@@ -48,8 +48,8 @@ public class PatternBasedOptimizer implements MDLWorker {
     @Override
     public String docString() {
         return "  -po: Runs the pattern-based optimizer.\n" +
-               "  -posilent: Supresses the pattern-based-optimized output\n" +
-               "  -popotential: Reports lines where a potential optimization was not applied for safety, but could maybe be done manually.";
+               "  -posilent: Supresses the pattern-based-optimizer output\n" +
+               "  -popotential: Reports lines where a potential optimization was not applied for safety, but could maybe be done manually.\n";
     }
 
     @Override
