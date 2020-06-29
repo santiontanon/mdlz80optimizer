@@ -41,6 +41,8 @@ public class Glass implements Idiom {
             SourceStatement s, SourceFile source, CodeBase code) throws Exception
     {
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("section")) {
+            // TODO(santi@): implement "section" with the same semantics as Glass. I am currently just
+            // approximating it by replacing it with "org"
             tokens.remove(0);
             
             Expression exp = config.expressionParser.parse(tokens, code);
