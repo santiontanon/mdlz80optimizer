@@ -140,6 +140,18 @@ public class ExpressionParser {
             }
             return Expression.operatorExpression(Expression.EXPRESSION_DIFF, exp, exp2, config);
         }
+        if (tokens.get(0).equals("?")) {
+            tokens.remove(0);
+            Expression exp2 = parse(tokens, code);
+            if (tokens.get(0).equals(":")) {
+                tokens.remove(0);
+                Expression exp3 = parse(tokens, code);
+                return Expression.operatorTernaryExpression(Expression.EXPRESSION_TERNARY_IF, exp, exp2, exp3, config);
+            } else {
+                config.error("Expected ':' in ternary if expression!");
+                return null;                
+            }
+        }
         
         return exp;
     }
@@ -158,13 +170,8 @@ public class ExpressionParser {
             String token = tokens.remove(0);
             return Expression.constantExpression(Tokenizer.stringValue(token));
         }
-        if (tokens.size() >= 1 &&
-            Tokenizer.isSymbol(tokens.get(0))) {
-            // symbol:
-            String token = tokens.remove(0);
-            return Expression.symbolExpression(token, code);
-        }
         if (tokens.size() >= 1 && 
+            (tokens.get(0).charAt(0) >= '0' && tokens.get(0).charAt(0) <= '9') &&
             (tokens.get(0).endsWith("h") || tokens.get(0).endsWith("H"))) {
             // should be a hex constant:
             String token = tokens.get(0);
@@ -174,6 +181,7 @@ public class ExpressionParser {
             }
         }
         if (tokens.size() >= 1 && 
+            (tokens.get(0).startsWith("0") || tokens.get(0).startsWith("1")) && 
             (tokens.get(0).endsWith("b") || tokens.get(0).endsWith("B"))) {
             // should be a binary constant:
             String token = tokens.get(0);
@@ -192,6 +200,21 @@ public class ExpressionParser {
                 return Expression.constantExpression(Tokenizer.parseHex(token));
             }
         }
+        if (tokens.size() >= 1 && 
+            (tokens.get(0).startsWith("0x") || tokens.get(0).startsWith("0x"))) {
+            // should be a hex constant:
+            String token = tokens.get(0).substring(2);
+            if (Tokenizer.isHex(token)) {
+                tokens.remove(0);
+                return Expression.constantExpression(Tokenizer.parseHex(token));
+            }
+        }
+        if (tokens.size() >= 1 &&
+            Tokenizer.isSymbol(tokens.get(0))) {
+            // symbol:
+            String token = tokens.remove(0);
+            return Expression.symbolExpression(token, code);
+        }        
         if (tokens.size() >= 2 && 
             (tokens.get(0).equals("%"))) {
             // should be a binary constant:

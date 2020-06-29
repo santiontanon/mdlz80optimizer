@@ -38,9 +38,8 @@ public class Pattern {
         String lines[] = patternString.split("\n");
         for(String line:lines) {
             line = line.strip();
-            if (line.startsWith("name:")) {
-                name = line.substring(5).strip();
-            } else if (line.equals("pattern:")) {
+            if (line.startsWith("pattern:")) {
+                name = line.substring(8).strip();
                 state = 1;
             } else if (line.equals("replacement:")) {
                 state = 2;

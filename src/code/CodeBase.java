@@ -16,7 +16,6 @@ public class CodeBase {
     SourceFile main;
     LinkedHashMap<String, SourceFile> sources = new LinkedHashMap<>();
     LinkedHashMap<String, SourceConstant> symbols = new LinkedHashMap<>();
-    LinkedHashMap<String, SourceMacro> macros = new LinkedHashMap<>();
     
     int current_address = 0;
     
@@ -102,20 +101,7 @@ public class CodeBase {
         sources.put(s.fileName, s);
     }
         
-    
-    public SourceMacro getMacro(String name)
-    {
-        if (macros.containsKey(name)) return macros.get(name);
-        return null;
-    }
-    
-    
-    public void addMacro(SourceMacro m)
-    {
-        macros.put(m.name, m);
-    }
-    
-    
+        
     public void setAddress(int a_address)
     {
         current_address = a_address;

@@ -14,6 +14,8 @@ import workers.MDLWorker;
 import parser.CodeBaseParser;
 import parser.ExpressionParser;
 import parser.LineParser;
+import parser.idioms.Glass;
+import parser.idioms.Idiom;
 
 public class MDLConfig {
 
@@ -26,6 +28,9 @@ public class MDLConfig {
     public static int CPU_Z80 = 0;
     public static int CPU_Z80MSX = 1;
     public static int CPU_Z80CPC = 2;
+    
+    public static int IDIOM_MDL = 0;
+    public static int IDIOM_GLASS = 1;
 
     // arguments:
     public String inputFile = null;
@@ -36,6 +41,9 @@ public class MDLConfig {
 
     public int cpu = CPU_Z80MSX;
     public int hexStyle = HEX_STYLE_HASH;
+    public int idiom = IDIOM_MDL;
+    public Idiom idiomParser = null;
+    public List<String> includeDirectories = new ArrayList<>();
     
     public boolean includeBinariesInAnalysis = false;
 
@@ -58,9 +66,12 @@ public class MDLConfig {
             + "\n"
             + "arguments: <input assembler file> [options]\n"
             + "  -cpu <type>: to select a different CPU (z80/z80msx/z80cpc) (default: z80msx).\n"
+            + "  -idiom <type>: to allow parsing different assembler idioms (mdl/glass) (default: mdl, which supports some basic code idioms common to various assemblers).\n"
+            + "                 Note that even when selecting an idiom, not all syntax of a given assembler might be supported.\n"
+            + "  -I <folder>: adds a folder to the include search path.\n"
+            + "  -debug: turns on debug messages.\n"
             + "  -warn-off-labelnocolon: turns off warnings for not placing colons after labels.\n"
             + "  -warn-off-jp(rr): turns off warnings for using confusing 'jp (hl)' instead of 'jp hl'.\n"
-            + "  -debug: turns on debug messages.\n"
             + "  -hex#: hex numbers render like #ffff (default).\n"
             + "  -HEX#: hex numbers render like  #FFFF.\n"
             + "  -hexh: hex numbers render like  0ffffh.\n"
@@ -132,6 +143,44 @@ public class MDLConfig {
                         }
                         break;
 
+                    case "-idiom":
+                        if (args.size()>=2) {
+                            args.remove(0);
+                            String idiomString = args.remove(0);
+                            switch(idiomString) {
+                                case "mdl":
+                                    idiom = IDIOM_MDL;
+                                    idiomParser = null;
+                                    break;
+                                case "glass":
+                                    idiom = IDIOM_GLASS;
+                                    idiomParser = new Glass(this);
+                                    break;
+                                default:
+                                    error("Unrecognized idiom " + idiomString);
+                                    return false;
+                            }
+                        } else {
+                            error("Missing idiom name after " + arg);
+                            return false;
+                        }
+                        break;
+                        
+                    case "-I":
+                        if (args.size()>=2) {
+                            args.remove(0);                        
+                            includeDirectories.add(args.remove(0));
+                        } else {
+                            error("Missing path after " + arg);
+                            return false;
+                        }
+                        break;
+    
+                    case "-debug":
+                        logger.setMinLevelToLog(Level.DEBUG);
+                        args.remove(0);
+                        break;
+                        
                     case "-warn-off-labelnocolon":
                         warningLabelWithoutColon = false;
                         args.remove(0);
@@ -139,11 +188,6 @@ public class MDLConfig {
 
                     case "-warn-off-jp(rr)":
                         warningJpHlWithParenthesis = false;
-                        args.remove(0);
-                        break;
-
-                    case "-debug":
-                        logger.setMinLevelToLog(Level.DEBUG);
                         args.remove(0);
                         break;
 

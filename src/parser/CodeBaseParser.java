@@ -18,6 +18,7 @@ public class CodeBaseParser {
     public CodeBaseParser(MDLConfig a_config) 
     {
         config = a_config;
+        preProcessor = new PreProcessor(config);
     }
     
     
@@ -39,7 +40,6 @@ public class CodeBaseParser {
         if (parent == null) code.setMain(f);
         code.addSourceFile(f);
         try {
-            preProcessor = new PreProcessor(config);
             if (parseSourceFileInternal(f, code, config)) return f;
         } catch(Exception e) {
             config.error("Problem parsing file " + fileName);

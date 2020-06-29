@@ -79,7 +79,7 @@ public class Tokenizer {
         if (token.equals("$")) return true;
         
         int c = token.charAt(0);
-        if ((c>='a' && c<='z') || (c>='A' && c<='Z')) return true;
+        if ((c>='a' && c<='z') || (c>='A' && c<='Z') || c=='_') return true;
         return false;
     }
     

@@ -9,7 +9,6 @@ import code.SourceConstant;
 import code.SourceFile;
 import code.SourceStatement;
 import code.CodeBase;
-import code.SourceMacro;
 import code.CPUOp;
 import java.io.File;
 import java.util.ArrayList;
@@ -91,21 +90,32 @@ public class LineParser {
                 return parseRestofTheLine(tokens, line, lineNumber, s, source);
             }
         } else if (Tokenizer.isSymbol(token)) {
-            if (line.startsWith(token) && (tokens.size() == 1 || tokens.get(1).startsWith(";"))) {
-                // it is just a label without colon:
-                if (config.warningLabelWithoutColon) {
-                    config.warn("Label defined without a colon in " + 
-                            source.fileName + ", " + lineNumber + ": " + line);
+            if (line.startsWith(token)) {
+                if (tokens.size() == 1 || tokens.get(1).startsWith(";")) {
+                    // it is just a label without colon:
+                    if (config.warningLabelWithoutColon) {
+                        config.warn("Label defined without a colon in " + 
+                                source.fileName + ", " + lineNumber + ": " + line);
+                    }
+                    Expression exp = Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, code);
+                    int address = exp.evaluate(s, code, false);
+                    tokens.remove(0);
+
+                    SourceConstant c = new SourceConstant(token, address, exp, s); 
+                    s.type = SourceStatement.STATEMENT_NONE;
+                    s.label = c;
+                    code.addSymbol(token, c);
+                    return parseRestofTheLine(tokens, line, lineNumber, s, source);   
+                } else if (tokens.size() >= 3 && tokens.get(1).equalsIgnoreCase("equ")) {
+                    // equ without a colon (provide warning):
+                    if (config.warningLabelWithoutColon) {
+                        config.warn("Label defined without a colon in " + 
+                                source.fileName + ", " + lineNumber + ": " + line);
+                    }
+                    tokens.remove(0);
+                    tokens.remove(0);
+                    return parseEqu(tokens, token, line, lineNumber, s, source, code);
                 }
-                Expression exp = Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, code);
-                int address = exp.evaluate(s, code, false);
-                tokens.remove(0);
-                
-                SourceConstant c = new SourceConstant(token, address, exp, s); 
-                s.type = SourceStatement.STATEMENT_NONE;
-                s.label = c;
-                code.addSymbol(token, c);
-                return parseRestofTheLine(tokens, line, lineNumber, s, source);   
             }
         }
         
@@ -137,7 +147,7 @@ public class LineParser {
             tokens.remove(0);
             return parseData(tokens, token, line, lineNumber, s, source, code);
 
-        } else if (tokens.size() >= 3 && token.equalsIgnoreCase("ds")) {
+        } else if (tokens.size() >= 2 && token.equalsIgnoreCase("ds")) {
             tokens.remove(0);
             return parseDefineSpace(tokens, line, lineNumber, s, source, code);
             
@@ -150,6 +160,8 @@ public class LineParser {
                          lineNumber + ": " + line);
             return false;
 
+        } else if (config.idiomParser != null && config.idiomParser.recognizeIdiom(tokens)) {
+            return config.idiomParser.parseLine(tokens, line, lineNumber, s, source, code);
         } else if (Tokenizer.isSymbol(token)) {
             // try to parse it as an assembler instruction or macro call:
             tokens.remove(0);
@@ -475,6 +487,18 @@ public class LineParser {
             }
             justFileName = rawFileName.substring(idx+1);
         }
-        return justPath + File.separator + justFileName;
+        String candidatePath = justPath + File.separator + justFileName;
+        File f = new File(candidatePath);
+        if (f.exists()) return candidatePath;
+        
+        for(String directory:config.includeDirectories) {
+            candidatePath = directory + File.separator + rawFileName;
+            f = new File(candidatePath);
+            if (f.exists()) return candidatePath;
+        }
+        
+        config.error("Cannot find include file " + rawFileName);
+        return null;
     }
+    
 }

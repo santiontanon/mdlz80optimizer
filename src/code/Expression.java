@@ -27,6 +27,7 @@ public class Expression {
     public static final int EXPRESSION_LEQTHAN = 16;
     public static final int EXPRESSION_GEQTHAN = 17;
     public static final int EXPRESSION_DIFF = 18;
+    public static final int EXPRESSION_TERNARY_IF = 19;
     
     // indexed by the numbers above:
     public static final int OPERATOR_PRECEDENCE[] = {
@@ -212,6 +213,16 @@ public class Expression {
                     return -1;
                 }
                 
+            case EXPRESSION_TERNARY_IF:
+                {
+                    Integer cond = args.get(0).evaluate(s, code, silent);
+                    if (cond == null) return null;
+                    if (cond != 0) {
+                        return args.get(1).evaluate(s, code, silent);
+                    } else {
+                        return args.get(2).evaluate(s, code, silent);
+                    }
+                }
         }
         
         return null;
@@ -397,6 +408,13 @@ public class Expression {
                     }
                     return str;
                 }
+                
+            case EXPRESSION_TERNARY_IF:
+                {
+                    return args.get(0).toString() + " ? " + 
+                           args.get(1).toString() + " : " + 
+                           args.get(2).toString();
+                }
 
             default:
                 return "<UNSUPPORTED TYPE "+type+">";
@@ -443,6 +461,9 @@ public class Expression {
                 if (!arg.evaluatesToNumericConstant()) return false;
             }
             return true;
+        }
+        if (type == EXPRESSION_TERNARY_IF) {
+            return args.get(1).evaluatesToNumericConstant() && args.get(2).evaluatesToNumericConstant();
         }
         return false;
     }
@@ -506,6 +527,7 @@ public class Expression {
         return exp;
     }
     
+    
     public static Expression operatorExpression(int operator, Expression arg1, Expression arg2, MDLConfig config)
     {
         // look at operator precedence:
@@ -565,4 +587,14 @@ public class Expression {
         return exp;
     }
 
+    
+    public static Expression operatorTernaryExpression(int operator, Expression arg1, Expression arg2, Expression arg3, MDLConfig config)
+    {
+        Expression exp = new Expression(operator);
+        exp.args = new ArrayList<>();
+        exp.args.add(arg1);
+        exp.args.add(arg2);
+        exp.args.add(arg3);
+        return exp;
+    }    
 }

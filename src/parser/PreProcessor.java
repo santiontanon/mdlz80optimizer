@@ -7,9 +7,9 @@ import cl.MDLConfig;
 import code.CodeBase;
 import code.Expression;
 import code.SourceFile;
-import code.SourceMacro;
 import code.SourceStatement;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 
 /**
@@ -23,6 +23,8 @@ public class PreProcessor {
     List<SourceMacro> currentMacroStack = new ArrayList<>();
     List<List<String>> macroExpansions = new ArrayList<>();
 
+    LinkedHashMap<String, SourceMacro> macros = new LinkedHashMap<>();
+    
 
     public PreProcessor(MDLConfig a_config)
     {
@@ -38,7 +40,7 @@ public class PreProcessor {
     
     public boolean isMacro(String name, CodeBase code)
     {
-        if (code.getMacro(name) != null) return true;
+        if (getMacro(name) != null) return true;
         if (name.equalsIgnoreCase(SourceMacro.MACRO_REPT)) return true;
         if (name.equalsIgnoreCase(SourceMacro.MACRO_IF)) return true;
         return false;
@@ -71,7 +73,7 @@ public class PreProcessor {
             } else if (m.name.equalsIgnoreCase(SourceMacro.MACRO_IF)) {
                 m.addLine(line);
             } else {
-                code.addMacro(m);
+                addMacro(m);
                 currentMacroStack.remove(0);
             }
         } else if (!tokens.isEmpty() && tokens.get(0).equalsIgnoreCase(SourceMacro.MACRO_ENDIF)) {
@@ -84,23 +86,31 @@ public class PreProcessor {
                 m.addLine(line);
             }
         } else if (!tokens.isEmpty() && tokens.get(0).equalsIgnoreCase(SourceMacro.MACRO_ELSE)) {
-            m.insideElse = true;
-        } else if (!tokens.isEmpty() && tokens.get(0).equalsIgnoreCase(SourceMacro.MACRO_IF)) {
-            // nested if:
-            tokens.remove(0);
-            SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_MACROCALL, f, lineNumber, code.getAddress());
-            s.source = f;
-            s.macroCallName = SourceMacro.MACRO_IF;
-            Expression exp = config.expressionParser.parse(tokens, code);
-            if (exp == null) {
-                config.error("Missing condition in " + f.fileName + ", " + 
-                             lineNumber + ": " + line);
-                return false;
+            if (m.name.equalsIgnoreCase(SourceMacro.MACRO_IF)) {
+                m.insideElse = true;
+            } else {
+                m.addLine(line);
             }
-            s.macroCallArguments = new ArrayList<>();
-            s.macroCallArguments.add(exp);
-            if (!config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, f)) return false;
-            return handleStatement(line, lineNumber, s, f, code);            
+        } else if (!tokens.isEmpty() && tokens.get(0).equalsIgnoreCase(SourceMacro.MACRO_IF)) {
+            if (m.name.equalsIgnoreCase(SourceMacro.MACRO_IF)) {
+                // nested if:
+                tokens.remove(0);
+                SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_MACROCALL, f, lineNumber, code.getAddress());
+                s.source = f;
+                s.macroCallName = SourceMacro.MACRO_IF;
+                Expression exp = config.expressionParser.parse(tokens, code);
+                if (exp == null) {
+                    config.error("Missing condition in " + f.fileName + ", " + 
+                                 lineNumber + ": " + line);
+                    return false;
+                }
+                s.macroCallArguments = new ArrayList<>();
+                s.macroCallArguments.add(exp);
+                if (!config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, f)) return false;
+                return handleStatement(line, lineNumber, s, f, code);            
+            } else {
+                m.addLine(line);
+            }
         } else {
             m.addLine(line);
         }     
@@ -135,7 +145,7 @@ public class PreProcessor {
                 currentMacroStack.add(0, m);   
                 return true;
             } else {
-                SourceMacro m = code.getMacro(s.macroCallName);    
+                SourceMacro m = getMacro(s.macroCallName);    
                 List<String> expandedMacro = m.instantiate(s.macroCallArguments, config);
                 if (expandedMacro == null) {
                     config.error("Problem instantiating macro "+s.macroCallName+" in " + source.fileName + ", " + 
@@ -153,5 +163,19 @@ public class PreProcessor {
             return false;
         }
     }
-        
+
+    
+    public SourceMacro getMacro(String name)
+    {
+        if (macros.containsKey(name)) return macros.get(name);
+        return null;
+    }
+    
+    
+    public void addMacro(SourceMacro m)
+    {
+        macros.put(m.name, m);
+    }
+    
+    
 }
