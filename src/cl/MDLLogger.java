@@ -3,6 +3,8 @@
  */
 package cl;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.ResourceBundle;
 
 public class MDLLogger {
@@ -11,7 +13,9 @@ public class MDLLogger {
     public static final int INFO = 1;
     public static final int WARNING = 2;
     public static final int ERROR = 3;
+    public static final int SILENT = 4;
 
+    List<Integer> minLevelToLogStack = new ArrayList<>();
     int minLevelToLog = INFO;
 
     public MDLLogger(int a_minLevelToLog) {
@@ -22,7 +26,21 @@ public class MDLLogger {
     {
         minLevelToLog = a_minLevelToLog;
     }
+ 
+    
+    public void silence()
+    {
+        minLevelToLogStack.add(0, minLevelToLog);
+        minLevelToLog = SILENT;
+    }
 
+    
+    public void resume()
+    {
+        minLevelToLog = minLevelToLogStack.remove(0);
+    }
+    
+    
     public String getName() {
         return "Z80OptimizerLogger";
     }

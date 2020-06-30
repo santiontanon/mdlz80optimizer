@@ -5,6 +5,7 @@ package parser;
 
 import cl.MDLConfig;
 import code.Expression;
+import code.SourceStatement;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,7 +19,9 @@ public class SourceMacro {
     
     
     public String name = null;
-    List<String> argNames = new ArrayList<>();
+    public SourceStatement definingStatement = null;
+    public List<String> argNames = new ArrayList<>();
+    public List<Expression> defaultValues = new ArrayList<>();
     List<String> lines = new ArrayList<>();
     List<String> elseLines = new ArrayList<>();  // only used by IF-ELSE-ENDIF macro
     
@@ -28,16 +31,19 @@ public class SourceMacro {
     public boolean insideElse = false;
     
     
-    public SourceMacro(String a_name)
+    public SourceMacro(String a_name, SourceStatement a_ds)
     {
         name = a_name;
+        definingStatement = a_ds;
     }
     
     
-    public SourceMacro(String a_name, List<String> a_args)
+    public SourceMacro(String a_name, List<String> a_args, List<Expression> a_defaultValues, SourceStatement a_ds)
     {
         name = a_name;
         argNames = a_args;
+        defaultValues = a_defaultValues;
+        definingStatement = a_ds;
     }
 
 
@@ -66,9 +72,14 @@ public class SourceMacro {
             }
         } else {
             // instantiate arguments:
-            if (argNames.size() != args.size()) {
-                config.error("Number of parameters in macro call incorrect!");
-                return null;
+            while(args.size() < argNames.size()) {
+                Expression defaultValue = defaultValues.get(args.size());
+                if (defaultValue == null) {
+                    config.error("Number of parameters in macro call incorrect!");
+                    return null;                    
+                } else {
+                    args.add(defaultValue);
+                }
             }
             for(String line:lines) {
                 String line2 = line;
@@ -79,6 +90,7 @@ public class SourceMacro {
                 lines2.add(line2);
             }            
         }
+                
         return lines2;
     }
 }

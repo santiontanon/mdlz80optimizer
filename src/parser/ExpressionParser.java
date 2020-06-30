@@ -21,136 +21,211 @@ public class ExpressionParser {
     {
         Expression exp = parseInternal(tokens, code);
         if (exp == null) return null;
-        if (tokens.isEmpty()) return exp;
-        
-        if (tokens.get(0).equals("+")) {
-            tokens.remove(0);
-            Expression exp2 = parse(tokens, code);
-            if (exp2 == null) {
-                config.error("Missing argument for operator +");
-                return null;
-            }
-            return Expression.operatorExpression(Expression.EXPRESSION_SUM, exp, exp2, config);
-        }
-        if (tokens.get(0).equals("-")) {
-            tokens.remove(0);
-            Expression exp2 = parse(tokens, code);
-            if (exp2 == null) {
-                config.error("Missing argument for operator -");
-                return null;
-            }
-            return Expression.operatorExpression(Expression.EXPRESSION_SUB, exp, exp2, config);
-        }
-        if (tokens.get(0).equals("*")) {
-            tokens.remove(0);
-            Expression exp2 = parse(tokens, code);
-            if (exp2 == null) {
-                config.error("Missing argument for operator *");
-                return null;
-            }
-            return Expression.operatorExpression(Expression.EXPRESSION_MUL, exp, exp2, config);
-        }
-        if (tokens.get(0).equals("/")) {
-            tokens.remove(0);
-            Expression exp2 = parse(tokens, code);
-            if (exp2 == null) {
-                config.error("Missing argument for operator /");
-                return null;
-            }
-            return Expression.operatorExpression(Expression.EXPRESSION_DIV, exp, exp2, config);
-        }
-        if (tokens.get(0).equals("%")) {
-            tokens.remove(0);
-            Expression exp2 = parse(tokens, code);
-            if (exp2 == null) {
-                config.error("Missing argument for operator %");
-                return null;
-            }
-            return Expression.operatorExpression(Expression.EXPRESSION_MOD, exp, exp2, config);
-        }
-        if (tokens.get(0).equals("|")) {
-            tokens.remove(0);
-            Expression exp2 = parse(tokens, code);
-            if (exp2 == null) {
-                config.error("Missing argument for operator |");
-                return null;
-            }
-            return Expression.operatorExpression(Expression.EXPRESSION_OR, exp, exp2, config);
-        }
-        if (tokens.get(0).equals("&")) {
-            tokens.remove(0);
-            Expression exp2 = parse(tokens, code);
-            if (exp2 == null) {
-                config.error("Missing argument for operator &");
-                return null;
-            }
-            return Expression.operatorExpression(Expression.EXPRESSION_AND, exp, exp2, config);
-        }
-        if (tokens.get(0).equals("=")) {
-            tokens.remove(0);
-            Expression exp2 = parse(tokens, code);
-            if (exp2 == null) {
-                config.error("Missing argument for operator &");
-                return null;
-            }
-            return Expression.operatorExpression(Expression.EXPRESSION_EQUAL, exp, exp2, config);
-        }
-        if (tokens.get(0).equals("<")) {
-            tokens.remove(0);
-            Expression exp2 = parse(tokens, code);
-            if (exp2 == null) {
-                config.error("Missing argument for operator &");
-                return null;
-            }
-            return Expression.operatorExpression(Expression.EXPRESSION_LOWERTHAN, exp, exp2, config);
-        }
-        if (tokens.get(0).equals(">")) {
-            tokens.remove(0);
-            Expression exp2 = parse(tokens, code);
-            if (exp2 == null) {
-                config.error("Missing argument for operator &");
-                return null;
-            }
-            return Expression.operatorExpression(Expression.EXPRESSION_GREATERTHAN, exp, exp2, config);
-        }
-        if (tokens.get(0).equals("<=")) {
-            tokens.remove(0);
-            Expression exp2 = parse(tokens, code);
-            if (exp2 == null) {
-                config.error("Missing argument for operator &");
-                return null;
-            }
-            return Expression.operatorExpression(Expression.EXPRESSION_LEQTHAN, exp, exp2, config);
-        }
-        if (tokens.get(0).equals(">=")) {
-            tokens.remove(0);
-            Expression exp2 = parse(tokens, code);
-            if (exp2 == null) {
-                config.error("Missing argument for operator &");
-                return null;
-            }
-            return Expression.operatorExpression(Expression.EXPRESSION_GEQTHAN, exp, exp2, config);
-        }
-        if (tokens.get(0).equals("!=")) {
-            tokens.remove(0);
-            Expression exp2 = parse(tokens, code);
-            if (exp2 == null) {
-                config.error("Missing argument for operator &");
-                return null;
-            }
-            return Expression.operatorExpression(Expression.EXPRESSION_DIFF, exp, exp2, config);
-        }
-        if (tokens.get(0).equals("?")) {
-            tokens.remove(0);
-            Expression exp2 = parse(tokens, code);
-            if (tokens.get(0).equals(":")) {
+        while(!tokens.isEmpty()) {        
+            if (tokens.get(0).equals("+")) {
                 tokens.remove(0);
-                Expression exp3 = parse(tokens, code);
-                return Expression.operatorTernaryExpression(Expression.EXPRESSION_TERNARY_IF, exp, exp2, exp3, config);
-            } else {
-                config.error("Expected ':' in ternary if expression!");
-                return null;                
+                if (exp.isRegister(code)) {
+                    // special case for ix+nn (since I want the register to be separated from the expression)
+                    Expression exp2 = parse(tokens, code);
+                    if (exp2 == null) {
+                        config.error("Missing argument for operator +");
+                        return null;
+                    }
+                    return Expression.operatorExpression(Expression.EXPRESSION_SUM, exp, exp2, config);
+                } else {
+                    Expression exp2 = parseInternal(tokens, code);
+                    if (exp2 == null) {
+                        config.error("Missing argument for operator +");
+                        return null;
+                    }
+                    exp = Expression.operatorExpression(Expression.EXPRESSION_SUM, exp, exp2, config);
+                    continue;
+                }
             }
+            if (tokens.get(0).equals("-")) {
+                tokens.remove(0);
+                if (exp.isRegister(code)) {
+                    // special case for ix+nn (since I want the register to be separated from the expression)
+                    Expression exp2 = parse(tokens, code);
+                    if (exp2 == null) {
+                        config.error("Missing argument for operator +");
+                        return null;
+                    }
+                    return Expression.operatorExpression(Expression.EXPRESSION_SUB, exp, exp2, config);
+                } else {
+                    Expression exp2 = parseInternal(tokens, code);
+                    if (exp2 == null) {
+                        config.error("Missing argument for operator -");
+                        return null;
+                    }
+                    exp = Expression.operatorExpression(Expression.EXPRESSION_SUB, exp, exp2, config);
+                    continue;
+                }
+            }
+            if (tokens.get(0).equals("*")) {
+                tokens.remove(0);
+                Expression exp2 = parseInternal(tokens, code);
+                if (exp2 == null) {
+                    config.error("Missing argument for operator *");
+                    return null;
+                }
+                exp = Expression.operatorExpression(Expression.EXPRESSION_MUL, exp, exp2, config);
+                continue;
+            }
+            if (tokens.get(0).equals("/")) {
+                tokens.remove(0);
+                Expression exp2 = parseInternal(tokens, code);
+                if (exp2 == null) {
+                    config.error("Missing argument for operator /");
+                    return null;
+                }
+                exp = Expression.operatorExpression(Expression.EXPRESSION_DIV, exp, exp2, config);
+                continue;
+            }
+            if (tokens.get(0).equals("%")) {
+                tokens.remove(0);
+                Expression exp2 = parseInternal(tokens, code);
+                if (exp2 == null) {
+                    config.error("Missing argument for operator %");
+                    return null;
+                }
+                exp = Expression.operatorExpression(Expression.EXPRESSION_MOD, exp, exp2, config);
+                continue;
+            }
+            if (tokens.get(0).equals("|")) {
+                tokens.remove(0);
+                Expression exp2 = parseInternal(tokens, code);
+                if (exp2 == null) {
+                    config.error("Missing argument for operator |");
+                    return null;
+                }
+                exp = Expression.operatorExpression(Expression.EXPRESSION_BITOR, exp, exp2, config);
+                continue;
+            }
+            if (tokens.get(0).equals("&")) {
+                tokens.remove(0);
+                Expression exp2 = parseInternal(tokens, code);
+                if (exp2 == null) {
+                    config.error("Missing argument for operator &");
+                    return null;
+                }
+                exp = Expression.operatorExpression(Expression.EXPRESSION_BITAND, exp, exp2, config);
+                continue;
+            }
+            if (tokens.get(0).equals("=")) {
+                tokens.remove(0);
+                Expression exp2 = parseInternal(tokens, code);
+                if (exp2 == null) {
+                    config.error("Missing argument for operator =");
+                    return null;
+                }
+                exp = Expression.operatorExpression(Expression.EXPRESSION_EQUAL, exp, exp2, config);
+                continue;
+            }
+            if (tokens.get(0).equals("<")) {
+                tokens.remove(0);
+                Expression exp2 = parseInternal(tokens, code);
+                if (exp2 == null) {
+                    config.error("Missing argument for operator <");
+                    return null;
+                }
+                exp = Expression.operatorExpression(Expression.EXPRESSION_LOWERTHAN, exp, exp2, config);
+                continue;
+            }
+            if (tokens.get(0).equals(">")) {
+                tokens.remove(0);
+                Expression exp2 = parseInternal(tokens, code);
+                if (exp2 == null) {
+                    config.error("Missing argument for operator >");
+                    return null;
+                }
+                exp = Expression.operatorExpression(Expression.EXPRESSION_GREATERTHAN, exp, exp2, config);
+                continue;
+            }
+            if (tokens.get(0).equals("<=")) {
+                tokens.remove(0);
+                Expression exp2 = parseInternal(tokens, code);
+                if (exp2 == null) {
+                    config.error("Missing argument for operator <=");
+                    return null;
+                }
+                exp = Expression.operatorExpression(Expression.EXPRESSION_LEQTHAN, exp, exp2, config);
+                continue;
+            }
+            if (tokens.get(0).equals(">=")) {
+                tokens.remove(0);
+                Expression exp2 = parseInternal(tokens, code);
+                if (exp2 == null) {
+                    config.error("Missing argument for operator >=");
+                    return null;
+                }
+                exp = Expression.operatorExpression(Expression.EXPRESSION_GEQTHAN, exp, exp2, config);
+                continue;
+            }
+            if (tokens.get(0).equals("!=")) {
+                tokens.remove(0);
+                Expression exp2 = parseInternal(tokens, code);
+                if (exp2 == null) {
+                    config.error("Missing argument for operator !=");
+                    return null;
+                }
+                exp = Expression.operatorExpression(Expression.EXPRESSION_DIFF, exp, exp2, config);
+                continue;
+            }
+            if (tokens.get(0).equals("?")) {
+                tokens.remove(0);
+                Expression exp2 = parseInternal(tokens, code);
+                if (tokens.get(0).equals(":")) {
+                    tokens.remove(0);
+                    Expression exp3 = parse(tokens, code);
+                    exp = Expression.operatorTernaryExpression(Expression.EXPRESSION_TERNARY_IF, exp, exp2, exp3, config);
+                    continue;
+                } else {
+                    config.error("Expected ':' in ternary if expression!");
+                    return null;                
+                }
+            }
+            if (tokens.get(0).equals("<<")) {
+                tokens.remove(0);
+                Expression exp2 = parseInternal(tokens, code);
+                if (exp2 == null) {
+                    config.error("Missing argument for operator <<");
+                    return null;
+                }
+                exp = Expression.operatorExpression(Expression.EXPRESSION_LSHIFT, exp, exp2, config);
+                continue;
+            }
+            if (tokens.get(0).equals(">>")) {
+                tokens.remove(0);
+                Expression exp2 = parseInternal(tokens, code);
+                if (exp2 == null) {
+                    config.error("Missing argument for operator >>");
+                    return null;
+                }
+                exp = Expression.operatorExpression(Expression.EXPRESSION_RSHIFT, exp, exp2, config);
+                continue;
+            }
+            if (tokens.get(0).equals("||")) {
+                tokens.remove(0);
+                Expression exp2 = parseInternal(tokens, code);
+                if (exp2 == null) {
+                    config.error("Missing argument for operator ||");
+                    return null;
+                }
+                exp = Expression.operatorExpression(Expression.EXPRESSION_OR, exp, exp2, config);
+                continue;
+            }
+            if (tokens.get(0).equals("&&")) {
+                tokens.remove(0);
+                Expression exp2 = parseInternal(tokens, code);
+                if (exp2 == null) {
+                    config.error("Missing argument for operator &&");
+                    return null;
+                }
+                exp = Expression.operatorExpression(Expression.EXPRESSION_AND, exp, exp2, config);
+                continue;
+            }
+            return exp;
         }
         
         return exp;

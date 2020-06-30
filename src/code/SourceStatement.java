@@ -48,6 +48,7 @@ public class SourceStatement {
     public String macroCallName = null;
     public List<Expression> macroCallArguments = null;
     public List<String> macroDefinitionArgs;
+    public List<Expression> macroDefinitionDefaults;
     
     // These two are optional attributes that all statements can have:
     public SourceConstant label = null; 

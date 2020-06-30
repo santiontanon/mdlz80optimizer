@@ -9,12 +9,34 @@ import java.util.List;
 import java.util.StringTokenizer;
 
 public class Tokenizer {    
+    public static final List<String> doubleTokens = new ArrayList<>();
+    static{
+        doubleTokens.add("<<");
+        doubleTokens.add(">>");
+        doubleTokens.add("<=");
+        doubleTokens.add(">=");
+        doubleTokens.add("&&");
+        doubleTokens.add("||");
+        doubleTokens.add("af'");
+        doubleTokens.add("AF'");
+        doubleTokens.add("!=");
+    }
+    
     public static List<String> tokenize(String line) {
         List<String> tokens = new ArrayList<>();
         
-        StringTokenizer st = new StringTokenizer(line, " \t()[]#$,;:+-*/%|&'\"?", true);
+        StringTokenizer st = new StringTokenizer(line, " \t()[]#$,;:+-*/%|&'\"?<>=", true);
+        String previous = null;
         while(st.hasMoreTokens()) {
             String next = st.nextToken();
+            if (previous != null) {
+                if (doubleTokens.contains(previous+next)) {
+                    tokens.remove(tokens.size()-1);
+                    tokens.add(previous+next);
+                    previous = previous+next;
+                    continue;
+                }
+            }
             if (next.equals("\"")) {
                 String token = next;
                 while(st.hasMoreTokens()) {
@@ -35,15 +57,18 @@ public class Tokenizer {
                         break;
                     }
                 }
+                /*
                 if (token.length() == 1 && !tokens.isEmpty()) {
                     // check if it's an "af'":
                     String prev = tokens.get(tokens.size()-1);
                     if (prev.equalsIgnoreCase("af")) {
                         tokens.remove(tokens.size()-1);
                         tokens.add(prev + "'");
+                        previous = next;
                         continue;
                     }
                 }
+                */
                 if (token.length()<2 || !token.endsWith("'")) return null;
                 token = "\"" + token.substring(1, token.length()-1) + "\"";
                 tokens.add(token);
@@ -54,6 +79,7 @@ public class Tokenizer {
             } else if (!next.equals(" ") && !next.equals("\t")) {
                 tokens.add(next);
             }
+            previous = next;
         }
         
         return tokens;

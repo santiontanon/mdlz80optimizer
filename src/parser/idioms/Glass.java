@@ -4,13 +4,15 @@
 package parser.idioms;
 
 import cl.MDLConfig;
+import cl.MDLLogger;
 import code.CodeBase;
 import code.Expression;
-import code.SourceConstant;
 import code.SourceFile;
 import code.SourceStatement;
 import java.util.ArrayList;
 import java.util.List;
+import parser.PreProcessor;
+import parser.SourceMacro;
 
 /**
  *
@@ -31,6 +33,9 @@ public class Glass implements Idiom {
     {
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("section")) return true;
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("ends")) return true;
+        if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("proc")) return true;
+        if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("endp")) return true;
+        if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("error")) return true;
         return false;
     }
     
@@ -59,10 +64,11 @@ public class Glass implements Idiom {
             s.type = SourceStatement.STATEMENT_ORG;
             s.org = exp;
             sectionStack.add(0, exp.symbolName);
+            
             return config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source);
         }
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("ends")) {
-            if (sectionStack.isEmpty()) {
+            if (!sectionStack.isEmpty()) {
                 sectionStack.remove(0);
                 return true;
             } else {
@@ -71,7 +77,87 @@ public class Glass implements Idiom {
                 return false;                
             }
         }
+        if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("proc")) {
+            if (s.label == null) {
+                config.error("Proc with no name at " + source.fileName + ", " + 
+                             lineNumber + ": " + line);
+                return false;                
+            }
+            config.lineParser.pushLabelPrefix(s.label.name);
+            return true;
+        }
+        if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("endp")) {
+            config.lineParser.popLabelPrefix();
+            return true;
+        }
+        if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("error")) {
+            config.error(line);
+            return false;
+        }
         return false;
+    }
+    
+    
+    @Override
+    public boolean newMacro(SourceMacro macro, CodeBase code) throws Exception
+    {
+        // Attempt to assemble the macro content at address 0, and define all the internal symbols as macroname.symbol:
+        // To do that, I instantiate the macro with all the parameters taking the value 0:
+        // However, it is not always possible to do this, so, this is only attempted, and if it fails
+        // no compilation happens:
+        List<Expression> args = new ArrayList<>();
+        for(int i=0;i<macro.argNames.size();i++) {
+            args.add(Expression.constantExpression(0));
+        }
+        List<String> lines = macro.instantiate(args, config);
+        PreProcessor preProcessor = new PreProcessor(config.preProcessor);
+        
+        // Assemble the macro at address 0:
+        config.lineParser.pushLabelPrefix(macro.name + ".");
+        // supress error messages when attempting to assemble a macro, as it might fail:
+        config.logger.silence();
+        try {
+            SourceFile f = new SourceFile(macro.definingStatement.source.fileName + ":macro(" + macro.name+")", null, null);
+            int lineNumber = macro.definingStatement.lineNumber;
+            while(true) {
+                String line = preProcessor.expandMacros();
+                if (line == null && !lines.isEmpty()) {
+                    line = lines.remove(0);
+                    lineNumber++;                
+                }
+                if (line == null) {
+//                    if (preProcessor.withinMacroDefinition()) {
+//                        // we fail to evaluate the macro, but it's ok, some times it can happen
+//                        break;
+//                    }
+                    break;
+                }
+
+                if (preProcessor.withinMacroDefinition()) {
+                    if (!preProcessor.parseMacroLine(line, lineNumber, f, code, config)) {
+                        // we fail to evaluate the macro, but it's ok, some times it can happen
+                        break;
+                    }
+                } else {
+                    SourceStatement s = config.lineParser.parse(line, lineNumber, f, code, config);
+                    if (s == null) {
+                        // we fail to evaluate the macro, but it's ok, some times it can happen
+                        break;
+                    }
+                    if (!s.isEmpty()) {
+                        if (!preProcessor.handleStatement(line, lineNumber, s, f, code)) {
+                            f.addStatement(s);
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            // we fail to evaluate the macro, but it's ok, some times it can happen
+        }
+        
+        config.lineParser.popLabelPrefix();
+        config.logger.resume();
+        return true;        
     }
     
 }

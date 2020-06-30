@@ -18,10 +18,27 @@ public class LineParser {
     MDLConfig config;
     CodeBaseParser codeBaseParser;
     
+    // for local labels:
+    String labelPrefix = "";
+    List<String> labelPrefixStack = new ArrayList<>();
+    
     public LineParser(MDLConfig a_config, CodeBaseParser a_codeBaseParser)
     {
         config = a_config;
         codeBaseParser = a_codeBaseParser;
+    }
+    
+    
+    public void pushLabelPrefix(String a_lp)
+    {
+        labelPrefixStack.add(0,labelPrefix);
+        labelPrefix = a_lp;
+    }
+
+    
+    public void popLabelPrefix()
+    {
+        labelPrefix = labelPrefixStack.remove(0);
     }
 
 
@@ -73,20 +90,20 @@ public class LineParser {
                     tokens.remove(0);
                     tokens.remove(0);
 
-                    SourceConstant c = new SourceConstant(token, address, exp, s); 
+                    SourceConstant c = new SourceConstant(labelPrefix+token, address, exp, s); 
                     s.type = SourceStatement.STATEMENT_NONE;
                     s.label = c;
-                    code.addSymbol(token, c);
+                    code.addSymbol(c.name, c);
                     token = tokens.get(0);
                 }
             } else {
                 tokens.remove(0);
                 tokens.remove(0);
 
-                SourceConstant c = new SourceConstant(token, address, exp, s); 
+                SourceConstant c = new SourceConstant(labelPrefix+token, address, exp, s); 
                 s.type = SourceStatement.STATEMENT_NONE;
                 s.label = c;
-                code.addSymbol(token, c);
+                code.addSymbol(c.name, c);
                 return parseRestofTheLine(tokens, line, lineNumber, s, source);
             }
         } else if (Tokenizer.isSymbol(token)) {
@@ -101,10 +118,10 @@ public class LineParser {
                     int address = exp.evaluate(s, code, false);
                     tokens.remove(0);
 
-                    SourceConstant c = new SourceConstant(token, address, exp, s); 
+                    SourceConstant c = new SourceConstant(labelPrefix+token, address, exp, s); 
                     s.type = SourceStatement.STATEMENT_NONE;
                     s.label = c;
-                    code.addSymbol(token, c);
+                    code.addSymbol(c.name, c);
                     return parseRestofTheLine(tokens, line, lineNumber, s, source);   
                 } else if (tokens.size() >= 3 && tokens.get(1).equalsIgnoreCase("equ")) {
                     // equ without a colon (provide warning):
@@ -280,10 +297,10 @@ public class LineParser {
         } else {
             Integer value = exp.evaluate(s, code, true);
             
-            SourceConstant c = new SourceConstant(label, value, exp, s);
+            SourceConstant c = new SourceConstant(labelPrefix+label, value, exp, s);
             s.type = SourceStatement.STATEMENT_CONSTANT;
             s.label = c;
-            code.addSymbol(label, c);
+            code.addSymbol(c.name, c);
             return parseRestofTheLine(tokens, line, lineNumber, s, source);
         }
     }
@@ -432,14 +449,29 @@ public class LineParser {
         
         // parse arguments:
         List<String> args = new ArrayList<>();
+        List<Expression> defaultValues = new ArrayList<>();
         while(tokens.size()>=2 && tokens.get(0).equals("?")) {
             tokens.remove(0);
             args.add(tokens.remove(0));
+            if (!tokens.isEmpty() && tokens.get(0).equals("=")) {
+                // default value:
+                tokens.remove(0);
+                Expression defaultValue = config.expressionParser.parse(tokens, code);
+                if (defaultValue == null) {
+                    config.error("Cannot parse default value in line " + source.fileName + ", " + 
+                                 lineNumber + ": " + line);
+                    return false;            
+                }
+                defaultValues.add(defaultValue);
+            } else {
+                defaultValues.add(null);
+            }
             if (!tokens.isEmpty() && tokens.get(0).equals(",")) tokens.remove(0);
         }
         
         s.type = SourceStatement.STATEMENT_MACRO;
         s.macroDefinitionArgs = args;
+        s.macroDefinitionDefaults = defaultValues;
         return parseRestofTheLine(tokens, line, lineNumber, s, source);   
     }    
     

@@ -28,11 +28,18 @@ public class Expression {
     public static final int EXPRESSION_GEQTHAN = 17;
     public static final int EXPRESSION_DIFF = 18;
     public static final int EXPRESSION_TERNARY_IF = 19;
+    public static final int EXPRESSION_LSHIFT = 20;
+    public static final int EXPRESSION_RSHIFT = 21;
+    public static final int EXPRESSION_BITOR = 22;
+    public static final int EXPRESSION_BITAND = 23;
     
     // indexed by the numbers above:
     public static final int OPERATOR_PRECEDENCE[] = {
-        -1, -1, -1, -1, -1, -1,
-        6, 6, 5, 5, 5, 13, 11, 10, 9, 9, 9, 9, 10};
+        -1, -1, -1, -1, -1, 
+        -1,  6,  6,  5,  5,  
+         5, 13, 11, 10,  9, 
+         9,  9,  9, 10, 16,
+         7,  7, 11, 13};
     
     public int type;
     public int numericConstant;
@@ -64,6 +71,7 @@ public class Expression {
                     if (value == null) {
                         if (!silent) {
                             code.config.error("Undefined symbol " + symbolName);
+                            code.getSymbolValue(symbolName, silent);
                         }
                         return null;
                     }
@@ -223,6 +231,43 @@ public class Expression {
                         return args.get(2).evaluate(s, code, silent);
                     }
                 }
+                
+            case EXPRESSION_LSHIFT:
+                {
+                    if (args.size() != 2) return null; 
+                    Integer v1 = args.get(0).evaluate(s, code, silent);
+                    Integer v2 = args.get(1).evaluate(s, code, silent);
+                    if (v1 == null || v2 == null) return null;
+                    return v1 << v2;
+                }
+
+            case EXPRESSION_RSHIFT:
+                {
+                    if (args.size() != 2) return null; 
+                    Integer v1 = args.get(0).evaluate(s, code, silent);
+                    Integer v2 = args.get(1).evaluate(s, code, silent);
+                    if (v1 == null || v2 == null) return null;
+                    return v1 >> v2;
+                }
+                
+            case EXPRESSION_BITOR:
+                {
+                    if (args.size() != 2) return null; 
+                    Integer v1 = args.get(0).evaluate(s, code, silent);
+                    Integer v2 = args.get(1).evaluate(s, code, silent);
+                    if (v1 == null || v2 == null) return null;
+                    return v1 | v2;
+                }
+                
+            case EXPRESSION_BITAND:
+                {
+                    if (args.size() != 2) return null; 
+                    Integer v1 = args.get(0).evaluate(s, code, silent);
+                    Integer v2 = args.get(1).evaluate(s, code, silent);
+                    if (v1 == null || v2 == null) return null;
+                    return v1 & v2;
+                }
+                
         }
         
         return null;
@@ -416,6 +461,58 @@ public class Expression {
                            args.get(2).toString();
                 }
 
+            case EXPRESSION_LSHIFT:
+                {
+                    String str = null;
+                    for(Expression arg:args) {
+                        if (str == null) {
+                            str = arg.toString();
+                        } else {
+                            str += " << " + arg.toString();
+                        }
+                    }
+                    return str;
+                }
+                
+            case EXPRESSION_RSHIFT:
+                {
+                    String str = null;
+                    for(Expression arg:args) {
+                        if (str == null) {
+                            str = arg.toString();
+                        } else {
+                            str += " >> " + arg.toString();
+                        }
+                    }
+                    return str;
+                }
+
+            case EXPRESSION_BITOR:
+                {
+                    String str = null;
+                    for(Expression arg:args) {
+                        if (str == null) {
+                            str = arg.toString();
+                        } else {
+                            str += " | " + arg.toString();
+                        }
+                    }
+                    return str;
+                }
+                
+            case EXPRESSION_BITAND:
+                {
+                    String str = null;
+                    for(Expression arg:args) {
+                        if (str == null) {
+                            str = arg.toString();
+                        } else {
+                            str += " & " + arg.toString();
+                        }
+                    }
+                    return str;
+                }
+                
             default:
                 return "<UNSUPPORTED TYPE "+type+">";
         }
@@ -456,7 +553,11 @@ public class Expression {
             type == EXPRESSION_GREATERTHAN ||
             type == EXPRESSION_LEQTHAN ||
             type == EXPRESSION_GEQTHAN ||
-            type == EXPRESSION_DIFF) {
+            type == EXPRESSION_DIFF ||
+            type == EXPRESSION_LSHIFT ||
+            type == EXPRESSION_RSHIFT ||
+            type == EXPRESSION_BITOR ||
+            type == EXPRESSION_BITAND) {
             for(Expression arg:args) {
                 if (!arg.evaluatesToNumericConstant()) return false;
             }

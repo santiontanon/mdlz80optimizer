@@ -12,6 +12,7 @@ import workers.MDLWorker;
 import parser.CodeBaseParser;
 import parser.ExpressionParser;
 import parser.LineParser;
+import parser.PreProcessor;
 import parser.idioms.Glass;
 import parser.idioms.Idiom;
 
@@ -50,6 +51,7 @@ public class MDLConfig {
 
     // utils:
     public MDLLogger logger;
+    public PreProcessor preProcessor;
     public LineParser lineParser;
     public ExpressionParser expressionParser;
     public CodeBaseParser codeBaseParser;
@@ -246,6 +248,7 @@ public class MDLConfig {
         
         CPUOpSpecParser opSpecParser = new CPUOpSpecParser(this);
 
+        preProcessor = new PreProcessor(this);
         codeBaseParser = new CodeBaseParser(this);
         lineParser = new LineParser(this, codeBaseParser);
         expressionParser = new ExpressionParser(this);
