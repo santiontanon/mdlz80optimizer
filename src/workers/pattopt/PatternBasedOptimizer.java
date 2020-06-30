@@ -96,7 +96,10 @@ public class PatternBasedOptimizer implements MDLWorker {
                     }
                     break;
                 }
-                line = line.strip();
+                line = line.trim();
+                // ignore comments:
+                if (line.startsWith(";")) continue;
+                
                 if (line.equals("")) {
                     if (!patternString.equals("")) {
                         patterns.add(new Pattern(patternString, config));

@@ -5,42 +5,42 @@ package cl;
 
 import java.util.ResourceBundle;
 
-public class MDLLogger implements System.Logger {
+public class MDLLogger {
+    
+    public static final int DEBUG = 0;
+    public static final int INFO = 1;
+    public static final int WARNING = 2;
+    public static final int ERROR = 3;
 
-    Level minLevelToLog = Level.INFO;
+    int minLevelToLog = INFO;
 
-    public MDLLogger(Level a_minLevelToLog) {
+    public MDLLogger(int a_minLevelToLog) {
         minLevelToLog = a_minLevelToLog;
     }
     
-    public void setMinLevelToLog(Level a_minLevelToLog)
+    public void setMinLevelToLog(int a_minLevelToLog)
     {
         minLevelToLog = a_minLevelToLog;
     }
 
-    @Override
     public String getName() {
         return "Z80OptimizerLogger";
     }
 
-    @Override
-    public boolean isLoggable(Level level) {
+    public boolean isLoggable(int level) {
         return true;
     }
 
-    @Override
-    public void log(Level level, ResourceBundle bundle, String msg, Throwable thrown) {
+    public void log(int level, ResourceBundle bundle, String msg, Throwable thrown) {
         log(level, msg);
     }
 
-    @Override
-    public void log(Level level, ResourceBundle bundle, String format, Object... params) {
+    public void log(int level, ResourceBundle bundle, String format, Object... params) {
         log(level, format);
     }
 
-    @Override
-    public void log(Level level, String msg) {
-        if (level.getSeverity() < minLevelToLog.getSeverity()) {
+    public void log(int level, String msg) {
+        if (level < minLevelToLog) {
             return;
         }
         switch (level) {

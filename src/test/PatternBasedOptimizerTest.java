@@ -35,6 +35,7 @@ public class PatternBasedOptimizerTest {
         failures += test("data/tests/test17.asm", 4, args);
         failures += test("data/tests/test18.asm", 3, args);
         failures += test("data/tests/test19.asm", 2, args);
+        failures += test("data/tests/test20.asm", 4, args);
         if (failures > 0) {
             throw new Error(failures + " tests failed!");
         }

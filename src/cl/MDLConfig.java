@@ -4,8 +4,6 @@
 package cl;
 
 import code.CodeBase;
-import java.lang.System.Logger;
-import java.lang.System.Logger.Level;
 import java.util.ArrayList;
 import java.util.List;
 import parser.CPUOpParser;
@@ -81,7 +79,7 @@ public class MDLConfig {
 
     
     public MDLConfig() {
-        logger = new MDLLogger(Level.INFO);
+        logger = new MDLLogger(MDLLogger.INFO);
     }
 
     
@@ -177,7 +175,7 @@ public class MDLConfig {
                         break;
     
                     case "-debug":
-                        logger.setMinLevelToLog(Level.DEBUG);
+                        logger.setMinLevelToLog(MDLLogger.DEBUG);
                         args.remove(0);
                         break;
                         
@@ -269,19 +267,19 @@ public class MDLConfig {
     }
     
     public void debug(String message) {
-        logger.log(Logger.Level.DEBUG, message);
+        logger.log(MDLLogger.DEBUG, message);
     }
 
     public void info(String message) {
-        logger.log(Logger.Level.INFO, message);
+        logger.log(MDLLogger.INFO, message);
     }
 
     public void warn(String message) {
-        logger.log(Logger.Level.WARNING, message);
+        logger.log(MDLLogger.WARNING, message);
     }
 
     public void error(String message) {
-        logger.log(Logger.Level.ERROR, message);
+        logger.log(MDLLogger.ERROR, message);
     }
 
 }

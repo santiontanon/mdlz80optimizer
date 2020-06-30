@@ -13,6 +13,7 @@ import code.SourceStatement;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import parser.Tokenizer;
 import util.Pair;
 
 /**
@@ -37,9 +38,9 @@ public class Pattern {
         // parse the pattern:
         String lines[] = patternString.split("\n");
         for(String line:lines) {
-            line = line.strip();
+            line = line.trim();
             if (line.startsWith("pattern:")) {
-                name = line.substring(8).strip();
+                name = line.substring(8).trim();
                 state = 1;
             } else if (line.equals("replacement:")) {
                 state = 2;
@@ -213,6 +214,26 @@ public class Pattern {
                                 config.info("Potential optimization ("+name+") in " + f.fileName + ", line " + f.getStatements().get(a_index).lineNumber);
                             return null;
                         }
+                    }
+                    break;
+                }
+                case "notEqual":
+                {
+                    String v1_str = constraint[1];
+                    String v2_str = constraint[2];
+                    List<String> v1_tokens = Tokenizer.tokenize(v1_str);
+                    List<String> v2_tokens = Tokenizer.tokenize(v2_str);
+                    
+                    Expression exp1 = config.expressionParser.parse(v1_tokens, code);
+                    Expression exp2 = config.expressionParser.parse(v2_tokens, code);
+                    
+                    if (exp1.evaluatesToNumericConstant() != exp2.evaluatesToNumericConstant()) break;
+                    if (exp1.evaluatesToNumericConstant()) {
+                        // If the expressions are numeric, we evaluate them:
+                        if (exp1.evaluate(null, code, true).equals(exp2.evaluate(null, code, true))) return null;
+                    } else {
+                        // If they are not, then there is no need to evaluate, as they should just string match:
+                        if (v1_str.equalsIgnoreCase(v2_str)) return null;
                     }
                     break;
                 }
