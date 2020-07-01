@@ -304,7 +304,7 @@ public class ExpressionParser {
             tokens.get(0).equals("-")) {
             // a negated expression:
             tokens.remove(0);
-            Expression exp = parse(tokens, code);
+            Expression exp = parseInternal(tokens, code);
             if (exp != null) {
                 if (exp.type == Expression.EXPRESSION_NUMERIC_CONSTANT) {
                     exp.numericConstant = -exp.numericConstant;

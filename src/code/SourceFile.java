@@ -87,12 +87,25 @@ public class SourceFile {
         switch(s.type) {
             case SourceStatement.STATEMENT_CPUOP:
             {
-                SourceConstant label = s.op.getTargetJumpLabel(code);
+                Expression labelExp = s.op.getTargetJumpExpression();
+                SourceConstant label = null;
+                if (labelExp != null) {
+                    if (labelExp.type == Expression.EXPRESSION_SYMBOL) {
+                        label = code.getSymbol(labelExp.symbolName);
+                        if (label == null)  {
+                            // not all next statements can be determined:
+                            return null;                            
+                        }
+                    } else {
+                        // not all next statements can be determined:
+                        return null;
+                    }
+                }
                 SourceStatement jumpTargetStatement = null;
                 if (label != null && label.isLabel()) {
                     jumpTargetStatement = label.s;
                 } else if (label != null) {
-                    // not all can next statements be determined:
+                    // not all next statements can be determined:
                     return null;
                 }
                 

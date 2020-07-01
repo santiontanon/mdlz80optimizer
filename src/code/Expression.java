@@ -8,6 +8,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Expression {    
+    public static final int TRUE = -1;
+    public static final int FALSE = 0;
+    
     public static final int EXPRESSION_REGISTER_OR_FLAG = 0;
     public static final int EXPRESSION_NUMERIC_CONSTANT = 1;
     public static final int EXPRESSION_STRING_CONSTANT = 2;
@@ -143,13 +146,13 @@ public class Expression {
                 
             case EXPRESSION_OR:
                 {
-                    int accum = 0;
-                    for(Expression arg:args) {
-                        Integer v = arg.evaluate(s, code, silent);
-                        if (v == null) return null;
-                        accum |= v;
-                    }
-                    return accum;
+                    if (args.size() != 2) return null; 
+                    Integer v1 = args.get(0).evaluate(s, code, silent);
+                    Integer v2 = args.get(1).evaluate(s, code, silent);
+                    if (v1 == null || v2 == null) return null;
+                    boolean b1 = v1 != 0;
+                    boolean b2 = v2 != 0;
+                    return b1 || b2 ? TRUE : FALSE;
                 }
                 
             case EXPRESSION_AND:
@@ -158,7 +161,9 @@ public class Expression {
                     Integer v1 = args.get(0).evaluate(s, code, silent);
                     Integer v2 = args.get(1).evaluate(s, code, silent);
                     if (v1 == null || v2 == null) return null;
-                    return v1 & v2;
+                    boolean b1 = v1 != 0;
+                    boolean b2 = v2 != 0;
+                    return b1 && b2 ? TRUE : FALSE;
                 }
                 
             case EXPRESSION_EQUAL:
@@ -167,8 +172,8 @@ public class Expression {
                     Integer v1 = args.get(0).evaluate(s, code, silent);
                     Integer v2 = args.get(1).evaluate(s, code, silent);
                     if (v1 == null || v2 == null) return null;
-                    if (v1.equals(v2)) return -1;
-                    return 0;
+                    if (v1.equals(v2)) return TRUE;
+                    return FALSE;
                 }
 
             case EXPRESSION_LOWERTHAN:
@@ -177,8 +182,8 @@ public class Expression {
                     Integer v1 = args.get(0).evaluate(s, code, silent);
                     Integer v2 = args.get(1).evaluate(s, code, silent);
                     if (v1 == null || v2 == null) return null;
-                    if (v1 < v2) return -1;
-                    return 0;
+                    if (v1 < v2) return TRUE;
+                    return FALSE;
                 }
                 
             case EXPRESSION_GREATERTHAN:
@@ -187,8 +192,8 @@ public class Expression {
                     Integer v1 = args.get(0).evaluate(s, code, silent);
                     Integer v2 = args.get(1).evaluate(s, code, silent);
                     if (v1 == null || v2 == null) return null;
-                    if (v1 > v2) return -1;
-                    return 0;
+                    if (v1 > v2) return TRUE;
+                    return FALSE;
                 }
 
             case EXPRESSION_LEQTHAN:
@@ -197,8 +202,8 @@ public class Expression {
                     Integer v1 = args.get(0).evaluate(s, code, silent);
                     Integer v2 = args.get(1).evaluate(s, code, silent);
                     if (v1 == null || v2 == null) return null;
-                    if (v1 <= v2) return -1;
-                    return 0;
+                    if (v1 <= v2) return TRUE;
+                    return FALSE;
                 }
 
             case EXPRESSION_GEQTHAN:
@@ -207,8 +212,8 @@ public class Expression {
                     Integer v1 = args.get(0).evaluate(s, code, silent);
                     Integer v2 = args.get(1).evaluate(s, code, silent);
                     if (v1 == null || v2 == null) return null;
-                    if (v1 >= v2) return -1;
-                    return 0;
+                    if (v1 >= v2) return TRUE;
+                    return FALSE;
                 }
                 
             case EXPRESSION_DIFF:
@@ -217,15 +222,15 @@ public class Expression {
                     Integer v1 = args.get(0).evaluate(s, code, silent);
                     Integer v2 = args.get(1).evaluate(s, code, silent);
                     if (v1 == null || v2 == null) return null;
-                    if (v1.equals(v2)) return 0;
-                    return -1;
+                    if (v1.equals(v2)) return FALSE;
+                    return TRUE;
                 }
                 
             case EXPRESSION_TERNARY_IF:
                 {
                     Integer cond = args.get(0).evaluate(s, code, silent);
                     if (cond == null) return null;
-                    if (cond != 0) {
+                    if (cond != FALSE) {
                         return args.get(1).evaluate(s, code, silent);
                     } else {
                         return args.get(2).evaluate(s, code, silent);
@@ -289,6 +294,7 @@ public class Expression {
                 if (args.get(0).type == EXPRESSION_REGISTER_OR_FLAG ||
                     args.get(0).type == EXPRESSION_NUMERIC_CONSTANT ||
                     args.get(0).type == EXPRESSION_STRING_CONSTANT ||
+                    args.get(0).type == EXPRESSION_PARENTHESIS ||
                     args.get(0).type == EXPRESSION_SYMBOL) {
                     return "-" + args.get(0).toString();
                 } else {
@@ -363,7 +369,7 @@ public class Expression {
                         if (str == null) {
                             str = arg.toString();
                         } else {
-                            str += " | " + arg.toString();
+                            str += " || " + arg.toString();
                         }
                     }
                     return str;
@@ -375,7 +381,7 @@ public class Expression {
                         if (str == null) {
                             str = arg.toString();
                         } else {
-                            str += " & " + arg.toString();
+                            str += " && " + arg.toString();
                         }
                     }
                     return str;

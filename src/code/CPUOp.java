@@ -108,13 +108,15 @@ public class CPUOp {
         return outputDeps;
     }
 
-    /*
-    public List<CPUOpDependency> checkDependencies(List<CPUOpDependency> potentialDeps)
+
+    public Expression getTargetJumpExpression() throws Exception
     {
-        return spec.checkDependencies(args, potentialDeps);
+        int labelArg = spec.jumpLabelArgument();
+        if (labelArg == -1) return null;
+        Expression targetLabel = args.get(labelArg);
+        return targetLabel;
     }
-    */
-    
+
     
     public SourceConstant getTargetJumpLabel(CodeBase code) throws Exception
     {
@@ -125,7 +127,6 @@ public class CPUOp {
             SourceConstant label = code.getSymbol(targetLabel.symbolName);
             return label;
         }
-//        throw new Exception("Non constant label " + targetLabel + " not supported in getTargetJumpLabel (" + this + ")" );
         return null;
     }
     

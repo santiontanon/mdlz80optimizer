@@ -320,6 +320,7 @@ public class Pattern {
                 } else {
                     // add successors:
                     List<SourceStatement> nextNext_l = next.source.nextStatements(next, true, code);
+//                    System.out.println("   next: " + nextNext_l);
                     if (nextNext_l == null) {
                         // It's hard to tell where is this instruction going to jump,
                         // so we act conservatively, and block the optimization:

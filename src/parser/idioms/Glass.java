@@ -4,7 +4,6 @@
 package parser.idioms;
 
 import cl.MDLConfig;
-import cl.MDLLogger;
 import code.CodeBase;
 import code.Expression;
 import code.SourceFile;
@@ -36,6 +35,7 @@ public class Glass implements Idiom {
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("proc")) return true;
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("endp")) return true;
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("error")) return true;
+        if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("warning")) return true;
         return false;
     }
     
@@ -91,8 +91,16 @@ public class Glass implements Idiom {
             return true;
         }
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("error")) {
-            config.error(line);
+            if (tokens.size()>=2) {
+                config.error(tokens.get(1));
+            }
             return false;
+        }
+        if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("warning")) {
+            if (tokens.size()>=2) {
+                config.warn(tokens.get(1));
+            }
+            return true;
         }
         return false;
     }
