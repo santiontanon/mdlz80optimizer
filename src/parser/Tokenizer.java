@@ -21,9 +21,13 @@ public class Tokenizer {
         doubleTokens.add("AF'");
         doubleTokens.add("!=");
     }
-    
+
     public static List<String> tokenize(String line) {
-        List<String> tokens = new ArrayList<>();
+        return tokenize(line, new ArrayList<>());
+    }
+    
+    
+    public static List<String> tokenize(String line, List<String> tokens) {
         
         StringTokenizer st = new StringTokenizer(line, " \t()[]#$,;:+-*/%|&'\"?<>=", true);
         String previous = null;

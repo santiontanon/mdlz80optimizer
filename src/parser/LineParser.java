@@ -42,38 +42,19 @@ public class LineParser {
     }
 
 
-    public SourceStatement parse(String line, int lineNumber, 
+    public SourceStatement parse(List<String> tokens, String line, int lineNumber, 
             SourceFile f, CodeBase code, MDLConfig config) throws Exception
     {
         // SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_NONE, source, lineNumber, code.getAddress());
         SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_NONE, f, lineNumber, null);
         
-        if (!parseInternal(line, lineNumber, s, f, code)) return null;
-//        switch (s.type) {
-//            case SourceStatement.STATEMENT_ORG:
-//                Integer v = s.org.evaluate(s, code, false);
-//                if (v == null) {
-//                    config.error("Cannot evaluate expression in line " + source.fileName + ", " +
-//                            lineNumber + ": " + line);
-//                    return null;
-//                }   
-//                code.setAddress(v);
-//                break;
-//            default:
-//                // update current address:
-//                code.setAddress(code.getAddress() + s.sizeInBytes(code, false, true, true));
-//                break;
-//        }
-        
+        if (!parseInternal(tokens, line, lineNumber, s, f, code)) return null;        
         return s;
     }    
     
 
-    boolean parseInternal(String line, int lineNumber, SourceStatement s, SourceFile source, CodeBase code) throws Exception
+    boolean parseInternal(List<String> tokens, String line, int lineNumber, SourceStatement s, SourceFile source, CodeBase code) throws Exception
     {
-        List<String> tokens = Tokenizer.tokenize(line);
-
-        // System.out.println(tokens);
         if (tokens.isEmpty()) return true;
         
         String token = tokens.get(0);
@@ -83,7 +64,6 @@ public class LineParser {
                    Tokenizer.isSymbol(token) &&
                    tokens.get(1).equals(":")) {
             Expression exp = Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, code);
-//            int address = exp.evaluate(s, code, false);
 
             if (tokens.size() >= 3) {
                 if (!tokens.get(2).equalsIgnoreCase("equ")) {
@@ -182,11 +162,11 @@ public class LineParser {
         } else if (Tokenizer.isSymbol(token)) {
             // try to parse it as an assembler instruction or macro call:
             tokens.remove(0);
-            if (codeBaseParser.isMacro(token, code)) {
-                return parseMacroCall(tokens, token, line, lineNumber, s, source, code);
-            } else {            
+            if (config.opParser.isOpName(token)) {
                 return parseZ80Op(tokens, token, line, lineNumber, s, source, code);
-            }
+            } else {
+                return parseMacroCall(tokens, token, line, lineNumber, s, source, code);
+            }                        
         } else {
             return parseRestofTheLine(tokens, line, lineNumber, s, source);
         }

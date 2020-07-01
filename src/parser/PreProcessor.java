@@ -5,7 +5,6 @@ package parser;
 
 import cl.MDLConfig;
 import code.CodeBase;
-import code.Expression;
 import code.SourceFile;
 import code.SourceStatement;
 import java.util.ArrayList;
@@ -21,7 +20,6 @@ public class PreProcessor {
 
     // current Macro we are parsing (should be null at the end of parsing a file):
     List<String> currentMacroNameStack = new ArrayList<>();
-//    List<SourceMacro> currentMacroStack = new ArrayList<>();
     SourceMacro currentMacro = null;
     List<List<String>> macroExpansions = new ArrayList<>();
 
@@ -45,7 +43,6 @@ public class PreProcessor {
     public boolean withinMacroDefinition()
     {
         return currentMacro != null;
-//        return !currentMacroStack.isEmpty();
     }
     
     
@@ -71,14 +68,13 @@ public class PreProcessor {
     }
     
     
-    public boolean parseMacroLine(String line, int lineNumber, SourceFile f, CodeBase code, MDLConfig config) throws Exception
+    public boolean parseMacroLine(List<String> tokens, String line, int lineNumber, SourceFile f, CodeBase code, MDLConfig config) throws Exception
     {
-        List<String> tokens = Tokenizer.tokenize(line);
         SourceMacro m = currentMacro;
         if (!tokens.isEmpty() && tokens.get(0).equalsIgnoreCase(SourceMacro.MACRO_ENDM)) {
             if (currentMacroNameStack.isEmpty()) {
                 if (m.name.equalsIgnoreCase(SourceMacro.MACRO_REPT)) {
-                    List<String> lines = m.instantiate(null, config);
+                    List<String> lines = m.instantiate(null, code, config);
                     if (lines == null) return false;
                     macroExpansions.add(lines);
                     currentMacro = null;
@@ -97,7 +93,7 @@ public class PreProcessor {
         } else if (!tokens.isEmpty() && tokens.get(0).equalsIgnoreCase(SourceMacro.MACRO_ENDIF)) {
             if (currentMacroNameStack.isEmpty()) {
                 if (m.name.equalsIgnoreCase(SourceMacro.MACRO_IF)) {
-                    List<String> lines = m.instantiate(null, config);
+                    List<String> lines = m.instantiate(null, code, config);
                     if (lines == null) return false;
                     macroExpansions.add(lines);
                     currentMacro = null;
@@ -134,48 +130,39 @@ public class PreProcessor {
         if (s.type == SourceStatement.STATEMENT_MACROCALL) {
             if (s.macroCallName.equalsIgnoreCase(SourceMacro.MACRO_IF)) {
                 SourceMacro m = new SourceMacro(SourceMacro.MACRO_IF, s);
-                Integer result = s.macroCallArguments.get(0).evaluate(s, code, false);
-                if (result == null) {
-                    config.error("Could not evaluate condition in " + source.fileName + ", " + 
-                                 lineNumber + ": " + line);
-                    return false;
-                }
-                m.ifCondition = result;
+                m.ifCondition = s.macroCallArguments.get(0);
                 if (currentMacro != null) {
                     config.error("Something weird just happend (expanding two macros at once, contact the developer) in " + source.fileName + ", " + 
                                  lineNumber + ": " + line);
                     return false;
                 }
                 currentMacro = m;
-//                currentMacroStack.add(0, m);
                 return true;
             } else if (s.macroCallName.equalsIgnoreCase(SourceMacro.MACRO_REPT)) {
                 SourceMacro m = new SourceMacro(SourceMacro.MACRO_REPT, s);
-                Integer repetitions = s.macroCallArguments.get(0).evaluate(s, code, false);
-                if (repetitions == null) {
-                    config.error("Could not evaluate number of repetitions in " + source.fileName + ", " + 
-                                 lineNumber + ": " + line);
-                    return false;
-                }
-                m.reptNRepetitions = repetitions;
+                m.reptNRepetitions = s.macroCallArguments.get(0);
                 if (currentMacro != null) {
                     config.error("Something weird just happend (expanding two macros at once, contact the developer) in " + source.fileName + ", " + 
                                  lineNumber + ": " + line);
                     return false;
                 }
                 currentMacro = m;                
-//                currentMacroStack.add(0, m);   
                 return true;
             } else {
                 SourceMacro m = getMacro(s.macroCallName);    
-                List<String> expandedMacro = m.instantiate(s.macroCallArguments, config);
-                if (expandedMacro == null) {
-                    config.error("Problem instantiating macro "+s.macroCallName+" in " + source.fileName + ", " + 
-                                 lineNumber + ": " + line);
-                    return false;            
+                if (m != null) {
+                    List<String> expandedMacro = m.instantiate(s.macroCallArguments, code, config);
+                    if (expandedMacro == null) {
+                        config.error("Problem instantiating macro "+s.macroCallName+" in " + source.fileName + ", " + 
+                                     lineNumber + ": " + line);
+                        return false;            
+                    }
+                    macroExpansions.add(expandedMacro);
+                    return true;
+                } else {
+                    // macro is not yet defined, keep it in the code, and we will evaluate later
+                    return false;
                 }
-                macroExpansions.add(expandedMacro);
-                return true;
             }
         } else {
             if (s.type == SourceStatement.STATEMENT_MACRO) {
@@ -185,7 +172,6 @@ public class PreProcessor {
                     return false;
                 }
                 currentMacro = new SourceMacro(s.label.name, s.macroDefinitionArgs, s.macroDefinitionDefaults, s);
-//                currentMacroStack.add(0, new SourceMacro(s.label.name, s.macroDefinitionArgs, s.macroDefinitionDefaults, s));
                 return true;
             }
             return false;

@@ -41,6 +41,11 @@ public class SourceFile {
     public void addStatement(SourceStatement s) {
         statements.add(s);
     }
+
+
+    public void addStatement(int position, SourceStatement s) {
+        statements.add(position, s);
+    }
     
     
     public void resetAddresses()
@@ -67,10 +72,12 @@ public class SourceFile {
     }
     
 
-    public int sizeInBytes(CodeBase code, boolean withIncludes, boolean withIncbin, boolean withVirtual) {
+    public Integer sizeInBytes(CodeBase code, boolean withIncludes, boolean withIncbin, boolean withVirtual) {
         int size = 0;
         for (SourceStatement s : statements) {
-            size += s.sizeInBytes(code, withIncludes, withIncbin, withVirtual);
+            Integer s_size = s.sizeInBytes(code, withIncludes, withIncbin, withVirtual);
+            if (s_size == null) return null;
+            size += s_size;
         }
         return size;
     }
@@ -166,6 +173,5 @@ public class SourceFile {
         }
         // we are done, no next!
         return new ArrayList<>();
-    }
-    
+    }    
 }

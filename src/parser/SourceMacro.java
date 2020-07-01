@@ -4,6 +4,7 @@
 package parser;
 
 import cl.MDLConfig;
+import code.CodeBase;
 import code.Expression;
 import code.SourceStatement;
 import java.util.ArrayList;
@@ -26,8 +27,8 @@ public class SourceMacro {
     List<String> elseLines = new ArrayList<>();  // only used by IF-ELSE-ENDIF macro
     
     // predefined macro arguments/state:
-    public int reptNRepetitions;
-    public int ifCondition;
+    public Expression reptNRepetitions;
+    public Expression ifCondition;
     public boolean insideElse = false;
     
     
@@ -57,15 +58,25 @@ public class SourceMacro {
     }
     
     
-    public List<String> instantiate(List<Expression> args, MDLConfig config)
+    public List<String> instantiate(List<Expression> args, CodeBase code, MDLConfig config)
     {
         List<String> lines2 = new ArrayList<>();
         if (name.equalsIgnoreCase(MACRO_REPT)) {
-            for(int i = 0;i<reptNRepetitions;i++) {
+            Integer reptNRepetitions_value = reptNRepetitions.evaluate(definingStatement, code, false);
+            if (reptNRepetitions_value == null) {
+                config.error("Coudl not evaluate REPT argument " + reptNRepetitions);
+                return null;
+            }
+            for(int i = 0;i<reptNRepetitions_value;i++) {
                 lines2.addAll(lines);
             }
         } else if (name.equalsIgnoreCase(MACRO_IF)) {
-            if (ifCondition == 0) {
+            Integer ifCondition_value = ifCondition.evaluate(definingStatement, code, false);
+            if (ifCondition_value == null) {
+                config.error("Coudl not evaluate IF argument " + ifCondition);
+                return null;
+            }
+            if (ifCondition_value == 0) {
                 lines2.addAll(elseLines);
             } else {
                 lines2.addAll(lines);

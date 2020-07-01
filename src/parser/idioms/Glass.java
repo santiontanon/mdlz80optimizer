@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 import parser.PreProcessor;
 import parser.SourceMacro;
+import parser.Tokenizer;
 
 /**
  *
@@ -121,7 +122,7 @@ public class Glass implements Idiom {
                 args.add(Expression.constantExpression(0));
             }
         }
-        List<String> lines = macro.instantiate(args, config);
+        List<String> lines = macro.instantiate(args, code, config);
         PreProcessor preProcessor = new PreProcessor(config.preProcessor);
         
         // Assemble the macro at address 0:
@@ -138,20 +139,24 @@ public class Glass implements Idiom {
                     lineNumber++;                
                 }
                 if (line == null) {
-//                    if (preProcessor.withinMacroDefinition()) {
-//                        // we fail to evaluate the macro, but it's ok, some times it can happen
-//                        break;
-//                    }
+                    if (preProcessor.withinMacroDefinition()) {
+                        // we fail to evaluate the macro, but it's ok, some times it can happen
+                        break;
+                    } else {
+                        config.debug("Glass: successfully assembled macro " + macro.name);
+                    }
                     break;
                 }
 
                 if (preProcessor.withinMacroDefinition()) {
-                    if (!preProcessor.parseMacroLine(line, lineNumber, f, code, config)) {
+                    if (!preProcessor.parseMacroLine(Tokenizer.tokenize(line), 
+                                                     line, lineNumber, f, code, config)) {
                         // we fail to evaluate the macro, but it's ok, some times it can happen
                         break;
                     }
                 } else {
-                    SourceStatement s = config.lineParser.parse(line, lineNumber, f, code, config);
+                    SourceStatement s = config.lineParser.parse(Tokenizer.tokenize(line), 
+                                                                line, lineNumber, f, code, config);
                     if (s == null) {
                         // we fail to evaluate the macro, but it's ok, some times it can happen
                         break;

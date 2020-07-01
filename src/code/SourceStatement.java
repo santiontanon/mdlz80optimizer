@@ -86,7 +86,7 @@ public class SourceStatement {
     }
     
     
-    public int getAddress(CodeBase code)
+    public Integer getAddress(CodeBase code)
     {
         if (address != null) return address;
         SourceStatement prev = source.getPreviousStatementTo(this, code);
@@ -99,18 +99,21 @@ public class SourceStatement {
     }
     
     
-    public int getAddressAfter(CodeBase code)
+    public Integer getAddressAfter(CodeBase code)
     {
         if (address == null) getAddress(code);
+        if (address == null) return null;
         if (type == STATEMENT_ORG) {
             return org.evaluate(this, code, true);
         } else {
-            return address + sizeInBytes(code, true, true, true);
+            Integer size = sizeInBytes(code, true, true, true);
+            if (size == null) return null;
+            return address + size;
         }
     }
     
     
-    public int sizeInBytes(CodeBase code, boolean withIncludes, boolean withIncBin, boolean withVirtual)
+    public Integer sizeInBytes(CodeBase code, boolean withIncludes, boolean withIncBin, boolean withVirtual)
     {
         switch(type) {
             case STATEMENT_INCBIN:
@@ -158,8 +161,7 @@ public class SourceStatement {
                 
             case STATEMENT_INCLUDE:
                 if (withIncludes) {
-                    int incSize = include.sizeInBytes(code, withIncludes, withIncBin, withVirtual);
-                    return incSize;
+                    return include.sizeInBytes(code, withIncludes, withIncBin, withVirtual);
                 }
                 return 0;
                                 

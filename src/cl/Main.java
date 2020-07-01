@@ -30,7 +30,7 @@ public class Main {
 
         // Parse the code base:
         CodeBase code = new CodeBase(config);
-        if (config.codeBaseParser.parseSourceFile(config.inputFile, code, null, null) != null) {
+        if (config.codeBaseParser.parseMainSourceFile(config.inputFile, code) != null) {
             // Execute all the requested tasks according to the command-line arguments:
             config.executeWorkers(code);
         }

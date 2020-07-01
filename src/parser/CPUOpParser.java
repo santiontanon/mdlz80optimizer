@@ -37,6 +37,12 @@ public class CPUOpParser {
     }
     
     
+    public boolean isOpName(String name)
+    {
+        return opSpecHash.containsKey(name);
+    }
+    
+    
     public List<CPUOpSpec> getOpSpecs(String name)
     {
         List<CPUOpSpec> l = opSpecHash.get(name);

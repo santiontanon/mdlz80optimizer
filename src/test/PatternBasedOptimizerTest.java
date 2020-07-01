@@ -37,6 +37,7 @@ public class PatternBasedOptimizerTest {
         failures += test("data/tests/test19.asm", 2, args);
         failures += test("data/tests/test20.asm", 4, args);
         failures += test("data/tests/test21.asm", 3, args);
+        failures += test("data/tests/test22.asm", 2, args);
         if (failures > 0) {
             throw new Error(failures + " tests failed!");
         } else {
@@ -55,16 +56,12 @@ public class PatternBasedOptimizerTest {
         }
         if (!config.parse(args)) return 1;
         CodeBase code = new CodeBase(config);
-        if (config.codeBaseParser.parseSourceFile(config.inputFile, code, null, null) == null) {
+        if (config.codeBaseParser.parseMainSourceFile(config.inputFile, code) == null) {
             config.error("Could not parse file " + inputFile);
             return 1;
         }
         PatternBasedOptimizer pbo = new PatternBasedOptimizer(config);
         PatternBasedOptimizer.OptimizationResult r = pbo.optimize(code);
-        if (r.bytesSaved != expected_bytesReduced) {
-            config.error("expected_bytesReduced = " + expected_bytesReduced + " for file " + inputFile + ", but was " + r.bytesSaved);
-            return 1;
-        }
         
         SourceCodeGenerator scg = new SourceCodeGenerator(config);
         String result = scg.sourceFileString(code.getMain());
@@ -72,6 +69,11 @@ public class PatternBasedOptimizerTest {
         System.out.println(result);
         System.out.println("--------------------------------------\n");
         
+        if (r.bytesSaved != expected_bytesReduced) {
+            config.error("expected_bytesReduced = " + expected_bytesReduced + " for file " + inputFile + ", but was " + r.bytesSaved);
+            return 1;
+        }
+                
         return 0;
     }
 }
