@@ -110,12 +110,16 @@ public class Glass implements Idiom {
     public boolean newMacro(SourceMacro macro, CodeBase code) throws Exception
     {
         // Attempt to assemble the macro content at address 0, and define all the internal symbols as macroname.symbol:
-        // To do that, I instantiate the macro with all the parameters taking the value 0:
+        // To do that, I instantiate the macro with all the parameters that do not have defaults taking the value 0:
         // However, it is not always possible to do this, so, this is only attempted, and if it fails
         // no compilation happens:
         List<Expression> args = new ArrayList<>();
         for(int i=0;i<macro.argNames.size();i++) {
-            args.add(Expression.constantExpression(0));
+            if (macro.defaultValues.get(i) != null) {
+                args.add(macro.defaultValues.get(i));
+            } else {
+                args.add(Expression.constantExpression(0));
+            }
         }
         List<String> lines = macro.instantiate(args, config);
         PreProcessor preProcessor = new PreProcessor(config.preProcessor);
@@ -125,7 +129,7 @@ public class Glass implements Idiom {
         // supress error messages when attempting to assemble a macro, as it might fail:
         config.logger.silence();
         try {
-            SourceFile f = new SourceFile(macro.definingStatement.source.fileName + ":macro(" + macro.name+")", null, null);
+            SourceFile f = new SourceFile(macro.definingStatement.source.fileName + ":macro(" + macro.name+")", null, null, config);
             int lineNumber = macro.definingStatement.lineNumber;
             while(true) {
                 String line = preProcessor.expandMacros();

@@ -43,6 +43,8 @@ public class SourceStatement {
     public int incbinSize = 0;
     public List<Expression> data = null;
     public Expression space = null;
+    public Expression space_value = null;   // if this is null, "space" is virtual,
+                                            // otherwise, it is filled with this value
     public CPUOp op = null;
     
     public String macroCallName = null;
@@ -145,7 +147,7 @@ public class SourceStatement {
             }
 
             case STATEMENT_DEFINE_SPACE:
-                if (withVirtual) {
+                if (withVirtual || space_value != null) {
                     return space.evaluate(this, code, false);
                 } else {
                     return 0;
@@ -235,7 +237,11 @@ public class SourceStatement {
                 }
                 break;
             case STATEMENT_DEFINE_SPACE:
-                str += "    ds virtual " + space;
+                if (space_value == null) {
+                    str += "    ds virtual " + space;
+                } else {
+                    str += "    ds " + space + ", " + space_value;
+                }
                 break;
                 
             case STATEMENT_CPUOP:

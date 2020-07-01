@@ -43,27 +43,27 @@ public class LineParser {
 
 
     public SourceStatement parse(String line, int lineNumber, 
-            SourceFile source, CodeBase code, MDLConfig config) throws Exception
+            SourceFile f, CodeBase code, MDLConfig config) throws Exception
     {
-        SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_NONE, source, lineNumber, code.getAddress());
-        s.source = source;
+        // SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_NONE, source, lineNumber, code.getAddress());
+        SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_NONE, f, lineNumber, null);
         
-        if (!parseInternal(line, lineNumber, s, source, code)) return null;
-        switch (s.type) {
-            case SourceStatement.STATEMENT_ORG:
-                Integer v = s.org.evaluate(s, code, false);
-                if (v == null) {
-                    config.error("Cannot evaluate expression in line " + source.fileName + ", " +
-                            lineNumber + ": " + line);
-                    return null;
-                }   
-                code.setAddress(v);
-                break;
-            default:
-                // update current address:
-                code.setAddress(code.getAddress() + s.sizeInBytes(code, false, true, true));
-                break;
-        }
+        if (!parseInternal(line, lineNumber, s, f, code)) return null;
+//        switch (s.type) {
+//            case SourceStatement.STATEMENT_ORG:
+//                Integer v = s.org.evaluate(s, code, false);
+//                if (v == null) {
+//                    config.error("Cannot evaluate expression in line " + source.fileName + ", " +
+//                            lineNumber + ": " + line);
+//                    return null;
+//                }   
+//                code.setAddress(v);
+//                break;
+//            default:
+//                // update current address:
+//                code.setAddress(code.getAddress() + s.sizeInBytes(code, false, true, true));
+//                break;
+//        }
         
         return s;
     }    
@@ -83,14 +83,14 @@ public class LineParser {
                    Tokenizer.isSymbol(token) &&
                    tokens.get(1).equals(":")) {
             Expression exp = Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, code);
-            int address = exp.evaluate(s, code, false);
+//            int address = exp.evaluate(s, code, false);
 
             if (tokens.size() >= 3) {
                 if (!tokens.get(2).equalsIgnoreCase("equ")) {
                     tokens.remove(0);
                     tokens.remove(0);
 
-                    SourceConstant c = new SourceConstant(labelPrefix+token, address, exp, s); 
+                    SourceConstant c = new SourceConstant(labelPrefix+token, null, exp, s); 
                     s.type = SourceStatement.STATEMENT_NONE;
                     s.label = c;
                     code.addSymbol(c.name, c);
@@ -100,7 +100,7 @@ public class LineParser {
                 tokens.remove(0);
                 tokens.remove(0);
 
-                SourceConstant c = new SourceConstant(labelPrefix+token, address, exp, s); 
+                SourceConstant c = new SourceConstant(labelPrefix+token, null, exp, s); 
                 s.type = SourceStatement.STATEMENT_NONE;
                 s.label = c;
                 code.addSymbol(c.name, c);
@@ -352,13 +352,9 @@ public class LineParser {
                              lineNumber + ": " + line);
                 return false;
             }            
-            if (exp.evaluate(s, code, false) == null) {
-                config.error("Cannot evaluate size expression in line " + source.fileName + ", " + 
-                             lineNumber + ": " + line);
-                return false;
-            }
             s.type = SourceStatement.STATEMENT_DEFINE_SPACE;
             s.space = exp;
+            s.space_value = null;
         } else {
             // In this case, "ds" is just a short-hand for "db" with repeated values:
             Expression exp_amount = config.expressionParser.parse(tokens, code);
@@ -378,22 +374,10 @@ public class LineParser {
             } else {
                 exp_value = Expression.constantExpression(0);
             }
-            Integer space = exp_amount.evaluate(s, code, false);
-            if (space == null) {
-                config.error("Cannot evaluate size expression in line " + source.fileName + ", " + 
-                             lineNumber + ": " + line);
-                return false;
-            }
-            s.type = SourceStatement.STATEMENT_DATA_BYTES;
-            s.data = new ArrayList<>();
-            if (space < 0) {
-                config.error("Reserving a negative amount of space in line " + source.fileName + ", " + 
-                             lineNumber + ": " + space + " = " + exp_amount);
-                return false;
-            }
-            for(int i = 0;i<space;i++) {
-                s.data.add(exp_value);
-            }
+            
+            s.type = SourceStatement.STATEMENT_DEFINE_SPACE;
+            s.space = exp_amount;
+            s.space_value = exp_value;
         }
 
         return parseRestofTheLine(tokens, line, lineNumber, s, source);

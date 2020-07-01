@@ -3,21 +3,24 @@
  */
 package code;
 
+import cl.MDLConfig;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
 public class SourceFile {
+    MDLConfig config;
 
     public String fileName = null;
     List<SourceStatement> statements = new ArrayList<>();
     SourceFile parent = null;
     SourceStatement parentInclude = null;
 
-    public SourceFile(String a_fileName, SourceFile a_parent, SourceStatement a_parentInclude) {
+    public SourceFile(String a_fileName, SourceFile a_parent, SourceStatement a_parentInclude, MDLConfig a_config) {
         fileName = a_fileName;
         parent = a_parent;
         parentInclude = a_parentInclude;
+        config = a_config;
     }
 
     public String getPath() {
@@ -51,7 +54,10 @@ public class SourceFile {
     public SourceStatement getPreviousStatementTo(SourceStatement s, CodeBase code)
     {
         int index = statements.indexOf(s);
-        if (index == -1) return null;
+        if (index == -1) {
+            // assume the statement has not yet been added, so, return the last:
+            index = statements.size();
+        }
         if (index == 0) {
             // look at the instruction before the "include" that included this file:
             if (parent != null) return parent.getPreviousStatementTo(parentInclude, code);

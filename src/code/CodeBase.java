@@ -17,8 +17,6 @@ public class CodeBase {
     LinkedHashMap<String, SourceFile> sources = new LinkedHashMap<>();
     LinkedHashMap<String, SourceConstant> symbols = new LinkedHashMap<>();
     
-    int current_address = 0;
-    
     
     public CodeBase(MDLConfig a_config)
     {
@@ -101,18 +99,6 @@ public class CodeBase {
         sources.put(s.fileName, s);
     }
         
-        
-    public void setAddress(int a_address)
-    {
-        current_address = a_address;
-    }
-    
-    
-    public int getAddress()
-    {
-        return current_address;
-    }
-    
     
     public void resetAddresses()
     {

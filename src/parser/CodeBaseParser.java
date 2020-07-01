@@ -34,7 +34,7 @@ public class CodeBaseParser {
             return null;
         }
 
-        SourceFile f = new SourceFile(fileName, parent, parentInclude);
+        SourceFile f = new SourceFile(fileName, parent, parentInclude, config);
         if (parent == null) code.setMain(f);
         code.addSourceFile(f);
         try {
