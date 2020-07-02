@@ -17,9 +17,12 @@ Moreover, mdl accepts a number of command line arguments in order to make it do 
 
   ```-cpu <type>```: to select a different CPU (z80/z80msx/z80cpc) (default: z80msx).
   
+  ```-dialect <type>```: to allow parsing different assembler dialects (mdl/glass/asmsx) (default: mdl, which supports some basic code idioms common to various assemblers).
+                   Note that even when selecting a dialect, not all syntax of a given assembler might be supported.
+  
   ```-warn-off-labelnocolon```: turns off warnings for not placing colons after labels.
   
-  ```-warn-off-jp(rr)```: turns off warnings for using confusing 'jp (hl)' instead of 'jp hl'.
+  ```-warn-off-jp(rr)```: turns off warnings for using confusing 'jp (hl)' instead of 'jp hl' (this is turned off by default in dialects that do not support this).
   
   ```-debug```: turns on debug messages.
   
@@ -32,12 +35,16 @@ Moreover, mdl accepts a number of command line arguments in order to make it do 
   ```-HEXH```: hex numbers render like  0FFFFh.
   
   ```-+bin```: includes binary files (incbin) in the output analyses.
+  
+  ```-no-opt-pragma <value>```: changes the pragma to be inserted in a comment on a line to prevent optimizing it (default: mdl:no-opt)
 
   ```-po```: Runs the pattern-based optimizer.
   
   ```-posilent```: Supresses the pattern-based-optimizer output
   
   ```-popotential```: Reports lines where a potential optimization was not applied for safety, but could maybe be done manually.  
+  
+  ```--popatterns <file>```: specifies the file to load optimization patterns from (default 'data/pbo-patterns.txt')
   
   ```-dot <output file>```: generates a dot file with a graph representing the whole source code. Convert it to a png using 'dot' like this: dot -Tpng <output file>.dot -o <output file>.png
   
@@ -93,4 +100,4 @@ MDL can also generate tables with how much space each of your assembler files us
 
 - MDL is a command line tool, so you need access to a terminal
 
-- Java installed in your computer
+- Java version 8 installed in your computer
