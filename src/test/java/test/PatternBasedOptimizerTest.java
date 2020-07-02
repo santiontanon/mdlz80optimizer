@@ -3,6 +3,8 @@
  */
 package test;
 
+import org.junit.Test;
+
 import cl.MDLConfig;
 import code.CodeBase;
 import workers.SourceCodeGenerator;
@@ -13,8 +15,11 @@ import workers.pattopt.PatternBasedOptimizer;
  * @author santi
  */
 public class PatternBasedOptimizerTest {
-    public static void main(String args[]) throws Exception
+
+    @Test
+    public void test() throws Exception
     {
+        final String[] args = new String[0];
         int failures = 0;
         failures += test("data/tests/test1.asm", 3, args);
         failures += test("data/tests/test2.asm", 1, args);
@@ -46,8 +51,8 @@ public class PatternBasedOptimizerTest {
             System.out.println(failures + " tests failed!");
         }
     }
-    
-    
+
+
     public static int test(String inputFile, int expected_bytesReduced, String a_args[]) throws Exception
     {
         MDLConfig config = new MDLConfig();
@@ -64,18 +69,18 @@ public class PatternBasedOptimizerTest {
         }
         PatternBasedOptimizer pbo = new PatternBasedOptimizer(config);
         PatternBasedOptimizer.OptimizationResult r = pbo.optimize(code);
-        
+
         SourceCodeGenerator scg = new SourceCodeGenerator(config);
         String result = scg.sourceFileString(code.getMain());
         System.out.println("\n--------------------------------------");
         System.out.println(result);
         System.out.println("--------------------------------------\n");
-        
+
         if (r.bytesSaved != expected_bytesReduced) {
             config.error("expected_bytesReduced = " + expected_bytesReduced + " for file " + inputFile + ", but was " + r.bytesSaved);
             return 1;
         }
-                
+
         return 0;
     }
 }

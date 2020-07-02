@@ -5,6 +5,9 @@ package test;
 
 import java.util.Arrays;
 import java.util.List;
+
+import org.junit.Test;
+
 import parser.Tokenizer;
 
 /**
@@ -12,9 +15,11 @@ import parser.Tokenizer;
  * @author santi
  */
 public class TokenizerTest {
-    public static void main(String args[]) throws Exception
+
+    @Test
+    public void test() throws Exception
     {
-        int failures = 0;        
+        int failures = 0;
         failures += tokenizerTest("ld a,2", new String[]{"ld","a",",","2"});
         failures += tokenizerTest("ex af,af'", new String[]{"ex","af",",","af'"});
         failures += tokenizerTest("ex af,AF'", new String[]{"ex","af",",","AF'"});
@@ -28,8 +33,8 @@ public class TokenizerTest {
             throw new Error(failures + " tests failed!");
         }
     }
-    
-    
+
+
     public static int tokenizerTest(String line, String[] expected) throws Exception
     {
         List<String> tokens = Tokenizer.tokenize(line);

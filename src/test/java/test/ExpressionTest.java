@@ -3,10 +3,13 @@
  */
 package test;
 
+import java.util.List;
+
+import org.junit.Test;
+
 import cl.MDLConfig;
 import code.CodeBase;
 import code.Expression;
-import java.util.List;
 import parser.ExpressionParser;
 import parser.Tokenizer;
 
@@ -15,9 +18,11 @@ import parser.Tokenizer;
  * @author santi
  */
 public class ExpressionTest {
-    public static void main(String args[]) throws Exception
+
+    @Test
+    public void test() throws Exception
     {
-        int failures = 0;        
+        int failures = 0;
         failures += expressionTest("2", 2);
         failures += expressionTest("af", null);
         failures += expressionTest("2+2", 4);
@@ -36,8 +41,8 @@ public class ExpressionTest {
             throw new Error(failures + " tests failed!");
         }
     }
-    
-    
+
+
     public static int expressionTest(String line, Integer expected) throws Exception
     {
         MDLConfig config = new MDLConfig();
@@ -60,12 +65,12 @@ public class ExpressionTest {
                     return 0;
                 } else {
                     System.err.println("Expected " + expected + ", but expression evaluates to " + actual);
-                    return 1;                    
+                    return 1;
                 }
             } else {
                 System.err.println("Expected " + expected + ", but expression does not evaluate to numeric constant.");
-                return 1;                    
+                return 1;
             }
         }
-    }    
+    }
 }
