@@ -58,7 +58,7 @@ public class SourceCodeGenerator implements MDLWorker {
 
 
     @Override
-    public boolean work(CodeBase code) throws Exception {
+    public boolean work(CodeBase code) {
 
         if (outputFileName != null) {
             config.debug("Executing "+this.getClass().getSimpleName()+" worker...");

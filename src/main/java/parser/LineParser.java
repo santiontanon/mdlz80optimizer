@@ -83,7 +83,7 @@ public class LineParser {
 
 
     public SourceStatement parse(List<String> tokens, String line, int lineNumber,
-            SourceFile f, CodeBase code, MDLConfig config) throws Exception
+            SourceFile f, CodeBase code, MDLConfig config)
     {
         // SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_NONE, source, lineNumber, code.getAddress());
         SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_NONE, f, lineNumber, null);
@@ -93,7 +93,7 @@ public class LineParser {
     }
 
 
-    boolean parseInternal(List<String> tokens, String line, int lineNumber, SourceStatement s, SourceFile source, CodeBase code) throws Exception
+    boolean parseInternal(List<String> tokens, String line, int lineNumber, SourceStatement s, SourceFile source, CodeBase code)
     {
         if (tokens.isEmpty()) return true;
 
@@ -272,7 +272,7 @@ public class LineParser {
 
     public boolean parseInclude(List<String> tokens,
             String line, int lineNumber,
-            SourceStatement s, SourceFile source, CodeBase code) throws Exception
+            SourceStatement s, SourceFile source, CodeBase code)
     {
         if (tokens.size() >= 1) {
             String token = tokens.get(0);
@@ -302,7 +302,7 @@ public class LineParser {
 
     public boolean parseIncbin(List<String> tokens,
             String line, int lineNumber,
-            SourceStatement s, SourceFile source, CodeBase code) throws Exception
+            SourceStatement s, SourceFile source, CodeBase code)
     {
         if (tokens.size() >= 1) {
             String token = tokens.get(0);
@@ -336,7 +336,7 @@ public class LineParser {
 
     public boolean parseEqu(List<String> tokens, String label,
             String line, int lineNumber,
-            SourceStatement s, SourceFile source, CodeBase code) throws Exception
+            SourceStatement s, SourceFile source, CodeBase code)
     {
         Expression exp = config.expressionParser.parse(tokens, code);
         if (exp == null) {
@@ -362,7 +362,7 @@ public class LineParser {
 
     public boolean parseData(List<String> tokens, String label,
             String line, int lineNumber,
-            SourceStatement s, SourceFile source, CodeBase code) throws Exception
+            SourceStatement s, SourceFile source, CodeBase code)
     {
         List<Expression> data = new ArrayList<>();
         while(true) {
@@ -396,7 +396,7 @@ public class LineParser {
 
     public boolean parseDefineSpace(List<String> tokens,
             String line, int lineNumber,
-            SourceStatement s, SourceFile source, CodeBase code) throws Exception
+            SourceStatement s, SourceFile source, CodeBase code)
     {
         if (tokens.get(0).equalsIgnoreCase("virtual")) {
             tokens.remove(0);
@@ -440,7 +440,7 @@ public class LineParser {
 
     public boolean parseZ80Op(List<String> tokens, String opName,
             String line, int lineNumber,
-            SourceStatement s, SourceFile source, CodeBase code) throws Exception
+            SourceStatement s, SourceFile source, CodeBase code)
     {
         List<Expression> arguments = new ArrayList<>();
         while(!tokens.isEmpty()) {
@@ -475,7 +475,7 @@ public class LineParser {
 
     public boolean parseMacroDefinition(List<String> tokens,
             String line, int lineNumber,
-            SourceStatement s, SourceFile source, CodeBase code) throws Exception
+            SourceStatement s, SourceFile source, CodeBase code)
     {
         // Marks that all the lines that come after this, and until ENDM,
         // are part of a macro, and should not yet be parsed:
@@ -516,7 +516,7 @@ public class LineParser {
 
     public boolean parseMacroCall(List<String> tokens, String macroName,
             String line, int lineNumber,
-            SourceStatement s, SourceFile source, CodeBase code) throws Exception
+            SourceStatement s, SourceFile source, CodeBase code)
     {
         List<Expression> arguments = new ArrayList<>();
         while(!tokens.isEmpty()) {

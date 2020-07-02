@@ -20,7 +20,7 @@ import parser.Tokenizer;
 public class ExpressionTest {
 
     @Test
-    public void test() throws Exception
+    public void test()
     {
         int failures = 0;
         failures += expressionTest("2", 2);
@@ -43,7 +43,7 @@ public class ExpressionTest {
     }
 
 
-    public static int expressionTest(String line, Integer expected) throws Exception
+    public static int expressionTest(String line, Integer expected)
     {
         MDLConfig config = new MDLConfig();
         List<String> tokens = Tokenizer.tokenize(line);

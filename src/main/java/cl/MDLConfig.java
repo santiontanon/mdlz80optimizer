@@ -4,6 +4,8 @@
 package cl;
 
 import code.CodeBase;
+
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import parser.CPUOpParser;
@@ -53,7 +55,6 @@ public class MDLConfig {
     // code annotations:
     public String PRAGMA_NO_OPTIMIZATION = "mdl:no-opt";
 
-
     // utils:
     public MDLLogger logger;
     public PreProcessor preProcessor;
@@ -64,54 +65,42 @@ public class MDLConfig {
 
     List<MDLWorker> workers = new ArrayList<>();
 
-
-    public String docString
-            = "MDL (A Z80 assembler optimizer) by Santiago Ontañón (Brain Games, 2020)\n"
-            + "https://github.com/santiontanon/mdlz80optimizer\n"
-            + "\n"
+    public String docString = "MDL (A Z80 assembler optimizer) by Santiago Ontañón (Brain Games, 2020)\n"
+            + "https://github.com/santiontanon/mdlz80optimizer\n" + "\n"
             + "arguments: <input assembler file> [options]\n"
             + "  -cpu <type>: to select a different CPU (z80/z80msx/z80cpc) (default: z80msx).\n"
             + "  -dialect <type>: to allow parsing different assembler dialects (mdl/glass/asmsx) (default: mdl, which supports some basic code idioms common to various assemblers).\n"
             + "                   Note that even when selecting a dialect, not all syntax of a given assembler might be supported.\n"
-            + "  -I <folder>: adds a folder to the include search path.\n"
-            + "  -debug: turns on debug messages.\n"
+            + "  -I <folder>: adds a folder to the include search path.\n" + "  -debug: turns on debug messages.\n"
             + "  -warn-off-labelnocolon: turns off warnings for not placing colons after labels.\n"
             + "  -warn-off-jp(rr): turns off warnings for using confusing 'jp (hl)' instead of 'jp hl' (this is turned off by default in dialects that do not support this).\n"
-            + "  -hex#: hex numbers render like #ffff (default).\n"
-            + "  -HEX#: hex numbers render like #FFFF.\n"
-            + "  -hexh: hex numbers render like 0ffffh.\n"
-            + "  -HEXH: hex numbers render like 0FFFFh.\n"
+            + "  -hex#: hex numbers render like #ffff (default).\n" + "  -HEX#: hex numbers render like #FFFF.\n"
+            + "  -hexh: hex numbers render like 0ffffh.\n" + "  -HEXH: hex numbers render like 0FFFFh.\n"
             + "  -+bin: includes binary files (incbin) in the output analyses.\n"
-            + "  -no-opt-pragma <value>: changes the pragma to be inserted in a comment on a line to prevent optimizing it (default: " + PRAGMA_NO_OPTIMIZATION + ")"
-            + "\n";
-
+            + "  -no-opt-pragma <value>: changes the pragma to be inserted in a comment on a line to prevent optimizing it (default: "
+            + PRAGMA_NO_OPTIMIZATION + ")" + "\n";
 
     public MDLConfig() {
         logger = new MDLLogger(MDLLogger.INFO);
     }
 
-
-    public void registerWorker(MDLWorker r)
-    {
+    public void registerWorker(MDLWorker r) {
         workers.add(r);
         docString += r.docString();
     }
 
-
-    public void executeWorkers(CodeBase code) throws Exception
-    {
-        for(MDLWorker w:workers) {
+    public void executeWorkers(CodeBase code) {
+        for (MDLWorker w : workers) {
             if (!w.work(code)) {
                 error("Problem executing worker " + w.getClass().getSimpleName());
             }
         }
     }
 
-
     /*
-        Returns null if everything is fine, and an error string otherwise.
+     * Returns null if everything is fine, and an error string otherwise.
      */
-    public boolean parse(String ... argsArray) throws Exception {
+    public boolean parse(String... argsArray) throws IOException {
         if (argsArray.length == 0) {
             info(docString);
             return false;

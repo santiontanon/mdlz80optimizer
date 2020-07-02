@@ -31,7 +31,7 @@ public class Pattern {
     List<String []> constraints = new ArrayList<>();
     Integer spaceSaving = null; // cache
 
-    public Pattern(String patternString, MDLConfig a_config) throws Exception
+    public Pattern(String patternString, MDLConfig a_config)
     {
         config = a_config;
         int state = 0;  // 0: default, 1: expecting pattern, 2: expecting replacement, 3: expecting constraints
@@ -74,7 +74,7 @@ public class Pattern {
                         break;
                     }
                     default:
-                        throw new Exception("Unexpected line parsing a pattern: " + line);
+                        throw new RuntimeException("Unexpected line parsing a pattern: " + line);
                 }
             }
         }
@@ -105,7 +105,7 @@ public class Pattern {
     }
 
 
-    public boolean opMatch(CPUOpPattern pat1, CPUOp op2, CodeBase code, PatternMatch match) throws Exception
+    public boolean opMatch(CPUOpPattern pat1, CPUOp op2, CodeBase code, PatternMatch match)
     {
         if (!pat1.opName.equals(op2.spec.opName)) return false;
         if (pat1.args.size() != op2.args.size()) return false;
@@ -133,7 +133,7 @@ public class Pattern {
                 } else if (arg1.symbolName.startsWith("?any")) {
                     match.variablesMatched.put(arg1.symbolName, arg2);
                 } else {
-                    throw new Exception("opMatch: unrecognized variable name " + arg1.symbolName);
+                    throw new RuntimeException("opMatch: unrecognized variable name " + arg1.symbolName);
                 }
             } else if (arg1.type == Expression.EXPRESSION_PARENTHESIS &&
                        arg1.args.get(0).type == Expression.EXPRESSION_SYMBOL &&
@@ -146,7 +146,7 @@ public class Pattern {
                         return false;
                     }
                 } else {
-                    throw new Exception("opMatch: unsupported matching case " + arg1 + " vs " + arg2);
+                    throw new UnsupportedOperationException("opMatch: unsupported matching case " + arg1 + " vs " + arg2);
                 }
             } else {
                 if (!pat1.args.get(i).toString().equals(op2.args.get(i).toString())) return false;
@@ -160,7 +160,7 @@ public class Pattern {
 
 
     public PatternMatch match(int a_index, SourceFile f, CodeBase code, MDLConfig config,
-                              boolean logPatternsMatchedWithViolatedConstraints) throws Exception
+                              boolean logPatternsMatchedWithViolatedConstraints)
     {
         int index = a_index;
         List<SourceStatement> l = f.getStatements();
@@ -242,7 +242,7 @@ public class Pattern {
                     break;
                 }
                 default:
-                    throw new Exception("Unknown pattern constraint " + constraint[0]);
+                    throw new UnsupportedOperationException("Unknown pattern constraint " + constraint[0]);
             }
         }
 
@@ -268,21 +268,21 @@ public class Pattern {
     }
 
 
-    public boolean regNotUsed(SourceStatement s, String reg, SourceFile f, CodeBase code) throws Exception
+    public boolean regNotUsed(SourceStatement s, String reg, SourceFile f, CodeBase code)
     {
         CPUOpDependency dep = new CPUOpDependency(reg.toUpperCase(), null, null, null, null);
         return depNotUsed(s, dep, f, code);
     }
 
 
-    public boolean flagNotUsed(SourceStatement s, String flag, SourceFile f, CodeBase code) throws Exception
+    public boolean flagNotUsed(SourceStatement s, String flag, SourceFile f, CodeBase code)
     {
         CPUOpDependency dep = new CPUOpDependency(null, flag.toUpperCase(), null, null, null);
         return depNotUsed(s, dep, f, code);
     }
 
 
-    public boolean depNotUsed(SourceStatement s, CPUOpDependency a_dep, SourceFile f, CodeBase code) throws Exception
+    public boolean depNotUsed(SourceStatement s, CPUOpDependency a_dep, SourceFile f, CodeBase code)
     {
         List<Pair<SourceStatement,CPUOpDependency>> open = new ArrayList<>();
         HashMap<SourceStatement,List<CPUOpDependency>> closed = new HashMap<>();

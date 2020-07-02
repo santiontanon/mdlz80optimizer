@@ -22,7 +22,7 @@ public class SourceCodeTableGenerator implements MDLWorker {
     MDLConfig config = null;
 
     String outputFileName = null;
-    
+
     public SourceCodeTableGenerator(MDLConfig a_config)
     {
         config = a_config;
@@ -44,11 +44,11 @@ public class SourceCodeTableGenerator implements MDLWorker {
     }
 
     @Override
-    public boolean work(CodeBase code) throws Exception {
+    public boolean work(CodeBase code) {
 
         if (outputFileName != null) {
             config.debug("Executing "+this.getClass().getSimpleName()+" worker...");
-            
+
             try (FileWriter fw = new FileWriter(outputFileName)) {
                 fw.write(sourceFileTableString(code));
                 fw.flush();
@@ -56,11 +56,11 @@ public class SourceCodeTableGenerator implements MDLWorker {
                 config.error("Cannot write to file " + outputFileName);
                 return false;
             }
-        }        
+        }
         return true;
     }
 
-    
+
     public String sourceFileTableString(CodeBase code)
     {
         HashMap<String, String> fileInfo = new HashMap<>();
@@ -69,11 +69,11 @@ public class SourceCodeTableGenerator implements MDLWorker {
             String data = f.fileName + "\t" + f.sizeInBytes(code, false, false, false) +
                                        "\t" + f.sizeInBytes(code, true, true, false);
             fileInfo.put(f.fileName, data);
-            
+
             if (config.includeBinariesInAnalysis) {
                 for(SourceStatement s : f.getStatements()) {
                     if (s.type == SourceStatement.STATEMENT_INCBIN) {
-                        String data2 = s.incbin + "\t" + s.incbinSize + 
+                        String data2 = s.incbin + "\t" + s.incbinSize +
                                                  "\t" + s.incbinSize;
                         fileInfo.put(s.incbin, data2);
                     }
@@ -89,7 +89,7 @@ public class SourceCodeTableGenerator implements MDLWorker {
             sb.append(fileInfo.get(name));
             sb.append("\n");
         }
-        
+
         return sb.toString();
     }
 }

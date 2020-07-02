@@ -4,6 +4,7 @@
 package parser;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,27 +19,23 @@ import util.Resources;
 public class CodeBaseParser {
     MDLConfig config;
 
-
-    public CodeBaseParser(MDLConfig a_config)
-    {
+    public CodeBaseParser(MDLConfig a_config) {
         config = a_config;
     }
 
-
-    public boolean isMacro(String name, CodeBase code)
-    {
-        if (config.preProcessor == null) return false;
+    public boolean isMacro(String name, CodeBase code) {
+        if (config.preProcessor == null)
+            return false;
         return config.preProcessor.isMacro(name, code);
     }
 
-
-    public SourceFile parseMainSourceFile(String fileName, CodeBase code) throws Exception
-    {
+    public SourceFile parseMainSourceFile(String fileName, CodeBase code) throws IOException {
         SourceFile main = parseSourceFile(fileName, code, null, null);
-        if (main == null) return null;
+        if (main == null)
+            return null;
 
         // Expanc all macros that were not expanded initially:
-        for(SourceFile f:code.getSourceFiles()) {
+        for (SourceFile f : code.getSourceFiles()) {
             if (!expandAllMacros(f, code)) {
                 config.error("Problem expanding macros after loading all the source code!");
                 return null;
@@ -48,29 +45,30 @@ public class CodeBaseParser {
         return main;
     }
 
-
-    public SourceFile parseSourceFile(String fileName, CodeBase code, SourceFile parent, SourceStatement parentInclude)
-    {
+    public SourceFile parseSourceFile(String fileName, CodeBase code, SourceFile parent,
+            SourceStatement parentInclude) {
         if (code.getSourceFile(fileName) != null) {
             config.warn("Re-entering into " + fileName + " ignored...");
             return null;
         }
 
         SourceFile f = new SourceFile(fileName, parent, parentInclude, config);
-        if (parent == null) code.setMain(f);
+        if (parent == null)
+            code.setMain(f);
         code.addSourceFile(f);
         try {
-            if (parseSourceFileInternal(f, code, config)) return f;
-        } catch(Exception e) {
+            if (parseSourceFileInternal(f, code, config))
+                return f;
+        } catch (Exception e) {
             config.error("Problem parsing file " + fileName);
             e.printStackTrace();
         }
         return null;
     }
 
-
     // Returns: <<line,lineNumber>, file_linenumber>
-    Pair<Pair<String,Integer>, Integer> getNextLine(BufferedReader br, int file_linenumber, List<String> tokens) throws Exception
+    Pair<Pair<String, Integer>, Integer> getNextLine(BufferedReader br, int file_linenumber, List<String> tokens)
+            throws IOException
     {
         Pair<String,Integer> line_lnumber = config.preProcessor.expandMacros();
         String line = null;
@@ -102,7 +100,7 @@ public class CodeBaseParser {
     }
 
 
-    boolean parseSourceFileInternal(SourceFile f, CodeBase code, MDLConfig config) throws Exception
+    boolean parseSourceFileInternal(SourceFile f, CodeBase code, MDLConfig config) throws IOException
     {
         config.debug("Parsing " + f.fileName + "...");
 
@@ -139,7 +137,7 @@ public class CodeBaseParser {
     }
 
 
-    public boolean expandAllMacros(SourceFile f, CodeBase code) throws Exception
+    public boolean expandAllMacros(SourceFile f, CodeBase code) throws IOException
     {
         for(int i = 0;i<f.getStatements().size();i++) {
             SourceStatement s_macro = f.getStatements().get(i);

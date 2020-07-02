@@ -81,7 +81,7 @@ public class SourceFile {
     }
 
 
-    public List<SourceStatement> nextStatements(SourceStatement s, boolean goInsideInclude, CodeBase code) throws Exception
+    public List<SourceStatement> nextStatements(SourceStatement s, boolean goInsideInclude, CodeBase code)
     {
         int index = statements.indexOf(s);
         return nextStatements(index, goInsideInclude, code);
@@ -92,7 +92,7 @@ public class SourceFile {
     This function returns "null" when there are some potential next statements that cannot be determined.
     For example, when encountering a "ret", a "jp hl", a "call CONSTANT", where CONSTANT is not a label (could be a system call)
     */
-    public List<SourceStatement> nextStatements(int index, boolean goInsideInclude, CodeBase code) throws Exception
+    public List<SourceStatement> nextStatements(int index, boolean goInsideInclude, CodeBase code)
     {
         SourceStatement s = statements.get(index);
         switch(s.type) {
@@ -150,7 +150,7 @@ public class SourceFile {
 
             case SourceStatement.STATEMENT_MACRO:
             case SourceStatement.STATEMENT_MACROCALL:
-                throw new Exception("Macros should have been resolved before optimization!");
+                throw new IllegalStateException("Macros should have been resolved before optimization!");
 
             default:
                 return immediatelyNextStatements(index, code);
@@ -158,7 +158,7 @@ public class SourceFile {
     }
 
 
-    public List<SourceStatement> immediatelyNextStatements(int index, CodeBase code) throws Exception
+    public List<SourceStatement> immediatelyNextStatements(int index, CodeBase code)
     {
         if (statements.size() > index+1) {
             List<SourceStatement> next = new ArrayList<>();

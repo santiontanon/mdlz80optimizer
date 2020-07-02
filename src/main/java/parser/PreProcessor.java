@@ -81,7 +81,7 @@ public class PreProcessor {
     }
 
 
-    public boolean parseMacroLine(List<String> tokens, String line, int lineNumber, SourceFile f, CodeBase code, MDLConfig config) throws Exception
+    public boolean parseMacroLine(List<String> tokens, String line, int lineNumber, SourceFile f, CodeBase code, MDLConfig config)
     {
         SourceMacro m = currentMacro;
         if (!tokens.isEmpty() && tokens.get(0).equalsIgnoreCase(SourceMacro.MACRO_ENDM)) {
@@ -245,7 +245,7 @@ public class PreProcessor {
     }
 
 
-    public boolean addMacro(SourceMacro m, CodeBase code) throws Exception
+    public boolean addMacro(SourceMacro m, CodeBase code)
     {
         macros.put(m.name, m);
         if (config.dialectParser != null) {

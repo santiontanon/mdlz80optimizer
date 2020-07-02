@@ -113,14 +113,14 @@ public class PatternBasedOptimizer implements MDLWorker {
 
 
     @Override
-    public boolean work(CodeBase code) throws Exception {
+    public boolean work(CodeBase code) {
         if (!activate) return true;
         optimize(code);
         return true;
     }
 
 
-    public OptimizationResult optimize(CodeBase code) throws Exception {
+    public OptimizationResult optimize(CodeBase code) {
         initPatterns();
         OptimizationResult r = new OptimizationResult();
         for(Pattern patt: patterns) {
@@ -138,7 +138,7 @@ public class PatternBasedOptimizer implements MDLWorker {
         return r;
     }
 
-    public OptimizationResult optimizeWithPattern(Pattern patt, CodeBase code) throws Exception {
+    public OptimizationResult optimizeWithPattern(Pattern patt, CodeBase code) {
         OptimizationResult r = new OptimizationResult();
         for(SourceFile f:code.getSourceFiles()) {
             for(int i = 0;i<f.getStatements().size();i++) {

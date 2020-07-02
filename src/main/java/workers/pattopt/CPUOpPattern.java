@@ -21,8 +21,8 @@ public class CPUOpPattern {
     int ID;
     String opName;
     List<Expression> args = new ArrayList<>();
-    
-    
+
+
     public String toString()
     {
         String str = opName;
@@ -37,8 +37,8 @@ public class CPUOpPattern {
         }
         return str;
     }
-    
-    
+
+
     public CPUOp instantiate(PatternMatch match, MDLConfig config)
     {
         // replace variables by the matched values:
@@ -53,12 +53,12 @@ public class CPUOpPattern {
             }
             instantiatedArgs.add(config.expressionParser.parse(Tokenizer.tokenize(argStr), code));
         }
-        
+
         return config.opParser.parseOp(opName, instantiatedArgs, s, code);
     }
-    
-    
-    public static CPUOpPattern parse(String line, CodeBase code, MDLConfig config) throws Exception
+
+
+    public static CPUOpPattern parse(String line, CodeBase code, MDLConfig config)
     {
         List<String> tokens = Tokenizer.tokenize(line);
         CPUOpPattern pat = new CPUOpPattern();

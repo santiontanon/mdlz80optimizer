@@ -24,7 +24,7 @@ public class Main {
         config.registerWorker(new SourceCodeTableGenerator(config));
         config.registerWorker(new SourceCodeGenerator(config));
         config.registerWorker(new AnnotatedSourceCodeGenerator(config));
-        
+
         // Parse command line arguments:
         if (!config.parse(args)) return;
 

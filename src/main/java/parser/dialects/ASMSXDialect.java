@@ -18,16 +18,16 @@ import parser.Tokenizer;
  */
 public class ASMSXDialect implements Dialect {
     MDLConfig config;
-    
+
     String lastAbsoluteLabel = null;
-    
-    
+
+
     public ASMSXDialect(MDLConfig a_config)
     {
         config = a_config;
     }
-    
-    
+
+
     @Override
     public void init(MDLConfig config)
     {
@@ -35,7 +35,7 @@ public class ASMSXDialect implements Dialect {
         config.lineParser.KEYWORD_INCLUDE = ".include";
         config.lineParser.KEYWORD_INCBIN = ".incbin";
         config.lineParser.addKeywordSynonym(".equ", config.lineParser.KEYWORD_EQU);
-        
+
         config.lineParser.addKeywordSynonym(".db", config.lineParser.KEYWORD_DB);
         config.lineParser.addKeywordSynonym("defb", config.lineParser.KEYWORD_DB);
         config.lineParser.addKeywordSynonym(".defb", config.lineParser.KEYWORD_DB);
@@ -52,8 +52,8 @@ public class ASMSXDialect implements Dialect {
         config.lineParser.addKeywordSynonym("defs", config.lineParser.KEYWORD_DS);
         config.lineParser.addKeywordSynonym(".defs", config.lineParser.KEYWORD_DS);
     }
-    
-    
+
+
     @Override
     public boolean recognizeIdiom(List<String> tokens) {
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase(".bios")) return true;
@@ -67,7 +67,7 @@ public class ASMSXDialect implements Dialect {
         return false;
     }
 
-    
+
     @Override
     public String newSymbolName(String name, Expression value) {
         // TODO(santi@): complete this list (or maybe have a better way than an if-then rule list!
@@ -86,15 +86,15 @@ public class ASMSXDialect implements Dialect {
         } else if (name.startsWith(".")) {
             return lastAbsoluteLabel + "." + name.substring(1);
         } else {
-            if (value.type == Expression.EXPRESSION_SYMBOL && 
+            if (value.type == Expression.EXPRESSION_SYMBOL &&
                 value.symbolName.equalsIgnoreCase(CodeBase.CURRENT_ADDRESS)) {
                 lastAbsoluteLabel = name;
             }
         }
         return name;
-    }    
-    
-    
+    }
+
+
     @Override
     public String symbolName(String name) {
         if (name.startsWith("@@")) {
@@ -104,11 +104,11 @@ public class ASMSXDialect implements Dialect {
         } else {
             return name;
         }
-    }    
-    
-    
+    }
+
+
     @Override
-    public boolean parseLine(List<String> tokens, String line, int lineNumber, SourceStatement s, SourceFile source, CodeBase code) throws Exception {
+    public boolean parseLine(List<String> tokens, String line, int lineNumber, SourceStatement s, SourceFile source, CodeBase code) {
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase(".bios")) {
             tokens.remove(0);
             // just ignore this line, as it seems it does nothing ...
@@ -133,8 +133,8 @@ public class ASMSXDialect implements Dialect {
             }
             s.type = SourceStatement.STATEMENT_ORG;
             s.org = page_exp;
-            Expression.operatorExpression(Expression.EXPRESSION_MUL, 
-                    Expression.parenthesisExpression(page_exp), 
+            Expression.operatorExpression(Expression.EXPRESSION_MUL,
+                    Expression.parenthesisExpression(page_exp),
                     Expression.constantExpression(16*1024), config);
             // Since we are not producing compiled output, we ignore this directive
             return config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source);
@@ -151,18 +151,18 @@ public class ASMSXDialect implements Dialect {
             Integer value = exp.evaluate(s, code, true);
             if (value == null) {
                 config.error("Cannot evaluate expression in " + source.fileName + ", " + lineNumber + ": " + line);
-                return false;                
+                return false;
             }
             config.info("" + value);
             return config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source);
-        }        
+        }
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase(".printhex")) {
             tokens.remove(0);
             Expression exp = config.expressionParser.parse(tokens, code);
             Integer value = exp.evaluate(s, code, true);
             if (value == null) {
                 config.error("Cannot evaluate expression in " + source.fileName + ", " + lineNumber + ": " + line);
-                return false;                
+                return false;
             }
             config.info(Tokenizer.toHexWord(value, config.hexStyle));
             return config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source);
@@ -181,15 +181,15 @@ public class ASMSXDialect implements Dialect {
             s.space_value = null;
             return config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source);
         }
-        
+
         config.error("ASMSXDialect cannot parse line in " + source.fileName + ", " + lineNumber + ": " + line);
-        return false;        
+        return false;
     }
 
-    
+
     @Override
-    public boolean newMacro(SourceMacro macro, CodeBase code) throws Exception {
+    public boolean newMacro(SourceMacro macro, CodeBase code) {
         return true;
     }
-    
+
 }

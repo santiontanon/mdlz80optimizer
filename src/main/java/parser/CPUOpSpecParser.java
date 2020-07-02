@@ -4,9 +4,14 @@
 package parser;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
+import java.util.stream.Collectors;
+
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import cl.MDLConfig;
 import code.CPUOpSpec;
@@ -20,35 +25,26 @@ import util.Resources;
 public class CPUOpSpecParser {
     MDLConfig config;
 
-
-    public CPUOpSpecParser(MDLConfig a_config)
-    {
+    public CPUOpSpecParser(MDLConfig a_config) {
         config = a_config;
     }
 
-
-    public List<CPUOpSpec> parseSpecs() throws Exception
+    public List<CPUOpSpec> parseSpecs() throws IOException
     {
-        List<CPUOpSpec> opSpecs = new ArrayList<>();
         String inputFile = "data/z80-instruction-set.tsv";
 
         try (BufferedReader br = Resources.asReader(inputFile)) {
-
-            String line;
-            while((line = br.readLine()) != null) {
-                if (line.startsWith(";")) continue;
-                CPUOpSpec opSpec = parseOpSpecLine(line.split("\t"), config);
-                if (opSpec != null) {
-                    opSpecs.add(opSpec);
-                }
-            }
+            return IOUtils.readLines(br)
+                    .stream()
+                    .filter(line -> !line.startsWith(";"))
+                    .map(line -> parseOpSpecLine(line.split("\t"), config))
+                    .filter(opSpec -> opSpec != null)
+                    .collect(Collectors.toList());
         }
-
-        return opSpecs;
     }
 
 
-    public CPUOpSpec parseOpSpecLine(String data[], MDLConfig config) throws Exception
+    public CPUOpSpec parseOpSpecLine(String data[], MDLConfig config)
     {
         int timeColumn = 1;
         if (config.cpu == MDLConfig.CPU_Z80MSX) timeColumn = 2;
@@ -198,7 +194,7 @@ public class CPUOpSpecParser {
             } else if (argStr.equals("(nn)")) {
                 arg.wordConstantIndirectionAllowed = true;
             } else {
-                throw new Exception("unsupported argument " + argStr);
+                throw new IllegalArgumentException("unsupported argument " + argStr);
             }
 
             spec.addArgSpec(arg);

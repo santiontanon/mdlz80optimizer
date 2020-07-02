@@ -16,13 +16,13 @@ public class DotGenerator implements MDLWorker {
 
     MDLConfig config = null;
     String outputFileName = null;
-    
+
     public DotGenerator(MDLConfig a_config)
     {
         config = a_config;
     }
-    
-    
+
+
     @Override
     public String docString()
     {
@@ -42,25 +42,25 @@ public class DotGenerator implements MDLWorker {
         return false;
     }
 
-        
+
     @Override
-    public boolean work(CodeBase code) throws Exception
+    public boolean work(CodeBase code)
     {
         if (outputFileName == null) return true;
-        
+
         config.debug("Executing "+this.getClass().getSimpleName()+" worker...");
-        
+
         HashMap<String, String> nodeNames = new HashMap<>();
         StringBuilder sb = new StringBuilder();
-        
+
         sb.append("digraph codeanalysis {\n");
         sb.append("graph[rankdir=LR];\n");
-        
+
         // vertices:
         for(SourceFile f : code.getSourceFiles()) {
             String sName = "" + (nodeNames.size()+1);
             nodeNames.put(f.fileName, sName);
-            
+
             sb.append(sName);
             sb.append(" [shape=record label=\"");
             sb.append(sourceFileDotCountent(f, code));
@@ -85,7 +85,7 @@ public class DotGenerator implements MDLWorker {
                 }
             }
         }
-        
+
         // edges:
         for(SourceFile f: code.getSourceFiles()) {
             for(SourceStatement s : f.getStatements()) {
@@ -104,9 +104,9 @@ public class DotGenerator implements MDLWorker {
                 }
             }
         }
-        
+
         sb.append("}");
-        
+
         try (FileWriter fw = new FileWriter(outputFileName)) {
             fw.write(sb.toString());
             fw.flush();
@@ -116,8 +116,8 @@ public class DotGenerator implements MDLWorker {
         }
         return true;
     }
-    
-    
+
+
     static String sourceFileDotCountent(SourceFile f, CodeBase code)
     {
         String str = "{{";
@@ -125,7 +125,7 @@ public class DotGenerator implements MDLWorker {
         str += "{size(self):|" + f.sizeInBytes(code, false, false, false) + "}|";
         str += "{size(total):|" + f.sizeInBytes(code, true, true, false) + "}";
         str += "}}";
-        
+
         return str;
     }
 }

@@ -17,7 +17,7 @@ import parser.Tokenizer;
 public class TokenizerTest {
 
     @Test
-    public void test() throws Exception
+    public void test()
     {
         int failures = 0;
         failures += tokenizerTest("ld a,2", new String[]{"ld","a",",","2"});
@@ -35,7 +35,7 @@ public class TokenizerTest {
     }
 
 
-    public static int tokenizerTest(String line, String[] expected) throws Exception
+    public static int tokenizerTest(String line, String[] expected)
     {
         List<String> tokens = Tokenizer.tokenize(line);
         if (tokens == null  || tokens.size() != expected.length) {

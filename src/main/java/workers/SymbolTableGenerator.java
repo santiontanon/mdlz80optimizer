@@ -23,7 +23,7 @@ public class SymbolTableGenerator implements MDLWorker {
 
     String outputFileName = null;
     boolean includeConstants = false;
-    
+
     public SymbolTableGenerator(MDLConfig a_config)
     {
         config = a_config;
@@ -51,7 +51,7 @@ public class SymbolTableGenerator implements MDLWorker {
     }
 
     @Override
-    public boolean work(CodeBase code) throws Exception {
+    public boolean work(CodeBase code) {
 
         if (outputFileName != null) {
             config.debug("Executing "+this.getClass().getSimpleName()+" worker...");
@@ -68,7 +68,7 @@ public class SymbolTableGenerator implements MDLWorker {
         return true;
     }
 
-    
+
     public String symbolTableString(CodeBase code)
     {
         List<String> sortedSymbols = new ArrayList<>();
@@ -89,12 +89,12 @@ public class SymbolTableGenerator implements MDLWorker {
                 } else {
                     sb.append(symbol.getValue(code, true));
                     sb.append("  ; ");
-                    sb.append(symbol.exp);                
+                    sb.append(symbol.exp);
                 }
                 sb.append("\n");
             }
         }
-        
+
         return sb.toString();
-    }    
+    }
 }

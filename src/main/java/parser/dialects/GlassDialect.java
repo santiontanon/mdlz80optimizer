@@ -80,7 +80,7 @@ public class GlassDialect implements Dialect {
     @Override
     public boolean parseLine(List<String> tokens,
             String line, int lineNumber,
-            SourceStatement s, SourceFile source, CodeBase code) throws Exception
+            SourceStatement s, SourceFile source, CodeBase code)
     {
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("section")) {
             // TODO(santi@): implement "section" with the same semantics as Glass. I am currently just
@@ -144,7 +144,7 @@ public class GlassDialect implements Dialect {
 
 
     @Override
-    public boolean newMacro(SourceMacro macro, CodeBase code) throws Exception
+    public boolean newMacro(SourceMacro macro, CodeBase code)
     {
         // Attempt to assemble the macro content at address 0, and define all the internal symbols as macroname.symbol:
         // To do that, I instantiate the macro with all the parameters that do not have defaults taking the value 0:

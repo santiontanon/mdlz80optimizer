@@ -3,6 +3,8 @@
  */
 package test;
 
+import java.io.IOException;
+
 import org.junit.Test;
 
 import cl.MDLConfig;
@@ -17,8 +19,7 @@ import workers.pattopt.PatternBasedOptimizer;
 public class PatternBasedOptimizerTest {
 
     @Test
-    public void test() throws Exception
-    {
+    public void test() throws IOException {
         int failures = 0;
         failures += test("data/tests/test1.asm", 3);
         failures += test("data/tests/test2.asm", 1);
@@ -51,8 +52,7 @@ public class PatternBasedOptimizerTest {
         }
     }
 
-
-    public static int test(String inputFile, int expected_bytesReduced) throws Exception
+    public static int test(String inputFile, int expected_bytesReduced) throws IOException
     {
         MDLConfig config = new MDLConfig();
         if (!config.parse(inputFile)) return 1;
