@@ -47,7 +47,6 @@ public class GlassDialect implements Dialect {
         return false;
     }
     
-
     
     @Override
     public String newSymbolName(String name, Expression value) {
