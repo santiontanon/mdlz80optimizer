@@ -3,9 +3,9 @@
  */
 package test;
 
-import java.util.Arrays;
 import java.util.List;
 
+import org.junit.Assert;
 import org.junit.Test;
 
 import parser.Tokenizer;
@@ -16,38 +16,41 @@ import parser.Tokenizer;
  */
 public class TokenizerTest {
 
-    @Test
-    public void test()
-    {
-        int failures = 0;
-        failures += tokenizerTest("ld a,2", new String[]{"ld","a",",","2"});
-        failures += tokenizerTest("ex af,af'", new String[]{"ex","af",",","af'"});
-        failures += tokenizerTest("ex af,AF'", new String[]{"ex","af",",","AF'"});
-        failures += tokenizerTest("variable<<2", new String[]{"variable","<<","2"});
-        failures += tokenizerTest("ds (($ + 1 - 1) >> 8) != ($ >> 8) && (100H - ($ & 0FFH)) || 0", new String[]{"ds","(","(","$","+","1","-","1",")",">>","8",")","!=","(","$",">>","8",")","&&","(","100H","-","(","$","&","0FFH",")",")","||","0"});
-        failures += tokenizerTest(".include", new String[]{".include"});
-        failures += tokenizerTest("ld a,(hl)", new String[]{"ld","a",",","(","hl",")"});
-        failures += tokenizerTest("ld a,[hl]", new String[]{"ld","a",",","[","hl","]"});
-        failures += tokenizerTest("@@my_local_label:", new String[]{"@@my_local_label",":"});
-        if (failures > 0) {
-            throw new Error(failures + " tests failed!");
-        }
+    @Test public void test1() {
+        Assert.assertArrayEquals(new String[]{"ld","a",",","2"}, tokenize("ld a,2"));
+    }
+    @Test public void test2() {
+        Assert.assertArrayEquals(new String[]{"ex","af",",","af'"}, tokenize("ex af,af'"));
+    }
+    @Test public void test3() {
+        Assert.assertArrayEquals(new String[]{"ex","af",",","AF'"}, tokenize("ex af,AF'"));
+    }
+    @Test public void test4() {
+        Assert.assertArrayEquals(new String[]{"variable","<<","2"}, tokenize("variable<<2"));
+    }
+    @Test public void test5() {
+        Assert.assertArrayEquals(
+                new String[]{"ds","(","(","$","+","1","-","1",")",">>","8",")","!=","(","$",">>","8",")","&&","(","100H","-","(","$","&","0FFH",")",")","||","0"},
+                tokenize("ds (($ + 1 - 1) >> 8) != ($ >> 8) && (100H - ($ & 0FFH)) || 0"));
+    }
+    @Test public void test6() {
+        Assert.assertArrayEquals(new String[]{".include"}, tokenize(".include"));
+    }
+    @Test public void test7() {
+        Assert.assertArrayEquals(new String[]{"ld","a",",","(","hl",")"}, tokenize("ld a,(hl)"));
+    }
+    @Test public void test8() {
+        Assert.assertArrayEquals(new String[]{"ld","a",",","[","hl","]"}, tokenize("ld a,[hl]"));
+    }
+    @Test public void test9() {
+        Assert.assertArrayEquals(new String[]{"@@my_local_label",":"}, tokenize("@@my_local_label:"));
     }
 
-
-    public static int tokenizerTest(String line, String[] expected)
+    private static String[] tokenize(String line)
     {
         List<String> tokens = Tokenizer.tokenize(line);
-        if (tokens == null  || tokens.size() != expected.length) {
-            System.err.println("Expected " + Arrays.toString(expected) + " got " + tokens);
-            return 1;
-        }
-        for(int i = 0;i<tokens.size();i++) {
-            if (!tokens.get(i).equals(expected[i])) {
-                System.err.println("Expected " + Arrays.toString(expected) + " got " + tokens);
-                return 1;
-            }
-        }
-        return 0;
+        return tokens != null
+                ? tokens.toArray(new String[0])
+                : null;
     }
 }
