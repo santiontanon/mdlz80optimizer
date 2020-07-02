@@ -4,7 +4,6 @@
 package parser;
 
 import java.io.BufferedReader;
-import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -14,6 +13,7 @@ import cl.MDLConfig;
 import code.CodeBase;
 import code.SourceFile;
 import code.SourceStatement;
+import util.Resources;
 
 public class CodeBaseParser {
     MDLConfig config;
@@ -106,31 +106,32 @@ public class CodeBaseParser {
     {
         config.debug("Parsing " + f.fileName + "...");
 
-        BufferedReader br = new BufferedReader(new FileReader(f.fileName));
-        int file_lineNumber = 0;
-        while(true) {
-            List<String> tokens = new ArrayList<>();
-            Pair<Pair<String,Integer>, Integer> tmp = getNextLine(br, file_lineNumber, tokens);
-            if (tmp == null) {
-                if (config.preProcessor.withinMacroDefinition()) {
-                    config.error("File " +f.fileName+ " ended while inside a macro definition: " + config.preProcessor.getCurrentMacro().name);
-                    return false;
+        try (BufferedReader br = Resources.asReader(f.fileName)) {
+            int file_lineNumber = 0;
+            while(true) {
+                List<String> tokens = new ArrayList<>();
+                Pair<Pair<String,Integer>, Integer> tmp = getNextLine(br, file_lineNumber, tokens);
+                if (tmp == null) {
+                    if (config.preProcessor.withinMacroDefinition()) {
+                        config.error("File " +f.fileName+ " ended while inside a macro definition: " + config.preProcessor.getCurrentMacro().name);
+                        return false;
+                    }
+                    return true;
                 }
-                return true;
-            }
-            file_lineNumber = tmp.getRight();
-            String line = tmp.getLeft().getLeft();
-            int line_lineNumber = file_lineNumber;
-            if (tmp.getLeft().getRight() != null) line_lineNumber = tmp.getLeft().getRight();
+                file_lineNumber = tmp.getRight();
+                String line = tmp.getLeft().getLeft();
+                int line_lineNumber = file_lineNumber;
+                if (tmp.getLeft().getRight() != null) line_lineNumber = tmp.getLeft().getRight();
 
-            if (config.preProcessor.withinMacroDefinition()) {
-                if (!config.preProcessor.parseMacroLine(tokens, line, line_lineNumber, f, code, config)) return false;
-            } else {
-                SourceStatement s = config.lineParser.parse(tokens, line, line_lineNumber, f, code, config);
-                if (s == null) return false;
-                if (!s.isEmpty()) {
-                    if (!config.preProcessor.handleStatement(line, line_lineNumber, s, f, code, false)) {
-                        f.addStatement(s);
+                if (config.preProcessor.withinMacroDefinition()) {
+                    if (!config.preProcessor.parseMacroLine(tokens, line, line_lineNumber, f, code, config)) return false;
+                } else {
+                    SourceStatement s = config.lineParser.parse(tokens, line, line_lineNumber, f, code, config);
+                    if (s == null) return false;
+                    if (!s.isEmpty()) {
+                        if (!config.preProcessor.handleStatement(line, line_lineNumber, s, f, code, false)) {
+                            f.addStatement(s);
+                        }
                     }
                 }
             }

@@ -19,32 +19,31 @@ public class PatternBasedOptimizerTest {
     @Test
     public void test() throws Exception
     {
-        final String[] args = new String[0];
         int failures = 0;
-        failures += test("data/tests/test1.asm", 3, args);
-        failures += test("data/tests/test2.asm", 1, args);
-        failures += test("data/tests/test3.asm", 0, args);
-        failures += test("data/tests/test4.asm", 0, args);
-        failures += test("data/tests/test5.asm", 0, args);
-        failures += test("data/tests/test6.asm", 2, args);
-        failures += test("data/tests/test7.asm", 2, args);
-        failures += test("data/tests/test8.asm", 2, args);
-        failures += test("data/tests/test9.asm", 0, args);
-        failures += test("data/tests/test10.asm", 2, args);
-        failures += test("data/tests/test11.asm", 3, args);
-        failures += test("data/tests/test12.asm", 2, args);
-        failures += test("data/tests/test13.asm", 0, args);
-        failures += test("data/tests/test14.asm", 1, args);
-        failures += test("data/tests/test15.asm", 2, args);
-        failures += test("data/tests/test16.asm", 5, args);
-        failures += test("data/tests/test17.asm", 4, args);
-        failures += test("data/tests/test18.asm", 3, args);
-        failures += test("data/tests/test19.asm", 2, args);
-        failures += test("data/tests/test20.asm", 4, args);
-        failures += test("data/tests/test21.asm", 3, args);
-        failures += test("data/tests/test22.asm", 2, args);
-        failures += test("data/tests/test23.asm", 1, args);
-        failures += test("data/tests/test24.asm", 0, args);
+        failures += test("data/tests/test1.asm", 3);
+        failures += test("data/tests/test2.asm", 1);
+        failures += test("data/tests/test3.asm", 0);
+        failures += test("data/tests/test4.asm", 0);
+        failures += test("data/tests/test5.asm", 0);
+        failures += test("data/tests/test6.asm", 2);
+        failures += test("data/tests/test7.asm", 2);
+        failures += test("data/tests/test8.asm", 2);
+        failures += test("data/tests/test9.asm", 0);
+        failures += test("data/tests/test10.asm", 2);
+        failures += test("data/tests/test11.asm", 3);
+        failures += test("data/tests/test12.asm", 2);
+        failures += test("data/tests/test13.asm", 0);
+        failures += test("data/tests/test14.asm", 1);
+        failures += test("data/tests/test15.asm", 2);
+        failures += test("data/tests/test16.asm", 5);
+        failures += test("data/tests/test17.asm", 4);
+        failures += test("data/tests/test18.asm", 3);
+        failures += test("data/tests/test19.asm", 2);
+        failures += test("data/tests/test20.asm", 4);
+        failures += test("data/tests/test21.asm", 3);
+        failures += test("data/tests/test22.asm", 2);
+        failures += test("data/tests/test23.asm", 1);
+        failures += test("data/tests/test24.asm", 0);
         if (failures > 0) {
             throw new Error(failures + " tests failed!");
         } else {
@@ -53,15 +52,10 @@ public class PatternBasedOptimizerTest {
     }
 
 
-    public static int test(String inputFile, int expected_bytesReduced, String a_args[]) throws Exception
+    public static int test(String inputFile, int expected_bytesReduced) throws Exception
     {
         MDLConfig config = new MDLConfig();
-        String args[] = new String[a_args.length+1];
-        args[0] = inputFile;
-        for(int i = 0;i<a_args.length;i++) {
-            args[i+1] = a_args[i];
-        }
-        if (!config.parse(args)) return 1;
+        if (!config.parse(inputFile)) return 1;
         CodeBase code = new CodeBase(config);
         if (config.codeBaseParser.parseMainSourceFile(config.inputFile, code) == null) {
             config.error("Could not parse file " + inputFile);

@@ -3,10 +3,12 @@
  */
 package code;
 
-import cl.MDLConfig;
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.apache.commons.io.FilenameUtils;
+
+import cl.MDLConfig;
 
 public class SourceFile {
     MDLConfig config;
@@ -24,20 +26,16 @@ public class SourceFile {
     }
 
     public String getPath() {
-        int idx = fileName.lastIndexOf(File.separator);
-        if (idx == -1) {
-            return "";
-        }
-        return fileName.substring(0, idx);
+        return FilenameUtils.getFullPath(fileName);
     }
 
-    
+
     public List<SourceStatement> getStatements()
     {
         return statements;
     }
-    
-    
+
+
     public void addStatement(SourceStatement s) {
         statements.add(s);
     }
@@ -46,16 +44,16 @@ public class SourceFile {
     public void addStatement(int position, SourceStatement s) {
         statements.add(position, s);
     }
-    
-    
+
+
     public void resetAddresses()
     {
         for(SourceStatement s:statements) {
             s.resetAddress();
         }
-    }    
-    
-    
+    }
+
+
     public SourceStatement getPreviousStatementTo(SourceStatement s, CodeBase code)
     {
         int index = statements.indexOf(s);
@@ -70,7 +68,7 @@ public class SourceFile {
         }
         return statements.get(index-1);
     }
-    
+
 
     public Integer sizeInBytes(CodeBase code, boolean withIncludes, boolean withIncbin, boolean withVirtual) {
         int size = 0;
@@ -81,8 +79,8 @@ public class SourceFile {
         }
         return size;
     }
-    
-    
+
+
     public List<SourceStatement> nextStatements(SourceStatement s, boolean goInsideInclude, CodeBase code) throws Exception
     {
         int index = statements.indexOf(s);
@@ -107,7 +105,7 @@ public class SourceFile {
                         label = code.getSymbol(labelExp.symbolName);
                         if (label == null)  {
                             // not all next statements can be determined:
-                            return null;                            
+                            return null;
                         }
                     } else {
                         // not all next statements can be determined:
@@ -121,7 +119,7 @@ public class SourceFile {
                     // not all next statements can be determined:
                     return null;
                 }
-                
+
                 if (jumpTargetStatement != null) {
                     // get target SourceStatement:
                     if (s.op.isConditional()) {
@@ -131,7 +129,7 @@ public class SourceFile {
                     } else {
                         List<SourceStatement> next = new ArrayList<>();
                         next.add(jumpTargetStatement);
-                        return next;                        
+                        return next;
                     }
                 } else {
                     return immediatelyNextStatements(index, code);
@@ -144,12 +142,12 @@ public class SourceFile {
                     SourceFile fi = s.include;
                     List<SourceStatement> next = new ArrayList<>();
                     next.add(fi.statements.get(0));
-                    return next;                    
+                    return next;
                 } else {
-                    // skip the include:                
+                    // skip the include:
                     return immediatelyNextStatements(index, code);
                 }
-                
+
             case SourceStatement.STATEMENT_MACRO:
             case SourceStatement.STATEMENT_MACROCALL:
                 throw new Exception("Macros should have been resolved before optimization!");
@@ -159,7 +157,7 @@ public class SourceFile {
         }
     }
 
-    
+
     public List<SourceStatement> immediatelyNextStatements(int index, CodeBase code) throws Exception
     {
         if (statements.size() > index+1) {
@@ -173,5 +171,5 @@ public class SourceFile {
         }
         // we are done, no next!
         return new ArrayList<>();
-    }    
+    }
 }

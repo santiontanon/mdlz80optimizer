@@ -23,11 +23,11 @@ public class MDLConfig {
     public static int HEX_STYLE_HASH_CAPS = 1;
     public static int HEX_STYLE_H = 2;
     public static int HEX_STYLE_H_CAPS = 3;
-    
+
     public static int CPU_Z80 = 0;
     public static int CPU_Z80MSX = 1;
     public static int CPU_Z80CPC = 2;
-    
+
     public static int DIALECT_MDL = 0;
     public static int DIALECT_GLASS = 1;
     public static int DIALECT_ASMSX = 2;
@@ -44,15 +44,15 @@ public class MDLConfig {
     public int dialect = DIALECT_MDL;
     public Dialect dialectParser = null;
     public List<String> includeDirectories = new ArrayList<>();
-    
+
     public boolean includeBinariesInAnalysis = false;
 
     public boolean warningLabelWithoutColon = true;
     public boolean warningJpHlWithParenthesis = true;
-    
+
     // code annotations:
     public String PRAGMA_NO_OPTIMIZATION = "mdl:no-opt";
-    
+
 
     // utils:
     public MDLLogger logger;
@@ -61,9 +61,9 @@ public class MDLConfig {
     public ExpressionParser expressionParser;
     public CodeBaseParser codeBaseParser;
     public CPUOpParser opParser;
-    
-    List<MDLWorker> workers = new ArrayList<>();    
-    
+
+    List<MDLWorker> workers = new ArrayList<>();
+
 
     public String docString
             = "MDL (A Z80 assembler optimizer) by Santiago Ontañón (Brain Games, 2020)\n"
@@ -85,19 +85,19 @@ public class MDLConfig {
             + "  -no-opt-pragma <value>: changes the pragma to be inserted in a comment on a line to prevent optimizing it (default: " + PRAGMA_NO_OPTIMIZATION + ")"
             + "\n";
 
-    
+
     public MDLConfig() {
         logger = new MDLLogger(MDLLogger.INFO);
     }
 
-    
+
     public void registerWorker(MDLWorker r)
     {
         workers.add(r);
         docString += r.docString();
     }
-    
-    
+
+
     public void executeWorkers(CodeBase code) throws Exception
     {
         for(MDLWorker w:workers) {
@@ -106,17 +106,17 @@ public class MDLConfig {
             }
         }
     }
-    
-    
+
+
     /*
         Returns null if everything is fine, and an error string otherwise.
      */
-    public boolean parse(String argsArray[]) throws Exception {
+    public boolean parse(String ... argsArray) throws Exception {
         if (argsArray.length == 0) {
             info(docString);
             return false;
         }
-        
+
         List<String> args = new ArrayList<>();
         for(String arg:argsArray) args.add(arg);
 
@@ -176,22 +176,22 @@ public class MDLConfig {
                             return false;
                         }
                         break;
-                        
+
                     case "-I":
                         if (args.size()>=2) {
-                            args.remove(0);                        
+                            args.remove(0);
                             includeDirectories.add(args.remove(0));
                         } else {
                             error("Missing path after " + arg);
                             return false;
                         }
                         break;
-    
+
                     case "-debug":
                         logger.setMinLevelToLog(MDLLogger.DEBUG);
                         args.remove(0);
                         break;
-                        
+
                     case "-warn-off-labelnocolon":
                         warningLabelWithoutColon = false;
                         args.remove(0);
@@ -226,17 +226,17 @@ public class MDLConfig {
                         hexStyle = HEX_STYLE_H_CAPS;
                         args.remove(0);
                         break;
-                        
+
                     case "-no-opt-pragma":
                         if (args.size()>=2) {
-                            args.remove(0);                        
+                            args.remove(0);
                             PRAGMA_NO_OPTIMIZATION = args.remove(0);
                         } else {
                             error("Missing pragma after " + arg);
                             return false;
-                        }                        
+                        }
                         break;
-                        
+
 
                     default:
                     {
@@ -265,8 +265,8 @@ public class MDLConfig {
                 }
             }
         }
-        
-        
+
+
         CPUOpSpecParser opSpecParser = new CPUOpSpecParser(this);
 
         preProcessor = new PreProcessor(this);
@@ -276,10 +276,10 @@ public class MDLConfig {
         opParser = new CPUOpParser(opSpecParser.parseSpecs(), this);
 
         if (dialectParser !=null) dialectParser.init(this);
-        
+
         return verify();
     }
-        
+
 
     /*
         Returns null if everything is fine, and an error string otherwise.
@@ -291,7 +291,7 @@ public class MDLConfig {
         }
         return true;
     }
-    
+
     public void debug(String message) {
         logger.log(MDLLogger.DEBUG, message);
     }

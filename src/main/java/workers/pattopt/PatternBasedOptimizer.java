@@ -3,16 +3,15 @@
  */
 package workers.pattopt;
 
+import java.io.BufferedReader;
+import java.util.ArrayList;
+import java.util.List;
+
 import cl.MDLConfig;
 import code.CodeBase;
 import code.SourceFile;
 import code.SourceStatement;
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.List;
+import util.Resources;
 import workers.MDLWorker;
 
 /**
@@ -20,32 +19,32 @@ import workers.MDLWorker;
  * @author santi
  */
 public class PatternBasedOptimizer implements MDLWorker {
-    
+
     public static class OptimizationResult {
         public int bytesSaved = 0;
         public int patternApplications = 0;
-        
+
         public void aggregate(OptimizationResult r) {
             bytesSaved += r.bytesSaved;
             patternApplications += r.patternApplications;
         }
     }
-    
-    
+
+
     MDLConfig config;
     boolean activate = false;
     boolean silent = false;
     boolean logPatternsMatchedWithViolatedConstraints = false;
     String inputPatternsFileName = "data/pbo-patterns.txt";
     List<Pattern> patterns = new ArrayList<>();
-    
-    
+
+
     public PatternBasedOptimizer(MDLConfig a_config)
     {
-        config = a_config;        
+        config = a_config;
     }
-    
-    
+
+
     @Override
     public String docString() {
         return "  -po: Runs the pattern-based optimizer.\n" +
@@ -78,20 +77,11 @@ public class PatternBasedOptimizer implements MDLWorker {
         }
         return false;
     }
-    
-    
-    void initPatterns() 
-    {
-        try {
-            BufferedReader br;
 
-            try {
-                // In case we are running from inside a JAR file:
-                InputStream in = config.getClass().getResourceAsStream("/"+inputPatternsFileName); 
-                br = new BufferedReader(new InputStreamReader(in));
-            } catch (Exception e) {
-                br = new BufferedReader(new FileReader(inputPatternsFileName));
-            }            
+
+    void initPatterns()
+    {
+        try (BufferedReader br = Resources.asReader(inputPatternsFileName)) {
 
             String patternString = "";
             while(true) {
@@ -105,7 +95,7 @@ public class PatternBasedOptimizer implements MDLWorker {
                 line = line.trim();
                 // ignore comments:
                 if (line.startsWith(";")) continue;
-                
+
                 if (line.equals("")) {
                     if (!patternString.equals("")) {
                         patterns.add(new Pattern(patternString, config));
@@ -113,14 +103,14 @@ public class PatternBasedOptimizer implements MDLWorker {
                     }
                 } else {
                     patternString += line + "\n";
-                }                
+                }
             }
         } catch (Exception e) {
             config.error("PatternBasedOptimizer: error initializing patterns!");
             e.printStackTrace();
         }
     }
-    
+
 
     @Override
     public boolean work(CodeBase code) throws Exception {
@@ -131,23 +121,23 @@ public class PatternBasedOptimizer implements MDLWorker {
 
 
     public OptimizationResult optimize(CodeBase code) throws Exception {
-        initPatterns();        
+        initPatterns();
         OptimizationResult r = new OptimizationResult();
         for(Pattern patt: patterns) {
             OptimizationResult r2 = optimizeWithPattern(patt, code);
             r.aggregate(r2);
         }
-        
+
         if (r.patternApplications > 0) {
             code.resetAddresses();
         }
-        
+
         if (!silent) {
             config.info("PatternBasedOptimizer: " + r.patternApplications + " patterns applied, " + r.bytesSaved + " bytes saved");
         }
         return r;
     }
-    
+
     public OptimizationResult optimizeWithPattern(Pattern patt, CodeBase code) throws Exception {
         OptimizationResult r = new OptimizationResult();
         for(SourceFile f:code.getSourceFiles()) {
@@ -165,13 +155,13 @@ public class PatternBasedOptimizer implements MDLWorker {
                     if (f.getStatements().size()>endIndex+1) {
                         endStatement = f.getStatements().get(endIndex+1);
                     }
-                    
+
                     String previousCode = "";
                     for(int line = startIndex;line<=endIndex;line++) {
                         previousCode += f.getStatements().get(line).toString();
                         if (line != endIndex) previousCode += "\n";
                     }
-                    
+
                     if (patt.apply(f.getStatements(), match)) {
                         if (!silent) {
                             String newCode = "";
@@ -194,5 +184,5 @@ public class PatternBasedOptimizer implements MDLWorker {
         }
         return r;
     }
-            
+
 }

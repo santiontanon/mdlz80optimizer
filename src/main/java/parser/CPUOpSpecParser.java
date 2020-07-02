@@ -3,16 +3,15 @@
  */
 package parser;
 
-import cl.MDLConfig;
-import code.CPUOpSpec;
-import code.CPUOpSpecArg;
 import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
+
+import cl.MDLConfig;
+import code.CPUOpSpec;
+import code.CPUOpSpecArg;
+import util.Resources;
 
 /**
  *
@@ -20,48 +19,41 @@ import java.util.StringTokenizer;
  */
 public class CPUOpSpecParser {
     MDLConfig config;
-        
-    
+
+
     public CPUOpSpecParser(MDLConfig a_config)
     {
         config = a_config;
     }
-    
-    
+
+
     public List<CPUOpSpec> parseSpecs() throws Exception
     {
         List<CPUOpSpec> opSpecs = new ArrayList<>();
         String inputFile = "data/z80-instruction-set.tsv";
-        BufferedReader br;
-        
-        try {
-            // In case we are running from inside a JAR file:
-            InputStream in = config.getClass().getResourceAsStream("/"+inputFile); 
-            br = new BufferedReader(new InputStreamReader(in));
-        } catch (Exception e) {
-            br = new BufferedReader(new FileReader(inputFile));
+
+        try (BufferedReader br = Resources.asReader(inputFile)) {
+
+            String line;
+            while((line = br.readLine()) != null) {
+                if (line.startsWith(";")) continue;
+                CPUOpSpec opSpec = parseOpSpecLine(line.split("\t"), config);
+                if (opSpec != null) {
+                    opSpecs.add(opSpec);
+                }
+            }
         }
 
-        while(true) {
-            String line = br.readLine();
-            if (line == null) break;
-            if (line.startsWith(";")) continue;
-            CPUOpSpec opSpec = parseOpSpecLine(line.split("\t"), config);
-            if (opSpec != null) {
-                opSpecs.add(opSpec);
-            }
-        }  
-        
         return opSpecs;
     }
-    
-    
+
+
     public CPUOpSpec parseOpSpecLine(String data[], MDLConfig config) throws Exception
-    {        
+    {
         int timeColumn = 1;
         if (config.cpu == MDLConfig.CPU_Z80MSX) timeColumn = 2;
         if (config.cpu == MDLConfig.CPU_Z80CPC) timeColumn = 3;
-        
+
         String op = data[0];
         StringTokenizer st = new StringTokenizer(op, " ,");
         String opName = st.nextToken();
@@ -78,43 +70,43 @@ public class CPUOpSpecParser {
         while(st.hasMoreTokens()) {
             String argStr = st.nextToken();
             CPUOpSpecArg arg = new CPUOpSpecArg();
-            
+
             if (argStr.equals("C")) {
                 if (spec.getName().equals("jr") ||
                     spec.getName().equals("jp") ||
                     spec.getName().equals("ret") ||
                     spec.getName().equals("call")) {
-                    arg.condition = argStr;                    
+                    arg.condition = argStr;
                 } else {
-                    arg.reg = argStr;                    
+                    arg.reg = argStr;
                 }
-            } else  if (argStr.equals("A") || 
-                argStr.equals("F") || 
-                argStr.equals("B") || 
-                argStr.equals("D") || 
-                argStr.equals("E") || 
-                argStr.equals("H") || 
-                argStr.equals("L") || 
-                argStr.equals("I") || 
-                argStr.equals("R") || 
-                argStr.equals("IXl") || 
-                argStr.equals("IXh") || 
-                argStr.equals("IYl") || 
-                argStr.equals("IYh") || 
-                argStr.equals("AF") || 
-                argStr.equals("AF'") || 
-                argStr.equals("BC") || 
-                argStr.equals("DE") || 
-                argStr.equals("HL") || 
-                argStr.equals("IX") || 
-                argStr.equals("IY") || 
+            } else  if (argStr.equals("A") ||
+                argStr.equals("F") ||
+                argStr.equals("B") ||
+                argStr.equals("D") ||
+                argStr.equals("E") ||
+                argStr.equals("H") ||
+                argStr.equals("L") ||
+                argStr.equals("I") ||
+                argStr.equals("R") ||
+                argStr.equals("IXl") ||
+                argStr.equals("IXh") ||
+                argStr.equals("IYl") ||
+                argStr.equals("IYh") ||
+                argStr.equals("AF") ||
+                argStr.equals("AF'") ||
+                argStr.equals("BC") ||
+                argStr.equals("DE") ||
+                argStr.equals("HL") ||
+                argStr.equals("IX") ||
+                argStr.equals("IY") ||
                 argStr.equals("SP")) {
                 arg.reg = argStr.toUpperCase();
-                
-            } else if(argStr.equals("r") || 
-                argStr.equals("p") || 
-                argStr.equals("q") || 
-                argStr.equals("IXp") || 
+
+            } else if(argStr.equals("r") ||
+                argStr.equals("p") ||
+                argStr.equals("q") ||
+                argStr.equals("IXp") ||
                 argStr.equals("IYq")) {
                 // we don't want to have these in upper case, to distinguish "r" from "R":
                 arg.reg = argStr;
@@ -136,12 +128,12 @@ public class CPUOpSpecParser {
             } else if (argStr.equals("(IY)")) {
                 arg.regIndirection = "IY";
                 if (opName.equalsIgnoreCase("jp")) spec.isJpRegWithParenthesis = true;
-                
+
             } else if (argStr.equals("(IX+o)")) {
                 arg.regOffsetIndirection = "IX";
             } else if (argStr.equals("(IY+o)")) {
                 arg.regOffsetIndirection = "IY";
-                
+
             } else if (argStr.equals("NC") ||
                        argStr.equals("Z") ||
                        argStr.equals("NZ") ||
@@ -208,11 +200,11 @@ public class CPUOpSpecParser {
             } else {
                 throw new Exception("unsupported argument " + argStr);
             }
-            
+
             spec.addArgSpec(arg);
         }
-        
-        // parse dependencies:       
+
+        // parse dependencies:
         // input:
         if (data.length>6) {
             spec.inputRegs = parseDeps(data[6]);
@@ -291,22 +283,22 @@ public class CPUOpSpecParser {
                 }
             }
         }
-        
+
         return spec;
-    }    
-    
-    
+    }
+
+
     public List<String> parseDeps(String regs_str)
     {
         List<String> regs = new ArrayList<>();
         StringTokenizer st = new StringTokenizer(regs_str, ", ");
-        
+
         while(st.hasMoreTokens()) {
             String reg = st.nextToken();
             regs.add(reg);
         }
-        
+
         return regs;
     }
-    
+
 }

@@ -23,14 +23,14 @@ public class SourceCodeGenerator implements MDLWorker {
     String outputFileName = null;
     boolean expandIncbin = false;
     int incbinBytesPerLine = 16;
-    
-    
+
+
     public SourceCodeGenerator(MDLConfig a_config)
     {
         config = a_config;
     }
 
-    
+
     @Override
     public String docString() {
         return "  -asm <output file>: saves the resulting assembler code in a single asm file (if no " +
@@ -39,7 +39,7 @@ public class SourceCodeGenerator implements MDLWorker {
                "  -asm-expand-inbcin: replaces all incbin commands with their actual data in the output " +
                "assembler file, effectively, making the output assembler file self-contained.\n";
     }
-    
+
 
     @Override
     public boolean parseFlag(List<String> flags) {
@@ -56,13 +56,13 @@ public class SourceCodeGenerator implements MDLWorker {
         return false;
     }
 
-    
+
     @Override
     public boolean work(CodeBase code) throws Exception {
 
         if (outputFileName != null) {
             config.debug("Executing "+this.getClass().getSimpleName()+" worker...");
-            
+
             try (FileWriter fw = new FileWriter(outputFileName)) {
                 fw.write(sourceFileString(code.getMain()));
                 fw.flush();
@@ -70,15 +70,15 @@ public class SourceCodeGenerator implements MDLWorker {
                 config.error("Cannot write to file " + outputFileName);
                 return false;
             }
-        }        
+        }
         return true;
     }
 
-    
+
     public String sourceFileString(SourceFile sf)
     {
         StringBuilder sb = new StringBuilder();
-        sourceFileString(sf, sb);    
+        sourceFileString(sf, sb);
         return sb.toString();
     }
 
@@ -89,15 +89,14 @@ public class SourceCodeGenerator implements MDLWorker {
             if (ss.type == SourceStatement.STATEMENT_INCLUDE) {
                 sourceFileString(ss.include, sb);
             } else if (ss.type == SourceStatement.STATEMENT_INCBIN && expandIncbin) {
-                try {
-                    InputStream is = new FileInputStream(ss.incbin);
+                try (InputStream is = new FileInputStream(ss.incbin)) {
                     int count = 0;
                     while(is.available() != 0) {
                         int data = is.read();
                         if (count > 0) {
                             sb.append(", ");
                         } else {
-                            sb.append("    db ");                            
+                            sb.append("    db ");
                         }
                         sb.append(data);
                         count++;
