@@ -27,8 +27,9 @@ public class SourceMacro {
     List<String> elseLines = new ArrayList<>();  // only used by IF-ELSE-ENDIF macro
     
     // predefined macro arguments/state:
-    public Expression reptNRepetitions;
-    public Expression ifCondition;
+    public List<Expression> preDefinedMacroArgs = null;
+//    public Expression reptNRepetitions;
+//    public Expression ifCondition;
     public boolean insideElse = false;
     
     
@@ -62,18 +63,18 @@ public class SourceMacro {
     {
         List<String> lines2 = new ArrayList<>();
         if (name.equalsIgnoreCase(MACRO_REPT)) {
-            Integer reptNRepetitions_value = reptNRepetitions.evaluate(definingStatement, code, false);
+            Integer reptNRepetitions_value = args.get(0).evaluate(definingStatement, code, false);
             if (reptNRepetitions_value == null) {
-                config.error("Coudl not evaluate REPT argument " + reptNRepetitions);
+                config.error("Could not evaluate REPT argument " + args.get(0));
                 return null;
             }
             for(int i = 0;i<reptNRepetitions_value;i++) {
                 lines2.addAll(lines);
             }
         } else if (name.equalsIgnoreCase(MACRO_IF)) {
-            Integer ifCondition_value = ifCondition.evaluate(definingStatement, code, false);
+            Integer ifCondition_value = args.get(0).evaluate(definingStatement, code, false);
             if (ifCondition_value == null) {
-                config.error("Coudl not evaluate IF argument " + ifCondition);
+                config.error("Could not evaluate IF argument " + args.get(0));
                 return null;
             }
             if (ifCondition_value == 0) {

@@ -157,8 +157,8 @@ public class LineParser {
                          lineNumber + ": " + line);
             return false;
 
-        } else if (config.idiomParser != null && config.idiomParser.recognizeIdiom(tokens)) {
-            return config.idiomParser.parseLine(tokens, line, lineNumber, s, source, code);
+        } else if (config.dialectParser != null && config.dialectParser.recognizeIdiom(tokens)) {
+            return config.dialectParser.parseLine(tokens, line, lineNumber, s, source, code);
         } else if (Tokenizer.isSymbol(token)) {
             // try to parse it as an assembler instruction or macro call:
             tokens.remove(0);

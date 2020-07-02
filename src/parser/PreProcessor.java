@@ -74,9 +74,13 @@ public class PreProcessor {
         if (!tokens.isEmpty() && tokens.get(0).equalsIgnoreCase(SourceMacro.MACRO_ENDM)) {
             if (currentMacroNameStack.isEmpty()) {
                 if (m.name.equalsIgnoreCase(SourceMacro.MACRO_REPT)) {
-                    List<String> lines = m.instantiate(null, code, config);
-                    if (lines == null) return false;
-                    macroExpansions.add(lines);
+                    SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_MACROCALL, f, lineNumber, null);
+                    s.macroCallMacro = m;
+                    s.macroCallArguments = m.preDefinedMacroArgs;
+                    f.addStatement(s);
+//                    List<String> lines = m.instantiate(m.preDefinedMacroArgs, code, config);
+//                    if (lines == null) return false;
+//                    macroExpansions.add(lines);
                     currentMacro = null;
                 } else if (m.name.equalsIgnoreCase(SourceMacro.MACRO_IF)) {
                     m.addLine(line);
@@ -93,9 +97,13 @@ public class PreProcessor {
         } else if (!tokens.isEmpty() && tokens.get(0).equalsIgnoreCase(SourceMacro.MACRO_ENDIF)) {
             if (currentMacroNameStack.isEmpty()) {
                 if (m.name.equalsIgnoreCase(SourceMacro.MACRO_IF)) {
-                    List<String> lines = m.instantiate(null, code, config);
-                    if (lines == null) return false;
-                    macroExpansions.add(lines);
+                    SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_MACROCALL, f, lineNumber, null);
+                    s.macroCallMacro = m;
+                    s.macroCallArguments = m.preDefinedMacroArgs;
+                    f.addStatement(s);
+//                    List<String> lines = m.instantiate(null, code, config);
+//                    if (lines == null) return false;
+//                    macroExpansions.add(lines);
                     currentMacro = null;
                 } else {
                     m.addLine(line);
@@ -125,12 +133,21 @@ public class PreProcessor {
     
     
     public boolean handleStatement(String line, int lineNumber, 
-            SourceStatement s, SourceFile source, CodeBase code)
+            SourceStatement s, SourceFile source, CodeBase code, boolean complainIfUndefined)
     {
         if (s.type == SourceStatement.STATEMENT_MACROCALL) {
-            if (s.macroCallName.equalsIgnoreCase(SourceMacro.MACRO_IF)) {
+            if (s.macroCallMacro != null) {
+                List<String> expandedMacro = s.macroCallMacro.instantiate(s.macroCallArguments, code, config);
+                if (expandedMacro == null) {
+                    config.error("Problem instantiating macro "+s.macroCallName+" in " + source.fileName + ", " + 
+                                 lineNumber + ": " + line);
+                    return false;            
+                }
+                macroExpansions.add(expandedMacro);
+                return true;
+            } else if (s.macroCallName.equalsIgnoreCase(SourceMacro.MACRO_IF)) {
                 SourceMacro m = new SourceMacro(SourceMacro.MACRO_IF, s);
-                m.ifCondition = s.macroCallArguments.get(0);
+                m.preDefinedMacroArgs = s.macroCallArguments;
                 if (currentMacro != null) {
                     config.error("Something weird just happend (expanding two macros at once, contact the developer) in " + source.fileName + ", " + 
                                  lineNumber + ": " + line);
@@ -140,7 +157,7 @@ public class PreProcessor {
                 return true;
             } else if (s.macroCallName.equalsIgnoreCase(SourceMacro.MACRO_REPT)) {
                 SourceMacro m = new SourceMacro(SourceMacro.MACRO_REPT, s);
-                m.reptNRepetitions = s.macroCallArguments.get(0);
+                m.preDefinedMacroArgs = s.macroCallArguments;
                 if (currentMacro != null) {
                     config.error("Something weird just happend (expanding two macros at once, contact the developer) in " + source.fileName + ", " + 
                                  lineNumber + ": " + line);
@@ -161,6 +178,9 @@ public class PreProcessor {
                     return true;
                 } else {
                     // macro is not yet defined, keep it in the code, and we will evaluate later
+                    if (complainIfUndefined) {
+                        config.error("Could not expand macro in " + source.fileName + ", " + lineNumber + ": " + line);
+                    }
                     return false;
                 }
             }
@@ -189,8 +209,8 @@ public class PreProcessor {
     public boolean addMacro(SourceMacro m, CodeBase code) throws Exception
     {
         macros.put(m.name, m);
-        if (config.idiomParser != null) {
-            return config.idiomParser.newMacro(m, code);
+        if (config.dialectParser != null) {
+            return config.dialectParser.newMacro(m, code);
         }
         return true;
     }

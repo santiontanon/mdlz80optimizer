@@ -117,7 +117,7 @@ public class CodeBaseParser {
                 SourceStatement s = config.lineParser.parse(tokens, line, lineNumber, f, code, config);
                 if (s == null) return false;
                 if (!s.isEmpty()) {
-                    if (!config.preProcessor.handleStatement(line, lineNumber, s, f, code)) {
+                    if (!config.preProcessor.handleStatement(line, lineNumber, s, f, code, false)) {
                         f.addStatement(s);
                     }
                 }
@@ -132,9 +132,13 @@ public class CodeBaseParser {
             SourceStatement s_macro = f.getStatements().get(i);
             if (s_macro.type == SourceStatement.STATEMENT_MACROCALL) {
                 // expand macro!
-                config.info("Expanding macro: " + s_macro.macroCallName);
+                if (s_macro.macroCallName != null) {
+                    config.debug("expandAllMacros: Expanding macro: " + s_macro.macroCallName);
+                } else {
+                    config.debug("expandAllMacros: Expanding macro: " + s_macro.macroCallMacro.name);
+                }
                 
-                if (!config.preProcessor.handleStatement("", s_macro.lineNumber, s_macro, f, code)) {
+                if (!config.preProcessor.handleStatement("", s_macro.lineNumber, s_macro, f, code, true)) {
                     config.error("Cannot expand macro " + s_macro.macroCallName);
                     return false;
                 }
@@ -159,7 +163,7 @@ public class CodeBaseParser {
                         SourceStatement s = config.lineParser.parse(tokens, line, s_macro.lineNumber, f, code, config);
                         if (s == null) return false;
                         if (!s.isEmpty()) {
-                            if (!config.preProcessor.handleStatement(line, s_macro.lineNumber, s, f, code)) {
+                            if (!config.preProcessor.handleStatement(line, s_macro.lineNumber, s, f, code, true)) {
                                 f.addStatement(i, s);
                             }
                         }

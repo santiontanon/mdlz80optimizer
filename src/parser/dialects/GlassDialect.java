@@ -1,7 +1,7 @@
 /*
  * Author: Santiago Ontañón Villar (Brain Games)
  */
-package parser.idioms;
+package parser.dialects;
 
 import cl.MDLConfig;
 import code.CodeBase;
@@ -18,11 +18,11 @@ import parser.Tokenizer;
  *
  * @author santi
  */
-public class Glass implements Idiom {
+public class GlassDialect implements Dialect {
     MDLConfig config;
     List<String> sectionStack = new ArrayList<>();
     
-    public Glass(MDLConfig a_config)
+    public GlassDialect(MDLConfig a_config)
     {
         config = a_config;
     }
@@ -162,7 +162,7 @@ public class Glass implements Idiom {
                         break;
                     }
                     if (!s.isEmpty()) {
-                        if (!preProcessor.handleStatement(line, lineNumber, s, f, code)) {
+                        if (!preProcessor.handleStatement(line, lineNumber, s, f, code, false)) {
                             f.addStatement(s);
                         }
                     }

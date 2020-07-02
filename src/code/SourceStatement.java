@@ -4,6 +4,7 @@
 package code;
 
 import java.util.List;
+import parser.SourceMacro;
 
 /**
  * A "SourceStatement" can contain zero or one the following plus a comment:
@@ -47,7 +48,8 @@ public class SourceStatement {
                                             // otherwise, it is filled with this value
     public CPUOp op = null;
     
-    public String macroCallName = null;
+    public SourceMacro macroCallMacro = null;   // if we know which macro it is
+    public String macroCallName = null;         // if we don't know which macro, just the name
     public List<Expression> macroCallArguments = null;
     public List<String> macroDefinitionArgs;
     public List<Expression> macroDefinitionDefaults;
@@ -151,7 +153,7 @@ public class SourceStatement {
 
             case STATEMENT_DEFINE_SPACE:
                 if (withVirtual || space_value != null) {
-                    return space.evaluate(this, code, false);
+                    return space.evaluate(this, code, true);
                 } else {
                     return 0;
                 }

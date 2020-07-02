@@ -29,7 +29,7 @@ public class Tokenizer {
     
     public static List<String> tokenize(String line, List<String> tokens) {
         
-        StringTokenizer st = new StringTokenizer(line, " \t()[]#$,;:+-*/%|&'\"?<>=", true);
+        StringTokenizer st = new StringTokenizer(line, " \r\n\t()[]#$,;:+-*/%|&'\"?<>=", true);
         String previous = null;
         while(st.hasMoreTokens()) {
             String next = st.nextToken();
@@ -80,7 +80,7 @@ public class Tokenizer {
                 String token = next;
                 while(st.hasMoreTokens()) token += st.nextToken();
                 tokens.add(token);
-            } else if (!next.equals(" ") && !next.equals("\t")) {
+            } else if (!next.equals(" ") && !next.equals("\r") && !next.equals("\n") && !next.equals("\t")) {
                 tokens.add(next);
             }
             previous = next;

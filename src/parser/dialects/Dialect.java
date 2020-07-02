@@ -1,7 +1,7 @@
 /*
  * Author: Santiago Ontañón Villar (Brain Games)
  */
-package parser.idioms;
+package parser.dialects;
 
 import code.CodeBase;
 import code.SourceFile;
@@ -13,7 +13,7 @@ import parser.SourceMacro;
  *
  * @author santi
  */
-public interface Idiom {
+public interface Dialect {
     // Returns true if the line represented by "tokens" is recognized by this idiom parser
     public boolean recognizeIdiom(List<String> tokens);
     
