@@ -19,6 +19,8 @@ Moreover, mdl accepts a number of command line arguments in order to make it do 
   
   ```-dialect <type>```: to allow parsing different assembler dialects (mdl/glass/asmsx) (default: mdl, which supports some basic code idioms common to various assemblers).
                    Note that even when selecting a dialect, not all syntax of a given assembler might be supported.
+                   
+  ```-I <folder>```: adds a folder to the include search path.
   
   ```-warn-off-labelnocolon```: turns off warnings for not placing colons after labels.
   
