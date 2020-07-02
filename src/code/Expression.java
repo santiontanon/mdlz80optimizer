@@ -35,6 +35,8 @@ public class Expression {
     public static final int EXPRESSION_RSHIFT = 21;
     public static final int EXPRESSION_BITOR = 22;
     public static final int EXPRESSION_BITAND = 23;
+    public static final int EXPRESSION_BITNEGATION = 24;
+    public static final int EXPRESSION_BITXOR = 25;
     
     // indexed by the numbers above:
     public static final int OPERATOR_PRECEDENCE[] = {
@@ -42,7 +44,8 @@ public class Expression {
         -1,  6,  6,  5,  5,  
          5, 13, 11, 10,  9, 
          9,  9,  9, 10, 16,
-         7,  7, 11, 13};
+         7,  7, 11, 13,  3,
+         12};
     
     public int type;
     public int numericConstant;
@@ -271,6 +274,20 @@ public class Expression {
                     Integer v2 = args.get(1).evaluate(s, code, silent);
                     if (v1 == null || v2 == null) return null;
                     return v1 & v2;
+                }
+            case EXPRESSION_BITNEGATION:
+                {
+                    Integer v = args.get(0).evaluate(s, code, silent);
+                    if (v == null) return null;
+                    return ~v;
+                }
+            case EXPRESSION_BITXOR:
+                {
+                    if (args.size() != 2) return null; 
+                    Integer v1 = args.get(0).evaluate(s, code, silent);
+                    Integer v2 = args.get(1).evaluate(s, code, silent);
+                    if (v1 == null || v2 == null) return null;
+                    return v1 ^ v2;
                 }
                 
         }
@@ -518,7 +535,28 @@ public class Expression {
                     }
                     return str;
                 }
-                
+            case EXPRESSION_BITNEGATION:
+                if (args.get(0).type == EXPRESSION_REGISTER_OR_FLAG ||
+                    args.get(0).type == EXPRESSION_NUMERIC_CONSTANT ||
+                    args.get(0).type == EXPRESSION_STRING_CONSTANT ||
+                    args.get(0).type == EXPRESSION_PARENTHESIS ||
+                    args.get(0).type == EXPRESSION_SYMBOL) {
+                    return "~" + args.get(0).toString();
+                } else {
+                    return "~(" + args.get(0).toString() + ")";
+                }
+            case EXPRESSION_BITXOR:
+                {
+                    String str = null;
+                    for(Expression arg:args) {
+                        if (str == null) {
+                            str = arg.toString();
+                        } else {
+                            str += " ^ " + arg.toString();
+                        }
+                    }
+                    return str;
+                }                
             default:
                 return "<UNSUPPORTED TYPE "+type+">";
         }
@@ -563,7 +601,9 @@ public class Expression {
             type == EXPRESSION_LSHIFT ||
             type == EXPRESSION_RSHIFT ||
             type == EXPRESSION_BITOR ||
-            type == EXPRESSION_BITAND) {
+            type == EXPRESSION_BITAND ||
+            type == EXPRESSION_BITNEGATION ||
+            type == EXPRESSION_BITXOR) {
             for(Expression arg:args) {
                 if (!arg.evaluatesToNumericConstant()) return false;
             }
@@ -625,6 +665,15 @@ public class Expression {
         return exp;
     }
 
+    
+    public static Expression bitNegationExpression(Expression arg)
+    {
+        Expression exp = new Expression(EXPRESSION_BITNEGATION);
+        exp.args = new ArrayList<>();
+        exp.args.add(arg);
+        return exp;
+    }
+    
 
     public static Expression parenthesisExpression(Expression arg)
     {

@@ -166,8 +166,10 @@ public class Pattern {
         PatternMatch match = new PatternMatch();
         for(int i = 0;i<pattern.size();i++) {
             while(true) {
-                if (l.get(index).type == SourceStatement.STATEMENT_CPUOP) break;
-                if (!l.get(index).isEmptyAllowingComments()) return null;
+                SourceStatement s = l.get(index);
+                if (s.comment != null && s.comment.contains(config.PRAGMA_NO_OPTIMIZATION)) return null;
+                if (s.type == SourceStatement.STATEMENT_CPUOP) break;
+                if (!s.isEmptyAllowingComments()) return null;
                 index++;
                 if (index >= l.size()) return null;
                 

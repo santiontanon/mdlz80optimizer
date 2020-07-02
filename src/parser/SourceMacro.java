@@ -9,12 +9,15 @@ import code.Expression;
 import code.SourceStatement;
 import java.util.ArrayList;
 import java.util.List;
+import util.Pair;
 
 public class SourceMacro {
     public static final String MACRO_MACRO = "macro";
     public static final String MACRO_ENDM = "endm";
     public static final String MACRO_REPT = "rept";
+    public static final String MACRO_ENDR = "endr";
     public static final String MACRO_IF = "if";
+    public static final String MACRO_IFDEF = "ifdef";
     public static final String MACRO_ELSE = "else";
     public static final String MACRO_ENDIF = "endif";
     
@@ -23,8 +26,9 @@ public class SourceMacro {
     public SourceStatement definingStatement = null;
     public List<String> argNames = new ArrayList<>();
     public List<Expression> defaultValues = new ArrayList<>();
-    List<String> lines = new ArrayList<>();
-    List<String> elseLines = new ArrayList<>();  // only used by IF-ELSE-ENDIF macro
+    // line + lineNumber:
+    List<Pair<String,Integer>> lines = new ArrayList<>();
+    List<Pair<String,Integer>> elseLines = new ArrayList<>();  // only used by IF-ELSE-ENDIF macro
     
     // predefined macro arguments/state:
     public List<Expression> preDefinedMacroArgs = null;
@@ -49,19 +53,19 @@ public class SourceMacro {
     }
 
 
-    public void addLine(String line)
+    public void addLine(String line, Integer lineNumber)
     {
         if (insideElse) {
-            elseLines.add(line);
+            elseLines.add(new Pair<>(line, lineNumber));
         } else {
-            lines.add(line);
+            lines.add(new Pair<>(line, lineNumber));
         }
     }
     
     
-    public List<String> instantiate(List<Expression> args, CodeBase code, MDLConfig config)
+    public List<Pair<String,Integer>> instantiate(List<Expression> args, CodeBase code, MDLConfig config)
     {
-        List<String> lines2 = new ArrayList<>();
+        List<Pair<String,Integer>> lines2 = new ArrayList<>();
         if (name.equalsIgnoreCase(MACRO_REPT)) {
             Integer reptNRepetitions_value = args.get(0).evaluate(definingStatement, code, false);
             if (reptNRepetitions_value == null) {
@@ -77,10 +81,24 @@ public class SourceMacro {
                 config.error("Could not evaluate IF argument " + args.get(0));
                 return null;
             }
-            if (ifCondition_value == 0) {
+            if (ifCondition_value == Expression.FALSE) {
                 lines2.addAll(elseLines);
             } else {
                 lines2.addAll(lines);
+            }
+        } else if (name.equalsIgnoreCase(MACRO_IFDEF)) {
+            Expression exp = args.get(0);
+            boolean defined = false;
+            if (exp.type == Expression.EXPRESSION_SYMBOL) {
+                if (code.getSymbol(exp.symbolName) != null) defined = true;
+            } else {
+                config.error("Incorrect parameter to " + MACRO_IFDEF + ": " + args.get(0));
+                return null;                
+            }
+            if (defined) {
+                lines2.addAll(lines);
+            } else {
+                lines2.addAll(elseLines);
             }
         } else {
             // instantiate arguments:
@@ -93,13 +111,13 @@ public class SourceMacro {
                     args.add(defaultValue);
                 }
             }
-            for(String line:lines) {
-                String line2 = line;
+            for(Pair<String,Integer> line_lnumber:lines) {
+                String line2 = line_lnumber.m_a;
                 for(int i = 0;i<argNames.size();i++) {
                     line2 = line2.replace("?" + argNames.get(i), 
                                           args.get(i).toString());
                 }
-                lines2.add(line2);
+                lines2.add(new Pair<>(line2, line_lnumber.m_b));
             }            
         }
                 

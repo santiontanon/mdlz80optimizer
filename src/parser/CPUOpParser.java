@@ -39,13 +39,13 @@ public class CPUOpParser {
     
     public boolean isOpName(String name)
     {
-        return opSpecHash.containsKey(name);
+        return opSpecHash.containsKey(name.toLowerCase());
     }
     
     
     public List<CPUOpSpec> getOpSpecs(String name)
     {
-        List<CPUOpSpec> l = opSpecHash.get(name);
+        List<CPUOpSpec> l = opSpecHash.get(name.toLowerCase());
         if (l != null) return l;
         return new ArrayList<>();
     }
@@ -54,10 +54,31 @@ public class CPUOpParser {
     public CPUOp parseOp(String a_op, List<Expression> a_args, SourceStatement s, CodeBase code) 
     {
         CPUOp op;
-        for(CPUOpSpec opSpec:getOpSpecs(a_op)) {
+        List<CPUOpSpec> candidates = getOpSpecs(a_op);
+        for(CPUOpSpec opSpec:candidates) {
             op = parseOp(a_op, opSpec, a_args, s, code);
             if (op != null) return op;
         }
+        if (candidates != null && !candidates.isEmpty()) {
+            // try to see if any of the arguments was a constant with parenthesis that had been interpreted
+            // as an indirection:
+            boolean anyChange = false;
+            for(int i = 0;i<a_args.size();i++) {
+                Expression arg = a_args.get(i);
+                if (arg.evaluatesToNumericConstant() && arg.type == Expression.EXPRESSION_PARENTHESIS) {
+                    a_args.set(i, arg.args.get(0));
+                    anyChange = true;
+                }
+            }
+            if (anyChange) {
+                // try again!
+                for(CPUOpSpec opSpec:candidates) {
+                    op = parseOp(a_op, opSpec, a_args, s, code);
+                    if (op != null) return op;
+                }
+            }
+        }
+        
         return null;
     }
     

@@ -10,6 +10,7 @@ import code.SourceStatement;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import util.Pair;
 
 /**
  *
@@ -21,7 +22,9 @@ public class PreProcessor {
     // current Macro we are parsing (should be null at the end of parsing a file):
     List<String> currentMacroNameStack = new ArrayList<>();
     SourceMacro currentMacro = null;
-    List<List<String>> macroExpansions = new ArrayList<>();
+    
+    // Each Pair has a line and a line number:
+    List<List<Pair<String,Integer>>> macroExpansions = new ArrayList<>();
 
     LinkedHashMap<String, SourceMacro> macros = new LinkedHashMap<>();
     
@@ -46,16 +49,24 @@ public class PreProcessor {
     }
     
     
+    public SourceMacro getCurrentMacro()
+    {
+        return currentMacro;
+                
+    }
+    
+    
     public boolean isMacro(String name, CodeBase code)
     {
         if (getMacro(name) != null) return true;
         if (name.equalsIgnoreCase(SourceMacro.MACRO_REPT)) return true;
         if (name.equalsIgnoreCase(SourceMacro.MACRO_IF)) return true;
+        if (name.equalsIgnoreCase(SourceMacro.MACRO_IFDEF)) return true;
         return false;
     }    
     
     
-    public String expandMacros()
+    public Pair<String,Integer> expandMacros()
     {
         while(!macroExpansions.isEmpty() && macroExpansions.get(0).isEmpty()) {
             macroExpansions.remove(0);
@@ -78,12 +89,11 @@ public class PreProcessor {
                     s.macroCallMacro = m;
                     s.macroCallArguments = m.preDefinedMacroArgs;
                     f.addStatement(s);
-//                    List<String> lines = m.instantiate(m.preDefinedMacroArgs, code, config);
-//                    if (lines == null) return false;
-//                    macroExpansions.add(lines);
                     currentMacro = null;
                 } else if (m.name.equalsIgnoreCase(SourceMacro.MACRO_IF)) {
-                    m.addLine(line);
+                    m.addLine(line, lineNumber);
+                } else if (m.name.equalsIgnoreCase(SourceMacro.MACRO_IFDEF)) {
+                    m.addLine(line, lineNumber);
                 } else {
                     if (!addMacro(m, code)) {
                         return false;
@@ -92,40 +102,57 @@ public class PreProcessor {
                 }
             } else {
                 currentMacroNameStack.remove(0);
-                m.addLine(line);
+                m.addLine(line, lineNumber);
             }
-        } else if (!tokens.isEmpty() && tokens.get(0).equalsIgnoreCase(SourceMacro.MACRO_ENDIF)) {
+        } else if (!tokens.isEmpty() && tokens.get(0).equalsIgnoreCase(SourceMacro.MACRO_ENDR)) {
             if (currentMacroNameStack.isEmpty()) {
-                if (m.name.equalsIgnoreCase(SourceMacro.MACRO_IF)) {
+                if (m.name.equalsIgnoreCase(SourceMacro.MACRO_REPT)) {
                     SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_MACROCALL, f, lineNumber, null);
                     s.macroCallMacro = m;
                     s.macroCallArguments = m.preDefinedMacroArgs;
                     f.addStatement(s);
-//                    List<String> lines = m.instantiate(null, code, config);
-//                    if (lines == null) return false;
-//                    macroExpansions.add(lines);
                     currentMacro = null;
                 } else {
-                    m.addLine(line);
+                    m.addLine(line, lineNumber);
                 }
             } else {
                 currentMacroNameStack.remove(0);
-                m.addLine(line);
+                m.addLine(line, lineNumber);
+            }            
+        } else if (!tokens.isEmpty() && tokens.get(0).equalsIgnoreCase(SourceMacro.MACRO_ENDIF)) {
+            if (currentMacroNameStack.isEmpty()) {
+                if (m.name.equalsIgnoreCase(SourceMacro.MACRO_IF) ||
+                    m.name.equalsIgnoreCase(SourceMacro.MACRO_IFDEF)) {
+                    SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_MACROCALL, f, lineNumber, null);
+                    s.macroCallMacro = m;
+                    s.macroCallArguments = m.preDefinedMacroArgs;
+                    f.addStatement(s);
+                    currentMacro = null;
+                } else {
+                    m.addLine(line, lineNumber);
+                }
+            } else {
+                currentMacroNameStack.remove(0);
+                m.addLine(line, lineNumber);
             }            
         } else if (!tokens.isEmpty() && tokens.get(0).equalsIgnoreCase(SourceMacro.MACRO_ELSE)) {
-            if (m.name.equalsIgnoreCase(SourceMacro.MACRO_IF)) {
+            if (m.name.equalsIgnoreCase(SourceMacro.MACRO_IF) ||
+                m.name.equalsIgnoreCase(SourceMacro.MACRO_IFDEF)) {
                 m.insideElse = true;
             } else {
-                m.addLine(line);
+                m.addLine(line, lineNumber);
             }
         } else if (!tokens.isEmpty() && tokens.get(0).equalsIgnoreCase(SourceMacro.MACRO_IF)) {
             currentMacroNameStack.add(0, SourceMacro.MACRO_IF);
-            m.addLine(line);
+            m.addLine(line, lineNumber);
+        } else if (!tokens.isEmpty() && tokens.get(0).equalsIgnoreCase(SourceMacro.MACRO_IFDEF)) {
+            currentMacroNameStack.add(0, SourceMacro.MACRO_IFDEF);
+            m.addLine(line, lineNumber);
         } else if (!tokens.isEmpty() && tokens.get(0).equalsIgnoreCase(SourceMacro.MACRO_REPT)) {
             currentMacroNameStack.add(0, SourceMacro.MACRO_REPT);
-            m.addLine(line);
+            m.addLine(line, lineNumber);
         } else {
-            m.addLine(line);
+            m.addLine(line, lineNumber);
         }
 
         return true;
@@ -137,7 +164,7 @@ public class PreProcessor {
     {
         if (s.type == SourceStatement.STATEMENT_MACROCALL) {
             if (s.macroCallMacro != null) {
-                List<String> expandedMacro = s.macroCallMacro.instantiate(s.macroCallArguments, code, config);
+                List<Pair<String,Integer>> expandedMacro = s.macroCallMacro.instantiate(s.macroCallArguments, code, config);
                 if (expandedMacro == null) {
                     config.error("Problem instantiating macro "+s.macroCallName+" in " + source.fileName + ", " + 
                                  lineNumber + ": " + line);
@@ -147,6 +174,16 @@ public class PreProcessor {
                 return true;
             } else if (s.macroCallName.equalsIgnoreCase(SourceMacro.MACRO_IF)) {
                 SourceMacro m = new SourceMacro(SourceMacro.MACRO_IF, s);
+                m.preDefinedMacroArgs = s.macroCallArguments;
+                if (currentMacro != null) {
+                    config.error("Something weird just happend (expanding two macros at once, contact the developer) in " + source.fileName + ", " + 
+                                 lineNumber + ": " + line);
+                    return false;
+                }
+                currentMacro = m;
+                return true;
+            } else if (s.macroCallName.equalsIgnoreCase(SourceMacro.MACRO_IFDEF)) {
+                SourceMacro m = new SourceMacro(SourceMacro.MACRO_IFDEF, s);
                 m.preDefinedMacroArgs = s.macroCallArguments;
                 if (currentMacro != null) {
                     config.error("Something weird just happend (expanding two macros at once, contact the developer) in " + source.fileName + ", " + 
@@ -168,7 +205,7 @@ public class PreProcessor {
             } else {
                 SourceMacro m = getMacro(s.macroCallName);    
                 if (m != null) {
-                    List<String> expandedMacro = m.instantiate(s.macroCallArguments, code, config);
+                    List<Pair<String,Integer>> expandedMacro = m.instantiate(s.macroCallArguments, code, config);
                     if (expandedMacro == null) {
                         config.error("Problem instantiating macro "+s.macroCallName+" in " + source.fileName + ", " + 
                                      lineNumber + ": " + line);

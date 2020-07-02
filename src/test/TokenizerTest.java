@@ -20,6 +20,10 @@ public class TokenizerTest {
         failures += tokenizerTest("ex af,AF'", new String[]{"ex","af",",","AF'"});
         failures += tokenizerTest("variable<<2", new String[]{"variable","<<","2"});
         failures += tokenizerTest("ds (($ + 1 - 1) >> 8) != ($ >> 8) && (100H - ($ & 0FFH)) || 0", new String[]{"ds","(","(","$","+","1","-","1",")",">>","8",")","!=","(","$",">>","8",")","&&","(","100H","-","(","$","&","0FFH",")",")","||","0"});
+        failures += tokenizerTest(".include", new String[]{".include"});
+        failures += tokenizerTest("ld a,(hl)", new String[]{"ld","a",",","(","hl",")"});
+        failures += tokenizerTest("ld a,[hl]", new String[]{"ld","a",",","[","hl","]"});
+        failures += tokenizerTest("@@my_local_label:", new String[]{"@@my_local_label",":"});
         if (failures > 0) {
             throw new Error(failures + " tests failed!");
         }

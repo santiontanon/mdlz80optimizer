@@ -13,6 +13,7 @@ import java.util.List;
 import parser.PreProcessor;
 import parser.SourceMacro;
 import parser.Tokenizer;
+import util.Pair;
 
 /**
  *
@@ -29,6 +30,12 @@ public class GlassDialect implements Dialect {
     
     
     @Override
+    public void init(MDLConfig config)
+    {
+    }
+    
+    
+    @Override
     public boolean recognizeIdiom(List<String> tokens)
     {
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("section")) return true;
@@ -38,6 +45,33 @@ public class GlassDialect implements Dialect {
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("error")) return true;
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("warning")) return true;
         return false;
+    }
+    
+
+    
+    @Override
+    public String newSymbolName(String name, Expression value) {
+        if (name.equalsIgnoreCase("org") ||
+            name.equalsIgnoreCase("db") ||
+            name.equalsIgnoreCase("dw") ||
+            name.equalsIgnoreCase("dd") ||
+            name.equalsIgnoreCase("ds") ||
+            name.equalsIgnoreCase("macro") ||
+            name.equalsIgnoreCase("endm") ||
+            name.equalsIgnoreCase("rept") ||
+            name.equalsIgnoreCase("if") ||
+            name.equalsIgnoreCase("else") ||
+            name.equalsIgnoreCase("endif")) {
+            return null;
+        }
+        return name;
+    }
+    
+    
+    @Override
+    public String symbolName(String name)
+    {
+        return name;
     }
     
     
@@ -91,17 +125,17 @@ public class GlassDialect implements Dialect {
             config.lineParser.popLabelPrefix();
             return true;
         }
-        if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("error")) {
-            if (tokens.size()>=2) {
-                config.error(tokens.get(1));
-            }
-            return false;
+        if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("error")) {
+            config.error(tokens.get(1));
+            sectionStack.remove(0);
+            sectionStack.remove(0);
+            return config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source);
         }
-        if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("warning")) {
-            if (tokens.size()>=2) {
-                config.warn(tokens.get(1));
-            }
-            return true;
+        if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("warning")) {
+            config.warn(tokens.get(1));
+            sectionStack.remove(0);
+            sectionStack.remove(0);
+            return config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source);
         }
         return false;
     }
@@ -122,7 +156,7 @@ public class GlassDialect implements Dialect {
                 args.add(Expression.constantExpression(0));
             }
         }
-        List<String> lines = macro.instantiate(args, code, config);
+        List<Pair<String,Integer>> lines = macro.instantiate(args, code, config);
         PreProcessor preProcessor = new PreProcessor(config.preProcessor);
         
         // Assemble the macro at address 0:
@@ -133,9 +167,11 @@ public class GlassDialect implements Dialect {
             SourceFile f = new SourceFile(macro.definingStatement.source.fileName + ":macro(" + macro.name+")", null, null, config);
             int lineNumber = macro.definingStatement.lineNumber;
             while(true) {
-                String line = preProcessor.expandMacros();
+                Pair<String,Integer> line_lnumber = preProcessor.expandMacros();
+                String line = null;
+                if (line_lnumber != null) line = line_lnumber.m_a; // ignore the line numbers here
                 if (line == null && !lines.isEmpty()) {
-                    line = lines.remove(0);
+                    line = lines.remove(0).m_a; // ignore the line numbers here
                     lineNumber++;                
                 }
                 if (line == null) {
@@ -176,5 +212,5 @@ public class GlassDialect implements Dialect {
         config.logger.resume();
         return true;        
     }
-    
+
 }

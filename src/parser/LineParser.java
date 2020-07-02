@@ -12,9 +12,21 @@ import code.CodeBase;
 import code.CPUOp;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 public class LineParser {
+    public String KEYWORD_ORG = "org";
+    public String KEYWORD_INCLUDE = "include";
+    public String KEYWORD_INCBIN = "incbin";
+    public String KEYWORD_EQU = "equ";
+    public String KEYWORD_DB = "db";
+    public String KEYWORD_DW = "dw";
+    public String KEYWORD_DD = "dd";
+    public String KEYWORD_DS = "ds";
+    HashMap<String, String> keywordSynonyms = new HashMap<>();
+    
+    
     MDLConfig config;
     CodeBaseParser codeBaseParser;
     
@@ -29,6 +41,21 @@ public class LineParser {
     }
     
     
+    public void addKeywordSynonym(String synonym, String kw)
+    {
+        keywordSynonyms.put(synonym, kw);
+    }
+    
+    
+    public boolean isKeyword(String token, String kw)
+    {
+        if (token.equalsIgnoreCase(kw)) return true;
+        if (keywordSynonyms.containsKey(token) &&
+            keywordSynonyms.get(token).equalsIgnoreCase(kw)) return true;
+        return false;
+    }
+        
+    
     public void pushLabelPrefix(String a_lp)
     {
         labelPrefixStack.add(0,labelPrefix);
@@ -39,6 +66,16 @@ public class LineParser {
     public void popLabelPrefix()
     {
         labelPrefix = labelPrefixStack.remove(0);
+    }
+    
+    
+    public String newSymbolName(String name, Expression value)
+    {
+        if (config.dialectParser != null) {
+            return config.dialectParser.newSymbolName(name, value);
+        } else {
+            return name;
+        }
     }
 
 
@@ -58,19 +95,24 @@ public class LineParser {
         if (tokens.isEmpty()) return true;
         
         String token = tokens.get(0);
-        
+                
         // The very first thing is to check if there is a label:
         if (tokens.size() >= 2 &&
-                   Tokenizer.isSymbol(token) &&
-                   tokens.get(1).equals(":")) {
+            Tokenizer.isSymbol(token) &&
+            tokens.get(1).equals(":")) {
             Expression exp = Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, code);
 
             if (tokens.size() >= 3) {
-                if (!tokens.get(2).equalsIgnoreCase("equ")) {
+                if (!isKeyword(tokens.get(2), KEYWORD_EQU)) {
                     tokens.remove(0);
                     tokens.remove(0);
 
-                    SourceConstant c = new SourceConstant(labelPrefix+token, null, exp, s); 
+                    String symbolName = newSymbolName(labelPrefix+token, exp);
+                    if (symbolName == null) {
+                        config.error("Problem defining symbol " + labelPrefix+token + " in " + source.fileName + ", " + lineNumber + ": " + line);
+                        return false;
+                    }
+                    SourceConstant c = new SourceConstant(symbolName, null, exp, s); 
                     s.type = SourceStatement.STATEMENT_NONE;
                     s.label = c;
                     code.addSymbol(c.name, c);
@@ -80,7 +122,12 @@ public class LineParser {
                 tokens.remove(0);
                 tokens.remove(0);
 
-                SourceConstant c = new SourceConstant(labelPrefix+token, null, exp, s); 
+                String symbolName = newSymbolName(labelPrefix+token, exp);
+                if (symbolName == null) {
+                    config.error("Problem defining symbol " + labelPrefix+token + " in " + source.fileName + ", " + lineNumber + ": " + line);
+                    return false;
+                }
+                SourceConstant c = new SourceConstant(symbolName, null, exp, s); 
                 s.type = SourceStatement.STATEMENT_NONE;
                 s.label = c;
                 code.addSymbol(c.name, c);
@@ -98,12 +145,17 @@ public class LineParser {
                     int address = exp.evaluate(s, code, false);
                     tokens.remove(0);
 
-                    SourceConstant c = new SourceConstant(labelPrefix+token, address, exp, s); 
+                    String symbolName = newSymbolName(labelPrefix+token, exp);
+                    if (symbolName == null) {
+                        config.error("Problem defining symbol " + labelPrefix+token + " in " + source.fileName + ", " + lineNumber + ": " + line);
+                        return false;
+                    }
+                    SourceConstant c = new SourceConstant(symbolName, address, exp, s); 
                     s.type = SourceStatement.STATEMENT_NONE;
                     s.label = c;
                     code.addSymbol(c.name, c);
                     return parseRestofTheLine(tokens, line, lineNumber, s, source);   
-                } else if (tokens.size() >= 3 && tokens.get(1).equalsIgnoreCase("equ")) {
+                } else if (tokens.size() >= 3 && isKeyword(tokens.get(1), "equ")) {
                     // equ without a colon (provide warning):
                     if (config.warningLabelWithoutColon) {
                         config.warn("Label defined without a colon in " + 
@@ -113,46 +165,55 @@ public class LineParser {
                     tokens.remove(0);
                     return parseEqu(tokens, token, line, lineNumber, s, source, code);
                 }
+            } else if (tokens.size() >= 3 && tokens.get(1).equalsIgnoreCase("equ")) {
+                // equ without a colon (provide warning):
+                if (config.warningLabelWithoutColon) {
+                    config.warn("Label defined without a colon in " + 
+                            source.fileName + ", " + lineNumber + ": " + line);
+                }
+                tokens.remove(0);
+                tokens.remove(0);
+                return parseEqu(tokens, token, line, lineNumber, s, source, code);
             }
         }
         
-        if (token.equalsIgnoreCase("org")) {
+        if (isKeyword(token, KEYWORD_ORG)) {
             tokens.remove(0);
             return parseOrg(tokens, line, lineNumber, s, source, code);
             
-        } else if (token.equalsIgnoreCase("include")) {
+        } else if (isKeyword(token, KEYWORD_INCLUDE)) {
             tokens.remove(0);
             return parseInclude(tokens, line, lineNumber, s, source, code);
             
-        } else if (token.equals("incbin")) {
+        } else if (isKeyword(token, KEYWORD_INCBIN)) {
             tokens.remove(0);
             return parseIncbin(tokens, line, lineNumber, s, source, code);
             
         } else if (tokens.size() >= 4 &&
                    Tokenizer.isSymbol(token) &&
                    tokens.get(1).equals(":") &&
-                   tokens.get(2).equalsIgnoreCase("equ")) {
+                   isKeyword(tokens.get(2), KEYWORD_EQU)) {
             tokens.remove(0);
             tokens.remove(0);
             tokens.remove(0);
             return parseEqu(tokens, token, line, lineNumber, s, source, code);
             
         } else if (tokens.size() >= 2 &&
-                   (token.equalsIgnoreCase("db") ||
-                    token.equalsIgnoreCase("dw") ||
-                    token.equalsIgnoreCase("dd"))) {
+                   (isKeyword(token, KEYWORD_DB) ||
+                    isKeyword(token, KEYWORD_DW) ||
+                    isKeyword(token, KEYWORD_DD))) {
             tokens.remove(0);
             return parseData(tokens, token, line, lineNumber, s, source, code);
 
-        } else if (tokens.size() >= 2 && token.equalsIgnoreCase("ds")) {
+        } else if (tokens.size() >= 2 && isKeyword(token, KEYWORD_DS)) {
             tokens.remove(0);
             return parseDefineSpace(tokens, line, lineNumber, s, source, code);
             
-        } else if (token.equalsIgnoreCase(SourceMacro.MACRO_MACRO)) {
+        } else if (isKeyword(token, SourceMacro.MACRO_MACRO)) {
             tokens.remove(0);
             return parseMacroDefinition(tokens, line, lineNumber, s, source, code);
 
-        } else if (token.equalsIgnoreCase(SourceMacro.MACRO_ENDM)) {
+        } else if (isKeyword(token, SourceMacro.MACRO_ENDM)) {
             config.error(SourceMacro.MACRO_ENDM + " keyword found outside of a macro at " + source.fileName + ", " + 
                          lineNumber + ": " + line);
             return false;
@@ -246,12 +307,17 @@ public class LineParser {
                 tokens.remove(0);
                 String rawFileName = Tokenizer.stringValue(token);
                 String path = resolveIncludePath(rawFileName, source);
+                if (path == null) {
+                    config.error("Incbin file "+rawFileName+" does not exist in " + source.fileName + ", " + 
+                                 lineNumber + ": " + line);
+                    return false;
+                }
                 s.type = SourceStatement.STATEMENT_INCBIN;
                 s.incbin = path;
                 s.incbinOriginalStr = rawFileName;
                 File f = new File(path);
                 if (!f.exists()) {
-                    config.error("Incbin file "+path+" does not exist in " + source.fileName + ", " + 
+                    config.error("Incbin file "+rawFileName+" does not exist in " + source.fileName + ", " + 
                                  lineNumber + ": " + line);
                     return false;
                 }
@@ -277,7 +343,12 @@ public class LineParser {
         } else {
             Integer value = exp.evaluate(s, code, true);
             
-            SourceConstant c = new SourceConstant(labelPrefix+label, value, exp, s);
+            String symbolName = newSymbolName(labelPrefix+label, exp);
+            if (symbolName == null) {
+                config.error("Problem defining symbol " + labelPrefix+label + " in " + source.fileName + ", " + lineNumber + ": " + line);
+                return false;
+            }
+            SourceConstant c = new SourceConstant(symbolName, value, exp, s);
             s.type = SourceStatement.STATEMENT_CONSTANT;
             s.label = c;
             code.addSymbol(c.name, c);

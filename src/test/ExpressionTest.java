@@ -31,6 +31,7 @@ public class ExpressionTest {
         failures += expressionTest("#38 & #1c", 0x18);
         failures += expressionTest("#38 && #1c", Expression.TRUE);
         failures += expressionTest("3 <= 4", Expression.TRUE);
+        failures += expressionTest("7 & ~3", 0x4);
         if (failures > 0) {
             throw new Error(failures + " tests failed!");
         }

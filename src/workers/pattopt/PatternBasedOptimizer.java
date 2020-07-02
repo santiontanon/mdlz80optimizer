@@ -36,6 +36,7 @@ public class PatternBasedOptimizer implements MDLWorker {
     boolean activate = false;
     boolean silent = false;
     boolean logPatternsMatchedWithViolatedConstraints = false;
+    String inputPatternsFileName = "data/pbo-patterns.txt";
     List<Pattern> patterns = new ArrayList<>();
     
     
@@ -49,7 +50,8 @@ public class PatternBasedOptimizer implements MDLWorker {
     public String docString() {
         return "  -po: Runs the pattern-based optimizer.\n" +
                "  -posilent: Supresses the pattern-based-optimizer output\n" +
-               "  -popotential: Reports lines where a potential optimization was not applied for safety, but could maybe be done manually.\n";
+               "  -popotential: Reports lines where a potential optimization was not applied for safety, but could maybe be done manually.\n" +
+               "  -popatterns <file>: specifies the file to load optimization patterns from (default 'data/pbo-patterns.txt')";
     }
 
     @Override
@@ -69,6 +71,11 @@ public class PatternBasedOptimizer implements MDLWorker {
             logPatternsMatchedWithViolatedConstraints = true;
             return true;
         }
+        if (flags.get(0).equals("-popatterns") && flags.size()>=2) {
+            flags.remove(0);
+            inputPatternsFileName = flags.remove(0);
+            return true;
+        }
         return false;
     }
     
@@ -76,15 +83,14 @@ public class PatternBasedOptimizer implements MDLWorker {
     void initPatterns() 
     {
         try {
-            String inputFile = "data/pbo-patterns.txt";
             BufferedReader br;
 
             try {
                 // In case we are running from inside a JAR file:
-                InputStream in = config.getClass().getResourceAsStream("/"+inputFile); 
+                InputStream in = config.getClass().getResourceAsStream("/"+inputPatternsFileName); 
                 br = new BufferedReader(new InputStreamReader(in));
             } catch (Exception e) {
-                br = new BufferedReader(new FileReader(inputFile));
+                br = new BufferedReader(new FileReader(inputPatternsFileName));
             }            
 
             String patternString = "";

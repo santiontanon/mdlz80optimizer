@@ -112,6 +112,16 @@ public class ExpressionParser {
                 exp = Expression.operatorExpression(Expression.EXPRESSION_BITAND, exp, exp2, config);
                 continue;
             }
+            if (tokens.get(0).equals("^")) {
+                tokens.remove(0);
+                Expression exp2 = parseInternal(tokens, code);
+                if (exp2 == null) {
+                    config.error("Missing argument for operator ^");
+                    return null;
+                }
+                exp = Expression.operatorExpression(Expression.EXPRESSION_BITXOR, exp, exp2, config);
+                continue;
+            }
             if (tokens.get(0).equals("=")) {
                 tokens.remove(0);
                 Expression exp2 = parseInternal(tokens, code);
@@ -265,6 +275,16 @@ public class ExpressionParser {
                 return Expression.constantExpression(Tokenizer.parseBinary(token));
             }
         }
+        if (tokens.size() >= 1 && 
+            (tokens.get(0).charAt(0) >= '0' && tokens.get(0).charAt(0) <= '7') && 
+            (tokens.get(0).endsWith("o") || tokens.get(0).endsWith("O"))) {
+            // should be a binary constant:
+            String token = tokens.get(0);
+            if (Tokenizer.isOctal(token)) {
+                tokens.remove(0);
+                return Expression.constantExpression(Tokenizer.parseOctal(token));
+            }
+        }
         if (tokens.size() >= 2 && 
             (tokens.get(0).equals("#") || tokens.get(0).equals("$"))) {
             // should be a hex constant:
@@ -288,6 +308,7 @@ public class ExpressionParser {
             Tokenizer.isSymbol(tokens.get(0))) {
             // symbol:
             String token = tokens.remove(0);
+            if (config.dialectParser != null) token = config.dialectParser.symbolName(token);
             return Expression.symbolExpression(token, code);
         }        
         if (tokens.size() >= 2 && 
@@ -315,6 +336,13 @@ public class ExpressionParser {
             }
         }
         if (tokens.size() >= 2 &&
+            tokens.get(0).equals("~")) {
+            // a bit negated expression:
+            tokens.remove(0);
+            Expression exp = parseInternal(tokens, code);
+            return Expression.bitNegationExpression(exp);
+        }
+        if (tokens.size() >= 2 &&
             tokens.get(0).equals("?")) {
             tokens.remove(0);
             // variable name symbol:
@@ -322,12 +350,12 @@ public class ExpressionParser {
             return Expression.symbolExpression(token, code);
         }
         if (tokens.size() >= 3 &&
-            tokens.get(0).equals("(")) {
+            (tokens.get(0).equals("(") || tokens.get(0).equals("["))) {
             // a parenthesis expression:
             tokens.remove(0);
             Expression exp = parse(tokens, code);
             if (exp != null && tokens.size() >= 1 &&
-                tokens.get(0).equals(")")) {
+                (tokens.get(0).equals(")") || tokens.get(0).equals("]"))) {
                 tokens.remove(0);
                 return Expression.parenthesisExpression(exp);
             }

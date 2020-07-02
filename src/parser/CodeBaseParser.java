@@ -67,28 +67,36 @@ public class CodeBaseParser {
     }
     
     
-    Pair<String, Integer> getNextLine(BufferedReader br, int lineNumber, List<String> tokens) throws Exception
+    // Returns: <<line,lineNumber>, file_linenumber>
+    Pair<Pair<String,Integer>, Integer> getNextLine(BufferedReader br, int file_linenumber, List<String> tokens) throws Exception
     {
-        String line = config.preProcessor.expandMacros();
+        Pair<String,Integer> line_lnumber = config.preProcessor.expandMacros();
+        String line = null;
+        int lineNumber = file_linenumber;
+        if (line_lnumber != null) {
+            line = line_lnumber.m_a;
+            lineNumber = line_lnumber.m_b;
+        }
         if (line == null) {
             if (br != null) line = br.readLine();
             if (line == null) return null;
-            lineNumber++;                
+            file_linenumber++;  
+            lineNumber = file_linenumber;
         }
         
         Tokenizer.tokenize(line, tokens);
         if (!tokens.isEmpty() && tokens.get(tokens.size()-1).equals(",")) {
             // unfinished line, get the next one!
             List<String> tokens2 = new ArrayList<>();
-            Pair<String, Integer> tmp = getNextLine(br, lineNumber, tokens2);
+            Pair<Pair<String,Integer>, Integer> tmp = getNextLine(br, lineNumber, tokens2);
             if (tmp != null) {
-                line += "\n" + tmp.m_a;
+                line += "\n" + tmp.m_a.m_a;
                 tokens.addAll(tokens2);
-                lineNumber = tmp.m_b;
+                file_linenumber = tmp.m_b;
             }
         }
         
-        return new Pair<>(line, lineNumber);
+        return new Pair<>(new Pair<>(line, lineNumber), file_linenumber);
     }
     
     
@@ -97,27 +105,29 @@ public class CodeBaseParser {
         config.debug("Parsing " + f.fileName + "...");
         
         BufferedReader br = new BufferedReader(new FileReader(f.fileName));
-        int lineNumber = 0;
+        int file_lineNumber = 0;
         while(true) {
             List<String> tokens = new ArrayList<>();
-            Pair<String, Integer> tmp = getNextLine(br, lineNumber, tokens);
+            Pair<Pair<String,Integer>, Integer> tmp = getNextLine(br, file_lineNumber, tokens);
             if (tmp == null) {
                 if (config.preProcessor.withinMacroDefinition()) {
-                    config.error("File " +f.fileName+ " ended while inside a macro definition");
+                    config.error("File " +f.fileName+ " ended while inside a macro definition: " + config.preProcessor.getCurrentMacro().name);
                     return false;
                 }
                 return true;
             }
-            String line = tmp.m_a;
-            lineNumber = tmp.m_b;
+            file_lineNumber = tmp.m_b;
+            String line = tmp.m_a.m_a;
+            int line_lineNumber = file_lineNumber;
+            if (tmp.m_a.m_b != null) line_lineNumber = tmp.m_a.m_b;
             
             if (config.preProcessor.withinMacroDefinition()) {
-                if (!config.preProcessor.parseMacroLine(tokens, line, lineNumber, f, code, config)) return false;
+                if (!config.preProcessor.parseMacroLine(tokens, line, line_lineNumber, f, code, config)) return false;
             } else {
-                SourceStatement s = config.lineParser.parse(tokens, line, lineNumber, f, code, config);
+                SourceStatement s = config.lineParser.parse(tokens, line, line_lineNumber, f, code, config);
                 if (s == null) return false;
                 if (!s.isEmpty()) {
-                    if (!config.preProcessor.handleStatement(line, lineNumber, s, f, code, false)) {
+                    if (!config.preProcessor.handleStatement(line, line_lineNumber, s, f, code, false)) {
                         f.addStatement(s);
                     }
                 }
@@ -146,9 +156,10 @@ public class CodeBaseParser {
                 f.getStatements().remove(i);
                 
                 // Parse the new lines (which could, potentially trigger other macros!):
+                int insertionPoint = i;
                 while(true) {
                     List<String> tokens = new ArrayList<>();
-                    Pair<String, Integer> tmp = getNextLine(null, s_macro.lineNumber, tokens);
+                    Pair<Pair<String, Integer>, Integer> tmp = getNextLine(null, s_macro.lineNumber, tokens);
                     if (tmp == null) {
                         if (config.preProcessor.withinMacroDefinition()) {
                             config.error("File " + f.fileName + " ended while inside a macro definition");
@@ -156,15 +167,18 @@ public class CodeBaseParser {
                         }
                         break;
                     }
-                    String line = tmp.m_a;
+                    String line = tmp.m_a.m_a;
+                    int lineNumber = s_macro.lineNumber;
+                    if (tmp.m_a.m_b != null) lineNumber = tmp.m_a.m_b; 
                     if (config.preProcessor.withinMacroDefinition()) {
-                        if (!config.preProcessor.parseMacroLine(tokens, line, s_macro.lineNumber, f, code, config)) return false;
+                        if (!config.preProcessor.parseMacroLine(tokens, line, lineNumber, f, code, config)) return false;
                     } else {
-                        SourceStatement s = config.lineParser.parse(tokens, line, s_macro.lineNumber, f, code, config);
+                        SourceStatement s = config.lineParser.parse(tokens, line, lineNumber, f, code, config);
                         if (s == null) return false;
                         if (!s.isEmpty()) {
-                            if (!config.preProcessor.handleStatement(line, s_macro.lineNumber, s, f, code, true)) {
-                                f.addStatement(i, s);
+                            if (!config.preProcessor.handleStatement(line, lineNumber, s, f, code, true)) {
+                                f.addStatement(insertionPoint, s);
+                                insertionPoint++;
                             }
                         }
                     }

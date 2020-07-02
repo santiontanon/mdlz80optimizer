@@ -29,7 +29,7 @@ public class Tokenizer {
     
     public static List<String> tokenize(String line, List<String> tokens) {
         
-        StringTokenizer st = new StringTokenizer(line, " \r\n\t()[]#$,;:+-*/%|&'\"?<>=", true);
+        StringTokenizer st = new StringTokenizer(line, " \r\n\t()[]#$,;:+-*/%|&'\"?<>=~^", true);
         String previous = null;
         while(st.hasMoreTokens()) {
             String next = st.nextToken();
@@ -61,18 +61,6 @@ public class Tokenizer {
                         break;
                     }
                 }
-                /*
-                if (token.length() == 1 && !tokens.isEmpty()) {
-                    // check if it's an "af'":
-                    String prev = tokens.get(tokens.size()-1);
-                    if (prev.equalsIgnoreCase("af")) {
-                        tokens.remove(tokens.size()-1);
-                        tokens.add(prev + "'");
-                        previous = next;
-                        continue;
-                    }
-                }
-                */
                 if (token.length()<2 || !token.endsWith("'")) return null;
                 token = "\"" + token.substring(1, token.length()-1) + "\"";
                 tokens.add(token);
@@ -109,7 +97,8 @@ public class Tokenizer {
         if (token.equals("$")) return true;
         
         int c = token.charAt(0);
-        if ((c>='a' && c<='z') || (c>='A' && c<='Z') || c=='_') return true;
+        if ((c>='a' && c<='z') || (c>='A' && c<='Z') || c=='_' ||
+            c=='.' || c == '@') return true;
         return false;
     }
     
@@ -209,6 +198,31 @@ public class Tokenizer {
             int idx = allowed.indexOf(c);
             if (idx == -1) {
                 if (i == token.length()-1 && c == 'b') return value;
+                return null;
+            }
+            value = value * 2 + idx;
+        }
+        return value;
+    }    
+
+
+    public static boolean isOctal(String token)
+    {
+        return parseOctal(token) != null;
+    }
+
+    
+    public static Integer parseOctal(String token)
+    {
+        int value = 0;
+        String allowed = "01234567";
+        
+        for(int i = 0;i<token.length();i++) {
+            char c = (char)token.charAt(i);
+            c = Character.toLowerCase(c);
+            int idx = allowed.indexOf(c);
+            if (idx == -1) {
+                if (i == token.length()-1 && c == 'o') return value;
                 return null;
             }
             value = value * 2 + idx;
