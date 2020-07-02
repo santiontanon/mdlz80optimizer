@@ -4,8 +4,8 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>com.github.santiontanon</groupId>
-	<artifactId>mdlz80optimizer</artifactId>
-	<version>0.2</version>
+	<artifactId>mdl</artifactId>
+	<version>0.3</version>
 
 	<dependencyManagement>
 		<dependencies>
