@@ -51,7 +51,7 @@ public class PatternBasedOptimizer implements MDLWorker {
         return "  -po: Runs the pattern-based optimizer.\n" +
                "  -posilent: Supresses the pattern-based-optimizer output\n" +
                "  -popotential: Reports lines where a potential optimization was not applied for safety, but could maybe be done manually.\n" +
-               "  -popatterns <file>: specifies the file to load optimization patterns from (default 'data/pbo-patterns.txt')";
+               "  -popatterns <file>: specifies the file to load optimization patterns from (default 'data/pbo-patterns.txt').\n";
     }
 
     @Override
