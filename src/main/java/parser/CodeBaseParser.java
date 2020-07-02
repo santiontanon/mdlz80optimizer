@@ -3,38 +3,40 @@
  */
 package parser;
 
-import cl.MDLConfig;
-import code.CodeBase;
-import code.SourceFile;
-import code.SourceStatement;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.List;
-import util.Pair;
+
+import org.apache.commons.lang3.tuple.Pair;
+
+import cl.MDLConfig;
+import code.CodeBase;
+import code.SourceFile;
+import code.SourceStatement;
 
 public class CodeBaseParser {
     MDLConfig config;
-  
-    
-    public CodeBaseParser(MDLConfig a_config) 
+
+
+    public CodeBaseParser(MDLConfig a_config)
     {
         config = a_config;
     }
-    
-    
+
+
     public boolean isMacro(String name, CodeBase code)
     {
         if (config.preProcessor == null) return false;
         return config.preProcessor.isMacro(name, code);
-    }    
-     
+    }
+
 
     public SourceFile parseMainSourceFile(String fileName, CodeBase code) throws Exception
     {
         SourceFile main = parseSourceFile(fileName, code, null, null);
         if (main == null) return null;
-        
+
         // Expanc all macros that were not expanded initially:
         for(SourceFile f:code.getSourceFiles()) {
             if (!expandAllMacros(f, code)) {
@@ -42,12 +44,12 @@ public class CodeBaseParser {
                 return null;
             }
         }
-        
+
         return main;
     }
 
-    
-    public SourceFile parseSourceFile(String fileName, CodeBase code, SourceFile parent, SourceStatement parentInclude) 
+
+    public SourceFile parseSourceFile(String fileName, CodeBase code, SourceFile parent, SourceStatement parentInclude)
     {
         if (code.getSourceFile(fileName) != null) {
             config.warn("Re-entering into " + fileName + " ignored...");
@@ -65,8 +67,8 @@ public class CodeBaseParser {
         }
         return null;
     }
-    
-    
+
+
     // Returns: <<line,lineNumber>, file_linenumber>
     Pair<Pair<String,Integer>, Integer> getNextLine(BufferedReader br, int file_linenumber, List<String> tokens) throws Exception
     {
@@ -74,36 +76,36 @@ public class CodeBaseParser {
         String line = null;
         int lineNumber = file_linenumber;
         if (line_lnumber != null) {
-            line = line_lnumber.m_a;
-            lineNumber = line_lnumber.m_b;
+            line = line_lnumber.getLeft();
+            lineNumber = line_lnumber.getRight();
         }
         if (line == null) {
             if (br != null) line = br.readLine();
             if (line == null) return null;
-            file_linenumber++;  
+            file_linenumber++;
             lineNumber = file_linenumber;
         }
-        
+
         Tokenizer.tokenize(line, tokens);
         if (!tokens.isEmpty() && tokens.get(tokens.size()-1).equals(",")) {
             // unfinished line, get the next one!
             List<String> tokens2 = new ArrayList<>();
             Pair<Pair<String,Integer>, Integer> tmp = getNextLine(br, lineNumber, tokens2);
             if (tmp != null) {
-                line += "\n" + tmp.m_a.m_a;
+                line += "\n" + tmp.getLeft().getLeft();
                 tokens.addAll(tokens2);
-                file_linenumber = tmp.m_b;
+                file_linenumber = tmp.getRight();
             }
         }
-        
-        return new Pair<>(new Pair<>(line, lineNumber), file_linenumber);
+
+        return Pair.of(Pair.of(line, lineNumber), file_linenumber);
     }
-    
-    
+
+
     boolean parseSourceFileInternal(SourceFile f, CodeBase code, MDLConfig config) throws Exception
     {
         config.debug("Parsing " + f.fileName + "...");
-        
+
         BufferedReader br = new BufferedReader(new FileReader(f.fileName));
         int file_lineNumber = 0;
         while(true) {
@@ -116,11 +118,11 @@ public class CodeBaseParser {
                 }
                 return true;
             }
-            file_lineNumber = tmp.m_b;
-            String line = tmp.m_a.m_a;
+            file_lineNumber = tmp.getRight();
+            String line = tmp.getLeft().getLeft();
             int line_lineNumber = file_lineNumber;
-            if (tmp.m_a.m_b != null) line_lineNumber = tmp.m_a.m_b;
-            
+            if (tmp.getLeft().getRight() != null) line_lineNumber = tmp.getLeft().getRight();
+
             if (config.preProcessor.withinMacroDefinition()) {
                 if (!config.preProcessor.parseMacroLine(tokens, line, line_lineNumber, f, code, config)) return false;
             } else {
@@ -134,8 +136,8 @@ public class CodeBaseParser {
             }
         }
     }
-    
-    
+
+
     public boolean expandAllMacros(SourceFile f, CodeBase code) throws Exception
     {
         for(int i = 0;i<f.getStatements().size();i++) {
@@ -147,14 +149,14 @@ public class CodeBaseParser {
                 } else {
                     config.debug("expandAllMacros: Expanding macro: " + s_macro.macroCallMacro.name);
                 }
-                
+
                 if (!config.preProcessor.handleStatement("", s_macro.lineNumber, s_macro, f, code, true)) {
                     config.error("Cannot expand macro " + s_macro.macroCallName);
                     return false;
                 }
-                
+
                 f.getStatements().remove(i);
-                
+
                 // Parse the new lines (which could, potentially trigger other macros!):
                 int insertionPoint = i;
                 while(true) {
@@ -167,9 +169,9 @@ public class CodeBaseParser {
                         }
                         break;
                     }
-                    String line = tmp.m_a.m_a;
+                    String line = tmp.getLeft().getLeft();
                     int lineNumber = s_macro.lineNumber;
-                    if (tmp.m_a.m_b != null) lineNumber = tmp.m_a.m_b; 
+                    if (tmp.getLeft().getRight() != null) lineNumber = tmp.getLeft().getRight();
                     if (config.preProcessor.withinMacroDefinition()) {
                         if (!config.preProcessor.parseMacroLine(tokens, line, lineNumber, f, code, config)) return false;
                     } else {
@@ -188,6 +190,6 @@ public class CodeBaseParser {
         }
         return true;
     }
-    
-   
+
+
 }

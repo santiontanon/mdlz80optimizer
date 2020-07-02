@@ -3,13 +3,15 @@
  */
 package parser;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.commons.lang3.tuple.Pair;
+
 import cl.MDLConfig;
 import code.CodeBase;
 import code.Expression;
 import code.SourceStatement;
-import java.util.ArrayList;
-import java.util.List;
-import util.Pair;
 
 public class SourceMacro {
     public static final String MACRO_MACRO = "macro";
@@ -20,8 +22,8 @@ public class SourceMacro {
     public static final String MACRO_IFDEF = "ifdef";
     public static final String MACRO_ELSE = "else";
     public static final String MACRO_ENDIF = "endif";
-    
-    
+
+
     public String name = null;
     public SourceStatement definingStatement = null;
     public List<String> argNames = new ArrayList<>();
@@ -29,21 +31,21 @@ public class SourceMacro {
     // line + lineNumber:
     List<Pair<String,Integer>> lines = new ArrayList<>();
     List<Pair<String,Integer>> elseLines = new ArrayList<>();  // only used by IF-ELSE-ENDIF macro
-    
+
     // predefined macro arguments/state:
     public List<Expression> preDefinedMacroArgs = null;
 //    public Expression reptNRepetitions;
 //    public Expression ifCondition;
     public boolean insideElse = false;
-    
-    
+
+
     public SourceMacro(String a_name, SourceStatement a_ds)
     {
         name = a_name;
         definingStatement = a_ds;
     }
-    
-    
+
+
     public SourceMacro(String a_name, List<String> a_args, List<Expression> a_defaultValues, SourceStatement a_ds)
     {
         name = a_name;
@@ -56,13 +58,13 @@ public class SourceMacro {
     public void addLine(String line, Integer lineNumber)
     {
         if (insideElse) {
-            elseLines.add(new Pair<>(line, lineNumber));
+            elseLines.add(Pair.of(line, lineNumber));
         } else {
-            lines.add(new Pair<>(line, lineNumber));
+            lines.add(Pair.of(line, lineNumber));
         }
     }
-    
-    
+
+
     public List<Pair<String,Integer>> instantiate(List<Expression> args, CodeBase code, MDLConfig config)
     {
         List<Pair<String,Integer>> lines2 = new ArrayList<>();
@@ -93,7 +95,7 @@ public class SourceMacro {
                 if (code.getSymbol(exp.symbolName) != null) defined = true;
             } else {
                 config.error("Incorrect parameter to " + MACRO_IFDEF + ": " + args.get(0));
-                return null;                
+                return null;
             }
             if (defined) {
                 lines2.addAll(lines);
@@ -106,21 +108,21 @@ public class SourceMacro {
                 Expression defaultValue = defaultValues.get(args.size());
                 if (defaultValue == null) {
                     config.error("Number of parameters in macro call incorrect!");
-                    return null;                    
+                    return null;
                 } else {
                     args.add(defaultValue);
                 }
             }
             for(Pair<String,Integer> line_lnumber:lines) {
-                String line2 = line_lnumber.m_a;
+                String line2 = line_lnumber.getLeft();
                 for(int i = 0;i<argNames.size();i++) {
-                    line2 = line2.replace("?" + argNames.get(i), 
+                    line2 = line2.replace("?" + argNames.get(i),
                                           args.get(i).toString());
                 }
-                lines2.add(new Pair<>(line2, line_lnumber.m_b));
-            }            
+                lines2.add(Pair.of(line2, line_lnumber.getRight()));
+            }
         }
-                
+
         return lines2;
     }
 }

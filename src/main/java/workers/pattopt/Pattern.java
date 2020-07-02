@@ -3,6 +3,12 @@
  */
 package workers.pattopt;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+
+import org.apache.commons.lang3.tuple.Pair;
+
 import cl.MDLConfig;
 import code.CPUOp;
 import code.CPUOpDependency;
@@ -10,11 +16,7 @@ import code.CodeBase;
 import code.Expression;
 import code.SourceFile;
 import code.SourceStatement;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 import parser.Tokenizer;
-import util.Pair;
 
 /**
  *
@@ -22,7 +24,7 @@ import util.Pair;
  */
 public class Pattern {
     MDLConfig config;
-    
+
     String name;
     List<CPUOpPattern> pattern = new ArrayList<>();
     List<CPUOpPattern> replacement = new ArrayList<>();
@@ -56,7 +58,7 @@ public class Pattern {
                         }
                         break;
                     }
-                        
+
                     case 2: // replacement:
                     {
                         CPUOpPattern patt = CPUOpPattern.parse(line, patternCB, config);
@@ -75,18 +77,18 @@ public class Pattern {
                         throw new Exception("Unexpected line parsing a pattern: " + line);
                 }
             }
-        }        
-        
+        }
+
         config.debug("parsed pattern: " + name);
     }
-    
-    
+
+
     public String getName()
     {
         return name;
     }
-    
-    
+
+
     public int getSpaceSaving(PatternMatch match)
     {
         if (spaceSaving != null) return spaceSaving;
@@ -101,13 +103,13 @@ public class Pattern {
         spaceSaving = patternSize - replacementSize;
         return spaceSaving;
     }
-    
-    
+
+
     public boolean opMatch(CPUOpPattern pat1, CPUOp op2, CodeBase code, PatternMatch match) throws Exception
     {
         if (!pat1.opName.equals(op2.spec.opName)) return false;
         if (pat1.args.size() != op2.args.size()) return false;
-        
+
         for(int i = 0;i<pat1.args.size();i++) {
             Expression arg1 = pat1.args.get(i);
             Expression arg2 = op2.args.get(i);
@@ -142,7 +144,7 @@ public class Pattern {
                         match.variablesMatched.put(arg1.args.get(0).symbolName, arg2.args.get(0));
                     } else {
                         return false;
-                    }                
+                    }
                 } else {
                     throw new Exception("opMatch: unsupported matching case " + arg1 + " vs " + arg2);
                 }
@@ -150,13 +152,13 @@ public class Pattern {
                 if (!pat1.args.get(i).toString().equals(op2.args.get(i).toString())) return false;
             }
         }
-        
+
         config.debug("opMatch:" + pat1 + " with " + op2 + "    (" + match.variablesMatched + ")");
-        
+
         return true;
     }
-    
-    
+
+
     public PatternMatch match(int a_index, SourceFile f, CodeBase code, MDLConfig config,
                               boolean logPatternsMatchedWithViolatedConstraints) throws Exception
     {
@@ -172,13 +174,13 @@ public class Pattern {
                 if (!s.isEmptyAllowingComments()) return null;
                 index++;
                 if (index >= l.size()) return null;
-                
+
             }
             if (!opMatch(pattern.get(i), l.get(index).op, code, match)) return null;
             match.opMap.put(i, l.get(index));
             index++;
         }
-        
+
         // potential match! check constraints:
         for(String[] raw_constraint:constraints) {
             String []constraint = new String[raw_constraint.length];
@@ -189,7 +191,7 @@ public class Pattern {
                     constraint[i] = raw_constraint[i];
                 }
             }
-            
+
             switch(constraint[0]) {
                 case "regNotUsed":
                 {
@@ -225,10 +227,10 @@ public class Pattern {
                     String v2_str = constraint[2];
                     List<String> v1_tokens = Tokenizer.tokenize(v1_str);
                     List<String> v2_tokens = Tokenizer.tokenize(v2_str);
-                    
+
                     Expression exp1 = config.expressionParser.parse(v1_tokens, code);
                     Expression exp2 = config.expressionParser.parse(v2_tokens, code);
-                    
+
                     if (exp1.evaluatesToNumericConstant() != exp2.evaluatesToNumericConstant()) break;
                     if (exp1.evaluatesToNumericConstant()) {
                         // If the expressions are numeric, we evaluate them:
@@ -243,7 +245,7 @@ public class Pattern {
                     throw new Exception("Unknown pattern constraint " + constraint[0]);
             }
         }
-                
+
         return match;
     }
 
@@ -260,26 +262,26 @@ public class Pattern {
                     l.add(insertionPoint, s);
                     insertionPoint++;
                 }
-            } 
+            }
         }
         return true;
     }
-    
-    
+
+
     public boolean regNotUsed(SourceStatement s, String reg, SourceFile f, CodeBase code) throws Exception
     {
         CPUOpDependency dep = new CPUOpDependency(reg.toUpperCase(), null, null, null, null);
         return depNotUsed(s, dep, f, code);
     }
 
-    
+
     public boolean flagNotUsed(SourceStatement s, String flag, SourceFile f, CodeBase code) throws Exception
     {
         CPUOpDependency dep = new CPUOpDependency(null, flag.toUpperCase(), null, null, null);
         return depNotUsed(s, dep, f, code);
     }
-    
-    
+
+
     public boolean depNotUsed(SourceStatement s, CPUOpDependency a_dep, SourceFile f, CodeBase code) throws Exception
     {
         List<Pair<SourceStatement,CPUOpDependency>> open = new ArrayList<>();
@@ -292,17 +294,17 @@ public class Pattern {
             return false;
         }
         for(SourceStatement s2:tmp) {
-            open.add(new Pair<>(s2, a_dep));
+            open.add(Pair.of(s2, a_dep));
             List<CPUOpDependency> l = new ArrayList<>();
             l.add(a_dep);
             closed.put(s2, l);
         }
         while(!open.isEmpty()) {
             Pair<SourceStatement, CPUOpDependency> pair = open.remove(0);
-            SourceStatement next = pair.m_a;
-            CPUOpDependency dep = pair.m_b;
+            SourceStatement next = pair.getLeft();
+            CPUOpDependency dep = pair.getRight();
             config.debug("    " + next.lineNumber + ": " + next);
-            
+
             if (next.type == SourceStatement.STATEMENT_CPUOP) {
                 CPUOp op = next.op;
                 if (op.isRet()) {
@@ -331,7 +333,7 @@ public class Pattern {
                     }
                     for(SourceStatement nextNext: nextNext_l) {
                         if (!closed.containsKey(nextNext)) {
-                            open.add(new Pair<>(nextNext, dep));
+                            open.add(Pair.of(nextNext, dep));
                             List<CPUOpDependency> l = new ArrayList<>();
                             l.add(dep);
                             closed.put(nextNext, l);
@@ -346,7 +348,7 @@ public class Pattern {
                             }
                             if (!found) {
                                 l.add(dep);
-                                open.add(new Pair<>(nextNext, dep));
+                                open.add(Pair.of(nextNext, dep));
                             }
                         }
                     }
@@ -355,7 +357,7 @@ public class Pattern {
                 // add successors:
                 for(SourceStatement nextNext: next.source.nextStatements(next, true, code)) {
                     if (!closed.containsKey(nextNext)) {
-                        open.add(new Pair<>(nextNext, dep));
+                        open.add(Pair.of(nextNext, dep));
                         List<CPUOpDependency> l = new ArrayList<>();
                         l.add(dep);
                         closed.put(nextNext, l);
@@ -370,13 +372,13 @@ public class Pattern {
                         }
                         if (!found) {
                             l.add(dep);
-                            open.add(new Pair<>(nextNext, dep));
+                            open.add(Pair.of(nextNext, dep));
                         }
                     }
-                }                
+                }
             }
         }
-        
+
         return true;
     }
 }

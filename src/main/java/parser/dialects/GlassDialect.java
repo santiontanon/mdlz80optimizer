@@ -3,17 +3,19 @@
  */
 package parser.dialects;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.commons.lang3.tuple.Pair;
+
 import cl.MDLConfig;
 import code.CodeBase;
 import code.Expression;
 import code.SourceFile;
 import code.SourceStatement;
-import java.util.ArrayList;
-import java.util.List;
 import parser.PreProcessor;
 import parser.SourceMacro;
 import parser.Tokenizer;
-import util.Pair;
 
 /**
  *
@@ -22,19 +24,19 @@ import util.Pair;
 public class GlassDialect implements Dialect {
     MDLConfig config;
     List<String> sectionStack = new ArrayList<>();
-    
+
     public GlassDialect(MDLConfig a_config)
     {
         config = a_config;
     }
-    
-    
+
+
     @Override
     public void init(MDLConfig config)
     {
     }
-    
-    
+
+
     @Override
     public boolean recognizeIdiom(List<String> tokens)
     {
@@ -46,9 +48,9 @@ public class GlassDialect implements Dialect {
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("warning")) return true;
         return false;
     }
-    
 
-    
+
+
     @Override
     public String newSymbolName(String name, Expression value) {
         if (name.equalsIgnoreCase("org") ||
@@ -66,40 +68,40 @@ public class GlassDialect implements Dialect {
         }
         return name;
     }
-    
-    
+
+
     @Override
     public String symbolName(String name)
     {
         return name;
     }
-    
-    
+
+
     @Override
     public boolean parseLine(List<String> tokens,
-            String line, int lineNumber, 
+            String line, int lineNumber,
             SourceStatement s, SourceFile source, CodeBase code) throws Exception
     {
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("section")) {
             // TODO(santi@): implement "section" with the same semantics as Glass. I am currently just
             // approximating it by replacing it with "org"
             tokens.remove(0);
-            
+
             Expression exp = config.expressionParser.parse(tokens, code);
             if (exp == null) {
-                config.error("Cannot parse line " + source.fileName + ", " + 
+                config.error("Cannot parse line " + source.fileName + ", " +
                              lineNumber + ": " + line);
-                return false;                
+                return false;
             }
             if (exp.type != Expression.EXPRESSION_SYMBOL) {
-                config.error("Invalid section name at " + source.fileName + ", " + 
+                config.error("Invalid section name at " + source.fileName + ", " +
                              lineNumber + ": " + line);
-                return false;                
+                return false;
             }
             s.type = SourceStatement.STATEMENT_ORG;
             s.org = exp;
             sectionStack.add(0, exp.symbolName);
-            
+
             return config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source);
         }
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("ends")) {
@@ -107,16 +109,16 @@ public class GlassDialect implements Dialect {
                 sectionStack.remove(0);
                 return true;
             } else {
-                config.error("No section to terminate at " + source.fileName + ", " + 
+                config.error("No section to terminate at " + source.fileName + ", " +
                              lineNumber + ": " + line);
-                return false;                
+                return false;
             }
         }
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("proc")) {
             if (s.label == null) {
-                config.error("Proc with no name at " + source.fileName + ", " + 
+                config.error("Proc with no name at " + source.fileName + ", " +
                              lineNumber + ": " + line);
-                return false;                
+                return false;
             }
             config.lineParser.pushLabelPrefix(s.label.name);
             return true;
@@ -139,8 +141,8 @@ public class GlassDialect implements Dialect {
         }
         return false;
     }
-    
-    
+
+
     @Override
     public boolean newMacro(SourceMacro macro, CodeBase code) throws Exception
     {
@@ -158,7 +160,7 @@ public class GlassDialect implements Dialect {
         }
         List<Pair<String,Integer>> lines = macro.instantiate(args, code, config);
         PreProcessor preProcessor = new PreProcessor(config.preProcessor);
-        
+
         // Assemble the macro at address 0:
         config.lineParser.pushLabelPrefix(macro.name + ".");
         // supress error messages when attempting to assemble a macro, as it might fail:
@@ -169,10 +171,10 @@ public class GlassDialect implements Dialect {
             while(true) {
                 Pair<String,Integer> line_lnumber = preProcessor.expandMacros();
                 String line = null;
-                if (line_lnumber != null) line = line_lnumber.m_a; // ignore the line numbers here
+                if (line_lnumber != null) line = line_lnumber.getLeft(); // ignore the line numbers here
                 if (line == null && !lines.isEmpty()) {
-                    line = lines.remove(0).m_a; // ignore the line numbers here
-                    lineNumber++;                
+                    line = lines.remove(0).getLeft(); // ignore the line numbers here
+                    lineNumber++;
                 }
                 if (line == null) {
                     if (preProcessor.withinMacroDefinition()) {
@@ -185,13 +187,13 @@ public class GlassDialect implements Dialect {
                 }
 
                 if (preProcessor.withinMacroDefinition()) {
-                    if (!preProcessor.parseMacroLine(Tokenizer.tokenize(line), 
+                    if (!preProcessor.parseMacroLine(Tokenizer.tokenize(line),
                                                      line, lineNumber, f, code, config)) {
                         // we fail to evaluate the macro, but it's ok, some times it can happen
                         break;
                     }
                 } else {
-                    SourceStatement s = config.lineParser.parse(Tokenizer.tokenize(line), 
+                    SourceStatement s = config.lineParser.parse(Tokenizer.tokenize(line),
                                                                 line, lineNumber, f, code, config);
                     if (s == null) {
                         // we fail to evaluate the macro, but it's ok, some times it can happen
@@ -207,10 +209,10 @@ public class GlassDialect implements Dialect {
         } catch (Exception e) {
             // we fail to evaluate the macro, but it's ok, some times it can happen
         }
-        
+
         config.lineParser.popLabelPrefix();
         config.logger.resume();
-        return true;        
+        return true;
     }
 
 }
