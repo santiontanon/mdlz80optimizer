@@ -27,6 +27,9 @@ public class LineParser {
     public String KEYWORD_DD = "dd";
     public String KEYWORD_DS = "ds";
     HashMap<String, String> keywordSynonyms = new HashMap<>();
+    
+    // If this is set to true then "ds 1" is the same as "ds virtual 1"
+    public boolean defineSpaceVirtualByDefault = false;
 
     MDLConfig config;
     CodeBaseParser codeBaseParser;
@@ -416,8 +419,15 @@ public class LineParser {
     public boolean parseDefineSpace(List<String> tokens,
             String line, int lineNumber,
             SourceStatement s, SourceFile source, CodeBase code) {
+        boolean virtual = false;
         if (tokens.get(0).equalsIgnoreCase("virtual")) {
             tokens.remove(0);
+            virtual = true;
+        }
+        if (defineSpaceVirtualByDefault) {
+            virtual = true;
+        }
+        if (virtual) {
             Expression exp = config.expressionParser.parse(tokens, code);
             if (exp == null) {
                 config.error("Cannot parse line " + source.fileName + ", "

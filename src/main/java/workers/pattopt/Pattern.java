@@ -125,7 +125,9 @@ public class Pattern {
                         return false;
                     }
                 } else if (arg1.symbolName.startsWith("?const")) {
-                    if (arg2.evaluatesToNumericConstant()) {
+                    // We expluce matches with "parenthesis" expressions, as those might be indirections
+                    if (arg2.evaluatesToNumericConstant() &&
+                        arg2.type != Expression.EXPRESSION_PARENTHESIS) {
                         if (!match.addVariableMatch(arg1.symbolName, arg2)) return false;
                     } else {
                         return false;
