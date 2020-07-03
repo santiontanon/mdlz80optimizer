@@ -172,7 +172,7 @@ public class PreProcessor {
                                  lineNumber + ": " + line);
                     return false;
                 }
-                macroExpansions.add(expandedMacro);
+                macroExpansions.add(0, expandedMacro);
                 return true;
             } else if (s.macroCallName.equalsIgnoreCase(SourceMacro.MACRO_IF)) {
                 SourceMacro m = new SourceMacro(SourceMacro.MACRO_IF, s);
@@ -213,7 +213,7 @@ public class PreProcessor {
                                      lineNumber + ": " + line);
                         return false;
                     }
-                    macroExpansions.add(expandedMacro);
+                    macroExpansions.add(0,expandedMacro);
                     return true;
                 } else {
                     // macro is not yet defined, keep it in the code, and we will evaluate later
