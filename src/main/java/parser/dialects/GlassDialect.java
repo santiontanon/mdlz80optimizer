@@ -6,14 +6,15 @@ package parser.dialects;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.lang3.tuple.Pair;
 
 import cl.MDLConfig;
 import code.CodeBase;
 import code.Expression;
 import code.SourceFile;
 import code.SourceStatement;
+import parser.MacroExpansion;
 import parser.PreProcessor;
+import parser.SourceLine;
 import parser.SourceMacro;
 import parser.Tokenizer;
 
@@ -119,7 +120,7 @@ public class GlassDialect implements Dialect {
                              lineNumber + ": " + line);
                 return false;
             }
-            config.lineParser.pushLabelPrefix(s.label.name);
+            config.lineParser.pushLabelPrefix(s.label.name + ".");
             return true;
         }
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("endp")) {
@@ -128,14 +129,14 @@ public class GlassDialect implements Dialect {
         }
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("error")) {
             config.error(tokens.get(1));
-            sectionStack.remove(0);
-            sectionStack.remove(0);
+            tokens.remove(0);
+            tokens.remove(0);
             return config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source);
         }
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("warning")) {
             config.warn(tokens.get(1));
-            sectionStack.remove(0);
-            sectionStack.remove(0);
+            tokens.remove(0);
+            tokens.remove(0);
             return config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source);
         }
         return false;
@@ -157,27 +158,30 @@ public class GlassDialect implements Dialect {
                 args.add(Expression.constantExpression(0));
             }
         }
-        List<Pair<String,Integer>> lines = macro.instantiate(args, code, config);
-        PreProcessor preProcessor = new PreProcessor(config.preProcessor);
 
         // Assemble the macro at address 0:
-        config.lineParser.pushLabelPrefix(macro.name + ".");
-        // supress error messages when attempting to assemble a macro, as it might fail:
-        config.logger.silence();
+        boolean succeeded = true;
         try {
+            // supress error messages when attempting to assemble a macro, as it might fail:
+            config.logger.silence();
+            MacroExpansion expansion = macro.instantiate(args, macro.definingStatement, code, config);
+            List<SourceLine> lines = expansion.lines;
+            PreProcessor preProcessor = new PreProcessor(config.preProcessor);
+
             SourceFile f = new SourceFile(macro.definingStatement.source.fileName + ":macro(" + macro.name+")", null, null, config);
             int lineNumber = macro.definingStatement.lineNumber;
             while(true) {
-                Pair<String,Integer> line_lnumber = preProcessor.expandMacros();
+                SourceLine sl = preProcessor.expandMacros();
                 String line = null;
-                if (line_lnumber != null) line = line_lnumber.getLeft(); // ignore the line numbers here
+                if (sl != null) line = sl.line; // ignore the line numbers here
                 if (line == null && !lines.isEmpty()) {
-                    line = lines.remove(0).getLeft(); // ignore the line numbers here
+                    line = lines.remove(0).line; // ignore the line numbers here
                     lineNumber++;
                 }
                 if (line == null) {
                     if (preProcessor.withinMacroDefinition()) {
                         // we fail to evaluate the macro, but it's ok, some times it can happen
+                        succeeded = false;
                         break;
                     } else {
                         config.debug("Glass: successfully assembled macro " + macro.name);
@@ -189,13 +193,15 @@ public class GlassDialect implements Dialect {
                     if (!preProcessor.parseMacroLine(Tokenizer.tokenize(line),
                                                      line, lineNumber, f, code, config)) {
                         // we fail to evaluate the macro, but it's ok, some times it can happen
+                        succeeded = false;
                         break;
                     }
                 } else {
                     SourceStatement s = config.lineParser.parse(Tokenizer.tokenize(line),
                                                                 line, lineNumber, f, code, config);
                     if (s == null) {
-                        // we fail to evaluate the macro, but it's ok, some times it can happen
+                        // we fail to assemble the macro, but it's ok, some times it can happen
+                        succeeded = false;
                         break;
                     }
                     if (!s.isEmpty()) {
@@ -207,10 +213,12 @@ public class GlassDialect implements Dialect {
             }
         } catch (Exception e) {
             // we fail to evaluate the macro, but it's ok, some times it can happen
+            succeeded = false;
         }
-
-        config.lineParser.popLabelPrefix();
         config.logger.resume();
+        
+        if (!succeeded) config.debug("Glass: failed to assemble macro " + macro.name);
+        
         return true;
     }
 

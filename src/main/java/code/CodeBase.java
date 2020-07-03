@@ -75,9 +75,18 @@ public class CodeBase {
     }
     
     
-    public void addSymbol(String name, SourceConstant sc)
+    public boolean addSymbol(String name, SourceConstant sc)
     {
+        if (symbols.containsKey(name)) {
+            if (symbols.get(name).exp != null) {
+                config.error("Redefining symbol " + name);
+                config.error("First defined in " + symbols.get(name).s.source.fileName + ", " + symbols.get(name).s.lineNumber + " as " + symbols.get(name).exp + ": " + symbols.get(name).s);
+                config.error("Redefined in " + sc.s.source.fileName + ", " + sc.s.lineNumber + " as " + symbols.get(name).exp + ": " + sc.s);
+                return false;
+            }
+        }
         symbols.put(name, sc);
+        return true;
     }
     
     

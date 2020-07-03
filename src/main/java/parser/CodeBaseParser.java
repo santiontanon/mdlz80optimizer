@@ -8,12 +8,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.lang3.tuple.Pair;
-
 import cl.MDLConfig;
 import code.CodeBase;
 import code.SourceFile;
 import code.SourceStatement;
+import org.apache.commons.lang3.tuple.Pair;
 import util.Resources;
 
 public class CodeBaseParser {
@@ -67,36 +66,31 @@ public class CodeBaseParser {
     }
 
     // Returns: <<line,lineNumber>, file_linenumber>
-    Pair<Pair<String, Integer>, Integer> getNextLine(BufferedReader br, int file_linenumber, List<String> tokens)
+    Pair<SourceLine, Integer> getNextLine(BufferedReader br, SourceFile f, int file_linenumber, List<String> tokens)
             throws IOException
     {
-        Pair<String,Integer> line_lnumber = config.preProcessor.expandMacros();
-        String line = null;
-        int lineNumber = file_linenumber;
-        if (line_lnumber != null) {
-            line = line_lnumber.getLeft();
-            lineNumber = line_lnumber.getRight();
-        }
-        if (line == null) {
+        SourceLine sl = config.preProcessor.expandMacros();
+        if (sl == null) {
+            String line = null;
             if (br != null) line = br.readLine();
             if (line == null) return null;
             file_linenumber++;
-            lineNumber = file_linenumber;
+            sl = new SourceLine(line, f, file_linenumber);
         }
 
-        Tokenizer.tokenize(line, tokens);
+        Tokenizer.tokenize(sl.line, tokens);
         if (!tokens.isEmpty() && tokens.get(tokens.size()-1).equals(",")) {
             // unfinished line, get the next one!
             List<String> tokens2 = new ArrayList<>();
-            Pair<Pair<String,Integer>, Integer> tmp = getNextLine(br, lineNumber, tokens2);
+            Pair<SourceLine, Integer> tmp = getNextLine(br, sl.source, file_linenumber, tokens2);
             if (tmp != null) {
-                line += "\n" + tmp.getLeft().getLeft();
+                sl.line += "\n" + tmp.getLeft().line;
                 tokens.addAll(tokens2);
                 file_linenumber = tmp.getRight();
             }
         }
 
-        return Pair.of(Pair.of(line, lineNumber), file_linenumber);
+        return Pair.of(sl, file_linenumber);
     }
 
 
@@ -108,7 +102,7 @@ public class CodeBaseParser {
             int file_lineNumber = 0;
             while(true) {
                 List<String> tokens = new ArrayList<>();
-                Pair<Pair<String,Integer>, Integer> tmp = getNextLine(br, file_lineNumber, tokens);
+                Pair<SourceLine, Integer> tmp = getNextLine(br, f, file_lineNumber, tokens);
                 if (tmp == null) {
                     if (config.preProcessor.withinMacroDefinition()) {
                         config.error("File " +f.fileName+ " ended while inside a macro definition: " + config.preProcessor.getCurrentMacro().name);
@@ -117,9 +111,9 @@ public class CodeBaseParser {
                     return true;
                 }
                 file_lineNumber = tmp.getRight();
-                String line = tmp.getLeft().getLeft();
+                String line = tmp.getLeft().line;
                 int line_lineNumber = file_lineNumber;
-                if (tmp.getLeft().getRight() != null) line_lineNumber = tmp.getLeft().getRight();
+                if (tmp.getLeft().lineNumber != null) line_lineNumber = tmp.getLeft().lineNumber;
 
                 if (config.preProcessor.withinMacroDefinition()) {
                     if (!config.preProcessor.parseMacroLine(tokens, line, line_lineNumber, f, code, config)) return false;
@@ -150,7 +144,7 @@ public class CodeBaseParser {
                 }
 
                 if (!config.preProcessor.handleStatement("", s_macro.lineNumber, s_macro, f, code, true)) {
-                    config.error("Cannot expand macro " + s_macro.macroCallName);
+                    config.error("Cannot expand macro " + s_macro.macroCallName + " in " + s_macro.source.fileName + ", " + s_macro.lineNumber);
                     return false;
                 }
 
@@ -160,7 +154,7 @@ public class CodeBaseParser {
                 int insertionPoint = i;
                 while(true) {
                     List<String> tokens = new ArrayList<>();
-                    Pair<Pair<String, Integer>, Integer> tmp = getNextLine(null, s_macro.lineNumber, tokens);
+                    Pair<SourceLine, Integer> tmp = getNextLine(null, f, s_macro.lineNumber, tokens);
                     if (tmp == null) {
                         if (config.preProcessor.withinMacroDefinition()) {
                             config.error("File " + f.fileName + " ended while inside a macro definition");
@@ -168,9 +162,9 @@ public class CodeBaseParser {
                         }
                         break;
                     }
-                    String line = tmp.getLeft().getLeft();
+                    String line = tmp.getLeft().line;
                     int lineNumber = s_macro.lineNumber;
-                    if (tmp.getLeft().getRight() != null) lineNumber = tmp.getLeft().getRight();
+                    if (tmp.getLeft().lineNumber != null) lineNumber = tmp.getLeft().lineNumber;
                     if (config.preProcessor.withinMacroDefinition()) {
                         if (!config.preProcessor.parseMacroLine(tokens, line, lineNumber, f, code, config)) return false;
                     } else {

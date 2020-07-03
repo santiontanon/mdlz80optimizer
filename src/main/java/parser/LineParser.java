@@ -69,6 +69,12 @@ public class LineParser {
         labelPrefix = labelPrefixStack.remove(0);
     }
     
+    
+    public String getLabelPrefix()
+    {
+        return labelPrefix;
+    }
+    
 
     public String newSymbolName(String name, Expression value) {
         if (config.dialectParser != null) {
@@ -92,92 +98,10 @@ public class LineParser {
     
 
     boolean parseInternal(List<String> tokens, String line, int lineNumber, SourceStatement s, SourceFile source, CodeBase code) {
-        if (tokens.isEmpty()) {
-            return true;
-        }
+        if (!parseLabel(tokens, line, lineNumber, s, source, code, true)) return false;
 
+        if (tokens.isEmpty()) return true;
         String token = tokens.get(0);
-
-        // The very first thing is to check if there is a label:
-        if (tokens.size() >= 2
-                && Tokenizer.isSymbol(token)
-                && tokens.get(1).equals(":")) {
-            Expression exp = Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, code);
-
-            if (tokens.size() >= 3) {
-                if (!isKeyword(tokens.get(2), KEYWORD_EQU)) {
-                    tokens.remove(0);
-                    tokens.remove(0);
-
-                    String symbolName = newSymbolName(labelPrefix + token, exp);
-                    if (symbolName == null) {
-                        config.error("Problem defining symbol " + labelPrefix + token + " in " + source.fileName + ", " + lineNumber + ": " + line);
-                        return false;
-                    }
-                    SourceConstant c = new SourceConstant(symbolName, null, exp, s);
-                    s.type = SourceStatement.STATEMENT_NONE;
-                    s.label = c;
-                    code.addSymbol(c.name, c);
-                    token = tokens.get(0);
-                }
-            } else {
-                tokens.remove(0);
-                tokens.remove(0);
-
-                String symbolName = newSymbolName(labelPrefix + token, exp);
-                if (symbolName == null) {
-                    config.error("Problem defining symbol " + labelPrefix + token + " in " + source.fileName + ", " + lineNumber + ": " + line);
-                    return false;
-                }
-                SourceConstant c = new SourceConstant(symbolName, null, exp, s);
-                s.type = SourceStatement.STATEMENT_NONE;
-                s.label = c;
-                code.addSymbol(c.name, c);
-                return parseRestofTheLine(tokens, line, lineNumber, s, source);
-            }
-        } else if (Tokenizer.isSymbol(token)) {
-            if (line.startsWith(token)) {
-                if (tokens.size() == 1 || tokens.get(1).startsWith(";")) {
-                    // it is just a label without colon:
-                    if (config.warningLabelWithoutColon) {
-                        config.warn("Label defined without a colon in "
-                                + source.fileName + ", " + lineNumber + ": " + line);
-                    }
-                    Expression exp = Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, code);
-                    int address = exp.evaluate(s, code, false);
-                    tokens.remove(0);
-
-                    String symbolName = newSymbolName(labelPrefix + token, exp);
-                    if (symbolName == null) {
-                        config.error("Problem defining symbol " + labelPrefix + token + " in " + source.fileName + ", " + lineNumber + ": " + line);
-                        return false;
-                    }
-                    SourceConstant c = new SourceConstant(symbolName, address, exp, s);
-                    s.type = SourceStatement.STATEMENT_NONE;
-                    s.label = c;
-                    code.addSymbol(c.name, c);
-                    return parseRestofTheLine(tokens, line, lineNumber, s, source);
-                } else if (tokens.size() >= 3 && isKeyword(tokens.get(1), "equ")) {
-                    // equ without a colon (provide warning):
-                    if (config.warningLabelWithoutColon) {
-                        config.warn("Label defined without a colon in "
-                                + source.fileName + ", " + lineNumber + ": " + line);
-                    }
-                    tokens.remove(0);
-                    tokens.remove(0);
-                    return parseEqu(tokens, token, line, lineNumber, s, source, code);
-                }
-            } else if (tokens.size() >= 3 && tokens.get(1).equalsIgnoreCase("equ")) {
-                // equ without a colon (provide warning):
-                if (config.warningLabelWithoutColon) {
-                    config.warn("Label defined without a colon in "
-                            + source.fileName + ", " + lineNumber + ": " + line);
-                }
-                tokens.remove(0);
-                tokens.remove(0);
-                return parseEqu(tokens, token, line, lineNumber, s, source, code);
-            }
-        }
 
         if (isKeyword(token, KEYWORD_ORG)) {
             tokens.remove(0);
@@ -190,15 +114,6 @@ public class LineParser {
         } else if (isKeyword(token, KEYWORD_INCBIN)) {
             tokens.remove(0);
             return parseIncbin(tokens, line, lineNumber, s, source, code);
-
-        } else if (tokens.size() >= 4
-                && Tokenizer.isSymbol(token)
-                && tokens.get(1).equals(":")
-                && isKeyword(tokens.get(2), KEYWORD_EQU)) {
-            tokens.remove(0);
-            tokens.remove(0);
-            tokens.remove(0);
-            return parseEqu(tokens, token, line, lineNumber, s, source, code);
 
         } else if (tokens.size() >= 2
                 && (isKeyword(token, KEYWORD_DB)
@@ -233,6 +148,110 @@ public class LineParser {
         } else {
             return parseRestofTheLine(tokens, line, lineNumber, s, source);
         }
+    }
+    
+    
+    public boolean parseLabel(List<String> tokens, String line, int lineNumber, SourceStatement s, SourceFile source, CodeBase code, boolean defineInCodeBase) {
+        if (tokens.isEmpty()) return true;
+
+        String token = tokens.get(0);
+
+        if (tokens.size() >= 2
+                && Tokenizer.isSymbol(token)
+                && tokens.get(1).equals(":")) {
+            Expression exp = Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, code);
+
+            if (tokens.size() >= 3) {
+                if (!isKeyword(tokens.get(2), KEYWORD_EQU)) {
+                    tokens.remove(0);
+                    tokens.remove(0);
+
+                    String symbolName = newSymbolName(labelPrefix + token, exp);
+                    if (symbolName == null) {
+                        config.error("Problem defining symbol " + labelPrefix + token + " in " + source.fileName + ", " + lineNumber + ": " + line);
+                        return false;
+                    }
+                    SourceConstant c = new SourceConstant(symbolName, null, exp, s);
+                    s.type = SourceStatement.STATEMENT_NONE;
+                    s.label = c;
+                    if (defineInCodeBase) {
+                        if (!code.addSymbol(c.name, c)) return false;
+                    }
+                }
+            } else {
+                tokens.remove(0);
+                tokens.remove(0);
+
+                String symbolName = newSymbolName(labelPrefix + token, exp);
+                if (symbolName == null) {
+                    config.error("Problem defining symbol " + labelPrefix + token + " in " + source.fileName + ", " + lineNumber + ": " + line);
+                    return false;
+                }
+                SourceConstant c = new SourceConstant(symbolName, null, exp, s);
+                s.type = SourceStatement.STATEMENT_NONE;
+                s.label = c;
+                if (defineInCodeBase) {
+                    if (!code.addSymbol(c.name, c)) return false;
+                }
+                return parseRestofTheLine(tokens, line, lineNumber, s, source);
+            }
+        } else if (Tokenizer.isSymbol(token)) {
+            if (line.startsWith(token)) {
+                if (tokens.size() == 1 || tokens.get(1).startsWith(";")) {
+                    // it is just a label without colon:
+                    if (config.warningLabelWithoutColon) {
+                        config.warn("Label defined without a colon in "
+                                + source.fileName + ", " + lineNumber + ": " + line);
+                    }
+                    Expression exp = Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, code);
+                    int address = exp.evaluate(s, code, false);
+                    tokens.remove(0);
+
+                    String symbolName = newSymbolName(labelPrefix + token, exp);
+                    if (symbolName == null) {
+                        config.error("Problem defining symbol " + labelPrefix + token + " in " + source.fileName + ", " + lineNumber + ": " + line);
+                        return false;
+                    }
+                    SourceConstant c = new SourceConstant(symbolName, address, exp, s);
+                    s.type = SourceStatement.STATEMENT_NONE;
+                    s.label = c;
+                    if (defineInCodeBase) {
+                        if (!code.addSymbol(c.name, c)) return false;
+                    }
+                    return parseRestofTheLine(tokens, line, lineNumber, s, source);
+                } else if (tokens.size() >= 3 && isKeyword(tokens.get(1), KEYWORD_EQU)) {
+                    // equ without a colon (provide warning):
+                    if (config.warningLabelWithoutColon) {
+                        config.warn("Label defined without a colon in "
+                                + source.fileName + ", " + lineNumber + ": " + line);
+                    }
+                    tokens.remove(0);
+                    tokens.remove(0);
+                    return parseEqu(tokens, token, line, lineNumber, s, source, code, defineInCodeBase);
+                }
+            } else if (tokens.size() >= 3 && tokens.get(1).equalsIgnoreCase(KEYWORD_EQU)) {
+                // equ without a colon (provide warning):
+                if (config.warningLabelWithoutColon) {
+                    config.warn("Label defined without a colon in "
+                            + source.fileName + ", " + lineNumber + ": " + line);
+                }
+                tokens.remove(0);
+                tokens.remove(0);
+                return parseEqu(tokens, token, line, lineNumber, s, source, code, defineInCodeBase);
+            }
+        }
+        
+        if (tokens.size() >= 4
+                && Tokenizer.isSymbol(token)
+                && tokens.get(1).equals(":")
+                && isKeyword(tokens.get(2), KEYWORD_EQU)) {
+            tokens.remove(0);
+            tokens.remove(0);
+            tokens.remove(0);
+            return parseEqu(tokens, token, line, lineNumber, s, source, code, defineInCodeBase);
+        }
+        
+        return true;
     }
     
 
@@ -333,7 +352,7 @@ public class LineParser {
     
     public boolean parseEqu(List<String> tokens, String label,
             String line, int lineNumber,
-            SourceStatement s, SourceFile source, CodeBase code) {
+            SourceStatement s, SourceFile source, CodeBase code, boolean defineInCodeBase) {
         Expression exp = config.expressionParser.parse(tokens, code);
         if (exp == null) {
             config.error("Cannot parse line " + source.fileName + ", "
@@ -350,7 +369,9 @@ public class LineParser {
             SourceConstant c = new SourceConstant(symbolName, value, exp, s);
             s.type = SourceStatement.STATEMENT_CONSTANT;
             s.label = c;
-            code.addSymbol(c.name, c);
+            if (defineInCodeBase) {
+                if (!code.addSymbol(c.name, c)) return false;
+            }
             return parseRestofTheLine(tokens, line, lineNumber, s, source);
         }
     }
@@ -412,7 +433,8 @@ public class LineParser {
                         + lineNumber + ": " + line);
                 return false;
             }
-            if (!tokens.isEmpty() && !tokens.get(0).startsWith(";")) {
+            if (!tokens.isEmpty() && tokens.get(0).startsWith(",")) {
+                tokens.remove(0);
                 exp_value = config.expressionParser.parse(tokens, code);
                 if (exp_value == null) {
                     config.error("Cannot parse line " + source.fileName + ", "
@@ -549,17 +571,17 @@ public class LineParser {
             if (parentPath.equals("")) {
                 justPath = rawFileName.substring(0, idx);
             } else {
-                justPath = parentPath + File.separator + rawFileName.substring(0, idx);
+                justPath = parentPath + (parentPath.endsWith(File.separator) ? "":File.separator) + rawFileName.substring(0, idx);
             }
             justFileName = rawFileName.substring(idx + 1);
         }
-        String candidatePath = justPath + File.separator + justFileName;
+        String candidatePath = justPath + (justPath.endsWith(File.separator) ? "":File.separator) + justFileName;
         if (Resources.exists(candidatePath)) {
             return candidatePath;
         }
 
         for (String directory : config.includeDirectories) {
-            candidatePath = directory + File.separator + rawFileName;
+            candidatePath = directory + (candidatePath.endsWith(File.separator) ? "":File.separator) + rawFileName;
             if (Resources.exists(candidatePath)) {
                 return candidatePath;
             }

@@ -44,5 +44,5 @@ public interface Dialect {
     // Glass actually compiles the code inside macros, rather than treating it simply as
     // text to be copy/pasted when the macro is expanded (as the default parser of MDL does).
     // - returns "false" if an error occurred
-    public boolean newMacro(SourceMacro macro, CodeBase code);
+    public boolean newMacro(SourceMacro macro, CodeBase code);    
 }

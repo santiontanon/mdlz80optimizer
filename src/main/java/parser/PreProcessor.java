@@ -7,8 +7,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 
-import org.apache.commons.lang3.tuple.Pair;
-
 import cl.MDLConfig;
 import code.CodeBase;
 import code.SourceFile;
@@ -18,15 +16,17 @@ import code.SourceStatement;
  *
  * @author santi
  */
-public class PreProcessor {
+public class PreProcessor {    
+    
     MDLConfig config;
 
     // current Macro we are parsing (should be null at the end of parsing a file):
     List<String> currentMacroNameStack = new ArrayList<>();
     SourceMacro currentMacro = null;
+    int macroExpansionCounter = 0;
 
     // Each Pair has a line and a line number:
-    List<List<Pair<String,Integer>>> macroExpansions = new ArrayList<>();
+    List<MacroExpansion> macroExpansions = new ArrayList<>();
 
     LinkedHashMap<String, SourceMacro> macros = new LinkedHashMap<>();
 
@@ -68,13 +68,13 @@ public class PreProcessor {
     }
 
 
-    public Pair<String,Integer> expandMacros()
+    public SourceLine expandMacros()
     {
-        while(!macroExpansions.isEmpty() && macroExpansions.get(0).isEmpty()) {
+        while(!macroExpansions.isEmpty() && macroExpansions.get(0).lines.isEmpty()) {
             macroExpansions.remove(0);
         }
         if (!macroExpansions.isEmpty()) {
-            return macroExpansions.get(0).remove(0);
+            return macroExpansions.get(0).lines.remove(0);
         } else {
             return null;
         }
@@ -93,9 +93,9 @@ public class PreProcessor {
                     f.addStatement(s);
                     currentMacro = null;
                 } else if (m.name.equalsIgnoreCase(SourceMacro.MACRO_IF)) {
-                    m.addLine(line, lineNumber);
+                    m.addLine(line, f, lineNumber);
                 } else if (m.name.equalsIgnoreCase(SourceMacro.MACRO_IFDEF)) {
-                    m.addLine(line, lineNumber);
+                    m.addLine(line, f, lineNumber);
                 } else {
                     if (!addMacro(m, code)) {
                         return false;
@@ -104,7 +104,7 @@ public class PreProcessor {
                 }
             } else {
                 currentMacroNameStack.remove(0);
-                m.addLine(line, lineNumber);
+                m.addLine(line, f, lineNumber);
             }
         } else if (!tokens.isEmpty() && tokens.get(0).equalsIgnoreCase(SourceMacro.MACRO_ENDR)) {
             if (currentMacroNameStack.isEmpty()) {
@@ -115,11 +115,11 @@ public class PreProcessor {
                     f.addStatement(s);
                     currentMacro = null;
                 } else {
-                    m.addLine(line, lineNumber);
+                    m.addLine(line, f, lineNumber);
                 }
             } else {
                 currentMacroNameStack.remove(0);
-                m.addLine(line, lineNumber);
+                m.addLine(line, f, lineNumber);
             }
         } else if (!tokens.isEmpty() && tokens.get(0).equalsIgnoreCase(SourceMacro.MACRO_ENDIF)) {
             if (currentMacroNameStack.isEmpty()) {
@@ -131,30 +131,30 @@ public class PreProcessor {
                     f.addStatement(s);
                     currentMacro = null;
                 } else {
-                    m.addLine(line, lineNumber);
+                    m.addLine(line, f, lineNumber);
                 }
             } else {
                 currentMacroNameStack.remove(0);
-                m.addLine(line, lineNumber);
+                m.addLine(line, f, lineNumber);
             }
         } else if (!tokens.isEmpty() && tokens.get(0).equalsIgnoreCase(SourceMacro.MACRO_ELSE)) {
             if (m.name.equalsIgnoreCase(SourceMacro.MACRO_IF) ||
                 m.name.equalsIgnoreCase(SourceMacro.MACRO_IFDEF)) {
                 m.insideElse = true;
             } else {
-                m.addLine(line, lineNumber);
+                m.addLine(line, f, lineNumber);
             }
         } else if (!tokens.isEmpty() && tokens.get(0).equalsIgnoreCase(SourceMacro.MACRO_IF)) {
             currentMacroNameStack.add(0, SourceMacro.MACRO_IF);
-            m.addLine(line, lineNumber);
+            m.addLine(line, f, lineNumber);
         } else if (!tokens.isEmpty() && tokens.get(0).equalsIgnoreCase(SourceMacro.MACRO_IFDEF)) {
             currentMacroNameStack.add(0, SourceMacro.MACRO_IFDEF);
-            m.addLine(line, lineNumber);
+            m.addLine(line, f, lineNumber);
         } else if (!tokens.isEmpty() && tokens.get(0).equalsIgnoreCase(SourceMacro.MACRO_REPT)) {
             currentMacroNameStack.add(0, SourceMacro.MACRO_REPT);
-            m.addLine(line, lineNumber);
+            m.addLine(line, f, lineNumber);
         } else {
-            m.addLine(line, lineNumber);
+            m.addLine(line, f, lineNumber);
         }
 
         return true;
@@ -166,7 +166,7 @@ public class PreProcessor {
     {
         if (s.type == SourceStatement.STATEMENT_MACROCALL) {
             if (s.macroCallMacro != null) {
-                List<Pair<String,Integer>> expandedMacro = s.macroCallMacro.instantiate(s.macroCallArguments, code, config);
+                MacroExpansion expandedMacro = s.macroCallMacro.instantiate(s.macroCallArguments, s, code, config);
                 if (expandedMacro == null) {
                     config.error("Problem instantiating macro "+s.macroCallName+" in " + source.fileName + ", " +
                                  lineNumber + ": " + line);
@@ -207,7 +207,7 @@ public class PreProcessor {
             } else {
                 SourceMacro m = getMacro(s.macroCallName);
                 if (m != null) {
-                    List<Pair<String,Integer>> expandedMacro = m.instantiate(s.macroCallArguments, code, config);
+                    MacroExpansion expandedMacro = m.instantiate(s.macroCallArguments, s, code, config);
                     if (expandedMacro == null) {
                         config.error("Problem instantiating macro "+s.macroCallName+" in " + source.fileName + ", " +
                                      lineNumber + ": " + line);
@@ -254,5 +254,11 @@ public class PreProcessor {
         return true;
     }
 
+    
+    public String nextMacroExpansionContextName()
+    {
+        macroExpansionCounter++;
+        return "___expanded_macro___" + macroExpansionCounter;
+    }
 
 }
