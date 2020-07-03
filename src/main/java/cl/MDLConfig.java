@@ -281,20 +281,29 @@ public class MDLConfig {
         return true;
     }
 
+    
     public void debug(String message) {
         logger.log(MDLLogger.DEBUG, message);
     }
 
+    
     public void info(String message) {
         logger.log(MDLLogger.INFO, message);
     }
 
+    
     public void warn(String message) {
         logger.log(MDLLogger.WARNING, message);
     }
 
+    
     public void error(String message) {
         logger.log(MDLLogger.ERROR, message);
+    }
+    
+    
+    public void annotation(String fileName, int lineNumber, String tag, String message) {
+        logger.annotation(fileName, lineNumber, tag, message);
     }
 
 }

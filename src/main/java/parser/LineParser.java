@@ -202,6 +202,7 @@ public class LineParser {
                     if (config.warningLabelWithoutColon) {
                         config.warn("Label defined without a colon in "
                                 + source.fileName + ", " + lineNumber + ": " + line);
+                        config.annotation(source.fileName, lineNumber, "warning", "Label defined without a colon.");
                     }
                     Expression exp = Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, code);
                     int address = exp.evaluate(s, code, false);
@@ -224,6 +225,7 @@ public class LineParser {
                     if (config.warningLabelWithoutColon) {
                         config.warn("Label defined without a colon in "
                                 + source.fileName + ", " + lineNumber + ": " + line);
+                        config.annotation(source.fileName, lineNumber, "warning", "Label defined without a colon.");
                     }
                     tokens.remove(0);
                     tokens.remove(0);
@@ -234,6 +236,7 @@ public class LineParser {
                 if (config.warningLabelWithoutColon) {
                     config.warn("Label defined without a colon in "
                             + source.fileName + ", " + lineNumber + ": " + line);
+                    config.annotation(source.fileName, lineNumber, "warning", "Label defined without a colon.");
                 }
                 tokens.remove(0);
                 tokens.remove(0);

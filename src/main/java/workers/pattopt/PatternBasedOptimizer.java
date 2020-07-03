@@ -175,6 +175,7 @@ public class PatternBasedOptimizer implements MDLWorker {
                             config.info(previousCode);
                             config.info("Replaced by:");
                             config.info(newCode);
+                            config.annotation(f.fileName, lineNumber, "optimization", patt.name);
                         }
                         r.patternApplications++;
                         r.bytesSaved += patt.getSpaceSaving(match);
