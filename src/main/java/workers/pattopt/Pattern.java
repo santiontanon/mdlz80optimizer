@@ -120,18 +120,18 @@ public class Pattern {
                 // it's a variable!
                 if (arg1.symbolName.startsWith("?reg")) {
                     if (arg2.isRegister(code)) {
-                        match.variablesMatched.put(arg1.symbolName, arg2);
+                        if (!match.addVariableMatch(arg1.symbolName, arg2)) return false;
                     } else {
                         return false;
                     }
                 } else if (arg1.symbolName.startsWith("?const")) {
                     if (arg2.evaluatesToNumericConstant()) {
-                        match.variablesMatched.put(arg1.symbolName, arg2);
+                        if (!match.addVariableMatch(arg1.symbolName, arg2)) return false;
                     } else {
                         return false;
                     }
                 } else if (arg1.symbolName.startsWith("?any")) {
-                    match.variablesMatched.put(arg1.symbolName, arg2);
+                    if (!match.addVariableMatch(arg1.symbolName, arg2)) return false;
                 } else {
                     throw new RuntimeException("opMatch: unrecognized variable name " + arg1.symbolName);
                 }
@@ -141,7 +141,7 @@ public class Pattern {
                 if (arg1.args.get(0).symbolName.startsWith("?const")) {
                     if (arg2.type == Expression.EXPRESSION_PARENTHESIS &&
                         arg2.args.get(0).evaluatesToNumericConstant()) {
-                        match.variablesMatched.put(arg1.args.get(0).symbolName, arg2.args.get(0));
+                        if (!match.addVariableMatch(arg1.args.get(0).symbolName, arg2.args.get(0))) return false;
                     } else {
                         return false;
                     }
@@ -153,7 +153,7 @@ public class Pattern {
             }
         }
 
-        config.debug("opMatch:" + pat1 + " with " + op2 + "    (" + match.variablesMatched + ")");
+        config.debug("opMatch:" + pat1 + " with " + op2 + "    (" + match.variables + ")");
 
         return true;
     }
@@ -185,8 +185,8 @@ public class Pattern {
         for(String[] raw_constraint:constraints) {
             String []constraint = new String[raw_constraint.length];
             for(int i = 0;i<raw_constraint.length;i++) {
-                if (match.variablesMatched.containsKey(raw_constraint[i])) {
-                    constraint[i] = match.variablesMatched.get(raw_constraint[i]).toString();
+                if (match.variables.containsKey(raw_constraint[i])) {
+                    constraint[i] = match.variables.get(raw_constraint[i]).toString();
                 } else {
                     constraint[i] = raw_constraint[i];
                 }

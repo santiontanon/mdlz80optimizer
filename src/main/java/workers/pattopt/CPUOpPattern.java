@@ -48,8 +48,8 @@ public class CPUOpPattern {
         List<Expression> instantiatedArgs = new ArrayList<>();
         for(Expression arg:args) {
             String argStr = arg.toString();
-            for(String variable:match.variablesMatched.keySet()) {
-                argStr = argStr.replace(variable, match.variablesMatched.get(variable).toString());
+            for(String variable:match.variables.keySet()) {
+                argStr = argStr.replace(variable, match.variables.get(variable).toString());
             }
             instantiatedArgs.add(config.expressionParser.parse(Tokenizer.tokenize(argStr), code));
         }
