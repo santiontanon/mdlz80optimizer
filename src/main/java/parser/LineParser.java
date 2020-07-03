@@ -403,9 +403,9 @@ public class LineParser {
             }
         }
 
-        if (label.equalsIgnoreCase("db")) {
+        if (isKeyword(label, KEYWORD_DB)) {
             s.type = SourceStatement.STATEMENT_DATA_BYTES;
-        } else if (label.equalsIgnoreCase("dw")) {
+        } else if (isKeyword(label, KEYWORD_DW)) {
             s.type = SourceStatement.STATEMENT_DATA_WORDS;
         } else {
             s.type = SourceStatement.STATEMENT_DATA_DOUBLE_WORDS;
