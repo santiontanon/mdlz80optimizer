@@ -587,11 +587,11 @@ public class LineParser {
         }
 
         // Relative to original source file
-        String sourcePath = FilenameUtils.getFullPath(source.getPath());
+        String sourcePath = source.getAbsolutePath();
         if (StringUtils.isNotBlank(sourcePath)) {
             final String relativePath = FilenameUtils.concat(sourcePath, rawFileName);
             if (Resources.exists(relativePath)) {
-                config.info("Included file " + rawFileName + " found relative to original source file");
+                config.debug("Included file " + rawFileName + " found relative to original source file");
                 return relativePath;
             }
         }
@@ -600,7 +600,7 @@ public class LineParser {
         for (File includePath : config.includeDirectories) {
             final String relativePath = FilenameUtils.concat(includePath.getAbsolutePath(), rawFileName);
             if (Resources.exists(relativePath)) {
-                config.info("Included file " + rawFileName + " found relative to include path " + includePath);
+                config.debug("Included file " + rawFileName + " found relative to include path " + includePath);
                 return relativePath;
             }
         }
