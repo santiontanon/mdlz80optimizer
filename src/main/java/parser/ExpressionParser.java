@@ -249,13 +249,13 @@ public class ExpressionParser {
             Tokenizer.isInteger(tokens.get(0))) {
             // decimal constant:
             String token = tokens.remove(0);
-            return Expression.constantExpression(Integer.parseInt(token));
+            return Expression.constantExpression(Integer.parseInt(token), config);
         }
         if (tokens.size() >= 1 &&
             Tokenizer.isString(tokens.get(0))) {
             // string constant:
             String token = tokens.remove(0);
-            return Expression.constantExpression(Tokenizer.stringValue(token));
+            return Expression.constantExpression(Tokenizer.stringValue(token), config);
         }
         if (tokens.size() >= 1 &&
             (tokens.get(0).charAt(0) >= '0' && tokens.get(0).charAt(0) <= '9') &&
@@ -264,7 +264,7 @@ public class ExpressionParser {
             String token = tokens.get(0);
             if (Tokenizer.isHex(token)) {
                 tokens.remove(0);
-                return Expression.constantExpression(Tokenizer.parseHex(token));
+                return Expression.constantExpression(Tokenizer.parseHex(token), config);
             }
         }
         if (tokens.size() >= 1 &&
@@ -274,7 +274,7 @@ public class ExpressionParser {
             String token = tokens.get(0);
             if (Tokenizer.isBinary(token)) {
                 tokens.remove(0);
-                return Expression.constantExpression(Tokenizer.parseBinary(token));
+                return Expression.constantExpression(Tokenizer.parseBinary(token), config);
             }
         }
         if (tokens.size() >= 1 &&
@@ -284,7 +284,7 @@ public class ExpressionParser {
             String token = tokens.get(0);
             if (Tokenizer.isOctal(token)) {
                 tokens.remove(0);
-                return Expression.constantExpression(Tokenizer.parseOctal(token));
+                return Expression.constantExpression(Tokenizer.parseOctal(token), config);
             }
         }
         if (tokens.size() >= 1 && tokens.get(0).length() > 1 &&
@@ -293,7 +293,7 @@ public class ExpressionParser {
             String token = tokens.get(0);
             if (Tokenizer.isHex(token)) {
                 tokens.remove(0);
-                return Expression.constantExpression(Tokenizer.parseHex(token));
+                return Expression.constantExpression(Tokenizer.parseHex(token), config);
             }
         }
         if (tokens.size() >= 1 &&
@@ -302,7 +302,7 @@ public class ExpressionParser {
             String token = tokens.get(0).substring(2);
             if (Tokenizer.isHex(token)) {
                 tokens.remove(0);
-                return Expression.constantExpression(Tokenizer.parseHex(token));
+                return Expression.constantExpression(Tokenizer.parseHex(token), config);
             }
         }
         if (tokens.size() >= 1 &&
@@ -310,16 +310,16 @@ public class ExpressionParser {
             // symbol:
             String token = tokens.remove(0);
             if (config.dialectParser != null) token = config.dialectParser.symbolName(token);
-            return Expression.symbolExpression(token, code);
-        }
-        if (tokens.size() >= 2 &&
+            return Expression.symbolExpression(token, code, config);
+        }        
+        if (tokens.size() >= 2 && 
             (tokens.get(0).equals("%"))) {
             // should be a binary constant:
             String token = tokens.get(1);
             if (Tokenizer.isBinary(token)) {
                 tokens.remove(0);
                 tokens.remove(0);
-                return Expression.constantExpression(Tokenizer.parseBinary(token));
+                return Expression.constantExpression(Tokenizer.parseBinary(token), config);
             }
         }
         if (tokens.size() >= 2 &&
@@ -332,7 +332,7 @@ public class ExpressionParser {
                     exp.numericConstant = -exp.numericConstant;
                     return exp;
                 } else {
-                    return Expression.signChangeExpression(exp);
+                    return Expression.signChangeExpression(exp, config);
                 }
             }
         }
@@ -341,14 +341,14 @@ public class ExpressionParser {
             // a bit negated expression:
             tokens.remove(0);
             Expression exp = parseInternal(tokens, code);
-            return Expression.bitNegationExpression(exp);
+            return Expression.bitNegationExpression(exp, config);
         }
         if (tokens.size() >= 2 &&
             tokens.get(0).equals("!")) {
             // a logical negation expression:
             tokens.remove(0);
             Expression exp = parseInternal(tokens, code);
-            return Expression.operatorExpression(Expression.EXPRESSION_LOGICAL_NEGATION, exp);
+            return Expression.operatorExpression(Expression.EXPRESSION_LOGICAL_NEGATION, exp, config);
         }
 
         if (tokens.size() >= 2 &&
@@ -356,7 +356,7 @@ public class ExpressionParser {
             tokens.remove(0);
             // variable name symbol:
             String token = "?" + tokens.remove(0);
-            return Expression.symbolExpression(token, code);
+            return Expression.symbolExpression(token, code, config);
         }
         if (tokens.size() >= 3 &&
             (tokens.get(0).equals("(") || tokens.get(0).equals("["))) {
@@ -366,7 +366,7 @@ public class ExpressionParser {
             if (exp != null && tokens.size() >= 1 &&
                 (tokens.get(0).equals(")") || tokens.get(0).equals("]"))) {
                 tokens.remove(0);
-                return Expression.parenthesisExpression(exp);
+                return Expression.parenthesisExpression(exp, config);
             }
         }
 

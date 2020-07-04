@@ -32,7 +32,7 @@ public class Resources {
         // From filesystem
         if (existsInFileSystem(path)) {
             File file = new File(path).getAbsoluteFile();
-            return new BufferedReader(new FileReader(file));
+            return new BufferedReader(new FileReader(file));        
         }
 
         // File not found

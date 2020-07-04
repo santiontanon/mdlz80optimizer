@@ -55,6 +55,13 @@ public class MDLConfig {
 
     public boolean warningLabelWithoutColon = true;
     public boolean warningJpHlWithParenthesis = true;
+    public boolean warningUnofficialOps = true;
+
+    public boolean convertToOfficial = true;
+    
+    // Two variables, as if they are both false, no conversion is done
+    public boolean opsInLowerCase = true;
+    public boolean opsInUpperCase = false;
 
     // code annotations:
     public String PRAGMA_NO_OPTIMIZATION = "mdl:no-opt";
@@ -80,9 +87,12 @@ public class MDLConfig {
             + "  -trace: turns on trace messages.\n"
             + "  -warn-off-labelnocolon: turns off warnings for not placing colons after labels.\n"
             + "  -warn-off-jp(rr): turns off warnings for using confusing 'jp (hl)' instead of 'jp hl' (this is turned off by default in dialects that do not support this).\n"
+            + "  -warn-off-unofficial: turns off warnings for using unofficial op syntax (e.g., 'add 1' instead of 'add a,1'.\n"
+            + "  -do-not-convert-to-official: turns off automatic con ersion of unofficial op syntax to official ones in assembler output.\n"
             + "  -hex#: hex numbers render like #ffff (default).\n" + "  -HEX#: hex numbers render like #FFFF.\n"
             + "  -hexh: hex numbers render like 0ffffh.\n" + "  -HEXH: hex numbers render like 0FFFFh.\n"
             + "  -+bin: includes binary files (incbin) in the output analyses.\n"
+            + "  -opcase <case>: whether to convert the assembler operators to upper or lower case. Possible values are: none/lower/upper (none does no conversion). Default is 'lower'.\n"
             + "  -no-opt-pragma <value>: changes the pragma to be inserted in a comment on a line to prevent optimizing it (default: "
             + PRAGMA_NO_OPTIMIZATION + ")" + "\n";
 
@@ -102,7 +112,7 @@ public class MDLConfig {
     /*
      * Returns null if everything is fine, and an error string otherwise.
      */
-    public boolean parse(String... argsArray) throws IOException {
+    public boolean parseArgs(String... argsArray) throws IOException {
         if (argsArray.length == 0) {
             MDLLogger.logger().info(docString);
             return false;
@@ -208,6 +218,16 @@ public class MDLConfig {
                         args.remove(0);
                         break;
 
+                    case "-warn-off-unofficial":
+                        warningUnofficialOps = false;
+                        args.remove(0);
+                        break;
+
+                    case "-do-not-convert-to-official":
+                        convertToOfficial = false;
+                        args.remove(0);
+                        break;
+                        
                     case "-+bin":
                         includeBinariesInAnalysis = true;
                         args.remove(0);
@@ -243,6 +263,32 @@ public class MDLConfig {
                         }
                         break;
 
+                    case "-opcase":
+                        if (args.size()>=2) {
+                            args.remove(0);
+                            switch(args.remove(0)) {
+                                case "none":
+                                    opsInLowerCase = false;
+                                    opsInUpperCase = false;
+                                    break;
+                                case "lower":
+                                    opsInLowerCase = false;
+                                    opsInUpperCase = true;
+                                    break;
+                                case "upper":
+                                    opsInLowerCase = true;
+                                    opsInUpperCase = false;
+                                    break;
+                                default:
+                                    error("Unknown value for -opcase argument!");
+                                    return false;                                    
+                            }
+                            
+                        } else {
+                            error("Missing pragma after " + arg);
+                            return false;
+                        }
+                        break;
 
                     default:
                     {

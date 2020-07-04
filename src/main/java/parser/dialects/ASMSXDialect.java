@@ -10,10 +10,18 @@ import cl.MDLConfig;
 import cl.MDLLogger;
 import code.CodeBase;
 import code.Expression;
+import code.SourceConstant;
 import code.SourceFile;
 import code.SourceStatement;
+import java.io.BufferedReader;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.StringTokenizer;
+import java.util.stream.Collectors;
+import org.apache.commons.io.IOUtils;
 import parser.SourceMacro;
 import parser.Tokenizer;
+import util.Resources;
 
 /**
  *
@@ -21,6 +29,8 @@ import parser.Tokenizer;
  */
 public class ASMSXDialect implements Dialect {
     MDLConfig config;
+    
+    String biosCallsFileName = "data/msx-bios-calls.asm";    
 
     String lastAbsoluteLabel = null;
     SourceStatement romHeaderStatement = null;
@@ -118,13 +128,63 @@ public class ASMSXDialect implements Dialect {
             return name;
         }
     }
-
+    
+    
+    String []parseBiosCallLine(String line)
+    {
+        String tokens[] = new String[2]; // name + address
+        StringTokenizer st = new StringTokenizer(line, ": \t");
+        if (!st.hasMoreTokens()) {
+            return null;
+        }
+        tokens[0] = st.nextToken();
+        if (!st.hasMoreTokens()) {
+            return null;
+        }
+        String equ = st.nextToken();
+        if (!equ.equalsIgnoreCase("equ")) {
+            return null;
+        }
+        if (!st.hasMoreTokens()) {
+            return null;
+        }
+        tokens[1] = st.nextToken();
+        return tokens;
+    }
+    
+    
+    List<String []>loadBiosCalls()
+    {
+        try (BufferedReader br = Resources.asReader(biosCallsFileName)) {
+            return IOUtils.readLines(br)
+                    .stream()
+                    .filter(line -> !line.trim().isEmpty())
+                    .filter(line -> !line.startsWith(";"))
+                    .map(line -> parseBiosCallLine(line))
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            config.error("Cannot read bios calls file "+biosCallsFileName);
+            return null;
+        }
+    }
+    
 
     @Override
     public boolean parseLine(List<String> tokens, String line, int lineNumber, SourceStatement s, SourceFile source, CodeBase code) {
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase(".bios")) {
             tokens.remove(0);
-            // just ignore this line, as it seems it does nothing ...
+            // Define all the bios calls:
+            List<String []> biosCalls = loadBiosCalls();
+            if (biosCalls == null) {
+                config.error("Cannot read bios calls file in " + source.fileName + ", " + lineNumber + ": " + line);
+                return false;                
+            }
+            for(String []biosCall:biosCalls) {
+                SourceStatement biosCallStatement = new SourceStatement(SourceStatement.STATEMENT_CONSTANT, source, lineNumber, null);
+                int address = Tokenizer.parseHex(biosCall[1]);
+                biosCallStatement.label = new SourceConstant(biosCall[0], address, Expression.constantExpression(address, config), biosCallStatement);
+                source.addStatement(biosCallStatement);
+            }
             return config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source);
         }
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase(".filename")) {
@@ -152,8 +212,8 @@ public class ASMSXDialect implements Dialect {
             }
             s.type = SourceStatement.STATEMENT_ORG;
             s.org = Expression.operatorExpression(Expression.EXPRESSION_MUL,
-                    Expression.parenthesisExpression(page_exp),
-                    Expression.constantExpression(16*1024), config);
+                    Expression.parenthesisExpression(page_exp, config),
+                    Expression.constantExpression(16*1024, config), config);
             // Since we are not producing compiled output, we ignore this directive
             return config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source);
         }
@@ -188,14 +248,14 @@ public class ASMSXDialect implements Dialect {
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase(".byte")) {
             tokens.remove(0);
             s.type = SourceStatement.STATEMENT_DEFINE_SPACE;
-            s.space = Expression.constantExpression(1);
+            s.space = Expression.constantExpression(1, config);
             s.space_value = null;
             return config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source);
         }
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase(".word")) {
             tokens.remove(0);
             s.type = SourceStatement.STATEMENT_DEFINE_SPACE;
-            s.space = Expression.constantExpression(2);
+            s.space = Expression.constantExpression(2, config);
             s.space_value = null;
             return config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source);
         }
@@ -206,19 +266,19 @@ public class ASMSXDialect implements Dialect {
             romHeaderStatement = s;
             s.type = SourceStatement.STATEMENT_DATA_BYTES;
             s.data = data;
-            data.add(Expression.constantExpression("AB"));
+            data.add(Expression.constantExpression("AB", config));
             if (startLabel == null) {
-                data.add(Expression.constantExpression(0)); // start address place holder
-                data.add(Expression.constantExpression(0));
+                data.add(Expression.constantExpression(0, config)); // start address place holder
+                data.add(Expression.constantExpression(0, config)); 
             } else {
-                data.add(Expression.operatorExpression(Expression.EXPRESSION_MOD,
-                        startLabel,
-                        Expression.constantExpression(256), config));
-                data.add(Expression.operatorExpression(Expression.EXPRESSION_DIV,
-                        startLabel,
-                        Expression.constantExpression(256), config));
+                data.add(Expression.operatorExpression(Expression.EXPRESSION_MOD, 
+                        startLabel, 
+                        Expression.constantExpression(256, config), config)); 
+                data.add(Expression.operatorExpression(Expression.EXPRESSION_DIV, 
+                        startLabel, 
+                        Expression.constantExpression(256, config), config)); 
             }
-            for(int i = 0;i<12;i++) data.add(Expression.constantExpression(0));
+            for(int i = 0;i<12;i++) data.add(Expression.constantExpression(0, config));
             return config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source);
         }
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase(".start")) {
@@ -230,12 +290,12 @@ public class ASMSXDialect implements Dialect {
             }
             startLabel = exp;
             if (romHeaderStatement != null) {
-                romHeaderStatement.data.set(1,Expression.operatorExpression(Expression.EXPRESSION_MOD,
-                        startLabel,
-                        Expression.constantExpression(256), config));
-                romHeaderStatement.data.set(2,Expression.operatorExpression(Expression.EXPRESSION_DIV,
-                        startLabel,
-                        Expression.constantExpression(256), config));
+                romHeaderStatement.data.set(1,Expression.operatorExpression(Expression.EXPRESSION_MOD, 
+                        startLabel, 
+                        Expression.constantExpression(256, config), config)); 
+                romHeaderStatement.data.set(2,Expression.operatorExpression(Expression.EXPRESSION_DIV, 
+                        startLabel, 
+                        Expression.constantExpression(256, config), config)); 
             }
             return config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source);
         }
@@ -249,5 +309,6 @@ public class ASMSXDialect implements Dialect {
     public boolean newMacro(SourceMacro macro, CodeBase code) {
         return true;
     }
+    
 
 }

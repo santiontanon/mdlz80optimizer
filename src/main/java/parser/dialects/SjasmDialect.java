@@ -146,7 +146,7 @@ public class SjasmDialect implements Dialect {
                 }
                 if (s2.label != null) {
                     s2.type = SourceStatement.STATEMENT_CONSTANT;
-                    s2.label.exp = Expression.constantExpression(offset_prev);
+                    s2.label.exp = Expression.constantExpression(offset_prev, config);
                 } else {
                     s2.type = SourceStatement.STATEMENT_NONE;
                 }

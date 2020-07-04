@@ -149,7 +149,7 @@ public class GlassDialect implements Dialect {
             if (macro.defaultValues.get(i) != null) {
                 args.add(macro.defaultValues.get(i));
             } else {
-                args.add(Expression.constantExpression(0));
+                args.add(Expression.constantExpression(0, config));
             }
         }
 

@@ -152,7 +152,7 @@ public class LineParser {
         } else if (config.dialectParser != null && config.dialectParser.recognizeIdiom(tokens)) {
             return config.dialectParser.parseLine(tokens, line, lineNumber, s, source, code);
         } else if (Tokenizer.isSymbol(token)) {
-            // try to parse it as an assembler instruction or macro call:
+            // try to parseArgs it as an assembler instruction or macro call:
             tokens.remove(0);
             if (config.opParser.isOpName(token)) {
                 return parseZ80Op(tokens, token, line, lineNumber, s, source, code);
@@ -173,7 +173,7 @@ public class LineParser {
         if (tokens.size() >= 2
                 && Tokenizer.isSymbol(token)
                 && tokens.get(1).equals(":")) {
-            Expression exp = Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, code);
+            Expression exp = Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, code, config);
 
             if (tokens.size() >= 3) {
                 tokens.remove(0);
@@ -215,7 +215,7 @@ public class LineParser {
                             + source.fileName + ", " + lineNumber + ": " + line);
                     config.annotation(source.fileName, lineNumber, "warning", "Label defined without a colon.");
                 }
-                Expression exp = Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, code);
+                Expression exp = Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, code, config);
                 int address = exp.evaluate(s, code, false);
                 tokens.remove(0);
 
@@ -387,7 +387,7 @@ public class LineParser {
         boolean done = false;
         if (allowEmptyDB_DW_DD_definitions) {
             if (tokens.isEmpty() || tokens.get(0).startsWith(";")) {
-                data.add(Expression.constantExpression(0));
+                data.add(Expression.constantExpression(0, config));
                 done = true;
             }
         }
@@ -459,7 +459,7 @@ public class LineParser {
                     return false;
                 }
             } else {
-                exp_value = Expression.constantExpression(0);
+                exp_value = Expression.constantExpression(0, config);
             }
 
             s.type = SourceStatement.STATEMENT_DEFINE_SPACE;
@@ -518,7 +518,7 @@ public class LineParser {
             return false;
         }
 
-        // parse arguments:
+        // parseArgs arguments:
         List<String> args = new ArrayList<>();
         List<Expression> defaultValues = new ArrayList<>();
         while (tokens.size() >= 2 && tokens.get(0).equals("?")) {
@@ -587,6 +587,8 @@ public class LineParser {
             return rawFileName;
         }
 
+        /*
+        santi: commenting this out temporarily just to resolve conflicts, once merged, I'll uncomment and try it out!
         // Relative to original source file (relative paths; e.g.: classpath)
         String sourcePath = FilenameUtils.getFullPath(source.fileName);
         if (StringUtils.isNotBlank(sourcePath)) {
@@ -596,11 +598,15 @@ public class LineParser {
                 return relativePath;
             }
         }
+        */
 
-        // Relative to original source file (absolute paths; e.g.: file system)
-        sourcePath = source.getAbsolutePath();
+        // Relative to original source file
+        String sourcePath = source.getPath();
         if (StringUtils.isNotBlank(sourcePath)) {
-            final String relativePath = FilenameUtils.concat(sourcePath, rawFileName);
+            // santi: Do NOT change to "FilenameUtils.concat", that function assumes that the first argument
+            // is an absolute directory, which in different configurations cannot be ensured to be true.
+            // for example when calling mdl like: java -jar mdl.jar ../project/src/main.asm -I ../project2/src
+            final String relativePath = pathConcat(sourcePath, rawFileName);
             if (Resources.exists(relativePath)) {
                 MDLLogger.logger().debug("Included file " + rawFileName + " found relative to original source file");
                 return relativePath;
@@ -609,7 +615,9 @@ public class LineParser {
 
         // Relative to any include directory
         for (File includePath : config.includeDirectories) {
-            final String relativePath = FilenameUtils.concat(includePath.getAbsolutePath(), rawFileName);
+            // santi: Do NOT change to "FilenameUtils.concat", that function assumes that the first argument
+            // is an absolute directory, which in different configurations cannot be ensured to be true.            
+            final String relativePath = pathConcat(includePath.getAbsolutePath(), rawFileName);
             if (Resources.exists(relativePath)) {
                 MDLLogger.logger().debug("Included file " + rawFileName + " found relative to include path " + includePath);
                 return relativePath;
@@ -619,5 +627,16 @@ public class LineParser {
         MDLLogger.logger().error("Cannot find include file " + rawFileName);
         return null;
     }
+    
+    
+    String pathConcat(String path, String fileName)
+    {
+        if (path.endsWith(File.separator)) {
+            return path + fileName;
+        } else {
+            return path + File.separator + fileName;
+        }
+    }
+    
 
 }

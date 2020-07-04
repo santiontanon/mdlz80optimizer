@@ -49,17 +49,19 @@ public class Expression {
          9,  9,  9, 10, 16,
          7,  7, 11, 13,  3,
          12};
-
+    
+    MDLConfig config;
     public int type;
     public int numericConstant;
     public String stringConstant;
     public String symbolName;
     public String registerOrFlagName;
     public List<Expression> args= null;
-
-    private Expression(int a_type)
+    
+    private Expression(int a_type, MDLConfig a_config)
     {
         type = a_type;
+        config = a_config;
     }
 
 
@@ -309,8 +311,14 @@ public class Expression {
     {
         switch(type) {
             case EXPRESSION_REGISTER_OR_FLAG:
-                return registerOrFlagName;
-            case EXPRESSION_NUMERIC_CONSTANT:
+                if (config.opsInLowerCase) {
+                    return registerOrFlagName.toLowerCase();
+                } else if (config.opsInUpperCase) {
+                    return registerOrFlagName.toUpperCase();
+                } else {
+                    return registerOrFlagName;
+                }
+            case EXPRESSION_NUMERIC_CONSTANT: 
                 return ""+numericConstant;
             case EXPRESSION_STRING_CONSTANT:
                 return "\"" + stringConstant + "\"";
@@ -644,69 +652,69 @@ public class Expression {
             return granularity;
         }
     }
-
-
-    public static Expression constantExpression(int v)
+    
+    
+    public static Expression constantExpression(int v, MDLConfig config)
     {
-        Expression exp = new Expression(EXPRESSION_NUMERIC_CONSTANT);
+        Expression exp = new Expression(EXPRESSION_NUMERIC_CONSTANT, config);
         exp.numericConstant = v;
         return exp;
     }
 
 
-    public static Expression constantExpression(String v)
+    public static Expression constantExpression(String v, MDLConfig config)
     {
-        Expression exp = new Expression(EXPRESSION_STRING_CONSTANT);
+        Expression exp = new Expression(EXPRESSION_STRING_CONSTANT, config);
         exp.stringConstant = v;
         return exp;
     }
 
 
-    public static Expression symbolExpression(String symbol, CodeBase code)
+    public static Expression symbolExpression(String symbol, CodeBase code, MDLConfig config)
     {
         if (code.isRegister(symbol) ||
             code.isCondition(symbol)) {
-            Expression exp = new Expression(EXPRESSION_REGISTER_OR_FLAG);
+            Expression exp = new Expression(EXPRESSION_REGISTER_OR_FLAG, config);
             exp.registerOrFlagName = symbol;
             return exp;
         } else {
-            Expression exp = new Expression(EXPRESSION_SYMBOL);
+            Expression exp = new Expression(EXPRESSION_SYMBOL, config);
             exp.symbolName = symbol;
             return exp;
         }
     }
 
-
-    public static Expression signChangeExpression(Expression arg)
+    
+    public static Expression signChangeExpression(Expression arg, MDLConfig config)
     {
-        Expression exp = new Expression(EXPRESSION_SIGN_CHANGE);
+        Expression exp = new Expression(EXPRESSION_SIGN_CHANGE, config);
+        exp.args = new ArrayList<>();
+        exp.args.add(arg);
+        return exp;
+    }
+
+    
+    public static Expression bitNegationExpression(Expression arg, MDLConfig config)
+    {
+        Expression exp = new Expression(EXPRESSION_BITNEGATION, config);
         exp.args = new ArrayList<>();
         exp.args.add(arg);
         return exp;
     }
 
 
-    public static Expression bitNegationExpression(Expression arg)
+    public static Expression parenthesisExpression(Expression arg, MDLConfig config)
     {
-        Expression exp = new Expression(EXPRESSION_BITNEGATION);
+        Expression exp = new Expression(EXPRESSION_PARENTHESIS, config);
         exp.args = new ArrayList<>();
         exp.args.add(arg);
         return exp;
     }
 
 
-    public static Expression parenthesisExpression(Expression arg)
+    public static Expression operatorExpression(int operator, Expression arg, MDLConfig config)
     {
-        Expression exp = new Expression(EXPRESSION_PARENTHESIS);
-        exp.args = new ArrayList<>();
-        exp.args.add(arg);
-        return exp;
-    }
-
-
-    public static Expression operatorExpression(int operator, Expression arg)
-    {
-        Expression exp = new Expression(operator);
+        Expression exp = new Expression(operator, config);
         exp.args = new ArrayList<>();
         exp.args.add(arg);
         return exp;
@@ -727,7 +735,7 @@ public class Expression {
                 OPERATOR_PRECEDENCE[operator] < OPERATOR_PRECEDENCE[arg2.type]) {
                 if (OPERATOR_PRECEDENCE[arg1.type] < OPERATOR_PRECEDENCE[arg2.type]) {
                     // (1 arg1 (2 operator 3)) arg2 4
-                    Expression exp = new Expression(operator);
+                    Expression exp = new Expression(operator, config);
                     exp.args = new ArrayList<>();
                     exp.args.add(arg1.args.get(arg1.args.size()-1));
                     exp.args.add(arg2.args.get(0));
@@ -736,7 +744,7 @@ public class Expression {
                     return arg2;
                 } else {
                     // 1 arg1 ((2 operator 3) arg2 4)
-                    Expression exp = new Expression(operator);
+                    Expression exp = new Expression(operator, config);
                     exp.args = new ArrayList<>();
                     exp.args.add(arg1.args.get(arg1.args.size()-1));
                     exp.args.add(arg2.args.get(0));
@@ -746,7 +754,7 @@ public class Expression {
                 }
             } else {
                 // 1 arg1 (2 operator arg2)
-                Expression exp = new Expression(operator);
+                Expression exp = new Expression(operator, config);
                 exp.args = new ArrayList<>();
                 exp.args.add(arg1.args.get(arg1.args.size()-1));
                 exp.args.add(arg2);
@@ -757,15 +765,15 @@ public class Expression {
                    OPERATOR_PRECEDENCE[operator] < OPERATOR_PRECEDENCE[arg2.type]) {
             // operator has higher precedence than the one in arg2, we need to reorder!
             // (arg1 operator 3) arg2 4
-            Expression exp = new Expression(operator);
+            Expression exp = new Expression(operator, config);
             exp.args = new ArrayList<>();
             exp.args.add(arg1);
             exp.args.add(arg2.args.get(0));
             arg2.args.set(0, exp);
             return arg2;
         }
-
-        Expression exp = new Expression(operator);
+        
+        Expression exp = new Expression(operator, config);
         exp.args = new ArrayList<>();
         exp.args.add(arg1);
         exp.args.add(arg2);
@@ -775,7 +783,7 @@ public class Expression {
 
     public static Expression operatorTernaryExpression(int operator, Expression arg1, Expression arg2, Expression arg3, MDLConfig config)
     {
-        Expression exp = new Expression(operator);
+        Expression exp = new Expression(operator, config);
         exp.args = new ArrayList<>();
         exp.args.add(arg1);
         exp.args.add(arg2);

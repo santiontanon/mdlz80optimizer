@@ -9,8 +9,6 @@ import java.util.List;
 import org.apache.commons.io.FilenameUtils;
 
 import cl.MDLConfig;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 public class SourceFile {
     MDLConfig config;
@@ -27,9 +25,9 @@ public class SourceFile {
         config = a_config;
     }
 
-    public String getAbsolutePath() {
-        Path sourceRelativePath = Paths.get(fileName);
-        return FilenameUtils.getFullPath(sourceRelativePath.toAbsolutePath().toString());
+    
+    public String getPath() {
+        return FilenameUtils.getFullPath(fileName);
     }
 
 
