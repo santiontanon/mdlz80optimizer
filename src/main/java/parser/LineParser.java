@@ -14,6 +14,10 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+
+import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.StringUtils;
+
 import util.Resources;
 
 public class LineParser {
@@ -28,7 +32,7 @@ public class LineParser {
     public String KEYWORD_DS = "ds";
     HashMap<String, String> keywordSynonyms = new HashMap<>();
     public List<String> keywordsHintingALabel = new ArrayList<>();
-    
+
     // If this is set to true then "ds 1" is the same as "ds virtual 1"
     public boolean defineSpaceVirtualByDefault = false;
     public boolean allowEmptyDB_DW_DD_definitions = false;
@@ -40,19 +44,19 @@ public class LineParser {
     String labelPrefix = "";
     List<String> labelPrefixStack = new ArrayList<>();
 
-    
+
     public LineParser(MDLConfig a_config, CodeBaseParser a_codeBaseParser) {
         config = a_config;
         codeBaseParser = a_codeBaseParser;
-        
+
         keywordsHintingALabel.add(KEYWORD_EQU);
     }
-    
-    
+
+
     public void addKeywordSynonym(String synonym, String kw) {
         keywordSynonyms.put(synonym, kw);
     }
-    
+
 
     public boolean isKeyword(String token, String kw) {
         if (token.equalsIgnoreCase(kw)) {
@@ -66,23 +70,23 @@ public class LineParser {
         return false;
     }
 
-    
+
     public void pushLabelPrefix(String a_lp) {
         labelPrefixStack.add(0, labelPrefix);
         labelPrefix = a_lp;
     }
-    
+
 
     public void popLabelPrefix() {
         labelPrefix = labelPrefixStack.remove(0);
     }
-    
-    
+
+
     public String getLabelPrefix()
     {
         return labelPrefix;
     }
-    
+
 
     public String newSymbolName(String name, Expression value) {
         if (config.dialectParser != null) {
@@ -92,7 +96,7 @@ public class LineParser {
         }
     }
 
-    
+
     public SourceStatement parse(List<String> tokens, String line, int lineNumber,
             SourceFile f, CodeBase code, MDLConfig config) {
         SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_NONE, f, lineNumber, null);
@@ -102,7 +106,7 @@ public class LineParser {
         }
         return s;
     }
-    
+
 
     boolean parseInternal(List<String> tokens, String line, int lineNumber, SourceStatement s, SourceFile source, CodeBase code) {
         if (!parseLabel(tokens, line, lineNumber, s, source, code, true)) return false;
@@ -158,8 +162,8 @@ public class LineParser {
             return parseRestofTheLine(tokens, line, lineNumber, s, source);
         }
     }
-    
-    
+
+
     public boolean parseLabel(List<String> tokens, String line, int lineNumber, SourceStatement s, SourceFile source, CodeBase code, boolean defineInCodeBase) {
         if (tokens.isEmpty()) return true;
 
@@ -255,10 +259,10 @@ public class LineParser {
                 }
             }
         }
-                
+
         return true;
     }
-    
+
 
     public boolean parseRestofTheLine(List<String> tokens,
             String line, int lineNumber,
@@ -275,7 +279,7 @@ public class LineParser {
                 + lineNumber + ": " + line);
         return false;
     }
-    
+
 
     public boolean parseOrg(List<String> tokens,
             String line, int lineNumber,
@@ -291,7 +295,7 @@ public class LineParser {
             return parseRestofTheLine(tokens, line, lineNumber, s, source);
         }
     }
-    
+
 
     public boolean parseInclude(List<String> tokens,
             String line, int lineNumber,
@@ -320,7 +324,7 @@ public class LineParser {
                 + lineNumber + ": " + line);
         return false;
     }
-    
+
 
     public boolean parseIncbin(List<String> tokens,
             String line, int lineNumber,
@@ -354,7 +358,7 @@ public class LineParser {
         return false;
     }
 
-    
+
     public boolean parseEqu(List<String> tokens,
             String line, int lineNumber,
             SourceStatement s, SourceFile source, CodeBase code, boolean defineInCodeBase) {
@@ -374,7 +378,7 @@ public class LineParser {
         return parseRestofTheLine(tokens, line, lineNumber, s, source);
     }
 
-    
+
     public boolean parseData(List<String> tokens, String label,
             String line, int lineNumber,
             SourceStatement s, SourceFile source, CodeBase code) {
@@ -414,7 +418,7 @@ public class LineParser {
         return parseRestofTheLine(tokens, line, lineNumber, s, source);
     }
 
-    
+
     public boolean parseDefineSpace(List<String> tokens,
             String line, int lineNumber,
             SourceStatement s, SourceFile source, CodeBase code) {
@@ -464,7 +468,7 @@ public class LineParser {
 
         return parseRestofTheLine(tokens, line, lineNumber, s, source);
     }
-    
+
 
     public boolean parseZ80Op(List<String> tokens, String opName,
             String line, int lineNumber,
@@ -501,7 +505,7 @@ public class LineParser {
         return parseRestofTheLine(tokens, line, lineNumber, s, source);
     }
 
-    
+
     public boolean parseMacroDefinition(List<String> tokens,
             String line, int lineNumber,
             SourceStatement s, SourceFile source, CodeBase code) {
@@ -543,7 +547,7 @@ public class LineParser {
         return parseRestofTheLine(tokens, line, lineNumber, s, source);
     }
 
-    
+
     public boolean parseMacroCall(List<String> tokens, String macroName,
             String line, int lineNumber,
             SourceStatement s, SourceFile source, CodeBase code) {
@@ -573,29 +577,31 @@ public class LineParser {
         return parseRestofTheLine(tokens, line, lineNumber, s, source);
     }
 
-    
+
     public String resolveIncludePath(String rawFileName, SourceFile source) {
-        String parentPath = source.getPath();
-        String justPath = parentPath;
-        String justFileName = rawFileName;
-        int idx = rawFileName.lastIndexOf(File.separator);
-        if (idx != -1) {
-            if (parentPath.equals("")) {
-                justPath = rawFileName.substring(0, idx);
-            } else {
-                justPath = parentPath + (parentPath.endsWith(File.separator) ? "":File.separator) + rawFileName.substring(0, idx);
-            }
-            justFileName = rawFileName.substring(idx + 1);
-        }
-        String candidatePath = justPath + (justPath.endsWith(File.separator) ? "":File.separator) + justFileName;
-        if (Resources.exists(candidatePath)) {
-            return candidatePath;
+
+        // Relative to current directory
+        if (Resources.exists(rawFileName)) {
+            config.info("Included file " + rawFileName + " found relative to current directory");
+            return rawFileName;
         }
 
-        for (String directory : config.includeDirectories) {
-            candidatePath = directory + (candidatePath.endsWith(File.separator) ? "":File.separator) + rawFileName;
-            if (Resources.exists(candidatePath)) {
-                return candidatePath;
+        // Relative to original source file
+        String sourcePath = FilenameUtils.getFullPath(source.getPath());
+        if (StringUtils.isNotBlank(sourcePath)) {
+            final String relativePath = FilenameUtils.concat(sourcePath, rawFileName);
+            if (Resources.exists(relativePath)) {
+                config.info("Included file " + rawFileName + " found relative to original source file");
+                return relativePath;
+            }
+        }
+
+        // Relative to any include directory
+        for (File includePath : config.includeDirectories) {
+            final String relativePath = FilenameUtils.concat(includePath.getAbsolutePath(), rawFileName);
+            if (Resources.exists(relativePath)) {
+                config.info("Included file " + rawFileName + " found relative to include path " + includePath);
+                return relativePath;
             }
         }
 
