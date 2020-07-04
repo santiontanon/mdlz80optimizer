@@ -56,7 +56,7 @@ public class PatternBasedOptimizerTest {
 
     private int test(String inputFile) throws IOException
     {
-        Assert.assertTrue(mdlConfig.parse(inputFile));
+        Assert.assertTrue(mdlConfig.parseArgs(inputFile));
         Assert.assertNotNull(
                 "Could not parse file " + inputFile,
                 mdlConfig.codeBaseParser.parseMainSourceFile(mdlConfig.inputFile, codeBase));

@@ -33,12 +33,21 @@ public class CPUOpSpecParser {
         String inputFile = "data/z80-instruction-set.tsv";
 
         try (BufferedReader br = Resources.asReader(inputFile)) {
-            return IOUtils.readLines(br)
+            List<CPUOpSpec> specs = IOUtils.readLines(br)
                     .stream()
                     .filter(line -> !line.startsWith(";"))
                     .map(line -> parseOpSpecLine(line.split("\t"), config))
                     .filter(opSpec -> opSpec != null)
                     .collect(Collectors.toList());
+            
+            for(CPUOpSpec spec:specs) {
+                if (!spec.searchOfficialEquivalent(specs)) {
+                    config.error("CPU op " + spec + " defined as unofficial, but there is no official equivalent!");
+                    return null;
+                }
+            }
+            
+            return specs;
         }
     }
 
@@ -60,7 +69,12 @@ public class CPUOpSpecParser {
             times[i] = Integer.parseInt(timesStr[i]);
         }
 
-        CPUOpSpec spec = new CPUOpSpec(opName.toLowerCase(), size, times, config);
+        boolean official = true;
+        if (data.length > 14) {
+            official = Boolean.parseBoolean(data[14]);
+        }
+        CPUOpSpec spec = new CPUOpSpec(opName.toLowerCase(), 
+                size, times, data[4], official, config);
 
         while(st.hasMoreTokens()) {
             String argStr = st.nextToken();
@@ -199,7 +213,7 @@ public class CPUOpSpecParser {
             spec.addArgSpec(arg);
         }
 
-        // parse dependencies:
+        // parseArgs dependencies:
         // input:
         if (data.length>6) {
             spec.inputRegs = parseDeps(data[6]);

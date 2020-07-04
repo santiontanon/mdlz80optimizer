@@ -13,6 +13,10 @@ public class CPUOpSpec {
     public List<CPUOpSpecArg> args = new ArrayList<>();
     int sizeInBytes;
     int times[];
+    String byteRepresentation = null;   // even if MDL does not compile,
+                                        // this is useful to check if two instructions are the same
+    public boolean official;
+    public CPUOpSpec officialEquivalent = null;
 
     public boolean isJpRegWithParenthesis = false;
     
@@ -23,12 +27,28 @@ public class CPUOpSpec {
     public String outputPort = null, outputMemoryStart = null, outputMemoryEnd = null;
     
     
-    public CPUOpSpec(String a_opName, int a_size, int a_times[], MDLConfig a_config)
+    public CPUOpSpec(String a_opName, int a_size, int a_times[], String a_byteRepresentation, boolean a_official, MDLConfig a_config)
     {
         opName = a_opName;
         sizeInBytes = a_size;
         times = a_times;
+        byteRepresentation = a_byteRepresentation;
+        official = a_official;
         config = a_config;
+    }
+    
+    
+    public boolean searchOfficialEquivalent(List<CPUOpSpec> specs)
+    {
+        if (official) return true;
+        for(CPUOpSpec spec:specs) {
+            if (spec == this) continue;
+            if (spec.byteRepresentation.equals(byteRepresentation)) {
+                officialEquivalent = spec;
+                return true;
+            }
+        }
+        return false;
     }
     
     

@@ -3,10 +3,12 @@
  */
 package code;
 
+import cl.MDLConfig;
 import java.util.ArrayList;
 import java.util.List;
 
 public class CPUOp {
+    MDLConfig config;
     public CPUOpSpec spec;
     public List<Expression> args;
 
@@ -14,10 +16,11 @@ public class CPUOp {
     List<CPUOpDependency> outputDeps = null;
 
 
-    public CPUOp(CPUOpSpec a_spec, List<Expression> a_args)
+    public CPUOp(CPUOpSpec a_spec, List<Expression> a_args, MDLConfig a_config)
     {
         spec = a_spec;
         args = a_args;
+        config = a_config;
     }
 
 
@@ -26,6 +29,7 @@ public class CPUOp {
         spec = op.spec;
         args = new ArrayList<>();
         args.addAll(op.args);
+        config = op.config;
     }
 
 
@@ -45,6 +49,8 @@ public class CPUOp {
     public String toString()
     {
         String str = spec.opName;
+        
+        if (config.opsInLowerCase) str = str.toLowerCase();
 
         for(int i = 0;i<args.size();i++) {
             if (i==0) {

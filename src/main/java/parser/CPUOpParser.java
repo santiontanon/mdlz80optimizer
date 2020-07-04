@@ -6,6 +6,7 @@ package parser;
 import cl.MDLConfig;
 import code.CPUOp;
 import code.CPUOpSpec;
+import code.CPUOpSpecArg;
 import code.CodeBase;
 import code.Expression;
 import code.SourceStatement;
@@ -98,7 +99,48 @@ public class CPUOpParser {
                     s.source.fileName + ", " + s.lineNumber);
             config.annotation(s.source.fileName, s.lineNumber, "warning", "Use of confusing z80 'jp (reg)' syntax, rather than the more accurate 'jp reg'.");
         }
-        
-        return new CPUOp(spec, a_args);
+
+        if (!spec.official) {
+            if (config.warningUnofficialOps) {
+                config.warn("Unofficial op syntax used in " + s.source.fileName + ", " + s.lineNumber);
+                config.annotation(s.source.fileName, s.lineNumber, "warning", "Unofficial op syntax.");
+            }
+            if (config.convertToOfficial) {
+                return officialFromUnofficial(spec.officialEquivalent, spec, a_args, code);
+            }
+        }    
+        return new CPUOp(spec, a_args, config);
     }        
+    
+    
+    CPUOp officialFromUnofficial(CPUOpSpec officialSpec, CPUOpSpec unofficialSpec, List<Expression> a_args, CodeBase code)
+    {
+        List<Expression> officialArgs = new ArrayList<>();
+        List<Integer> used = new ArrayList<>();
+        for(CPUOpSpecArg officialArgSpec:officialSpec.args) {
+            boolean found = false;
+            for(int i = 0;i<unofficialSpec.args.size();i++) {
+                if (used.contains(i)) continue;
+                if (officialArgSpec.equals(unofficialSpec.args.get(i))) {
+                    officialArgs.add(a_args.get(i));
+                    used.add(i);
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                // if the missing argument is a register, that is precisely specified (in upper case), we fill it in:
+                if (officialArgSpec.reg != null && 
+                    officialArgSpec.reg.equals(officialArgSpec.reg.toUpperCase())) {
+                    officialArgs.add(Expression.symbolExpression(officialArgSpec.reg.toLowerCase(), code, config));
+                } else {
+                    // case not supported:
+                    config.error("Cannot turn unofficial assembler op to official!");
+                    return null;
+                }
+            }
+        }
+        
+        return new CPUOp(officialSpec, officialArgs, config);
+    }
 }

@@ -37,7 +37,7 @@ public class Pattern {
         int state = 0;  // 0: default, 1: expecting pattern, 2: expecting replacement, 3: expecting constraints
         CodeBase patternCB = new CodeBase(config);
 
-        // parse the pattern:
+        // parseArgs the pattern:
         String lines[] = patternString.split("\n");
         for(String line:lines) {
             line = line.trim();

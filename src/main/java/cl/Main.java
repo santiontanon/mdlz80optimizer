@@ -28,7 +28,7 @@ public class Main {
         config.registerWorker(new AnnotationsGenerator(config));
 
         // Parse command line arguments:
-        if (!config.parse(args)) return;
+        if (!config.parseArgs(args)) return;
 
         // Parse the code base:
         CodeBase code = new CodeBase(config);
