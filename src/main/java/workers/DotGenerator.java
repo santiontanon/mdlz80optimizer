@@ -3,13 +3,15 @@
  */
 package workers;
 
-import cl.MDLConfig;
-import code.CodeBase;
-import code.SourceFile;
-import code.SourceStatement;
 import java.io.FileWriter;
 import java.util.HashMap;
 import java.util.List;
+
+import cl.MDLConfig;
+import cl.MDLLogger;
+import code.CodeBase;
+import code.SourceFile;
+import code.SourceStatement;
 
 public class DotGenerator implements MDLWorker {
     public static final String BINARY_COLOR = "gray";
@@ -48,7 +50,7 @@ public class DotGenerator implements MDLWorker {
     {
         if (outputFileName == null) return true;
 
-        config.debug("Executing "+this.getClass().getSimpleName()+" worker...");
+        MDLLogger.logger().debug("Executing "+this.getClass().getSimpleName()+" worker...");
 
         HashMap<String, String> nodeNames = new HashMap<>();
         StringBuilder sb = new StringBuilder();
@@ -111,7 +113,7 @@ public class DotGenerator implements MDLWorker {
             fw.write(sb.toString());
             fw.flush();
         } catch (Exception e) {
-            config.error("Cannot write to file " + outputFileName);
+            MDLLogger.logger().error("Cannot write to file " + outputFileName);
             return false;
         }
         return true;

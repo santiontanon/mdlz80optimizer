@@ -10,6 +10,7 @@ import java.util.List;
 import org.apache.commons.lang3.tuple.Pair;
 
 import cl.MDLConfig;
+import cl.MDLLogger;
 import code.CPUOp;
 import code.CPUOpDependency;
 import code.CodeBase;
@@ -79,7 +80,7 @@ public class Pattern {
             }
         }
 
-        config.debug("parsed pattern: " + name);
+        MDLLogger.logger().trace("parsed pattern: {}", name);
     }
 
 
@@ -155,8 +156,7 @@ public class Pattern {
             }
         }
 
-        config.debug("opMatch:" + pat1 + " with " + op2 + "    (" + match.variables + ")");
-
+        MDLLogger.logger().trace("opMatch: {} with {}    ({})", pat1, op2, match.variables);
         return true;
     }
 
@@ -203,7 +203,7 @@ public class Pattern {
 
                         if (!regNotUsed(match.opMap.get(idx), reg, f, code)) {
                             if (logPatternsMatchedWithViolatedConstraints)
-                                config.info("Potential optimization ("+name+") in " + f.fileName + ", line " + f.getStatements().get(a_index).lineNumber);
+                                MDLLogger.logger().info("Potential optimization ("+name+") in " + f.fileName + ", line " + f.getStatements().get(a_index).lineNumber);
                             return null;
                         }
                     }
@@ -217,7 +217,7 @@ public class Pattern {
 
                         if (!flagNotUsed(match.opMap.get(idx), flag, f, code)) {
                             if (logPatternsMatchedWithViolatedConstraints)
-                                config.info("Potential optimization ("+name+") in " + f.fileName + ", line " + f.getStatements().get(a_index).lineNumber);
+                                MDLLogger.logger().info("Potential optimization ("+name+") in " + f.fileName + ", line " + f.getStatements().get(a_index).lineNumber);
                             return null;
                         }
                     }
@@ -292,7 +292,7 @@ public class Pattern {
         if (tmp == null) {
             // It's hard to tell where is this instruction going to jump,
             // so we act conservatively, and block the optimization:
-            config.debug("    unclear next statement after " + s);
+            MDLLogger.logger().trace("    unclear next statement after {}", s);
             return false;
         }
         for(SourceStatement s2:tmp) {
@@ -305,24 +305,24 @@ public class Pattern {
             Pair<SourceStatement, CPUOpDependency> pair = open.remove(0);
             SourceStatement next = pair.getLeft();
             CPUOpDependency dep = pair.getRight();
-            config.debug("    " + next.lineNumber + ": " + next);
+            MDLLogger.logger().trace("    {}: {}", next.lineNumber, next);
 
             if (next.type == SourceStatement.STATEMENT_CPUOP) {
                 CPUOp op = next.op;
                 if (op.isRet()) {
                     // It's hard to tell where is this instruction going to jump,
                     // so we act conservatively, and block the optimization:
-                    config.debug("    ret!");
+                    MDLLogger.logger().trace("    ret!");
                     return false;
                 }
                 if (op.checkInputDependency(dep)) {
                     // register is actually used!
-                    config.debug("    dependency found!");
+                    MDLLogger.logger().trace("    dependency found!");
                     return false;
                 }
                 dep = op.checkOutputDependency(dep);
                 if (dep == null) {
-                    config.debug("    dependency broken!");
+                    MDLLogger.logger().trace("    dependency broken!");
                 } else {
                     // add successors:
                     List<SourceStatement> nextNext_l = next.source.nextStatements(next, true, code);
@@ -330,7 +330,7 @@ public class Pattern {
                     if (nextNext_l == null) {
                         // It's hard to tell where is this instruction going to jump,
                         // so we act conservatively, and block the optimization:
-                        config.debug("    unclear next statement after: " + next);
+                        MDLLogger.logger().trace("    unclear next statement after: {}", next);
                         return false;
                     }
                     for(SourceStatement nextNext: nextNext_l) {

@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import ch.qos.logback.classic.Level;
 import code.CodeBase;
 import parser.CPUOpParser;
 import parser.CPUOpSpecParser;
@@ -59,7 +60,6 @@ public class MDLConfig {
     public String PRAGMA_NO_OPTIMIZATION = "mdl:no-opt";
 
     // utils:
-    public MDLLogger logger;
     public PreProcessor preProcessor;
     public LineParser lineParser;
     public ExpressionParser expressionParser;
@@ -74,7 +74,10 @@ public class MDLConfig {
             + "  -cpu <type>: to select a different CPU (z80/z80msx/z80cpc) (default: z80msx).\n"
             + "  -dialect <type>: to allow parsing different assembler dialects (mdl/glass/asmsx/sjasm) (default: mdl, which supports some basic code idioms common to various assemblers).\n"
             + "                   Note that even when selecting a dialect, not all syntax of a given assembler might be supported.\n"
-            + "  -I <folder>: adds a folder to the include search path.\n" + "  -debug: turns on debug messages.\n"
+            + "  -I <folder>: adds a folder to the include search path.\n"
+            + "  -quiet: turns off info messages; only outputs warnings and errors.\n"
+            + "  -debug: turns on debug messages.\n"
+            + "  -trace: turns on trace messages.\n"
             + "  -warn-off-labelnocolon: turns off warnings for not placing colons after labels.\n"
             + "  -warn-off-jp(rr): turns off warnings for using confusing 'jp (hl)' instead of 'jp hl' (this is turned off by default in dialects that do not support this).\n"
             + "  -hex#: hex numbers render like #ffff (default).\n" + "  -HEX#: hex numbers render like #FFFF.\n"
@@ -82,10 +85,6 @@ public class MDLConfig {
             + "  -+bin: includes binary files (incbin) in the output analyses.\n"
             + "  -no-opt-pragma <value>: changes the pragma to be inserted in a comment on a line to prevent optimizing it (default: "
             + PRAGMA_NO_OPTIMIZATION + ")" + "\n";
-
-    public MDLConfig() {
-        logger = new MDLLogger(MDLLogger.INFO);
-    }
 
     public void registerWorker(MDLWorker r) {
         workers.add(r);
@@ -95,7 +94,7 @@ public class MDLConfig {
     public void executeWorkers(CodeBase code) {
         for (MDLWorker w : workers) {
             if (!w.work(code)) {
-                error("Problem executing worker " + w.getClass().getSimpleName());
+                MDLLogger.logger().error("Problem executing worker {}", w.getClass().getSimpleName());
             }
         }
     }
@@ -105,7 +104,7 @@ public class MDLConfig {
      */
     public boolean parse(String... argsArray) throws IOException {
         if (argsArray.length == 0) {
-            info(docString);
+            MDLLogger.logger().info(docString);
             return false;
         }
 
@@ -132,11 +131,11 @@ public class MDLConfig {
                                     cpu = CPU_Z80CPC;
                                     break;
                                 default:
-                                    error("Unrecognized cpu " + cpuString);
+                                MDLLogger.logger().error("Unrecognized cpu {}", cpuString);
                                     return false;
                             }
                         } else {
-                            error("Missing cpu name after " + arg);
+                            MDLLogger.logger().error("Missing cpu name after {}", arg);
                             return false;
                         }
                         break;
@@ -160,11 +159,11 @@ public class MDLConfig {
                                     dialect = DIALECT_SJASM;
                                     break;
                                 default:
-                                    error("Unrecognized dialect " + dialectString);
+                                    MDLLogger.logger().error("Unrecognized dialect {}", dialectString);
                                     return false;
                             }
                         } else {
-                            error("Missing dialect name after " + arg);
+                            MDLLogger.logger().error("Missing dialect name after {}", arg);
                             return false;
                         }
                         break;
@@ -176,16 +175,26 @@ public class MDLConfig {
                             if ((includePath.isDirectory())) {
                                 includeDirectories.add(includePath);
                             } else {
-                                warn("Include path " + includePath + " is not a directory and will be ignored");
+                                MDLLogger.logger().warn("Include path {} is not a directory and will be ignored", includePath);
                             }
                         } else {
-                            error("Missing path after " + arg);
+                            MDLLogger.logger().error("Missing path after {}", arg);
                             return false;
                         }
                         break;
 
+                    case "-quiet":
+                        MDLLogger.INSTANCE.setMinLevelToLog(Level.WARN);
+                        args.remove(0);
+                        break;
+
                     case "-debug":
-                        logger.setMinLevelToLog(MDLLogger.DEBUG);
+                        MDLLogger.INSTANCE.setMinLevelToLog(Level.DEBUG);
+                        args.remove(0);
+                        break;
+
+                    case "-trace":
+                        MDLLogger.INSTANCE.setMinLevelToLog(Level.TRACE);
                         args.remove(0);
                         break;
 
@@ -229,7 +238,7 @@ public class MDLConfig {
                             args.remove(0);
                             PRAGMA_NO_OPTIMIZATION = args.remove(0);
                         } else {
-                            error("Missing pragma after " + arg);
+                            MDLLogger.logger().error("Missing pragma after {}", arg);
                             return false;
                         }
                         break;
@@ -245,7 +254,7 @@ public class MDLConfig {
                             }
                         }
                         if (!recognized) {
-                            error("Unrecognized argument " + arg);
+                            MDLLogger.logger().error("Unrecognized argument {}", arg);
                             return false;
                         }
                     }
@@ -257,7 +266,7 @@ public class MDLConfig {
                         state++;
                         break;
                     default:
-                        error("Unrecognized argument " + arg);
+                        MDLLogger.logger().error("Unrecognized argument {}", arg);
                         return false;
                 }
             }
@@ -294,35 +303,14 @@ public class MDLConfig {
      */
     public boolean verify() {
         if (inputFile == null) {
-            error("Missing inputFile");
+            MDLLogger.logger().error("Missing inputFile");
             return false;
         }
         return true;
     }
 
-
-    public void debug(String message) {
-        logger.log(MDLLogger.DEBUG, message);
-    }
-
-
-    public void info(String message) {
-        logger.log(MDLLogger.INFO, message);
-    }
-
-
-    public void warn(String message) {
-        logger.log(MDLLogger.WARNING, message);
-    }
-
-
-    public void error(String message) {
-        logger.log(MDLLogger.ERROR, message);
-    }
-
-
     public void annotation(String fileName, int lineNumber, String tag, String message) {
-        logger.annotation(fileName, lineNumber, tag, message);
+        MDLLogger.INSTANCE.annotation(fileName, lineNumber, tag, message);
     }
 
 }

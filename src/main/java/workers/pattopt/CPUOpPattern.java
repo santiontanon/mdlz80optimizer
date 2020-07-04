@@ -3,14 +3,16 @@
  */
 package workers.pattopt;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import cl.MDLConfig;
+import cl.MDLLogger;
 import code.CPUOp;
 import code.CodeBase;
 import code.Expression;
 import code.SourceFile;
 import code.SourceStatement;
-import java.util.ArrayList;
-import java.util.List;
 import parser.Tokenizer;
 
 /**
@@ -64,7 +66,7 @@ public class CPUOpPattern {
         CPUOpPattern pat = new CPUOpPattern();
         pat.ID = Integer.parseInt(tokens.remove(0));
         if (!tokens.remove(0).equals(":")) {
-            config.error("Cannot parse CPUOpPattern: " + line);
+            MDLLogger.logger().error("Cannot parse CPUOpPattern: " + line);
             return null;
         }
         pat.opName = tokens.remove(0);
@@ -72,7 +74,7 @@ public class CPUOpPattern {
             if (tokens.get(0).startsWith(";")) break;
             Expression exp = config.expressionParser.parse(tokens, code);
             if (exp == null) {
-                config.error("Cannot parse CPUOpPattern: " + line);
+                MDLLogger.logger().error("Cannot parse CPUOpPattern: " + line);
                 return null;
             } else {
                 pat.args.add(exp);

@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import cl.MDLConfig;
+import cl.MDLLogger;
 import code.CodeBase;
 import code.SourceFile;
 import code.SourceStatement;
@@ -106,16 +107,14 @@ public class PatternBasedOptimizer implements MDLWorker {
                 }
             }
         } catch (Exception e) {
-            config.error("PatternBasedOptimizer: error initializing patterns!");
-            e.printStackTrace();
+            MDLLogger.logger().error("PatternBasedOptimizer: error initializing patterns!", e);
         }
     }
 
 
     @Override
     public boolean work(CodeBase code) {
-        if (!activate) return true;
-        optimize(code);
+        if (activate) optimize(code);
         return true;
     }
 
@@ -132,54 +131,61 @@ public class PatternBasedOptimizer implements MDLWorker {
             code.resetAddresses();
         }
 
-        if (!silent) {
-            config.info("PatternBasedOptimizer: " + r.patternApplications + " patterns applied, " + r.bytesSaved + " bytes saved");
-        }
+        MDLLogger.logger().info("PatternBasedOptimizer: {} patterns applied, {} bytes saved", r.patternApplications, r.bytesSaved);
         return r;
     }
 
     public OptimizationResult optimizeWithPattern(Pattern patt, CodeBase code) {
         OptimizationResult r = new OptimizationResult();
-        for(SourceFile f:code.getSourceFiles()) {
-            for(int i = 0;i<f.getStatements().size();i++) {
+        for (SourceFile f : code.getSourceFiles()) {
+            for (int i = 0; i < f.getStatements().size(); i++) {
                 PatternMatch match = patt.match(i, f, code, config, logPatternsMatchedWithViolatedConstraints);
-                if (match != null) {
-                    int lineNumber = f.getStatements().get(i).lineNumber;
-                    int startIndex = i;
-                    int endIndex = startIndex;
-                    for(int id:match.opMap.keySet()) {
-                        int idx = f.getStatements().indexOf(match.opMap.get(id));
-                        if (idx > endIndex) endIndex = idx;
-                    }
-                    SourceStatement endStatement = null;
-                    if (f.getStatements().size()>endIndex+1) {
-                        endStatement = f.getStatements().get(endIndex+1);
-                    }
+                if (match == null) {
+                    continue;
+                }
 
-                    String previousCode = "";
-                    for(int line = startIndex;line<=endIndex;line++) {
-                        previousCode += f.getStatements().get(line).toString();
-                        if (line != endIndex) previousCode += "\n";
-                    }
+                int lineNumber = f.getStatements().get(i).lineNumber;
+                int startIndex = i;
+                int endIndex = startIndex;
+                for(int id:match.opMap.keySet()) {
+                    int idx = f.getStatements().indexOf(match.opMap.get(id));
+                    if (idx > endIndex) endIndex = idx;
+                }
+                SourceStatement endStatement = null;
+                if (f.getStatements().size()>endIndex+1) {
+                    endStatement = f.getStatements().get(endIndex+1);
+                }
 
-                    if (patt.apply(f.getStatements(), match)) {
-                        if (!silent) {
-                            String newCode = "";
+                if (patt.apply(f.getStatements(), match)) {
+                    config.annotation(f.fileName, lineNumber, "optimization", patt.name);
+
+                    if (MDLLogger.logger().isInfoEnabled()) {
+                        MDLLogger.logger().info(
+                                "Pattern-based optimization in {}#{}: {} ({} bytes saved)",
+                                f.fileName, lineNumber, patt.name, patt.getSpaceSaving(match));
+
+                        if (MDLLogger.logger().isDebugEnabled()) {
+                            StringBuilder previousCode = new StringBuilder();
+                            for(int line = startIndex;line<=endIndex;line++) {
+                                previousCode
+                                        .append('\n')
+                                        .append(f.getStatements().get(line).toString());
+                            }
+
+                            StringBuilder newCode = new StringBuilder();
                             endIndex = f.getStatements().size();
                             if (endStatement != null) endIndex = f.getStatements().indexOf(endStatement);
                             for(int line = startIndex;line<endIndex;line++) {
-                                newCode += f.getStatements().get(line).toString() + "\n";
+                                newCode
+                                        .append('\n')
+                                        .append(f.getStatements().get(line).toString());
                             }
-                            // config.info("Pattern "+patt.getName()+" applied in " + f.fileName + ", line " + lineNumber + ": " + patt.getSpaceSaving(match) + " bytes saved");
-                            config.info("PatternBasedOptimizer substitution in " + f.fileName + ", line " + lineNumber + ": " + patt.getSpaceSaving(match) + " bytes saved");
-                            config.info(previousCode);
-                            config.info("Replaced by:");
-                            config.info(newCode);
-                            config.annotation(f.fileName, lineNumber, "optimization", patt.name);
+
+                            MDLLogger.logger().debug("{}\nReplaced by:{}", previousCode, newCode);
                         }
-                        r.patternApplications++;
-                        r.bytesSaved += patt.getSpaceSaving(match);
                     }
+                    r.patternApplications++;
+                    r.bytesSaved += patt.getSpaceSaving(match);
                 }
             }
         }

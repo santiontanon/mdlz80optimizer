@@ -3,12 +3,14 @@
  */
 package workers;
 
+import java.io.FileWriter;
+import java.util.List;
+
 import cl.MDLConfig;
+import cl.MDLLogger;
 import code.CodeBase;
 import code.SourceFile;
 import code.SourceStatement;
-import java.io.FileWriter;
-import java.util.List;
 import parser.Tokenizer;
 
 /**
@@ -51,7 +53,7 @@ public class AnnotatedSourceCodeGenerator implements MDLWorker {
     public boolean work(CodeBase code) {
 
         if (outputFileName != null) {
-            config.debug("Executing "+this.getClass().getSimpleName()+" worker...");
+            MDLLogger.logger().debug("Executing "+this.getClass().getSimpleName()+" worker...");
 
             try (FileWriter fw = new FileWriter(outputFileName)) {
                 for(SourceFile sf:code.getSourceFiles()) {
@@ -65,7 +67,7 @@ public class AnnotatedSourceCodeGenerator implements MDLWorker {
                 }
                 fw.flush();
             } catch (Exception e) {
-                config.error("Cannot write to file " + outputFileName);
+                MDLLogger.logger().error("Cannot write to file " + outputFileName);
                 return false;
             }
         }

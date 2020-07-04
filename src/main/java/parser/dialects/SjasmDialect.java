@@ -5,13 +5,15 @@
  */
 package parser.dialects;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import cl.MDLConfig;
+import cl.MDLLogger;
 import code.CodeBase;
 import code.Expression;
 import code.SourceFile;
 import code.SourceStatement;
-import java.util.ArrayList;
-import java.util.List;
 import parser.SourceMacro;
 
 /**
@@ -25,7 +27,7 @@ public class SjasmDialect implements Dialect {
     String lastAbsoluteLabel = null;
     SourceFile structFile = null;
     int structStart = 0;
-    
+
     int mapCounter = 0;
     List<Integer> mapCounterStack = new ArrayList<>();
 
@@ -77,7 +79,7 @@ public class SjasmDialect implements Dialect {
             return lastAbsoluteLabel + "." + name.substring(1);
         } else {
             if (value != null &&
-                value.type == Expression.EXPRESSION_SYMBOL && 
+                value.type == Expression.EXPRESSION_SYMBOL &&
                 value.symbolName.equalsIgnoreCase(CodeBase.CURRENT_ADDRESS)) {
                 lastAbsoluteLabel = name;
             }
@@ -114,12 +116,12 @@ public class SjasmDialect implements Dialect {
         if (tokens.size() >= 1 && tokens.get(0).equalsIgnoreCase("ends")) {
             tokens.remove(0);
             if (structFile == null) {
-                config.error("ends outside of a struct at " + source.fileName + ", "
+                MDLLogger.logger().error("ends outside of a struct at " + source.fileName + ", "
                         + lineNumber + ": " + line);
                 return false;
             }
             if (structFile != source) {
-                config.error("struct split among multiple files is not supported at " + source.fileName + ", "
+                MDLLogger.logger().error("struct split among multiple files is not supported at " + source.fileName + ", "
                         + lineNumber + ": " + line);
                 return false;
             }
@@ -138,7 +140,7 @@ public class SjasmDialect implements Dialect {
                         offset += s2.sizeInBytes(code, true, true, true);
                         break;
                     default:
-                        config.error("Unsupported statement (type="+s2.type+") inside a struct definition at " + source.fileName + ", "
+                        MDLLogger.logger().error("Unsupported statement (type="+s2.type+") inside a struct definition at " + source.fileName + ", "
                                 + lineNumber + ": " + line);
                         return false;
                 }
@@ -163,9 +165,9 @@ public class SjasmDialect implements Dialect {
             tokens.remove(0);
             Expression exp = config.expressionParser.parse(tokens, code);
             if (exp == null) {
-                config.error("Cannot parse expression at " + source.fileName + ", "
+                MDLLogger.logger().error("Cannot parse expression at " + source.fileName + ", "
                         + lineNumber + ": " + line);
-                return false;                
+                return false;
             }
             mapCounterStack.add(0, mapCounter);
             mapCounter = exp.evaluate(s, code, false);
@@ -176,19 +178,19 @@ public class SjasmDialect implements Dialect {
             mapCounter = mapCounterStack.remove(0);
             return config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source);
         }
-        if (tokens.size() >= 2 && 
+        if (tokens.size() >= 2 &&
             (tokens.get(0).equalsIgnoreCase("#") || tokens.get(0).equalsIgnoreCase("field"))) {
             tokens.remove(0);
             Expression exp = config.expressionParser.parse(tokens, code);
             if (exp == null) {
-                config.error("Cannot parse expression at " + source.fileName + ", "
+                MDLLogger.logger().error("Cannot parse expression at " + source.fileName + ", "
                         + lineNumber + ": " + line);
-                return false;                
+                return false;
             }
             if (s.label == null) {
-                config.error("Field expression does not have a label at " + source.fileName + ", "
+                MDLLogger.logger().error("Field expression does not have a label at " + source.fileName + ", "
                         + lineNumber + ": " + line);
-                return false;                
+                return false;
             }
             s.label.exp = exp;
             mapCounter += exp.evaluate(s, code, false);
@@ -198,19 +200,19 @@ public class SjasmDialect implements Dialect {
             tokens.remove(0);
             Expression exp = config.expressionParser.parse(tokens, code);
             if (exp == null) {
-                config.error("Cannot parse expression at " + source.fileName + ", "
+                MDLLogger.logger().error("Cannot parse expression at " + source.fileName + ", "
                         + lineNumber + ": " + line);
-                return false;                
+                return false;
             }
             Integer value = exp.evaluate(s, code, false);
             if (value == null || value == Expression.FALSE) {
-                config.error("Assertion failed at " + source.fileName + ", "
+                MDLLogger.logger().error("Assertion failed at " + source.fileName + ", "
                         + lineNumber + ": " + line);
-                return false;                
+                return false;
             }
             return config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source);
         }
-        
+
         return false;
     }
 

@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import cl.MDLConfig;
+import cl.MDLLogger;
 import code.CodeBase;
 import code.Expression;
 import code.SourceFile;
@@ -72,15 +73,15 @@ public class SourceMacro {
         if (name.equalsIgnoreCase(MACRO_REPT)) {
             Integer reptNRepetitions_value = args.get(0).evaluate(definingStatement, code, false);
             if (reptNRepetitions_value == null) {
-                config.error("Could not evaluate REPT argument " + args.get(0));
+                MDLLogger.logger().error("Could not evaluate REPT argument " + args.get(0));
                 return null;
             }
             String scope;
             if (macroCall.label != null) {
-                scope = macroCall.label.name; 
+                scope = macroCall.label.name;
             } else {
                 scope = config.preProcessor.nextMacroExpansionContextName();
-            }                
+            }
             for(int i = 0;i<reptNRepetitions_value;i++) {
                 List<SourceLine> linesTmp = new ArrayList<>();
                 for(SourceLine sl:lines) {
@@ -93,7 +94,7 @@ public class SourceMacro {
         } else if (name.equalsIgnoreCase(MACRO_IF)) {
             Integer ifCondition_value = args.get(0).evaluate(definingStatement, code, false);
             if (ifCondition_value == null) {
-                config.error("Could not evaluate IF argument " + args.get(0));
+                MDLLogger.logger().error("Could not evaluate IF argument " + args.get(0));
                 return null;
             }
             if (ifCondition_value == Expression.FALSE) {
@@ -107,7 +108,7 @@ public class SourceMacro {
             if (exp.type == Expression.EXPRESSION_SYMBOL) {
                 if (code.getSymbol(exp.symbolName) != null) defined = true;
             } else {
-                config.error("Incorrect parameter to " + MACRO_IFDEF + ": " + args.get(0));
+                MDLLogger.logger().error("Incorrect parameter to " + MACRO_IFDEF + ": " + args.get(0));
                 return null;
             }
             if (defined) {
@@ -120,13 +121,13 @@ public class SourceMacro {
             while(args.size() < argNames.size()) {
                 Expression defaultValue = defaultValues.get(args.size());
                 if (defaultValue == null) {
-                    config.error("Number of parameters in macro call incorrect!");
+                    MDLLogger.logger().error("Number of parameters in macro call incorrect!");
                     return null;
                 } else {
                     args.add(defaultValue);
                 }
             }
-            
+
             for(SourceLine sl:lines) {
                 String line2 = sl.line;
                 for(int i = 0;i<argNames.size();i++) {
@@ -135,22 +136,22 @@ public class SourceMacro {
                 }
                 lines2.add(new SourceLine(line2, sl.source, sl.lineNumber));
             }
-            
+
             // rename all the macro-defined, labels with the new scope:
             String scope;
             if (macroCall.label != null) {
-                scope = macroCall.label.name; 
+                scope = macroCall.label.name;
             } else {
                 scope = config.preProcessor.nextMacroExpansionContextName();
             }
-            
+
             scopeMacroExpansionLines(scope, lines2, code, config);
         }
 
         return me;
     }
-    
-    
+
+
     public void scopeMacroExpansionLines(String scope, List<SourceLine> lines, CodeBase code, MDLConfig config)
     {
         List<String> macroDefinedLabels = new ArrayList<>();
@@ -164,9 +165,9 @@ public class SourceMacro {
             if (s.label != null) {
                 macroDefinedLabels.add(s.label.name);
             }
-        }        
+        }
         // System.out.println("Expanding " + this.name + " with scope " + scope + " and defined labels: " + macroDefinedLabels);
-        
+
         for(SourceLine sl:lines) {
             for(String definedLabel:macroDefinedLabels) {
                 List<String> tokens = Tokenizer.tokenize(sl.line);

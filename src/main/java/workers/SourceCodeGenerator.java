@@ -3,14 +3,16 @@
  */
 package workers;
 
-import cl.MDLConfig;
-import code.CodeBase;
-import code.SourceFile;
-import code.SourceStatement;
 import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.InputStream;
 import java.util.List;
+
+import cl.MDLConfig;
+import cl.MDLLogger;
+import code.CodeBase;
+import code.SourceFile;
+import code.SourceStatement;
 
 /**
  *
@@ -61,13 +63,13 @@ public class SourceCodeGenerator implements MDLWorker {
     public boolean work(CodeBase code) {
 
         if (outputFileName != null) {
-            config.debug("Executing "+this.getClass().getSimpleName()+" worker...");
+            MDLLogger.logger().debug("Executing "+this.getClass().getSimpleName()+" worker...");
 
             try (FileWriter fw = new FileWriter(outputFileName)) {
                 fw.write(sourceFileString(code.getMain()));
                 fw.flush();
             } catch (Exception e) {
-                config.error("Cannot write to file " + outputFileName);
+                MDLLogger.logger().error("Cannot write to file {}", outputFileName, e);
                 return false;
             }
         }
@@ -107,7 +109,7 @@ public class SourceCodeGenerator implements MDLWorker {
                     }
                     if (count > 0) sb.append("\n");
                 } catch(Exception e) {
-                    config.error("Cannot expand incbin: " + ss.incbin);
+                    MDLLogger.logger().error("Cannot expand incbin: " + ss.incbin);
                 }
             } else {
                 sb.append(ss.toString());

@@ -4,38 +4,40 @@
 package code;
 
 import cl.MDLConfig;
+import cl.MDLLogger;
+
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Set;
 
-public class CodeBase {    
+public class CodeBase {
     public static final String CURRENT_ADDRESS = "$";
 
     MDLConfig config;
-    
+
     SourceFile main;
     LinkedHashMap<String, SourceFile> sources = new LinkedHashMap<>();
     LinkedHashMap<String, SourceConstant> symbols = new LinkedHashMap<>();
-    
-    
+
+
     public CodeBase(MDLConfig a_config)
     {
-        config = a_config;        
+        config = a_config;
     }
-    
-    
+
+
     public boolean isRegister(String name)
     {
         String registers[] = {"a", "b", "c", "d", "e", "h","l",
                               "af", "bc", "de", "hl",
-                              "sp", "ix", "iy", "pc", 
+                              "sp", "ix", "iy", "pc",
                               "ixl", "ixh", "iyl", "iyh",
-                              "af'", 
+                              "af'",
                               "i", "r"};
         for(String reg:registers) {
             if (name.equalsIgnoreCase(reg)) return true;
         }
-        
+
         return false;
     }
 
@@ -46,11 +48,11 @@ public class CodeBase {
         for(String c:conditions) {
             if (name.equalsIgnoreCase(c)) return true;
         }
-        
+
         return false;
     }
-    
-    
+
+
     public SourceConstant getSymbol(String name)
     {
         if (symbols.containsKey(name)) {
@@ -58,8 +60,8 @@ public class CodeBase {
         }
         return null;
     }
-    
-    
+
+
     public Set<String> getSymbols()
     {
         return symbols.keySet();
@@ -73,59 +75,61 @@ public class CodeBase {
         }
         return null;
     }
-    
-    
+
+
     public boolean addSymbol(String name, SourceConstant sc)
     {
         if (symbols.containsKey(name)) {
             if (symbols.get(name).exp != null) {
-                config.error("Redefining symbol " + name);
-                config.error("First defined in " + symbols.get(name).s.source.fileName + ", " + symbols.get(name).s.lineNumber + " as " + symbols.get(name).exp + ": " + symbols.get(name).s);
-                config.error("Redefined in " + sc.s.source.fileName + ", " + sc.s.lineNumber + " as " + symbols.get(name).exp + ": " + sc.s);
+                MDLLogger.logger().error("Redefining symbol {}", name);
+                MDLLogger.logger().error("First defined in {}, {} as {}: {}",
+                        symbols.get(name).s.source.fileName, symbols.get(name).s.lineNumber, symbols.get(name).exp, symbols.get(name).s);
+                MDLLogger.logger().error("Redefined in {}, {} as {}: {}",
+                        sc.s.source.fileName, sc.s.lineNumber, symbols.get(name).exp, sc.s);
                 return false;
             }
         }
         symbols.put(name, sc);
         return true;
     }
-    
-    
+
+
     public Collection<SourceFile> getSourceFiles()
     {
         return sources.values();
     }
-    
-    
+
+
     public SourceFile getSourceFile(String fileName)
     {
         if (sources.containsKey(fileName)) return sources.get(fileName);
         return null;
     }
-    
-    
+
+
     public void addSourceFile(SourceFile s)
     {
         sources.put(s.fileName, s);
     }
-        
-    
+
+
     public void resetAddresses()
     {
         for(SourceFile f:sources.values()) {
             f.resetAddresses();
         }
     }
-    
-    
+
+
     public void setMain(SourceFile s)
     {
         main = s;
     }
-    
-    
+
+
     public SourceFile getMain()
     {
         return main;
     }
-                
+
 }

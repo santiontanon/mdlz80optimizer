@@ -3,15 +3,17 @@
  */
 package parser;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+
 import cl.MDLConfig;
+import cl.MDLLogger;
 import code.CPUOp;
 import code.CPUOpSpec;
 import code.CodeBase;
 import code.Expression;
 import code.SourceStatement;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 
 /**
  *
@@ -21,37 +23,37 @@ public class CPUOpParser {
     MDLConfig config;
 
     List<CPUOpSpec> opSpecs;
-    HashMap<String, List<CPUOpSpec>> opSpecHash = new HashMap<>();    
-    
-    
+    HashMap<String, List<CPUOpSpec>> opSpecHash = new HashMap<>();
+
+
     public CPUOpParser(List<CPUOpSpec> a_opSpecs, MDLConfig a_config) {
         opSpecs = a_opSpecs;
         config = a_config;
-        
+
         for(CPUOpSpec spec:opSpecs) {
             if (!opSpecHash.containsKey(spec.getName())) {
                 opSpecHash.put(spec.getName(), new ArrayList<>());
             }
             opSpecHash.get(spec.getName()).add(spec);
-        }        
+        }
     }
-    
-    
+
+
     public boolean isOpName(String name)
     {
         return opSpecHash.containsKey(name.toLowerCase());
     }
-    
-    
+
+
     public List<CPUOpSpec> getOpSpecs(String name)
     {
         List<CPUOpSpec> l = opSpecHash.get(name.toLowerCase());
         if (l != null) return l;
         return new ArrayList<>();
     }
-    
-    
-    public CPUOp parseOp(String a_op, List<Expression> a_args, SourceStatement s, CodeBase code) 
+
+
+    public CPUOp parseOp(String a_op, List<Expression> a_args, SourceStatement s, CodeBase code)
     {
         CPUOp op;
         List<CPUOpSpec> candidates = getOpSpecs(a_op);
@@ -78,11 +80,11 @@ public class CPUOpParser {
                 }
             }
         }
-        
+
         return null;
     }
-    
-    
+
+
     public CPUOp parseOp(String a_op, CPUOpSpec spec, List<Expression> a_args, SourceStatement s, CodeBase code)
     {
         if (!a_op.equalsIgnoreCase(spec.opName)) return null;
@@ -92,13 +94,14 @@ public class CPUOpParser {
                 return null;
             }
         }
-        
+
         if (spec.isJpRegWithParenthesis && config.warningJpHlWithParenthesis) {
-            config.warn("Use of confusing classic 'jp (hl)' syntax, rather than the more accurate 'jp hp' in " + 
-                    s.source.fileName + ", " + s.lineNumber);
-            config.annotation(s.source.fileName, s.lineNumber, "warning", "Use of confusing z80 'jp (reg)' syntax, rather than the more accurate 'jp reg'.");
+            MDLLogger.logger().warn(
+                    "Use of confusing classic 'jp (hl)' syntax, rather than the more accurate 'jp hp' in {}, {}",
+                    s.source.fileName, s.lineNumber);
+            MDLLogger.INSTANCE.annotation(s.source.fileName, s.lineNumber, "warning", "Use of confusing z80 'jp (reg)' syntax, rather than the more accurate 'jp reg'.");
         }
-        
+
         return new CPUOp(spec, a_args);
-    }        
+    }
 }
