@@ -3,14 +3,16 @@
  */
 package workers;
 
-import cl.MDLConfig;
-import code.CodeBase;
-import code.Expression;
-import code.SourceConstant;
 import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
+import cl.MDLConfig;
+import cl.MDLLogger;
+import code.CodeBase;
+import code.Expression;
+import code.SourceConstant;
 import parser.Tokenizer;
 
 /**
@@ -54,13 +56,13 @@ public class SymbolTableGenerator implements MDLWorker {
     public boolean work(CodeBase code) {
 
         if (outputFileName != null) {
-            config.debug("Executing "+this.getClass().getSimpleName()+" worker...");
+            MDLLogger.logger().debug("Executing "+this.getClass().getSimpleName()+" worker...");
 
             try (FileWriter fw = new FileWriter(outputFileName)) {
                 fw.write(symbolTableString(code));
                 fw.flush();
             } catch (Exception e) {
-                config.error("Cannot write to file " + outputFileName);
+                MDLLogger.logger().error("Cannot write to file {}", outputFileName, e);
                 return false;
             }
         }

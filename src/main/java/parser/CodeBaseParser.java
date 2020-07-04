@@ -8,11 +8,13 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.lang3.tuple.Pair;
+
 import cl.MDLConfig;
+import cl.MDLLogger;
 import code.CodeBase;
 import code.SourceFile;
 import code.SourceStatement;
-import org.apache.commons.lang3.tuple.Pair;
 import util.Resources;
 
 public class CodeBaseParser {
@@ -35,7 +37,7 @@ public class CodeBaseParser {
 
         // Expand all macros that were not expanded initially:
         if (!expandAllMacros(code)) {
-            config.error("Problem expanding macros after loading all the source code!");
+            MDLLogger.logger().error("Problem expanding macros after loading all the source code!");
             return null;
         }
 
@@ -45,7 +47,7 @@ public class CodeBaseParser {
     public SourceFile parseSourceFile(String fileName, CodeBase code, SourceFile parent,
             SourceStatement parentInclude) {
         if (code.getSourceFile(fileName) != null) {
-            config.warn("Re-entering into " + fileName + " ignored...");
+            MDLLogger.logger().warn("Re-entering into {} ignored...", fileName);
             return null;
         }
 
@@ -57,8 +59,7 @@ public class CodeBaseParser {
             if (parseSourceFileInternal(f, code, config))
                 return f;
         } catch (Exception e) {
-            config.error("Problem parsing file " + fileName);
-            e.printStackTrace();
+            MDLLogger.logger().error("Problem parsing file {}", fileName, e);
         }
         return null;
     }
@@ -94,7 +95,7 @@ public class CodeBaseParser {
 
     boolean parseSourceFileInternal(SourceFile f, CodeBase code, MDLConfig config) throws IOException
     {
-        config.debug("Parsing " + f.fileName + "...");
+        MDLLogger.logger().trace("Parsing {}...", f.fileName);
 
         try (BufferedReader br = Resources.asReader(f.fileName)) {
             int file_lineNumber = 0;
@@ -103,7 +104,7 @@ public class CodeBaseParser {
                 Pair<SourceLine, Integer> tmp = getNextLine(br, f, file_lineNumber, tokens);
                 if (tmp == null) {
                     if (config.preProcessor.withinMacroDefinition()) {
-                        config.error("File " +f.fileName+ " ended while inside a macro definition: " + config.preProcessor.getCurrentMacro().name);
+                        MDLLogger.logger().error("File {} ended while inside a macro definition: {}", f.fileName, config.preProcessor.getCurrentMacro().name);
                         return false;
                     }
                     return true;
@@ -127,17 +128,17 @@ public class CodeBaseParser {
             }
         }
     }
-    
-    
+
+
     public boolean expandAllMacros(CodeBase code) throws IOException
     {
         List<SourceFile> l = new ArrayList<>();
         l.addAll(code.getSourceFiles());
-        
+
         for (SourceFile f : l) {
             if (!expandAllMacros(f, code)) return false;
         }
-        
+
         if (code.getSourceFiles().size() > l.size()) {
             // there are more files, we need to expand macros again!
             return expandAllMacros(code);
@@ -152,14 +153,11 @@ public class CodeBaseParser {
             SourceStatement s_macro = f.getStatements().get(i);
             if (s_macro.type == SourceStatement.STATEMENT_MACROCALL) {
                 // expand macro!
-                if (s_macro.macroCallName != null) {
-                    config.debug("expandAllMacros: Expanding macro: " + s_macro.macroCallName);
-                } else {
-                    config.debug("expandAllMacros: Expanding macro: " + s_macro.macroCallMacro.name);
-                }
+                MDLLogger.logger().trace("expandAllMacros: Expanding macro: {}",
+                        s_macro.macroCallName != null ? s_macro.macroCallName : s_macro.macroCallMacro.name);
 
                 if (!config.preProcessor.handleStatement("", s_macro.lineNumber, s_macro, f, code, true)) {
-                    config.error("Cannot expand macro " + s_macro.macroCallName + " in " + s_macro.source.fileName + ", " + s_macro.lineNumber);
+                    MDLLogger.logger().error("Cannot expand macro {} in {}, {}", s_macro.macroCallName, s_macro.source.fileName, s_macro.lineNumber);
                     return false;
                 }
 
@@ -172,7 +170,7 @@ public class CodeBaseParser {
                     Pair<SourceLine, Integer> tmp = getNextLine(null, f, s_macro.lineNumber, tokens);
                     if (tmp == null) {
                         if (config.preProcessor.withinMacroDefinition()) {
-                            config.error("File " + f.fileName + " ended while inside a macro definition");
+                            MDLLogger.logger().error("File {} ended while inside a macro definition", f.fileName);
                             return false;
                         }
                         break;

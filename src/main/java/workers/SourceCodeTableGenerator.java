@@ -3,15 +3,17 @@
  */
 package workers;
 
-import cl.MDLConfig;
-import code.CodeBase;
-import code.SourceFile;
-import code.SourceStatement;
 import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+
+import cl.MDLConfig;
+import cl.MDLLogger;
+import code.CodeBase;
+import code.SourceFile;
+import code.SourceStatement;
 
 /**
  *
@@ -47,13 +49,13 @@ public class SourceCodeTableGenerator implements MDLWorker {
     public boolean work(CodeBase code) {
 
         if (outputFileName != null) {
-            config.debug("Executing "+this.getClass().getSimpleName()+" worker...");
+            MDLLogger.logger().debug("Executing "+this.getClass().getSimpleName()+" worker...");
 
             try (FileWriter fw = new FileWriter(outputFileName)) {
                 fw.write(sourceFileTableString(code));
                 fw.flush();
             } catch (Exception e) {
-                config.error("Cannot write to file " + outputFileName);
+                MDLLogger.logger().error("Cannot write to file {}", outputFileName, e);
                 return false;
             }
         }

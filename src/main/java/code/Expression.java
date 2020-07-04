@@ -3,14 +3,16 @@
  */
 package code;
 
-import cl.MDLConfig;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Expression {    
+import cl.MDLConfig;
+import cl.MDLLogger;
+
+public class Expression {
     public static final int TRUE = -1;
     public static final int FALSE = 0;
-    
+
     public static final int EXPRESSION_REGISTER_OR_FLAG = 0;
     public static final int EXPRESSION_NUMERIC_CONSTANT = 1;
     public static final int EXPRESSION_STRING_CONSTANT = 2;
@@ -38,12 +40,12 @@ public class Expression {
     public static final int EXPRESSION_BITNEGATION = 24;
     public static final int EXPRESSION_BITXOR = 25;
     public static final int EXPRESSION_LOGICAL_NEGATION = 26;
-    
+
     // indexed by the numbers above:
     public static final int OPERATOR_PRECEDENCE[] = {
-        -1, -1, -1, -1, -1, 
-        -1,  6,  6,  5,  5,  
-         5, 13, 11, 10,  9, 
+        -1, -1, -1, -1, -1,
+        -1,  6,  6,  5,  5,
+         5, 13, 11, 10,  9,
          9,  9,  9, 10, 16,
          7,  7, 11, 13,  3,
          12};
@@ -61,32 +63,32 @@ public class Expression {
         type = a_type;
         config = a_config;
     }
-    
-    
+
+
     public Integer evaluate(SourceStatement s, CodeBase code, boolean silent)
     {
         switch(type) {
             case EXPRESSION_NUMERIC_CONSTANT:
                 return numericConstant;
-            
+
             case EXPRESSION_STRING_CONSTANT:
-                if (!silent) code.config.error("A string cannot be used as part of an expression.");
+                MDLLogger.logger().warn("A string cannot be used as part of an expression.");
                 return null;
-                
+
             case EXPRESSION_SYMBOL:
                 {
                     if (symbolName.equals(CodeBase.CURRENT_ADDRESS)) return s.getAddress(code);
                     Integer value = code.getSymbolValue(symbolName, silent);
                     if (value == null) {
                         if (!silent) {
-                            code.config.error("Undefined symbol " + symbolName);
+                            MDLLogger.logger().error("Undefined symbol {}", symbolName);
                             code.getSymbolValue(symbolName, silent);
                         }
                         return null;
                     }
                     return value;
                 }
-                
+
             case EXPRESSION_SIGN_CHANGE:
                 {
                     Integer v = args.get(0).evaluate(s, code, silent);
@@ -111,10 +113,10 @@ public class Expression {
                     }
                     return accum;
                 }
-                
+
             case EXPRESSION_SUB:
                 {
-                    if (args.size() != 2) return null; 
+                    if (args.size() != 2) return null;
                     Integer v1 = args.get(0).evaluate(s, code, silent);
                     Integer v2 = args.get(1).evaluate(s, code, silent);
                     if (v1 == null || v2 == null) return null;
@@ -131,28 +133,28 @@ public class Expression {
                     }
                     return accum;
                 }
-                
+
             case EXPRESSION_DIV:
                 {
-                    if (args.size() != 2) return null; 
+                    if (args.size() != 2) return null;
                     Integer v1 = args.get(0).evaluate(s, code, silent);
                     Integer v2 = args.get(1).evaluate(s, code, silent);
                     if (v1 == null || v2 == null) return null;
                     return v1/v2;
                 }
-                
+
             case EXPRESSION_MOD:
                 {
-                    if (args.size() != 2) return null; 
+                    if (args.size() != 2) return null;
                     Integer v1 = args.get(0).evaluate(s, code, silent);
                     Integer v2 = args.get(1).evaluate(s, code, silent);
                     if (v1 == null || v2 == null) return null;
                     return v1 % v2;
                 }
-                
+
             case EXPRESSION_OR:
                 {
-                    if (args.size() != 2) return null; 
+                    if (args.size() != 2) return null;
                     Integer v1 = args.get(0).evaluate(s, code, silent);
                     Integer v2 = args.get(1).evaluate(s, code, silent);
                     if (v1 == null || v2 == null) return null;
@@ -160,10 +162,10 @@ public class Expression {
                     boolean b2 = v2 != 0;
                     return b1 || b2 ? TRUE : FALSE;
                 }
-                
+
             case EXPRESSION_AND:
                 {
-                    if (args.size() != 2) return null; 
+                    if (args.size() != 2) return null;
                     Integer v1 = args.get(0).evaluate(s, code, silent);
                     Integer v2 = args.get(1).evaluate(s, code, silent);
                     if (v1 == null || v2 == null) return null;
@@ -171,10 +173,10 @@ public class Expression {
                     boolean b2 = v2 != 0;
                     return b1 && b2 ? TRUE : FALSE;
                 }
-                
+
             case EXPRESSION_EQUAL:
                 {
-                    if (args.size() != 2) return null; 
+                    if (args.size() != 2) return null;
                     Integer v1 = args.get(0).evaluate(s, code, silent);
                     Integer v2 = args.get(1).evaluate(s, code, silent);
                     if (v1 == null || v2 == null) return null;
@@ -184,17 +186,17 @@ public class Expression {
 
             case EXPRESSION_LOWERTHAN:
                 {
-                    if (args.size() != 2) return null; 
+                    if (args.size() != 2) return null;
                     Integer v1 = args.get(0).evaluate(s, code, silent);
                     Integer v2 = args.get(1).evaluate(s, code, silent);
                     if (v1 == null || v2 == null) return null;
                     if (v1 < v2) return TRUE;
                     return FALSE;
                 }
-                
+
             case EXPRESSION_GREATERTHAN:
                 {
-                    if (args.size() != 2) return null; 
+                    if (args.size() != 2) return null;
                     Integer v1 = args.get(0).evaluate(s, code, silent);
                     Integer v2 = args.get(1).evaluate(s, code, silent);
                     if (v1 == null || v2 == null) return null;
@@ -204,7 +206,7 @@ public class Expression {
 
             case EXPRESSION_LEQTHAN:
                 {
-                    if (args.size() != 2) return null; 
+                    if (args.size() != 2) return null;
                     Integer v1 = args.get(0).evaluate(s, code, silent);
                     Integer v2 = args.get(1).evaluate(s, code, silent);
                     if (v1 == null || v2 == null) return null;
@@ -214,24 +216,24 @@ public class Expression {
 
             case EXPRESSION_GEQTHAN:
                 {
-                    if (args.size() != 2) return null; 
+                    if (args.size() != 2) return null;
                     Integer v1 = args.get(0).evaluate(s, code, silent);
                     Integer v2 = args.get(1).evaluate(s, code, silent);
                     if (v1 == null || v2 == null) return null;
                     if (v1 >= v2) return TRUE;
                     return FALSE;
                 }
-                
+
             case EXPRESSION_DIFF:
                 {
-                    if (args.size() != 2) return null; 
+                    if (args.size() != 2) return null;
                     Integer v1 = args.get(0).evaluate(s, code, silent);
                     Integer v2 = args.get(1).evaluate(s, code, silent);
                     if (v1 == null || v2 == null) return null;
                     if (v1.equals(v2)) return FALSE;
                     return TRUE;
                 }
-                
+
             case EXPRESSION_TERNARY_IF:
                 {
                     Integer cond = args.get(0).evaluate(s, code, silent);
@@ -242,10 +244,10 @@ public class Expression {
                         return args.get(2).evaluate(s, code, silent);
                     }
                 }
-                
+
             case EXPRESSION_LSHIFT:
                 {
-                    if (args.size() != 2) return null; 
+                    if (args.size() != 2) return null;
                     Integer v1 = args.get(0).evaluate(s, code, silent);
                     Integer v2 = args.get(1).evaluate(s, code, silent);
                     if (v1 == null || v2 == null) return null;
@@ -254,25 +256,25 @@ public class Expression {
 
             case EXPRESSION_RSHIFT:
                 {
-                    if (args.size() != 2) return null; 
+                    if (args.size() != 2) return null;
                     Integer v1 = args.get(0).evaluate(s, code, silent);
                     Integer v2 = args.get(1).evaluate(s, code, silent);
                     if (v1 == null || v2 == null) return null;
                     return v1 >> v2;
                 }
-                
+
             case EXPRESSION_BITOR:
                 {
-                    if (args.size() != 2) return null; 
+                    if (args.size() != 2) return null;
                     Integer v1 = args.get(0).evaluate(s, code, silent);
                     Integer v2 = args.get(1).evaluate(s, code, silent);
                     if (v1 == null || v2 == null) return null;
                     return v1 | v2;
                 }
-                
+
             case EXPRESSION_BITAND:
                 {
-                    if (args.size() != 2) return null; 
+                    if (args.size() != 2) return null;
                     Integer v1 = args.get(0).evaluate(s, code, silent);
                     Integer v2 = args.get(1).evaluate(s, code, silent);
                     if (v1 == null || v2 == null) return null;
@@ -286,7 +288,7 @@ public class Expression {
                 }
             case EXPRESSION_BITXOR:
                 {
-                    if (args.size() != 2) return null; 
+                    if (args.size() != 2) return null;
                     Integer v1 = args.get(0).evaluate(s, code, silent);
                     Integer v2 = args.get(1).evaluate(s, code, silent);
                     if (v1 == null || v2 == null) return null;
@@ -298,13 +300,13 @@ public class Expression {
                     if (v == null) return null;
                     return v == FALSE ? TRUE:FALSE;
                 }
-                
+
         }
-        
+
         return null;
     }
-    
-    
+
+
     public String toString()
     {
         switch(type) {
@@ -318,7 +320,7 @@ public class Expression {
                 }
             case EXPRESSION_NUMERIC_CONSTANT: 
                 return ""+numericConstant;
-            case EXPRESSION_STRING_CONSTANT: 
+            case EXPRESSION_STRING_CONSTANT:
                 return "\"" + stringConstant + "\"";
             case EXPRESSION_SYMBOL:
                 return symbolName;
@@ -478,7 +480,7 @@ public class Expression {
                     }
                     return str;
                 }
-                
+
             case EXPRESSION_DIFF:
                 {
                     String str = null;
@@ -491,11 +493,11 @@ public class Expression {
                     }
                     return str;
                 }
-                
+
             case EXPRESSION_TERNARY_IF:
                 {
-                    return args.get(0).toString() + " ? " + 
-                           args.get(1).toString() + " : " + 
+                    return args.get(0).toString() + " ? " +
+                           args.get(1).toString() + " : " +
                            args.get(2).toString();
                 }
 
@@ -511,7 +513,7 @@ public class Expression {
                     }
                     return str;
                 }
-                
+
             case EXPRESSION_RSHIFT:
                 {
                     String str = null;
@@ -537,7 +539,7 @@ public class Expression {
                     }
                     return str;
                 }
-                
+
             case EXPRESSION_BITAND:
                 {
                     String str = null;
@@ -571,7 +573,7 @@ public class Expression {
                         }
                     }
                     return str;
-                }      
+                }
             case EXPRESSION_LOGICAL_NEGATION:
                 if (args.get(0).type == EXPRESSION_REGISTER_OR_FLAG ||
                     args.get(0).type == EXPRESSION_NUMERIC_CONSTANT ||
@@ -581,12 +583,12 @@ public class Expression {
                     return "!" + args.get(0).toString();
                 } else {
                     return "!(" + args.get(0).toString() + ")";
-                }                
+                }
             default:
                 return "<UNSUPPORTED TYPE "+type+">";
         }
     }
-    
+
 
     public boolean isRegister(CodeBase code)
     {
@@ -594,10 +596,10 @@ public class Expression {
         return code.isRegister(registerOrFlagName);
     }
 
-    
+
     public boolean isConstant()
     {
-        return (type == EXPRESSION_NUMERIC_CONSTANT) || 
+        return (type == EXPRESSION_NUMERIC_CONSTANT) ||
                (type == EXPRESSION_STRING_CONSTANT);
     }
 
@@ -640,8 +642,8 @@ public class Expression {
         }
         return false;
     }
-    
-    
+
+
     public int sizeInBytes(int granularity)
     {
         if (type == EXPRESSION_STRING_CONSTANT) {
@@ -658,7 +660,7 @@ public class Expression {
         exp.numericConstant = v;
         return exp;
     }
-    
+
 
     public static Expression constantExpression(String v, MDLConfig config)
     {
@@ -666,7 +668,7 @@ public class Expression {
         exp.stringConstant = v;
         return exp;
     }
-    
+
 
     public static Expression symbolExpression(String symbol, CodeBase code, MDLConfig config)
     {
@@ -674,7 +676,7 @@ public class Expression {
             code.isCondition(symbol)) {
             Expression exp = new Expression(EXPRESSION_REGISTER_OR_FLAG, config);
             exp.registerOrFlagName = symbol;
-            return exp;            
+            return exp;
         } else {
             Expression exp = new Expression(EXPRESSION_SYMBOL, config);
             exp.symbolName = symbol;
@@ -699,7 +701,7 @@ public class Expression {
         exp.args.add(arg);
         return exp;
     }
-    
+
 
     public static Expression parenthesisExpression(Expression arg, MDLConfig config)
     {
@@ -717,13 +719,13 @@ public class Expression {
         exp.args.add(arg);
         return exp;
     }
-    
-    
+
+
     public static Expression operatorExpression(int operator, Expression arg1, Expression arg2, MDLConfig config)
     {
         // look at operator precedence:
         if (OPERATOR_PRECEDENCE[operator] < 0) {
-            config.error("Precedence for operator " + operator + " is undefined!");
+            MDLLogger.logger().error("Precedence for operator {} is undefined!", operator);
             return null;
         }
         if (OPERATOR_PRECEDENCE[arg1.type] >= 0 &&
@@ -778,7 +780,7 @@ public class Expression {
         return exp;
     }
 
-    
+
     public static Expression operatorTernaryExpression(int operator, Expression arg1, Expression arg2, Expression arg3, MDLConfig config)
     {
         Expression exp = new Expression(operator, config);
@@ -787,5 +789,5 @@ public class Expression {
         exp.args.add(arg2);
         exp.args.add(arg3);
         return exp;
-    }    
+    }
 }

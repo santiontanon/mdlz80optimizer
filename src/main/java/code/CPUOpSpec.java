@@ -4,10 +4,12 @@
 package code;
 
 import cl.MDLConfig;
+import cl.MDLLogger;
+
 import java.util.ArrayList;
 import java.util.List;
 
-public class CPUOpSpec {   
+public class CPUOpSpec {
     MDLConfig config;
     public String opName;
     public List<CPUOpSpecArg> args = new ArrayList<>();
@@ -19,7 +21,7 @@ public class CPUOpSpec {
     public CPUOpSpec officialEquivalent = null;
 
     public boolean isJpRegWithParenthesis = false;
-    
+
     // Dependency data:
     public List<String> inputRegs, inputFlags;
     public String inputPort = null, inputMemoryStart = null, inputMemoryEnd = null;
@@ -56,13 +58,13 @@ public class CPUOpSpec {
     {
         return opName;
     }
-    
-    
+
+
     public void addArgSpec(CPUOpSpecArg arg) {
         args.add(arg);
     }
-  
-        
+
+
     public String timeString()
     {
         String str = "";
@@ -75,16 +77,16 @@ public class CPUOpSpec {
         }
         return str;
     }
-    
-    
+
+
     public boolean isPrimitiveReg(String regName)
     {
         // by convention, regnames are all in uppercase letters:
         if (regName.toUpperCase().equals(regName)) return true;
         return false;
     }
-    
-    
+
+
     public boolean regMatch(String pattern, String regName)
     {
         if (pattern.equals("r")) {
@@ -116,14 +118,14 @@ public class CPUOpSpec {
                 regName.equalsIgnoreCase("IXl")) return true;
         } else if (pattern.equals("IYq")) {
             if (regName.equalsIgnoreCase("IYh") ||
-                regName.equalsIgnoreCase("IYl")) return true;            
+                regName.equalsIgnoreCase("IYl")) return true;
         } else {
             return pattern.equalsIgnoreCase(regName);
         }
         return false;
     }
-    
-    
+
+
     public List<CPUOpDependency> getInputDependencies(List<Expression> opArgs)
     {
         List<CPUOpDependency> deps = new ArrayList<>();
@@ -140,7 +142,7 @@ public class CPUOpSpec {
                         if (opArg.type == Expression.EXPRESSION_REGISTER_OR_FLAG) {
                             deps.add(new CPUOpDependency(opArg.registerOrFlagName.toUpperCase(), null, null, null, null));
                         } else {
-                            config.error("getInputDependencies Register expression is not of type EXPRESSION_REGISTER_OR_FLAG");
+                            MDLLogger.logger().error("getInputDependencies Register expression is not of type EXPRESSION_REGISTER_OR_FLAG");
                             return null;
                         }
                     }
@@ -156,11 +158,11 @@ public class CPUOpSpec {
         if (inputMemoryStart != null) {
             deps.add(new CPUOpDependency(null, null, null, inputMemoryStart, inputMemoryEnd));
         }
-        
-        return deps;        
+
+        return deps;
     }
-    
-    
+
+
     public List<CPUOpDependency> getOutputDependencies(List<Expression> opArgs)
     {
         List<CPUOpDependency> deps = new ArrayList<>();
@@ -177,7 +179,7 @@ public class CPUOpSpec {
                         if (opArg.type == Expression.EXPRESSION_REGISTER_OR_FLAG) {
                             deps.add(new CPUOpDependency(opArg.registerOrFlagName.toUpperCase(), null, null, null, null));
                         } else {
-                            config.error("getOutputDependencies Register expression is not of type EXPRESSION_REGISTER_OR_FLAG");
+                            MDLLogger.logger().error("getOutputDependencies Register expression is not of type EXPRESSION_REGISTER_OR_FLAG");
                             return null;
                         }
                     }
@@ -193,17 +195,17 @@ public class CPUOpSpec {
         if (outputMemoryStart != null) {
             deps.add(new CPUOpDependency(null, null, null, outputMemoryStart, outputMemoryEnd));
         }
-        
-        return deps;        
+
+        return deps;
     }
-    
-    
+
+
     /*
     public List<CPUOpDependency> checkDependencies(List<Expression> opArgs, List<CPUOpDependency> inputDeps)
     {
         List<CPUOpDependency> deps = new ArrayList<>();
         List<CPUOpDependency> outputDeps = getOutputDependencies(opArgs);
-        
+
         for(CPUOpDependency d1:inputDeps) {
             for(CPUOpDependency d2:outputDeps) {
                 if (d1.match(d2)) {
@@ -212,12 +214,12 @@ public class CPUOpSpec {
                 }
             }
         }
-        
+
         return deps;
     }
     */
-    
-    
+
+
     public boolean isConditional()
     {
         // TODO(santi@): move this info to the CPU definition file
@@ -232,8 +234,8 @@ public class CPUOpSpec {
         if (opName.equalsIgnoreCase("djnz")) return true;
         return false;
     }
-    
-    
+
+
     public int jumpLabelArgument()
     {
         // TODO(santi@): move this info to the CPU definition file
@@ -246,12 +248,12 @@ public class CPUOpSpec {
         }
         return -1;
     }
-    
-    
+
+
     public boolean isRet()
     {
         if (opName.equalsIgnoreCase("ret")) return true;
         return false;
     }
-            
+
 }

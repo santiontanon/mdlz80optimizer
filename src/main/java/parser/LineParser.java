@@ -3,13 +3,6 @@
  */
 package parser;
 
-import cl.MDLConfig;
-import code.Expression;
-import code.SourceConstant;
-import code.SourceFile;
-import code.SourceStatement;
-import code.CodeBase;
-import code.CPUOp;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -18,6 +11,14 @@ import java.util.List;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 
+import cl.MDLConfig;
+import cl.MDLLogger;
+import code.CPUOp;
+import code.CodeBase;
+import code.Expression;
+import code.SourceConstant;
+import code.SourceFile;
+import code.SourceStatement;
 import util.Resources;
 
 public class LineParser {
@@ -144,7 +145,7 @@ public class LineParser {
             return parseMacroDefinition(tokens, line, lineNumber, s, source, code);
 
         } else if (isKeyword(token, SourceMacro.MACRO_ENDM)) {
-            config.error(SourceMacro.MACRO_ENDM + " keyword found outside of a macro at " + source.fileName + ", "
+            MDLLogger.logger().error(SourceMacro.MACRO_ENDM + " keyword found outside of a macro at " + source.fileName + ", "
                     + lineNumber + ": " + line);
             return false;
 
@@ -180,7 +181,7 @@ public class LineParser {
 
                 String symbolName = newSymbolName(labelPrefix + token, exp);
                 if (symbolName == null) {
-                    config.error("Problem defining symbol " + labelPrefix + token + " in " + source.fileName + ", " + lineNumber + ": " + line);
+                    MDLLogger.logger().error("Problem defining symbol " + labelPrefix + token + " in " + source.fileName + ", " + lineNumber + ": " + line);
                     return false;
                 }
                 SourceConstant c = new SourceConstant(symbolName, null, exp, s);
@@ -195,7 +196,7 @@ public class LineParser {
 
                 String symbolName = newSymbolName(labelPrefix + token, exp);
                 if (symbolName == null) {
-                    config.error("Problem defining symbol " + labelPrefix + token + " in " + source.fileName + ", " + lineNumber + ": " + line);
+                    MDLLogger.logger().error("Problem defining symbol " + labelPrefix + token + " in " + source.fileName + ", " + lineNumber + ": " + line);
                     return false;
                 }
                 SourceConstant c = new SourceConstant(symbolName, null, exp, s);
@@ -210,7 +211,7 @@ public class LineParser {
             if (line.startsWith(token) && (tokens.size() == 1 || tokens.get(1).startsWith(";"))) {
                 // it is just a label without colon:
                 if (config.warningLabelWithoutColon) {
-                    config.warn("Label defined without a colon in "
+                    MDLLogger.logger().warn("Label defined without a colon in "
                             + source.fileName + ", " + lineNumber + ": " + line);
                     config.annotation(source.fileName, lineNumber, "warning", "Label defined without a colon.");
                 }
@@ -220,7 +221,7 @@ public class LineParser {
 
                 String symbolName = newSymbolName(labelPrefix + token, exp);
                 if (symbolName == null) {
-                    config.error("Problem defining symbol " + labelPrefix + token + " in " + source.fileName + ", " + lineNumber + ": " + line);
+                    MDLLogger.logger().error("Problem defining symbol " + labelPrefix + token + " in " + source.fileName + ", " + lineNumber + ": " + line);
                     return false;
                 }
                 SourceConstant c = new SourceConstant(symbolName, address, exp, s);
@@ -240,14 +241,14 @@ public class LineParser {
                 }
                 if (isLabel) {
                     if (config.warningLabelWithoutColon) {
-                        config.warn("Label defined without a colon in "
+                        MDLLogger.logger().warn("Label defined without a colon in "
                                 + source.fileName + ", " + lineNumber + ": " + line);
                         config.annotation(source.fileName, lineNumber, "warning", "Label defined without a colon.");
                     }
                     tokens.remove(0);
                     String symbolName = newSymbolName(labelPrefix + token, null);
                     if (symbolName == null) {
-                        config.error("Problem defining symbol " + labelPrefix + token + " in " + source.fileName + ", " + lineNumber + ": " + line);
+                        MDLLogger.logger().error("Problem defining symbol " + labelPrefix + token + " in " + source.fileName + ", " + lineNumber + ": " + line);
                         return false;
                     }
                     SourceConstant c = new SourceConstant(symbolName, null, null, s);
@@ -275,7 +276,7 @@ public class LineParser {
             return true;
         }
 
-        config.error("Cannot parse line " + source.fileName + ", "
+        MDLLogger.logger().error("Cannot parse line " + source.fileName + ", "
                 + lineNumber + ": " + line);
         return false;
     }
@@ -286,7 +287,7 @@ public class LineParser {
             SourceStatement s, SourceFile source, CodeBase code) {
         Expression exp = config.expressionParser.parse(tokens, code);
         if (exp == null) {
-            config.error("Cannot parse line " + source.fileName + ", "
+            MDLLogger.logger().error("Cannot parse line " + source.fileName + ", "
                     + lineNumber + ": " + line);
             return false;
         } else {
@@ -310,7 +311,7 @@ public class LineParser {
                 String path = resolveIncludePath(rawFileName, source);
                 SourceFile includedSource = codeBaseParser.parseSourceFile(path, code, source, s);
                 if (includedSource == null) {
-                    config.error("Problem including file at " + source.fileName + ", "
+                    MDLLogger.logger().error("Problem including file at " + source.fileName + ", "
                             + lineNumber + ": " + line);
                     return false;
                 } else {
@@ -320,7 +321,7 @@ public class LineParser {
                 }
             }
         }
-        config.error("Cannot parse line " + source.fileName + ", "
+        MDLLogger.logger().error("Cannot parse line " + source.fileName + ", "
                 + lineNumber + ": " + line);
         return false;
     }
@@ -336,7 +337,7 @@ public class LineParser {
                 String rawFileName = Tokenizer.stringValue(token);
                 String path = resolveIncludePath(rawFileName, source);
                 if (path == null) {
-                    config.error("Incbin file " + rawFileName + " does not exist in " + source.fileName + ", "
+                    MDLLogger.logger().error("Incbin file " + rawFileName + " does not exist in " + source.fileName + ", "
                             + lineNumber + ": " + line);
                     return false;
                 }
@@ -345,7 +346,7 @@ public class LineParser {
                 s.incbinOriginalStr = rawFileName;
                 File f = new File(path);
                 if (!f.exists()) {
-                    config.error("Incbin file " + rawFileName + " does not exist in " + source.fileName + ", "
+                    MDLLogger.logger().error("Incbin file " + rawFileName + " does not exist in " + source.fileName + ", "
                             + lineNumber + ": " + line);
                     return false;
                 }
@@ -353,7 +354,7 @@ public class LineParser {
                 return parseRestofTheLine(tokens, line, lineNumber, s, source);
             }
         }
-        config.error("Cannot parse line " + source.fileName + ", "
+        MDLLogger.logger().error("Cannot parse line " + source.fileName + ", "
                 + lineNumber + ": " + line);
         return false;
     }
@@ -363,13 +364,13 @@ public class LineParser {
             String line, int lineNumber,
             SourceStatement s, SourceFile source, CodeBase code, boolean defineInCodeBase) {
         if (s.label == null) {
-            config.error("Equ without label in line " + source.fileName + ", "
+            MDLLogger.logger().error("Equ without label in line " + source.fileName + ", "
                     + lineNumber + ": " + line);
             return false;
         }
         Expression exp = config.expressionParser.parse(tokens, code);
         if (exp == null) {
-            config.error("Cannot parse line " + source.fileName + ", "
+            MDLLogger.logger().error("Cannot parse line " + source.fileName + ", "
                     + lineNumber + ": " + line);
             return false;
         }
@@ -393,7 +394,7 @@ public class LineParser {
         while (!done) {
             Expression exp = config.expressionParser.parse(tokens, code);
             if (exp == null) {
-                config.error("Cannot parse line " + source.fileName + ", "
+                MDLLogger.logger().error("Cannot parse line " + source.fileName + ", "
                         + lineNumber + ": " + line);
                 return false;
             } else {
@@ -433,7 +434,7 @@ public class LineParser {
         if (virtual) {
             Expression exp = config.expressionParser.parse(tokens, code);
             if (exp == null) {
-                config.error("Cannot parse line " + source.fileName + ", "
+                MDLLogger.logger().error("Cannot parse line " + source.fileName + ", "
                         + lineNumber + ": " + line);
                 return false;
             }
@@ -445,7 +446,7 @@ public class LineParser {
             Expression exp_amount = config.expressionParser.parse(tokens, code);
             Expression exp_value;
             if (exp_amount == null) {
-                config.error("Cannot parse line " + source.fileName + ", "
+                MDLLogger.logger().error("Cannot parse line " + source.fileName + ", "
                         + lineNumber + ": " + line);
                 return false;
             }
@@ -453,7 +454,7 @@ public class LineParser {
                 tokens.remove(0);
                 exp_value = config.expressionParser.parse(tokens, code);
                 if (exp_value == null) {
-                    config.error("Cannot parse line " + source.fileName + ", "
+                    MDLLogger.logger().error("Cannot parse line " + source.fileName + ", "
                             + lineNumber + ": " + line);
                     return false;
                 }
@@ -480,7 +481,7 @@ public class LineParser {
             }
             Expression exp = config.expressionParser.parse(tokens, code);
             if (exp == null) {
-                config.error("Cannot parse line " + source.fileName + ", "
+                MDLLogger.logger().error("Cannot parse line " + source.fileName + ", "
                         + lineNumber + ": " + line);
                 return false;
             } else {
@@ -495,7 +496,7 @@ public class LineParser {
 
         CPUOp op = config.opParser.parseOp(opName, arguments, s, code);
         if (op == null) {
-            config.error("No op spec matches with operator in line " + source.fileName + ", "
+            MDLLogger.logger().error("No op spec matches with operator in line " + source.fileName + ", "
                     + lineNumber + ": " + line);
             return false;
         }
@@ -512,7 +513,7 @@ public class LineParser {
         // Marks that all the lines that come after this, and until ENDM,
         // are part of a macro, and should not yet be parsed:
         if (s.label == null) {
-            config.error("Cannot parse line " + source.fileName + ", "
+            MDLLogger.logger().error("Cannot parse line " + source.fileName + ", "
                     + lineNumber + ": " + line);
             return false;
         }
@@ -528,7 +529,7 @@ public class LineParser {
                 tokens.remove(0);
                 Expression defaultValue = config.expressionParser.parse(tokens, code);
                 if (defaultValue == null) {
-                    config.error("Cannot parse default value in line " + source.fileName + ", "
+                    MDLLogger.logger().error("Cannot parse default value in line " + source.fileName + ", "
                             + lineNumber + ": " + line);
                     return false;
                 }
@@ -558,7 +559,7 @@ public class LineParser {
             }
             Expression exp = config.expressionParser.parse(tokens, code);
             if (exp == null) {
-                config.error("Cannot parse line " + source.fileName + ", "
+                MDLLogger.logger().error("Cannot parse line " + source.fileName + ", "
                         + lineNumber + ": " + line);
                 return false;
             } else {
@@ -582,9 +583,22 @@ public class LineParser {
 
         // Relative to current directory
         if (Resources.exists(rawFileName)) {
-            config.info("Included file " + rawFileName + " found relative to current directory");
+            MDLLogger.logger().debug("Included file " + rawFileName + " found relative to current directory");
             return rawFileName;
         }
+
+        /*
+        santi: commenting this out temporarily just to resolve conflicts, once merged, I'll uncomment and try it out!
+        // Relative to original source file (relative paths; e.g.: classpath)
+        String sourcePath = FilenameUtils.getFullPath(source.fileName);
+        if (StringUtils.isNotBlank(sourcePath)) {
+            final String relativePath = FilenameUtils.concat(sourcePath, rawFileName);
+            if (Resources.exists(relativePath)) {
+                MDLLogger.logger().debug("Included file " + rawFileName + " found relative to original source file");
+                return relativePath;
+            }
+        }
+        */
 
         // Relative to original source file
         String sourcePath = source.getPath();
@@ -594,7 +608,7 @@ public class LineParser {
             // for example when calling mdl like: java -jar mdl.jar ../project/src/main.asm -I ../project2/src
             final String relativePath = pathConcat(sourcePath, rawFileName);
             if (Resources.exists(relativePath)) {
-                config.debug("Included file " + rawFileName + " found relative to original source file");
+                MDLLogger.logger().debug("Included file " + rawFileName + " found relative to original source file");
                 return relativePath;
             }
         }
@@ -605,12 +619,12 @@ public class LineParser {
             // is an absolute directory, which in different configurations cannot be ensured to be true.            
             final String relativePath = pathConcat(includePath.getAbsolutePath(), rawFileName);
             if (Resources.exists(relativePath)) {
-                config.debug("Included file " + rawFileName + " found relative to include path " + includePath);
+                MDLLogger.logger().debug("Included file " + rawFileName + " found relative to include path " + includePath);
                 return relativePath;
             }
         }
 
-        config.error("Cannot find include file " + rawFileName);
+        MDLLogger.logger().error("Cannot find include file " + rawFileName);
         return null;
     }
     

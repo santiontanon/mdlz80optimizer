@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.io.IOUtils;
 
 import cl.MDLConfig;
+import cl.MDLLogger;
 import code.CPUOpSpec;
 import code.CPUOpSpecArg;
 import util.Resources;
@@ -231,7 +232,7 @@ public class CPUOpSpecParser {
                 if (l.size() == 1) {
                     spec.inputPort = l.get(0);
                 } else {
-                    config.error("More than one port specified as input dependency in CPUOpSpec for " + op + "!");
+                    MDLLogger.logger().error("More than one port specified as input dependency in CPUOpSpec for {}!", op);
                     return null;
                 }
             }
@@ -248,7 +249,7 @@ public class CPUOpSpecParser {
                         spec.inputMemoryEnd = l.get(1);
                         break;
                     default:
-                        config.error("Cannot parse input memory dependency for CPUOpSpec: " + data[9] + "!");
+                        MDLLogger.logger().error("Cannot parse input memory dependency for CPUOpSpec: {}!", data[9]);
                         return null;
                 }
             }
@@ -270,7 +271,7 @@ public class CPUOpSpecParser {
                 if (l.size() == 1) {
                     spec.outputPort = l.get(0);
                 } else {
-                    config.error("More than one port specified as output dependency in CPUOpSpec for " + op + "!");
+                    MDLLogger.logger().error("More than one port specified as output dependency in CPUOpSpec for {}!", op);
                     return null;
                 }
             }
@@ -287,7 +288,7 @@ public class CPUOpSpecParser {
                         spec.outputMemoryEnd = l.get(1);
                         break;
                     default:
-                        config.error("Cannot parse output memory dependency for CPUOpSpec: " + data[9] + "!");
+                        MDLLogger.logger().error("Cannot parse output memory dependency for CPUOpSpec: {}!", data[9]);
                         return null;
                 }
             }
