@@ -33,12 +33,10 @@ public class CodeBaseParser {
         if (main == null)
             return null;
 
-        // Expanc all macros that were not expanded initially:
-        for (SourceFile f : code.getSourceFiles()) {
-            if (!expandAllMacros(f, code)) {
-                config.error("Problem expanding macros after loading all the source code!");
-                return null;
-            }
+        // Expand all macros that were not expanded initially:
+        if (!expandAllMacros(code)) {
+            config.error("Problem expanding macros after loading all the source code!");
+            return null;
         }
 
         return main;
@@ -128,6 +126,23 @@ public class CodeBaseParser {
                 }
             }
         }
+    }
+    
+    
+    public boolean expandAllMacros(CodeBase code) throws IOException
+    {
+        List<SourceFile> l = new ArrayList<>();
+        l.addAll(code.getSourceFiles());
+        
+        for (SourceFile f : l) {
+            if (!expandAllMacros(f, code)) return false;
+        }
+        
+        if (code.getSourceFiles().size() > l.size()) {
+            // there are more files, we need to expand macros again!
+            return expandAllMacros(code);
+        }
+        return true;
     }
 
 

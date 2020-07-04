@@ -17,22 +17,24 @@ import parser.LineParser;
 import parser.PreProcessor;
 import parser.dialects.ASMSXDialect;
 import parser.dialects.GlassDialect;
+import parser.dialects.SjasmDialect;
 import parser.dialects.Dialect;
 
 public class MDLConfig {
     // constants:
-    public static int HEX_STYLE_HASH = 0;
-    public static int HEX_STYLE_HASH_CAPS = 1;
-    public static int HEX_STYLE_H = 2;
-    public static int HEX_STYLE_H_CAPS = 3;
+    public static final int HEX_STYLE_HASH = 0;
+    public static final int HEX_STYLE_HASH_CAPS = 1;
+    public static final int HEX_STYLE_H = 2;
+    public static final int HEX_STYLE_H_CAPS = 3;
 
-    public static int CPU_Z80 = 0;
-    public static int CPU_Z80MSX = 1;
-    public static int CPU_Z80CPC = 2;
+    public static final int CPU_Z80 = 0;
+    public static final int CPU_Z80MSX = 1;
+    public static final int CPU_Z80CPC = 2;
 
-    public static int DIALECT_MDL = 0;
-    public static int DIALECT_GLASS = 1;
-    public static int DIALECT_ASMSX = 2;
+    public static final int DIALECT_MDL = 0;
+    public static final int DIALECT_GLASS = 1;
+    public static final int DIALECT_ASMSX = 2;
+    public static final int DIALECT_SJASM = 3;
 
     // arguments:
     public String inputFile = null;
@@ -69,7 +71,7 @@ public class MDLConfig {
             + "https://github.com/santiontanon/mdlz80optimizer\n" + "\n"
             + "arguments: <input assembler file> [options]\n"
             + "  -cpu <type>: to select a different CPU (z80/z80msx/z80cpc) (default: z80msx).\n"
-            + "  -dialect <type>: to allow parsing different assembler dialects (mdl/glass/asmsx) (default: mdl, which supports some basic code idioms common to various assemblers).\n"
+            + "  -dialect <type>: to allow parsing different assembler dialects (mdl/glass/asmsx/sjasm) (default: mdl, which supports some basic code idioms common to various assemblers).\n"
             + "                   Note that even when selecting a dialect, not all syntax of a given assembler might be supported.\n"
             + "  -I <folder>: adds a folder to the include search path.\n" + "  -debug: turns on debug messages.\n"
             + "  -warn-off-labelnocolon: turns off warnings for not placing colons after labels.\n"
@@ -149,12 +151,12 @@ public class MDLConfig {
                                     break;
                                 case "glass":
                                     dialect = DIALECT_GLASS;
-                                    dialectParser = new GlassDialect(this);
                                     break;
                                 case "asmsx":
                                     dialect = DIALECT_ASMSX;
-                                    dialectParser = new ASMSXDialect(this);
-                                    warningJpHlWithParenthesis = false;
+                                    break;
+                                case "sjasm":
+                                    dialect = DIALECT_SJASM;
                                     break;
                                 default:
                                     error("Unrecognized dialect " + dialectString);
@@ -264,7 +266,18 @@ public class MDLConfig {
         expressionParser = new ExpressionParser(this);
         opParser = new CPUOpParser(opSpecParser.parseSpecs(), this);
 
-        if (dialectParser !=null) dialectParser.init(this);
+        switch(dialect) {
+            case DIALECT_GLASS:
+                dialectParser = new GlassDialect(this);
+                break;
+            case DIALECT_ASMSX:
+                dialectParser = new ASMSXDialect(this);
+                break;
+            case DIALECT_SJASM:
+                dialectParser = new SjasmDialect(this);
+                break;
+            
+        }
 
         return verify();
     }

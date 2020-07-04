@@ -45,6 +45,12 @@ public class TokenizerTest {
     @Test public void test9() {
         Assert.assertArrayEquals(new String[]{"@@my_local_label",":"}, tokenize("@@my_local_label:"));
     }
+    @Test public void test10() {
+        Assert.assertArrayEquals(new String[]{"GameStatus",":","#","1"}, tokenize("GameStatus: # 1"));
+    }
+    @Test public void test11() {
+        Assert.assertArrayEquals(new String[]{"GameStatus",":","#","#10"}, tokenize("GameStatus: # #10"));
+    }
 
     private static String[] tokenize(String line)
     {

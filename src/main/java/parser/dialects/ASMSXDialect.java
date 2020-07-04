@@ -28,12 +28,7 @@ public class ASMSXDialect implements Dialect {
     public ASMSXDialect(MDLConfig a_config)
     {
         config = a_config;
-    }
 
-
-    @Override
-    public void init(MDLConfig config)
-    {
         config.lineParser.KEYWORD_ORG = ".org";
         config.lineParser.KEYWORD_INCLUDE = ".include";
         config.lineParser.KEYWORD_INCBIN = ".incbin";
@@ -56,6 +51,8 @@ public class ASMSXDialect implements Dialect {
         config.lineParser.addKeywordSynonym(".defs", config.lineParser.KEYWORD_DS);
         
         config.lineParser.defineSpaceVirtualByDefault = true;
+        
+        config.warningJpHlWithParenthesis = false;
     }
 
 
@@ -99,7 +96,8 @@ public class ASMSXDialect implements Dialect {
         } else if (name.startsWith(".")) {
             return lastAbsoluteLabel + "." + name.substring(1);
         } else {
-            if (value.type == Expression.EXPRESSION_SYMBOL &&
+            if (value != null &&
+                value.type == Expression.EXPRESSION_SYMBOL &&
                 value.symbolName.equalsIgnoreCase(CodeBase.CURRENT_ADDRESS)) {
                 lastAbsoluteLabel = name;
             }

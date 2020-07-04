@@ -15,7 +15,7 @@ public class Expression {
     public static final int EXPRESSION_NUMERIC_CONSTANT = 1;
     public static final int EXPRESSION_STRING_CONSTANT = 2;
     public static final int EXPRESSION_SYMBOL = 3;
-    public static final int EXPRESSION_NEGATION = 4;
+    public static final int EXPRESSION_SIGN_CHANGE = 4;
     public static final int EXPRESSION_PARENTHESIS = 5;
     public static final int EXPRESSION_SUM = 6;
     public static final int EXPRESSION_SUB = 7;
@@ -37,6 +37,7 @@ public class Expression {
     public static final int EXPRESSION_BITAND = 23;
     public static final int EXPRESSION_BITNEGATION = 24;
     public static final int EXPRESSION_BITXOR = 25;
+    public static final int EXPRESSION_LOGICAL_NEGATION = 26;
     
     // indexed by the numbers above:
     public static final int OPERATOR_PRECEDENCE[] = {
@@ -84,7 +85,7 @@ public class Expression {
                     return value;
                 }
                 
-            case EXPRESSION_NEGATION:
+            case EXPRESSION_SIGN_CHANGE:
                 {
                     Integer v = args.get(0).evaluate(s, code, silent);
                     if (v == null) return null;
@@ -289,6 +290,12 @@ public class Expression {
                     if (v1 == null || v2 == null) return null;
                     return v1 ^ v2;
                 }
+            case EXPRESSION_LOGICAL_NEGATION:
+                {
+                    Integer v = args.get(0).evaluate(s, code, silent);
+                    if (v == null) return null;
+                    return v == FALSE ? TRUE:FALSE;
+                }
                 
         }
         
@@ -307,7 +314,7 @@ public class Expression {
                 return "\"" + stringConstant + "\"";
             case EXPRESSION_SYMBOL:
                 return symbolName;
-            case EXPRESSION_NEGATION:
+            case EXPRESSION_SIGN_CHANGE:
                 if (args.get(0).type == EXPRESSION_REGISTER_OR_FLAG ||
                     args.get(0).type == EXPRESSION_NUMERIC_CONSTANT ||
                     args.get(0).type == EXPRESSION_STRING_CONSTANT ||
@@ -556,6 +563,16 @@ public class Expression {
                         }
                     }
                     return str;
+                }      
+            case EXPRESSION_LOGICAL_NEGATION:
+                if (args.get(0).type == EXPRESSION_REGISTER_OR_FLAG ||
+                    args.get(0).type == EXPRESSION_NUMERIC_CONSTANT ||
+                    args.get(0).type == EXPRESSION_STRING_CONSTANT ||
+                    args.get(0).type == EXPRESSION_PARENTHESIS ||
+                    args.get(0).type == EXPRESSION_SYMBOL) {
+                    return "!" + args.get(0).toString();
+                } else {
+                    return "!(" + args.get(0).toString() + ")";
                 }                
             default:
                 return "<UNSUPPORTED TYPE "+type+">";
@@ -583,7 +600,7 @@ public class Expression {
         if (type == EXPRESSION_SYMBOL) return true;
         if (type == EXPRESSION_STRING_CONSTANT &&
             stringConstant.length() == 1) return true;
-        if (type == EXPRESSION_NEGATION ||
+        if (type == EXPRESSION_SIGN_CHANGE ||
             type == EXPRESSION_PARENTHESIS ||
             type == EXPRESSION_SUM ||
             type == EXPRESSION_SUB ||
@@ -603,7 +620,8 @@ public class Expression {
             type == EXPRESSION_BITOR ||
             type == EXPRESSION_BITAND ||
             type == EXPRESSION_BITNEGATION ||
-            type == EXPRESSION_BITXOR) {
+            type == EXPRESSION_BITXOR ||
+            type == EXPRESSION_LOGICAL_NEGATION) {
             for(Expression arg:args) {
                 if (!arg.evaluatesToNumericConstant()) return false;
             }
@@ -657,9 +675,9 @@ public class Expression {
     }
 
     
-    public static Expression negationExpression(Expression arg)
+    public static Expression signChangeExpression(Expression arg)
     {
-        Expression exp = new Expression(EXPRESSION_NEGATION);
+        Expression exp = new Expression(EXPRESSION_SIGN_CHANGE);
         exp.args = new ArrayList<>();
         exp.args.add(arg);
         return exp;
@@ -678,6 +696,15 @@ public class Expression {
     public static Expression parenthesisExpression(Expression arg)
     {
         Expression exp = new Expression(EXPRESSION_PARENTHESIS);
+        exp.args = new ArrayList<>();
+        exp.args.add(arg);
+        return exp;
+    }
+
+
+    public static Expression operatorExpression(int operator, Expression arg)
+    {
+        Expression exp = new Expression(operator);
         exp.args = new ArrayList<>();
         exp.args.add(arg);
         return exp;

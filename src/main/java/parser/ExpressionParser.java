@@ -285,12 +285,11 @@ public class ExpressionParser {
                 return Expression.constantExpression(Tokenizer.parseOctal(token));
             }
         }
-        if (tokens.size() >= 2 && 
-            (tokens.get(0).equals("#") || tokens.get(0).equals("$"))) {
+        if (tokens.size() >= 1 && tokens.get(0).length() > 1 &&
+            (tokens.get(0).startsWith("#") || tokens.get(0).startsWith("$"))) {
             // should be a hex constant:
-            String token = tokens.get(1);
+            String token = tokens.get(0);
             if (Tokenizer.isHex(token)) {
-                tokens.remove(0);
                 tokens.remove(0);
                 return Expression.constantExpression(Tokenizer.parseHex(token));
             }
@@ -331,7 +330,7 @@ public class ExpressionParser {
                     exp.numericConstant = -exp.numericConstant;
                     return exp;
                 } else {
-                    return Expression.negationExpression(exp);
+                    return Expression.signChangeExpression(exp);
                 }
             }
         }
@@ -342,6 +341,14 @@ public class ExpressionParser {
             Expression exp = parseInternal(tokens, code);
             return Expression.bitNegationExpression(exp);
         }
+        if (tokens.size() >= 2 &&
+            tokens.get(0).equals("!")) {
+            // a logical negation expression:
+            tokens.remove(0);
+            Expression exp = parseInternal(tokens, code);
+            return Expression.operatorExpression(Expression.EXPRESSION_LOGICAL_NEGATION, exp);
+        }
+        
         if (tokens.size() >= 2 &&
             tokens.get(0).equals("?")) {
             tokens.remove(0);

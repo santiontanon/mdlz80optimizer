@@ -29,12 +29,26 @@ public class Tokenizer {
     
     public static List<String> tokenize(String line, List<String> tokens) {
         
-        StringTokenizer st = new StringTokenizer(line, " \r\n\t()[]#$,;:+-*/%|&'\"?<>=~^", true);
+        StringTokenizer st = new StringTokenizer(line, " \r\n\t()[]#$,;:+-*/%|&'\"!?<>=~^", true);
         String previous = null;
         while(st.hasMoreTokens()) {
             String next = st.nextToken();
             if (previous != null) {
                 if (doubleTokens.contains(previous+next)) {
+                    tokens.remove(tokens.size()-1);
+                    tokens.add(previous+next);
+                    previous = previous+next;
+                    continue;
+                }
+                if (previous.equals("#") && isHexCharacter(next.charAt(0))) {
+                    // merge, as this is just a single symbol
+                    tokens.remove(tokens.size()-1);
+                    tokens.add(previous+next);
+                    previous = previous+next;
+                    continue;
+                }
+                if (previous.equals("$") && isHexCharacter(next.charAt(0))) {
+                    // merge, as this is just a single symbol
                     tokens.remove(tokens.size()-1);
                     tokens.add(previous+next);
                     previous = previous+next;
@@ -107,9 +121,18 @@ public class Tokenizer {
         try{
             Integer.parseInt(token);
             return true;
-        }catch(Exception e) {
+        } catch(Exception e) {
             return false;
         }
+    }
+    
+    
+    public static boolean isHexCharacter(int c)
+    {
+        if (c>='a' && c<='f') return true;
+        if (c>='A' && c<='F') return true;
+        if (c>='0' && c<='9') return true;
+        return false;
     }
     
     
@@ -122,9 +145,11 @@ public class Tokenizer {
     public static Integer parseHex(String token)
     {
         int value = 0;
+        int startIndex = 0;
         String allowed = "0123456789abcdef";
         
-        for(int i = 0;i<token.length();i++) {
+        if (token.charAt(0) == '#' || token.charAt(0) == '$') startIndex = 1;
+        for(int i = startIndex;i<token.length();i++) {
             char c = (char)token.charAt(i);
             c = Character.toLowerCase(c);
             int idx = allowed.indexOf(c);
@@ -159,24 +184,29 @@ public class Tokenizer {
     
     public static String toHexWord(int value, int hex_style)
     {
-        if (hex_style == MDLConfig.HEX_STYLE_HASH) {
-            return "#" + toHexWord(value);
-        } else if (hex_style == MDLConfig.HEX_STYLE_HASH_CAPS) {
-            return "#" + toHexWord(value).toUpperCase();
-        } else if (hex_style == MDLConfig.HEX_STYLE_H) {
-            String hex = Tokenizer.toHexWord(value);
-            if (hex.charAt(0) >= 'a' && hex.charAt(0) <= 'f') {
-                hex = "0" + hex;
+        switch (hex_style) {
+            case MDLConfig.HEX_STYLE_HASH:
+                return "#" + toHexWord(value);
+            case MDLConfig.HEX_STYLE_HASH_CAPS:
+                return "#" + toHexWord(value).toUpperCase();
+            case MDLConfig.HEX_STYLE_H:
+            {
+                String hex = Tokenizer.toHexWord(value);
+                if (hex.charAt(0) >= 'a' && hex.charAt(0) <= 'f') {
+                    hex = "0" + hex;
+                }
+                return hex + "h";
             }
-            return hex + "h";
-        } else if (hex_style == MDLConfig.HEX_STYLE_H_CAPS) {
-            String hex = Tokenizer.toHexWord(value);
-            if (hex.charAt(0) >= 'a' && hex.charAt(0) <= 'f') {
-                hex = "0" + hex;
+            case MDLConfig.HEX_STYLE_H_CAPS:
+            {
+                String hex = Tokenizer.toHexWord(value);
+                if (hex.charAt(0) >= 'a' && hex.charAt(0) <= 'f') {
+                    hex = "0" + hex;
+                }
+                return (hex + "h").toUpperCase();
             }
-            return (hex + "h").toUpperCase();
-        } else {
-            return null;
+            default:
+                return null;
         }
     }
     

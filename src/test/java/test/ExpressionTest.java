@@ -43,6 +43,8 @@ public class ExpressionTest {
     @Test public void test12() { Assert.assertEquals(Integer.valueOf(Expression.TRUE), evaluate("#38 && #1c")); }
     @Test public void test13() { Assert.assertEquals(Integer.valueOf(Expression.TRUE), evaluate("3 <= 4")); }
     @Test public void test14() { Assert.assertEquals(Integer.valueOf(0x4), evaluate("7 & ~3")); }
+    @Test public void test15() { Assert.assertEquals(Integer.valueOf(2), evaluate("#01+$01")); }
+    @Test public void test16() { Assert.assertEquals(Integer.valueOf(Expression.FALSE), evaluate("!(3 <= 4)")); }
 
     private Integer evaluate(String line)
     {

@@ -16,9 +16,6 @@ import parser.SourceMacro;
  * @author santi
  */
 public interface Dialect {
-    // Modifies any internal configuration that needs to be modified to make this dialect work
-    public void init(MDLConfig config);
-
     // Returns true if the line represented by "tokens" is recognized by this dialect parser
     public boolean recognizeIdiom(List<String> tokens);
 

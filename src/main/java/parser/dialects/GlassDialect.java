@@ -33,12 +33,6 @@ public class GlassDialect implements Dialect {
 
 
     @Override
-    public void init(MDLConfig config)
-    {
-    }
-
-
-    @Override
     public boolean recognizeIdiom(List<String> tokens)
     {
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("section")) return true;
