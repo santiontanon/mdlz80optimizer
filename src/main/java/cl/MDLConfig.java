@@ -3,22 +3,23 @@
  */
 package cl;
 
-import code.CodeBase;
-
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+
+import code.CodeBase;
 import parser.CPUOpParser;
 import parser.CPUOpSpecParser;
-import workers.MDLWorker;
 import parser.CodeBaseParser;
 import parser.ExpressionParser;
 import parser.LineParser;
 import parser.PreProcessor;
 import parser.dialects.ASMSXDialect;
+import parser.dialects.Dialect;
 import parser.dialects.GlassDialect;
 import parser.dialects.SjasmDialect;
-import parser.dialects.Dialect;
+import workers.MDLWorker;
 
 public class MDLConfig {
     // constants:
@@ -47,7 +48,7 @@ public class MDLConfig {
     public int hexStyle = HEX_STYLE_HASH;
     public int dialect = DIALECT_MDL;
     public Dialect dialectParser = null;
-    public List<String> includeDirectories = new ArrayList<>();
+    public List<File> includeDirectories = new ArrayList<>();
 
     public boolean includeBinariesInAnalysis = false;
 
@@ -171,7 +172,12 @@ public class MDLConfig {
                     case "-I":
                         if (args.size()>=2) {
                             args.remove(0);
-                            includeDirectories.add(args.remove(0));
+                            final File includePath = new File(args.remove(0));
+                            if ((includePath.isDirectory())) {
+                                includeDirectories.add(includePath);
+                            } else {
+                                warn("Include path " + includePath + " is not a directory and will be ignored");
+                            }
                         } else {
                             error("Missing path after " + arg);
                             return false;
@@ -276,7 +282,7 @@ public class MDLConfig {
             case DIALECT_SJASM:
                 dialectParser = new SjasmDialect(this);
                 break;
-            
+
         }
 
         return verify();
@@ -294,27 +300,27 @@ public class MDLConfig {
         return true;
     }
 
-    
+
     public void debug(String message) {
         logger.log(MDLLogger.DEBUG, message);
     }
 
-    
+
     public void info(String message) {
         logger.log(MDLLogger.INFO, message);
     }
 
-    
+
     public void warn(String message) {
         logger.log(MDLLogger.WARNING, message);
     }
 
-    
+
     public void error(String message) {
         logger.log(MDLLogger.ERROR, message);
     }
-    
-    
+
+
     public void annotation(String fileName, int lineNumber, String tag, String message) {
         logger.annotation(fileName, lineNumber, tag, message);
     }
