@@ -31,7 +31,8 @@ public class Resources {
 
         // From filesystem
         if (existsInFileSystem(path)) {
-            return new BufferedReader(new FileReader(path));
+            File file = new File(path).getAbsoluteFile();
+            return new BufferedReader(new FileReader(file));
         }
 
         // File not found
@@ -60,7 +61,7 @@ public class Resources {
         }
 
         // Checks filesystem
-        File file = new File(path);
+        File file = new File(path).getAbsoluteFile();
         return file.exists() && file.canRead();
     }
 
