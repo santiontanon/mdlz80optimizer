@@ -115,6 +115,10 @@ public class CodeBase {
         for(SourceFile f:sources.values()) {
             f.resetAddresses();
         }
+        for(SourceConstant c:symbols.values()) {
+            if (c.exp.type == Expression.EXPRESSION_SYMBOL &&
+                c.exp.symbolName.equals(CURRENT_ADDRESS)) c.valueCache = null;
+        }
     }
 
 

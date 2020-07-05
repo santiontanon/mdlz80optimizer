@@ -79,7 +79,7 @@ public class Expression {
                 }
 
             case EXPRESSION_SYMBOL:
-                {
+                {                    
                     if (symbolName.equals(CodeBase.CURRENT_ADDRESS)) return s.getAddress(code);
                     Integer value = code.getSymbolValue(symbolName, silent);
                     if (value == null) {

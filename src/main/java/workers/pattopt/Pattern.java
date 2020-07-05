@@ -170,13 +170,12 @@ public class Pattern {
         PatternMatch match = new PatternMatch();
         for(int i = 0;i<pattern.size();i++) {
             while(true) {
+                if (index >= l.size()) return null;
                 SourceStatement s = l.get(index);
                 if (s.comment != null && s.comment.contains(config.PRAGMA_NO_OPTIMIZATION)) return null;
                 if (s.type == SourceStatement.STATEMENT_CPUOP) break;
                 if (!s.isEmptyAllowingComments()) return null;
                 index++;
-                if (index >= l.size()) return null;
-
             }
             if (!opMatch(pattern.get(i), l.get(index).op, code, match)) return null;
             match.opMap.put(i, l.get(index));

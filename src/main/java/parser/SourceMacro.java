@@ -70,7 +70,7 @@ public class SourceMacro {
         List<SourceLine> lines2 = new ArrayList<>();
         MacroExpansion me = new MacroExpansion(this, macroCall, lines2);
         if (name.equalsIgnoreCase(MACRO_REPT)) {
-            Integer reptNRepetitions_value = args.get(0).evaluate(definingStatement, code, false);
+            Integer reptNRepetitions_value = args.get(0).evaluate(macroCall, code, false);
             if (reptNRepetitions_value == null) {
                 config.error("Could not evaluate REPT argument " + args.get(0));
                 return null;
@@ -91,7 +91,7 @@ public class SourceMacro {
                 lines2.addAll(linesTmp);
             }
         } else if (name.equalsIgnoreCase(MACRO_IF)) {
-            Integer ifCondition_value = args.get(0).evaluate(definingStatement, code, false);
+            Integer ifCondition_value = args.get(0).evaluate(macroCall, code, false);
             if (ifCondition_value == null) {
                 config.error("Could not evaluate IF argument " + args.get(0));
                 return null;

@@ -3,6 +3,7 @@
  */
 package code;
 
+import java.util.ArrayList;
 import java.util.List;
 import parser.SourceMacro;
 
@@ -100,51 +101,70 @@ public class SourceStatement {
 
     public Integer getAddressInternal(CodeBase code, boolean recurse)
     {
-        if (address != null) return address;
-                
-        SourceStatement prev = source.getPreviousStatementTo(this, code);
-        if (prev == null) {
-            address = 0;
-        } else {
-            /*
-            if (prev.source == source) {
-                if (recurse) {
-                    // to prevent a stack overflow, by recursing instruction by instruction, 
-                    // we just start filling addresses from the beginning of the file:
-                    for(SourceStatement s:source.getStatements()) {
-                        if (s == this) break;
-                        s.getAddressInternal(code, false);
-                    }
-                    // now we can do the recursive call, as we know the previous address will be filled:
-                    if (prev.address == null) return null;
-                    address = prev.getAddressAfter(code);
+
+        if (recurse) {
+            if (address != null) return address;
+         
+            // go back iteratively to prevent a stack overflow:
+            List<SourceStatement> trail = new ArrayList<>();
+            SourceStatement prev = source.getPreviousStatementTo(this, code);
+            while(prev != null) {
+                if (prev.getAddressAfterInternal(code, false) != null) {
+                    break;
                 } else {
-                    if (prev.address == null) {
-                        return null;
-                    } else {
-                        address = prev.getAddressAfter(code);
-                    }
+                    trail.add(0, prev);
+                    prev = prev.source.getPreviousStatementTo(prev, code);
                 }
+            }
+            // now it should be possible to do it:
+            for(SourceStatement s:trail) {
+                s.getAddress(code);
+            }
+
+            prev = source.getPreviousStatementTo(this, code);
+            if (prev == null) {
+                address = 0;
             } else {
-            */
                 address = prev.getAddressAfter(code);
-            //}
-        }
-        //System.out.println(address + ":("+source.fileName+") " + this);
-        return address;
+            }
+            return address;
+            
+        } else {
+            return address;
+        }        
     }
     
     
     public Integer getAddressAfter(CodeBase code)
     {
-        if (type == STATEMENT_ORG) {
-            return org.evaluate(this, code, true);
-        } else {
-            if (address == null) getAddress(code);
-            if (address == null) return null;
-            Integer size = sizeInBytes(code, true, true, true);
-            if (size == null) return null;
-            return address + size;
+        switch (type) {
+            case STATEMENT_ORG:
+                return org.evaluate(this, code, true);
+            case STATEMENT_INCLUDE:
+                return include.getStatements().get(include.getStatements().size()-1).getAddressAfter(code);
+            default:
+                if (address == null) getAddress(code);
+                if (address == null) return null;
+                Integer size = sizeInBytes(code, true, true, true);
+                if (size == null) return null;
+                return address + size;
+        }
+    }
+
+
+    public Integer getAddressAfterInternal(CodeBase code, boolean recurse)
+    {
+        switch (type) {
+            case STATEMENT_ORG:
+                return org.evaluate(this, code, true);
+            case STATEMENT_INCLUDE:
+                return include.getStatements().get(include.getStatements().size()-1).getAddressAfterInternal(code, recurse);
+            default:
+                if (recurse && address == null) getAddress(code);
+                if (address == null) return null;
+                Integer size = sizeInBytes(code, true, true, true);
+                if (size == null) return null;
+                return address + size;
         }
     }
     

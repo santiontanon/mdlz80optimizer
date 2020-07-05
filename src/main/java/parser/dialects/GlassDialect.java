@@ -9,8 +9,10 @@ import java.util.List;
 import cl.MDLConfig;
 import code.CodeBase;
 import code.Expression;
+import code.SourceConstant;
 import code.SourceFile;
 import code.SourceStatement;
+import java.util.HashMap;
 import parser.MacroExpansion;
 import parser.PreProcessor;
 import parser.SourceLine;
@@ -24,6 +26,11 @@ import parser.Tokenizer;
 public class GlassDialect implements Dialect {
     MDLConfig config;
     List<String> sectionStack = new ArrayList<>();
+    
+    // Although this is not documented, it seems you can have the same "section XXX" command multiple times
+    // in the same codebase, and the address counters just continue from the last time. So, we need to keep
+    // track of how many times each section has appeared:
+    HashMap<String,Integer> sectionAppearanceCounters = new HashMap<>();
 
     public GlassDialect(MDLConfig a_config)
     {
@@ -94,13 +101,36 @@ public class GlassDialect implements Dialect {
             s.type = SourceStatement.STATEMENT_ORG;
             s.org = exp;
             sectionStack.add(0, exp.symbolName);
+            
+            int appearanceCounter = 1;
+            if (sectionAppearanceCounters.containsKey(exp.symbolName)) {
+                appearanceCounter = sectionAppearanceCounters.get(exp.symbolName);
+            } else {
+                sectionAppearanceCounters.put(exp.symbolName, appearanceCounter);
+            }
+            
+            // Insert a helper statement, so we can restore the address counter after the section is complete:
+            SourceStatement sectionHelper = new SourceStatement(SourceStatement.STATEMENT_CONSTANT, source, lineNumber, null);
+            sectionHelper.label = new SourceConstant("__address_before_section_"+exp.symbolName+"_"+appearanceCounter+"_starts", null, 
+                    Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, code, config), sectionHelper);
+            code.addSymbol(sectionHelper.label.name, sectionHelper.label);
+            source.addStatement(sectionHelper);
 
             return config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source);
         }
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("ends")) {
             if (!sectionStack.isEmpty()) {
-                sectionStack.remove(0);
-                return true;
+                tokens.remove(0);
+                String sectionName = sectionStack.remove(0);
+                int appearanceCounter = sectionAppearanceCounters.get(sectionName);
+                
+                // Insert a helper statement, so we can restore the address counter after the section is complete:
+                SourceStatement sectionHelper = new SourceStatement(SourceStatement.STATEMENT_ORG, source, lineNumber, null);
+                sectionHelper.org = Expression.symbolExpression("__address_before_section_"+sectionName+"_"+appearanceCounter+"_starts", code, config);
+                source.addStatement(sectionHelper);
+                sectionAppearanceCounters.put(sectionName, appearanceCounter+1);
+                
+                return config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source);
             } else {
                 config.error("No section to terminate at " + source.fileName + ", " +
                              lineNumber + ": " + line);
@@ -183,11 +213,15 @@ public class GlassDialect implements Dialect {
                 }
 
                 if (preProcessor.withinMacroDefinition()) {
-                    if (!preProcessor.parseMacroLine(Tokenizer.tokenize(line),
-                                                     line, lineNumber, f, code, config)) {
+                    List<SourceStatement> newStatements = preProcessor.parseMacroLine(Tokenizer.tokenize(line), line, lineNumber, f, code, config);
+                    if (newStatements == null) {
                         // we fail to evaluate the macro, but it's ok, some times it can happen
                         succeeded = false;
                         break;
+                    } else {
+                        for(SourceStatement s:newStatements) {
+                            f.addStatement(s);
+                        }
                     }
                 } else {
                     SourceStatement s = config.lineParser.parse(Tokenizer.tokenize(line),

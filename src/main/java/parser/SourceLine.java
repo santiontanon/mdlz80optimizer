@@ -23,4 +23,10 @@ public class SourceLine {
         source = a_f;
         lineNumber = a_ln;
     }
+    
+    
+    public String toString()
+    {
+        return "["+source.fileName+"#"+lineNumber+"]:" + line;
+    }
 }

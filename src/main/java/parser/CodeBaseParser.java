@@ -114,7 +114,14 @@ public class CodeBaseParser {
                 if (tmp.getLeft().lineNumber != null) line_lineNumber = tmp.getLeft().lineNumber;
 
                 if (config.preProcessor.withinMacroDefinition()) {
-                    if (!config.preProcessor.parseMacroLine(tokens, line, line_lineNumber, f, code, config)) return false;
+                    List<SourceStatement> newStatements =  config.preProcessor.parseMacroLine(tokens, line, line_lineNumber, f, code, config);
+                    if (newStatements == null) {
+                        return false;
+                    } else {
+                        for(SourceStatement s:newStatements) {
+                            f.addStatement(s);
+                        }
+                    }
                 } else {
                     SourceStatement s = config.lineParser.parse(tokens, line, line_lineNumber, f, code, config);
                     if (s == null) return false;
@@ -147,9 +154,10 @@ public class CodeBaseParser {
 
 
     public boolean expandAllMacros(SourceFile f, CodeBase code) throws IOException
-    {
-        for(int i = 0;i<f.getStatements().size();i++) {
+    {        
+        for(int i = 0;i<f.getStatements().size();i++) {            
             SourceStatement s_macro = f.getStatements().get(i);
+            
             if (s_macro.type == SourceStatement.STATEMENT_MACROCALL) {
                 // expand macro!
                 config.trace("expandAllMacros: Expanding macro: " + s_macro.macroCallName != null ? s_macro.macroCallName : s_macro.macroCallMacro.name);
@@ -160,6 +168,9 @@ public class CodeBaseParser {
                 }
 
                 f.getStatements().remove(i);
+                
+                // We need to reset the addresses, as when we expand a macro, these can all change!
+                code.resetAddresses();
 
                 // Parse the new lines (which could, potentially trigger other macros!):
                 int insertionPoint = i;
@@ -177,7 +188,15 @@ public class CodeBaseParser {
                     int lineNumber = s_macro.lineNumber;
                     if (tmp.getLeft().lineNumber != null) lineNumber = tmp.getLeft().lineNumber;
                     if (config.preProcessor.withinMacroDefinition()) {
-                        if (!config.preProcessor.parseMacroLine(tokens, line, lineNumber, f, code, config)) return false;
+                        List<SourceStatement> newStatements =  config.preProcessor.parseMacroLine(tokens, line, lineNumber, f, code, config);
+                        if (newStatements == null) {
+                            return false;
+                        } else {
+                            for(SourceStatement s:newStatements) {
+                                f.addStatement(insertionPoint, s);
+                                insertionPoint++;
+                            }
+                        }                        
                     } else {
                         SourceStatement s = config.lineParser.parse(tokens, line, lineNumber, f, code, config);
                         if (s == null) return false;
@@ -189,6 +208,7 @@ public class CodeBaseParser {
                         }
                     }
                 }
+                
                 i--;
             }
         }

@@ -11,6 +11,7 @@ import cl.MDLConfig;
 import code.CodeBase;
 import code.SourceFile;
 import code.SourceStatement;
+import org.apache.commons.lang3.tuple.Pair;
 
 /**
  *
@@ -81,8 +82,12 @@ public class PreProcessor {
     }
 
 
-    public boolean parseMacroLine(List<String> tokens, String line, int lineNumber, SourceFile f, CodeBase code, MDLConfig config)
+    // Since the statements to be added might have to be added somewhere in the middle of a file, when expanding macros at the very end of parsing,
+    // we cannot insert them directly here. So, we just return a list of statements to be inserted wherever necessary by the calling code:
+    // - the return value is null if failure, and a list of statements if succeeded
+    public List<SourceStatement> parseMacroLine(List<String> tokens, String line, int lineNumber, SourceFile f, CodeBase code, MDLConfig config)
     {
+        List<SourceStatement> newStatements = new ArrayList<>();
         SourceMacro m = currentMacro;
         if (!tokens.isEmpty() && tokens.get(0).equalsIgnoreCase(SourceMacro.MACRO_ENDM)) {
             if (currentMacroNameStack.isEmpty()) {
@@ -90,7 +95,7 @@ public class PreProcessor {
                     SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_MACROCALL, f, lineNumber, null);
                     s.macroCallMacro = m;
                     s.macroCallArguments = m.preDefinedMacroArgs;
-                    f.addStatement(s);
+                    newStatements.add(s);
                     currentMacro = null;
                 } else if (m.name.equalsIgnoreCase(SourceMacro.MACRO_IF)) {
                     m.addLine(line, f, lineNumber);
@@ -98,7 +103,7 @@ public class PreProcessor {
                     m.addLine(line, f, lineNumber);
                 } else {
                     if (!addMacro(m, code)) {
-                        return false;
+                        return null;
                     }
                     currentMacro = null;
                 }
@@ -112,7 +117,7 @@ public class PreProcessor {
                     SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_MACROCALL, f, lineNumber, null);
                     s.macroCallMacro = m;
                     s.macroCallArguments = m.preDefinedMacroArgs;
-                    f.addStatement(s);
+                    newStatements.add(s);
                     currentMacro = null;
                 } else {
                     m.addLine(line, f, lineNumber);
@@ -128,7 +133,7 @@ public class PreProcessor {
                     SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_MACROCALL, f, lineNumber, null);
                     s.macroCallMacro = m;
                     s.macroCallArguments = m.preDefinedMacroArgs;
-                    f.addStatement(s);
+                    newStatements.add(s);
                     currentMacro = null;
                 } else {
                     m.addLine(line, f, lineNumber);
@@ -157,7 +162,7 @@ public class PreProcessor {
             m.addLine(line, f, lineNumber);
         }
 
-        return true;
+        return newStatements;
     }
 
 
@@ -168,7 +173,7 @@ public class PreProcessor {
             if (s.macroCallMacro != null) {
                 MacroExpansion expandedMacro = s.macroCallMacro.instantiate(s.macroCallArguments, s, code, config);
                 if (expandedMacro == null) {
-                    config.error("Problem instantiating macro "+s.macroCallName+" in " + source.fileName + ", " +
+                    config.error("Problem instantiating macro "+s.macroCallMacro.name+" in " + source.fileName + ", " +
                                  lineNumber + ": " + line);
                     return false;
                 }
