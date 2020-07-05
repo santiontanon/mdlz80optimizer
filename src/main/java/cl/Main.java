@@ -31,10 +31,8 @@ public class Main {
         // If there is nothing to do, just terminate:
         if (!config.somethingToDo()) return;
 
-        // Set up the code-base structure:
-        CodeBase code = new CodeBase(config);
-
         // Parse the code base:
+        CodeBase code = new CodeBase(config);
         if (!config.codeBaseParser.parseMainSourceFile(config.inputFile, code)) System.exit(2);
         
         // Execute all the requested tasks according to the command-line arguments:
