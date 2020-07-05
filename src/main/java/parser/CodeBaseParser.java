@@ -29,18 +29,16 @@ public class CodeBaseParser {
         return config.preProcessor.isMacro(name, code);
     }
 
-    public SourceFile parseMainSourceFile(String fileName, CodeBase code) throws IOException {
-        SourceFile main = parseSourceFile(fileName, code, null, null);
-        if (main == null)
-            return null;
+    public boolean parseMainSourceFile(String fileName, CodeBase code) throws IOException {
+        if (parseSourceFile(fileName, code, null, null) == null) return false;
 
         // Expand all macros that were not expanded initially:
         if (!expandAllMacros(code)) {
             config.error("Problem expanding macros after loading all the source code!");
-            return null;
+            return false;
         }
 
-        return main;
+        return true;
     }
 
     public SourceFile parseSourceFile(String fileName, CodeBase code, SourceFile parent,

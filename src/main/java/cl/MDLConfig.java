@@ -43,6 +43,7 @@ public class MDLConfig {
     public String symbolTableAllOutputFile = null;
     public String sourceFileOutputFile = null;
     public String dotOutputFile = null;
+    public boolean somethingToDo = true;
 
     public int cpu = CPU_Z80MSX;
     public int hexStyle = HEX_STYLE_HASH;
@@ -114,6 +115,11 @@ public class MDLConfig {
             }
         }
     }
+    
+    
+    public boolean somethingToDo() {
+        return somethingToDo;
+    }
 
     /*
      * Returns null if everything is fine, and an error string otherwise.
@@ -121,7 +127,8 @@ public class MDLConfig {
     public boolean parseArgs(String... argsArray) throws IOException {
         if (argsArray.length == 0) {
             info(docString);
-            return false;
+            somethingToDo = false;
+            return true;
         }
 
         List<String> args = new ArrayList<>();

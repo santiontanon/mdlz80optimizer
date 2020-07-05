@@ -26,13 +26,18 @@ public class Main {
         config.registerWorker(new AnnotatedSourceCodeGenerator(config));
 
         // Parse command line arguments:
-        if (!config.parseArgs(args)) return;
+        if (!config.parseArgs(args)) System.exit(1);
+        
+        // If there is nothing to do, just terminate:
+        if (!config.somethingToDo()) return;
+
+        // Set up the code-base structure:
+        CodeBase code = new CodeBase(config);
 
         // Parse the code base:
-        CodeBase code = new CodeBase(config);
-        if (config.codeBaseParser.parseMainSourceFile(config.inputFile, code) != null) {
-            // Execute all the requested tasks according to the command-line arguments:
-            config.executeWorkers(code);
-        }
+        if (!config.codeBaseParser.parseMainSourceFile(config.inputFile, code)) System.exit(2);
+        
+        // Execute all the requested tasks according to the command-line arguments:
+        config.executeWorkers(code);
     }
 }
