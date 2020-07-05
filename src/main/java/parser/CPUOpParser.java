@@ -8,7 +8,6 @@ import java.util.HashMap;
 import java.util.List;
 
 import cl.MDLConfig;
-import cl.MDLLogger;
 import code.CPUOp;
 import code.CPUOpSpec;
 import code.CPUOpSpecArg;
@@ -97,15 +96,13 @@ public class CPUOpParser {
         }
 
         if (spec.isJpRegWithParenthesis && config.warningJpHlWithParenthesis) {
-            config.warn(
-                    "Use of confusing classic 'jp (hl)' syntax, rather than the more accurate 'jp hp' in "+s.source.fileName+", " + s.lineNumber);
-            config.annotation(s.source.fileName, s.lineNumber, "warning", "Use of confusing z80 'jp (reg)' syntax, rather than the more accurate 'jp reg'.");
+            config.warn("Style suggestion", s.source.fileName, s.lineNumber,
+                    "Prefer using 'jp reg' rather than the confusing z80 'jp (reg)' syntax.");
         }
 
         if (!spec.official) {
             if (config.warningUnofficialOps) {
-                config.warn("Unofficial op syntax used in " + s.source.fileName + ", " + s.lineNumber);
-                config.annotation(s.source.fileName, s.lineNumber, "warning", "Unofficial op syntax.");
+                config.warn("Style suggestion", s.source.fileName, s.lineNumber, "Unofficial op syntax.");
             }
             if (config.convertToOfficial) {
                 return officialFromUnofficial(spec.officialEquivalent, spec, a_args, code);

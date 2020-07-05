@@ -385,11 +385,18 @@ public class MDLConfig {
     public void error(String message) {
         logger.log(MDLLogger.ERROR, message);
     }
-    
-    
-    public void annotation(String fileName, int lineNumber, String tag, String message) {
-        logger.annotation(fileName, lineNumber, tag, message);
+
+
+    // Logging with pre-defined format, to produce messages easy to parse by text editors:
+    public void info(String tag, String fileName, int lineNumber, String message) {
+        logger.log(MDLLogger.INFO, tag + " in " + fileName + "#" + lineNumber + ": " + message);
     }
+
+    
+    public void warn(String tag, String fileName, int lineNumber, String message) {
+        logger.log(MDLLogger.WARNING, tag + " in " + fileName + "#" + lineNumber + ": " + message);
+    }
+    
     
     public boolean isInfoEnabled()
     {

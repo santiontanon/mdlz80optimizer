@@ -156,11 +156,9 @@ public class PatternBasedOptimizer implements MDLWorker {
                 }
 
                 if (patt.apply(f.getStatements(), match)) {
-                    config.annotation(f.fileName, lineNumber, "optimization", patt.name);
-
                     if (config.isInfoEnabled()) {
-                        config.info(
-                                "Pattern-based optimization in "+f.fileName+"#"+lineNumber+": "+patt.name+" ("+patt.getSpaceSaving(match)+" bytes saved)");
+                        config.info("Pattern-based optimization", f.fileName, lineNumber, 
+                                patt.name+" ("+patt.getSpaceSaving(match)+" bytes saved)");
 
                         if (config.isDebugEnabled()) {
                             StringBuilder previousCode = new StringBuilder();

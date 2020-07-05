@@ -209,9 +209,8 @@ public class LineParser {
             if (line.startsWith(token) && (tokens.size() == 1 || tokens.get(1).startsWith(";"))) {
                 // it is just a label without colon:
                 if (config.warningLabelWithoutColon) {
-                    config.warn("Label defined without a colon in "
-                            + source.fileName + ", " + lineNumber + ": " + line);
-                    config.annotation(source.fileName, lineNumber, "warning", "Label defined without a colon.");
+                    config.warn(s.source.fileName+"#"+s.lineNumber+
+                            ": Label "+token+" defined without a colon.");
                 }
                 Expression exp = Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, code, config);
                 int address = exp.evaluate(s, code, false);
@@ -239,9 +238,8 @@ public class LineParser {
                 }
                 if (isLabel) {
                     if (config.warningLabelWithoutColon) {
-                        config.warn("Label defined without a colon in "
-                                + source.fileName + ", " + lineNumber + ": " + line);
-                        config.annotation(source.fileName, lineNumber, "warning", "Label defined without a colon.");
+                        config.warn("Style suggestion", s.source.fileName, s.lineNumber, 
+                                "Label "+token+" defined without a colon.");
                     }
                     tokens.remove(0);
                     String symbolName = newSymbolName(labelPrefix + token, null);
