@@ -39,9 +39,13 @@ public class SourceStatement {
     
     public Expression org;
     public SourceFile include = null;
+    
     public String incbin = null;
     public String incbinOriginalStr = null;
-    public int incbinSize = 0;
+    public boolean incbinSizeSpecified = false;
+    public Expression incbinSize = null;
+    public Expression incbinSkip = null;
+    
     public List<Expression> data = null;
     public Expression space = null;
     public Expression space_value = null;   // if this is null, "space" is virtual,
@@ -150,7 +154,7 @@ public class SourceStatement {
         switch(type) {
             case STATEMENT_INCBIN:
                 if (withIncBin) {
-                    return incbinSize;
+                    return incbinSize.evaluate(this, code, true);
                 }
                 return 0;
             
@@ -232,7 +236,15 @@ public class SourceStatement {
                 str += "    include \"" + include.fileName + "\"";
                 break;
             case STATEMENT_INCBIN:
-                str += "    incbin \"" + incbinOriginalStr + "\"";
+                if (incbinSkip != null) {
+                    if (incbinSizeSpecified) {
+                        str += "    incbin \"" + incbinOriginalStr + "\", " + incbinSkip + ", " + incbinSize;
+                    } else {
+                        str += "    incbin \"" + incbinOriginalStr + "\", " + incbinSkip;
+                    }
+                } else {
+                    str += "    incbin \"" + incbinOriginalStr + "\"";
+                }
                 break;
             case STATEMENT_CONSTANT:
                 str += " equ " + label.exp.toString();

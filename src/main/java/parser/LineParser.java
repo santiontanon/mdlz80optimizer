@@ -326,33 +326,70 @@ public class LineParser {
     public boolean parseIncbin(List<String> tokens,
             String line, int lineNumber,
             SourceStatement s, SourceFile source, CodeBase code) {
-        if (tokens.size() >= 1) {
-            String token = tokens.get(0);
-            if (Tokenizer.isString(token)) {
-                tokens.remove(0);
-                String rawFileName = Tokenizer.stringValue(token);
-                String path = resolveIncludePath(rawFileName, source);
-                if (path == null) {
-                    config.error("Incbin file " + rawFileName + " does not exist in " + source.fileName + ", "
+        if (tokens.isEmpty()) {
+            config.error("Cannot parse line " + source.fileName + ", "
+                    + lineNumber + ": " + line);
+            return false;
+        }
+        String token = tokens.get(0);
+        if (!Tokenizer.isString(token)) {
+            config.error("Cannot parse line " + source.fileName + ", "
+                    + lineNumber + ": " + line);
+            return false;
+        }
+        tokens.remove(0);
+        String rawFileName = Tokenizer.stringValue(token);
+        String path = resolveIncludePath(rawFileName, source);
+        if (path == null) {
+            config.error("Incbin file " + rawFileName + " does not exist in " + source.fileName + ", "
+                    + lineNumber + ": " + line);
+            return false;
+        }
+        s.type = SourceStatement.STATEMENT_INCBIN;
+        s.incbin = path;
+        s.incbinOriginalStr = rawFileName;
+        File f = new File(path);
+        if (!f.exists()) {
+            config.error("Incbin file " + rawFileName + " does not exist in " + source.fileName + ", "
+                    + lineNumber + ": " + line);
+            return false;
+        }
+        
+        // optional skip and size arguments (they could be separated by commas or not, depending on the assembler dialect):
+        Expression skip_exp = null;
+        Expression size_exp = null;
+        if (!tokens.isEmpty() && !tokens.get(0).startsWith(";")) {
+            if (tokens.get(0).equals(",")) tokens.remove(0);
+            if (!tokens.isEmpty() && !tokens.get(0).startsWith(";")) {
+                skip_exp = config.expressionParser.parse(tokens, code);
+                if (skip_exp == null) {
+                    config.error("Cannot parse line " + source.fileName + ", "
                             + lineNumber + ": " + line);
-                    return false;
+                    return false;                    
                 }
-                s.type = SourceStatement.STATEMENT_INCBIN;
-                s.incbin = path;
-                s.incbinOriginalStr = rawFileName;
-                File f = new File(path);
-                if (!f.exists()) {
-                    config.error("Incbin file " + rawFileName + " does not exist in " + source.fileName + ", "
-                            + lineNumber + ": " + line);
-                    return false;
-                }
-                s.incbinSize = (int) f.length();
-                return parseRestofTheLine(tokens, line, lineNumber, s, source);
             }
         }
-        config.error("Cannot parse line " + source.fileName + ", "
-                + lineNumber + ": " + line);
-        return false;
+        if (!tokens.isEmpty() && !tokens.get(0).startsWith(";")) {
+            if (tokens.get(0).equals(",")) tokens.remove(0);
+            if (!tokens.isEmpty() && !tokens.get(0).startsWith(";")) {
+                size_exp = config.expressionParser.parse(tokens, code);
+                if (skip_exp == null) {
+                    config.error("Cannot parse line " + source.fileName + ", "
+                            + lineNumber + ": " + line);
+                    return false;                    
+                }
+            }
+        }
+        
+        s.incbinSkip = skip_exp;
+        if (size_exp != null) {
+            s.incbinSize = size_exp;
+            s.incbinSizeSpecified = true;
+        } else {
+            s.incbinSize = Expression.constantExpression((int)f.length(), config);
+            s.incbinSizeSpecified = false;
+        }
+        return parseRestofTheLine(tokens, line, lineNumber, s, source);
     }
 
 

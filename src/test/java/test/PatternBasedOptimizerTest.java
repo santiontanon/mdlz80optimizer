@@ -66,7 +66,7 @@ public class PatternBasedOptimizerTest {
 
         SourceCodeGenerator scg = new SourceCodeGenerator(mdlConfig);
 
-        String result = scg.sourceFileString(codeBase.getMain());
+        String result = scg.sourceFileString(codeBase.getMain(), codeBase);
         System.out.println("\n--------------------------------------");
         System.out.println(result);
         System.out.println("--------------------------------------\n");

@@ -9,7 +9,6 @@ import java.io.InputStream;
 import java.util.List;
 
 import cl.MDLConfig;
-import cl.MDLLogger;
 import code.CodeBase;
 import code.SourceFile;
 import code.SourceStatement;
@@ -66,7 +65,7 @@ public class SourceCodeGenerator implements MDLWorker {
             config.debug("Executing "+this.getClass().getSimpleName()+" worker...");
 
             try (FileWriter fw = new FileWriter(outputFileName)) {
-                fw.write(sourceFileString(code.getMain()));
+                fw.write(sourceFileString(code.getMain(), code));
                 fw.flush();
             } catch (Exception e) {
                 config.error("Cannot write to file " + outputFileName + ": " + e);
@@ -77,24 +76,32 @@ public class SourceCodeGenerator implements MDLWorker {
     }
 
 
-    public String sourceFileString(SourceFile sf)
+    public String sourceFileString(SourceFile sf, CodeBase code)
     {
         StringBuilder sb = new StringBuilder();
-        sourceFileString(sf, sb);
+        sourceFileString(sf, code, sb);
         return sb.toString();
     }
 
 
-    public void sourceFileString(SourceFile sf, StringBuilder sb)
+    public void sourceFileString(SourceFile sf, CodeBase code, StringBuilder sb)
     {
         for (SourceStatement ss:sf.getStatements()) {
             if (ss.type == SourceStatement.STATEMENT_INCLUDE) {
-                sourceFileString(ss.include, sb);
+                sourceFileString(ss.include, code, sb);
             } else if (ss.type == SourceStatement.STATEMENT_INCBIN && expandIncbin) {
+                int skip = 0;
+                int size = 0;
+                if (ss.incbinSkip != null) skip = ss.incbinSkip.evaluate(ss, code, false);
+                if (ss.incbinSize != null) size = ss.incbinSize.evaluate(ss, code, false);
                 try (InputStream is = new FileInputStream(ss.incbin)) {
                     int count = 0;
                     while(is.available() != 0) {
                         int data = is.read();
+                        if (skip > 0) {
+                            skip --;
+                            continue;
+                        }
                         if (count > 0) {
                             sb.append(", ");
                         } else {
@@ -106,6 +113,8 @@ public class SourceCodeGenerator implements MDLWorker {
                             sb.append("\n");
                             count = 0;
                         }
+                        size --;
+                        if (size <= 0) break;
                     }
                     if (count > 0) sb.append("\n");
                 } catch(Exception e) {
