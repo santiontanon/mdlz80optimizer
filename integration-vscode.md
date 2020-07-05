@@ -8,7 +8,7 @@ MDLZ80 pattern-based optimizer can be integrated into VSCode using a problem mat
 	"tasks": [{
 		"label": "run mdlz80",
 		"type": "shell",
-		"command": "java -jar mdlz80.jar -po <main source> -dialect <dialect>",
+		"command": "java -jar mdlz80.jar <main source> -po -dialect <dialect>",
 		"group": "build",
 		"problemMatcher": {
 			"applyTo": "allDocuments",
