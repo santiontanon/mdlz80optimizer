@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import cl.MDLConfig;
-import cl.MDLLogger;
 import code.CodeBase;
 import code.Expression;
 import code.SourceFile;
@@ -73,7 +72,7 @@ public class SourceMacro {
         if (name.equalsIgnoreCase(MACRO_REPT)) {
             Integer reptNRepetitions_value = args.get(0).evaluate(definingStatement, code, false);
             if (reptNRepetitions_value == null) {
-                MDLLogger.logger().error("Could not evaluate REPT argument " + args.get(0));
+                config.error("Could not evaluate REPT argument " + args.get(0));
                 return null;
             }
             String scope;
@@ -94,7 +93,7 @@ public class SourceMacro {
         } else if (name.equalsIgnoreCase(MACRO_IF)) {
             Integer ifCondition_value = args.get(0).evaluate(definingStatement, code, false);
             if (ifCondition_value == null) {
-                MDLLogger.logger().error("Could not evaluate IF argument " + args.get(0));
+                config.error("Could not evaluate IF argument " + args.get(0));
                 return null;
             }
             if (ifCondition_value == Expression.FALSE) {
@@ -108,7 +107,7 @@ public class SourceMacro {
             if (exp.type == Expression.EXPRESSION_SYMBOL) {
                 if (code.getSymbol(exp.symbolName) != null) defined = true;
             } else {
-                MDLLogger.logger().error("Incorrect parameter to " + MACRO_IFDEF + ": " + args.get(0));
+                config.error("Incorrect parameter to " + MACRO_IFDEF + ": " + args.get(0));
                 return null;
             }
             if (defined) {
@@ -121,7 +120,7 @@ public class SourceMacro {
             while(args.size() < argNames.size()) {
                 Expression defaultValue = defaultValues.get(args.size());
                 if (defaultValue == null) {
-                    MDLLogger.logger().error("Number of parameters in macro call incorrect!");
+                    config.error("Number of parameters in macro call incorrect!");
                     return null;
                 } else {
                     args.add(defaultValue);

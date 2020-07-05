@@ -56,13 +56,13 @@ public class SymbolTableGenerator implements MDLWorker {
     public boolean work(CodeBase code) {
 
         if (outputFileName != null) {
-            MDLLogger.logger().debug("Executing "+this.getClass().getSimpleName()+" worker...");
+            config.debug("Executing "+this.getClass().getSimpleName()+" worker...");
 
             try (FileWriter fw = new FileWriter(outputFileName)) {
                 fw.write(symbolTableString(code));
                 fw.flush();
             } catch (Exception e) {
-                MDLLogger.logger().error("Cannot write to file {}", outputFileName, e);
+                config.error("Cannot write to file " + outputFileName + ": " + e);
                 return false;
             }
         }

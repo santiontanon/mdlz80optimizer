@@ -66,7 +66,7 @@ public class CPUOpPattern {
         CPUOpPattern pat = new CPUOpPattern();
         pat.ID = Integer.parseInt(tokens.remove(0));
         if (!tokens.remove(0).equals(":")) {
-            MDLLogger.logger().error("Cannot parse CPUOpPattern: " + line);
+            config.error("Cannot parse CPUOpPattern: " + line);
             return null;
         }
         pat.opName = tokens.remove(0);
@@ -74,7 +74,7 @@ public class CPUOpPattern {
             if (tokens.get(0).startsWith(";")) break;
             Expression exp = config.expressionParser.parse(tokens, code);
             if (exp == null) {
-                MDLLogger.logger().error("Cannot parse CPUOpPattern: " + line);
+                config.error("Cannot parse CPUOpPattern: " + line);
                 return null;
             } else {
                 pat.args.add(exp);

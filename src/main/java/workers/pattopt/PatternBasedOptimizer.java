@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import cl.MDLConfig;
-import cl.MDLLogger;
 import code.CodeBase;
 import code.SourceFile;
 import code.SourceStatement;
@@ -107,7 +106,7 @@ public class PatternBasedOptimizer implements MDLWorker {
                 }
             }
         } catch (Exception e) {
-            MDLLogger.logger().error("PatternBasedOptimizer: error initializing patterns!", e);
+            config.error("PatternBasedOptimizer: error initializing patterns! " + e);
         }
     }
 
@@ -131,7 +130,7 @@ public class PatternBasedOptimizer implements MDLWorker {
             code.resetAddresses();
         }
 
-        MDLLogger.logger().info("PatternBasedOptimizer: {} patterns applied, {} bytes saved", r.patternApplications, r.bytesSaved);
+        config.info("PatternBasedOptimizer: "+r.patternApplications+" patterns applied, "+r.bytesSaved+" bytes saved");
         return r;
     }
 
@@ -159,14 +158,13 @@ public class PatternBasedOptimizer implements MDLWorker {
                 if (patt.apply(f.getStatements(), match)) {
                     config.annotation(f.fileName, lineNumber, "optimization", patt.name);
 
-                    if (MDLLogger.logger().isInfoEnabled()) {
-                        MDLLogger.logger().info(
-                                "Pattern-based optimization in {}#{}: {} ({} bytes saved)",
-                                f.fileName, lineNumber, patt.name, patt.getSpaceSaving(match));
+                    if (config.isInfoEnabled()) {
+                        config.info(
+                                "Pattern-based optimization in "+f.fileName+", "+lineNumber+": "+patt.name+" ("+patt.getSpaceSaving(match)+" bytes saved)");
 
-                        if (MDLLogger.logger().isDebugEnabled()) {
+                        if (config.isDebugEnabled()) {
                             StringBuilder previousCode = new StringBuilder();
-                            for(int line = startIndex;line<=endIndex;line++) {
+                            for(int line = startIndex;line<endIndex;line++) {
                                 previousCode
                                         .append('\n')
                                         .append(f.getStatements().get(line).toString());
@@ -181,7 +179,7 @@ public class PatternBasedOptimizer implements MDLWorker {
                                         .append(f.getStatements().get(line).toString());
                             }
 
-                            MDLLogger.logger().debug("{}\nReplaced by:{}", previousCode, newCode);
+                            config.debug(previousCode + "\nReplaced by:" + newCode);
                         }
                     }
                     r.patternApplications++;

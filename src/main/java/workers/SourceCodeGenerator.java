@@ -63,13 +63,13 @@ public class SourceCodeGenerator implements MDLWorker {
     public boolean work(CodeBase code) {
 
         if (outputFileName != null) {
-            MDLLogger.logger().debug("Executing "+this.getClass().getSimpleName()+" worker...");
+            config.debug("Executing "+this.getClass().getSimpleName()+" worker...");
 
             try (FileWriter fw = new FileWriter(outputFileName)) {
                 fw.write(sourceFileString(code.getMain()));
                 fw.flush();
             } catch (Exception e) {
-                MDLLogger.logger().error("Cannot write to file {}", outputFileName, e);
+                config.error("Cannot write to file " + outputFileName + ": " + e);
                 return false;
             }
         }
@@ -109,7 +109,7 @@ public class SourceCodeGenerator implements MDLWorker {
                     }
                     if (count > 0) sb.append("\n");
                 } catch(Exception e) {
-                    MDLLogger.logger().error("Cannot expand incbin: " + ss.incbin);
+                    config.error("Cannot expand incbin: " + ss.incbin);
                 }
             } else {
                 sb.append(ss.toString());

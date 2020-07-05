@@ -142,7 +142,7 @@ public class CPUOpSpec {
                         if (opArg.type == Expression.EXPRESSION_REGISTER_OR_FLAG) {
                             deps.add(new CPUOpDependency(opArg.registerOrFlagName.toUpperCase(), null, null, null, null));
                         } else {
-                            MDLLogger.logger().error("getInputDependencies Register expression is not of type EXPRESSION_REGISTER_OR_FLAG");
+                            config.error("getInputDependencies Register expression is not of type EXPRESSION_REGISTER_OR_FLAG");
                             return null;
                         }
                     }
@@ -179,7 +179,7 @@ public class CPUOpSpec {
                         if (opArg.type == Expression.EXPRESSION_REGISTER_OR_FLAG) {
                             deps.add(new CPUOpDependency(opArg.registerOrFlagName.toUpperCase(), null, null, null, null));
                         } else {
-                            MDLLogger.logger().error("getOutputDependencies Register expression is not of type EXPRESSION_REGISTER_OR_FLAG");
+                            config.error("getOutputDependencies Register expression is not of type EXPRESSION_REGISTER_OR_FLAG");
                             return null;
                         }
                     }

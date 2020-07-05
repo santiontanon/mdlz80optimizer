@@ -97,10 +97,9 @@ public class CPUOpParser {
         }
 
         if (spec.isJpRegWithParenthesis && config.warningJpHlWithParenthesis) {
-            MDLLogger.logger().warn(
-                    "Use of confusing classic 'jp (hl)' syntax, rather than the more accurate 'jp hp' in {}, {}",
-                    s.source.fileName, s.lineNumber);
-            MDLLogger.INSTANCE.annotation(s.source.fileName, s.lineNumber, "warning", "Use of confusing z80 'jp (reg)' syntax, rather than the more accurate 'jp reg'.");
+            config.warn(
+                    "Use of confusing classic 'jp (hl)' syntax, rather than the more accurate 'jp hp' in "+s.source.fileName+", " + s.lineNumber);
+            config.annotation(s.source.fileName, s.lineNumber, "warning", "Use of confusing z80 'jp (reg)' syntax, rather than the more accurate 'jp reg'.");
         }
 
         if (!spec.official) {

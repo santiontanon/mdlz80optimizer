@@ -8,7 +8,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import ch.qos.logback.classic.Level;
 import code.CodeBase;
 import parser.CPUOpParser;
 import parser.CPUOpSpecParser;
@@ -67,6 +66,7 @@ public class MDLConfig {
     public String PRAGMA_NO_OPTIMIZATION = "mdl:no-opt";
 
     // utils:
+    public MDLLogger logger;
     public PreProcessor preProcessor;
     public LineParser lineParser;
     public ExpressionParser expressionParser;
@@ -96,6 +96,12 @@ public class MDLConfig {
             + "  -no-opt-pragma <value>: changes the pragma to be inserted in a comment on a line to prevent optimizing it (default: "
             + PRAGMA_NO_OPTIMIZATION + ")" + "\n";
 
+
+    public MDLConfig() {
+        logger = new MDLLogger(MDLLogger.INFO);
+    }
+
+    
     public void registerWorker(MDLWorker r) {
         workers.add(r);
         docString += r.docString();
@@ -104,7 +110,7 @@ public class MDLConfig {
     public void executeWorkers(CodeBase code) {
         for (MDLWorker w : workers) {
             if (!w.work(code)) {
-                MDLLogger.logger().error("Problem executing worker {}", w.getClass().getSimpleName());
+                error("Problem executing worker " + w.getClass().getSimpleName());
             }
         }
     }
@@ -114,7 +120,7 @@ public class MDLConfig {
      */
     public boolean parseArgs(String... argsArray) throws IOException {
         if (argsArray.length == 0) {
-            MDLLogger.logger().info(docString);
+            info(docString);
             return false;
         }
 
@@ -141,11 +147,11 @@ public class MDLConfig {
                                     cpu = CPU_Z80CPC;
                                     break;
                                 default:
-                                MDLLogger.logger().error("Unrecognized cpu {}", cpuString);
+                                error("Unrecognized cpu " + cpuString);
                                     return false;
                             }
                         } else {
-                            MDLLogger.logger().error("Missing cpu name after {}", arg);
+                            error("Missing cpu name after " + arg);
                             return false;
                         }
                         break;
@@ -169,11 +175,11 @@ public class MDLConfig {
                                     dialect = DIALECT_SJASM;
                                     break;
                                 default:
-                                    MDLLogger.logger().error("Unrecognized dialect {}", dialectString);
+                                    error("Unrecognized dialect " + dialectString);
                                     return false;
                             }
                         } else {
-                            MDLLogger.logger().error("Missing dialect name after {}", arg);
+                            error("Missing dialect name after " + arg);
                             return false;
                         }
                         break;
@@ -185,26 +191,26 @@ public class MDLConfig {
                             if ((includePath.isDirectory())) {
                                 includeDirectories.add(includePath);
                             } else {
-                                MDLLogger.logger().warn("Include path {} is not a directory and will be ignored", includePath);
+                                warn("Include path "+includePath+" is not a directory and will be ignored");
                             }
                         } else {
-                            MDLLogger.logger().error("Missing path after {}", arg);
+                            error("Missing path after " + arg);
                             return false;
                         }
                         break;
 
                     case "-quiet":
-                        MDLLogger.INSTANCE.setMinLevelToLog(Level.WARN);
+                        logger.minLevelToLog = MDLLogger.WARNING;
                         args.remove(0);
                         break;
 
                     case "-debug":
-                        MDLLogger.INSTANCE.setMinLevelToLog(Level.DEBUG);
+                        logger.minLevelToLog = MDLLogger.DEBUG;
                         args.remove(0);
                         break;
 
                     case "-trace":
-                        MDLLogger.INSTANCE.setMinLevelToLog(Level.TRACE);
+                        logger.minLevelToLog = MDLLogger.TRACE;
                         args.remove(0);
                         break;
 
@@ -258,7 +264,7 @@ public class MDLConfig {
                             args.remove(0);
                             PRAGMA_NO_OPTIMIZATION = args.remove(0);
                         } else {
-                            MDLLogger.logger().error("Missing pragma after {}", arg);
+                            error("Missing pragma after " + arg);
                             return false;
                         }
                         break;
@@ -300,7 +306,7 @@ public class MDLConfig {
                             }
                         }
                         if (!recognized) {
-                            MDLLogger.logger().error("Unrecognized argument {}", arg);
+                            error("Unrecognized argument " + arg);
                             return false;
                         }
                     }
@@ -312,7 +318,7 @@ public class MDLConfig {
                         state++;
                         break;
                     default:
-                        MDLLogger.logger().error("Unrecognized argument {}", arg);
+                        error("Unrecognized argument " + arg);
                         return false;
                 }
             }
@@ -349,14 +355,50 @@ public class MDLConfig {
      */
     public boolean verify() {
         if (inputFile == null) {
-            MDLLogger.logger().error("Missing inputFile");
+            error("Missing inputFile");
             return false;
         }
         return true;
     }
 
-    public void annotation(String fileName, int lineNumber, String tag, String message) {
-        MDLLogger.INSTANCE.annotation(fileName, lineNumber, tag, message);
+
+    public void trace(String message) {
+        logger.log(MDLLogger.TRACE, message);
     }
 
+    
+    public void debug(String message) {
+        logger.log(MDLLogger.DEBUG, message);
+    }
+    
+    
+    public void info(String message) {
+        logger.log(MDLLogger.INFO, message);
+    }
+
+    
+    public void warn(String message) {
+        logger.log(MDLLogger.WARNING, message);
+    }
+
+    
+    public void error(String message) {
+        logger.log(MDLLogger.ERROR, message);
+    }
+    
+    
+    public void annotation(String fileName, int lineNumber, String tag, String message) {
+        logger.annotation(fileName, lineNumber, tag, message);
+    }
+    
+    public boolean isInfoEnabled()
+    {
+        return logger.minLevelToLog <= MDLLogger.INFO;
+    }
+
+
+    public boolean isDebugEnabled()
+    {
+        return logger.minLevelToLog <= MDLLogger.DEBUG;
+    }
 }

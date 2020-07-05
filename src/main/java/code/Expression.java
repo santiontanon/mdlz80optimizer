@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import cl.MDLConfig;
-import cl.MDLLogger;
 
 public class Expression {
     public static final int TRUE = -1;
@@ -72,8 +71,12 @@ public class Expression {
                 return numericConstant;
 
             case EXPRESSION_STRING_CONSTANT:
-                MDLLogger.logger().warn("A string cannot be used as part of an expression.");
-                return null;
+                if (stringConstant.length() == 1) {
+                    return (int)stringConstant.charAt(0);
+                } else {
+                    config.warn("A string cannot be used as part of an expression.");
+                    return null;
+                }
 
             case EXPRESSION_SYMBOL:
                 {
@@ -81,7 +84,7 @@ public class Expression {
                     Integer value = code.getSymbolValue(symbolName, silent);
                     if (value == null) {
                         if (!silent) {
-                            MDLLogger.logger().error("Undefined symbol {}", symbolName);
+                            config.error("Undefined symbol " + symbolName);
                             code.getSymbolValue(symbolName, silent);
                         }
                         return null;
@@ -725,7 +728,7 @@ public class Expression {
     {
         // look at operator precedence:
         if (OPERATOR_PRECEDENCE[operator] < 0) {
-            MDLLogger.logger().error("Precedence for operator {} is undefined!", operator);
+            config.error("Precedence for operator "+operator+" is undefined!");
             return null;
         }
         if (OPERATOR_PRECEDENCE[arg1.type] >= 0 &&

@@ -8,7 +8,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 
 import cl.MDLConfig;
-import cl.MDLLogger;
 import code.CodeBase;
 import code.SourceFile;
 import code.SourceStatement;
@@ -169,7 +168,7 @@ public class PreProcessor {
             if (s.macroCallMacro != null) {
                 MacroExpansion expandedMacro = s.macroCallMacro.instantiate(s.macroCallArguments, s, code, config);
                 if (expandedMacro == null) {
-                    MDLLogger.logger().error("Problem instantiating macro "+s.macroCallName+" in " + source.fileName + ", " +
+                    config.error("Problem instantiating macro "+s.macroCallName+" in " + source.fileName + ", " +
                                  lineNumber + ": " + line);
                     return false;
                 }
@@ -179,7 +178,7 @@ public class PreProcessor {
                 SourceMacro m = new SourceMacro(SourceMacro.MACRO_IF, s);
                 m.preDefinedMacroArgs = s.macroCallArguments;
                 if (currentMacro != null) {
-                    MDLLogger.logger().error("Something weird just happend (expanding two macros at once, contact the developer) in " + source.fileName + ", " +
+                    config.error("Something weird just happend (expanding two macros at once, contact the developer) in " + source.fileName + ", " +
                                  lineNumber + ": " + line);
                     return false;
                 }
@@ -189,7 +188,7 @@ public class PreProcessor {
                 SourceMacro m = new SourceMacro(SourceMacro.MACRO_IFDEF, s);
                 m.preDefinedMacroArgs = s.macroCallArguments;
                 if (currentMacro != null) {
-                    MDLLogger.logger().error("Something weird just happend (expanding two macros at once, contact the developer) in " + source.fileName + ", " +
+                    config.error("Something weird just happend (expanding two macros at once, contact the developer) in " + source.fileName + ", " +
                                  lineNumber + ": " + line);
                     return false;
                 }
@@ -199,7 +198,7 @@ public class PreProcessor {
                 SourceMacro m = new SourceMacro(SourceMacro.MACRO_REPT, s);
                 m.preDefinedMacroArgs = s.macroCallArguments;
                 if (currentMacro != null) {
-                    MDLLogger.logger().error("Something weird just happend (expanding two macros at once, contact the developer) in " + source.fileName + ", " +
+                    config.error("Something weird just happend (expanding two macros at once, contact the developer) in " + source.fileName + ", " +
                                  lineNumber + ": " + line);
                     return false;
                 }
@@ -210,7 +209,7 @@ public class PreProcessor {
                 if (m != null) {
                     MacroExpansion expandedMacro = m.instantiate(s.macroCallArguments, s, code, config);
                     if (expandedMacro == null) {
-                        MDLLogger.logger().error("Problem instantiating macro "+s.macroCallName+" in " + source.fileName + ", " +
+                        config.error("Problem instantiating macro "+s.macroCallName+" in " + source.fileName + ", " +
                                      lineNumber + ": " + line);
                         return false;
                     }
@@ -219,7 +218,7 @@ public class PreProcessor {
                 } else {
                     // macro is not yet defined, keep it in the code, and we will evaluate later
                     if (complainIfUndefined) {
-                        MDLLogger.logger().error("Could not expand macro in " + source.fileName + ", " + lineNumber + ": " + line);
+                        config.error("Could not expand macro in " + source.fileName + ", " + lineNumber + ": " + line);
                     }
                     return false;
                 }
@@ -227,7 +226,7 @@ public class PreProcessor {
         } else {
             if (s.type == SourceStatement.STATEMENT_MACRO) {
                 if (currentMacro != null) {
-                    MDLLogger.logger().error("Something weird just happend (expanding two macros at once, contact the developer) in " + source.fileName + ", " +
+                    config.error("Something weird just happend (expanding two macros at once, contact the developer) in " + source.fileName + ", " +
                                  lineNumber + ": " + line);
                     return false;
                 }

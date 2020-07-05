@@ -11,7 +11,6 @@ import java.util.List;
 import org.apache.commons.lang3.tuple.Pair;
 
 import cl.MDLConfig;
-import cl.MDLLogger;
 import code.CodeBase;
 import code.SourceFile;
 import code.SourceStatement;
@@ -37,7 +36,7 @@ public class CodeBaseParser {
 
         // Expand all macros that were not expanded initially:
         if (!expandAllMacros(code)) {
-            MDLLogger.logger().error("Problem expanding macros after loading all the source code!");
+            config.error("Problem expanding macros after loading all the source code!");
             return null;
         }
 
@@ -47,7 +46,7 @@ public class CodeBaseParser {
     public SourceFile parseSourceFile(String fileName, CodeBase code, SourceFile parent,
             SourceStatement parentInclude) {
         if (code.getSourceFile(fileName) != null) {
-            MDLLogger.logger().warn("Re-entering into {} ignored...", fileName);
+            config.warn("Re-entering into "+fileName+" ignored...");
             return null;
         }
 
@@ -59,7 +58,7 @@ public class CodeBaseParser {
             if (parseSourceFileInternal(f, code, config))
                 return f;
         } catch (Exception e) {
-            MDLLogger.logger().error("Problem parsing file {}", fileName, e);
+            config.error("Problem parsing file " + fileName + ": " + e);
         }
         return null;
     }
@@ -95,7 +94,7 @@ public class CodeBaseParser {
 
     boolean parseSourceFileInternal(SourceFile f, CodeBase code, MDLConfig config) throws IOException
     {
-        MDLLogger.logger().trace("Parsing {}...", f.fileName);
+        config.trace("Parsing "+f.fileName+"...");
 
         try (BufferedReader br = Resources.asReader(f.fileName)) {
             int file_lineNumber = 0;
@@ -104,7 +103,7 @@ public class CodeBaseParser {
                 Pair<SourceLine, Integer> tmp = getNextLine(br, f, file_lineNumber, tokens);
                 if (tmp == null) {
                     if (config.preProcessor.withinMacroDefinition()) {
-                        MDLLogger.logger().error("File {} ended while inside a macro definition: {}", f.fileName, config.preProcessor.getCurrentMacro().name);
+                        config.error("File "+f.fileName+" ended while inside a macro definition: " + config.preProcessor.getCurrentMacro().name);
                         return false;
                     }
                     return true;
@@ -153,11 +152,10 @@ public class CodeBaseParser {
             SourceStatement s_macro = f.getStatements().get(i);
             if (s_macro.type == SourceStatement.STATEMENT_MACROCALL) {
                 // expand macro!
-                MDLLogger.logger().trace("expandAllMacros: Expanding macro: {}",
-                        s_macro.macroCallName != null ? s_macro.macroCallName : s_macro.macroCallMacro.name);
+                config.trace("expandAllMacros: Expanding macro: " + s_macro.macroCallName != null ? s_macro.macroCallName : s_macro.macroCallMacro.name);
 
                 if (!config.preProcessor.handleStatement("", s_macro.lineNumber, s_macro, f, code, true)) {
-                    MDLLogger.logger().error("Cannot expand macro {} in {}, {}", s_macro.macroCallName, s_macro.source.fileName, s_macro.lineNumber);
+                    config.error("Cannot expand macro "+s_macro.macroCallName+" in "+s_macro.source.fileName+", " + s_macro.lineNumber);
                     return false;
                 }
 
@@ -170,7 +168,7 @@ public class CodeBaseParser {
                     Pair<SourceLine, Integer> tmp = getNextLine(null, f, s_macro.lineNumber, tokens);
                     if (tmp == null) {
                         if (config.preProcessor.withinMacroDefinition()) {
-                            MDLLogger.logger().error("File {} ended while inside a macro definition", f.fileName);
+                            config.error("File "+f.fileName+" ended while inside a macro definition");
                             return false;
                         }
                         break;

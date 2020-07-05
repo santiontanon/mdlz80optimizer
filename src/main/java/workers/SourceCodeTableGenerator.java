@@ -10,7 +10,6 @@ import java.util.HashMap;
 import java.util.List;
 
 import cl.MDLConfig;
-import cl.MDLLogger;
 import code.CodeBase;
 import code.SourceFile;
 import code.SourceStatement;
@@ -49,13 +48,13 @@ public class SourceCodeTableGenerator implements MDLWorker {
     public boolean work(CodeBase code) {
 
         if (outputFileName != null) {
-            MDLLogger.logger().debug("Executing "+this.getClass().getSimpleName()+" worker...");
+            config.debug("Executing "+this.getClass().getSimpleName()+" worker...");
 
             try (FileWriter fw = new FileWriter(outputFileName)) {
                 fw.write(sourceFileTableString(code));
                 fw.flush();
             } catch (Exception e) {
-                MDLLogger.logger().error("Cannot write to file {}", outputFileName, e);
+                config.error("Cannot write to file " + outputFileName + ": " + e);
                 return false;
             }
         }

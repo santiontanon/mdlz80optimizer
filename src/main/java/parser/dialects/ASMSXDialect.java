@@ -3,11 +3,8 @@
  */
 package parser.dialects;
 
-import java.util.ArrayList;
-import java.util.List;
 
 import cl.MDLConfig;
-import cl.MDLLogger;
 import code.CodeBase;
 import code.Expression;
 import code.SourceConstant;
@@ -197,7 +194,7 @@ public class ASMSXDialect implements Dialect {
             tokens.remove(0);
             Expression size_exp = config.expressionParser.parse(tokens, code);
             if (size_exp == null) {
-                MDLLogger.logger().error("Cannot parse .size parameter in {}, {}: {}", source.fileName, lineNumber, line);
+                config.error("Cannot parse .size parameter in "+source.fileName+", "+lineNumber+": " + line);
                 return false;
             }
             // Since we are not producing compiled output, we ignore this directive
@@ -207,7 +204,7 @@ public class ASMSXDialect implements Dialect {
             tokens.remove(0);
             Expression page_exp = config.expressionParser.parse(tokens, code);
             if (page_exp == null) {
-                MDLLogger.logger().error("Cannot parse .page parameter in {}, {}: {}", source.fileName, lineNumber, line);
+                config.error("Cannot parse .page parameter in "+source.fileName+", "+lineNumber+": " + line);
                 return false;
             }
             s.type = SourceStatement.STATEMENT_ORG;
@@ -218,7 +215,7 @@ public class ASMSXDialect implements Dialect {
             return config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source);
         }
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase(".printtext")) {
-            MDLLogger.logger().info(tokens.get(1));
+            config.info(tokens.get(1));
             tokens.remove(0);
             tokens.remove(0);
             return config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source);
@@ -228,10 +225,10 @@ public class ASMSXDialect implements Dialect {
             Expression exp = config.expressionParser.parse(tokens, code);
             Integer value = exp.evaluate(s, code, true);
             if (value == null) {
-                MDLLogger.logger().error("Cannot evaluate expression in {}, {}: {}", source.fileName, lineNumber, line);
+                config.error("Cannot evaluate expression in "+source.fileName+", "+lineNumber+": "+line);
                 return false;
             }
-            MDLLogger.logger().debug(".printdec: {}", value);
+            config.info(".printdec: " + value);
             return config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source);
         }
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase(".printhex")) {
@@ -239,10 +236,10 @@ public class ASMSXDialect implements Dialect {
             Expression exp = config.expressionParser.parse(tokens, code);
             Integer value = exp.evaluate(s, code, true);
             if (value == null) {
-                MDLLogger.logger().error("Cannot evaluate expression in {}, {}: {}", source.fileName, lineNumber, line);
+                config.error("Cannot evaluate expression in "+source.fileName+", "+lineNumber+": "+line);
                 return false;
             }
-            MDLLogger.logger().debug(".printhex: {}", Tokenizer.toHexWord(value, config.hexStyle));
+            config.info(".printhex: " + Tokenizer.toHexWord(value, config.hexStyle));
             return config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source);
         }
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase(".byte")) {
@@ -285,7 +282,7 @@ public class ASMSXDialect implements Dialect {
             tokens.remove(0);
             Expression exp = config.expressionParser.parse(tokens, code);
             if (exp == null) {
-                MDLLogger.logger().error("Cannot parse expression in {}, {}: {}", source.fileName, lineNumber, line);
+                config.error("Cannot parse expression in "+source.fileName+", "+source.fileName+": " + line);
                 return false;
             }
             startLabel = exp;
@@ -300,7 +297,7 @@ public class ASMSXDialect implements Dialect {
             return config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source);
         }
 
-        MDLLogger.logger().error("ASMSXDialect cannot parse line in {}, {}: {}", source.fileName, lineNumber, line);
+        config.error("ASMSXDialect cannot parse line in "+source.fileName+", "+lineNumber+": " + line);
         return false;
     }
 

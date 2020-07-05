@@ -9,7 +9,6 @@ import java.io.FileWriter;
 import java.util.List;
 
 import cl.MDLConfig;
-import cl.MDLLogger;
 import code.CodeBase;
 
 /**
@@ -44,15 +43,15 @@ public class AnnotationsGenerator implements MDLWorker {
     @Override
     public boolean work(CodeBase code) {
         if (outputFileName != null) {
-            MDLLogger.logger().debug("Executing "+this.getClass().getSimpleName()+" worker...");
+            config.debug("Executing "+this.getClass().getSimpleName()+" worker...");
 
             try (FileWriter fw = new FileWriter(outputFileName)) {
-                for(String annotation : MDLLogger.INSTANCE.getAnnotations()) {
+                for(String annotation : config.logger.getAnnotations()) {
                     fw.write(annotation + "\n");
                 }
                 fw.flush();
             } catch (Exception e) {
-                MDLLogger.logger().error("Cannot write to file {}", outputFileName, e);
+                config.error("Cannot write to file " + outputFileName + ": " + e);
                 return false;
             }
         }

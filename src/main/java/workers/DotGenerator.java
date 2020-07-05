@@ -8,7 +8,6 @@ import java.util.HashMap;
 import java.util.List;
 
 import cl.MDLConfig;
-import cl.MDLLogger;
 import code.CodeBase;
 import code.SourceFile;
 import code.SourceStatement;
@@ -50,7 +49,7 @@ public class DotGenerator implements MDLWorker {
     {
         if (outputFileName == null) return true;
 
-        MDLLogger.logger().debug("Executing "+this.getClass().getSimpleName()+" worker...");
+        config.debug("Executing "+this.getClass().getSimpleName()+" worker...");
 
         HashMap<String, String> nodeNames = new HashMap<>();
         StringBuilder sb = new StringBuilder();
@@ -113,7 +112,7 @@ public class DotGenerator implements MDLWorker {
             fw.write(sb.toString());
             fw.flush();
         } catch (Exception e) {
-            MDLLogger.logger().error("Cannot write to file " + outputFileName);
+            config.error("Cannot write to file " + outputFileName);
             return false;
         }
         return true;

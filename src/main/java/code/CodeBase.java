@@ -4,7 +4,6 @@
 package code;
 
 import cl.MDLConfig;
-import cl.MDLLogger;
 
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -81,11 +80,9 @@ public class CodeBase {
     {
         if (symbols.containsKey(name)) {
             if (symbols.get(name).exp != null) {
-                MDLLogger.logger().error("Redefining symbol {}", name);
-                MDLLogger.logger().error("First defined in {}, {} as {}: {}",
-                        symbols.get(name).s.source.fileName, symbols.get(name).s.lineNumber, symbols.get(name).exp, symbols.get(name).s);
-                MDLLogger.logger().error("Redefined in {}, {} as {}: {}",
-                        sc.s.source.fileName, sc.s.lineNumber, symbols.get(name).exp, sc.s);
+                config.error("Redefining symbol " + name);
+                config.error("First defined in " + symbols.get(name).s.source.fileName + ", " + symbols.get(name).s.lineNumber + " as " + symbols.get(name).exp + ": " +  symbols.get(name).s);
+                config.error("Redefined in " + sc.s.source.fileName + ", "+ sc.s.lineNumber + " as " + symbols.get(name).exp + ": " + sc.s);
                 return false;
             }
         }

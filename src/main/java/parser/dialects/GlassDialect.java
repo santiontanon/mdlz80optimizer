@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import cl.MDLConfig;
-import cl.MDLLogger;
 import code.CodeBase;
 import code.Expression;
 import code.SourceFile;
@@ -83,12 +82,12 @@ public class GlassDialect implements Dialect {
 
             Expression exp = config.expressionParser.parse(tokens, code);
             if (exp == null) {
-                MDLLogger.logger().error("Cannot parse line " + source.fileName + ", " +
+                config.error("Cannot parse line " + source.fileName + ", " +
                              lineNumber + ": " + line);
                 return false;
             }
             if (exp.type != Expression.EXPRESSION_SYMBOL) {
-                MDLLogger.logger().error("Invalid section name at " + source.fileName + ", " +
+                config.error("Invalid section name at " + source.fileName + ", " +
                              lineNumber + ": " + line);
                 return false;
             }
@@ -103,14 +102,14 @@ public class GlassDialect implements Dialect {
                 sectionStack.remove(0);
                 return true;
             } else {
-                MDLLogger.logger().error("No section to terminate at " + source.fileName + ", " +
+                config.error("No section to terminate at " + source.fileName + ", " +
                              lineNumber + ": " + line);
                 return false;
             }
         }
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("proc")) {
             if (s.label == null) {
-                MDLLogger.logger().error("Proc with no name at " + source.fileName + ", " +
+                config.error("Proc with no name at " + source.fileName + ", " +
                              lineNumber + ": " + line);
                 return false;
             }
@@ -122,13 +121,13 @@ public class GlassDialect implements Dialect {
             return true;
         }
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("error")) {
-            MDLLogger.logger().error(tokens.get(1));
+            config.error(tokens.get(1));
             tokens.remove(0);
             tokens.remove(0);
             return config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source);
         }
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("warning")) {
-            MDLLogger.logger().warn(tokens.get(1));
+            config.warn(tokens.get(1));
             tokens.remove(0);
             tokens.remove(0);
             return config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source);
@@ -157,7 +156,7 @@ public class GlassDialect implements Dialect {
         boolean succeeded = true;
         try {
             // supress error messages when attempting to assemble a macro, as it might fail:
-            MDLLogger.INSTANCE.silence();
+            config.logger.silence();
             MacroExpansion expansion = macro.instantiate(args, macro.definingStatement, code, config);
             List<SourceLine> lines = expansion.lines;
             PreProcessor preProcessor = new PreProcessor(config.preProcessor);
@@ -178,7 +177,7 @@ public class GlassDialect implements Dialect {
                         succeeded = false;
                         break;
                     } else {
-                        MDLLogger.logger().debug("Glass: successfully assembled macro " + macro.name);
+                        config.debug("Glass: successfully assembled macro " + macro.name);
                     }
                     break;
                 }
@@ -209,9 +208,10 @@ public class GlassDialect implements Dialect {
             // we fail to evaluate the macro, but it's ok, some times it can happen
             succeeded = false;
         }
-        MDLLogger.INSTANCE.resume();
+        config.logger.resume();
 
-        if (!succeeded) MDLLogger.logger().warn("Glass: failed to assemble macro {}", macro.name);
+        // this is a debug message, not a warning, as it can definitively happen if macros contain unresolved symbols:
+        if (!succeeded) config.debug("Glass: failed to assemble macro " + macro.name);
 
         return true;
     }

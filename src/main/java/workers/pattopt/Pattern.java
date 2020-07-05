@@ -80,7 +80,7 @@ public class Pattern {
             }
         }
 
-        MDLLogger.logger().trace("parsed pattern: {}", name);
+        config.trace("parsed pattern: " + name);
     }
 
 
@@ -156,7 +156,7 @@ public class Pattern {
             }
         }
 
-        MDLLogger.logger().trace("opMatch: {} with {}    ({})", pat1, op2, match.variables);
+        config.trace("opMatch: "+pat1+" with "+op2+" ("+match.variables+")");
         return true;
     }
 
@@ -203,7 +203,7 @@ public class Pattern {
 
                         if (!regNotUsed(match.opMap.get(idx), reg, f, code)) {
                             if (logPatternsMatchedWithViolatedConstraints)
-                                MDLLogger.logger().info("Potential optimization ("+name+") in " + f.fileName + ", line " + f.getStatements().get(a_index).lineNumber);
+                                config.info("Potential optimization ("+name+") in " + f.fileName + ", line " + f.getStatements().get(a_index).lineNumber);
                             return null;
                         }
                     }
@@ -217,7 +217,7 @@ public class Pattern {
 
                         if (!flagNotUsed(match.opMap.get(idx), flag, f, code)) {
                             if (logPatternsMatchedWithViolatedConstraints)
-                                MDLLogger.logger().info("Potential optimization ("+name+") in " + f.fileName + ", line " + f.getStatements().get(a_index).lineNumber);
+                                config.info("Potential optimization ("+name+") in " + f.fileName + ", line " + f.getStatements().get(a_index).lineNumber);
                             return null;
                         }
                     }
@@ -292,7 +292,7 @@ public class Pattern {
         if (tmp == null) {
             // It's hard to tell where is this instruction going to jump,
             // so we act conservatively, and block the optimization:
-            MDLLogger.logger().trace("    unclear next statement after {}", s);
+            config.trace("    unclear next statement after " + s);
             return false;
         }
         for(SourceStatement s2:tmp) {
@@ -305,24 +305,24 @@ public class Pattern {
             Pair<SourceStatement, CPUOpDependency> pair = open.remove(0);
             SourceStatement next = pair.getLeft();
             CPUOpDependency dep = pair.getRight();
-            MDLLogger.logger().trace("    {}: {}", next.lineNumber, next);
+            config.trace("    "+next.lineNumber+": "+next);
 
             if (next.type == SourceStatement.STATEMENT_CPUOP) {
                 CPUOp op = next.op;
                 if (op.isRet()) {
                     // It's hard to tell where is this instruction going to jump,
                     // so we act conservatively, and block the optimization:
-                    MDLLogger.logger().trace("    ret!");
+                    config.trace("    ret!");
                     return false;
                 }
                 if (op.checkInputDependency(dep)) {
                     // register is actually used!
-                    MDLLogger.logger().trace("    dependency found!");
+                    config.trace("    dependency found!");
                     return false;
                 }
                 dep = op.checkOutputDependency(dep);
                 if (dep == null) {
-                    MDLLogger.logger().trace("    dependency broken!");
+                    config.trace("    dependency broken!");
                 } else {
                     // add successors:
                     List<SourceStatement> nextNext_l = next.source.nextStatements(next, true, code);
@@ -330,7 +330,7 @@ public class Pattern {
                     if (nextNext_l == null) {
                         // It's hard to tell where is this instruction going to jump,
                         // so we act conservatively, and block the optimization:
-                        MDLLogger.logger().trace("    unclear next statement after: {}", next);
+                        config.trace("    unclear next statement after: "+next);
                         return false;
                     }
                     for(SourceStatement nextNext: nextNext_l) {

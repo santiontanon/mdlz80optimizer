@@ -116,12 +116,12 @@ public class SjasmDialect implements Dialect {
         if (tokens.size() >= 1 && tokens.get(0).equalsIgnoreCase("ends")) {
             tokens.remove(0);
             if (structFile == null) {
-                MDLLogger.logger().error("ends outside of a struct at " + source.fileName + ", "
+                config.error("ends outside of a struct at " + source.fileName + ", "
                         + lineNumber + ": " + line);
                 return false;
             }
             if (structFile != source) {
-                MDLLogger.logger().error("struct split among multiple files is not supported at " + source.fileName + ", "
+                config.error("struct split among multiple files is not supported at " + source.fileName + ", "
                         + lineNumber + ": " + line);
                 return false;
             }
@@ -140,7 +140,7 @@ public class SjasmDialect implements Dialect {
                         offset += s2.sizeInBytes(code, true, true, true);
                         break;
                     default:
-                        MDLLogger.logger().error("Unsupported statement (type="+s2.type+") inside a struct definition at " + source.fileName + ", "
+                        config.error("Unsupported statement (type="+s2.type+") inside a struct definition at " + source.fileName + ", "
                                 + lineNumber + ": " + line);
                         return false;
                 }
@@ -165,7 +165,7 @@ public class SjasmDialect implements Dialect {
             tokens.remove(0);
             Expression exp = config.expressionParser.parse(tokens, code);
             if (exp == null) {
-                MDLLogger.logger().error("Cannot parse expression at " + source.fileName + ", "
+                config.error("Cannot parse expression at " + source.fileName + ", "
                         + lineNumber + ": " + line);
                 return false;
             }
@@ -183,12 +183,12 @@ public class SjasmDialect implements Dialect {
             tokens.remove(0);
             Expression exp = config.expressionParser.parse(tokens, code);
             if (exp == null) {
-                MDLLogger.logger().error("Cannot parse expression at " + source.fileName + ", "
+                config.error("Cannot parse expression at " + source.fileName + ", "
                         + lineNumber + ": " + line);
                 return false;
             }
             if (s.label == null) {
-                MDLLogger.logger().error("Field expression does not have a label at " + source.fileName + ", "
+                config.error("Field expression does not have a label at " + source.fileName + ", "
                         + lineNumber + ": " + line);
                 return false;
             }
@@ -200,13 +200,13 @@ public class SjasmDialect implements Dialect {
             tokens.remove(0);
             Expression exp = config.expressionParser.parse(tokens, code);
             if (exp == null) {
-                MDLLogger.logger().error("Cannot parse expression at " + source.fileName + ", "
+                config.error("Cannot parse expression at " + source.fileName + ", "
                         + lineNumber + ": " + line);
                 return false;
             }
             Integer value = exp.evaluate(s, code, false);
             if (value == null || value == Expression.FALSE) {
-                MDLLogger.logger().error("Assertion failed at " + source.fileName + ", "
+                config.error("Assertion failed at " + source.fileName + ", "
                         + lineNumber + ": " + line);
                 return false;
             }
