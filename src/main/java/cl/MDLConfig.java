@@ -108,12 +108,14 @@ public class MDLConfig {
         docString += r.docString();
     }
 
-    public void executeWorkers(CodeBase code) {
+    public boolean executeWorkers(CodeBase code) {
         for (MDLWorker w : workers) {
             if (!w.work(code)) {
                 error("Problem executing worker " + w.getClass().getSimpleName());
+                return false;
             }
         }
+        return true;
     }
     
     

@@ -36,6 +36,6 @@ public class Main {
         if (!config.codeBaseParser.parseMainSourceFile(config.inputFile, code)) System.exit(2);
         
         // Execute all the requested tasks according to the command-line arguments:
-        config.executeWorkers(code);
+        if (!config.executeWorkers(code)) System.exit(3);
     }
 }
