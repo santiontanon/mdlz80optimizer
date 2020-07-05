@@ -88,7 +88,7 @@ public class MDLConfig {
             + "  -warn-off-labelnocolon: turns off warnings for not placing colons after labels.\n"
             + "  -warn-off-jp(rr): turns off warnings for using confusing 'jp (hl)' instead of 'jp hl' (this is turned off by default in dialects that do not support this).\n"
             + "  -warn-off-unofficial: turns off warnings for using unofficial op syntax (e.g., 'add 1' instead of 'add a,1'.\n"
-            + "  -do-not-convert-to-official: turns off automatic con ersion of unofficial op syntax to official ones in assembler output.\n"
+            + "  -do-not-convert-to-official: turns off automatic conversion of unofficial op syntax to official ones in assembler output.\n"
             + "  -hex#: hex numbers render like #ffff (default).\n" + "  -HEX#: hex numbers render like #FFFF.\n"
             + "  -hexh: hex numbers render like 0ffffh.\n" + "  -HEXH: hex numbers render like 0FFFFh.\n"
             + "  -+bin: includes binary files (incbin) in the output analyses.\n"
