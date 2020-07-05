@@ -58,7 +58,7 @@ public class MDLLogger {
                 System.out.println("DEBUG: " + msg);
                 break;
             case INFO:
-                System.out.println(msg);
+                System.out.println("INFO: " + msg);
                 break;
             case WARNING:
                 System.out.println("WARNING: " + msg);
