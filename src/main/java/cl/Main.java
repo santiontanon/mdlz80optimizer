@@ -35,7 +35,7 @@ public class Main {
         CodeBase code = new CodeBase(config);
         if (!config.codeBaseParser.parseMainSourceFile(config.inputFile, code)) System.exit(2);
         
-        // Execute all the requested tasks according to the command-line arguments:
+        // Execute all the requested workers according to the command-line arguments:
         if (!config.executeWorkers(code)) System.exit(3);
     }
 }

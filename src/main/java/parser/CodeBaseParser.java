@@ -14,6 +14,7 @@ import cl.MDLConfig;
 import code.CodeBase;
 import code.SourceFile;
 import code.SourceStatement;
+import java.util.Arrays;
 import util.Resources;
 
 public class CodeBaseParser {
@@ -57,6 +58,9 @@ public class CodeBaseParser {
                 return f;
         } catch (Exception e) {
             config.error("Problem parsing file " + fileName + ": " + e);
+            for(Object st:e.getStackTrace()) {
+                config.error("    " + st);
+            }
         }
         return null;
     }

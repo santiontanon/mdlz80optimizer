@@ -31,6 +31,7 @@ public class ASMSXDialect implements Dialect {
 
     String lastAbsoluteLabel = null;
     SourceStatement romHeaderStatement = null;
+    SourceStatement basicHeaderStatement = null;
     Expression startLabel = null;
 
 
@@ -68,17 +69,31 @@ public class ASMSXDialect implements Dialect {
     @Override
     public boolean recognizeIdiom(List<String> tokens) {
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase(".bios")) return true;
+        if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("bios")) return true;
+        if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("filename")) return true;
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase(".filename")) return true;
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase(".size")) return true;
+        if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("size")) return true;
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase(".page")) return true;
+        if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("page")) return true;
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase(".printtext")) return true;
+        if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("printtext")) return true;
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase(".print")) return true;
+        if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("print")) return true;
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase(".printdec")) return true;
+        if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("printdec")) return true;
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase(".printhex")) return true;
+        if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("printhex")) return true;
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase(".byte")) return true;
+        if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("byte")) return true;
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase(".word")) return true;
+        if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("word")) return true;
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase(".rom")) return true;
+        if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("rom")) return true;
+        if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase(".basic")) return true;
+        if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("basic")) return true;
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase(".start")) return true;
+        if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("start")) return true;
         return false;
     }
 
@@ -87,17 +102,31 @@ public class ASMSXDialect implements Dialect {
     public String newSymbolName(String name, Expression value) {
         // TODO(santi@): complete this list (or maybe have a better way than an if-then rule list!
         if (name.equalsIgnoreCase(".bios") ||
+            name.equalsIgnoreCase("bios") ||
             name.equalsIgnoreCase(".filename") ||
+            name.equalsIgnoreCase("filename") ||
             name.equalsIgnoreCase(".size") ||
+            name.equalsIgnoreCase("size") ||
             name.equalsIgnoreCase(".page") ||
+            name.equalsIgnoreCase("page") ||
             name.equalsIgnoreCase(".printtext") ||
+            name.equalsIgnoreCase("printtext") ||
             name.equalsIgnoreCase(".print") ||
+            name.equalsIgnoreCase("print") ||
             name.equalsIgnoreCase(".printdec") ||
+            name.equalsIgnoreCase("printdec") ||
             name.equalsIgnoreCase(".printhex") ||
+            name.equalsIgnoreCase("printhex") ||
             name.equalsIgnoreCase(".byte") ||
+            name.equalsIgnoreCase("byte") ||
             name.equalsIgnoreCase(".word") ||
+            name.equalsIgnoreCase("word") ||
             name.equalsIgnoreCase(".rom") ||
-            name.equalsIgnoreCase(".start")) {
+            name.equalsIgnoreCase("rom") ||
+            name.equalsIgnoreCase(".basic") ||
+            name.equalsIgnoreCase("basic") ||
+            name.equalsIgnoreCase(".start") ||
+            name.equalsIgnoreCase("start")) {
             return null;
         }
         if (name.startsWith("@@")) {
@@ -168,7 +197,7 @@ public class ASMSXDialect implements Dialect {
 
     @Override
     public boolean parseLine(List<String> tokens, String line, int lineNumber, SourceStatement s, SourceFile source, CodeBase code) {
-        if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase(".bios")) {
+        if (tokens.size()>=1 && (tokens.get(0).equalsIgnoreCase(".bios") || tokens.get(0).equalsIgnoreCase("bios"))) {
             tokens.remove(0);
             // Define all the bios calls:
             List<String []> biosCalls = loadBiosCalls();
@@ -184,13 +213,16 @@ public class ASMSXDialect implements Dialect {
             }
             return config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source);
         }
-        if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase(".filename")) {
+        if (tokens.size()>=2 && (tokens.get(0).equalsIgnoreCase(".filename") || tokens.get(0).equalsIgnoreCase("filename"))) {
             tokens.remove(0);
-            tokens.remove(0);
-            // just ignore this line
+            Expression filename_exp = config.expressionParser.parse(tokens, code);
+            if (filename_exp == null) {
+                config.error("Cannot parse expression in "+source.fileName+", "+source.fileName+": " + line);
+                return false;
+            }
             return config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source);
         }
-        if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase(".size")) {
+        if (tokens.size()>=1 && (tokens.get(0).equalsIgnoreCase(".size") || tokens.get(0).equalsIgnoreCase("size"))) {
             tokens.remove(0);
             Expression size_exp = config.expressionParser.parse(tokens, code);
             if (size_exp == null) {
@@ -200,7 +232,7 @@ public class ASMSXDialect implements Dialect {
             // Since we are not producing compiled output, we ignore this directive
             return config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source);
         }
-        if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase(".page")) {
+        if (tokens.size()>=1 && (tokens.get(0).equalsIgnoreCase(".page") || tokens.get(0).equalsIgnoreCase("page"))) {
             tokens.remove(0);
             Expression page_exp = config.expressionParser.parse(tokens, code);
             if (page_exp == null) {
@@ -214,13 +246,14 @@ public class ASMSXDialect implements Dialect {
             // Since we are not producing compiled output, we ignore this directive
             return config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source);
         }
-        if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase(".printtext")) {
+        if (tokens.size()>=2 && (tokens.get(0).equalsIgnoreCase(".printtext") || tokens.get(0).equalsIgnoreCase("printtext"))) {
             config.info(tokens.get(1));
             tokens.remove(0);
             tokens.remove(0);
             return config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source);
         }
-        if (tokens.size()>=2 && (tokens.get(0).equalsIgnoreCase(".printdec") || tokens.get(0).equalsIgnoreCase(".print"))) {
+        if (tokens.size()>=2 && (tokens.get(0).equalsIgnoreCase(".printdec") || tokens.get(0).equalsIgnoreCase(".print") ||
+                                 tokens.get(0).equalsIgnoreCase("printdec") || tokens.get(0).equalsIgnoreCase("print"))) {
             tokens.remove(0);
             Expression exp = config.expressionParser.parse(tokens, code);
             Integer value = exp.evaluate(s, code, true);
@@ -231,7 +264,7 @@ public class ASMSXDialect implements Dialect {
             config.info(".printdec: " + value);
             return config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source);
         }
-        if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase(".printhex")) {
+        if (tokens.size()>=2 && (tokens.get(0).equalsIgnoreCase(".printhex") || tokens.get(0).equalsIgnoreCase("printhex"))) {
             tokens.remove(0);
             Expression exp = config.expressionParser.parse(tokens, code);
             Integer value = exp.evaluate(s, code, true);
@@ -242,21 +275,21 @@ public class ASMSXDialect implements Dialect {
             config.info(".printhex: " + Tokenizer.toHexWord(value, config.hexStyle));
             return config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source);
         }
-        if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase(".byte")) {
+        if (tokens.size()>=1 && (tokens.get(0).equalsIgnoreCase(".byte") || tokens.get(0).equalsIgnoreCase("byte"))) {
             tokens.remove(0);
             s.type = SourceStatement.STATEMENT_DEFINE_SPACE;
             s.space = Expression.constantExpression(1, config);
             s.space_value = null;
             return config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source);
         }
-        if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase(".word")) {
+        if (tokens.size()>=1 && (tokens.get(0).equalsIgnoreCase(".word") || tokens.get(0).equalsIgnoreCase("word"))) {
             tokens.remove(0);
             s.type = SourceStatement.STATEMENT_DEFINE_SPACE;
             s.space = Expression.constantExpression(2, config);
             s.space_value = null;
             return config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source);
         }
-        if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase(".rom")) {
+        if (tokens.size()>=1 && (tokens.get(0).equalsIgnoreCase(".rom") || tokens.get(0).equalsIgnoreCase("rom"))) {
             tokens.remove(0);
             // Generates a ROM header (and stores a pointer to the start address, to later modify with the .start directive):
             List<Expression> data = new ArrayList<>();
@@ -278,7 +311,35 @@ public class ASMSXDialect implements Dialect {
             for(int i = 0;i<12;i++) data.add(Expression.constantExpression(0, config));
             return config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source);
         }
-        if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase(".start")) {
+        if (tokens.size()>=1 && (tokens.get(0).equalsIgnoreCase(".basic") || tokens.get(0).equalsIgnoreCase("basic"))) {
+            tokens.remove(0);
+            // Generates a BASIC header (and stores a pointer to the start address, to later modify with the .start directive):
+            List<Expression> data = new ArrayList<>();
+            basicHeaderStatement = s;
+            s.type = SourceStatement.STATEMENT_DATA_BYTES;
+            s.data = data;
+            data.add(Expression.constantExpression(0xfe, config));
+            data.add(Expression.operatorExpression(Expression.EXPRESSION_MOD, 
+                    Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, code, config), 
+                    Expression.constantExpression(256, config), config)); 
+            data.add(Expression.operatorExpression(Expression.EXPRESSION_DIV, 
+                    Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, code, config), 
+                    Expression.constantExpression(256, config), config)); 
+            for(int i = 0;i<2;i++) data.add(Expression.constantExpression(0, config));
+            if (startLabel == null) {
+                data.add(Expression.constantExpression(0, config)); // start address place holder
+                data.add(Expression.constantExpression(0, config)); 
+            } else {
+                data.add(Expression.operatorExpression(Expression.EXPRESSION_MOD, 
+                        startLabel, 
+                        Expression.constantExpression(256, config), config)); 
+                data.add(Expression.operatorExpression(Expression.EXPRESSION_DIV, 
+                        startLabel, 
+                        Expression.constantExpression(256, config), config)); 
+            }
+            return config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source);
+        }        
+        if (tokens.size()>=2 && (tokens.get(0).equalsIgnoreCase(".start") || tokens.get(0).equalsIgnoreCase("start"))) {
             tokens.remove(0);
             Expression exp = config.expressionParser.parse(tokens, code);
             if (exp == null) {
@@ -291,6 +352,14 @@ public class ASMSXDialect implements Dialect {
                         startLabel, 
                         Expression.constantExpression(256, config), config)); 
                 romHeaderStatement.data.set(2,Expression.operatorExpression(Expression.EXPRESSION_DIV, 
+                        startLabel, 
+                        Expression.constantExpression(256, config), config)); 
+            }
+            if (basicHeaderStatement != null) {
+                basicHeaderStatement.data.set(5,Expression.operatorExpression(Expression.EXPRESSION_MOD, 
+                        startLabel, 
+                        Expression.constantExpression(256, config), config)); 
+                basicHeaderStatement.data.set(6,Expression.operatorExpression(Expression.EXPRESSION_DIV, 
                         startLabel, 
                         Expression.constantExpression(256, config), config)); 
             }
