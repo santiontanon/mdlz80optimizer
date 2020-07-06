@@ -165,7 +165,7 @@ public class SjasmDialect implements Dialect {
         }
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("map")) {
             tokens.remove(0);
-            Expression exp = config.expressionParser.parse(tokens, code);
+            Expression exp = config.expressionParser.parse(tokens, s, code);
             if (exp == null) {
                 config.error("Cannot parse expression at " + source.fileName + ", "
                         + lineNumber + ": " + line);
@@ -183,7 +183,7 @@ public class SjasmDialect implements Dialect {
         if (tokens.size() >= 2 &&
             (tokens.get(0).equalsIgnoreCase("#") || tokens.get(0).equalsIgnoreCase("field"))) {
             tokens.remove(0);
-            Expression exp = config.expressionParser.parse(tokens, code);
+            Expression exp = config.expressionParser.parse(tokens, s, code);
             if (exp == null) {
                 config.error("Cannot parse expression at " + source.fileName + ", "
                         + lineNumber + ": " + line);
@@ -200,7 +200,7 @@ public class SjasmDialect implements Dialect {
         }
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("assert")) {
             tokens.remove(0);
-            Expression exp = config.expressionParser.parse(tokens, code);
+            Expression exp = config.expressionParser.parse(tokens, s, code);
             if (exp == null) {
                 config.error("Cannot parse expression at " + source.fileName + ", "
                         + lineNumber + ": " + line);

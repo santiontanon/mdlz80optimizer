@@ -12,14 +12,20 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import cl.MDLConfig;
 import code.CodeBase;
+import code.Expression;
 import code.SourceFile;
 import code.SourceStatement;
-import java.util.Arrays;
 import util.Resources;
 
 public class CodeBaseParser {
     MDLConfig config;
+    
+    // Expressions that we don't want to keep expanded, but want to replace by concrete values
+    // once the code is parsed. Examples of this are dialect-specific functions, which we want
+    // to resolve before generating asm output to maintain maximum compatibility in the output:
+    public List<Pair<Expression, SourceStatement>> expressionsToReplaceByValueAtTheEnd = new ArrayList<>();
 
+    
     public CodeBaseParser(MDLConfig a_config) {
         config = a_config;
     }
@@ -40,6 +46,16 @@ public class CodeBaseParser {
         }
 
         if (config.dialectParser != null) config.dialectParser.performAnyFinalActions(code);
+        for(Pair<Expression, SourceStatement> pair:expressionsToReplaceByValueAtTheEnd) {
+            Expression exp = pair.getLeft();
+            Integer value = exp.evaluate(pair.getRight(), code, false);
+            if (value == null) {
+                config.error("Cannot resolve expression " + exp + " after loading all the source code!");
+                return false;
+            }
+            exp.type = Expression.EXPRESSION_NUMERIC_CONSTANT;
+            exp.numericConstant = value;
+        }
         
         return true;
     }

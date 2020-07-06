@@ -8,7 +8,9 @@ import java.util.List;
 import cl.MDLConfig;
 import code.CodeBase;
 import code.Expression;
+import code.SourceStatement;
 import java.util.ArrayList;
+import org.apache.commons.lang3.tuple.Pair;
 
 public class ExpressionParser {
     MDLConfig config;
@@ -23,23 +25,23 @@ public class ExpressionParser {
     }
 
 
-    public Expression parse(List<String> tokens, CodeBase code)
+    public Expression parse(List<String> tokens, SourceStatement s, CodeBase code)
     {
-        Expression exp = parseInternal(tokens, code);
+        Expression exp = parseInternal(tokens, s, code);
         if (exp == null) return null;
         while(!tokens.isEmpty()) {
             if (tokens.get(0).equals("+")) {
                 tokens.remove(0);
                 if (exp.isRegister(code)) {
                     // special case for ix+nn (since I want the register to be separated from the expression)
-                    Expression exp2 = parse(tokens, code);
+                    Expression exp2 = parse(tokens, s, code);
                     if (exp2 == null) {
                         config.error("Missing argument for operator +");
                         return null;
                     }
                     return Expression.operatorExpression(Expression.EXPRESSION_SUM, exp, exp2, config);
                 } else {
-                    Expression exp2 = parseInternal(tokens, code);
+                    Expression exp2 = parseInternal(tokens, s, code);
                     if (exp2 == null) {
                         config.error("Missing argument for operator +");
                         return null;
@@ -52,14 +54,14 @@ public class ExpressionParser {
                 tokens.remove(0);
                 if (exp.isRegister(code)) {
                     // special case for ix+nn (since I want the register to be separated from the expression)
-                    Expression exp2 = parse(tokens, code);
+                    Expression exp2 = parse(tokens, s, code);
                     if (exp2 == null) {
                         config.error("Missing argument for operator +");
                         return null;
                     }
                     return Expression.operatorExpression(Expression.EXPRESSION_SUB, exp, exp2, config);
                 } else {
-                    Expression exp2 = parseInternal(tokens, code);
+                    Expression exp2 = parseInternal(tokens, s, code);
                     if (exp2 == null) {
                         config.error("Missing argument for operator -");
                         return null;
@@ -70,7 +72,7 @@ public class ExpressionParser {
             }
             if (tokens.get(0).equals("*")) {
                 tokens.remove(0);
-                Expression exp2 = parseInternal(tokens, code);
+                Expression exp2 = parseInternal(tokens, s, code);
                 if (exp2 == null) {
                     config.error("Missing argument for operator *");
                     return null;
@@ -80,7 +82,7 @@ public class ExpressionParser {
             }
             if (tokens.get(0).equals("/")) {
                 tokens.remove(0);
-                Expression exp2 = parseInternal(tokens, code);
+                Expression exp2 = parseInternal(tokens, s, code);
                 if (exp2 == null) {
                     config.error("Missing argument for operator /");
                     return null;
@@ -90,7 +92,7 @@ public class ExpressionParser {
             }
             if (tokens.get(0).equals("%")) {
                 tokens.remove(0);
-                Expression exp2 = parseInternal(tokens, code);
+                Expression exp2 = parseInternal(tokens, s, code);
                 if (exp2 == null) {
                     config.error("Missing argument for operator %");
                     return null;
@@ -100,7 +102,7 @@ public class ExpressionParser {
             }
             if (tokens.get(0).equals("|")) {
                 tokens.remove(0);
-                Expression exp2 = parseInternal(tokens, code);
+                Expression exp2 = parseInternal(tokens, s, code);
                 if (exp2 == null) {
                     config.error("Missing argument for operator |");
                     return null;
@@ -110,7 +112,7 @@ public class ExpressionParser {
             }
             if (tokens.get(0).equals("&")) {
                 tokens.remove(0);
-                Expression exp2 = parseInternal(tokens, code);
+                Expression exp2 = parseInternal(tokens, s, code);
                 if (exp2 == null) {
                     config.error("Missing argument for operator &");
                     return null;
@@ -120,7 +122,7 @@ public class ExpressionParser {
             }
             if (tokens.get(0).equals("^")) {
                 tokens.remove(0);
-                Expression exp2 = parseInternal(tokens, code);
+                Expression exp2 = parseInternal(tokens, s, code);
                 if (exp2 == null) {
                     config.error("Missing argument for operator ^");
                     return null;
@@ -130,7 +132,7 @@ public class ExpressionParser {
             }
             if (tokens.get(0).equals("=")) {
                 tokens.remove(0);
-                Expression exp2 = parseInternal(tokens, code);
+                Expression exp2 = parseInternal(tokens, s, code);
                 if (exp2 == null) {
                     config.error("Missing argument for operator =");
                     return null;
@@ -140,7 +142,7 @@ public class ExpressionParser {
             }
             if (tokens.get(0).equals("<")) {
                 tokens.remove(0);
-                Expression exp2 = parseInternal(tokens, code);
+                Expression exp2 = parseInternal(tokens, s, code);
                 if (exp2 == null) {
                     config.error("Missing argument for operator <");
                     return null;
@@ -150,7 +152,7 @@ public class ExpressionParser {
             }
             if (tokens.get(0).equals(">")) {
                 tokens.remove(0);
-                Expression exp2 = parseInternal(tokens, code);
+                Expression exp2 = parseInternal(tokens, s, code);
                 if (exp2 == null) {
                     config.error("Missing argument for operator >");
                     return null;
@@ -160,7 +162,7 @@ public class ExpressionParser {
             }
             if (tokens.get(0).equals("<=")) {
                 tokens.remove(0);
-                Expression exp2 = parseInternal(tokens, code);
+                Expression exp2 = parseInternal(tokens, s, code);
                 if (exp2 == null) {
                     config.error("Missing argument for operator <=");
                     return null;
@@ -170,7 +172,7 @@ public class ExpressionParser {
             }
             if (tokens.get(0).equals(">=")) {
                 tokens.remove(0);
-                Expression exp2 = parseInternal(tokens, code);
+                Expression exp2 = parseInternal(tokens, s, code);
                 if (exp2 == null) {
                     config.error("Missing argument for operator >=");
                     return null;
@@ -180,7 +182,7 @@ public class ExpressionParser {
             }
             if (tokens.get(0).equals("!=")) {
                 tokens.remove(0);
-                Expression exp2 = parseInternal(tokens, code);
+                Expression exp2 = parseInternal(tokens, s, code);
                 if (exp2 == null) {
                     config.error("Missing argument for operator !=");
                     return null;
@@ -190,10 +192,10 @@ public class ExpressionParser {
             }
             if (tokens.get(0).equals("?")) {
                 tokens.remove(0);
-                Expression exp2 = parseInternal(tokens, code);
+                Expression exp2 = parseInternal(tokens, s, code);
                 if (tokens.get(0).equals(":")) {
                     tokens.remove(0);
-                    Expression exp3 = parse(tokens, code);
+                    Expression exp3 = parse(tokens, s, code);
                     exp = Expression.operatorTernaryExpression(Expression.EXPRESSION_TERNARY_IF, exp, exp2, exp3, config);
                     continue;
                 } else {
@@ -203,7 +205,7 @@ public class ExpressionParser {
             }
             if (tokens.get(0).equals("<<")) {
                 tokens.remove(0);
-                Expression exp2 = parseInternal(tokens, code);
+                Expression exp2 = parseInternal(tokens, s, code);
                 if (exp2 == null) {
                     config.error("Missing argument for operator <<");
                     return null;
@@ -213,7 +215,7 @@ public class ExpressionParser {
             }
             if (tokens.get(0).equals(">>")) {
                 tokens.remove(0);
-                Expression exp2 = parseInternal(tokens, code);
+                Expression exp2 = parseInternal(tokens, s, code);
                 if (exp2 == null) {
                     config.error("Missing argument for operator >>");
                     return null;
@@ -223,7 +225,7 @@ public class ExpressionParser {
             }
             if (tokens.get(0).equals("||")) {
                 tokens.remove(0);
-                Expression exp2 = parseInternal(tokens, code);
+                Expression exp2 = parseInternal(tokens, s, code);
                 if (exp2 == null) {
                     config.error("Missing argument for operator ||");
                     return null;
@@ -233,7 +235,7 @@ public class ExpressionParser {
             }
             if (tokens.get(0).equals("&&")) {
                 tokens.remove(0);
-                Expression exp2 = parseInternal(tokens, code);
+                Expression exp2 = parseInternal(tokens, s, code);
                 if (exp2 == null) {
                     config.error("Missing argument for operator &&");
                     return null;
@@ -247,7 +249,7 @@ public class ExpressionParser {
         return exp;
     }
 
-    public Expression parseInternal(List<String> tokens, CodeBase code)
+    public Expression parseInternal(List<String> tokens, SourceStatement s, CodeBase code)
     {
         if (tokens.size() >= 1 &&
             Tokenizer.isInteger(tokens.get(0))) {
@@ -336,7 +338,7 @@ public class ExpressionParser {
                             }
                             tokens.remove(0);
                         }
-                        Expression arg = parse(tokens, code);
+                        Expression arg = parse(tokens, s, code);
                         if (arg == null) {
                             config.error("Failed to parse argument list of a dialect function.");
                             return null;                            
@@ -345,7 +347,13 @@ public class ExpressionParser {
                         first = false;
                     }
                 }
-                return Expression.dialectFunctionExpression(functionName, args, config);
+                Expression exp = Expression.dialectFunctionExpression(functionName, args, config);
+                if (exp != null) {
+                    if (config.evaluateDialectFunctions) {
+                        config.codeBaseParser.expressionsToReplaceByValueAtTheEnd.add(Pair.of(exp, s));
+                    }
+                }
+                return exp;
             } else {
                 if (config.dialectParser != null) token = config.dialectParser.symbolName(token);
                 return Expression.symbolExpression(token, code, config);
@@ -365,7 +373,7 @@ public class ExpressionParser {
             tokens.get(0).equals("-")) {
             // a negated expression:
             tokens.remove(0);
-            Expression exp = parseInternal(tokens, code);
+            Expression exp = parseInternal(tokens, s, code);
             if (exp != null) {
                 if (exp.type == Expression.EXPRESSION_NUMERIC_CONSTANT) {
                     exp.numericConstant = -exp.numericConstant;
@@ -379,14 +387,14 @@ public class ExpressionParser {
             tokens.get(0).equals("~")) {
             // a bit negated expression:
             tokens.remove(0);
-            Expression exp = parseInternal(tokens, code);
+            Expression exp = parseInternal(tokens, s, code);
             return Expression.bitNegationExpression(exp, config);
         }
         if (tokens.size() >= 2 &&
             tokens.get(0).equals("!")) {
             // a logical negation expression:
             tokens.remove(0);
-            Expression exp = parseInternal(tokens, code);
+            Expression exp = parseInternal(tokens, s, code);
             return Expression.operatorExpression(Expression.EXPRESSION_LOGICAL_NEGATION, exp, config);
         }
 
@@ -401,7 +409,7 @@ public class ExpressionParser {
             (tokens.get(0).equals("(") || tokens.get(0).equals("["))) {
             // a parenthesis expression:
             tokens.remove(0);
-            Expression exp = parse(tokens, code);
+            Expression exp = parse(tokens, s, code);
             if (exp != null && tokens.size() >= 1 &&
                 (tokens.get(0).equals(")") || tokens.get(0).equals("]"))) {
                 tokens.remove(0);

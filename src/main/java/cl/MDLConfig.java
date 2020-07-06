@@ -58,6 +58,7 @@ public class MDLConfig {
     public boolean warningUnofficialOps = true;
 
     public boolean convertToOfficial = true;
+    public boolean evaluateDialectFunctions = true;
     
     // Two variables, as if they are both false, no conversion is done
     public boolean opsInLowerCase = true;
@@ -90,12 +91,15 @@ public class MDLConfig {
             + "  -warn-off-jp(rr): turns off warnings for using confusing 'jp (hl)' instead of 'jp hl' (this is turned off by default in dialects that do not support this).\n"
             + "  -warn-off-unofficial: turns off warnings for using unofficial op syntax (e.g., 'add 1' instead of 'add a,1'.\n"
             + "  -do-not-convert-to-official: turns off automatic conversion of unofficial op syntax to official ones in assembler output.\n"
-            + "  -hex#: hex numbers render like #ffff (default).\n" + "  -HEX#: hex numbers render like #FFFF.\n"
-            + "  -hexh: hex numbers render like 0ffffh.\n" + "  -HEXH: hex numbers render like 0FFFFh.\n"
+            + "  -hex#: hex numbers render like #ffff (default).\n" 
+            + "  -HEX#: hex numbers render like #FFFF.\n"
+            + "  -hexh: hex numbers render like 0ffffh.\n" 
+            + "  -HEXH: hex numbers render like 0FFFFh.\n"
             + "  -+bin: includes binary files (incbin) in the output analyses.\n"
             + "  -opcase <case>: whether to convert the assembler operators to upper or lower case. Possible values are: none/lower/upper (none does no conversion). Default is 'lower'.\n"
             + "  -no-opt-pragma <value>: changes the pragma to be inserted in a comment on a line to prevent optimizing it (default: "
-            + PRAGMA_NO_OPTIMIZATION + ")" + "\n";
+            + PRAGMA_NO_OPTIMIZATION + ")\n"
+            + "  -do-not-evaluate-dialect-functions: some assembler dialects define functions like random/sin/cos that can be used to form expressions. By default, MDL replaces them by the result of their execution before generating assembler output (as those might not be defined in other assemblers, and thus this keeps the assembler output as compatible as possible). Use this flag if you don't want this to happen.\n";
 
 
     public MDLConfig() {
@@ -303,6 +307,11 @@ public class MDLConfig {
                             error("Missing pragma after " + arg);
                             return false;
                         }
+                        break;
+                        
+                    case "-do-not-evaluate-dialect-functions":
+                        evaluateDialectFunctions = false;
+                        args.remove(0);
                         break;
 
                     default:

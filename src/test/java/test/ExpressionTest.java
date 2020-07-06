@@ -49,7 +49,7 @@ public class ExpressionTest {
     private Integer evaluate(String line)
     {
         List<String> tokens = Tokenizer.tokenize(line);
-        Expression exp = expressionParser.parse(tokens, codeBase);
+        Expression exp = expressionParser.parse(tokens, null, codeBase);
         System.out.println(exp);
 
         return exp.evaluatesToNumericConstant()

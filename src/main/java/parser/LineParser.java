@@ -281,7 +281,7 @@ public class LineParser {
     public boolean parseOrg(List<String> tokens,
             String line, int lineNumber,
             SourceStatement s, SourceFile source, CodeBase code) {
-        Expression exp = config.expressionParser.parse(tokens, code);
+        Expression exp = config.expressionParser.parse(tokens, s, code);
         if (exp == null) {
             config.error("Cannot parse line " + source.fileName + ", "
                     + lineNumber + ": " + line);
@@ -361,7 +361,7 @@ public class LineParser {
         if (!tokens.isEmpty() && !tokens.get(0).startsWith(";")) {
             if (tokens.get(0).equals(",")) tokens.remove(0);
             if (!tokens.isEmpty() && !tokens.get(0).startsWith(";")) {
-                skip_exp = config.expressionParser.parse(tokens, code);
+                skip_exp = config.expressionParser.parse(tokens, s, code);
                 if (skip_exp == null) {
                     config.error("Cannot parse line " + source.fileName + ", "
                             + lineNumber + ": " + line);
@@ -372,7 +372,7 @@ public class LineParser {
         if (!tokens.isEmpty() && !tokens.get(0).startsWith(";")) {
             if (tokens.get(0).equals(",")) tokens.remove(0);
             if (!tokens.isEmpty() && !tokens.get(0).startsWith(";")) {
-                size_exp = config.expressionParser.parse(tokens, code);
+                size_exp = config.expressionParser.parse(tokens, s, code);
                 if (skip_exp == null) {
                     config.error("Cannot parse line " + source.fileName + ", "
                             + lineNumber + ": " + line);
@@ -401,7 +401,7 @@ public class LineParser {
                     + lineNumber + ": " + line);
             return false;
         }
-        Expression exp = config.expressionParser.parse(tokens, code);
+        Expression exp = config.expressionParser.parse(tokens, s, code);
         if (exp == null) {
             config.error("Cannot parse line " + source.fileName + ", "
                     + lineNumber + ": " + line);
@@ -425,7 +425,7 @@ public class LineParser {
             }
         }
         while (!done) {
-            Expression exp = config.expressionParser.parse(tokens, code);
+            Expression exp = config.expressionParser.parse(tokens, s, code);
             if (exp == null) {
                 config.error("Cannot parse line " + source.fileName + ", "
                         + lineNumber + ": " + line);
@@ -465,7 +465,7 @@ public class LineParser {
             virtual = true;
         }
         if (virtual) {
-            Expression exp = config.expressionParser.parse(tokens, code);
+            Expression exp = config.expressionParser.parse(tokens, s, code);
             if (exp == null) {
                 config.error("Cannot parse line " + source.fileName + ", "
                         + lineNumber + ": " + line);
@@ -476,7 +476,7 @@ public class LineParser {
             s.space_value = null;
         } else {
             // In this case, "ds" is just a short-hand for "db" with repeated values:
-            Expression exp_amount = config.expressionParser.parse(tokens, code);
+            Expression exp_amount = config.expressionParser.parse(tokens, s, code);
             Expression exp_value;
             if (exp_amount == null) {
                 config.error("Cannot parse line " + source.fileName + ", "
@@ -485,7 +485,7 @@ public class LineParser {
             }
             if (!tokens.isEmpty() && tokens.get(0).startsWith(",")) {
                 tokens.remove(0);
-                exp_value = config.expressionParser.parse(tokens, code);
+                exp_value = config.expressionParser.parse(tokens, s, code);
                 if (exp_value == null) {
                     config.error("Cannot parse line " + source.fileName + ", "
                             + lineNumber + ": " + line);
@@ -512,7 +512,7 @@ public class LineParser {
             if (tokens.get(0).startsWith(";")) {
                 break;
             }
-            Expression exp = config.expressionParser.parse(tokens, code);
+            Expression exp = config.expressionParser.parse(tokens, s, code);
             if (exp == null) {
                 config.error("Cannot parse line " + source.fileName + ", "
                         + lineNumber + ": " + line);
@@ -560,7 +560,7 @@ public class LineParser {
             if (!tokens.isEmpty() && tokens.get(0).equals("=")) {
                 // default value:
                 tokens.remove(0);
-                Expression defaultValue = config.expressionParser.parse(tokens, code);
+                Expression defaultValue = config.expressionParser.parse(tokens, s, code);
                 if (defaultValue == null) {
                     config.error("Cannot parse default value in line " + source.fileName + ", "
                             + lineNumber + ": " + line);
@@ -590,7 +590,7 @@ public class LineParser {
             if (tokens.get(0).startsWith(";")) {
                 break;
             }
-            Expression exp = config.expressionParser.parse(tokens, code);
+            Expression exp = config.expressionParser.parse(tokens, s, code);
             if (exp == null) {
                 config.error("Cannot parse line " + source.fileName + ", "
                         + lineNumber + ": " + line);

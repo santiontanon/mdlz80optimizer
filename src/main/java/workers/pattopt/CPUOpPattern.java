@@ -53,7 +53,7 @@ public class CPUOpPattern {
             for(String variable:match.variables.keySet()) {
                 argStr = argStr.replace(variable, match.variables.get(variable).toString());
             }
-            instantiatedArgs.add(config.expressionParser.parse(Tokenizer.tokenize(argStr), code));
+            instantiatedArgs.add(config.expressionParser.parse(Tokenizer.tokenize(argStr), null, code));
         }
 
         return config.opParser.parseOp(opName, instantiatedArgs, s, code);
@@ -72,7 +72,7 @@ public class CPUOpPattern {
         pat.opName = tokens.remove(0);
         while(!tokens.isEmpty()) {
             if (tokens.get(0).startsWith(";")) break;
-            Expression exp = config.expressionParser.parse(tokens, code);
+            Expression exp = config.expressionParser.parse(tokens, null, code);
             if (exp == null) {
                 config.error("Cannot parse CPUOpPattern: " + line);
                 return null;

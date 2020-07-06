@@ -48,7 +48,7 @@ public interface Dialect {
     // be included in the general parser, as if someone uses a different assembler, those could be used
     // as macro names, causing a collision. So, they are implemented via this function:
     public Integer evaluateExpression(String functionName, List<Expression> args, SourceStatement s, CodeBase code, boolean silent);
-    
+        
     // Called after all the code is parsed and all macros expanded:
     public void performAnyFinalActions(CodeBase code);
 }

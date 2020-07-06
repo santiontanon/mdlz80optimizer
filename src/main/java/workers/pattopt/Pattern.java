@@ -229,8 +229,8 @@ public class Pattern {
                     List<String> v1_tokens = Tokenizer.tokenize(v1_str);
                     List<String> v2_tokens = Tokenizer.tokenize(v2_str);
 
-                    Expression exp1 = config.expressionParser.parse(v1_tokens, code);
-                    Expression exp2 = config.expressionParser.parse(v2_tokens, code);
+                    Expression exp1 = config.expressionParser.parse(v1_tokens, null, code);
+                    Expression exp2 = config.expressionParser.parse(v2_tokens, null, code);
 
                     if (exp1.evaluatesToNumericConstant() != exp2.evaluatesToNumericConstant()) break;
                     if (exp1.evaluatesToNumericConstant()) {

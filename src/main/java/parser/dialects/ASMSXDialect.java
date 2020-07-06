@@ -53,7 +53,7 @@ public class ASMSXDialect implements Dialect {
     // Addresses are not resolved until the very end, so, when printing values, we just queue them up here, and
     // print them all at the very end:
     List<PrintRecord> toPrint = new ArrayList<>();
-
+    
 
     public ASMSXDialect(MDLConfig a_config)
     {
@@ -242,7 +242,7 @@ public class ASMSXDialect implements Dialect {
         }
         if (tokens.size()>=2 && (tokens.get(0).equalsIgnoreCase(".filename") || tokens.get(0).equalsIgnoreCase("filename"))) {
             tokens.remove(0);
-            Expression filename_exp = config.expressionParser.parse(tokens, code);
+            Expression filename_exp = config.expressionParser.parse(tokens, s, code);
             if (filename_exp == null) {
                 config.error("Cannot parse expression in "+source.fileName+", "+source.fileName+": " + line);
                 return null;
@@ -251,7 +251,7 @@ public class ASMSXDialect implements Dialect {
         }
         if (tokens.size()>=1 && (tokens.get(0).equalsIgnoreCase(".size") || tokens.get(0).equalsIgnoreCase("size"))) {
             tokens.remove(0);
-            Expression size_exp = config.expressionParser.parse(tokens, code);
+            Expression size_exp = config.expressionParser.parse(tokens, s, code);
             if (size_exp == null) {
                 config.error("Cannot parse .size parameter in "+source.fileName+", "+lineNumber+": " + line);
                 return null;
@@ -261,7 +261,7 @@ public class ASMSXDialect implements Dialect {
         }
         if (tokens.size()>=1 && (tokens.get(0).equalsIgnoreCase(".page") || tokens.get(0).equalsIgnoreCase("page"))) {
             tokens.remove(0);
-            Expression page_exp = config.expressionParser.parse(tokens, code);
+            Expression page_exp = config.expressionParser.parse(tokens, s, code);
             if (page_exp == null) {
                 config.error("Cannot parse .page parameter in "+source.fileName+", "+lineNumber+": " + line);
                 return null;
@@ -284,7 +284,7 @@ public class ASMSXDialect implements Dialect {
         if (tokens.size()>=2 && (tokens.get(0).equalsIgnoreCase(".printdec") || tokens.get(0).equalsIgnoreCase(".print") ||
                                  tokens.get(0).equalsIgnoreCase("printdec") || tokens.get(0).equalsIgnoreCase("print"))) {
             tokens.remove(0);
-            Expression exp = config.expressionParser.parse(tokens, code);
+            Expression exp = config.expressionParser.parse(tokens, s, code);
             toPrint.add(new PrintRecord("printdec", 
                     source.getStatements().get(source.getStatements().size()-1), 
                     exp));
@@ -293,7 +293,7 @@ public class ASMSXDialect implements Dialect {
         }
         if (tokens.size()>=2 && (tokens.get(0).equalsIgnoreCase(".printhex") || tokens.get(0).equalsIgnoreCase("printhex"))) {
             tokens.remove(0);
-            Expression exp = config.expressionParser.parse(tokens, code);
+            Expression exp = config.expressionParser.parse(tokens, s, code);
             toPrint.add(new PrintRecord("printhex", 
                     source.getStatements().get(source.getStatements().size()-1), 
                     exp));
@@ -372,7 +372,7 @@ public class ASMSXDialect implements Dialect {
         }        
         if (tokens.size()>=2 && (tokens.get(0).equalsIgnoreCase(".start") || tokens.get(0).equalsIgnoreCase("start"))) {
             tokens.remove(0);
-            Expression exp = config.expressionParser.parse(tokens, code);
+            Expression exp = config.expressionParser.parse(tokens, s, code);
             if (exp == null) {
                 config.error("Cannot parse expression in "+source.fileName+", "+source.fileName+": " + line);
                 return null;

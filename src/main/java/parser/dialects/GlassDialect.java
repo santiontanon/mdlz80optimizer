@@ -90,7 +90,7 @@ public class GlassDialect implements Dialect {
             // approximating it by replacing it with "org"
             tokens.remove(0);
 
-            Expression exp = config.expressionParser.parse(tokens, code);
+            Expression exp = config.expressionParser.parse(tokens, s, code);
             if (exp == null) {
                 config.error("Cannot parse line " + source.fileName + ", " +
                              lineNumber + ": " + line);
@@ -256,7 +256,7 @@ public class GlassDialect implements Dialect {
 
         return true;
     }
-    
+
     
     @Override
     public Integer evaluateExpression(String functionName, List<Expression> args, SourceStatement s, CodeBase code, boolean silent)
