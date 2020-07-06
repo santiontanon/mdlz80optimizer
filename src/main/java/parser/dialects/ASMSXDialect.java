@@ -13,6 +13,7 @@ import code.SourceStatement;
 import java.io.BufferedReader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.StringTokenizer;
 import java.util.stream.Collectors;
 import org.apache.commons.io.IOUtils;
@@ -25,14 +26,33 @@ import util.Resources;
  * @author santi
  */
 public class ASMSXDialect implements Dialect {
-    MDLConfig config;
+    public static class PrintRecord {
+        String keyword;
+        SourceStatement previousStatement;  // not the current, as it was probably not added to the file
+        Expression exp;
+        
+        public PrintRecord(String a_kw, SourceStatement a_prev, Expression a_exp)
+        {
+            keyword = a_kw;
+            previousStatement = a_prev;
+            exp = a_exp;
+        }
+    }
     
+    MDLConfig config;
+
+    Random r = new Random();
+
     String biosCallsFileName = "data/msx-bios-calls.asm";    
 
     String lastAbsoluteLabel = null;
     SourceStatement romHeaderStatement = null;
     SourceStatement basicHeaderStatement = null;
     Expression startLabel = null;
+    
+    // Addresses are not resolved until the very end, so, when printing values, we just queue them up here, and
+    // print them all at the very end:
+    List<PrintRecord> toPrint = new ArrayList<>();
 
 
     public ASMSXDialect(MDLConfig a_config)
@@ -63,6 +83,9 @@ public class ASMSXDialect implements Dialect {
         config.lineParser.defineSpaceVirtualByDefault = true;
 
         config.warningJpHlWithParenthesis = false;
+        
+        config.expressionParser.dialectFunctions.add(".random");
+        config.expressionParser.dialectFunctions.add("random");
     }
 
 
@@ -196,98 +219,100 @@ public class ASMSXDialect implements Dialect {
     
 
     @Override
-    public boolean parseLine(List<String> tokens, String line, int lineNumber, SourceStatement s, SourceFile source, CodeBase code) {
+    public List<SourceStatement> parseLine(List<String> tokens, String line, int lineNumber, SourceStatement s, SourceFile source, CodeBase code) 
+    {
+        List<SourceStatement> l = new ArrayList<>();
+        l.add(s);
+        
         if (tokens.size()>=1 && (tokens.get(0).equalsIgnoreCase(".bios") || tokens.get(0).equalsIgnoreCase("bios"))) {
             tokens.remove(0);
             // Define all the bios calls:
             List<String []> biosCalls = loadBiosCalls();
             if (biosCalls == null) {
                 config.error("Cannot read bios calls file in " + source.fileName + ", " + lineNumber + ": " + line);
-                return false;                
+                return null;                
             }
             for(String []biosCall:biosCalls) {
                 SourceStatement biosCallStatement = new SourceStatement(SourceStatement.STATEMENT_CONSTANT, source, lineNumber, null);
                 int address = Tokenizer.parseHex(biosCall[1]);
                 biosCallStatement.label = new SourceConstant(biosCall[0], address, Expression.constantExpression(address, config), biosCallStatement);
-                source.addStatement(biosCallStatement);
+                l.add(biosCallStatement);
             }
-            return config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source);
+            if (config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source)) return l;
         }
         if (tokens.size()>=2 && (tokens.get(0).equalsIgnoreCase(".filename") || tokens.get(0).equalsIgnoreCase("filename"))) {
             tokens.remove(0);
             Expression filename_exp = config.expressionParser.parse(tokens, code);
             if (filename_exp == null) {
                 config.error("Cannot parse expression in "+source.fileName+", "+source.fileName+": " + line);
-                return false;
+                return null;
             }
-            return config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source);
+            if (config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source)) return l;
         }
         if (tokens.size()>=1 && (tokens.get(0).equalsIgnoreCase(".size") || tokens.get(0).equalsIgnoreCase("size"))) {
             tokens.remove(0);
             Expression size_exp = config.expressionParser.parse(tokens, code);
             if (size_exp == null) {
                 config.error("Cannot parse .size parameter in "+source.fileName+", "+lineNumber+": " + line);
-                return false;
+                return null;
             }
             // Since we are not producing compiled output, we ignore this directive
-            return config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source);
+            if (config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source)) return l;
         }
         if (tokens.size()>=1 && (tokens.get(0).equalsIgnoreCase(".page") || tokens.get(0).equalsIgnoreCase("page"))) {
             tokens.remove(0);
             Expression page_exp = config.expressionParser.parse(tokens, code);
             if (page_exp == null) {
                 config.error("Cannot parse .page parameter in "+source.fileName+", "+lineNumber+": " + line);
-                return false;
+                return null;
             }
             s.type = SourceStatement.STATEMENT_ORG;
             s.org = Expression.operatorExpression(Expression.EXPRESSION_MUL,
                     Expression.parenthesisExpression(page_exp, config),
                     Expression.constantExpression(16*1024, config), config);
             // Since we are not producing compiled output, we ignore this directive
-            return config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source);
+            if (config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source)) return l;
         }
         if (tokens.size()>=2 && (tokens.get(0).equalsIgnoreCase(".printtext") || tokens.get(0).equalsIgnoreCase("printtext"))) {
-            config.info(tokens.get(1));
+            toPrint.add(new PrintRecord("printtext", 
+                    source.getStatements().get(source.getStatements().size()-1), 
+                    Expression.constantExpression(tokens.get(1), config)));
             tokens.remove(0);
             tokens.remove(0);
-            return config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source);
+            if (config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source)) return l;
         }
         if (tokens.size()>=2 && (tokens.get(0).equalsIgnoreCase(".printdec") || tokens.get(0).equalsIgnoreCase(".print") ||
                                  tokens.get(0).equalsIgnoreCase("printdec") || tokens.get(0).equalsIgnoreCase("print"))) {
             tokens.remove(0);
             Expression exp = config.expressionParser.parse(tokens, code);
-            Integer value = exp.evaluate(s, code, true);
-            if (value == null) {
-                config.error("Cannot evaluate expression in "+source.fileName+", "+lineNumber+": "+line);
-                return false;
-            }
-            config.info(".printdec: " + value);
-            return config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source);
+            toPrint.add(new PrintRecord("printdec", 
+                    source.getStatements().get(source.getStatements().size()-1), 
+                    exp));
+            
+            if (config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source)) return l;
         }
         if (tokens.size()>=2 && (tokens.get(0).equalsIgnoreCase(".printhex") || tokens.get(0).equalsIgnoreCase("printhex"))) {
             tokens.remove(0);
             Expression exp = config.expressionParser.parse(tokens, code);
-            Integer value = exp.evaluate(s, code, true);
-            if (value == null) {
-                config.error("Cannot evaluate expression in "+source.fileName+", "+lineNumber+": "+line);
-                return false;
-            }
-            config.info(".printhex: " + Tokenizer.toHexWord(value, config.hexStyle));
-            return config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source);
+            toPrint.add(new PrintRecord("printhex", 
+                    source.getStatements().get(source.getStatements().size()-1), 
+                    exp));
+            
+            if (config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source)) return l;
         }
         if (tokens.size()>=1 && (tokens.get(0).equalsIgnoreCase(".byte") || tokens.get(0).equalsIgnoreCase("byte"))) {
             tokens.remove(0);
             s.type = SourceStatement.STATEMENT_DEFINE_SPACE;
             s.space = Expression.constantExpression(1, config);
             s.space_value = null;
-            return config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source);
+            if (config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source)) return l;
         }
         if (tokens.size()>=1 && (tokens.get(0).equalsIgnoreCase(".word") || tokens.get(0).equalsIgnoreCase("word"))) {
             tokens.remove(0);
             s.type = SourceStatement.STATEMENT_DEFINE_SPACE;
             s.space = Expression.constantExpression(2, config);
             s.space_value = null;
-            return config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source);
+            if (config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source)) return l;
         }
         if (tokens.size()>=1 && (tokens.get(0).equalsIgnoreCase(".rom") || tokens.get(0).equalsIgnoreCase("rom"))) {
             tokens.remove(0);
@@ -309,7 +334,7 @@ public class ASMSXDialect implements Dialect {
                         Expression.constantExpression(256, config), config)); 
             }
             for(int i = 0;i<12;i++) data.add(Expression.constantExpression(0, config));
-            return config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source);
+            if (config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source)) return l;
         }
         if (tokens.size()>=1 && (tokens.get(0).equalsIgnoreCase(".basic") || tokens.get(0).equalsIgnoreCase("basic"))) {
             tokens.remove(0);
@@ -337,14 +362,20 @@ public class ASMSXDialect implements Dialect {
                         startLabel, 
                         Expression.constantExpression(256, config), config)); 
             }
-            return config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source);
+            // the header of a basic program should not use any space, so we add an org statement afterwards to compensate for its space:
+            SourceStatement auxiliarOrg = new SourceStatement(SourceStatement.STATEMENT_ORG, source, lineNumber, null);
+            auxiliarOrg.org = Expression.operatorExpression(Expression.EXPRESSION_SUB, 
+                    Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, code, config), 
+                    Expression.constantExpression(7, config), config);
+            l.add(auxiliarOrg);
+            if (config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source)) return l;
         }        
         if (tokens.size()>=2 && (tokens.get(0).equalsIgnoreCase(".start") || tokens.get(0).equalsIgnoreCase("start"))) {
             tokens.remove(0);
             Expression exp = config.expressionParser.parse(tokens, code);
             if (exp == null) {
                 config.error("Cannot parse expression in "+source.fileName+", "+source.fileName+": " + line);
-                return false;
+                return null;
             }
             startLabel = exp;
             if (romHeaderStatement != null) {
@@ -363,11 +394,11 @@ public class ASMSXDialect implements Dialect {
                         startLabel, 
                         Expression.constantExpression(256, config), config)); 
             }
-            return config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source);
+            if (config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source)) return l;
         }
 
         config.error("ASMSXDialect cannot parse line in "+source.fileName+", "+lineNumber+": " + line);
-        return false;
+        return null;
     }
 
 
@@ -377,4 +408,57 @@ public class ASMSXDialect implements Dialect {
     }
     
 
+    @Override
+    public Integer evaluateExpression(String functionName, List<Expression> args, SourceStatement s, CodeBase code, boolean silent)
+    {
+        if ((functionName.equalsIgnoreCase(".random") || 
+             functionName.equalsIgnoreCase("random")) && args.size() == 1) {
+            Integer range = args.get(0).evaluate(s, code, silent);
+            if (range == null) return null;
+            return r.nextInt(range);
+        }
+        return null;
+    }
+    
+    
+    @Override
+    public void performAnyFinalActions(CodeBase code)
+    {
+        for(PrintRecord pr:toPrint) {
+            switch(pr.keyword) {
+                case "printtext":
+                    config.info(pr.exp.stringConstant);
+                    break;
+                case "printdec":
+                {
+                    SourceFile f = pr.previousStatement.source;
+                    int idx = f.getStatements().indexOf(pr.previousStatement);
+                    SourceStatement s = null;
+                    if (f.getStatements().size() > idx+1) s = f.getStatements().get(idx+1);
+                    Integer value = pr.exp.evaluate(s, code, false);
+                    if (value == null) {
+                        config.error("Cannot evaluate expression " + pr.exp);
+                    } else {
+                        config.info("" + value);
+                    }
+                    break;
+                }
+                case "printhex":
+                {
+                    SourceFile f = pr.previousStatement.source;
+                    int idx = f.getStatements().indexOf(pr.previousStatement);
+                    SourceStatement s = null;
+                    if (f.getStatements().size() > idx+1) s = f.getStatements().get(idx+1);
+                    Integer value = pr.exp.evaluate(s, code, false);
+                    if (value == null) {
+                        config.error("Cannot evaluate expression " + pr.exp);
+                    } else {
+                        config.info("" + Tokenizer.toHexWord(value));
+                    }
+                    break;
+                }
+            }
+        }
+    }
+    
 }

@@ -32,8 +32,9 @@ public interface Dialect {
     // If the previous function returns true, instead of trying to parse the line with the
     // default parser, this function will be invoked instead. Returns true if it could
     // successfully parse the line
-    // - returns "false" if an error occurred
-    public boolean parseLine(List<String> tokens,
+    // - returns "null" if an error occurred
+    // - otherwise, a list of statements to add as a result of parsing the line
+    public List<SourceStatement> parseLine(List<String> tokens,
             String line, int lineNumber,
             SourceStatement s, SourceFile source, CodeBase code);
 
@@ -42,4 +43,12 @@ public interface Dialect {
     // text to be copy/pasted when the macro is expanded (as the default parser of MDL does).
     // - returns "false" if an error occurred
     public boolean newMacro(SourceMacro macro, CodeBase code);
+    
+    // Some dialectss implement custom functions (e.g., asMSX has a "random" function). They cannot
+    // be included in the general parser, as if someone uses a different assembler, those could be used
+    // as macro names, causing a collision. So, they are implemented via this function:
+    public Integer evaluateExpression(String functionName, List<Expression> args, SourceStatement s, CodeBase code, boolean silent);
+    
+    // Called after all the code is parsed and all macros expanded:
+    public void performAnyFinalActions(CodeBase code);
 }

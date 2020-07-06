@@ -39,6 +39,8 @@ public class CodeBaseParser {
             return false;
         }
 
+        if (config.dialectParser != null) config.dialectParser.performAnyFinalActions(code);
+        
         return true;
     }
 
@@ -125,11 +127,13 @@ public class CodeBaseParser {
                         }
                     }
                 } else {
-                    SourceStatement s = config.lineParser.parse(tokens, line, line_lineNumber, f, code, config);
-                    if (s == null) return false;
-                    if (!s.isEmpty()) {
-                        if (!config.preProcessor.handleStatement(line, line_lineNumber, s, f, code, false)) {
-                            f.addStatement(s);
+                    List<SourceStatement> l = config.lineParser.parse(tokens, line, line_lineNumber, f, code, config);
+                    if (l == null) return false;
+                    for(SourceStatement s:l) {
+                        if (!s.isEmpty()) {
+                            if (!config.preProcessor.handleStatement(line, line_lineNumber, s, f, code, false)) {
+                                f.addStatement(s);
+                            }
                         }
                     }
                 }
@@ -200,12 +204,14 @@ public class CodeBaseParser {
                             }
                         }                        
                     } else {
-                        SourceStatement s = config.lineParser.parse(tokens, line, lineNumber, f, code, config);
-                        if (s == null) return false;
-                        if (!s.isEmpty()) {
-                            if (!config.preProcessor.handleStatement(line, lineNumber, s, f, code, true)) {
-                                f.addStatement(insertionPoint, s);
-                                insertionPoint++;
+                        List<SourceStatement> l = config.lineParser.parse(tokens, line, lineNumber, f, code, config);
+                        if (l == null) return false;
+                        for(SourceStatement s:l) {
+                            if (!s.isEmpty()) {
+                                if (!config.preProcessor.handleStatement(line, lineNumber, s, f, code, true)) {
+                                    f.addStatement(insertionPoint, s);
+                                    insertionPoint++;
+                                }
                             }
                         }
                     }

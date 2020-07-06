@@ -9,7 +9,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import cl.MDLConfig;
-import cl.MDLLogger;
 import code.CodeBase;
 import code.Expression;
 import code.SourceFile;
@@ -98,9 +97,12 @@ public class SjasmDialect implements Dialect {
     }
 
     @Override
-    public boolean parseLine(List<String> tokens,
+    public List<SourceStatement> parseLine(List<String> tokens,
             String line, int lineNumber,
             SourceStatement s, SourceFile source, CodeBase code) {
+        List<SourceStatement> l = new ArrayList<>();
+        l.add(s);
+        
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("struct")) {
             tokens.remove(0);
             config.lineParser.pushLabelPrefix(tokens.remove(0) + ".");
@@ -111,19 +113,19 @@ public class SjasmDialect implements Dialect {
             }
             structFile = source;
             structStart = source.getStatements().size();
-            return config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source);
+            if (config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source)) return l;
         }
         if (tokens.size() >= 1 && tokens.get(0).equalsIgnoreCase("ends")) {
             tokens.remove(0);
             if (structFile == null) {
                 config.error("ends outside of a struct at " + source.fileName + ", "
                         + lineNumber + ": " + line);
-                return false;
+                return null;
             }
             if (structFile != source) {
                 config.error("struct split among multiple files is not supported at " + source.fileName + ", "
                         + lineNumber + ": " + line);
-                return false;
+                return null;
             }
 
             // Transform the struct into equ definitions with local labels:
@@ -142,7 +144,7 @@ public class SjasmDialect implements Dialect {
                     default:
                         config.error("Unsupported statement (type="+s2.type+") inside a struct definition at " + source.fileName + ", "
                                 + lineNumber + ": " + line);
-                        return false;
+                        return null;
                 }
                 if (s2.label != null) {
                     s2.type = SourceStatement.STATEMENT_CONSTANT;
@@ -154,12 +156,12 @@ public class SjasmDialect implements Dialect {
 
             config.lineParser.popLabelPrefix();
             structFile = null;
-            return config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source);
+            if (config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source)) return l;
         }
         if (tokens.size() >= 1 && tokens.get(0).equalsIgnoreCase("end")) {
             tokens.remove(0);
             // just ignore
-            return config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source);
+            if (config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source)) return l;
         }
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("map")) {
             tokens.remove(0);
@@ -167,16 +169,16 @@ public class SjasmDialect implements Dialect {
             if (exp == null) {
                 config.error("Cannot parse expression at " + source.fileName + ", "
                         + lineNumber + ": " + line);
-                return false;
+                return null;
             }
             mapCounterStack.add(0, mapCounter);
             mapCounter = exp.evaluate(s, code, false);
-            return config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source);
+            if (config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source)) return l;
         }
         if (tokens.size() >= 1 && tokens.get(0).equalsIgnoreCase("endmap")) {
             tokens.remove(0);
             mapCounter = mapCounterStack.remove(0);
-            return config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source);
+            if (config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source)) return l;
         }
         if (tokens.size() >= 2 &&
             (tokens.get(0).equalsIgnoreCase("#") || tokens.get(0).equalsIgnoreCase("field"))) {
@@ -185,16 +187,16 @@ public class SjasmDialect implements Dialect {
             if (exp == null) {
                 config.error("Cannot parse expression at " + source.fileName + ", "
                         + lineNumber + ": " + line);
-                return false;
+                return null;
             }
             if (s.label == null) {
                 config.error("Field expression does not have a label at " + source.fileName + ", "
                         + lineNumber + ": " + line);
-                return false;
+                return null;
             }
             s.label.exp = exp;
             mapCounter += exp.evaluate(s, code, false);
-            return config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source);
+            if (config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source)) return l;
         }
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("assert")) {
             tokens.remove(0);
@@ -202,22 +204,38 @@ public class SjasmDialect implements Dialect {
             if (exp == null) {
                 config.error("Cannot parse expression at " + source.fileName + ", "
                         + lineNumber + ": " + line);
-                return false;
+                return null;
             }
             Integer value = exp.evaluate(s, code, false);
             if (value == null || value == Expression.FALSE) {
                 config.error("Assertion failed at " + source.fileName + ", "
                         + lineNumber + ": " + line);
-                return false;
+                return null;
             }
-            return config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source);
+            if (config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source)) return l;
         }
 
-        return false;
+        return null;
     }
+
 
     @Override
     public boolean newMacro(SourceMacro macro, CodeBase code) {
         return true;
     }
+    
+    
+    @Override
+    public Integer evaluateExpression(String functionName, List<Expression> args, SourceStatement s, CodeBase code, boolean silent)
+    {
+        return null;
+    }
+
+
+    @Override
+    public void performAnyFinalActions(CodeBase code)
+    {
+        
+    }
+    
 }

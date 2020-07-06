@@ -96,70 +96,70 @@ public class LineParser {
     }
 
 
-    public SourceStatement parse(List<String> tokens, String line, int lineNumber,
+    public List<SourceStatement> parse(List<String> tokens, String line, int lineNumber,
             SourceFile f, CodeBase code, MDLConfig config) {
         SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_NONE, f, lineNumber, null);
-
-        if (!parseInternal(tokens, line, lineNumber, s, f, code)) {
-            return null;
-        }
-        return s;
+        List<SourceStatement> l = parseInternal(tokens, line, lineNumber, s, f, code);
+        return l;
     }
 
 
-    boolean parseInternal(List<String> tokens, String line, int lineNumber, SourceStatement s, SourceFile source, CodeBase code) {
-        if (!parseLabel(tokens, line, lineNumber, s, source, code, true)) return false;
-
-        if (tokens.isEmpty()) return true;
+    List<SourceStatement> parseInternal(List<String> tokens, String line, int lineNumber, SourceStatement s, SourceFile source, CodeBase code) {
+        if (!parseLabel(tokens, line, lineNumber, s, source, code, true)) return null;
+        List<SourceStatement> l = new ArrayList<>();
+        l.add(s);
+        
+        if (tokens.isEmpty()) return l;
         String token = tokens.get(0);
 
         if (isKeyword(token, KEYWORD_ORG)) {
             tokens.remove(0);
-            return parseOrg(tokens, line, lineNumber, s, source, code);
-
+            if (parseOrg(tokens, line, lineNumber, s, source, code)) return l;
         } else if (isKeyword(token, KEYWORD_INCLUDE)) {
             tokens.remove(0);
-            return parseInclude(tokens, line, lineNumber, s, source, code);
+            if (parseInclude(tokens, line, lineNumber, s, source, code)) return l;
 
         } else if (isKeyword(token, KEYWORD_INCBIN)) {
             tokens.remove(0);
-            return parseIncbin(tokens, line, lineNumber, s, source, code);
+            if (parseIncbin(tokens, line, lineNumber, s, source, code)) return l;
         } else if (tokens.size() >= 2 && isKeyword(token, KEYWORD_EQU)) {
             tokens.remove(0);
-            return parseEqu(tokens, line, lineNumber, s, source, code, true);
+            if (parseEqu(tokens, line, lineNumber, s, source, code, true)) return l;
         } else if (tokens.size() >= 1
                 && (isKeyword(token, KEYWORD_DB)
                 || isKeyword(token, KEYWORD_DW)
                 || isKeyword(token, KEYWORD_DD))) {
             tokens.remove(0);
-            return parseData(tokens, token, line, lineNumber, s, source, code);
+            if (parseData(tokens, token, line, lineNumber, s, source, code)) return l;
 
         } else if (tokens.size() >= 2 && isKeyword(token, KEYWORD_DS)) {
             tokens.remove(0);
-            return parseDefineSpace(tokens, line, lineNumber, s, source, code);
+            if (parseDefineSpace(tokens, line, lineNumber, s, source, code)) return l;
 
         } else if (isKeyword(token, SourceMacro.MACRO_MACRO)) {
             tokens.remove(0);
-            return parseMacroDefinition(tokens, line, lineNumber, s, source, code);
+            if (parseMacroDefinition(tokens, line, lineNumber, s, source, code)) return l;
 
         } else if (isKeyword(token, SourceMacro.MACRO_ENDM)) {
             config.error(SourceMacro.MACRO_ENDM + " keyword found outside of a macro at " + source.fileName + ", "
                     + lineNumber + ": " + line);
-            return false;
+            return null;
 
         } else if (config.dialectParser != null && config.dialectParser.recognizeIdiom(tokens)) {
+            // this one might return one or more statements:
             return config.dialectParser.parseLine(tokens, line, lineNumber, s, source, code);
         } else if (Tokenizer.isSymbol(token)) {
             // try to parseArgs it as an assembler instruction or macro call:
             tokens.remove(0);
             if (config.opParser.isOpName(token)) {
-                return parseZ80Op(tokens, token, line, lineNumber, s, source, code);
+                if (parseZ80Op(tokens, token, line, lineNumber, s, source, code)) return l;
             } else {
-                return parseMacroCall(tokens, token, line, lineNumber, s, source, code);
+                if (parseMacroCall(tokens, token, line, lineNumber, s, source, code)) return l;
             }
         } else {
-            return parseRestofTheLine(tokens, line, lineNumber, s, source);
+            if (parseRestofTheLine(tokens, line, lineNumber, s, source)) return l;
         }
+        return null;
     }
 
 

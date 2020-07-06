@@ -78,10 +78,13 @@ public class GlassDialect implements Dialect {
 
 
     @Override
-    public boolean parseLine(List<String> tokens,
+    public List<SourceStatement> parseLine(List<String> tokens,
             String line, int lineNumber,
             SourceStatement s, SourceFile source, CodeBase code)
     {
+        List<SourceStatement> l = new ArrayList<>();
+        l.add(s);
+        
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("section")) {
             // TODO(santi@): implement "section" with the same semantics as Glass. I am currently just
             // approximating it by replacing it with "org"
@@ -91,12 +94,12 @@ public class GlassDialect implements Dialect {
             if (exp == null) {
                 config.error("Cannot parse line " + source.fileName + ", " +
                              lineNumber + ": " + line);
-                return false;
+                return null;
             }
             if (exp.type != Expression.EXPRESSION_SYMBOL) {
                 config.error("Invalid section name at " + source.fileName + ", " +
                              lineNumber + ": " + line);
-                return false;
+                return null;
             }
             s.type = SourceStatement.STATEMENT_ORG;
             s.org = exp;
@@ -116,7 +119,7 @@ public class GlassDialect implements Dialect {
             code.addSymbol(sectionHelper.label.name, sectionHelper.label);
             source.addStatement(sectionHelper);
 
-            return config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source);
+            if (config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source)) return l;
         }
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("ends")) {
             if (!sectionStack.isEmpty()) {
@@ -130,39 +133,41 @@ public class GlassDialect implements Dialect {
                 source.addStatement(sectionHelper);
                 sectionAppearanceCounters.put(sectionName, appearanceCounter+1);
                 
-                return config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source);
+                if (config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source)) return l;
             } else {
                 config.error("No section to terminate at " + source.fileName + ", " +
                              lineNumber + ": " + line);
-                return false;
+                return null;
             }
         }
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("proc")) {
             if (s.label == null) {
                 config.error("Proc with no name at " + source.fileName + ", " +
                              lineNumber + ": " + line);
-                return false;
+                return null;
             }
+            tokens.remove(0);
             config.lineParser.pushLabelPrefix(s.label.name + ".");
-            return true;
+            if (config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source)) return l;
         }
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("endp")) {
+            tokens.remove(0);
             config.lineParser.popLabelPrefix();
-            return true;
+            if (config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source)) return l;
         }
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("error")) {
             config.error(tokens.get(1));
             tokens.remove(0);
             tokens.remove(0);
-            return config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source);
+            if (config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source)) return l;
         }
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("warning")) {
             config.warn(tokens.get(1));
             tokens.remove(0);
             tokens.remove(0);
-            return config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source);
+            if (config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source)) return l;
         }
-        return false;
+        return null;
     }
 
 
@@ -224,16 +229,18 @@ public class GlassDialect implements Dialect {
                         }
                     }
                 } else {
-                    SourceStatement s = config.lineParser.parse(Tokenizer.tokenize(line),
-                                                                line, lineNumber, f, code, config);
-                    if (s == null) {
+                    List<SourceStatement> l = config.lineParser.parse(Tokenizer.tokenize(line), 
+                            line, lineNumber, f, code, config);
+                    if (l == null) {
                         // we fail to assemble the macro, but it's ok, some times it can happen
                         succeeded = false;
                         break;
                     }
-                    if (!s.isEmpty()) {
-                        if (!preProcessor.handleStatement(line, lineNumber, s, f, code, false)) {
-                            f.addStatement(s);
+                    for(SourceStatement s:l) {
+                        if (!s.isEmpty()) {
+                            if (!preProcessor.handleStatement(line, lineNumber, s, f, code, false)) {
+                                f.addStatement(s);
+                            }
                         }
                     }
                 }
@@ -249,5 +256,18 @@ public class GlassDialect implements Dialect {
 
         return true;
     }
-
+    
+    
+    @Override
+    public Integer evaluateExpression(String functionName, List<Expression> args, SourceStatement s, CodeBase code, boolean silent)
+    {
+        return null;
+    }
+    
+    
+    @Override
+    public void performAnyFinalActions(CodeBase code)
+    {
+        
+    }
 }

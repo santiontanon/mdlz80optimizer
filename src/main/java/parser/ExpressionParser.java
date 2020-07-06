@@ -8,9 +8,14 @@ import java.util.List;
 import cl.MDLConfig;
 import code.CodeBase;
 import code.Expression;
+import java.util.ArrayList;
 
 public class ExpressionParser {
     MDLConfig config;
+    
+    // make sure to add functions in lower case into this list:
+    public List<String> dialectFunctions = new ArrayList<>();
+    
     
     public ExpressionParser(MDLConfig a_config)
     {
@@ -308,8 +313,43 @@ public class ExpressionParser {
             Tokenizer.isSymbol(tokens.get(0))) {
             // symbol:
             String token = tokens.remove(0);
-            if (config.dialectParser != null) token = config.dialectParser.symbolName(token);
-            return Expression.symbolExpression(token, code, config);
+            
+            if (dialectFunctions.contains(token.toLowerCase())) {
+                String functionName = token;
+                List<Expression> args = new ArrayList<>();
+                if (!tokens.isEmpty() && tokens.get(0).equals("(")) {
+                    boolean first = true;
+                    tokens.remove(0);
+                    while(true) {
+                        if (tokens.isEmpty()) {
+                            config.error("Failed to parse argument list of a dialect function.");
+                            return null;
+                        }
+                        if (tokens.get(0).equals(")")) {
+                            tokens.remove(0);
+                            break;
+                        }
+                        if (!first) {
+                            if (tokens.isEmpty() || !tokens.get(0).equals(",")) {
+                                config.error("Failed to parse argument list of a dialect function.");
+                                return null;                                
+                            }
+                            tokens.remove(0);
+                        }
+                        Expression arg = parse(tokens, code);
+                        if (arg == null) {
+                            config.error("Failed to parse argument list of a dialect function.");
+                            return null;                            
+                        }
+                        args.add(arg);
+                        first = false;
+                    }
+                }
+                return Expression.dialectFunctionExpression(functionName, args, config);
+            } else {
+                if (config.dialectParser != null) token = config.dialectParser.symbolName(token);
+                return Expression.symbolExpression(token, code, config);
+            }
         }        
         if (tokens.size() >= 2 && 
             (tokens.get(0).equals("%"))) {
