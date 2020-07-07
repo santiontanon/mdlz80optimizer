@@ -394,7 +394,14 @@ public class Expression {
             case EXPRESSION_NUMERIC_CONSTANT:
                 return "" + numericConstant;
             case EXPRESSION_STRING_CONSTANT:
-                return "\"" + stringConstant + "\"";
+            {
+                String tmp = stringConstant.replace("\n", "\\n");
+                tmp = tmp.replace("\r", "\\r");
+                tmp = tmp.replace("\t", "\\t");
+                tmp = tmp.replace("\"", "\\\"");
+                tmp = tmp.replace("\'", "\\\'");
+                return "\"" + tmp + "\"";
+            }
             case EXPRESSION_SYMBOL:
                 return symbolName;
             case EXPRESSION_SIGN_CHANGE:

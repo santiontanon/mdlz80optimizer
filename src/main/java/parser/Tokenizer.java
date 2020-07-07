@@ -68,7 +68,13 @@ public class Tokenizer {
                     }
                 }
                 if (token.length()<2 || !token.endsWith("\"")) return null;
-                tokens.add(token);                
+                
+                token = token.replace("\\n", "\n");
+                token = token.replace("\\r", "\r");
+                token = token.replace("\\t", "\t");
+                token = token.replace("\\\"", "\"");
+                token = token.replace("\\\'", "\'");
+                tokens.add(token);
             } else if (next.equals("'")) {
                 String token = next;
                 while(st.hasMoreTokens()) {

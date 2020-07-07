@@ -60,6 +60,9 @@ public class TokenizerTest {
     @Test public void test14() {
         Assert.assertArrayEquals(new String[]{"/*","C","+","+","style","comment","*/"}, tokenize("/*C++ style comment*/"));
     }
+    @Test public void test15() {
+        Assert.assertArrayEquals(new String[]{"\"string\t\r\n\""}, tokenize("\"string\\t\\r\\n\""));
+    }
 
     
     private static String[] tokenize(String line)
