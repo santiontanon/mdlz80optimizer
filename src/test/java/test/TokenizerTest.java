@@ -51,7 +51,17 @@ public class TokenizerTest {
     @Test public void test11() {
         Assert.assertArrayEquals(new String[]{"GameStatus",":","#","#10"}, tokenize("GameStatus: # #10"));
     }
+    @Test public void test12() {
+        Assert.assertArrayEquals(new String[]{"ld","a",",","(","hl",")","; Comment"}, tokenize("ld a,(hl) ; Comment"));
+    }
+    @Test public void test13() {
+        Assert.assertArrayEquals(new String[]{"ld","a",",","(","hl",")","//C style comment"}, tokenize("ld a,(hl) //C style comment"));
+    }
+    @Test public void test14() {
+        Assert.assertArrayEquals(new String[]{"/*","C","+","+","style","comment","*/"}, tokenize("/*C++ style comment*/"));
+    }
 
+    
     private static String[] tokenize(String line)
     {
         List<String> tokens = Tokenizer.tokenize(line);

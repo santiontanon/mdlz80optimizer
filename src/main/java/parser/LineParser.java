@@ -206,7 +206,7 @@ public class LineParser {
                 return parseRestofTheLine(tokens, line, lineNumber, s, source);
             }
         } else if (Tokenizer.isSymbol(token)) {
-            if (line.startsWith(token) && (tokens.size() == 1 || tokens.get(1).startsWith(";"))) {
+            if (line.startsWith(token) && (tokens.size() == 1 || Tokenizer.isSingleLineComment(tokens.get(1)))) {
                 // it is just a label without colon:
                 if (config.warningLabelWithoutColon) {
                     config.warn("Style suggestion", s.source.fileName, s.lineNumber, 
@@ -267,7 +267,7 @@ public class LineParser {
         if (tokens.isEmpty()) {
             return true;
         }
-        if (tokens.size() == 1 && tokens.get(0).startsWith(";")) {
+        if (tokens.size() == 1 && Tokenizer.isSingleLineComment(tokens.get(0))) {
             s.comment = tokens.get(0);
             return true;
         }
@@ -358,9 +358,9 @@ public class LineParser {
         // optional skip and size arguments (they could be separated by commas or not, depending on the assembler dialect):
         Expression skip_exp = null;
         Expression size_exp = null;
-        if (!tokens.isEmpty() && !tokens.get(0).startsWith(";")) {
+        if (!tokens.isEmpty() && !Tokenizer.isSingleLineComment(tokens.get(0))) {
             if (tokens.get(0).equals(",")) tokens.remove(0);
-            if (!tokens.isEmpty() && !tokens.get(0).startsWith(";")) {
+            if (!tokens.isEmpty() && !Tokenizer.isSingleLineComment(tokens.get(0))) {
                 skip_exp = config.expressionParser.parse(tokens, s, code);
                 if (skip_exp == null) {
                     config.error("Cannot parse line " + source.fileName + ", "
@@ -369,9 +369,9 @@ public class LineParser {
                 }
             }
         }
-        if (!tokens.isEmpty() && !tokens.get(0).startsWith(";")) {
+        if (!tokens.isEmpty() && !Tokenizer.isSingleLineComment(tokens.get(0))) {
             if (tokens.get(0).equals(",")) tokens.remove(0);
-            if (!tokens.isEmpty() && !tokens.get(0).startsWith(";")) {
+            if (!tokens.isEmpty() && !Tokenizer.isSingleLineComment(tokens.get(0))) {
                 size_exp = config.expressionParser.parse(tokens, s, code);
                 if (skip_exp == null) {
                     config.error("Cannot parse line " + source.fileName + ", "
@@ -419,7 +419,7 @@ public class LineParser {
         List<Expression> data = new ArrayList<>();
         boolean done = false;
         if (allowEmptyDB_DW_DD_definitions) {
-            if (tokens.isEmpty() || tokens.get(0).startsWith(";")) {
+            if (tokens.isEmpty() || Tokenizer.isSingleLineComment(tokens.get(0))) {
                 data.add(Expression.constantExpression(0, config));
                 done = true;
             }
@@ -509,7 +509,7 @@ public class LineParser {
             SourceStatement s, SourceFile source, CodeBase code) {
         List<Expression> arguments = new ArrayList<>();
         while (!tokens.isEmpty()) {
-            if (tokens.get(0).startsWith(";")) {
+            if (Tokenizer.isSingleLineComment(tokens.get(0))) {
                 break;
             }
             Expression exp = config.expressionParser.parse(tokens, s, code);
@@ -587,7 +587,7 @@ public class LineParser {
             SourceStatement s, SourceFile source, CodeBase code) {
         List<Expression> arguments = new ArrayList<>();
         while (!tokens.isEmpty()) {
-            if (tokens.get(0).startsWith(";")) {
+            if (Tokenizer.isSingleLineComment(tokens.get(0))) {
                 break;
             }
             Expression exp = config.expressionParser.parse(tokens, s, code);

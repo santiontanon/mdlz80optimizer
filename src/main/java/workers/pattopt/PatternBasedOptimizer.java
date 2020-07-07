@@ -11,6 +11,7 @@ import cl.MDLConfig;
 import code.CodeBase;
 import code.SourceFile;
 import code.SourceStatement;
+import parser.Tokenizer;
 import util.Resources;
 import workers.MDLWorker;
 
@@ -94,7 +95,7 @@ public class PatternBasedOptimizer implements MDLWorker {
                 }
                 line = line.trim();
                 // ignore comments:
-                if (line.startsWith(";")) continue;
+                if (Tokenizer.isSingleLineComment(line)) continue;
 
                 if (line.equals("")) {
                     if (!patternString.equals("")) {
@@ -182,6 +183,8 @@ public class PatternBasedOptimizer implements MDLWorker {
                     }
                     r.patternApplications++;
                     r.bytesSaved += patt.getSpaceSaving(match);
+                    
+                    i--;    // re-check this statement, as more optimizations might chain
                 }
             }
         }

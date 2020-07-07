@@ -13,7 +13,6 @@ import java.util.stream.Collectors;
 import org.apache.commons.io.IOUtils;
 
 import cl.MDLConfig;
-import cl.MDLLogger;
 import code.CPUOpSpec;
 import code.CPUOpSpecArg;
 import util.Resources;
@@ -36,7 +35,7 @@ public class CPUOpSpecParser {
         try (BufferedReader br = Resources.asReader(inputFile)) {
             List<CPUOpSpec> specs = IOUtils.readLines(br)
                     .stream()
-                    .filter(line -> !line.startsWith(";"))
+                    .filter(line -> !Tokenizer.isSingleLineComment(line))
                     .map(line -> parseOpSpecLine(line.split("\t"), config))
                     .filter(opSpec -> opSpec != null)
                     .collect(Collectors.toList());

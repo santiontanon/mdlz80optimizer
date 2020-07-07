@@ -20,6 +20,8 @@ import util.Resources;
 public class CodeBaseParser {
     MDLConfig config;
     
+    boolean withinMultilineComment = false;
+    
     // Expressions that we don't want to keep expanded, but want to replace by concrete values
     // once the code is parsed. Examples of this are dialect-specific functions, which we want
     // to resolve before generating asm output to maintain maximum compatibility in the output:
@@ -87,6 +89,8 @@ public class CodeBaseParser {
     Pair<SourceLine, Integer> getNextLine(BufferedReader br, SourceFile f, int file_linenumber, List<String> tokens)
             throws IOException
     {
+        List<String> unfilteredTokens = new ArrayList<>();
+        
         SourceLine sl = config.preProcessor.expandMacros();
         if (sl == null) {
             String line = null;
@@ -96,15 +100,30 @@ public class CodeBaseParser {
             sl = new SourceLine(line, f, file_linenumber);
         }
 
-        Tokenizer.tokenize(sl.line, tokens);
-        if (!tokens.isEmpty() && tokens.get(tokens.size()-1).equals(",")) {
+        Tokenizer.tokenize(sl.line, unfilteredTokens);
+        if (!unfilteredTokens.isEmpty() && unfilteredTokens.get(unfilteredTokens.size()-1).equals(",")) {
             // unfinished line, get the next one!
             List<String> tokens2 = new ArrayList<>();
             Pair<SourceLine, Integer> tmp = getNextLine(br, sl.source, file_linenumber, tokens2);
             if (tmp != null) {
                 sl.line += "\n" + tmp.getLeft().line;
-                tokens.addAll(tokens2);
+                unfilteredTokens.addAll(tokens2);
                 file_linenumber = tmp.getRight();
+            }
+        }
+        
+        // remove multi-line comments
+        for(String token:unfilteredTokens) {
+            if (withinMultilineComment) {
+                if (Tokenizer.isMultiLineCommentEnd(token)) {
+                    withinMultilineComment = false;
+                }
+            } else {
+                if (Tokenizer.isMultiLineCommentStart(token)) {
+                    withinMultilineComment = true;
+                } else {
+                    tokens.add(token);
+                }
             }
         }
 
@@ -163,9 +182,24 @@ public class CodeBaseParser {
         List<SourceFile> l = new ArrayList<>();
         l.addAll(code.getSourceFiles());
 
-        for (SourceFile f : l) {
-            if (!expandAllMacros(f, code)) return false;
-        }
+        int n_expanded;
+        int n_failed;
+        
+        do {
+            n_expanded = 0;
+            n_failed = 0;
+            for (SourceFile f : l) {
+                Pair<Integer,Integer> expanded = expandAllMacros(f, code);
+                if (expanded == null) return false;
+                n_expanded += expanded.getLeft();
+                n_failed += expanded.getRight();
+            }
+            config.debug("expandAllMacros: " + n_expanded + " / " + (n_expanded+n_failed));
+            if (n_expanded == 0 && n_failed > 0) {
+                config.debug("Failed to expand all macros after loading source code: " + n_failed+ " did not expand.");
+                return false;
+            }
+        } while (n_failed > 0);
 
         if (code.getSourceFiles().size() > l.size()) {
             // there are more files, we need to expand macros again!
@@ -175,8 +209,10 @@ public class CodeBaseParser {
     }
 
 
-    public boolean expandAllMacros(SourceFile f, CodeBase code) throws IOException
+    public Pair<Integer,Integer> expandAllMacros(SourceFile f, CodeBase code) throws IOException
     {        
+        int n_expanded = 0;
+        int n_failed = 0;
         for(int i = 0;i<f.getStatements().size();i++) {            
             SourceStatement s_macro = f.getStatements().get(i);
             
@@ -185,11 +221,14 @@ public class CodeBaseParser {
                 config.trace("expandAllMacros: Expanding macro: " + s_macro.macroCallName != null ? s_macro.macroCallName : s_macro.macroCallMacro.name);
 
                 if (!config.preProcessor.handleStatement("", s_macro.lineNumber, s_macro, f, code, true)) {
-                    config.error("Cannot expand macro "+s_macro.macroCallName+" in "+s_macro.source.fileName+", " + s_macro.lineNumber);
-                    return false;
+                    config.debug("Cannot yet expand macro "+s_macro.macroCallName+" in "+s_macro.source.fileName+", " + s_macro.lineNumber);
+                    n_failed++;
+                    continue;
+                } else {
+                    n_expanded++;
+                    f.getStatements().remove(i);                
                 }
 
-                f.getStatements().remove(i);
                 
                 // We need to reset the addresses, as when we expand a macro, these can all change!
                 code.resetAddresses();
@@ -202,7 +241,7 @@ public class CodeBaseParser {
                     if (tmp == null) {
                         if (config.preProcessor.withinMacroDefinition()) {
                             config.error("File "+f.fileName+" ended while inside a macro definition");
-                            return false;
+                            return null;
                         }
                         break;
                     }
@@ -212,7 +251,7 @@ public class CodeBaseParser {
                     if (config.preProcessor.withinMacroDefinition()) {
                         List<SourceStatement> newStatements =  config.preProcessor.parseMacroLine(tokens, line, lineNumber, f, code, config);
                         if (newStatements == null) {
-                            return false;
+                            return null;
                         } else {
                             for(SourceStatement s:newStatements) {
                                 f.addStatement(insertionPoint, s);
@@ -221,7 +260,7 @@ public class CodeBaseParser {
                         }                        
                     } else {
                         List<SourceStatement> l = config.lineParser.parse(tokens, line, lineNumber, f, code, config);
-                        if (l == null) return false;
+                        if (l == null) return null;
                         for(SourceStatement s:l) {
                             if (!s.isEmpty()) {
                                 if (!config.preProcessor.handleStatement(line, lineNumber, s, f, code, true)) {
@@ -236,7 +275,7 @@ public class CodeBaseParser {
                 i--;
             }
         }
-        return true;
+        return Pair.of(n_expanded, n_failed);
     }
 
 

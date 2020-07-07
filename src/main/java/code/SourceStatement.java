@@ -105,6 +105,7 @@ public class SourceStatement {
         if (recurse) {
             if (address != null) return address;
          
+            
             // go back iteratively to prevent a stack overflow:
             List<SourceStatement> trail = new ArrayList<>();
             SourceStatement prev = source.getPreviousStatementTo(this, code);
@@ -118,7 +119,7 @@ public class SourceStatement {
             }
             // now it should be possible to do it:
             for(SourceStatement s:trail) {
-                s.getAddress(code);
+                if (s.getAddress(code) == null) return null;
             }
 
             prev = source.getPreviousStatementTo(this, code);
@@ -315,8 +316,24 @@ public class SourceStatement {
                 break;
                 
             case STATEMENT_MACRO:
+                // we should have resolved all the macros, so, this should not happen though
+                return null;
             case STATEMENT_MACROCALL:
-                // we should have resolved all the macros, so, this should not happen
+            {
+                if (macroCallMacro != null) {
+                    str += "    " + macroCallMacro.name + " ";
+                } else {
+                    str += "    " + macroCallName + " ";
+                }
+                for(int i = 0;i<macroCallArguments.size();i++) {
+                    if (i==0) {
+                        str += macroCallArguments.get(i);
+                    } else {
+                        str += ", " + macroCallArguments.get(i);
+                    }
+                }
+                return str;
+            }
             default:
                 return null;
         }

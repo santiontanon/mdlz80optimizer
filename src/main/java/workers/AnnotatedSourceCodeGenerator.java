@@ -65,7 +65,10 @@ public class AnnotatedSourceCodeGenerator implements MDLWorker {
                 }
                 fw.flush();
             } catch (Exception e) {
-                config.error("Cannot write to file " + outputFileName);
+                config.error("Cannot write to file " + outputFileName + ": " + e);
+                for(Object st:e.getStackTrace()) {
+                    config.error("    " + st);
+                }
                 return false;
             }
         }
@@ -87,7 +90,11 @@ public class AnnotatedSourceCodeGenerator implements MDLWorker {
             sb.append("  ");
             sb.append(Tokenizer.toHexWord(ss.getAddress(code), config.hexStyle));
             sb.append("  ");
-            int size = ss.sizeInBytes(code, true, true, true);
+            Integer size = ss.sizeInBytes(code, true, true, true);
+            if (size == null) {
+                config.error("Cannot evaluate the size of statement: " + ss);
+                return;
+            }
             String sizeString = "" + (size > 0 ? size:"");
             while(sizeString.length() < 4) sizeString = " " + sizeString;
             sb.append(sizeString);

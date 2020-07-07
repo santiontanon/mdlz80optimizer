@@ -20,6 +20,9 @@ public class Tokenizer {
         doubleTokens.add("af'");
         doubleTokens.add("AF'");
         doubleTokens.add("!=");
+        doubleTokens.add("//");
+        doubleTokens.add("/*");
+        doubleTokens.add("*/");
     }
 
     public static List<String> tokenize(String line) {
@@ -29,7 +32,7 @@ public class Tokenizer {
     
     public static List<String> tokenize(String line, List<String> tokens) {
         
-        StringTokenizer st = new StringTokenizer(line, " \r\n\t()[]#$,;:+-*/%|&'\"!?<>=~^", true);
+        StringTokenizer st = new StringTokenizer(line, " \r\n\t()[]#$,;:+-*/%|&'\"!?<>=~^{}", true);
         String previous = null;
         while(st.hasMoreTokens()) {
             String next = st.nextToken();
@@ -78,9 +81,10 @@ public class Tokenizer {
                 if (token.length()<2 || !token.endsWith("'")) return null;
                 token = "\"" + token.substring(1, token.length()-1) + "\"";
                 tokens.add(token);
-            } else if (next.equals(";")) {
-                String token = next;
+            } else if (previous != null && Tokenizer.isSingleLineComment(previous)) {
+                String token = previous + next;
                 while(st.hasMoreTokens()) token += st.nextToken();
+                tokens.remove(tokens.size()-1);
                 tokens.add(token);
             } else if (!next.equals(" ") && !next.equals("\r") && !next.equals("\n") && !next.equals("\t")) {
                 tokens.add(next);
@@ -259,4 +263,25 @@ public class Tokenizer {
         }
         return value;
     }    
+    
+    
+    public static boolean isSingleLineComment(String token) {
+        if (token.startsWith(";")) return true;
+        if (token.startsWith("//")) return true;
+        return false;
+    }
+    
+
+    public static boolean isMultiLineCommentStart(String token) {
+        if (token.equals("/*")) return true;
+        if (token.equals("{")) return true;
+        return false;
+    }
+    
+
+    public static boolean isMultiLineCommentEnd(String token) {
+        if (token.equals("*/")) return true;
+        if (token.equals("}")) return true;
+        return false;
+    }
 }

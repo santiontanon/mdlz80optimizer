@@ -71,7 +71,7 @@ public class CPUOpPattern {
         }
         pat.opName = tokens.remove(0);
         while(!tokens.isEmpty()) {
-            if (tokens.get(0).startsWith(";")) break;
+            if (Tokenizer.isSingleLineComment(tokens.get(0))) break;
             Expression exp = config.expressionParser.parse(tokens, null, code);
             if (exp == null) {
                 config.error("Cannot parse CPUOpPattern: " + line);

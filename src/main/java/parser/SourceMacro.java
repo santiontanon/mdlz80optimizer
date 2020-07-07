@@ -93,7 +93,8 @@ public class SourceMacro {
         } else if (name.equalsIgnoreCase(MACRO_IF)) {
             Integer ifCondition_value = args.get(0).evaluate(macroCall, code, false);
             if (ifCondition_value == null) {
-                config.error("Could not evaluate IF argument " + args.get(0));
+                config.error("Could not evaluate IF argument " + args.get(0) + ": " + macroCall);
+                args.get(0).evaluate(macroCall, code, false);
                 return null;
             }
             if (ifCondition_value == Expression.FALSE) {

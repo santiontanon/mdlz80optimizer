@@ -63,6 +63,7 @@ public class ASMSXDialect implements Dialect {
         config.lineParser.KEYWORD_INCLUDE = ".include";
         config.lineParser.KEYWORD_INCBIN = ".incbin";
         config.lineParser.addKeywordSynonym(".equ", config.lineParser.KEYWORD_EQU);
+        config.lineParser.addKeywordSynonym("=", config.lineParser.KEYWORD_EQU);
 
         config.lineParser.addKeywordSynonym(".db", config.lineParser.KEYWORD_DB);
         config.lineParser.addKeywordSynonym("defb", config.lineParser.KEYWORD_DB);
@@ -80,6 +81,7 @@ public class ASMSXDialect implements Dialect {
         config.lineParser.addKeywordSynonym("defs", config.lineParser.KEYWORD_DS);
         config.lineParser.addKeywordSynonym(".defs", config.lineParser.KEYWORD_DS);
 
+        
         config.lineParser.defineSpaceVirtualByDefault = true;
 
         config.warningJpHlWithParenthesis = false;
@@ -117,6 +119,19 @@ public class ASMSXDialect implements Dialect {
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("basic")) return true;
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase(".start")) return true;
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("start")) return true;
+        
+        // weird syntax that for some reason asMSX swallows (undocumented):
+        // if a line is all dashes, it's ignored:
+        {
+            boolean allDashes = true;
+            for(String token:tokens) {
+                if (!token.equals("-")) {
+                    allDashes = false;
+                    break;
+                }
+            }
+            if (allDashes) return true;
+        }
         return false;
     }
 
@@ -208,7 +223,7 @@ public class ASMSXDialect implements Dialect {
             return IOUtils.readLines(br)
                     .stream()
                     .filter(line -> !line.trim().isEmpty())
-                    .filter(line -> !line.startsWith(";"))
+                    .filter(line -> !Tokenizer.isSingleLineComment(line))
                     .map(line -> parseBiosCallLine(line))
                     .collect(Collectors.toList());
         } catch (Exception e) {
@@ -397,6 +412,25 @@ public class ASMSXDialect implements Dialect {
             if (config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source)) return l;
         }
 
+        // weird syntax that for some reason asMSX swallows (undocumented):
+        // if a line is all dashes, it's ignored:
+        {
+            boolean allDashes = true;
+            for(String token:tokens) {
+                if (!token.equals("-")) {
+                    allDashes = false;
+                    break;
+                }
+            }
+            if (allDashes) {
+                String newToken = ";";
+                for(String token:tokens) newToken += token;
+                tokens.clear();
+                tokens.add(newToken);
+                if (config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source)) return l;
+            }
+        }
+        
         config.error("ASMSXDialect cannot parse line in "+source.fileName+", "+lineNumber+": " + line);
         return null;
     }
