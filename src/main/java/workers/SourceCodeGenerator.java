@@ -64,6 +64,8 @@ public class SourceCodeGenerator implements MDLWorker {
         if (outputFileName != null) {
             config.debug("Executing "+this.getClass().getSimpleName()+" worker...");
 
+            if (config.evaluateAllExpressions) code.evaluateAllExpressions();
+            
             try (FileWriter fw = new FileWriter(outputFileName)) {
                 fw.write(sourceFileString(code.getMain(), code));
                 fw.flush();

@@ -173,4 +173,12 @@ public class SourceFile {
         // we are done, no next!
         return new ArrayList<>();
     }
+
+
+    public void evaluateAllExpressions(CodeBase code)
+    {
+        for(SourceStatement s:statements) {
+            s.evaluateAllExpressions(code, config);
+        }
+    }
 }

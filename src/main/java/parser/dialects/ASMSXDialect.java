@@ -251,6 +251,7 @@ public class ASMSXDialect implements Dialect {
                 SourceStatement biosCallStatement = new SourceStatement(SourceStatement.STATEMENT_CONSTANT, source, lineNumber, null);
                 int address = Tokenizer.parseHex(biosCall[1]);
                 biosCallStatement.label = new SourceConstant(biosCall[0], address, Expression.constantExpression(address, config), biosCallStatement);
+                code.addSymbol(biosCall[0], biosCallStatement.label);
                 l.add(biosCallStatement);
             }
             if (config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source)) return l;

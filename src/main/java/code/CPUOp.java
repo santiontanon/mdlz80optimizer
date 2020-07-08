@@ -38,6 +38,12 @@ public class CPUOp {
         return spec.sizeInBytes;
     }
 
+    
+    public int[] timing()
+    {
+        return spec.times;
+    }
+    
 
     public String timeString()
     {
@@ -147,4 +153,27 @@ public class CPUOp {
     {
         return spec.isRet();
     }
+    
+    
+    public boolean evaluateAllExpressions(SourceStatement s, CodeBase code, MDLConfig config)
+    {
+        for(int i = 0;i<args.size();i++) {
+            // preserve indirections:
+            if (args.get(i).type == Expression.EXPRESSION_PARENTHESIS) {
+                if (args.get(i).args.get(0).evaluatesToNumericConstant()) {
+                    args.get(i).args.set(0, Expression.constantExpression(args.get(i).args.get(0).evaluate(s, code, false), config));
+                }
+            } else {
+                if (args.get(i).evaluatesToNumericConstant()) {
+                    Integer value = args.get(i).evaluate(s, code, false);
+                    if (value == null) {
+                        config.error("Cannot evaluate expression: " + args.get(i));
+                        return false;
+                    }
+                    args.set(i, Expression.constantExpression(value, config));
+                }
+            }
+        }
+        return true;
+    }    
 }

@@ -132,4 +132,11 @@ public class CodeBase {
         return main;
     }
 
+    
+    public void evaluateAllExpressions()
+    {
+        for(SourceFile f:sources.values()) {
+            f.evaluateAllExpressions(this);
+        }
+    }
 }

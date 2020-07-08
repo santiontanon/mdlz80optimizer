@@ -10,7 +10,6 @@ import java.util.List;
 import org.apache.commons.lang3.tuple.Pair;
 
 import cl.MDLConfig;
-import cl.MDLLogger;
 import code.CPUOp;
 import code.CPUOpDependency;
 import code.CodeBase;
@@ -31,6 +30,7 @@ public class Pattern {
     List<CPUOpPattern> replacement = new ArrayList<>();
     List<String []> constraints = new ArrayList<>();
     Integer spaceSaving = null; // cache
+    int timeSaving[] = null;    // cache
 
     public Pattern(String patternString, MDLConfig a_config)
     {
@@ -103,6 +103,46 @@ public class Pattern {
         }
         spaceSaving = patternSize - replacementSize;
         return spaceSaving;
+    }
+    
+    
+    public int[] getTimeSaving(PatternMatch match)
+    {
+        if (timeSaving != null) return timeSaving;
+        int patternTime[] = {0,0};
+        int replacementTime[] = {0,0};
+        for(CPUOpPattern pat:pattern) {
+            int tmp[] = pat.instantiate(match, config).timing();
+            patternTime[0] += tmp[0];
+            if (tmp.length>1) {
+                patternTime[1] += tmp[1];
+            } else {
+                patternTime[1] += tmp[0];
+            }
+        }
+        for(CPUOpPattern pat:replacement) {
+            int tmp[] = pat.instantiate(match, config).timing();
+            replacementTime[0] += tmp[0];
+            if (tmp.length>1) {            
+                replacementTime[1] += tmp[1];
+            } else {
+                replacementTime[1] += tmp[0];
+            }
+        }
+        timeSaving = new int[]{patternTime[0] - replacementTime[0],
+                               patternTime[1] - replacementTime[1]};
+        return timeSaving;
+    }
+    
+    
+    public String getTimeSavingString(PatternMatch match)
+    {
+        int tmp[] = getTimeSaving(match);
+        if (tmp[0] == tmp[1]) {
+            return ""+tmp[0];
+        } else {
+            return tmp[0] + "/" + tmp[1];
+        }
     }
 
 

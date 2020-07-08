@@ -3,6 +3,7 @@
  */
 package code;
 
+import cl.MDLConfig;
 import java.util.ArrayList;
 import java.util.List;
 import parser.SourceMacro;
@@ -238,7 +239,7 @@ public class SourceStatement {
                 return "";
         }
     }
-    
+        
     
     @Override
     public String toString()
@@ -344,5 +345,47 @@ public class SourceStatement {
         }
         
         return str;
+    }
+    
+    
+    public void evaluateAllExpressions(CodeBase code, MDLConfig config)
+    {
+        if (org != null && org.evaluatesToNumericConstant()) {
+            org = Expression.constantExpression(org.evaluate(this, code, false), config);
+        } 
+        if (incbinSize != null && incbinSize.evaluatesToNumericConstant()) {
+            incbinSize = Expression.constantExpression(incbinSize.evaluate(this, code, false), config);
+        } 
+        if (incbinSkip != null && incbinSkip.evaluatesToNumericConstant()) {
+            incbinSkip = Expression.constantExpression(incbinSkip.evaluate(this, code, false), config);
+        } 
+        if (data != null) {
+            for(int i = 0;i<data.size();i++) {
+                if (data.get(i).evaluatesToNumericConstant()) {
+                    data.set(i, Expression.constantExpression(data.get(i).evaluate(this, code, false), config));
+                }
+            }
+        }
+        if (space != null && space.evaluatesToNumericConstant()) {
+            space = Expression.constantExpression(space.evaluate(this, code, false), config);
+        } 
+        if (space_value != null && space_value.evaluatesToNumericConstant()) {
+            space_value = Expression.constantExpression(space_value.evaluate(this, code, false), config);
+        } 
+        if (op != null) op.evaluateAllExpressions(this, code, config);
+        if (macroCallArguments != null) {
+            for(int i = 0;i<macroCallArguments.size();i++) {
+                if (macroCallArguments.get(i).evaluatesToNumericConstant()) {
+                    macroCallArguments.set(i, Expression.constantExpression(macroCallArguments.get(i).evaluate(this, code, false), config));
+                }
+            }
+        }
+        if (macroDefinitionDefaults != null) {
+            for(int i = 0;i<macroDefinitionDefaults.size();i++) {
+                if (macroDefinitionDefaults.get(i).evaluatesToNumericConstant()) {
+                    macroDefinitionDefaults.set(i, Expression.constantExpression(macroDefinitionDefaults.get(i).evaluate(this, code, false), config));
+                }
+            }
+        }        
     }
 }

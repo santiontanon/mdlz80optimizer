@@ -53,6 +53,9 @@ public class AnnotatedSourceCodeGenerator implements MDLWorker {
 
         if (outputFileName != null) {
             config.debug("Executing "+this.getClass().getSimpleName()+" worker...");
+            
+            if (config.evaluateAllExpressions) code.evaluateAllExpressions();
+            
             try (FileWriter fw = new FileWriter(outputFileName)) {
                 for(SourceFile sf:code.getSourceFiles()) {
                     fw.write("; ------------------------------------------------\n");

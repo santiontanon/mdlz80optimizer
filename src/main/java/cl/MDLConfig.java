@@ -46,6 +46,7 @@ public class MDLConfig {
     public boolean somethingToDo = true;
 
     public int cpu = CPU_Z80MSX;
+    public String timeUnit = "t-state";
     public int hexStyle = HEX_STYLE_HASH;
     public int dialect = DIALECT_MDL;
     public Dialect dialectParser = null;
@@ -58,6 +59,7 @@ public class MDLConfig {
     public boolean warningUnofficialOps = true;
 
     public boolean convertToOfficial = true;
+    public boolean evaluateAllExpressions = false;
     public boolean evaluateDialectFunctions = true;
     
     // Two variables, as if they are both false, no conversion is done
@@ -99,7 +101,8 @@ public class MDLConfig {
             + "  -opcase <case>: whether to convert the assembler operators to upper or lower case. Possible values are: none/lower/upper (none does no conversion). Default is 'lower'.\n"
             + "  -no-opt-pragma <value>: changes the pragma to be inserted in a comment on a line to prevent optimizing it (default: "
             + PRAGMA_NO_OPTIMIZATION + ")\n"
-            + "  -do-not-evaluate-dialect-functions: some assembler dialects define functions like random/sin/cos that can be used to form expressions. By default, MDL replaces them by the result of their execution before generating assembler output (as those might not be defined in other assemblers, and thus this keeps the assembler output as compatible as possible). Use this flag if you don't want this to happen.\n";
+            + "  -do-not-evaluate-dialect-functions: some assembler dialects define functions like random/sin/cos that can be used to form expressions. By default, MDL replaces them by the result of their execution before generating assembler output (as those might not be defined in other assemblers, and thus this keeps the assembler output as compatible as possible). Use this flag if you don't want this to happen.\n"
+            + "  -evaluate-all-expressions: this flag makes MDL resolve all expressions down to their ultimate numeric or string value when generating assembler code.\n";
 
 
     public MDLConfig() {
@@ -152,12 +155,15 @@ public class MDLConfig {
                             switch(cpuString) {
                                 case "z80":
                                     cpu = CPU_Z80;
+                                    timeUnit = "t-state";
                                     break;
                                 case "z80msx":
                                     cpu = CPU_Z80MSX;
+                                    timeUnit = "t-state";
                                     break;
                                 case "z80cpc":
                                     cpu = CPU_Z80CPC;
+                                    timeUnit = "nop";
                                     break;
                                 default:
                                 error("Unrecognized cpu " + cpuString);
@@ -314,6 +320,11 @@ public class MDLConfig {
                         args.remove(0);
                         break;
 
+                    case "-evaluate-all-expressions":
+                        evaluateAllExpressions = true;
+                        args.remove(0);
+                        break;
+                        
                     default:
                     {
                         boolean recognized = false;

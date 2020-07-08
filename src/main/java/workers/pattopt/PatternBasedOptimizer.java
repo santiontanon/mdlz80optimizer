@@ -23,11 +23,23 @@ public class PatternBasedOptimizer implements MDLWorker {
 
     public static class OptimizationResult {
         public int bytesSaved = 0;
+        public int timeSaved[] = {0,0}; // some instructions have two times (e.g., if a condition is met or not)
         public int patternApplications = 0;
 
         public void aggregate(OptimizationResult r) {
             bytesSaved += r.bytesSaved;
             patternApplications += r.patternApplications;
+            timeSaved[0] += r.timeSaved[0];
+            timeSaved[1] += r.timeSaved[1];
+        }
+        
+        
+        public String timeString() {
+            if (timeSaved[0] == timeSaved[1]) {
+                return ""+timeSaved[0];
+            } else {
+                return timeSaved[0] + "/" + timeSaved[1];
+            }        
         }
     }
 
@@ -131,7 +143,9 @@ public class PatternBasedOptimizer implements MDLWorker {
             code.resetAddresses();
         }
 
-        config.info("PatternBasedOptimizer: "+r.patternApplications+" patterns applied, "+r.bytesSaved+" bytes saved");
+        config.info("PatternBasedOptimizer: "+r.patternApplications+" patterns applied, " +
+                    r.bytesSaved+" bytes, " + 
+                    r.timeString() + " " +config.timeUnit+"s saved.");
         return r;
     }
 
@@ -158,8 +172,11 @@ public class PatternBasedOptimizer implements MDLWorker {
 
                 if (patt.apply(f.getStatements(), match)) {
                     if (config.isInfoEnabled()) {
+                        int bytesSaved = patt.getSpaceSaving(match);
+                        String timeSavedString = patt.getTimeSavingString(match);
                         config.info("Pattern-based optimization", f.fileName, lineNumber, 
-                                patt.name+" ("+patt.getSpaceSaving(match)+" bytes saved)");
+                                patt.name+" ("+bytesSaved+" bytes, " +
+                                timeSavedString + " " +config.timeUnit+"s saved)");
 
                         if (config.isDebugEnabled()) {
                             StringBuilder previousCode = new StringBuilder();
@@ -183,6 +200,8 @@ public class PatternBasedOptimizer implements MDLWorker {
                     }
                     r.patternApplications++;
                     r.bytesSaved += patt.getSpaceSaving(match);
+                    r.timeSaved[0] += patt.getTimeSaving(match)[0];
+                    r.timeSaved[1] += patt.getTimeSaving(match)[1];
                     
                     i--;    // re-check this statement, as more optimizations might chain
                 }
