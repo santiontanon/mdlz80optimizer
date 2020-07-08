@@ -18,7 +18,7 @@ The output of the MDL pattern-based optimizer can be integrated into VSCode usin
 			],
 			"pattern": [
 				{
-					"regexp": "^(\\w+): Pattern-based optimization in (.+)#([0-9]+): (.+) \\(\\d+ bytes saved\\)$",
+					"regexp": "^(\\w+): Pattern-based optimization in (.+)#([0-9]+): (.+)$",
 					"file": 2,
 					"line": 3,
 					"severity": 1,
