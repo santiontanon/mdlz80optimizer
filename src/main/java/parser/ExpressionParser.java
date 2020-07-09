@@ -10,15 +10,17 @@ import code.CodeBase;
 import code.Expression;
 import code.SourceStatement;
 import java.util.ArrayList;
+
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
 public class ExpressionParser {
     MDLConfig config;
-    
+
     // make sure to add functions in lower case into this list:
     public List<String> dialectFunctions = new ArrayList<>();
-    
-    
+
+
     public ExpressionParser(MDLConfig a_config)
     {
         config = a_config;
@@ -90,7 +92,7 @@ public class ExpressionParser {
                 exp = Expression.operatorExpression(Expression.EXPRESSION_DIV, exp, exp2, config);
                 continue;
             }
-            if (tokens.get(0).equals("%")) {
+            if (StringUtils.equalsAnyIgnoreCase(tokens.get(0), "%", "MOD")) { // "MOD" is tniASM syntax
                 tokens.remove(0);
                 Expression exp2 = parseInternal(tokens, s, code);
                 if (exp2 == null) {
@@ -100,7 +102,7 @@ public class ExpressionParser {
                 exp = Expression.operatorExpression(Expression.EXPRESSION_MOD, exp, exp2, config);
                 continue;
             }
-            if (tokens.get(0).equals("|")) {
+            if (StringUtils.equalsAnyIgnoreCase(tokens.get(0), "|", "OR")) { // "OR" is tniASM syntax
                 tokens.remove(0);
                 Expression exp2 = parseInternal(tokens, s, code);
                 if (exp2 == null) {
@@ -110,7 +112,7 @@ public class ExpressionParser {
                 exp = Expression.operatorExpression(Expression.EXPRESSION_BITOR, exp, exp2, config);
                 continue;
             }
-            if (tokens.get(0).equals("&")) {
+            if (StringUtils.equalsAnyIgnoreCase(tokens.get(0), "&", "AND")) { // "AND" is tniASM syntax
                 tokens.remove(0);
                 Expression exp2 = parseInternal(tokens, s, code);
                 if (exp2 == null) {
@@ -120,7 +122,7 @@ public class ExpressionParser {
                 exp = Expression.operatorExpression(Expression.EXPRESSION_BITAND, exp, exp2, config);
                 continue;
             }
-            if (tokens.get(0).equals("^")) {
+            if (StringUtils.equalsAnyIgnoreCase(tokens.get(0), "^", "XOR")) { // "XOR" is tniASM syntax
                 tokens.remove(0);
                 Expression exp2 = parseInternal(tokens, s, code);
                 if (exp2 == null) {
@@ -315,7 +317,7 @@ public class ExpressionParser {
             Tokenizer.isSymbol(tokens.get(0))) {
             // symbol:
             String token = tokens.remove(0);
-            
+
             if (dialectFunctions.contains(token.toLowerCase())) {
                 String functionName = token;
                 List<Expression> args = new ArrayList<>();
@@ -334,14 +336,14 @@ public class ExpressionParser {
                         if (!first) {
                             if (tokens.isEmpty() || !tokens.get(0).equals(",")) {
                                 config.error("Failed to parse argument list of a dialect function.");
-                                return null;                                
+                                return null;
                             }
                             tokens.remove(0);
                         }
                         Expression arg = parse(tokens, s, code);
                         if (arg == null) {
                             config.error("Failed to parse argument list of a dialect function.");
-                            return null;                            
+                            return null;
                         }
                         args.add(arg);
                         first = false;
@@ -358,8 +360,8 @@ public class ExpressionParser {
                 if (config.dialectParser != null) token = config.dialectParser.symbolName(token);
                 return Expression.symbolExpression(token, code, config);
             }
-        }        
-        if (tokens.size() >= 2 && 
+        }
+        if (tokens.size() >= 2 &&
             (tokens.get(0).equals("%"))) {
             // should be a binary constant:
             String token = tokens.get(1);
@@ -384,7 +386,7 @@ public class ExpressionParser {
             }
         }
         if (tokens.size() >= 2 &&
-            tokens.get(0).equals("~")) {
+            StringUtils.equalsAnyIgnoreCase(tokens.get(0), "~", "NOT")) { // "NOT" is tniASM syntax
             // a bit negated expression:
             tokens.remove(0);
             Expression exp = parseInternal(tokens, s, code);
