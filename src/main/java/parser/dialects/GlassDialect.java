@@ -32,7 +32,7 @@ public class GlassDialect implements Dialect {
     // in the same codebase, and the address counters just continue from the last time. So, we need to keep
     // track of how many times each section has appeared:
     HashMap<String,Integer> sectionAppearanceCounters = new HashMap<>();
-
+    
     public GlassDialect(MDLConfig a_config)
     {
         config = a_config;
@@ -77,6 +77,19 @@ public class GlassDialect implements Dialect {
         return name;
     }
 
+    
+    String getSectionName(String baseName, CodeBase code)
+    {
+        SourceConstant sc = code.getSymbol(baseName);
+        if (sc == null) return baseName;
+        while(sc.exp != null && sc.exp.type == Expression.EXPRESSION_SYMBOL && !sc.exp.symbolName.equals(CodeBase.CURRENT_ADDRESS)) {
+            SourceConstant sc2 = code.getSymbol(sc.exp.symbolName);
+            if (sc2 == null) break;
+            sc = sc2;
+        }
+        return sc.name;
+    }
+    
 
     @Override
     public List<SourceStatement> parseLine(List<String> tokens,
@@ -102,19 +115,21 @@ public class GlassDialect implements Dialect {
                              lineNumber + ": " + line);
                 return null;
             }
-            String sectionName = exp.symbolName;
+            String sectionName = getSectionName(exp.symbolName, code);
             s.type = SourceStatement.STATEMENT_ORG;
             s.org = exp;
-            sectionStack.add(0, sectionName);
             
             int appearanceCounter = 1;
-            if (sectionAppearanceCounters.containsKey(exp.symbolName)) {
-                appearanceCounter = sectionAppearanceCounters.get(exp.symbolName);
-                // it's not the first time we have seen this section:
-                s.org = Expression.symbolExpression("__address_before_section_"+sectionName+"_"+(appearanceCounter-1)+"_ends", code, config);
-            } else {
-                sectionAppearanceCounters.put(exp.symbolName, appearanceCounter);
+            if (sectionAppearanceCounters.containsKey(sectionName)) {
+                appearanceCounter = sectionAppearanceCounters.get(sectionName);
             }
+
+            sectionStack.add(0, sectionName + "_" + appearanceCounter);
+
+            // it's not the first time we have seen this section:
+            if (appearanceCounter > 1) {
+                s.org = Expression.symbolExpression("__address_before_section_"+sectionName+"_"+(appearanceCounter-1)+"_ends", code, config);
+            } 
             
             // Insert a helper statement, so we can restore the address counter after the section is complete:
             SourceStatement sectionHelper = new SourceStatement(SourceStatement.STATEMENT_NONE, source, lineNumber, null);
@@ -123,24 +138,26 @@ public class GlassDialect implements Dialect {
             code.addSymbol(sectionHelper.label.name, sectionHelper.label);
             l.add(0, sectionHelper);
 
+            sectionAppearanceCounters.put(sectionName, appearanceCounter+1);
+            
             if (config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source)) return l;
         }
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("ends")) {
             if (!sectionStack.isEmpty()) {
                 tokens.remove(0);
-                String sectionName = sectionStack.remove(0);
-                int appearanceCounter = sectionAppearanceCounters.get(sectionName);
+                String sectionName_appearanceCounter = sectionStack.remove(0);
+//                int appearanceCounter = sectionAppearanceCounters.get(sectionName);
                 
                 // Insert two helper statements, so we can restore the address counter after the section is complete, and continue the section later on
                 SourceStatement sectionHelper1 = new SourceStatement(SourceStatement.STATEMENT_NONE, source, lineNumber, null);
-                sectionHelper1.label = new SourceConstant("__address_before_section_"+sectionName+"_"+appearanceCounter+"_ends", null, 
+                sectionHelper1.label = new SourceConstant("__address_before_section_"+sectionName_appearanceCounter+"_ends", null, 
                         Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, code, config), sectionHelper1);
                 code.addSymbol(sectionHelper1.label.name, sectionHelper1.label);
                 SourceStatement sectionHelper2 = new SourceStatement(SourceStatement.STATEMENT_ORG, source, lineNumber, null);
-                sectionHelper2.org = Expression.symbolExpression("__address_before_section_"+sectionName+"_"+appearanceCounter+"_starts", code, config);
+                sectionHelper2.org = Expression.symbolExpression("__address_before_section_"+sectionName_appearanceCounter+"_starts", code, config);
                 l.add(0,sectionHelper1);
                 l.add(1,sectionHelper2);
-                sectionAppearanceCounters.put(sectionName, appearanceCounter+1);
+//                sectionAppearanceCounters.put(sectionName, appearanceCounter+1);
                 
                 if (config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source)) return l;
             } else {

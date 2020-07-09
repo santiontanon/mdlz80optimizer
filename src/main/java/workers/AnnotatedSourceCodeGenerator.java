@@ -91,7 +91,12 @@ public class AnnotatedSourceCodeGenerator implements MDLWorker {
     {
         for (SourceStatement ss:sf.getStatements()) {
             sb.append("  ");
-            sb.append(Tokenizer.toHexWord(ss.getAddress(code), config.hexStyle));
+            Integer address = ss.getAddress(code);
+            if (address == null) {
+                sb.append("????");
+            } else {
+                sb.append(Tokenizer.toHexWord(address, config.hexStyle));
+            }
             sb.append("  ");
             Integer size = ss.sizeInBytes(code, true, true, true);
             if (size == null) {
