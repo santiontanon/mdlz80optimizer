@@ -19,15 +19,15 @@ import util.Resources;
 
 public class CodeBaseParser {
     MDLConfig config;
-    
+
     boolean withinMultilineComment = false;
-    
+
     // Expressions that we don't want to keep expanded, but want to replace by concrete values
     // once the code is parsed. Examples of this are dialect-specific functions, which we want
     // to resolve before generating asm output to maintain maximum compatibility in the output:
     public List<Pair<Expression, SourceStatement>> expressionsToReplaceByValueAtTheEnd = new ArrayList<>();
 
-    
+
     public CodeBaseParser(MDLConfig a_config) {
         config = a_config;
     }
@@ -58,7 +58,7 @@ public class CodeBaseParser {
             exp.type = Expression.EXPRESSION_NUMERIC_CONSTANT;
             exp.numericConstant = value;
         }
-        
+
         return true;
     }
 
@@ -90,7 +90,7 @@ public class CodeBaseParser {
             throws IOException
     {
         List<String> unfilteredTokens = new ArrayList<>();
-        
+
         SourceLine sl = config.preProcessor.expandMacros();
         if (sl == null) {
             String line = null;
@@ -111,7 +111,7 @@ public class CodeBaseParser {
                 file_linenumber = tmp.getRight();
             }
         }
-        
+
         // remove multi-line comments
         for(String token:unfilteredTokens) {
             if (withinMultilineComment) {
@@ -142,7 +142,11 @@ public class CodeBaseParser {
                 Pair<SourceLine, Integer> tmp = getNextLine(br, f, file_lineNumber, tokens);
                 if (tmp == null) {
                     if (config.preProcessor.withinMacroDefinition()) {
-                        config.error("File "+f.fileName+" ended while inside a macro definition: " + config.preProcessor.getCurrentMacro().name);
+                        SourceMacro macro = config.preProcessor.getCurrentMacro();
+                        SourceLine macroLine = macro.lines.iterator().next(); // (first macro line)
+                        config.error(
+                                "File " + f.fileName + " ended while inside a macro definition of \"" + macro.name + "\" "
+                                + "at #" + macroLine.lineNumber + ": " + macroLine.line);
                         return false;
                     }
                     return true;
@@ -184,7 +188,7 @@ public class CodeBaseParser {
 
         int n_expanded;
         int n_failed;
-        
+
         do {
             n_expanded = 0;
             n_failed = 0;
@@ -210,12 +214,12 @@ public class CodeBaseParser {
 
 
     public Pair<Integer,Integer> expandAllMacros(SourceFile f, CodeBase code) throws IOException
-    {        
+    {
         int n_expanded = 0;
         int n_failed = 0;
-        for(int i = 0;i<f.getStatements().size();i++) {            
+        for(int i = 0;i<f.getStatements().size();i++) {
             SourceStatement s_macro = f.getStatements().get(i);
-            
+
             if (s_macro.type == SourceStatement.STATEMENT_MACROCALL) {
                 // expand macro!
                 config.trace("expandAllMacros: Expanding macro: " + s_macro.macroCallName != null ? s_macro.macroCallName : s_macro.macroCallMacro.name);
@@ -226,10 +230,10 @@ public class CodeBaseParser {
                     continue;
                 } else {
                     n_expanded++;
-                    f.getStatements().remove(i);                
+                    f.getStatements().remove(i);
                 }
 
-                
+
                 // We need to reset the addresses, as when we expand a macro, these can all change!
                 code.resetAddresses();
 
@@ -240,7 +244,11 @@ public class CodeBaseParser {
                     Pair<SourceLine, Integer> tmp = getNextLine(null, f, s_macro.lineNumber, tokens);
                     if (tmp == null) {
                         if (config.preProcessor.withinMacroDefinition()) {
-                            config.error("File "+f.fileName+" ended while inside a macro definition");
+                            SourceMacro macro = config.preProcessor.getCurrentMacro();
+                            SourceLine macroLine = macro.lines.iterator().next(); // (first macro line)
+                            config.error(
+                                    "File " + f.fileName + " ended while inside a macro definition of \"" + macro.name + "\" "
+                                    + "at #" + macroLine.lineNumber + ": " + macroLine.line);
                             return null;
                         }
                         break;
@@ -257,7 +265,7 @@ public class CodeBaseParser {
                                 f.addStatement(insertionPoint, s);
                                 insertionPoint++;
                             }
-                        }                        
+                        }
                     } else {
                         List<SourceStatement> l = config.lineParser.parse(tokens, line, lineNumber, f, code, config);
                         if (l == null) return null;
@@ -271,7 +279,7 @@ public class CodeBaseParser {
                         }
                     }
                 }
-                
+
                 i--;
             }
         }
