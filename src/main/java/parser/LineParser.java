@@ -108,7 +108,7 @@ public class LineParser {
         if (!parseLabel(tokens, line, lineNumber, s, source, code, true)) return null;
         List<SourceStatement> l = new ArrayList<>();
         l.add(s);
-        
+
         if (tokens.isEmpty()) return l;
         String token = tokens.get(0);
 
@@ -209,7 +209,7 @@ public class LineParser {
             if (line.startsWith(token) && (tokens.size() == 1 || Tokenizer.isSingleLineComment(tokens.get(1)))) {
                 // it is just a label without colon:
                 if (config.warningLabelWithoutColon) {
-                    config.warn("Style suggestion", s.source.fileName, s.lineNumber, 
+                    config.warn("Style suggestion", s.source.fileName, s.lineNumber,
                             "Label "+token+" defined without a colon.");
                 }
                 Expression exp = Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, code, config);
@@ -238,7 +238,7 @@ public class LineParser {
                 }
                 if (isLabel) {
                     if (config.warningLabelWithoutColon) {
-                        config.warn("Style suggestion", s.source.fileName, s.lineNumber, 
+                        config.warn("Style suggestion", s.source.fileName, s.lineNumber,
                                 "Label "+token+" defined without a colon.");
                     }
                     tokens.remove(0);
@@ -281,16 +281,29 @@ public class LineParser {
     public boolean parseOrg(List<String> tokens,
             String line, int lineNumber,
             SourceStatement s, SourceFile source, CodeBase code) {
+
         Expression exp = config.expressionParser.parse(tokens, s, code);
         if (exp == null) {
             config.error("Cannot parse line " + source.fileName + ", "
                     + lineNumber + ": " + line);
             return false;
-        } else {
-            s.type = SourceStatement.STATEMENT_ORG;
-            s.org = exp;
-            return parseRestofTheLine(tokens, line, lineNumber, s, source);
         }
+
+        // skip optional second argument of .org (last memory address, tniASM syntax)
+        if (!tokens.isEmpty() && !Tokenizer.isSingleLineComment(tokens.get(0))) {
+            if (tokens.get(0).equals(",")) tokens.remove(0);
+            if (tokens.isEmpty() || Tokenizer.isSingleLineComment(tokens.get(0))) {
+                config.error("Cannot parse line " + source.fileName + ", " + lineNumber + ": " + line);
+                return false;
+            }
+            // (for the moment, just ignore the second argument)
+            // TODO This should validate that the second argument is an expression (and potentially evaluate it)
+            tokens.clear();
+        }
+
+        s.type = SourceStatement.STATEMENT_ORG;
+        s.org = exp;
+        return parseRestofTheLine(tokens, line, lineNumber, s, source);
     }
 
 
@@ -354,7 +367,7 @@ public class LineParser {
                     + lineNumber + ": " + line);
             return false;
         }
-        
+
         // optional skip and size arguments (they could be separated by commas or not, depending on the assembler dialect):
         Expression skip_exp = null;
         Expression size_exp = null;
@@ -365,7 +378,7 @@ public class LineParser {
                 if (skip_exp == null) {
                     config.error("Cannot parse line " + source.fileName + ", "
                             + lineNumber + ": " + line);
-                    return false;                    
+                    return false;
                 }
             }
         }
@@ -376,11 +389,11 @@ public class LineParser {
                 if (skip_exp == null) {
                     config.error("Cannot parse line " + source.fileName + ", "
                             + lineNumber + ": " + line);
-                    return false;                    
+                    return false;
                 }
             }
         }
-        
+
         s.incbinSkip = skip_exp;
         if (size_exp != null) {
             s.incbinSize = size_exp;
@@ -636,7 +649,7 @@ public class LineParser {
         // Relative to any include directory
         for (File includePath : config.includeDirectories) {
             // santi: Do NOT change to "FilenameUtils.concat", that function assumes that the first argument
-            // is an absolute directory, which in different configurations cannot be ensured to be true.            
+            // is an absolute directory, which in different configurations cannot be ensured to be true.
             final String relativePath = pathConcat(includePath.getAbsolutePath(), rawFileName);
             if (Resources.exists(relativePath)) {
                 config.debug("Included file " + rawFileName + " found relative to include path " + includePath);
@@ -647,8 +660,8 @@ public class LineParser {
         config.error("Cannot find include file " + rawFileName);
         return null;
     }
-    
-    
+
+
     String pathConcat(String path, String fileName)
     {
         if (path.endsWith(File.separator)) {
@@ -657,6 +670,6 @@ public class LineParser {
             return path + File.separator + fileName;
         }
     }
-    
+
 
 }

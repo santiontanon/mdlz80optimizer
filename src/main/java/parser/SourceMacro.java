@@ -20,6 +20,7 @@ public class SourceMacro {
     public static final String MACRO_ENDR = "endr";
     public static final String MACRO_IF = "if";
     public static final String MACRO_IFDEF = "ifdef";
+    public static final String MACRO_IFEXIST = "ifexist"; // tniASM syntax
     public static final String MACRO_ELSE = "else";
     public static final String MACRO_ENDIF = "endif";
 
