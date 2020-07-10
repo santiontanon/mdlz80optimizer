@@ -54,6 +54,7 @@ public class PatternBasedOptimizerTest {
     @Test public void test25() throws IOException { Assert.assertEquals(0, test("data/tests/test25.asm")); }
     @Test public void test26() throws IOException { Assert.assertEquals(0, test("data/tests/test26.asm")); }
     @Test public void test27() throws IOException { Assert.assertEquals(4, test("data/tests/test27.asm")); }
+    @Test public void test28() throws IOException { Assert.assertEquals(6, test("data/tests/test28.asm")); }
 
     private int test(String inputFile) throws IOException
     {

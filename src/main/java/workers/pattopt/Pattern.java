@@ -144,6 +144,54 @@ public class Pattern {
             return tmp[0] + "/" + tmp[1];
         }
     }
+    
+    
+    public boolean unifyExpressions(Expression pattern, Expression arg2, PatternMatch match, CodeBase code)
+    {
+        if (pattern.type == Expression.EXPRESSION_SYMBOL &&
+            pattern.symbolName.startsWith("?")) {
+            // it's a variable!
+            if (pattern.symbolName.startsWith("?reg")) {
+                if (arg2.isRegister(code)) {
+                    return match.addVariableMatch(pattern.symbolName, arg2);
+                } else {
+                    return false;
+                }
+            } else if (pattern.symbolName.startsWith("?const")) {
+                // We expluce matches with "parenthesis" expressions, as those might be indirections
+                if (arg2.evaluatesToNumericConstant() &&
+                    arg2.type != Expression.EXPRESSION_PARENTHESIS) {
+                    return match.addVariableMatch(pattern.symbolName, arg2);
+                } else {
+                    return false;
+                }
+            } else if (pattern.symbolName.startsWith("?any")) {
+                return match.addVariableMatch(pattern.symbolName, arg2);
+            } else {
+                throw new RuntimeException("opMatch: unrecognized variable name " + pattern.symbolName);
+            }     
+        }
+        if (pattern.type != arg2.type) return false;
+        if (pattern.type == Expression.EXPRESSION_REGISTER_OR_FLAG) {
+            return pattern.registerOrFlagName.equals(arg2.registerOrFlagName);
+        }
+        if (pattern.type == Expression.EXPRESSION_NUMERIC_CONSTANT) {
+            return pattern.numericConstant == arg2.numericConstant;
+        }
+        if (pattern.type == Expression.EXPRESSION_STRING_CONSTANT) {
+            return pattern.stringConstant.equals(arg2.stringConstant);
+        }
+        if (pattern.type == Expression.EXPRESSION_SYMBOL) {
+            return pattern.symbolName.equals(arg2.symbolName);
+        }
+        if (pattern.args != null && arg2.args != null && pattern.args.size() == arg2.args.size()) {
+            for(int i = 0;i<pattern.args.size();i++) {
+                if (!unifyExpressions(pattern.args.get(i), arg2.args.get(i), match, code)) return false;
+            }
+            return true;
+        }
+        return false;
+    }
 
 
     public boolean opMatch(CPUOpPattern pat1, CPUOp op2, CodeBase code, PatternMatch match)
@@ -153,47 +201,8 @@ public class Pattern {
 
         for(int i = 0;i<pat1.args.size();i++) {
             Expression arg1 = pat1.args.get(i);
-            Expression arg2 = op2.args.get(i);
-            // TODO(santi@): this is a very limited form of matching, define proper
-            //               expression unification if needed by more complex patterns.
-            if (arg1.type == Expression.EXPRESSION_SYMBOL &&
-                arg1.symbolName.startsWith("?")) {
-                // it's a variable!
-                if (arg1.symbolName.startsWith("?reg")) {
-                    if (arg2.isRegister(code)) {
-                        if (!match.addVariableMatch(arg1.symbolName, arg2)) return false;
-                    } else {
-                        return false;
-                    }
-                } else if (arg1.symbolName.startsWith("?const")) {
-                    // We expluce matches with "parenthesis" expressions, as those might be indirections
-                    if (arg2.evaluatesToNumericConstant() &&
-                        arg2.type != Expression.EXPRESSION_PARENTHESIS) {
-                        if (!match.addVariableMatch(arg1.symbolName, arg2)) return false;
-                    } else {
-                        return false;
-                    }
-                } else if (arg1.symbolName.startsWith("?any")) {
-                    if (!match.addVariableMatch(arg1.symbolName, arg2)) return false;
-                } else {
-                    throw new RuntimeException("opMatch: unrecognized variable name " + arg1.symbolName);
-                }
-            } else if (arg1.type == Expression.EXPRESSION_PARENTHESIS &&
-                       arg1.args.get(0).type == Expression.EXPRESSION_SYMBOL &&
-                       arg1.args.get(0).symbolName.startsWith("?")) {
-                if (arg1.args.get(0).symbolName.startsWith("?const")) {
-                    if (arg2.type == Expression.EXPRESSION_PARENTHESIS &&
-                        arg2.args.get(0).evaluatesToNumericConstant()) {
-                        if (!match.addVariableMatch(arg1.args.get(0).symbolName, arg2.args.get(0))) return false;
-                    } else {
-                        return false;
-                    }
-                } else {
-                    throw new UnsupportedOperationException("opMatch: unsupported matching case " + arg1 + " vs " + arg2);
-                }
-            } else {
-                if (!pat1.args.get(i).toString().equals(op2.args.get(i).toString())) return false;
-            }
+            Expression arg2 = op2.args.get(i);                        
+            if (!unifyExpressions(arg1, arg2, match, code)) return false;
         }
 
         config.trace("opMatch: "+pat1+" with "+op2+" ("+match.variables+")");
