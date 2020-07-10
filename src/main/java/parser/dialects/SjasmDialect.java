@@ -77,6 +77,8 @@ public class SjasmDialect implements Dialect {
         if (name.startsWith(".")) {
             return lastAbsoluteLabel + "." + name.substring(1);
         } else {
+            // When a name has "CURRENT_ADDRESS" as its value, it means it's a label.
+            // If it does not start by ".", then it's an absolute label:
             if (value != null &&
                 value.type == Expression.EXPRESSION_SYMBOL &&
                 value.symbolName.equalsIgnoreCase(CodeBase.CURRENT_ADDRESS)) {

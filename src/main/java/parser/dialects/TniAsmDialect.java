@@ -87,7 +87,8 @@ public class TniAsmDialect implements Dialect {
             return lastAbsoluteLabel + name;
         }
 
-        // $ (??)
+        // When a name has "CURRENT_ADDRESS" as its value, it means it's a label.
+        // If it does not start by ".", then it's an absolute label:
         if ((value != null)
                 && (value.type == Expression.EXPRESSION_SYMBOL)
                 && value.symbolName.equalsIgnoreCase(CodeBase.CURRENT_ADDRESS)) {
