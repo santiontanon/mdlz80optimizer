@@ -35,7 +35,7 @@ public class Dialects {
 	}
 
 	/**
-	 * @param dialect a dialect candidate
+	 * @param pDialect a dialect candidate
 	 * @param mdlConfig MDLConfig instance
 	 * @return a Dialect instance for the requested dialect,
 	 * or {@code null} if the candidate is not a known dialect or has no Dialect implementation

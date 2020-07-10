@@ -3,8 +3,6 @@
  */
 package parser.dialects;
 
-import java.util.Collections;
-import java.util.List;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -14,6 +12,7 @@ import code.CodeBase;
 import code.Expression;
 import code.SourceFile;
 import code.SourceStatement;
+import java.util.List;
 
 /**
  * tniASM 0.45 Dialect
@@ -48,7 +47,8 @@ public class TniAsmDialect implements Dialect {
 
     @Override
     public boolean recognizeIdiom(List<String> tokens) {
-        return getKeyword(tokens) != null;
+        // We only need to return true for those that the default MDL parser would not recognize
+        return false;
     }
 
 
@@ -110,12 +110,8 @@ public class TniAsmDialect implements Dialect {
             String line, int lineNumber,
             SourceStatement s, SourceFile source, CodeBase code)
     {
-        String keyword = getKeyword(tokens);
-        if (keyword == null) {
-            return null;
-        }
-
-        tokens.remove(0);
-        return Collections.singletonList(s);
+        // We only need to react to dialect-specific keywords, standard keywords are already handled by the 
+        // standard MDL parser
+        return null;
     }
 }
