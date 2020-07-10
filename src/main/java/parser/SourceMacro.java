@@ -9,22 +9,12 @@ import java.util.List;
 import cl.MDLConfig;
 import code.CodeBase;
 import code.Expression;
+import code.SourceConstant;
 import code.SourceFile;
 import code.SourceStatement;
 
 
 public class SourceMacro {
-    public static final String MACRO_MACRO = "macro";
-    public static final String MACRO_ENDM = "endm";
-    public static final String MACRO_REPT = "rept";
-    public static final String MACRO_ENDR = "endr";
-    public static final String MACRO_IF = "if";
-    public static final String MACRO_IFDEF = "ifdef";
-    public static final String MACRO_IFEXIST = "ifexist"; // tniASM syntax
-    public static final String MACRO_ELSE = "else";
-    public static final String MACRO_ENDIF = "endif";
-
-
     public String name = null;
     public SourceStatement definingStatement = null;
     public List<String> argNames = new ArrayList<>();
@@ -35,8 +25,6 @@ public class SourceMacro {
 
     // predefined macro arguments/state:
     public List<Expression> preDefinedMacroArgs = null;
-//    public Expression reptNRepetitions;
-//    public Expression ifCondition;
     public boolean insideElse = false;
 
 
@@ -70,7 +58,7 @@ public class SourceMacro {
     {
         List<SourceLine> lines2 = new ArrayList<>();
         MacroExpansion me = new MacroExpansion(this, macroCall, lines2);
-        if (name.equalsIgnoreCase(MACRO_REPT)) {
+        if (config.preProcessor.isMacroName(name, config.preProcessor.MACRO_REPT)) {
             Integer reptNRepetitions_value = args.get(0).evaluate(macroCall, code, false);
             if (reptNRepetitions_value == null) {
                 config.error("Could not evaluate REPT argument " + args.get(0));
@@ -91,7 +79,7 @@ public class SourceMacro {
                 scopeMacroExpansionLines(scope+"."+i, linesTmp, code, config);
                 lines2.addAll(linesTmp);
             }
-        } else if (name.equalsIgnoreCase(MACRO_IF)) {
+        } else if (config.preProcessor.isMacroName(name, config.preProcessor.MACRO_IF)) {
             Integer ifCondition_value = args.get(0).evaluate(macroCall, code, false);
             if (ifCondition_value == null) {
                 config.error("Could not evaluate IF argument " + args.get(0) + ": " + macroCall);
@@ -103,13 +91,14 @@ public class SourceMacro {
             } else {
                 lines2.addAll(lines);
             }
-        } else if (name.equalsIgnoreCase(MACRO_IFDEF)) {
+        } else if (config.preProcessor.isMacroName(name, config.preProcessor.MACRO_IFDEF)) {
             Expression exp = args.get(0);
             boolean defined = false;
             if (exp.type == Expression.EXPRESSION_SYMBOL) {
-                if (code.getSymbol(exp.symbolName) != null) defined = true;
+                SourceConstant sc = code.getSymbol(exp.symbolName);
+                if (sc != null && sc.exp != null) defined = true;
             } else {
-                config.error("Incorrect parameter to " + MACRO_IFDEF + ": " + args.get(0));
+                config.error("Incorrect parameter to " + config.preProcessor.MACRO_IFDEF + ": " + args.get(0));
                 return null;
             }
             if (defined) {

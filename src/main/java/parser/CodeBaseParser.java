@@ -32,11 +32,6 @@ public class CodeBaseParser {
         config = a_config;
     }
 
-    public boolean isMacro(String name, CodeBase code) {
-        if (config.preProcessor == null)
-            return false;
-        return config.preProcessor.isMacro(name, code);
-    }
 
     public boolean parseMainSourceFile(String fileName, CodeBase code) throws IOException {
         if (parseSourceFile(fileName, code, null, null) == null) return false;

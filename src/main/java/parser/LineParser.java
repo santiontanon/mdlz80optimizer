@@ -136,12 +136,12 @@ public class LineParser {
             tokens.remove(0);
             if (parseDefineSpace(tokens, line, lineNumber, s, source, code)) return l;
 
-        } else if (isKeyword(token, SourceMacro.MACRO_MACRO)) {
+        } else if (isKeyword(token, config.preProcessor.MACRO_MACRO)) {
             tokens.remove(0);
             if (parseMacroDefinition(tokens, line, lineNumber, s, source, code)) return l;
 
-        } else if (isKeyword(token, SourceMacro.MACRO_ENDM)) {
-            config.error(SourceMacro.MACRO_ENDM + " keyword found outside of a macro at " + source.fileName + ", "
+        } else if (isKeyword(token, config.preProcessor.MACRO_ENDM)) {
+            config.error(config.preProcessor.MACRO_ENDM + " keyword found outside of a macro at " + source.fileName + ", "
                     + lineNumber + ": " + line);
             return null;
 
@@ -206,7 +206,8 @@ public class LineParser {
                 return parseRestofTheLine(tokens, line, lineNumber, s, source);
             }
         } else if (Tokenizer.isSymbol(token)) {
-            if (line.startsWith(token) && (tokens.size() == 1 || Tokenizer.isSingleLineComment(tokens.get(1)))) {
+            if (line.startsWith(token) && (tokens.size() == 1 || Tokenizer.isSingleLineComment(tokens.get(1))) && 
+                !config.preProcessor.isMacroIncludingEnds(token)) {
                 // it is just a label without colon:
                 if (config.warningLabelWithoutColon) {
                     config.warn("Style suggestion", s.source.fileName, s.lineNumber,

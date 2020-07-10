@@ -35,6 +35,7 @@ public class TniAsmDialect implements Dialect {
 
     /**
      * Constructor
+     * @param a_config
      */
     public TniAsmDialect(MDLConfig a_config) {
         super();
@@ -42,6 +43,8 @@ public class TniAsmDialect implements Dialect {
         config = a_config;
 
         lastAbsoluteLabel = null;
+        
+        config.preProcessor.macroSynonyms.put("ifexist", config.preProcessor.MACRO_IFDEF);
     }
 
 
