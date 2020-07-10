@@ -19,7 +19,10 @@ public interface Dialect {
 
 
     // @return true if the line represented by "tokens" is recognized by this dialect parser
-    boolean recognizeIdiom(List<String> tokens);
+    default boolean recognizeIdiom(List<String> tokens) {
+        // (no-op by default)
+        return false;
+    }
 
     // Called when a new symbol is defined (so that the dialect parser can do whatever special it
     // needs to do with it, e.g. define local labels, etc.)
@@ -36,9 +39,12 @@ public interface Dialect {
     // successfully parse the line
     // @return {@code null} if an error occurred;
     // a list of statements to add as a result of parsing the line otherwise
-    List<SourceStatement> parseLine(List<String> tokens,
+    default List<SourceStatement> parseLine(List<String> tokens,
             String line, int lineNumber,
-            SourceStatement s, SourceFile source, CodeBase code);
+            SourceStatement s, SourceFile source, CodeBase code) {
+        // (no-op by default)
+        return null;
+    }
 
     // Some dialects might do special things when macros are defined. For example,
     // Glass actually compiles the code inside macros, rather than treating it simply as
