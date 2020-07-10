@@ -24,10 +24,10 @@ public class TniAsmDialect implements Dialect {
      */
 
     /** tniASM keywords (lowercase) */
-    private final String[] keywords = { "org", "db", "dw", "dd", "ds" };
+    private final String[] keywords = {};
 
     /** The minimum number of tokens for each {@link #keywords tniASM keyword} */
-    private final int[] minTokens = { 2, 2, 2, 2, 2 };
+    private final int[] minTokens = {};
 
     private final MDLConfig config;
 
