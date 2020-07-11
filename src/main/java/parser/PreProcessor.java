@@ -49,7 +49,7 @@ public class PreProcessor {
     }
 
 
-    // instantiate a new preProcessor with a clean state, but linked to the previous one (sharing "macros")
+    // create a new preProcessor with a clean state, but linked to the previous one (sharing "macros")
     public PreProcessor(PreProcessor pp)
     {
         config = pp.config;

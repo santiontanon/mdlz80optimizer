@@ -33,6 +33,8 @@ public class SjasmDialect implements Dialect {
     public SjasmDialect(MDLConfig a_config) {
         config = a_config;
 
+        config.warningJpHlWithParenthesis = false;  // I don't think sjasm supports "jp hl"
+        
         config.lineParser.addKeywordSynonym("byte", config.lineParser.KEYWORD_DB);
         config.lineParser.addKeywordSynonym("defb", config.lineParser.KEYWORD_DB);
         config.lineParser.addKeywordSynonym("word", config.lineParser.KEYWORD_DW);

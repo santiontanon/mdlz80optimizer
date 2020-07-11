@@ -9,6 +9,10 @@ import org.apache.commons.lang3.StringUtils;
 import cl.MDLConfig;
 import code.CodeBase;
 import code.Expression;
+import code.SourceFile;
+import code.SourceStatement;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * tniASM 0.45 Dialect
@@ -28,15 +32,24 @@ public class TniAsmDialect implements Dialect {
         super();
 
         config = a_config;
+        
+        config.warningJpHlWithParenthesis = false;  // I don't think tniasm supports "jp hl"
 
         lastAbsoluteLabel = null;
 
         config.preProcessor.macroSynonyms.put("ifexist", config.preProcessor.MACRO_IFDEF);
 
         config.lineParser.addKeywordSynonym("rb", config.lineParser.KEYWORD_DS);
-        config.lineParser.addKeywordSynonym("rw", config.lineParser.KEYWORD_DS); // FIXME misses implicit x2
     }
 
+    
+    @Override
+    public boolean recognizeIdiom(List<String> tokens)
+    {
+        if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("rw")) return true;
+        return false;
+    }
+    
 
     @Override
     public String newSymbolName(String name, Expression value) {
@@ -65,5 +78,30 @@ public class TniAsmDialect implements Dialect {
         return StringUtils.startsWith(name, ".")
                 ? lastAbsoluteLabel + name
                 : name;
+    }
+    
+    
+    @Override
+    public List<SourceStatement> parseLine(List<String> tokens,
+            String line, int lineNumber,
+            SourceStatement s, SourceFile source, CodeBase code)
+    {
+        List<SourceStatement> l = new ArrayList<>();
+        l.add(s);
+        
+        if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("rw")) {
+            tokens.remove(0);
+            
+            // Parse it as a "ds", but multiply the number by 2:
+            if (!config.lineParser.parseDefineSpace(tokens, line, lineNumber, s, source, code)) return null;
+            if (s.space != null) {
+                s.space = Expression.operatorExpression(Expression.EXPRESSION_MUL, 
+                        s.space, 
+                        Expression.constantExpression(2, config), config);
+            }
+            if (config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source)) return l;
+        }   
+        
+        return null;
     }
 }

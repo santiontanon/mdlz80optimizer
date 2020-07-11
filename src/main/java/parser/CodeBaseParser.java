@@ -157,7 +157,13 @@ public class CodeBaseParser {
                         return false;
                     } else {
                         for(SourceStatement s:newStatements) {
-                            f.addStatement(s);
+                            if (config.eagerMacroEvaluation) {
+                                if (!config.preProcessor.handleStatement(line, line_lineNumber, s, f, code, false)) {
+                                    f.addStatement(s);
+                                }                                
+                            } else {
+                                f.addStatement(s);                            
+                            }
                         }
                     }
                 } else {

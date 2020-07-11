@@ -36,6 +36,8 @@ public class GlassDialect implements Dialect {
     public GlassDialect(MDLConfig a_config)
     {
         config = a_config;
+
+        config.eagerMacroEvaluation = false;  // Glass expects lazy evaluation of macros
     }
 
 
@@ -100,8 +102,6 @@ public class GlassDialect implements Dialect {
         l.add(s);
         
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("section")) {
-            // TODO(santi@): implement "section" with the same semantics as Glass. I am currently just
-            // approximating it by replacing it with "org"
             tokens.remove(0);
 
             Expression exp = config.expressionParser.parse(tokens, s, code);
@@ -315,17 +315,4 @@ public class GlassDialect implements Dialect {
     }
     
 
-    
-    @Override
-    public Integer evaluateExpression(String functionName, List<Expression> args, SourceStatement s, CodeBase code, boolean silent)
-    {
-        return null;
-    }
-    
-    
-    @Override
-    public void performAnyFinalActions(CodeBase code)
-    {
-        
-    }
 }

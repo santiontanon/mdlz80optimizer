@@ -433,3 +433,7 @@ replacement:
 1: ld ?reg,(hl)
 constraints:
 regNotUsed(1,IY,HL)
+
+pattern: Remove ld reg,reg
+0: ld ?reg,?reg
+replacement:

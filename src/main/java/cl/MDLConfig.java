@@ -47,6 +47,7 @@ public class MDLConfig {
     public Dialect dialectParser = null;
     public List<File> includeDirectories = new ArrayList<>();
 
+    public boolean eagerMacroEvaluation = true;
     public boolean includeBinariesInAnalysis = false;
 
     public boolean warningLabelWithoutColon = true;
