@@ -63,11 +63,6 @@ public interface Dialect {
         // (no-op by default)
         return null;
     }
-
-    // Called after all the code is parsed and all macros expanded
-    default void performAnyFinalActions(CodeBase code) {
-        // (no-op by default)
-    }
     
     // Called to expand any dialect-specific macros:
     default MacroExpansion instantiateMacro(SourceMacro macro, List<Expression> args, SourceStatement macroCall, CodeBase code) {
@@ -75,4 +70,9 @@ public interface Dialect {
         return null;
     }
 
+    // Called after all the code is parsed and all macros expanded
+    default void performAnyFinalActions(CodeBase code) {
+        // (no-op by default)
+    }
+    
 }

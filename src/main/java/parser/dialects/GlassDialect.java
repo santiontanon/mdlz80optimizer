@@ -33,6 +33,9 @@ public class GlassDialect implements Dialect {
     // track of how many times each section has appeared:
     HashMap<String,Integer> sectionAppearanceCounters = new HashMap<>();
     
+    // We keep track, to give a warning at the end, since Section is not fully supported yet if MDL is asked to generate output assembler
+    boolean usedSectionKeyword = false;
+    
     public GlassDialect(MDLConfig a_config)
     {
         config = a_config;
@@ -105,6 +108,8 @@ public class GlassDialect implements Dialect {
         l.add(s);
         
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("section")) {
+            usedSectionKeyword = true;
+            
             tokens.remove(0);
 
             Expression exp = config.expressionParser.parse(tokens, s, code);
@@ -356,4 +361,12 @@ public class GlassDialect implements Dialect {
         }
     }
 
+    
+    @Override
+    public void performAnyFinalActions(CodeBase code)
+    {
+        if (usedSectionKeyword) {
+            config.warn("Glass's 'section' keyword was used. If you are asking MDL to generate assembler output, the result might not be compilable, as 'section' requires re-organizing the input lines, which is currently not done.");
+        }
+    }    
 }
