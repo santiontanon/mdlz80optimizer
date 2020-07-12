@@ -87,7 +87,7 @@ The most commonly expected use of MDL is to integrate it into your text editor (
 
 Here is an example of how does it look when integrated into Sublime Text:
 
-<img src="https://github.com/santiontanon/mdlz80optimizer/blob/master/media/mdl-sublime.png?raw=true" alt="title" width="988"/>
+<img src="https://github.com/santiontanon/mdlz80optimizer/blob/master/media/mdl-sublime.png?raw=true" alt="mdl in sublime" width="640"/>
 
 
 ### Optimizing Assembler
