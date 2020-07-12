@@ -78,9 +78,21 @@ Moreover, mdl accepts a number of command line arguments in order to make it do 
 
 ## How to use MDL
 
+### Integrating it into an IDE
+
+The most commonly expected use of MDL is to integrate it into your text editor (Subline Text, VSCode, etc.). We currently provide two examples of how to integrate it into Sublime and VSCode, but if you want to integrate it into another editor/IDE and do not know how, please do let me know!:
+
+- https://github.com/santiontanon/mdlz80optimizer/blob/master/integration-sublime.md
+- https://github.com/santiontanon/mdlz80optimizer/blob/master/integration-vscode.md
+
+Here is an example of how does it look when integrated into Sublime Text:
+
+<img src="https://github.com/santiontanon/mdlz80optimizer/blob/master/media/mdl-sublime.png?raw=true" alt="title" width="988"/>
+
+
 ### Optimizing Assembler
 
-The most common use case of MDL is if you have a Z80 assembler project (with main file ```main.asm```), and you just want to optimize it. In this case, you can just do this:
+Alternatively, you can ask MDL to directly generate optimized code Imagine you have a Z80 assembler project (with main file ```main.asm```), you can just do this:
 
 ```
 java -jar mdl.jar main.asm -po -asm main-optimized.asm
