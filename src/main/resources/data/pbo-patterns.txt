@@ -106,41 +106,41 @@ replacement:
 constraints:
 regNotUsed(2,HL)
 
-pattern: Replace ld b,n; ld c,m with ld bc m+n*256
+pattern: Replace ld b,n; ld c,m with ld bc m%256+n*256
 0: ld b,?const1
 1: ld c,?const2
 replacement:
-0: ld bc,?const2 + 256 * (?const1)
+0: ld bc,((?const2) % 256) + 256 * (?const1)
 
-pattern: Replace ld c,m; ld b,n with ld bc m+n*256
+pattern: Replace ld c,m; ld b,n with ld bc m%256+n*256
 0: ld c,?const2
 1: ld b,?const1
 replacement:
-0: ld bc,?const2 + 256 * (?const1)
+0: ld bc,((?const2) % 256) + 256 * (?const1)
 
-pattern: Replace ld d,n; ld e,m with ld de,m+n*256
+pattern: Replace ld d,n; ld e,m with ld de,m%256+n*256
 0: ld d,?const1
 1: ld e,?const2
 replacement:
-0: ld de,?const2 + 256 * (?const1)
+0: ld de,((?const2) % 256) + 256 * (?const1)
 
-pattern: Replace ld e,m; ld d,n with ld de,m+n*256
+pattern: Replace ld e,m; ld d,n with ld de,m%256+n*256
 0: ld e,?const2
 1: ld d,?const1
 replacement:
-0: ld de,?const2 + 256 * (?const1)
+0: ld de,((?const2) % 256) + 256 * (?const1)
 
-pattern: Replace ld h,n; ld l,m with ld hl,m+n*256
+pattern: Replace ld h,n; ld l,m with ld hl,m%256+n*256
 0: ld h,?const1
 1: ld l,?const2
 replacement:
-0: ld hl,?const2 + 256 * (?const1)
+0: ld hl,((?const2) % 256) + 256 * (?const1)
 
-pattern: Replace ld l,m; ld h,n with ld hl,m+n*256
+pattern: Replace ld l,m; ld h,n with ld hl,m%256+n*256
 0: ld l,?const2
 1: ld h,?const1
 replacement:
-0: ld hl,?const2 + 256 * (?const1)
+0: ld hl,((?const2) % 256) + 256 * (?const1)
 
 pattern: Replace ld a,n; ld (hl),a with ld (hl),n
 0: ld a,?const1
