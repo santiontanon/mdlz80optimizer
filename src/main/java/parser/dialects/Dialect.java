@@ -9,6 +9,7 @@ import code.CodeBase;
 import code.Expression;
 import code.SourceFile;
 import code.SourceStatement;
+import parser.MacroExpansion;
 import parser.SourceMacro;
 
 /**
@@ -67,4 +68,11 @@ public interface Dialect {
     default void performAnyFinalActions(CodeBase code) {
         // (no-op by default)
     }
+    
+    // Called to expand any dialect-specific macros:
+    default MacroExpansion instantiateMacro(SourceMacro macro, List<Expression> args, SourceStatement macroCall, CodeBase code) {
+        // (no-op by default)
+        return null;
+    }
+
 }

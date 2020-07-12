@@ -1,5 +1,6 @@
 ; Test case: check code annotations work
 
+symbol: equ 1
 
 IFDEF symbol
 	ld b,1	; mdl:no-opt
@@ -13,5 +14,3 @@ ENDIF
 end:
 	jp end
 
-symbol:
-	dw 0

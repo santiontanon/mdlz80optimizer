@@ -29,6 +29,7 @@ public class PreProcessor {
     public final String MACRO_ENDIF = "endif";
 
     public HashMap<String, String> macroSynonyms = new HashMap<>();
+    public List<String> dialectMacros = new ArrayList<>();
     
     MDLConfig config;
 
@@ -70,6 +71,7 @@ public class PreProcessor {
     }
 
     
+    // Checks if "token" corresponds to the macro "macro":
     public boolean isMacroName(String token, String macro)
     {
         if (token.equalsIgnoreCase(macro)) {
@@ -87,6 +89,7 @@ public class PreProcessor {
     public boolean isMacro(String name)
     {
         if (getMacro(name) != null) return true;
+        if (dialectMacros.contains(name)) return true;
         return  (isMacroName(name, MACRO_REPT) ||
                  isMacroName(name, MACRO_IF) ||
                  isMacroName(name, MACRO_IFDEF));
@@ -96,6 +99,7 @@ public class PreProcessor {
     public boolean isMacroIncludingEnds(String name)
     {
         if (getMacro(name) != null) return true;
+        if (dialectMacros.contains(name)) return true;
         return  (isMacroName(name, MACRO_REPT) ||
                  isMacroName(name, MACRO_IF) ||
                  isMacroName(name, MACRO_IFDEF) ||
@@ -139,6 +143,12 @@ public class PreProcessor {
                            isMacroName(m.name, MACRO_IFDEF)) {
                     m.addLine(line, f, lineNumber);
 
+                } else if (dialectMacros.contains(m.name)) {
+                    SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_MACROCALL, f, lineNumber, null);
+                    s.macroCallMacro = m;
+                    s.macroCallArguments = m.preDefinedMacroArgs;
+                    newStatements.add(s);
+                    currentMacro = null;                    
                 } else {
                     if (!addMacro(m, code)) {
                         return null;
@@ -250,7 +260,19 @@ public class PreProcessor {
                 }
                 currentMacro = m;
                 return true;
+            } else if (dialectMacros.contains(s.macroCallName.toLowerCase())) {
+                SourceMacro m = new SourceMacro(s.macroCallName.toLowerCase(), s);
+                m.preDefinedMacroArgs = s.macroCallArguments;
+                if (currentMacro != null) {
+                    config.error("Something weird just happend (expanding two macros at once, contact the developer) in " + source.fileName + ", " +
+                                 lineNumber + ": " + line);
+                    return false;
+                }
+                currentMacro = m;
+                return true;
+
             } else {
+                
                 SourceMacro m = getMacro(s.macroCallName);
                 if (m != null) {
                     MacroExpansion expandedMacro = m.instantiate(s.macroCallArguments, s, code, config);

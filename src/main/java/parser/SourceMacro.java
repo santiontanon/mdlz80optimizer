@@ -20,8 +20,8 @@ public class SourceMacro {
     public List<String> argNames = new ArrayList<>();
     public List<Expression> defaultValues = new ArrayList<>();
     // line + lineNumber:
-    List<SourceLine> lines = new ArrayList<>();
-    List<SourceLine> elseLines = new ArrayList<>();  // only used by IF-ELSE-ENDIF macro
+    public List<SourceLine> lines = new ArrayList<>();
+    public List<SourceLine> elseLines = new ArrayList<>();  // only used by IF-ELSE-ENDIF macro
 
     // predefined macro arguments/state:
     public List<Expression> preDefinedMacroArgs = null;
@@ -106,6 +106,8 @@ public class SourceMacro {
             } else {
                 lines2.addAll(elseLines);
             }
+        } else if (config.preProcessor.dialectMacros.contains(name)) {
+            return config.dialectParser.instantiateMacro(this, args, macroCall, code);
         } else {
             // instantiate arguments:
             while(args.size() < argNames.size()) {
@@ -156,7 +158,6 @@ public class SourceMacro {
                 macroDefinedLabels.add(s.label.name);
             }
         }
-        // System.out.println("Expanding " + this.name + " with scope " + scope + " and defined labels: " + macroDefinedLabels);
 
         for(SourceLine sl:lines) {
             for(String definedLabel:macroDefinedLabels) {

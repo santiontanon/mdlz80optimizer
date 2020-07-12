@@ -38,6 +38,8 @@ public class GlassDialect implements Dialect {
         config = a_config;
 
         config.eagerMacroEvaluation = false;  // Glass expects lazy evaluation of macros
+        
+        config.preProcessor.dialectMacros.add("irp");
     }
 
 
@@ -50,6 +52,7 @@ public class GlassDialect implements Dialect {
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("endp")) return true;
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("error")) return true;
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("warning")) return true;
+        
         return false;
     }
 
@@ -314,5 +317,43 @@ public class GlassDialect implements Dialect {
         return Pair.of(new SourceLine(line, f, file_linenumber), file_linenumber);
     }
     
+    
+    @Override
+    public MacroExpansion instantiateMacro(SourceMacro macro, List<Expression> args, SourceStatement macroCall, CodeBase code)
+    {
+        List<SourceLine> lines2 = new ArrayList<>();
+        MacroExpansion me = new MacroExpansion(macro, macroCall, lines2);
+        
+        if (macro.name.equals("irp")) {
+            if (args.isEmpty()) return null;
+            if (args.get(0).type != Expression.EXPRESSION_SYMBOL) {
+                config.error("First parameter to IRP should be a variable name");
+                return null;
+            }
+            String variableName = args.get(0).symbolName;            
+            String scope;
+            if (macroCall.label != null) {
+                scope = macroCall.label.name;
+            } else {
+                scope = config.preProcessor.nextMacroExpansionContextName();
+            }
+            for(int i = 1;i<args.size();i++) {
+                List<SourceLine> linesTmp = new ArrayList<>();
+                for(SourceLine sl:macro.lines) {
+                    // we create new instances, as we will modify them:
+                    linesTmp.add(new SourceLine(sl.line, sl.source, sl.lineNumber));
+                }
+                macro.scopeMacroExpansionLines(scope+"."+i, linesTmp, code, config);
+                for(SourceLine sl:linesTmp) {
+                    String line2 = sl.line;
+                    line2 = line2.replace(variableName, args.get(i).toString());
+                    lines2.add(new SourceLine(line2, sl.source, sl.lineNumber));
+                }
+            }
+            return me;
+        } else {
+            return null;
+        }
+    }
 
 }
