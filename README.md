@@ -9,7 +9,9 @@ MDL (Minimum Description Length), is a command line tool to optimize Z80 assembl
 java -jar mdl.jar
 ```
 
-Moreover, mdl accepts a number of command line arguments in order to make it do what you want
+Moreover, mdl accepts a number of command line arguments in order to make it do what you want (see below).
+
+The latest version can always be downloaded from the "releases" section: https://github.com/santiontanon/mdlz80optimizer/releases
 
 ## Command Line Arguments
 
