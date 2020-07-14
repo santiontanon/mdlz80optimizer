@@ -1,9 +1,9 @@
 ; Test case: 
-; - line 6 (cp 0), should be optimized to "or a"
-; - line 15 (ld a,0), should be removed
+
+ONE:	equ 1
 
 	ld a,(value)
-	cp 0			; <-- should be optimized
+	cp ONE*0		; <-- should be optimized (we are just checking that even if there is an expression, since it evaluates to 0, it should match)
 	call z,function1
 	ld a,2
 	ld (value),a

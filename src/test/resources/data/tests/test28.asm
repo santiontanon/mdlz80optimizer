@@ -1,7 +1,8 @@
 ; Test case:
+ONE: equ 1
 
 	ld ix,list
-	ld a,(ix+1)	; this should be optimized to use hl
+	ld a,(ix+ONE)	; this should be optimized to use hl
 	ld (var),a
 
 	ld ix,list

@@ -146,7 +146,7 @@ public class Pattern {
     }
     
     
-    public boolean unifyExpressions(Expression pattern, Expression arg2, PatternMatch match, CodeBase code)
+    public boolean unifyExpressions(Expression pattern, Expression arg2, boolean expressionRoot, PatternMatch match, SourceStatement s, CodeBase code)
     {
         if (pattern.type == Expression.EXPRESSION_SYMBOL &&
             pattern.symbolName.startsWith("?")) {
@@ -171,6 +171,20 @@ public class Pattern {
                 throw new RuntimeException("opMatch: unrecognized variable name " + pattern.symbolName);
             }     
         }
+
+        if (pattern.type == Expression.EXPRESSION_NUMERIC_CONSTANT) {
+            // if the pattern is a numeric constant, and the argument is an expression that
+            // evaluates to a number, the evaluate to check equality:
+            // An exception is the "parenthesis" operation, which we assume is for an indirection if we
+            // are at the top level of the expression
+            if (arg2.evaluatesToNumericConstant()) {
+                if (!expressionRoot || arg2.type != Expression.EXPRESSION_PARENTHESIS) {
+                    Integer arg2_val = arg2.evaluate(s, code, true);
+                    if (arg2_val != null && arg2_val == pattern.numericConstant) return true;
+                }
+            }
+        }
+
         if (pattern.type != arg2.type) return false;
         if (pattern.type == Expression.EXPRESSION_REGISTER_OR_FLAG) {
             return pattern.registerOrFlagName.equals(arg2.registerOrFlagName);
@@ -186,7 +200,7 @@ public class Pattern {
         }
         if (pattern.args != null && arg2.args != null && pattern.args.size() == arg2.args.size()) {
             for(int i = 0;i<pattern.args.size();i++) {
-                if (!unifyExpressions(pattern.args.get(i), arg2.args.get(i), match, code)) return false;
+                if (!unifyExpressions(pattern.args.get(i), arg2.args.get(i), false, match, s, code)) return false;
             }
             return true;
         }
@@ -194,7 +208,7 @@ public class Pattern {
     }
 
 
-    public boolean opMatch(CPUOpPattern pat1, CPUOp op2, CodeBase code, PatternMatch match)
+    public boolean opMatch(CPUOpPattern pat1, CPUOp op2, SourceStatement s, CodeBase code, PatternMatch match)
     {
         if (!pat1.opName.equals(op2.spec.opName)) return false;
         if (pat1.args.size() != op2.args.size()) return false;
@@ -202,7 +216,7 @@ public class Pattern {
         for(int i = 0;i<pat1.args.size();i++) {
             Expression arg1 = pat1.args.get(i);
             Expression arg2 = op2.args.get(i);                        
-            if (!unifyExpressions(arg1, arg2, match, code)) return false;
+            if (!unifyExpressions(arg1, arg2, true, match, s, code)) return false;
         }
 
         config.trace("opMatch: "+pat1+" with "+op2+" ("+match.variables+")");
@@ -226,7 +240,7 @@ public class Pattern {
                 if (!s.isEmptyAllowingComments()) return null;
                 index++;
             }
-            if (!opMatch(pattern.get(i), l.get(index).op, code, match)) return null;
+            if (!opMatch(pattern.get(i), l.get(index).op, l.get(index), code, match)) return null;
             match.opMap.put(i, l.get(index));
             index++;
         }
