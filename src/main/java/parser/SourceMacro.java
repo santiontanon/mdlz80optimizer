@@ -10,7 +10,6 @@ import cl.MDLConfig;
 import code.CodeBase;
 import code.Expression;
 import code.SourceConstant;
-import code.SourceFile;
 import code.SourceStatement;
 
 
@@ -44,12 +43,12 @@ public class SourceMacro {
     }
 
 
-    public void addLine(String line, SourceFile f, Integer lineNumber)
+    public void addLine(SourceLine sl)
     {
         if (insideElse) {
-            elseLines.add(new SourceLine(line, f, lineNumber));
+            elseLines.add(sl);
         } else {
-            lines.add(new SourceLine(line, f, lineNumber));
+            lines.add(sl);
         }
     }
 
@@ -126,7 +125,7 @@ public class SourceMacro {
                     line2 = line2.replace("?" + argNames.get(i),
                                           args.get(i).toString());
                 }
-                lines2.add(new SourceLine(line2, sl.source, sl.lineNumber));
+                lines2.add(new SourceLine(line2, sl.source, sl.lineNumber, macroCall));
             }
 
             // rename all the macro-defined, labels with the new scope:
@@ -149,10 +148,10 @@ public class SourceMacro {
         List<String> macroDefinedLabels = new ArrayList<>();
         for(SourceLine sl:lines) {
             // Find if the macro defined a label, to properly scope it:
-            SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_NONE, sl.source, sl.lineNumber, null);
+            SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_NONE, sl, sl.source, null);
             List<String> tokens = Tokenizer.tokenize(sl.line);
             if (tokens != null) {
-                config.lineParser.parseLabel(tokens, sl.line, sl.lineNumber, s, sl.source, code, false);
+                config.lineParser.parseLabel(tokens, sl, s, sl.source, code, false);
             }
             if (s.label != null) {
                 macroDefinedLabels.add(s.label.name);

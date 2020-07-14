@@ -13,6 +13,7 @@ import code.SourceFile;
 import code.SourceStatement;
 import java.util.ArrayList;
 import java.util.List;
+import parser.SourceLine;
 
 /**
  * tniASM 0.45 Dialect
@@ -83,7 +84,7 @@ public class TniAsmDialect implements Dialect {
     
     @Override
     public List<SourceStatement> parseLine(List<String> tokens,
-            String line, int lineNumber,
+            SourceLine sl,
             SourceStatement s, SourceFile source, CodeBase code)
     {
         List<SourceStatement> l = new ArrayList<>();
@@ -93,13 +94,13 @@ public class TniAsmDialect implements Dialect {
             tokens.remove(0);
             
             // Parse it as a "ds", but multiply the number by 2:
-            if (!config.lineParser.parseDefineSpace(tokens, line, lineNumber, s, source, code)) return null;
+            if (!config.lineParser.parseDefineSpace(tokens, sl, s, source, code)) return null;
             if (s.space != null) {
                 s.space = Expression.operatorExpression(Expression.EXPRESSION_MUL, 
                         s.space, 
                         Expression.constantExpression(2, config), config);
             }
-            if (config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source)) return l;
+            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
         }   
         
         return null;

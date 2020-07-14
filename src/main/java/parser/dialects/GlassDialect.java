@@ -101,7 +101,7 @@ public class GlassDialect implements Dialect {
 
     @Override
     public List<SourceStatement> parseLine(List<String> tokens,
-            String line, int lineNumber,
+            SourceLine sl,
             SourceStatement s, SourceFile source, CodeBase code)
     {
         List<SourceStatement> l = new ArrayList<>();
@@ -114,13 +114,11 @@ public class GlassDialect implements Dialect {
 
             Expression exp = config.expressionParser.parse(tokens, s, code);
             if (exp == null) {
-                config.error("Cannot parse line " + source.fileName + ", " +
-                             lineNumber + ": " + line);
+                config.error("Cannot parse line " + sl);
                 return null;
             }
             if (exp.type != Expression.EXPRESSION_SYMBOL) {
-                config.error("Invalid section name at " + source.fileName + ", " +
-                             lineNumber + ": " + line);
+                config.error("Invalid section name at " + sl);
                 return null;
             }
             String sectionName = getSectionName(exp.symbolName, code);
@@ -140,7 +138,7 @@ public class GlassDialect implements Dialect {
             } 
             
             // Insert a helper statement, so we can restore the address counter after the section is complete:
-            SourceStatement sectionHelper = new SourceStatement(SourceStatement.STATEMENT_NONE, source, lineNumber, null);
+            SourceStatement sectionHelper = new SourceStatement(SourceStatement.STATEMENT_NONE, sl, source, null);
             sectionHelper.label = new SourceConstant("__address_before_section_"+sectionName+"_"+appearanceCounter+"_starts", null, 
                     Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, code, config), sectionHelper);
             code.addSymbol(sectionHelper.label.name, sectionHelper.label);
@@ -148,7 +146,7 @@ public class GlassDialect implements Dialect {
 
             sectionAppearanceCounters.put(sectionName, appearanceCounter+1);
             
-            if (config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source)) return l;
+            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
         }
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("ends")) {
             if (!sectionStack.isEmpty()) {
@@ -157,49 +155,47 @@ public class GlassDialect implements Dialect {
 //                int appearanceCounter = sectionAppearanceCounters.get(sectionName);
                 
                 // Insert two helper statements, so we can restore the address counter after the section is complete, and continue the section later on
-                SourceStatement sectionHelper1 = new SourceStatement(SourceStatement.STATEMENT_NONE, source, lineNumber, null);
+                SourceStatement sectionHelper1 = new SourceStatement(SourceStatement.STATEMENT_NONE, sl, source, null);
                 sectionHelper1.label = new SourceConstant("__address_before_section_"+sectionName_appearanceCounter+"_ends", null, 
                         Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, code, config), sectionHelper1);
                 code.addSymbol(sectionHelper1.label.name, sectionHelper1.label);
-                SourceStatement sectionHelper2 = new SourceStatement(SourceStatement.STATEMENT_ORG, source, lineNumber, null);
+                SourceStatement sectionHelper2 = new SourceStatement(SourceStatement.STATEMENT_ORG, sl, source, null);
                 sectionHelper2.org = Expression.symbolExpression("__address_before_section_"+sectionName_appearanceCounter+"_starts", code, config);
                 l.add(0,sectionHelper1);
                 l.add(1,sectionHelper2);
 //                sectionAppearanceCounters.put(sectionName, appearanceCounter+1);
                 
-                if (config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source)) return l;
+                if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
             } else {
-                config.error("No section to terminate at " + source.fileName + ", " +
-                             lineNumber + ": " + line);
+                config.error("No section to terminate at " + sl);
                 return null;
             }
         }
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("proc")) {
             if (s.label == null) {
-                config.error("Proc with no name at " + source.fileName + ", " +
-                             lineNumber + ": " + line);
+                config.error("Proc with no name at " + sl);
                 return null;
             }
             tokens.remove(0);
             config.lineParser.pushLabelPrefix(s.label.name + ".");
-            if (config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source)) return l;
+            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
         }
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("endp")) {
             tokens.remove(0);
             config.lineParser.popLabelPrefix();
-            if (config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source)) return l;
+            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
         }
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("error")) {
             config.error(tokens.get(1));
             tokens.remove(0);
             tokens.remove(0);
-            if (config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source)) return l;
+            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
         }
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("warning")) {
             config.warn(tokens.get(1));
             tokens.remove(0);
             tokens.remove(0);
-            if (config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source)) return l;
+            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
         }
         return null;
     }
@@ -231,7 +227,7 @@ public class GlassDialect implements Dialect {
             PreProcessor preProcessor = new PreProcessor(config.preProcessor);
 
             SourceFile f = new SourceFile(macro.definingStatement.source.fileName + ":macro(" + macro.name+")", null, null, config);
-            int lineNumber = macro.definingStatement.lineNumber;
+            int lineNumber = macro.definingStatement.sl.lineNumber;
             while(true) {
                 List<String> tokens = new ArrayList<>();
                 Pair<SourceLine, Integer> tmp = getNextLine(lines, f, lineNumber, tokens, preProcessor);
@@ -246,11 +242,10 @@ public class GlassDialect implements Dialect {
                     break;
                 }
                 lineNumber = tmp.getRight();
-                String line = tmp.getLeft().line;
-                if (tmp.getLeft().lineNumber != null) lineNumber = tmp.getLeft().lineNumber;
+                SourceLine sl = tmp.getLeft();
                 
                 if (preProcessor.withinMacroDefinition()) {
-                    List<SourceStatement> newStatements = preProcessor.parseMacroLine(tokens, line, lineNumber, f, code, config);
+                    List<SourceStatement> newStatements = preProcessor.parseMacroLine(tokens, sl, f, code, config);
                     if (newStatements == null) {
                         // we fail to evaluate the macro, but it's ok, some times it can happen
                         succeeded = false;
@@ -261,8 +256,8 @@ public class GlassDialect implements Dialect {
                         }
                     }
                 } else {
-                    List<SourceStatement> l = config.lineParser.parse(Tokenizer.tokenize(line), 
-                            line, lineNumber, f, code, config);
+                    List<SourceStatement> l = config.lineParser.parse(Tokenizer.tokenize(sl.line), 
+                            sl, f, code, config);
                     if (l == null) {
                         // we fail to assemble the macro, but it's ok, some times it can happen
                         succeeded = false;
@@ -270,7 +265,7 @@ public class GlassDialect implements Dialect {
                     }
                     for(SourceStatement s:l) {
                         if (!s.isEmpty()) {
-                            if (!preProcessor.handleStatement(line, lineNumber, s, f, code, false)) {
+                            if (!preProcessor.handleStatement(sl, s, f, code, false)) {
                                 f.addStatement(s);
                             }
                         }
@@ -290,27 +285,25 @@ public class GlassDialect implements Dialect {
     }
     
     
-    // Returns: <<line,lineNumber>, file_linenumber>
+    // Returns: <SourceLine, file_linenumber>
     Pair<SourceLine, Integer> getNextLine(List<SourceLine> lines, SourceFile f, int file_linenumber, List<String> tokens, PreProcessor preProcessor)
     {
         List<String> unfilteredTokens = new ArrayList<>();
         
         SourceLine sl = preProcessor.expandMacros();
-        String line = null;
-        if (sl != null) line = sl.line; // ignore the line numbers here
-        if (line == null && !lines.isEmpty()) {
-            line = lines.remove(0).line; // ignore the line numbers here
+        if (sl == null && !lines.isEmpty()) {
+            sl = lines.remove(0); // ignore the line numbers here
             file_linenumber++;
         }
-        if (line == null) return null;
+        if (sl == null) return null;
         
-        Tokenizer.tokenize(line, unfilteredTokens);
+        Tokenizer.tokenize(sl.line, unfilteredTokens);
         if (!unfilteredTokens.isEmpty() && unfilteredTokens.get(unfilteredTokens.size()-1).equals(",")) {
             // unfinished line, get the next one!
             List<String> tokens2 = new ArrayList<>();
             Pair<SourceLine, Integer> tmp = getNextLine(lines, f, file_linenumber, tokens2, preProcessor);
             if (tmp != null) {
-                line += "\n" + tmp.getLeft().line;
+                sl = new SourceLine(sl.line += "\n" + tmp.getLeft().line, sl.source, sl.lineNumber);
                 unfilteredTokens.addAll(tokens2);
                 file_linenumber = tmp.getRight();
             }
@@ -319,7 +312,7 @@ public class GlassDialect implements Dialect {
         // Glass does not support multi-line comments, so, no need to handle that here as in SourceCodeParser.getNextLine
         tokens.addAll(unfilteredTokens);
         
-        return Pair.of(new SourceLine(line, f, file_linenumber), file_linenumber);
+        return Pair.of(sl, file_linenumber);
     }
     
     

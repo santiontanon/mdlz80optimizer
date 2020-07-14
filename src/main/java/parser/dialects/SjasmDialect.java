@@ -13,6 +13,7 @@ import code.CodeBase;
 import code.Expression;
 import code.SourceFile;
 import code.SourceStatement;
+import parser.SourceLine;
 import parser.SourceMacro;
 
 /**
@@ -102,7 +103,7 @@ public class SjasmDialect implements Dialect {
 
     @Override
     public List<SourceStatement> parseLine(List<String> tokens,
-            String line, int lineNumber,
+            SourceLine sl,
             SourceStatement s, SourceFile source, CodeBase code) {
         List<SourceStatement> l = new ArrayList<>();
         l.add(s);
@@ -117,18 +118,16 @@ public class SjasmDialect implements Dialect {
             }
             structFile = source;
             structStart = source.getStatements().size();
-            if (config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source)) return l;
+            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
         }
         if (tokens.size() >= 1 && tokens.get(0).equalsIgnoreCase("ends")) {
             tokens.remove(0);
             if (structFile == null) {
-                config.error("ends outside of a struct at " + source.fileName + ", "
-                        + lineNumber + ": " + line);
+                config.error("ends outside of a struct at " + sl);
                 return null;
             }
             if (structFile != source) {
-                config.error("struct split among multiple files is not supported at " + source.fileName + ", "
-                        + lineNumber + ": " + line);
+                config.error("struct split among multiple files is not supported at " + sl);
                 return null;
             }
 
@@ -146,8 +145,7 @@ public class SjasmDialect implements Dialect {
                         offset += s2.sizeInBytes(code, true, true, true);
                         break;
                     default:
-                        config.error("Unsupported statement (type="+s2.type+") inside a struct definition at " + source.fileName + ", "
-                                + lineNumber + ": " + line);
+                        config.error("Unsupported statement (type="+s2.type+") inside a struct definition at " + sl);
                         return null;
                 }
                 if (s2.label != null) {
@@ -160,63 +158,58 @@ public class SjasmDialect implements Dialect {
 
             config.lineParser.popLabelPrefix();
             structFile = null;
-            if (config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source)) return l;
+            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
         }
         if (tokens.size() >= 1 && tokens.get(0).equalsIgnoreCase("end")) {
             tokens.remove(0);
             // just ignore
-            if (config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source)) return l;
+            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
         }
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("map")) {
             tokens.remove(0);
             Expression exp = config.expressionParser.parse(tokens, s, code);
             if (exp == null) {
-                config.error("Cannot parse expression at " + source.fileName + ", "
-                        + lineNumber + ": " + line);
+                config.error("Cannot parse expression at " + sl);
                 return null;
             }
             mapCounterStack.add(0, mapCounter);
             mapCounter = exp.evaluate(s, code, false);
-            if (config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source)) return l;
+            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
         }
         if (tokens.size() >= 1 && tokens.get(0).equalsIgnoreCase("endmap")) {
             tokens.remove(0);
             mapCounter = mapCounterStack.remove(0);
-            if (config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source)) return l;
+            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
         }
         if (tokens.size() >= 2 &&
             (tokens.get(0).equalsIgnoreCase("#") || tokens.get(0).equalsIgnoreCase("field"))) {
             tokens.remove(0);
             Expression exp = config.expressionParser.parse(tokens, s, code);
             if (exp == null) {
-                config.error("Cannot parse expression at " + source.fileName + ", "
-                        + lineNumber + ": " + line);
+                config.error("Cannot parse expression at " + sl);
                 return null;
             }
             if (s.label == null) {
-                config.error("Field expression does not have a label at " + source.fileName + ", "
-                        + lineNumber + ": " + line);
+                config.error("Field expression does not have a label at " + sl);
                 return null;
             }
             s.label.exp = exp;
             mapCounter += exp.evaluate(s, code, false);
-            if (config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source)) return l;
+            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
         }
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("assert")) {
             tokens.remove(0);
             Expression exp = config.expressionParser.parse(tokens, s, code);
             if (exp == null) {
-                config.error("Cannot parse expression at " + source.fileName + ", "
-                        + lineNumber + ": " + line);
+                config.error("Cannot parse expression at " + sl);
                 return null;
             }
             Integer value = exp.evaluate(s, code, false);
             if (value == null || value == Expression.FALSE) {
-                config.error("Assertion failed at " + source.fileName + ", "
-                        + lineNumber + ": " + line);
+                config.error("Assertion failed at " + sl);
                 return null;
             }
-            if (config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source)) return l;
+            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
         }
 
         return null;

@@ -6,6 +6,7 @@ package code;
 import cl.MDLConfig;
 import java.util.ArrayList;
 import java.util.List;
+import parser.SourceLine;
 import parser.SourceMacro;
 
 /**
@@ -35,8 +36,11 @@ public class SourceStatement {
     
     
     public int type;
-    public SourceFile source;
-    public int lineNumber;
+    
+    public SourceLine sl;
+    public SourceFile source;   // this should be equivalent to the source obtained
+                                // from navigating up the sl.expandedFrom all the way to the parent
+    
     Integer address = null;    // this is just an internal cache of the address
     
     public Expression org;
@@ -65,11 +69,13 @@ public class SourceStatement {
     public String comment = null;
     
     
-    public SourceStatement(int a_type, SourceFile a_source, int a_lineNumber, Integer a_address)
+    public SourceStatement(int a_type, SourceLine a_sl, SourceFile a_source, Integer a_address)
     {
         type = a_type;
+        sl = a_sl;
         source = a_source;
-        lineNumber = a_lineNumber;
+//        lineNumber = a_lineNumber;
+//        expandedFrom = null;
         address = a_address;
     }
    
@@ -85,6 +91,12 @@ public class SourceStatement {
     {
         if (type == STATEMENT_NONE && label == null) return true;
         return false;
+    }
+    
+    
+    public String fileNameLineString()
+    {
+        return sl.fileNameLineString();
     }
     
     

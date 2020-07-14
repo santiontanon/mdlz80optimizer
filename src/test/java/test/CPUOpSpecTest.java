@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.util.List;
 import org.junit.Assert;
 import org.junit.Test;
+import parser.SourceLine;
 import parser.Tokenizer;
 
 /**
@@ -38,7 +39,7 @@ public class CPUOpSpecTest {
         Assert.assertTrue(mdlConfig.parseArgs("dummy.asm"));
         SourceFile dummy = new SourceFile("dummy.asm", null, null, mdlConfig);
         
-        List<SourceStatement> l = mdlConfig.lineParser.parse(Tokenizer.tokenize(opString), opString, 0, dummy, codeBase, mdlConfig);
+        List<SourceStatement> l = mdlConfig.lineParser.parse(Tokenizer.tokenize(opString), new SourceLine("", dummy, 0), dummy, codeBase, mdlConfig);
         if (l == null || l.size() != 1) return null;
         SourceStatement s = l.get(0);
         if (s == null || s.type != SourceStatement.STATEMENT_CPUOP ||

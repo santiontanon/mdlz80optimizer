@@ -265,7 +265,7 @@ public class Pattern {
 
                         if (!regNotUsed(match.opMap.get(idx), reg, f, code)) {
                             if (logPatternsMatchedWithViolatedConstraints)
-                                config.info("Potential optimization ("+name+") in " + f.fileName + ", line " + f.getStatements().get(a_index).lineNumber);
+                                config.info("Potential optimization ("+name+") in " + f.getStatements().get(a_index).sl);
                             return null;
                         }
                     }
@@ -279,7 +279,7 @@ public class Pattern {
 
                         if (!flagNotUsed(match.opMap.get(idx), flag, f, code)) {
                             if (logPatternsMatchedWithViolatedConstraints)
-                                config.info("Potential optimization ("+name+") in " + f.fileName + ", line " + f.getStatements().get(a_index).lineNumber);
+                                config.info("Potential optimization ("+name+") in " + f.getStatements().get(a_index).sl);
                             return null;
                         }
                     }
@@ -321,7 +321,7 @@ public class Pattern {
             SourceStatement removed = l.remove(insertionPoint);
             for(int j = 0;j<replacement.size();j++) {
                 if (replacement.get(j).ID == pattern.get(i).ID) {
-                    SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_CPUOP, removed.source, removed.lineNumber, null);
+                    SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_CPUOP, removed.sl, removed.source, null);
                     s.op = new CPUOp(replacement.get(j).instantiate(match, config));
                     l.add(insertionPoint, s);
                     insertionPoint++;
@@ -367,7 +367,7 @@ public class Pattern {
             Pair<SourceStatement, CPUOpDependency> pair = open.remove(0);
             SourceStatement next = pair.getLeft();
             CPUOpDependency dep = pair.getRight();
-            config.trace("    "+next.lineNumber+": "+next);
+            config.trace("    "+next.sl.lineNumber+": "+next);
 
             if (next.type == SourceStatement.STATEMENT_CPUOP) {
                 CPUOp op = next.op;

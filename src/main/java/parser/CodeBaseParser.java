@@ -80,7 +80,7 @@ public class CodeBaseParser {
         return null;
     }
 
-    // Returns: <<line,lineNumber>, file_linenumber>
+    // Returns: <SourceLine, file_linenumber>
     Pair<SourceLine, Integer> getNextLine(BufferedReader br, SourceFile f, int file_linenumber, List<String> tokens)
             throws IOException
     {
@@ -147,18 +147,18 @@ public class CodeBaseParser {
                     return true;
                 }
                 file_lineNumber = tmp.getRight();
-                String line = tmp.getLeft().line;
-                int line_lineNumber = file_lineNumber;
-                if (tmp.getLeft().lineNumber != null) line_lineNumber = tmp.getLeft().lineNumber;
+                SourceLine sl = tmp.getLeft();
+                // int line_lineNumber = file_lineNumber;
+                // if (sl.lineNumber != null) line_lineNumber = tmp.getLeft().lineNumber;
 
                 if (config.preProcessor.withinMacroDefinition()) {
-                    List<SourceStatement> newStatements =  config.preProcessor.parseMacroLine(tokens, line, line_lineNumber, f, code, config);
+                    List<SourceStatement> newStatements =  config.preProcessor.parseMacroLine(tokens, sl, f, code, config);
                     if (newStatements == null) {
                         return false;
                     } else {
                         for(SourceStatement s:newStatements) {
                             if (config.eagerMacroEvaluation) {
-                                if (!config.preProcessor.handleStatement(line, line_lineNumber, s, f, code, false)) {
+                                if (!config.preProcessor.handleStatement(sl, s, f, code, false)) {
                                     f.addStatement(s);
                                 }                                
                             } else {
@@ -167,11 +167,11 @@ public class CodeBaseParser {
                         }
                     }
                 } else {
-                    List<SourceStatement> l = config.lineParser.parse(tokens, line, line_lineNumber, f, code, config);
+                    List<SourceStatement> l = config.lineParser.parse(tokens, sl, f, code, config);
                     if (l == null) return false;
                     for(SourceStatement s:l) {
                         if (!s.isEmpty()) {
-                            if (!config.preProcessor.handleStatement(line, line_lineNumber, s, f, code, false)) {
+                            if (!config.preProcessor.handleStatement(sl, s, f, code, false)) {
                                 f.addStatement(s);
                             }
                         }
@@ -225,8 +225,8 @@ public class CodeBaseParser {
                 // expand macro!
                 config.trace("expandAllMacros: Expanding macro: " + s_macro.macroCallName != null ? s_macro.macroCallName : s_macro.macroCallMacro.name);
 
-                if (!config.preProcessor.handleStatement("", s_macro.lineNumber, s_macro, f, code, true)) {
-                    config.debug("Cannot yet expand macro "+s_macro.macroCallName+" in "+s_macro.source.fileName+", " + s_macro.lineNumber);
+                if (!config.preProcessor.handleStatement(s_macro.sl, s_macro, f, code, true)) {
+                    config.debug("Cannot yet expand macro "+s_macro.macroCallName+" in "+s_macro.sl);
                     n_failed++;
                     continue;
                 } else {
@@ -242,7 +242,7 @@ public class CodeBaseParser {
                 int insertionPoint = i;
                 while(true) {
                     List<String> tokens = new ArrayList<>();
-                    Pair<SourceLine, Integer> tmp = getNextLine(null, f, s_macro.lineNumber, tokens);
+                    Pair<SourceLine, Integer> tmp = getNextLine(null, f, s_macro.sl.lineNumber, tokens);
                     if (tmp == null) {
                         if (config.preProcessor.withinMacroDefinition()) {
                             SourceMacro macro = config.preProcessor.getCurrentMacro();
@@ -254,11 +254,11 @@ public class CodeBaseParser {
                         }
                         break;
                     }
-                    String line = tmp.getLeft().line;
-                    int lineNumber = s_macro.lineNumber;
-                    if (tmp.getLeft().lineNumber != null) lineNumber = tmp.getLeft().lineNumber;
+                    SourceLine sl = tmp.getLeft();
+                    //int lineNumber = s_macro.lineNumber;
+                    //if (tmp.getLeft().lineNumber != null) lineNumber = tmp.getLeft().lineNumber;
                     if (config.preProcessor.withinMacroDefinition()) {
-                        List<SourceStatement> newStatements =  config.preProcessor.parseMacroLine(tokens, line, lineNumber, f, code, config);
+                        List<SourceStatement> newStatements =  config.preProcessor.parseMacroLine(tokens, sl, f, code, config);
                         if (newStatements == null) {
                             return null;
                         } else {
@@ -268,11 +268,11 @@ public class CodeBaseParser {
                             }
                         }
                     } else {
-                        List<SourceStatement> l = config.lineParser.parse(tokens, line, lineNumber, f, code, config);
+                        List<SourceStatement> l = config.lineParser.parse(tokens, sl, f, code, config);
                         if (l == null) return null;
                         for(SourceStatement s:l) {
                             if (!s.isEmpty()) {
-                                if (!config.preProcessor.handleStatement(line, lineNumber, s, f, code, true)) {
+                                if (!config.preProcessor.handleStatement(sl, s, f, code, true)) {
                                     f.addStatement(insertionPoint, s);
                                     insertionPoint++;
                                 }

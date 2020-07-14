@@ -10,6 +10,7 @@ import code.Expression;
 import code.SourceFile;
 import code.SourceStatement;
 import parser.MacroExpansion;
+import parser.SourceLine;
 import parser.SourceMacro;
 
 /**
@@ -41,8 +42,7 @@ public interface Dialect {
     // @return {@code null} if an error occurred;
     // a list of statements to add as a result of parsing the line otherwise
     default List<SourceStatement> parseLine(List<String> tokens,
-            String line, int lineNumber,
-            SourceStatement s, SourceFile source, CodeBase code) {
+            SourceLine sl, SourceStatement s, SourceFile source, CodeBase code) {
         // (no-op by default)
         return null;
     }

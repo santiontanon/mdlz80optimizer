@@ -17,6 +17,7 @@ import java.util.Random;
 import java.util.StringTokenizer;
 import java.util.stream.Collectors;
 import org.apache.commons.io.IOUtils;
+import parser.SourceLine;
 import parser.SourceMacro;
 import parser.Tokenizer;
 import util.Resources;
@@ -236,7 +237,7 @@ public class ASMSXDialect implements Dialect {
     
 
     @Override
-    public List<SourceStatement> parseLine(List<String> tokens, String line, int lineNumber, SourceStatement s, SourceFile source, CodeBase code) 
+    public List<SourceStatement> parseLine(List<String> tokens, SourceLine sl, SourceStatement s, SourceFile source, CodeBase code) 
     {
         List<SourceStatement> l = new ArrayList<>();
         l.add(s);
@@ -246,42 +247,42 @@ public class ASMSXDialect implements Dialect {
             // Define all the bios calls:
             List<String []> biosCalls = loadBiosCalls();
             if (biosCalls == null) {
-                config.error("Cannot read bios calls file in " + source.fileName + ", " + lineNumber + ": " + line);
+                config.error("Cannot read bios calls file in " + sl.fileNameLineString() + ": " + sl.line);
                 return null;                
             }
             for(String []biosCall:biosCalls) {
-                SourceStatement biosCallStatement = new SourceStatement(SourceStatement.STATEMENT_CONSTANT, source, lineNumber, null);
+                SourceStatement biosCallStatement = new SourceStatement(SourceStatement.STATEMENT_CONSTANT, sl, source, null);
                 int address = Tokenizer.parseHex(biosCall[1]);
                 biosCallStatement.label = new SourceConstant(biosCall[0], address, Expression.constantExpression(address, config), biosCallStatement);
                 code.addSymbol(biosCall[0], biosCallStatement.label);
                 l.add(biosCallStatement);
             }
-            if (config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source)) return l;
+            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
         }
         if (tokens.size()>=2 && (tokens.get(0).equalsIgnoreCase(".filename") || tokens.get(0).equalsIgnoreCase("filename"))) {
             tokens.remove(0);
             Expression filename_exp = config.expressionParser.parse(tokens, s, code);
             if (filename_exp == null) {
-                config.error("Cannot parse expression in "+source.fileName+", "+source.fileName+": " + line);
+                config.error("Cannot parse expression in "+sl.fileNameLineString()+": " + sl.line);
                 return null;
             }
-            if (config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source)) return l;
+            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
         }
         if (tokens.size()>=1 && (tokens.get(0).equalsIgnoreCase(".size") || tokens.get(0).equalsIgnoreCase("size"))) {
             tokens.remove(0);
             Expression size_exp = config.expressionParser.parse(tokens, s, code);
             if (size_exp == null) {
-                config.error("Cannot parse .size parameter in "+source.fileName+", "+lineNumber+": " + line);
+                config.error("Cannot parse .size parameter in "+sl.fileNameLineString()+": " + sl.line);
                 return null;
             }
             // Since we are not producing compiled output, we ignore this directive
-            if (config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source)) return l;
+            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
         }
         if (tokens.size()>=1 && (tokens.get(0).equalsIgnoreCase(".page") || tokens.get(0).equalsIgnoreCase("page"))) {
             tokens.remove(0);
             Expression page_exp = config.expressionParser.parse(tokens, s, code);
             if (page_exp == null) {
-                config.error("Cannot parse .page parameter in "+source.fileName+", "+lineNumber+": " + line);
+                config.error("Cannot parse .page parameter in "+sl.fileNameLineString()+": " + sl.line);
                 return null;
             }
             s.type = SourceStatement.STATEMENT_ORG;
@@ -289,7 +290,7 @@ public class ASMSXDialect implements Dialect {
                     Expression.parenthesisExpression(page_exp, config),
                     Expression.constantExpression(16*1024, config), config);
             // Since we are not producing compiled output, we ignore this directive
-            if (config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source)) return l;
+            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
         }
         if (tokens.size()>=2 && (tokens.get(0).equalsIgnoreCase(".printtext") || tokens.get(0).equalsIgnoreCase("printtext"))) {
             toPrint.add(new PrintRecord("printtext", 
@@ -297,7 +298,7 @@ public class ASMSXDialect implements Dialect {
                     Expression.constantExpression(tokens.get(1), config)));
             tokens.remove(0);
             tokens.remove(0);
-            if (config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source)) return l;
+            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
         }
         if (tokens.size()>=2 && (tokens.get(0).equalsIgnoreCase(".printdec") || tokens.get(0).equalsIgnoreCase(".print") ||
                                  tokens.get(0).equalsIgnoreCase("printdec") || tokens.get(0).equalsIgnoreCase("print"))) {
@@ -307,7 +308,7 @@ public class ASMSXDialect implements Dialect {
                     source.getStatements().get(source.getStatements().size()-1), 
                     exp));
             
-            if (config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source)) return l;
+            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
         }
         if (tokens.size()>=2 && (tokens.get(0).equalsIgnoreCase(".printhex") || tokens.get(0).equalsIgnoreCase("printhex"))) {
             tokens.remove(0);
@@ -316,21 +317,21 @@ public class ASMSXDialect implements Dialect {
                     source.getStatements().get(source.getStatements().size()-1), 
                     exp));
             
-            if (config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source)) return l;
+            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
         }
         if (tokens.size()>=1 && (tokens.get(0).equalsIgnoreCase(".byte") || tokens.get(0).equalsIgnoreCase("byte"))) {
             tokens.remove(0);
             s.type = SourceStatement.STATEMENT_DEFINE_SPACE;
             s.space = Expression.constantExpression(1, config);
             s.space_value = null;
-            if (config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source)) return l;
+            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
         }
         if (tokens.size()>=1 && (tokens.get(0).equalsIgnoreCase(".word") || tokens.get(0).equalsIgnoreCase("word"))) {
             tokens.remove(0);
             s.type = SourceStatement.STATEMENT_DEFINE_SPACE;
             s.space = Expression.constantExpression(2, config);
             s.space_value = null;
-            if (config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source)) return l;
+            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
         }
         if (tokens.size()>=1 && (tokens.get(0).equalsIgnoreCase(".rom") || tokens.get(0).equalsIgnoreCase("rom"))) {
             tokens.remove(0);
@@ -352,7 +353,7 @@ public class ASMSXDialect implements Dialect {
                         Expression.constantExpression(256, config), config)); 
             }
             for(int i = 0;i<12;i++) data.add(Expression.constantExpression(0, config));
-            if (config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source)) return l;
+            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
         }
         if (tokens.size()>=1 && (tokens.get(0).equalsIgnoreCase(".basic") || tokens.get(0).equalsIgnoreCase("basic"))) {
             tokens.remove(0);
@@ -381,18 +382,18 @@ public class ASMSXDialect implements Dialect {
                         Expression.constantExpression(256, config), config)); 
             }
             // the header of a basic program should not use any space, so we add an org statement afterwards to compensate for its space:
-            SourceStatement auxiliarOrg = new SourceStatement(SourceStatement.STATEMENT_ORG, source, lineNumber, null);
+            SourceStatement auxiliarOrg = new SourceStatement(SourceStatement.STATEMENT_ORG, sl, source, null);
             auxiliarOrg.org = Expression.operatorExpression(Expression.EXPRESSION_SUB, 
                     Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, code, config), 
                     Expression.constantExpression(7, config), config);
             l.add(auxiliarOrg);
-            if (config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source)) return l;
+            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
         }        
         if (tokens.size()>=2 && (tokens.get(0).equalsIgnoreCase(".start") || tokens.get(0).equalsIgnoreCase("start"))) {
             tokens.remove(0);
             Expression exp = config.expressionParser.parse(tokens, s, code);
             if (exp == null) {
-                config.error("Cannot parse expression in "+source.fileName+", "+source.fileName+": " + line);
+                config.error("Cannot parse expression in "+sl.fileNameLineString()+": " + sl.line);
                 return null;
             }
             startLabel = exp;
@@ -412,7 +413,7 @@ public class ASMSXDialect implements Dialect {
                         startLabel, 
                         Expression.constantExpression(256, config), config)); 
             }
-            if (config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source)) return l;
+            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
         }
 
         // weird syntax that for some reason asMSX swallows (undocumented):
@@ -430,11 +431,11 @@ public class ASMSXDialect implements Dialect {
                 for(String token:tokens) newToken += token;
                 tokens.clear();
                 tokens.add(newToken);
-                if (config.lineParser.parseRestofTheLine(tokens, line, lineNumber, s, source)) return l;
+                if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
             }
         }
         
-        config.error("ASMSXDialect cannot parse line in "+source.fileName+", "+lineNumber+": " + line);
+        config.error("ASMSXDialect cannot parse line in "+sl.fileNameLineString()+": " + sl.line);
         return null;
     }
 

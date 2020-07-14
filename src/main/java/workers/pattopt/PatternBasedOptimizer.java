@@ -158,7 +158,7 @@ public class PatternBasedOptimizer implements MDLWorker {
                     continue;
                 }
 
-                int lineNumber = f.getStatements().get(i).lineNumber;
+                SourceStatement startStatement = f.getStatements().get(i);
                 int startIndex = i;
                 int endIndex = startIndex;
                 for(int id:match.opMap.keySet()) {
@@ -174,7 +174,7 @@ public class PatternBasedOptimizer implements MDLWorker {
                     if (config.isInfoEnabled()) {
                         int bytesSaved = patt.getSpaceSaving(match);
                         String timeSavedString = patt.getTimeSavingString(match);
-                        config.info("Pattern-based optimization", f.fileName, lineNumber, 
+                        config.info("Pattern-based optimization", startStatement.fileNameLineString(), 
                                 patt.name+" ("+bytesSaved+" bytes, " +
                                 timeSavedString + " " +config.timeUnit+"s saved)");
 
