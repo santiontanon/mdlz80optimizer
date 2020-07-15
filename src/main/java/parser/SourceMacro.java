@@ -121,9 +121,24 @@ public class SourceMacro {
 
             for(SourceLine sl:lines) {
                 String line2 = sl.line;
-                for(int i = 0;i<argNames.size();i++) {
-                    line2 = line2.replace("?" + argNames.get(i),
-                                          args.get(i).toString());
+                List<String> tokens = Tokenizer.tokenizeIncludingBlanks(line2);
+                line2 = "";
+                
+                String previous = null;
+                for(String token:tokens) {
+                    if (previous != null && previous.equals("?") && Tokenizer.isSymbol(token)) {
+                        // variable name starting with "?":
+                        line2 = line2.substring(0, line2.length()-1);
+                        token = previous + token;
+                    }
+                    String newToken = token;
+                    for(int i = 0;i<argNames.size();i++) {
+                        if (token.equals(argNames.get(i))) {
+                            newToken = args.get(i).toString();
+                        }
+                    }
+                    line2 += newToken;
+                    previous = token;
                 }
                 lines2.add(new SourceLine(line2, sl.source, sl.lineNumber, macroCall));
             }

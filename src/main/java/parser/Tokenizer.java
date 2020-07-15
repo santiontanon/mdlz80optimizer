@@ -25,12 +25,22 @@ public class Tokenizer {
         doubleTokens.add("*/");
     }
 
-    public static List<String> tokenize(String line) {
-        return tokenize(line, new ArrayList<>());
+    
+    public static List<String> tokenizeIncludingBlanks(String line) {
+        return tokenize(line, new ArrayList<>(), true);
     }
     
     
+    public static List<String> tokenize(String line) {
+        return tokenize(line, new ArrayList<>(), false);
+    }
+
     public static List<String> tokenize(String line, List<String> tokens) {
+        return tokenize(line, tokens, false);
+    }
+    
+    
+    public static List<String> tokenize(String line, List<String> tokens, boolean includeBlanks) {
         
         StringTokenizer st = new StringTokenizer(line, " \r\n\t()[]#$,;:+-*/%|&'\"!?<>=~^{}", true);
         String previous = null;
@@ -58,7 +68,12 @@ public class Tokenizer {
                     continue;
                 }
             }
-            if (next.equals("\"")) {
+            if (previous != null && Tokenizer.isSingleLineComment(previous)) {
+                String token = previous + next;
+                while(st.hasMoreTokens()) token += st.nextToken();
+                tokens.remove(tokens.size()-1);
+                tokens.add(token);
+            } else if (next.equals("\"")) {
                 String token = next;
                 while(st.hasMoreTokens()) {
                     next = st.nextToken();
@@ -87,17 +102,17 @@ public class Tokenizer {
                 if (token.length()<2 || !token.endsWith("'")) return null;
                 token = "\"" + token.substring(1, token.length()-1) + "\"";
                 tokens.add(token);
-            } else if (previous != null && Tokenizer.isSingleLineComment(previous)) {
-                String token = previous + next;
-                while(st.hasMoreTokens()) token += st.nextToken();
-                tokens.remove(tokens.size()-1);
-                tokens.add(token);
-            } else if (!next.equals(" ") && !next.equals("\r") && !next.equals("\n") && !next.equals("\t")) {
-                tokens.add(next);
-            }
+            } else {
+                if (!next.equals(" ") && !next.equals("\r") && !next.equals("\n") && !next.equals("\t")) {
+                    tokens.add(next);
+                } else {
+                    if (includeBlanks) {
+                        tokens.add(next);
+                    }
+                }
+            } 
             previous = next;
         }
-        
         return tokens;
     }
     

@@ -35,6 +35,11 @@ public class LineParser {
     // If this is set to true then "ds 1" is the same as "ds virtual 1"
     public boolean defineSpaceVirtualByDefault = false;
     public boolean allowEmptyDB_DW_DD_definitions = false;
+    public boolean allowIncludesWithoutQuotes = false;
+    
+    // sjasm defines macros like: "macro macroname arg1,...,agn" instead of "macroname: macro arg1,...,argn":
+    public boolean macroNameIsFirstArgumentOfMacro = false;
+    public boolean allowNumberLabels = false;   // also for sjasm (for "reusable" labels)
 
     MDLConfig config;
     CodeBaseParser codeBaseParser;
@@ -49,6 +54,9 @@ public class LineParser {
         codeBaseParser = a_codeBaseParser;
 
         keywordsHintingALabel.add(KEYWORD_EQU);
+        keywordsHintingALabel.add(KEYWORD_DB);
+        keywordsHintingALabel.add(KEYWORD_DW);
+        keywordsHintingALabel.add(KEYWORD_DD);
     }
 
 
@@ -152,7 +160,7 @@ public class LineParser {
             // try to parseArgs it as an assembler instruction or macro call:
             tokens.remove(0);
             if (config.opParser.isOpName(token)) {
-                if (parseZ80Op(tokens, token, sl, s, source, code)) return l;
+                if (parseCPUOp(tokens, token, sl, s, source, code)) return l;
             } else {
                 if (parseMacroCall(tokens, token, sl, s, source, code)) return l;
             }
@@ -160,6 +168,14 @@ public class LineParser {
             if (parseRestofTheLine(tokens, sl, s, source)) return l;
         }
         return null;
+    }
+    
+    
+    public boolean canBeLabel(String token)
+    {
+        if (Tokenizer.isSymbol(token)) return true;
+        if (allowNumberLabels && Tokenizer.isInteger(token)) return true;
+        return false;
     }
 
 
@@ -169,7 +185,7 @@ public class LineParser {
         String token = tokens.get(0);
 
         if (tokens.size() >= 2
-                && Tokenizer.isSymbol(token)
+                && canBeLabel(token)
                 && tokens.get(1).equals(":")) {
             Expression exp = Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, code, config);
 
@@ -205,7 +221,7 @@ public class LineParser {
                 }
                 return parseRestofTheLine(tokens, sl, s, source);
             }
-        } else if (Tokenizer.isSymbol(token)) {
+        } else if (canBeLabel(token)) {
             if (sl.line.startsWith(token) && (tokens.size() == 1 || Tokenizer.isSingleLineComment(tokens.get(1))) && 
                 !config.preProcessor.isMacroIncludingEnds(token)) {
                 // it is just a label without colon:
@@ -310,11 +326,22 @@ public class LineParser {
             SourceLine sl,
             SourceStatement s, SourceFile source, CodeBase code) {
         if (tokens.size() >= 1) {
+            String rawFileName = null;
             String token = tokens.get(0);
             if (Tokenizer.isString(token)) {
                 tokens.remove(0);
-                String rawFileName = Tokenizer.stringValue(token);
-
+                rawFileName = Tokenizer.stringValue(token);
+            } else {
+                if (allowIncludesWithoutQuotes) {
+                    rawFileName = "";
+                    while(!tokens.isEmpty()) {
+                        if (Tokenizer.isSingleLineComment(tokens.get(0)) || 
+                            Tokenizer.isMultiLineCommentStart(tokens.get(0))) break;
+                        rawFileName += tokens.remove(0);
+                    }
+                }
+            }
+            if (rawFileName != null) {
                 // recursive include file:
                 String path = resolveIncludePath(rawFileName, source);
                 SourceFile includedSource = codeBaseParser.parseSourceFile(path, code, source, s);
@@ -326,7 +353,7 @@ public class LineParser {
                     s.include = includedSource;
                     return parseRestofTheLine(tokens, sl, s, source);
                 }
-            }
+            } 
         }
         config.error("Cannot parse line " + sl.fileNameLineString() + ": " + sl.line);
         return false;
@@ -340,13 +367,25 @@ public class LineParser {
             config.error("Cannot parse line " + sl.fileNameLineString() + ": " + sl.line);
             return false;
         }
-        String token = tokens.get(0);
-        if (!Tokenizer.isString(token)) {
-            config.error("Cannot parse line " + sl.fileNameLineString() + ": " + sl.line);
-            return false;
+        String rawFileName = null;
+        String token = tokens.get(0);        
+        if (Tokenizer.isString(token)) {
+                tokens.remove(0);
+            rawFileName = Tokenizer.stringValue(token);
+        } else {
+            if (allowIncludesWithoutQuotes) {
+                rawFileName = "";
+                while(!tokens.isEmpty()) {
+                    if (Tokenizer.isSingleLineComment(tokens.get(0)) || 
+                        Tokenizer.isMultiLineCommentStart(tokens.get(0))) break;
+                    rawFileName += tokens.remove(0);
+                }
+            }
         }
-        tokens.remove(0);
-        String rawFileName = Tokenizer.stringValue(token);
+        if (rawFileName == null) {
+            config.error("Cannot parse line " + sl.fileNameLineString() + ": " + sl.line);
+            return false;        
+        }
         String path = resolveIncludePath(rawFileName, source);
         if (path == null) {
             config.error("Incbin file " + rawFileName + " does not exist in " + sl.fileNameLineString() + ": " + sl.line);
@@ -393,7 +432,7 @@ public class LineParser {
             s.incbinSize = Expression.constantExpression((int)f.length(), config);
             s.incbinSizeSpecified = false;
         }
-        return parseRestofTheLine(tokens, sl, s, source);
+        return parseRestofTheLine(tokens, sl, s, source);        
     }
 
 
@@ -502,7 +541,7 @@ public class LineParser {
     }
 
 
-    public boolean parseZ80Op(List<String> tokens, String opName,
+    public boolean parseCPUOp(List<String> tokens, String opName,
             SourceLine sl,
             SourceStatement s, SourceFile source, CodeBase code) {
         List<Expression> arguments = new ArrayList<>();
@@ -510,7 +549,22 @@ public class LineParser {
             if (Tokenizer.isSingleLineComment(tokens.get(0))) {
                 break;
             }
-            Expression exp = config.expressionParser.parse(tokens, s, code);
+            Expression exp = null;
+            if (allowNumberLabels) {
+                // Check for some strange sjasm syntax concerning reusable labels:
+                if (opName.equalsIgnoreCase("call") ||
+                    opName.equalsIgnoreCase("jp") ||
+                    opName.equalsIgnoreCase("jr")) {
+                    String token = tokens.get(0);
+                    if ((token.endsWith("f") || token.endsWith("F") || token.endsWith("b") || token.endsWith("B")) && 
+                        Tokenizer.isInteger(token.substring(0, token.length()-1))) {
+                        token = config.dialectParser.symbolName(token);
+                        exp = Expression.symbolExpression(token, code, config);
+                        tokens.remove(0);
+                    }
+                }
+            }
+            if (exp == null) exp = config.expressionParser.parse(tokens, s, code);
             if (exp == null) {
                 config.error("Cannot parse line " + sl.fileNameLineString() + ": " + sl.line);
                 return false;
@@ -541,17 +595,34 @@ public class LineParser {
             SourceStatement s, SourceFile source, CodeBase code) {
         // Marks that all the lines that come after this, and until ENDM,
         // are part of a macro, and should not yet be parsed:
-        if (s.label == null) {
-            config.error("Cannot parse line " + sl.fileNameLineString() + ": " + sl.line);
-            return false;
+        if (macroNameIsFirstArgumentOfMacro) {
+            if (s.label != null || tokens.isEmpty()) {
+                config.error("Cannot parse line " + sl.fileNameLineString() + ": " + sl.line);
+                return false;
+            }
+            String macroNameStr = tokens.remove(0);
+            SourceConstant c = new SourceConstant(macroNameStr, null, null, s);
+            s.label = c;
+        } else {
+            if (s.label == null) {
+                config.error("Cannot parse line " + sl.fileNameLineString() + ": " + sl.line);
+                return false;
+            }
         }
 
         // parseArgs arguments:
         List<String> args = new ArrayList<>();
         List<Expression> defaultValues = new ArrayList<>();
-        while (tokens.size() >= 2 && tokens.get(0).equals("?")) {
+        while (!tokens.isEmpty() && 
+               !Tokenizer.isSingleLineComment(tokens.get(0)) &&
+               !Tokenizer.isMultiLineCommentStart(tokens.get(0))) {
+            String token = tokens.get(0);
             tokens.remove(0);
-            args.add(tokens.remove(0));
+            if (token.equals("?")) {
+                args.add(token + tokens.remove(0));
+            } else {
+                args.add(token);
+            }
             if (!tokens.isEmpty() && tokens.get(0).equals("=")) {
                 // default value:
                 tokens.remove(0);
@@ -614,7 +685,7 @@ public class LineParser {
         }
 
         // Relative to original source file
-         String sourcePath = source.getPath();
+        String sourcePath = source.getPath();
         if (StringUtils.isNotBlank(sourcePath)) {
             // santi: Do NOT change to "FilenameUtils.concat", that function assumes that the first argument
             // is an absolute directory, which in different configurations cannot be ensured to be true.
@@ -642,7 +713,7 @@ public class LineParser {
     }
 
 
-    String pathConcat(String path, String fileName)
+    public String pathConcat(String path, String fileName)
     {
         if (path.endsWith(File.separator)) {
             return path + fileName;

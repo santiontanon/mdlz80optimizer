@@ -63,6 +63,9 @@ public class TokenizerTest {
     @Test public void test15() {
         Assert.assertArrayEquals(new String[]{"\"string\t\r\n\""}, tokenize("\"string\\t\\r\\n\""));
     }
+    @Test public void test16() {
+        Assert.assertArrayEquals(new String[]{";\"J\" \"I\" \"H\" \"G\" \"F\" \"E\" \"D\" \"C\""}, tokenize(";\"J\" \"I\" \"H\" \"G\" \"F\" \"E\" \"D\" \"C\""));
+    }
 
     
     private static String[] tokenize(String line)

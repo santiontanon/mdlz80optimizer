@@ -13,8 +13,11 @@ import code.CodeBase;
 import code.Expression;
 import code.SourceFile;
 import code.SourceStatement;
+import java.io.File;
+import java.util.HashMap;
 import parser.SourceLine;
 import parser.SourceMacro;
+import parser.Tokenizer;
 
 /**
  *
@@ -30,7 +33,13 @@ public class SjasmDialect implements Dialect {
 
     int mapCounter = 0;
     List<Integer> mapCounterStack = new ArrayList<>();
+    
+    HashMap<Integer,Expression> pageStart = new HashMap<>();
+    HashMap<Integer,Expression> pageSize = new HashMap<>();
+    
+    HashMap<String, Integer> reusableLabelCounts = new HashMap<>();
 
+    
     public SjasmDialect(MDLConfig a_config) {
         config = a_config;
 
@@ -41,11 +50,17 @@ public class SjasmDialect implements Dialect {
         config.lineParser.addKeywordSynonym("word", config.lineParser.KEYWORD_DW);
         config.lineParser.addKeywordSynonym("defw", config.lineParser.KEYWORD_DW);
         config.lineParser.addKeywordSynonym("dword", config.lineParser.KEYWORD_DD);
+        config.lineParser.addKeywordSynonym("=", config.lineParser.KEYWORD_EQU);
+        
+        config.preProcessor.macroSynonyms.put("endmacro", config.preProcessor.MACRO_ENDM);
 
         config.warningJpHlWithParenthesis = false;
         config.lineParser.allowEmptyDB_DW_DD_definitions = true;
         config.lineParser.keywordsHintingALabel.add("#");
         config.lineParser.keywordsHintingALabel.add("field");
+        config.lineParser.allowIncludesWithoutQuotes = true;
+        config.lineParser.macroNameIsFirstArgumentOfMacro = true;
+        config.lineParser.allowNumberLabels = true;
     }
 
     @Override
@@ -58,6 +73,11 @@ public class SjasmDialect implements Dialect {
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("#")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("field")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("assert")) return true;
+        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("incdir")) return true;
+        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("output")) return true;
+        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("defpage")) return true;
+        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("code")) return true;
+        if (tokens.size() >= 3 && tokens.get(0).equalsIgnoreCase("[")) return true;
         return false;
     }
 
@@ -74,11 +94,23 @@ public class SjasmDialect implements Dialect {
                 || name.equalsIgnoreCase("map")
                 || name.equalsIgnoreCase("endmap")
                 || name.equalsIgnoreCase("field")
-                || name.equalsIgnoreCase("assert")) {
+                || name.equalsIgnoreCase("assert")
+                || name.equalsIgnoreCase("incdir")
+                || name.equalsIgnoreCase("output")
+                || name.equalsIgnoreCase("defpage")
+                || name.equalsIgnoreCase("code")) {
             return null;
         }
         if (name.startsWith(".")) {
             return lastAbsoluteLabel + "." + name.substring(1);
+        } else if (Tokenizer.isInteger(name)) {
+            // it's a reusable label:
+            int count = 1;
+            if (reusableLabelCounts.containsKey(name)) {
+                count = reusableLabelCounts.get(name);
+            }
+            reusableLabelCounts.put(name, count+1);
+            return "_sjasm_reusable_" + name + "_" + count;
         } else {
             // When a name has "CURRENT_ADDRESS" as its value, it means it's a label.
             // If it does not start by ".", then it's an absolute label:
@@ -92,15 +124,30 @@ public class SjasmDialect implements Dialect {
         return name;
     }
 
+    
     @Override
     public String symbolName(String name) {
         if (name.startsWith(".")) {
             return lastAbsoluteLabel + "." + name.substring(1);
+        } else if ((name.endsWith("f") || name.endsWith("F")) && Tokenizer.isInteger(name.substring(0, name.length()-1))) {
+            // it's a reusable label:
+            name = name.substring(0, name.length()-1);
+            int count = 1;
+            if (reusableLabelCounts.containsKey(name)) {
+                count = reusableLabelCounts.get(name);
+            }
+            return "_sjasm_reusable_" + name + "_" + count;
+        } else if ((name.endsWith("b") || name.endsWith("B")) && Tokenizer.isInteger(name.substring(0, name.length()-1))) {
+            // it's a reusable label:
+            name = name.substring(0, name.length()-1);
+            int count = reusableLabelCounts.get(name);
+            return "_sjasm_reusable_" + name + "_" + (count-1);
         } else {
             return name;
         }
     }
 
+    
     @Override
     public List<SourceStatement> parseLine(List<String> tokens,
             SourceLine sl,
@@ -211,7 +258,123 @@ public class SjasmDialect implements Dialect {
             }
             if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
         }
-
+        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("incdir")) {
+            tokens.remove(0);
+            String folder = "";
+            while(!tokens.isEmpty()) {
+                if (Tokenizer.isSingleLineComment(tokens.get(0)) || 
+                    Tokenizer.isMultiLineCommentStart(tokens.get(0))) break;
+                folder += tokens.remove(0);
+            }
+            
+            File path = new File(config.lineParser.pathConcat(source.getPath(), folder));
+            config.includeDirectories.add(path);
+            
+            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
+        }
+        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("output")) {
+            // Just ignore ...
+            while(!tokens.isEmpty()) {
+                if (Tokenizer.isSingleLineComment(tokens.get(0)) || 
+                    Tokenizer.isMultiLineCommentStart(tokens.get(0))) break;
+                tokens.remove(0);
+            }
+            
+            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
+        }
+        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("defpage")) {
+            tokens.remove(0);
+            Expression pageExp = config.expressionParser.parse(tokens, s, code);
+            Expression pageStartExp = null;
+            Expression pageSizeExp = null;
+            if (pageExp == null) {
+                config.error("Cannot parse expression at " + sl);
+                return null;
+            }
+            if (!tokens.isEmpty() && tokens.get(0).equals(",")) {
+                tokens.remove(0);
+                pageStartExp = config.expressionParser.parse(tokens, s, code);
+                if (pageStartExp == null) {
+                    config.error("Cannot parse expression at " + sl);
+                    return null;
+                }
+            }
+            if (!tokens.isEmpty() && tokens.get(0).equals(",")) {
+                tokens.remove(0);
+                pageSizeExp = config.expressionParser.parse(tokens, s, code);
+                if (pageSizeExp == null) {
+                    config.error("Cannot parse expression at " + sl);
+                    return null;
+                }
+            }
+            if (pageStartExp != null) pageStart.put(pageExp.evaluate(s, code, false), pageStartExp);
+            if (pageSizeExp != null) pageStart.put(pageExp.evaluate(s, code, false), pageSizeExp);
+            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
+        }
+        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("code")) {
+            tokens.remove(0);
+            Expression addressExp = null;
+            if (!tokens.isEmpty() && tokens.get(0).equals("?")) {
+                config.error("Unsupported form of code keyword at " + sl);
+                return null;
+            }                    
+            if (!tokens.isEmpty() && tokens.get(0).equals("@")) {
+                tokens.remove(0);
+                addressExp = config.expressionParser.parse(tokens, s, code);
+                if (addressExp == null) {
+                    config.error("Cannot parse expression at " + sl);
+                    return null;
+                }
+                if (!tokens.isEmpty() && tokens.get(0).equals(",")) tokens.remove(0);
+            }
+            if (!tokens.isEmpty() && tokens.get(0).equals("#")) {
+                config.error("Unsupported form of code keyword at " + sl);
+                return null;
+            }
+            if (!tokens.isEmpty() && tokens.get(0).equalsIgnoreCase("page")) {
+                tokens.remove(0);
+                Expression pageExp = config.expressionParser.parse(tokens, s, code);
+                if (addressExp == null) {
+                    int page = pageExp.evaluate(s, code, false);
+                    addressExp = pageStart.get(page);
+                    if (addressExp == null) {
+                        config.error("Undefined page at " + sl);
+                        return null;
+                    }
+                } else {
+                    // ignore
+                }
+            }
+            if (addressExp != null) {
+                // parse it as an "org"
+                s.type = SourceStatement.STATEMENT_ORG;
+                s.org = addressExp;                
+            } else {
+                // ignore
+            }
+            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
+        }
+        if (tokens.size() >= 3 && tokens.get(0).equalsIgnoreCase("[")) {
+            tokens.remove(0);
+            Expression numberExp = config.expressionParser.parse(tokens, s, code);
+            if (tokens.isEmpty() || !tokens.get(0).equals("]")) {
+                config.error("Cannot parse line at " + sl);
+                return null;
+            }
+            tokens.remove(0);
+            int number = numberExp.evaluate(s, code, false);
+            List<SourceStatement> l2 = config.lineParser.parse(tokens, sl, source, code, config);
+            if (l2 == null) {
+                config.error("Cannot parse line at " + sl);
+                return null;
+            }
+            l.clear();
+            for(int i = 0;i<number;i++) {
+                l.addAll(l2);
+            }
+            return l;
+        }
+        
         return null;
     }
 
@@ -232,7 +395,7 @@ public class SjasmDialect implements Dialect {
     @Override
     public void performAnyFinalActions(CodeBase code)
     {
-        
+        config.warn("Use of sjasm reusable labels, which are conductive to human error.");
     }
     
 }
