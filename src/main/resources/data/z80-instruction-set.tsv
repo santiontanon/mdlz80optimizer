@@ -412,3 +412,5 @@ SUB A, D	4	5	1	90+r	1	A,D				A	S,Z,H,P/V,N,C			false
 SUB A, E	4	5	1	90+r	1	A,E				A	S,Z,H,P/V,N,C			false
 SUB A, H	4	5	1	90+r	1	A,H				A	S,Z,H,P/V,N,C			false
 SUB A, L	4	5	1	90+r	1	A,L				A	S,Z,H,P/V,N,C			false
+SUB A, (IX+o)	19	21	5	DD 96 o	3	A,IX			IX+o	A	S,Z,H,P/V,N,C			false
+SUB A, (IY+o)	19	21	5	FD 96 o	3	A,IY			IY+o	A	S,Z,H,P/V,N,C			false

@@ -19,6 +19,7 @@ public class ExpressionParser {
 
     // make sure to add functions in lower case into this list:
     public List<String> dialectFunctions = new ArrayList<>();
+    public List<String> dialectFunctionsSingleArgumentNoParenthesis = new ArrayList<>();
 
 
     public ExpressionParser(MDLConfig a_config)
@@ -356,6 +357,23 @@ public class ExpressionParser {
                     }
                 }
                 return exp;
+                
+            } else if (dialectFunctionsSingleArgumentNoParenthesis.contains(token.toLowerCase())) {
+                String functionName = token;
+                List<Expression> args = new ArrayList<>();
+                Expression arg = parse(tokens, s, code);
+                if (arg == null) {
+                    config.error("Failed to parse argument list of a dialect function.");
+                    return null;
+                }
+                args.add(arg);
+                Expression exp = Expression.dialectFunctionExpression(functionName, args, config);
+                if (exp != null) {
+                    if (config.evaluateDialectFunctions) {
+                        config.codeBaseParser.expressionsToReplaceByValueAtTheEnd.add(Pair.of(exp, s));
+                    }
+                }
+                return exp;
             } else {
                 if (config.dialectParser != null) token = config.dialectParser.symbolName(token);
                 return Expression.symbolExpression(token, code, config);
@@ -382,6 +400,27 @@ public class ExpressionParser {
                     return exp;
                 } else {
                     return Expression.signChangeExpression(exp, config);
+                }
+            }
+        }
+        if (tokens.size() >= 2 &&
+            tokens.get(0).equals("+")) {
+            // Check if it's just a number with a plus in the front:
+            if (Tokenizer.isInteger(tokens.get(1))) {
+                tokens.remove(0);
+                Expression exp = parseInternal(tokens, s, code);
+                if (exp != null) {
+                    if (exp.type == Expression.EXPRESSION_NUMERIC_CONSTANT) {
+                        return exp;
+                    } else {
+                        // something weird happened:
+                        config.error("expression failed to parse with token list: " + tokens);
+                        return null;
+                    }
+                } else {
+                    // something weird happened:
+                    config.error("expression failed to parse with token list: " + tokens);
+                    return null;
                 }
             }
         }

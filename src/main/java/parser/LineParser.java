@@ -678,6 +678,9 @@ public class LineParser {
 
     public String resolveIncludePath(String rawFileName, SourceFile source) {
 
+        // Make sure we don't have a windows/Unix path separator problem:
+        if (rawFileName.contains("\\")) rawFileName = rawFileName.replace("\\", File.separator);
+        
         // Relative to current directory
         if (Resources.exists(rawFileName)) {
             config.debug("Included file " + rawFileName + " found relative to current directory");

@@ -381,6 +381,8 @@ public class Expression {
         return null;
     }
 
+    
+    @Override
     public String toString() {
         switch (type) {
             case EXPRESSION_REGISTER_OR_FLAG:
@@ -716,6 +718,9 @@ public class Expression {
         }
         if (type == EXPRESSION_TERNARY_IF) {
             return args.get(1).evaluatesToNumericConstant() && args.get(2).evaluatesToNumericConstant();
+        }
+        if (type == EXPRESSION_DIALECT_FUNCTION) {
+            return true;
         }
         return false;
     }

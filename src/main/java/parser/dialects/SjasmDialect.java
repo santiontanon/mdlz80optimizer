@@ -15,6 +15,8 @@ import code.SourceFile;
 import code.SourceStatement;
 import java.io.File;
 import java.util.HashMap;
+import java.util.StringTokenizer;
+import parser.MacroExpansion;
 import parser.SourceLine;
 import parser.SourceMacro;
 import parser.Tokenizer;
@@ -53,6 +55,9 @@ public class SjasmDialect implements Dialect {
         config.lineParser.addKeywordSynonym("=", config.lineParser.KEYWORD_EQU);
         
         config.preProcessor.macroSynonyms.put("endmacro", config.preProcessor.MACRO_ENDM);
+        
+        // This is not quite right, but should work:
+        config.preProcessor.macroSynonyms.put("endrepeat", config.preProcessor.MACRO_ENDM);
 
         config.warningJpHlWithParenthesis = false;
         config.lineParser.allowEmptyDB_DW_DD_definitions = true;
@@ -61,6 +66,13 @@ public class SjasmDialect implements Dialect {
         config.lineParser.allowIncludesWithoutQuotes = true;
         config.lineParser.macroNameIsFirstArgumentOfMacro = true;
         config.lineParser.allowNumberLabels = true;
+        
+        config.expressionParser.dialectFunctionsSingleArgumentNoParenthesis.add("high");
+        config.expressionParser.dialectFunctionsSingleArgumentNoParenthesis.add("low");
+        
+        // We define it as a dialectMacro instead of as a synonym of "REPT", as it has some special syntax for
+        // indicating the current iteration
+        config.preProcessor.dialectMacros.add("repeat");        
     }
 
     @Override
@@ -90,7 +102,6 @@ public class SjasmDialect implements Dialect {
                 || name.equalsIgnoreCase("word")
                 || name.equalsIgnoreCase("defw")
                 || name.equalsIgnoreCase("dword")
-                || name.equalsIgnoreCase("end")
                 || name.equalsIgnoreCase("map")
                 || name.equalsIgnoreCase("endmap")
                 || name.equalsIgnoreCase("field")
@@ -266,6 +277,9 @@ public class SjasmDialect implements Dialect {
                     Tokenizer.isMultiLineCommentStart(tokens.get(0))) break;
                 folder += tokens.remove(0);
             }
+
+            // Make sure we don't have a windows/Unix path separator problem:
+            if (folder.contains("\\")) folder = folder.replace("\\", File.separator);
             
             File path = new File(config.lineParser.pathConcat(source.getPath(), folder));
             config.includeDirectories.add(path);
@@ -388,9 +402,65 @@ public class SjasmDialect implements Dialect {
     @Override
     public Integer evaluateExpression(String functionName, List<Expression> args, SourceStatement s, CodeBase code, boolean silent)
     {
+        if (functionName.equalsIgnoreCase("high") && args.size() == 1) {
+            Integer value = args.get(0).evaluate(s, code, silent);
+            if (value == null) return null;
+            return (value >> 8)&0xff;
+        }
+        if (functionName.equalsIgnoreCase("low") && args.size() == 1) {
+            Integer value = args.get(0).evaluate(s, code, silent);
+            if (value == null) return null;
+            return value&0xff;
+        }
         return null;
     }
 
+    
+    @Override
+    public MacroExpansion instantiateMacro(SourceMacro macro, List<Expression> args, SourceStatement macroCall, CodeBase code)
+    {
+        List<SourceLine> lines2 = new ArrayList<>();
+        MacroExpansion me = new MacroExpansion(macro, macroCall, lines2);
+        
+        if (macro.name.equals("repeat")) {
+            if (args.isEmpty()) return null;
+            int iterations = args.get(0).evaluate(macroCall, code, false);
+            String scope;
+            if (macroCall.label != null) {
+                scope = macroCall.label.name;
+            } else {
+                scope = config.preProcessor.nextMacroExpansionContextName();
+            }
+            for(int i = 0;i<iterations;i++) {
+                String variable = "@#";
+                List<SourceLine> linesTmp = new ArrayList<>();
+                for(SourceLine sl:macro.lines) {
+                    // we create new instances, as we will modify them:
+                    linesTmp.add(new SourceLine(sl.line, sl.source, sl.lineNumber));
+                }
+                macro.scopeMacroExpansionLines(scope+"."+i, linesTmp, code, config);
+                for(SourceLine sl:linesTmp) {
+                    String line2 = sl.line;
+                    StringTokenizer st = new StringTokenizer(line2, " \t");
+                    if (st.hasMoreTokens()) {
+                        String token = st.nextToken();
+                        if (token.equalsIgnoreCase("repeat")) {
+                            variable = "@" + variable;
+                        } else if (token.equalsIgnoreCase("endrepeat")) {
+                            variable = variable.substring(1);
+                        }
+                    }
+                    line2 = line2.replace(variable, i + "");
+//                    System.out.println("line2 ("+variable+"): " + line2);
+                    lines2.add(new SourceLine(line2, sl.source, sl.lineNumber));
+                }
+            }
+            return me;
+        } else {
+            return null;
+        }
+    }
+    
 
     @Override
     public void performAnyFinalActions(CodeBase code)

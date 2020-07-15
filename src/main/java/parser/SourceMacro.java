@@ -175,7 +175,7 @@ public class SourceMacro {
 
         for(SourceLine sl:lines) {
             for(String definedLabel:macroDefinedLabels) {
-                List<String> tokens = Tokenizer.tokenize(sl.line);
+                List<String> tokens = Tokenizer.tokenizeIncludingBlanks(sl.line);
                 if (!tokens.isEmpty()) {
                     for(int i = 0;i<tokens.size();i++) {
                         String token = tokens.get(i);
@@ -190,8 +190,8 @@ public class SourceMacro {
                             tokens.set(i, scope + "." + definedLabel + token2.substring(definedLabel.length()));
                         }
                     }
-                    String reconstructedLine = sl.line.startsWith(tokens.get(0)) ? "":"  ";
-                    for(String token:tokens) reconstructedLine += token + " ";
+                    String reconstructedLine = "";
+                    for(String token:tokens) reconstructedLine += token;
                     sl.line = reconstructedLine;
                 }
             }
