@@ -88,6 +88,16 @@ public class Pattern {
     {
         return name;
     }
+    
+    
+    public String getInstantiatedName(PatternMatch match)
+    {
+        String tmp = name;
+        for(String variable:match.variables.keySet()) {
+            tmp = tmp.replace(variable, match.variables.get(variable).toString());
+        }
+        return tmp;
+    }
 
 
     public int getSpaceSaving(PatternMatch match)
@@ -302,6 +312,97 @@ public class Pattern {
                     } else {
                         // If they are not, then there is no need to evaluate, as they should just string match:
                         if (v1_str.equalsIgnoreCase(v2_str)) return null;
+                    }
+                    break;
+                }
+                case "in":
+                {
+                    boolean found = false;
+                    for(int i = 2;i<constraint.length;i++) {
+                        if (constraint[1].equalsIgnoreCase(constraint[i])) {
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found) {
+                        return null;
+                    }
+                    break;
+                }
+                case "regpair":
+                {
+                    String expected1 = null;
+                    String expected2 = null;
+                    String expected3 = null;
+                    if (!constraint[1].startsWith("?")) {
+                        // we need to construct the value from the second part:
+                        if (constraint[1].equalsIgnoreCase("bc")) {
+                            expected1 = "bc"; expected2 = "b"; expected3 = "c";
+                        }
+                        if (constraint[1].equalsIgnoreCase("de")) {
+                            expected1 = "de"; expected2 = "d"; expected3 = "e";
+                        }
+                        if (constraint[1].equalsIgnoreCase("hl")) {
+                            expected1 = "hl"; expected2 = "h"; expected3 = "l";
+                        }
+                        if (constraint[1].equalsIgnoreCase("ix")) {
+                            expected1 = "ix"; expected2 = "ixh"; expected3 = "ixl";
+                        }
+                        if (constraint[1].equalsIgnoreCase("iy")) {
+                            expected1 = "iy"; expected2 = "iyh"; expected3 = "iyl";
+                        }
+                    }
+                    if (!constraint[2].startsWith("?")) {
+                        // we need to construct the value from the second part:
+                        if (constraint[2].equalsIgnoreCase("b")) {
+                            expected1 = "bc"; expected2 = "b"; expected3 = "c";
+                        }
+                        if (constraint[2].equalsIgnoreCase("d")) {
+                            expected1 = "de"; expected2 = "d"; expected3 = "e";
+                        }
+                        if (constraint[2].equalsIgnoreCase("h")) {
+                            expected1 = "hl"; expected2 = "h"; expected3 = "l";
+                        }
+                        if (constraint[2].equalsIgnoreCase("ixh")) {
+                            expected1 = "ix"; expected2 = "ixh"; expected3 = "ixl";
+                        }
+                        if (constraint[2].equalsIgnoreCase("iyh")) {
+                            expected1 = "iy"; expected2 = "iyh"; expected3 = "iyl";
+                        }
+                    }
+                    if (!constraint[3].startsWith("?")) {
+                        // we need to construct the value from the second part:
+                        if (constraint[3].equalsIgnoreCase("c")) {
+                            expected1 = "bc"; expected2 = "b"; expected3 = "c";
+                        }
+                        if (constraint[3].equalsIgnoreCase("e")) {
+                            expected1 = "de"; expected2 = "d"; expected3 = "e";
+                        }
+                        if (constraint[3].equalsIgnoreCase("l")) {
+                            expected1 = "hl"; expected2 = "h"; expected3 = "l";
+                        }
+                        if (constraint[3].equalsIgnoreCase("ixl")) {
+                            expected1 = "ix"; expected2 = "ixh"; expected3 = "ixl";
+                        }
+                        if (constraint[3].equalsIgnoreCase("iyl")) {
+                            expected1 = "iy"; expected2 = "iyh"; expected3 = "iyl";
+                        }
+                    }
+                    if (expected1 == null || expected2 == null || expected3 == null) return null;
+                    if (constraint[1].startsWith("?")) {
+                        if (!match.addVariableMatch(constraint[1], Expression.symbolExpression(expected1, code, config))) return null;
+                    } else {
+                        if (!constraint[1].equalsIgnoreCase(expected1)) return null;
+                    }
+                    if (constraint[2].startsWith("?")) {
+                        if (!match.addVariableMatch(constraint[2], Expression.symbolExpression(expected2, code, config))) return null;
+                    } else {
+                        if (!constraint[2].equalsIgnoreCase(expected2)) return null;
+                    }
+                    if (constraint[3].startsWith("?")) {
+                        if (!match.addVariableMatch(constraint[3], Expression.symbolExpression(expected3, code, config))) return null;
+                    } else {
+                        if (!constraint[3].equalsIgnoreCase(expected3)) return null;
                     }
                     break;
                 }

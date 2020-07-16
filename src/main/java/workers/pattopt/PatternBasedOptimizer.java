@@ -175,7 +175,7 @@ public class PatternBasedOptimizer implements MDLWorker {
                         int bytesSaved = patt.getSpaceSaving(match);
                         String timeSavedString = patt.getTimeSavingString(match);
                         config.info("Pattern-based optimization", startStatement.fileNameLineString(), 
-                                patt.name+" ("+bytesSaved+" bytes, " +
+                                patt.getInstantiatedName(match)+" ("+bytesSaved+" bytes, " +
                                 timeSavedString + " " +config.timeUnit+"s saved)");
 
                         if (config.isDebugEnabled()) {
