@@ -14,7 +14,7 @@ label3:
     add hl,bc
     ld (hl),a
 
-    ld bc,1
+    ld bc,1     ; only c is ever used, so, this should be optimized to ld c,1
     ld hl,map
     jr z,label2b
 label1b:
@@ -29,7 +29,7 @@ label3b:
     add hl,bc
     ld (hl),a
 
-    ld bc,1
+    ld bc,1     ; only c is ever used, so, this should be optimized to ld c,1
     ld hl,map
     jr z,label2c
 label1c:

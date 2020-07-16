@@ -1,5 +1,5 @@
 ; Test case: 
-; - ld bc,1 should NOT be optimized (even if b is overwritten, c is not!)
+; - ld bc,1 should be optimized to write only c (as b is never used!)
 ; - ld bc,3 should be optimized
 ; - ld b,4; ld c,5 should be combined into one
 

@@ -434,3 +434,19 @@ constraints:
 in(?regixiy,IX,IY)
 regNotUsed(1,A)
 
+; theNestruo
+pattern: Replace ld ?regpair,?const1 with ld ?regpairl,(?const1 % 256)
+0: ld ?regpair,?const1
+replacement:
+0: ld ?regpairl,(?const1 % 256)
+constraints:
+regpair(?regpair,?regpairh,?regpairl)
+regNotUsed(0,?regpairh)
+
+pattern: Replace ld ?regpair,?const1 with ld ?regpairh,(?const1 / 256)
+0: ld ?regpair,?const1
+replacement:
+0: ld ?regpairh,(?const1 / 256)
+constraints:
+regpair(?regpair,?regpairh,?regpairl)
+regNotUsed(0,?regpairl)
