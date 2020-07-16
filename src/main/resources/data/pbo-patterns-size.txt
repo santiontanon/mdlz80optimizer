@@ -1,0 +1,21 @@
+; Author: Santiago Ontañón
+; - Patterns are separated by a blank line
+; - Patterns suggested by others are credited to them below.
+; - If you do a pull request with more patterns, please credit yourself in a comment before the pattern.
+
+include "pbo-patterns-base.txt"
+
+pattern: Replace jp ?const1 with jr ?const1
+0: jp ?const1
+replacement:
+0: jr ?const1
+constraints:
+reachableByJr(0,?const1)
+
+pattern: Replace jp ?any,?const1 with jr ?any,?const1
+0: jp ?any,?const1
+replacement:
+0: jr ?any,?const1
+constraints:
+in(?any,C,NC,Z,NZ)
+reachableByJr(0,?const1)

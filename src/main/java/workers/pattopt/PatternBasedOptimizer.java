@@ -11,6 +11,7 @@ import cl.MDLConfig;
 import code.CodeBase;
 import code.SourceFile;
 import code.SourceStatement;
+import org.apache.commons.io.FilenameUtils;
 import parser.Tokenizer;
 import util.Resources;
 import workers.MDLWorker;
@@ -63,7 +64,9 @@ public class PatternBasedOptimizer implements MDLWorker {
         return "  -po: Runs the pattern-based optimizer.\n" +
                "  -posilent: Supresses the pattern-based-optimizer output\n" +
                "  -popotential: Reports lines where a potential optimization was not applied for safety, but could maybe be done manually.\n" +
-               "  -popatterns <file>: specifies the file to load optimization patterns from (default 'data/pbo-patterns.txt').\n";
+               "  -popatterns <file>: specifies the file to load optimization patterns from (default 'data/pbo-patterns.txt', " +
+                                     "which contains patterns that optimize both size and speed). For targetting size optimizations, use " +
+                                     "'data/pbo-patterns-size.txt'.\n";
     }
 
     @Override
@@ -94,8 +97,14 @@ public class PatternBasedOptimizer implements MDLWorker {
 
     void initPatterns()
     {
-        try (BufferedReader br = Resources.asReader(inputPatternsFileName)) {
-
+        loadPatterns(inputPatternsFileName);
+    }
+    
+    
+    void loadPatterns(String fileName) 
+    {
+        config.debug("Loading patterns from " + fileName);
+        try (BufferedReader br = Resources.asReader(fileName)) {
             String patternString = "";
             while(true) {
                 String line = br.readLine();
@@ -115,7 +124,24 @@ public class PatternBasedOptimizer implements MDLWorker {
                         patternString = "";
                     }
                 } else {
-                    patternString += line + "\n";
+                    if (line.startsWith("include")) {
+                        List<String> tokens = Tokenizer.tokenize(line);
+                        if (tokens.size()>=2) {
+                            String name = tokens.get(1);
+                            if (Tokenizer.isString(name)) {
+                                // include another pattern file:
+                                name = name.substring(1, name.length()-1);
+                                String path = config.lineParser.pathConcat(FilenameUtils.getFullPath(fileName), name);
+                                loadPatterns(path);
+                            } else {
+                                config.error("Problem loading patterns in line: " + line);
+                            }
+                        } else {
+                            config.error("Problem loading patterns in line: " + line);
+                        }
+                    } else {
+                        patternString += line + "\n";
+                    }
                 }
             }
         } catch (Exception e) {

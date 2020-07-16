@@ -14,6 +14,7 @@ import code.CPUOp;
 import code.CPUOpDependency;
 import code.CodeBase;
 import code.Expression;
+import code.SourceConstant;
 import code.SourceFile;
 import code.SourceStatement;
 import parser.Tokenizer;
@@ -427,6 +428,18 @@ public class Pattern {
                     } else {
                         if (!constraint[3].equalsIgnoreCase(expected3)) return null;
                     }
+                    break;
+                }
+                case "reachableByJr":
+                {
+                    SourceStatement start = match.opMap.get(Integer.parseInt(constraint[1]));
+                    Integer startAddress = start.getAddress(code);
+                    SourceConstant sc = code.getSymbol(constraint[2]);
+                    if (sc == null) return null;
+                    Integer endAddress = sc.getValue(code, false);
+                    if (startAddress == null || endAddress == null) return null;
+                    int diff = endAddress - startAddress;
+                    if (diff < -128 || diff > 127) return null;
                     break;
                 }
                 default:

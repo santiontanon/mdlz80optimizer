@@ -33,7 +33,7 @@ public class SourceLineTrackingTest {
         Assert.assertTrue(test(
                 "data/tests/test1.asm", 
                 new String[]{"INFO: Pattern-based optimization in data/tests/test1.asm#6: Replace cp 0 with or a (1 bytes, 3 t-states saved)",
-                             "INFO: Pattern-based optimization in data/tests/test1.asm#15: Remove unused ld reg,? (2 bytes, 8 t-states saved)"})); 
+                             "INFO: Pattern-based optimization in data/tests/test1.asm#15: Remove unused ld a,? (2 bytes, 8 t-states saved)"})); 
     }
     @Test public void test29() throws IOException { 
         Assert.assertTrue(test(
