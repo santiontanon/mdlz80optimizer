@@ -105,7 +105,7 @@ public class SourceMacro {
             } else {
                 lines2.addAll(elseLines);
             }
-        } else if (config.preProcessor.dialectMacros.contains(name)) {
+        } else if (config.preProcessor.dialectMacros.containsKey(name)) {
             return config.dialectParser.instantiateMacro(this, args, macroCall, code);
         } else {
             // instantiate arguments:

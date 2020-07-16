@@ -29,7 +29,8 @@ public class PreProcessor {
     public final String MACRO_ENDIF = "endif";
 
     public HashMap<String, String> macroSynonyms = new HashMap<>();
-    public List<String> dialectMacros = new ArrayList<>();
+    // start/end keyword, e.g.: "repeat","endrepeat":
+    public HashMap<String,String> dialectMacros = new HashMap<>();
     
     MDLConfig config;
 
@@ -89,7 +90,7 @@ public class PreProcessor {
     public boolean isMacro(String name)
     {
         if (getMacro(name) != null) return true;
-        if (dialectMacros.contains(name)) return true;
+        if (dialectMacros.containsKey(name)) return true;
         return  (isMacroName(name, MACRO_REPT) ||
                  isMacroName(name, MACRO_IF) ||
                  isMacroName(name, MACRO_IFDEF));
@@ -99,7 +100,8 @@ public class PreProcessor {
     public boolean isMacroIncludingEnds(String name)
     {
         if (getMacro(name) != null) return true;
-        if (dialectMacros.contains(name)) return true;
+        if (dialectMacros.containsKey(name)) return true;
+        if (dialectMacros.containsValue(name)) return true;
         return  (isMacroName(name, MACRO_REPT) ||
                  isMacroName(name, MACRO_IF) ||
                  isMacroName(name, MACRO_IFDEF) ||
@@ -143,7 +145,7 @@ public class PreProcessor {
                            isMacroName(m.name, MACRO_IFDEF)) {
                     m.addLine(sl);
 
-                } else if (dialectMacros.contains(m.name)) {
+                } else if (dialectMacros.containsKey(m.name)) {
                     SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_MACROCALL, sl, f, null);
                     s.macroCallMacro = m;
                     s.macroCallArguments = m.preDefinedMacroArgs;
@@ -207,6 +209,20 @@ public class PreProcessor {
         } else if (!tokens.isEmpty() && isMacroName(tokens.get(0), MACRO_REPT)) {
             currentMacroNameStack.add(0, MACRO_REPT);
             m.addLine(sl);
+        } else if (!tokens.isEmpty() && dialectMacros.containsKey(tokens.get(0).toLowerCase())) {
+            currentMacroNameStack.add(0, MACRO_REPT);
+            m.addLine(sl);
+        } else if (!tokens.isEmpty() && dialectMacros.containsValue(tokens.get(0).toLowerCase())) {
+            if (currentMacroNameStack.isEmpty()) {
+                SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_MACROCALL, sl, f, null);
+                s.macroCallMacro = m;
+                s.macroCallArguments = m.preDefinedMacroArgs;
+                newStatements.add(s);
+                currentMacro = null;
+            } else {
+                currentMacroNameStack.remove(0);
+                m.addLine(sl);
+            }
         } else {
             m.addLine(sl);
         }
@@ -256,7 +272,7 @@ public class PreProcessor {
                 }
                 currentMacro = m;
                 return true;
-            } else if (dialectMacros.contains(s.macroCallName.toLowerCase())) {
+            } else if (dialectMacros.containsKey(s.macroCallName.toLowerCase())) {
                 SourceMacro m = new SourceMacro(s.macroCallName.toLowerCase(), s);
                 m.preDefinedMacroArgs = s.macroCallArguments;
                 if (currentMacro != null) {

@@ -42,7 +42,7 @@ public class GlassDialect implements Dialect {
 
         config.eagerMacroEvaluation = false;  // Glass expects lazy evaluation of macros
         
-        config.preProcessor.dialectMacros.add("irp");
+        config.preProcessor.dialectMacros.put("irp", "endm");
     }
 
 

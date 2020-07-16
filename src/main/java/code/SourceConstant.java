@@ -8,6 +8,9 @@ public class SourceConstant {
     public Expression exp;
     Integer valueCache;  // null if not yet evaluated
     
+    public boolean resolveEagerly = false; // Variables where this is true, will be evaluated right away
+                                           // This is needed for := variables in sjasm and asMSX
+    
     SourceStatement s;  // the statement where it was defined
     
     public SourceConstant(String a_name, Integer a_value, Expression a_exp, SourceStatement a_s)
@@ -27,6 +30,12 @@ public class SourceConstant {
             valueCache = exp.evaluate(s, code, silent);
             return valueCache;
         }
+    }
+    
+    
+    public void clearCache()
+    {
+        valueCache = null;
     }
     
     

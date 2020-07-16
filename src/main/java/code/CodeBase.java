@@ -79,11 +79,26 @@ public class CodeBase {
     public boolean addSymbol(String name, SourceConstant sc)
     {
         if (symbols.containsKey(name)) {
-            if (symbols.get(name).exp != null) {
-                config.error("Redefining symbol " + name);
-                config.error("First defined in " + symbols.get(name).s.sl.source.fileName + ", " + symbols.get(name).s.sl.lineNumber + " as " + symbols.get(name).exp + ": " +  symbols.get(name).s);
-                config.error("Redefined in " + sc.s.sl.source.fileName + ", "+ sc.s.sl.lineNumber + " as " + symbols.get(name).exp + ": " + sc.s);
-                return false;
+            SourceConstant previous = symbols.get(name);
+            if (previous.resolveEagerly) {
+                if (sc.exp != null) {
+                    // resolve it right away, before replacing:
+                    Integer value = sc.exp.evaluate(sc.s, this, false);
+                    if (value != null) {
+                        config.error("Cannot resolve eager variable in " + sc.s.sl);
+                        return false;
+                    }
+                    sc.exp = Expression.constantExpression(value, config);
+                } else {
+                    sc.exp = previous.exp;
+                }
+            } else {
+                if (symbols.get(name).exp != null) {
+                    config.error("Redefining symbol " + name);
+                    config.error("First defined in " + symbols.get(name).s.sl.source.fileName + ", " + symbols.get(name).s.sl.lineNumber + " as " + symbols.get(name).exp + ": " +  symbols.get(name).s);
+                    config.error("Redefined in " + sc.s.sl.source.fileName + ", "+ sc.s.sl.lineNumber + " as " + symbols.get(name).exp + ": " + sc.s);
+                    return false;
+                }
             }
         }
         symbols.put(name, sc);

@@ -252,6 +252,8 @@ public class CPUOpSpec {
     public boolean isRet()
     {
         if (opName.equalsIgnoreCase("ret")) return true;
+        if (opName.equalsIgnoreCase("retni")) return true;
+        if (opName.equalsIgnoreCase("ret")) return true;
         return false;
     }
 

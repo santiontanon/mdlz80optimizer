@@ -132,7 +132,7 @@ public class LineParser {
             if (parseIncbin(tokens, sl, s, source, code)) return l;
         } else if (tokens.size() >= 2 && isKeyword(token, KEYWORD_EQU)) {
             tokens.remove(0);
-            if (parseEqu(tokens, sl, s, source, code, true)) return l;
+            if (parseEqu(tokens, sl, s, source, code)) return l;
         } else if (tokens.size() >= 1
                 && (isKeyword(token, KEYWORD_DB)
                 || isKeyword(token, KEYWORD_DW)
@@ -254,7 +254,7 @@ public class LineParser {
                     }
                 }
                 if (isLabel) {
-                    if (config.warningLabelWithoutColon) {
+                    if (config.warningLabelWithoutColon && !tokens.get(1).startsWith(":")) {
                         config.warn("Style suggestion", s.fileNameLineString(),
                                 "Label "+token+" defined without a colon.");
                     }
@@ -438,7 +438,7 @@ public class LineParser {
 
     public boolean parseEqu(List<String> tokens,
             SourceLine sl,
-            SourceStatement s, SourceFile source, CodeBase code, boolean defineInCodeBase) {
+            SourceStatement s, SourceFile source, CodeBase code) {
         if (s.label == null) {
             config.error("Equ without label in line " + sl.fileNameLineString() + ": " + sl.line);
             return false;
@@ -554,7 +554,8 @@ public class LineParser {
                 // Check for some strange sjasm syntax concerning reusable labels:
                 if (opName.equalsIgnoreCase("call") ||
                     opName.equalsIgnoreCase("jp") ||
-                    opName.equalsIgnoreCase("jr")) {
+                    opName.equalsIgnoreCase("jr") ||
+                    opName.equalsIgnoreCase("djnz")) {
                     String token = tokens.get(0);
                     if ((token.endsWith("f") || token.endsWith("F") || token.endsWith("b") || token.endsWith("B")) && 
                         Tokenizer.isInteger(token.substring(0, token.length()-1))) {

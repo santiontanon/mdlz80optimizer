@@ -752,6 +752,19 @@ public class Expression {
             exp.registerOrFlagName = symbol;
             return exp;
         } else {
+            // check if it's a variable that needs to be evaluated eagerly:
+            SourceConstant c = code.getSymbol(symbol);
+            if (c != null && c.resolveEagerly) {
+                Integer value = c.getValue(code, false);
+                if (value == null) {
+                    config.error("Cannot resolve eager variable " + symbol + "!");
+                    return null;
+                }
+                Expression exp = new Expression(EXPRESSION_NUMERIC_CONSTANT, config);
+                exp.numericConstant = value;
+                return exp;
+            }
+            
             Expression exp = new Expression(EXPRESSION_SYMBOL, config);
             exp.symbolName = symbol;
             return exp;

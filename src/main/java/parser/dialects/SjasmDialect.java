@@ -56,13 +56,11 @@ public class SjasmDialect implements Dialect {
         
         config.preProcessor.macroSynonyms.put("endmacro", config.preProcessor.MACRO_ENDM);
         
-        // This is not quite right, but should work:
-        config.preProcessor.macroSynonyms.put("endrepeat", config.preProcessor.MACRO_ENDM);
-
         config.warningJpHlWithParenthesis = false;
         config.lineParser.allowEmptyDB_DW_DD_definitions = true;
         config.lineParser.keywordsHintingALabel.add("#");
         config.lineParser.keywordsHintingALabel.add("field");
+        config.lineParser.keywordsHintingALabel.add(":=");
         config.lineParser.allowIncludesWithoutQuotes = true;
         config.lineParser.macroNameIsFirstArgumentOfMacro = true;
         config.lineParser.allowNumberLabels = true;
@@ -72,7 +70,7 @@ public class SjasmDialect implements Dialect {
         
         // We define it as a dialectMacro instead of as a synonym of "REPT", as it has some special syntax for
         // indicating the current iteration
-        config.preProcessor.dialectMacros.add("repeat");        
+        config.preProcessor.dialectMacros.put("repeat", "endrepeat");
     }
 
     @Override
@@ -90,6 +88,7 @@ public class SjasmDialect implements Dialect {
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("defpage")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("code")) return true;
         if (tokens.size() >= 3 && tokens.get(0).equalsIgnoreCase("[")) return true;
+        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase(":=")) return true;
         return false;
     }
 
@@ -388,6 +387,29 @@ public class SjasmDialect implements Dialect {
             }
             return l;
         }
+        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase(":=")) {
+            // This is like an equ, but with a variable that changes value throughout parsing.
+            // This only makes sense in eager execution, so, we check for that:
+            if (!config.eagerMacroEvaluation) {
+                config.error("Non final variable defined in lazy evaluation mode at " + sl);
+                return null;
+            }
+            
+            tokens.remove(0);
+            s.label.resolveEagerly = true;
+            if (!config.lineParser.parseEqu(tokens, sl, s, source, code)) return null;
+            s.label.clearCache();
+            Integer value = s.label.exp.evaluate(s, code, false);
+            if (value == null) {
+                config.error("Cannot resolve eager variable in " + sl);
+                return null;
+            }
+            s.label.exp = Expression.constantExpression(value, config);
+            
+            // these variables should not be part of the source code:
+            l.clear();
+            return l;
+        }
         
         return null;
     }
@@ -425,12 +447,12 @@ public class SjasmDialect implements Dialect {
         if (macro.name.equals("repeat")) {
             if (args.isEmpty()) return null;
             int iterations = args.get(0).evaluate(macroCall, code, false);
-            String scope;
-            if (macroCall.label != null) {
-                scope = macroCall.label.name;
-            } else {
-                scope = config.preProcessor.nextMacroExpansionContextName();
-            }
+//            String scope;
+//            if (macroCall.label != null) {
+//                scope = macroCall.label.name;
+//            } else {
+//                scope = config.preProcessor.nextMacroExpansionContextName();
+//            }
             for(int i = 0;i<iterations;i++) {
                 String variable = "@#";
                 List<SourceLine> linesTmp = new ArrayList<>();
@@ -438,7 +460,7 @@ public class SjasmDialect implements Dialect {
                     // we create new instances, as we will modify them:
                     linesTmp.add(new SourceLine(sl.line, sl.source, sl.lineNumber));
                 }
-                macro.scopeMacroExpansionLines(scope+"."+i, linesTmp, code, config);
+                // macro.scopeMacroExpansionLines(scope+"."+i, linesTmp, code, config);
                 for(SourceLine sl:linesTmp) {
                     String line2 = sl.line;
                     StringTokenizer st = new StringTokenizer(line2, " \t");
