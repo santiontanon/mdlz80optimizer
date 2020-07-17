@@ -35,21 +35,21 @@ pattern: Replace cp 1 with dec a
 replacement:
 0: dec a
 constraints:
-regNotUsed(0,A)
+regsNotUsedAfter(0,A)
 
 pattern: Replace cp 255 with inc a
 0: cp 255
 replacement:
 0: inc a
 constraints:
-regNotUsed(0,A)
+regsNotUsedAfter(0,A)
 
 pattern: Replace ld a,0 with xor a
 0: ld a,0
 replacement:
 0: xor a
 constraints:
-flagsNotUsed(0,S,Z,H,P/V,N,C)
+flagsNotUsedAfter(0,S,Z,H,P/V,N,C)
 
 pattern: Replace srl a; srl a; srl a with rrca; rrca; rrca; and #1f
 0: srl a
@@ -65,7 +65,7 @@ pattern: Remove unused ld ?reg,?any
 0: ld ?reg,?any
 replacement:
 constraints:
-regNotUsed(0,?reg)
+regsNotUsedAfter(0,?reg)
 
 pattern: Replace pop ?regpair1; ld ?regpair2h,?regpair1h; ld ?regpair2l,?regpair1l with pop ?regpair2
 0: pop ?regpair1
@@ -78,7 +78,7 @@ in(?regpair1,BC,DE,HL)
 regpair(?regpair1,?regpair1h,?regpair1l)
 regpair(?regpair2,?regpair2h,?regpair2l)
 in(?regpair2,BC,DE,HL)
-regNotUsed(2,?regpair1)
+regsNotUsedAfter(2,?regpair1)
 
 pattern: Replace pop ?regpair1; ld ?regpair2l,?regpair1l; ld ?regpair2h,?regpair1h with pop ?regpair2
 0: pop ?regpair1
@@ -91,7 +91,7 @@ in(?regpair1,BC,DE,HL)
 regpair(?regpair1,?regpair1h,?regpair1l)
 regpair(?regpair2,?regpair2h,?regpair2l)
 in(?regpair2,BC,DE,HL)
-regNotUsed(2,?regpair1)
+regsNotUsedAfter(2,?regpair1)
 
 pattern: Replace 0: ld a,(nn); inc a; ld (nn),a with  ld hl,nn; inc (hl)
 0: ld a,(?const1)
@@ -101,7 +101,7 @@ replacement:
 0: ld hl,?const1
 1: inc (hl)
 constraints:
-regNotUsed(2,A,HL)
+regsNotUsedAfter(2,A,HL)
 
 pattern: Replace ld a,(nn); inc a; ld (nn),a with  ld hl,nn; inc (hl); ld a,(hl)
 0: ld a,(?const1)
@@ -112,7 +112,7 @@ replacement:
 1: inc (hl)
 2: ld a,(hl)
 constraints:
-regNotUsed(2,HL)
+regsNotUsedAfter(2,HL)
 
 pattern: Replace ld ?regpair1h,n; ld ?regpair1l,m with ld ?regpair1,m%256+n*256
 0: ld ?regpair1h,?const1
@@ -136,7 +136,7 @@ pattern: Replace ld a,n; ld (hl),a with ld (hl),n
 replacement:
 0: ld (hl),?const1
 constraints:
-regNotUsed(1,A)
+regsNotUsedAfter(1,A)
 
 pattern: Replace dec b; jr nz,label with djnz label
 0: dec b
@@ -152,7 +152,7 @@ pattern: Replace ld a,(hl); lde (de),a; inc hl; inc de with ldi
 replacement:
 0: ldi
 constraints:
-regNotUsed(3,A,BC)
+regsNotUsedAfter(3,A,BC)
 
 ; thanks to pgimeno for suggesting this permutation
 pattern: Replace ld a,(hl); inc hl; lde (de),a; inc de with ldi
@@ -163,7 +163,7 @@ pattern: Replace ld a,(hl); inc hl; lde (de),a; inc de with ldi
 replacement:
 0: ldi
 constraints:
-regNotUsed(3,A,BC)
+regsNotUsedAfter(3,A,BC)
 
 pattern: Replace ld a,(hl); lde (de),a; inc de; inc hl; with ldi
 0: ld a,(hl)
@@ -173,7 +173,7 @@ pattern: Replace ld a,(hl); lde (de),a; inc de; inc hl; with ldi
 replacement:
 0: ldi
 constraints:
-regNotUsed(3,A,BC)
+regsNotUsedAfter(3,A,BC)
 
 pattern: Replace ld a,(hl); lde (de),a; inc hl; inc de with ldi; inc bc
 0: ld a,(hl)
@@ -184,7 +184,7 @@ replacement:
 0: ldi
 1: inc bc
 constraints:
-regNotUsed(3,A)
+regsNotUsedAfter(3,A)
 
 ; thanks to pgimeno for suggesting this permutation
 pattern: Replace ld a,(hl); inc hl; lde (de),a; inc de with ldi; inc bc
@@ -196,7 +196,7 @@ replacement:
 0: ldi
 1: inc bc
 constraints:
-regNotUsed(3,A)
+regsNotUsedAfter(3,A)
 
 pattern: Replace ld a,(hl); lde (de),a; inc de; inc hl; with ldi
 0: ld a,(hl)
@@ -207,7 +207,7 @@ replacement:
 0: ldi
 1: inc bc
 constraints:
-regNotUsed(3,A)
+regsNotUsedAfter(3,A)
 
 pattern: Replace ld ?regpair,nn; or a; sbc hl,?regpair with ld ?regpair,-nn; add hl,regpair
 0: ld ?regpair,?const1
@@ -242,7 +242,7 @@ pattern: Replace xor 255 with cpl
 replacement:
 0: cpl
 constraints:
-flagsNotUsed(0,S,Z,P/V,C)
+flagsNotUsedAfter(0,S,Z,P/V,C)
 
 pattern: Replace ld a,?reg; neg with xor a; sub ?reg
 0: ld a,?reg
@@ -265,7 +265,7 @@ pattern: Replace sla l; rl h with add hl,hl
 replacement:
 0: add hl,hl
 constraints:
-flagsNotUsed(1,S,Z,P/V,C)
+flagsNotUsedAfter(1,S,Z,P/V,C)
 
 ; thanks to grauw for suggesting this pattern
 pattern: Replace sla a with add a,a
@@ -273,7 +273,7 @@ pattern: Replace sla a with add a,a
 replacement:
 0: add a,a
 constraints:
-flagsNotUsed(0,H,P/V)
+flagsNotUsedAfter(0,H,P/V)
 
 ; theNestruo
 pattern: Replace call nn; ret with jp nn
@@ -290,7 +290,7 @@ replacement:
 0: rra
 1: jr c,?const
 constraints:
-regNotUsed(2,A)
+regsNotUsedAfter(2,A)
 
 pattern: Replace and 1; cp 1; jp z,nn with rra; jp nz,nn
 0: and 1
@@ -300,7 +300,7 @@ replacement:
 0: rra
 1: jp c,?const
 constraints:
-regNotUsed(2,A)
+regsNotUsedAfter(2,A)
 
 pattern: Replace and 1; cp 1; call z,nn with rra; call nz,nn
 0: and 1
@@ -310,7 +310,7 @@ replacement:
 0: rra
 1: call c,?const
 constraints:
-regNotUsed(2,A)
+regsNotUsedAfter(2,A)
 
 pattern: Replace and 1; cp 1; jr z,nn with and 1; jr nz,nn
 0: and 1
@@ -343,7 +343,7 @@ replacement:
 0: rra
 1: jr nc,?const
 constraints:
-regNotUsed(1,A)
+regsNotUsedAfter(1,A)
 
 pattern: Replace bit 7,a; jr z,nn with rla; jr nc,nn
 0: bit 7,a
@@ -352,7 +352,7 @@ replacement:
 0: rla
 1: jr nc,?const
 constraints:
-regNotUsed(1,A)
+regsNotUsedAfter(1,A)
 
 pattern: Replace bit 0,a; jp z,nn with rra; jp nc,nn
 0: bit 0,a
@@ -361,7 +361,7 @@ replacement:
 0: rra
 1: jp nc,?const
 constraints:
-regNotUsed(1,A)
+regsNotUsedAfter(1,A)
 
 pattern: Replace bit 7,a; jp z,nn with rla; jp nc,nn
 0: bit 7,a
@@ -370,7 +370,7 @@ replacement:
 0: rla
 1: jp nc,?const
 constraints:
-regNotUsed(1,A)
+regsNotUsedAfter(1,A)
 
 pattern: Replace bit 0,a; call z,nn with rra; call nc,nn
 0: bit 0,a
@@ -379,7 +379,7 @@ replacement:
 0: rra
 1: call nc,?const
 constraints:
-regNotUsed(1,A)
+regsNotUsedAfter(1,A)
 
 pattern: Replace bit 7,a; call z,nn with rla; call nc,nn
 0: bit 7,a
@@ -388,7 +388,7 @@ replacement:
 0: rla
 1: call nc,?const
 constraints:
-regNotUsed(1,A)
+regsNotUsedAfter(1,A)
 
 pattern: Replace ld ?regixiy,nn; ld r,(?regixiy+mm) with ld hl,nn+mm; ld r,(hl)
 0: ld ?regixiy,?const1
@@ -398,7 +398,7 @@ replacement:
 1: ld ?reg,(hl)
 constraints:
 in(?regixiy,IX,IY)
-regNotUsed(1,?regixiy,HL)
+regsNotUsedAfter(1,?regixiy,HL)
 
 pattern: Replace ld ?regixiy,nn; ld r,(?regixiy) with ld hl,nn+mm; ld r,(hl)
 0: ld ?regixiy,?const1
@@ -408,7 +408,7 @@ replacement:
 1: ld ?reg,(hl)
 constraints:
 in(?regixiy,IX,IY)
-regNotUsed(1,?regixiy,HL)
+regsNotUsedAfter(1,?regixiy,HL)
 
 pattern: Remove ld ?reg,?reg
 0: ld ?reg,?reg
@@ -422,7 +422,7 @@ replacement:
 0: ld (?regixiy+?const2),?const1
 constraints:
 in(?regixiy,IX,IY)
-regNotUsed(1,?reg)
+regsNotUsedAfter(1,?reg)
 
 ; theNestruo
 pattern: Replace xor a; ld (?regixiy+m),a with ld (?regixiy+m),0
@@ -432,7 +432,7 @@ replacement:
 0: ld (?regixiy+?const2),0
 constraints:
 in(?regixiy,IX,IY)
-regNotUsed(1,A)
+regsNotUsedAfter(1,A)
 
 ; theNestruo
 pattern: Replace ld ?regpair,?const1 with ld ?regpairl,(?const1 % 256)
@@ -441,7 +441,7 @@ replacement:
 0: ld ?regpairl,(?const1 % 256)
 constraints:
 regpair(?regpair,?regpairh,?regpairl)
-regNotUsed(0,?regpairh)
+regsNotUsedAfter(0,?regpairh)
 
 pattern: Replace ld ?regpair,?const1 with ld ?regpairh,(?const1 / 256)
 0: ld ?regpair,?const1
@@ -449,4 +449,15 @@ replacement:
 0: ld ?regpairh,(?const1 / 256)
 constraints:
 regpair(?regpair,?regpairh,?regpairl)
-regNotUsed(0,?regpairl)
+regsNotUsedAfter(0,?regpairl)
+
+; pattern commented out, since I'm still working on support for this:
+; pattern: Remove duplicate ld ?reg,?any that appears below this line
+; 0: ld ?reg,?any
+; 1: *
+; 2: ld ?reg,?any
+; replacement:
+; 0: ld ?reg,?any
+; 1: *
+; constraints:
+; regsNotModified(1, ?reg)

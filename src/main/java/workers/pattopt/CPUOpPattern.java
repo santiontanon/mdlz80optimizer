@@ -20,11 +20,15 @@ import parser.Tokenizer;
  * @author santi
  */
 public class CPUOpPattern {
+    public static final String WILDCARD = "*";
+    
     int ID;
+    boolean wildcard = false;   // if this is true, "opName" and "args" will be "*" and empty.
     String opName;
     List<Expression> args = new ArrayList<>();
 
 
+    @Override
     public String toString()
     {
         String str = opName;
@@ -70,6 +74,7 @@ public class CPUOpPattern {
             return null;
         }
         pat.opName = tokens.remove(0);
+        if (pat.opName.equals(WILDCARD)) return pat;
         while(!tokens.isEmpty()) {
             if (Tokenizer.isSingleLineComment(tokens.get(0))) break;
             Expression exp = config.expressionParser.parse(tokens, null, code);

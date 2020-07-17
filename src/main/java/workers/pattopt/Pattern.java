@@ -268,7 +268,7 @@ public class Pattern {
             }
 
             switch(constraint[0]) {
-                case "regNotUsed":
+                case "regsNotUsedAfter":
                 {
                     int idx = Integer.parseInt(constraint[1]);
                     for(int i = 2;i<constraint.length;i++) {
@@ -281,7 +281,7 @@ public class Pattern {
                     }
                     break;
                 }
-                case "flagsNotUsed":
+                case "flagsNotUsedAfter":
                 {
                     int idx = Integer.parseInt(constraint[1]);
                     for(int i = 2;i<constraint.length;i++) {
