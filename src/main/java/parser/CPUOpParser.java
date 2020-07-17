@@ -115,6 +115,13 @@ public class CPUOpParser {
     CPUOp officialFromUnofficial(CPUOpSpec officialSpec, CPUOpSpec unofficialSpec, List<Expression> a_args, CodeBase code)
     {
         List<Expression> officialArgs = new ArrayList<>();
+
+        if (unofficialSpec.opName.equalsIgnoreCase("sub") && a_args.size() == 2) {
+            // just ignore the initial "A":
+            officialArgs.add(a_args.get(1));
+            return new CPUOp(officialSpec, officialArgs, config);
+        }
+        
         List<Integer> used = new ArrayList<>();
         for(CPUOpSpecArg officialArgSpec:officialSpec.args) {
             boolean found = false;

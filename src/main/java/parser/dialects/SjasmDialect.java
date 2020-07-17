@@ -11,6 +11,7 @@ import java.util.List;
 import cl.MDLConfig;
 import code.CodeBase;
 import code.Expression;
+import code.SourceConstant;
 import code.SourceFile;
 import code.SourceStatement;
 import java.io.File;
@@ -26,12 +27,21 @@ import parser.Tokenizer;
  * @author santi
  */
 public class SjasmDialect implements Dialect {
+    
+    public static class SjasmStruct {
+        String name;
+        SourceFile file;
+        SourceStatement start;
+        List<String> attributeNames = new ArrayList<>();
+        List<Integer> attributeSizes = new ArrayList<>();
+    }
+    
 
     MDLConfig config;
 
     String lastAbsoluteLabel = null;
-    SourceFile structFile = null;
-    int structStart = 0;
+    SjasmStruct struct = null;
+    List<SjasmStruct> structs = new ArrayList<>();
 
     int mapCounter = 0;
     List<Integer> mapCounterStack = new ArrayList<>();
@@ -86,9 +96,14 @@ public class SjasmDialect implements Dialect {
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("incdir")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("output")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("defpage")) return true;
-        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("code")) return true;
+        if (tokens.size() >= 1 && tokens.get(0).equalsIgnoreCase("code")) return true;
+        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("dz")) return true;
         if (tokens.size() >= 3 && tokens.get(0).equalsIgnoreCase("[")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase(":=")) return true;
+        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("align")) return true;
+        for(SjasmStruct s:structs) {
+            if (tokens.get(0).equals(s.name)) return true;
+        }
         return false;
     }
 
@@ -167,30 +182,38 @@ public class SjasmDialect implements Dialect {
         
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("struct")) {
             tokens.remove(0);
-            config.lineParser.pushLabelPrefix(tokens.remove(0) + ".");
+            struct = new SjasmStruct();
+            struct.name = tokens.remove(0);
+            struct.file = source;
+            config.lineParser.pushLabelPrefix(struct.name + ".");
             if (!tokens.isEmpty() && tokens.get(0).equalsIgnoreCase("struc")) {
                 // TODO(santi@): investigate what is this syntax, I found it in this file: https://github.com/GuillianSeed/MetalGear/blob/master/constants/structures.asm
                 // But it does not seem to be documented, I think it might be an error that sjasm just happens to swalow
                 tokens.remove(0);
             }
-            structFile = source;
-            structStart = source.getStatements().size();
+            struct.file = source;
+            struct.start = s;
+            s.type = SourceStatement.STATEMENT_CONSTANT;
+            SourceConstant c = new SourceConstant(struct.name, null, null, s);
+            s.label = c;
+            if (!code.addSymbol(c.name, c)) return null;
             if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
         }
         if (tokens.size() >= 1 && tokens.get(0).equalsIgnoreCase("ends")) {
             tokens.remove(0);
-            if (structFile == null) {
+            if (struct.file == null) {
                 config.error("ends outside of a struct at " + sl);
                 return null;
             }
-            if (structFile != source) {
+            if (struct.file != source) {
                 config.error("struct split among multiple files is not supported at " + sl);
                 return null;
             }
-
+            
             // Transform the struct into equ definitions with local labels:
             int offset = 0;
-            for (int i = structStart; i < source.getStatements().size(); i++) {
+            int start = source.getStatements().indexOf(struct.start) + 1;
+            for (int i = start; i < source.getStatements().size(); i++) {
                 SourceStatement s2 = source.getStatements().get(i);
                 int offset_prev = offset;
                 switch (s2.type) {
@@ -199,8 +222,17 @@ public class SjasmDialect implements Dialect {
                     case SourceStatement.STATEMENT_DATA_BYTES:
                     case SourceStatement.STATEMENT_DATA_WORDS:
                     case SourceStatement.STATEMENT_DATA_DOUBLE_WORDS:
-                        offset += s2.sizeInBytes(code, true, true, true);
+                    {
+                        int size = s2.sizeInBytes(code, true, true, true);
+                        offset += size;
+                        if (s2.label != null) {
+                            struct.attributeNames.add(s2.label.name);
+                        } else {
+                            struct.attributeNames.add(null);
+                        }
+                        struct.attributeSizes.add(size);
                         break;
+                    }
                     default:
                         config.error("Unsupported statement (type="+s2.type+") inside a struct definition at " + sl);
                         return null;
@@ -210,11 +242,16 @@ public class SjasmDialect implements Dialect {
                     s2.label.exp = Expression.constantExpression(offset_prev, config);
                 } else {
                     s2.type = SourceStatement.STATEMENT_NONE;
-                }
+                }                
             }
 
+            // Record the struct for later:
+//            System.out.println("New struct definition: " + struct.name + ":\n  - " + struct.attributeNames + "\n  - " + struct.attributeSizes);
+            struct.start.label.exp = Expression.constantExpression(offset, config);
+            structs.add(struct);
+            config.lineParser.keywordsHintingALabel.add(struct.name);
             config.lineParser.popLabelPrefix();
-            structFile = null;
+            struct = null;
             if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
         }
         if (tokens.size() >= 1 && tokens.get(0).equalsIgnoreCase("end")) {
@@ -251,6 +288,7 @@ public class SjasmDialect implements Dialect {
                 return null;
             }
             s.label.exp = exp;
+            s.type = SourceStatement.STATEMENT_CONSTANT;
             mapCounter += exp.evaluate(s, code, false);
             if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
         }
@@ -324,7 +362,7 @@ public class SjasmDialect implements Dialect {
             if (pageSizeExp != null) pageStart.put(pageExp.evaluate(s, code, false), pageSizeExp);
             if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
         }
-        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("code")) {
+        if (tokens.size() >= 1 && tokens.get(0).equalsIgnoreCase("code")) {
             tokens.remove(0);
             Expression addressExp = null;
             if (!tokens.isEmpty() && tokens.get(0).equals("?")) {
@@ -376,13 +414,17 @@ public class SjasmDialect implements Dialect {
             }
             tokens.remove(0);
             int number = numberExp.evaluate(s, code, false);
-            List<SourceStatement> l2 = config.lineParser.parse(tokens, sl, source, code, config);
-            if (l2 == null) {
-                config.error("Cannot parse line at " + sl);
-                return null;
-            }
             l.clear();
             for(int i = 0;i<number;i++) {
+                List<String> tokensCopy = new ArrayList<>();
+                tokensCopy.addAll(tokens);
+                // we need to parse it every time, to create multiple different copies of the statements:
+                List<SourceStatement> l2 = config.lineParser.parse(tokensCopy, sl, source, code, config);
+                if (l2 == null) {
+                    config.error("Cannot parse line at " + sl);
+                    return null;
+                }
+
                 l.addAll(l2);
             }
             return l;
@@ -410,6 +452,94 @@ public class SjasmDialect implements Dialect {
             l.clear();
             return l;
         }
+        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("dz")) {
+            tokens.remove(0);
+            if (!config.lineParser.parseData(tokens, "db", sl, s, source, code)) return null;
+            // insert a "0" at the end of each string:
+            List<Expression> newData = new ArrayList<>();
+            for(Expression exp:s.data) {
+                newData.add(exp);
+                newData.add(Expression.constantExpression(0, config));
+            }
+            s.data = newData;
+            return l;
+        }        
+        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("align")) {
+            tokens.remove(0);
+            Expression exp = config.expressionParser.parse(tokens, s, code);
+            if (exp == null) {
+                config.error("Cannot parse expression in " + sl);
+                return null;
+            }
+            s.type = SourceStatement.STATEMENT_DEFINE_SPACE;
+            // ds virtual (((($-1)/exp)+1)*exp-$)
+            s.space = Expression.operatorExpression(Expression.EXPRESSION_SUB,
+                        Expression.operatorExpression(Expression.EXPRESSION_MUL, 
+                          Expression.operatorExpression(Expression.EXPRESSION_SUM, 
+                            Expression.operatorExpression(Expression.EXPRESSION_DIV, 
+                              Expression.operatorExpression(Expression.EXPRESSION_SUB, 
+                                  Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, code, config), 
+                                  Expression.constantExpression(1, config), config),
+                              exp, config),
+                            Expression.constantExpression(1, config), config),
+                          exp, config),
+                        Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, code, config), config);
+            return l;
+        }   
+        
+        // struct definitions:
+        for(SjasmStruct st:structs) {
+            if (tokens.get(0).equals(st.name)) {
+                tokens.remove(0);
+                // it is a struct definition:
+                boolean done = false;
+                List<Expression> data = new ArrayList<>();
+                while (!done) {
+                    Expression exp = config.expressionParser.parse(tokens, s, code);
+                    if (exp == null) {
+                        config.error("Cannot parse line " + sl);
+                        return null;
+                    } else {
+                        data.add(exp);
+                    }
+                    if (!tokens.isEmpty() && tokens.get(0).equals(",")) {
+                        tokens.remove(0);
+                    } else {
+                        done = true;
+                    }
+                }
+                if (data.size() != st.attributeSizes.size()) {
+                    config.error("Struct instantiation has the wrong number of fields ("+data.size()+" vs the expected "+st.attributeSizes.size()+") in " + sl);
+                    return null;                    
+                }
+                l.clear();
+                
+                for(int i = 0;i<data.size();i++) {
+                    SourceStatement s2;
+                    switch(st.attributeSizes.get(i)) {
+                        case 1:
+                            s2 = new SourceStatement(SourceStatement.STATEMENT_DATA_BYTES, sl, source, null);
+                            break;
+                        case 2:
+                            s2 = new SourceStatement(SourceStatement.STATEMENT_DATA_WORDS, sl, source, null);
+                            break;
+                        case 4:
+                            s2 = new SourceStatement(SourceStatement.STATEMENT_DATA_DOUBLE_WORDS, sl, source, null);
+                            break;
+                        default:
+                            config.error("Field " + st.attributeNames.get(i) + " of struct " + st.name + " has an unsupported size in: " + sl);
+                            return null;
+                    }
+                    if (i == 0) s2.label = s.label;
+                    s2.data = new ArrayList<>();
+                    s2.data.add(data.get(i));
+                    l.add(s2);
+                }
+                if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
+                break;
+            }
+        }
+        
         
         return null;
     }

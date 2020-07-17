@@ -61,7 +61,7 @@ replacement:
 2: rrca
 2: and #1f
 
-pattern: Remove unused ld ?reg,?
+pattern: Remove unused ld ?reg,?any
 0: ld ?reg,?any
 replacement:
 constraints:
@@ -242,7 +242,7 @@ pattern: Replace xor 255 with cpl
 replacement:
 0: cpl
 constraints:
-flagNotUsed(0,S,Z,P/V,C)
+flagsNotUsed(0,S,Z,P/V,C)
 
 pattern: Replace ld a,?reg; neg with xor a; sub ?reg
 0: ld a,?reg

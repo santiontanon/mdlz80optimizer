@@ -273,7 +273,6 @@ public class Pattern {
                     int idx = Integer.parseInt(constraint[1]);
                     for(int i = 2;i<constraint.length;i++) {
                         String reg = constraint[i];
-
                         if (!regNotUsed(match.opMap.get(idx), reg, f, code)) {
                             if (logPatternsMatchedWithViolatedConstraints)
                                 config.info("Potential optimization ("+name+") in " + f.getStatements().get(a_index).sl);

@@ -74,11 +74,9 @@ public class SourceStatement {
         type = a_type;
         sl = a_sl;
         source = a_source;
-//        lineNumber = a_lineNumber;
-//        expandedFrom = null;
         address = a_address;
     }
-   
+    
     
     public boolean isEmpty()
     {
