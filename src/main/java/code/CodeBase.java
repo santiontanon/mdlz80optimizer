@@ -84,7 +84,7 @@ public class CodeBase {
                 if (sc.exp != null) {
                     // resolve it right away, before replacing:
                     Integer value = sc.exp.evaluate(sc.s, this, false);
-                    if (value != null) {
+                    if (value == null) {
                         config.error("Cannot resolve eager variable in " + sc.s.sl);
                         return false;
                     }
@@ -147,7 +147,7 @@ public class CodeBase {
         return main;
     }
 
-    
+
     public void evaluateAllExpressions()
     {
         for(SourceFile f:sources.values()) {
