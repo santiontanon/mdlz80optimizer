@@ -160,14 +160,78 @@ public class PatternBasedOptimizer implements MDLWorker {
     public OptimizationResult optimize(CodeBase code) {
         initPatterns();
         OptimizationResult r = new OptimizationResult();
-        for(Pattern patt: patterns) {
-            OptimizationResult r2 = optimizeWithPattern(patt, code);
-            r.aggregate(r2);
-        }
+        
+//        for(Pattern patt: patterns) {
+////            OptimizationResult r2 = optimizeWithPattern(patt, code);
+////            r.aggregate(r2);
+//        }
+        
+        for (SourceFile f : code.getSourceFiles()) {
+            for (int i = 0; i < f.getStatements().size(); i++) {
+                for(Pattern patt: patterns) {
+                    PatternMatch match = patt.match(i, f, code, config, logPatternsMatchedWithViolatedConstraints);
+                    if (match == null) continue;
 
-        if (r.patternApplications > 0) {
-            code.resetAddresses();
-        }
+                    SourceStatement statementToDisplayMessageOn = null;
+                    int startIndex = i;
+                    int endIndex = startIndex;
+                    for(int id:match.opMap.keySet()) {
+                        if (id == 0) statementToDisplayMessageOn = match.opMap.get(id);
+                        int idx = f.getStatements().indexOf(match.opMap.get(id));
+                        if (idx > endIndex) endIndex = idx;
+                    }
+                    if (statementToDisplayMessageOn == null) {
+                        config.warn("Could not identify the statement to display the optimization message on...");
+                        statementToDisplayMessageOn = f.getStatements().get(i);
+                    }
+                    SourceStatement endStatement = null;
+                    if (f.getStatements().size()>endIndex+1) {
+                        endStatement = f.getStatements().get(endIndex+1);
+                    }
+
+                    if (patt.apply(f.getStatements(), match)) {
+                        if (config.isInfoEnabled()) {
+                            int bytesSaved = patt.getSpaceSaving(match);
+                            String timeSavedString = patt.getTimeSavingString(match);
+                            config.info("Pattern-based optimization", statementToDisplayMessageOn.fileNameLineString(), 
+                                    patt.getInstantiatedName(match)+" ("+bytesSaved+" bytes, " +
+                                    timeSavedString + " " +config.timeUnit+"s saved)");
+
+                            if (config.isDebugEnabled()) {
+                                StringBuilder previousCode = new StringBuilder();
+                                for(int line = startIndex;line<endIndex;line++) {
+                                    previousCode.append('\n')
+                                                .append(f.getStatements().get(line).toString());
+                                }
+
+                                StringBuilder newCode = new StringBuilder();
+                                endIndex = f.getStatements().size();
+                                if (endStatement != null) endIndex = f.getStatements().indexOf(endStatement);
+                                for(int line = startIndex;line<endIndex;line++) {
+                                    newCode.append('\n')
+                                           .append(f.getStatements().get(line).toString());
+                                }
+
+                                config.debug(previousCode + "\nReplaced by:" + newCode);
+                            }
+                        }
+                        r.patternApplications++;
+                        r.bytesSaved += patt.getSpaceSaving(match);
+                        r.timeSaved[0] += patt.getTimeSaving(match)[0];
+                        r.timeSaved[1] += patt.getTimeSaving(match)[1];
+                        i--;    // re-check this statement, as more optimizations might chain
+                        code.resetAddresses();
+                        break;  // a pattern just matched, so, we restart the pattern loop
+                    }
+                }
+            }
+        }        
+        
+//        
+//
+//        if (r.patternApplications > 0) {
+//            code.resetAddresses();
+//        }
 
         config.info("PatternBasedOptimizer: "+r.patternApplications+" patterns applied, " +
                     r.bytesSaved+" bytes, " + 

@@ -507,3 +507,91 @@ constraints:
 regsNotModified(1, ?regpair)
 regpair(?regpair,?regpairh,?regpairl)
 equal(?const1 % 256, ?const2 % 256)
+
+; Thanks to theNestruo for suggesting the idea for this pattern:
+pattern: Replace ld (?reg2),?const with ld (?reg2),?reg (as ?reg == ?const here)
+2: ld ?reg,?const
+1: *
+0: ld (?reg2),?const
+replacement:
+2: ld ?reg,?const
+1: *
+0: ld (?reg2),?reg
+constraints:
+in(?reg,A,B,C,D,E,H,L)
+in(?reg2,HL,IX,IY)
+regsNotModified(1,?reg)
+
+; Thanks to theNestruo for suggesting the idea for this pattern:
+pattern: Replace ld (?reg2),?const2 with ld (?reg2),?regpairl (as ?regpairl == ?const2 here)
+2: ld ?regpair,?const1
+1: *
+0: ld (?reg2),?const2
+replacement:
+2: ld ?regpair,?const1
+1: *
+0: ld (?reg2),?regpairl
+constraints:
+regpair(?regpair,?regpairh,?regpairl)
+in(?reg2,HL,IX,IY)
+equal(?const2, ?const1 % 256)
+regsNotModified(1,?regpairl)
+
+; Thanks to theNestruo for suggesting the idea for this pattern:
+pattern: Replace ld (?reg2),?const2 with ld (?reg2),?regpairh (as ?regpairh == ?const2 here)
+2: ld ?regpair,?const1
+1: *
+0: ld (?reg2),?const2
+replacement:
+2: ld ?regpair,?const1
+1: *
+0: ld (?reg2),?regpairh
+constraints:
+regpair(?regpair,?regpairh,?regpairl)
+in(?reg2,HL,IX,IY)
+equal(?const2, ?const1 / 256)
+regsNotModified(1,?regpairh)
+
+; Thanks to theNestruo for suggesting the idea for this pattern:
+pattern: Replace ld ?reg2,?const with ld ?reg2,?reg (as ?reg == ?const here)
+2: ld ?reg,?const
+1: *
+0: ld ?reg2,?const
+replacement:
+2: ld ?reg,?const
+1: *
+0: ld ?reg2,?reg
+constraints:
+in(?reg,A,B,C,D,E,H,L)
+in(?reg2,A,B,C,D,E,H,L)
+regsNotModified(1,?reg)
+
+; Thanks to theNestruo for suggesting the idea for this pattern:
+pattern: Replace ld ?reg2,?const2 with ld ?reg2,?regpairl (as ?regpairl == ?const2 here)
+2: ld ?regpair,?const1
+1: *
+0: ld ?reg2,?const2
+replacement:
+2: ld ?regpair,?const1
+1: *
+0: ld ?reg2,?regpairl
+constraints:
+regpair(?regpair,?regpairh,?regpairl)
+in(?reg2,A,B,C,D,E,H,L)
+equal(?const2, ?const1 % 256)
+regsNotModified(1,?regpairl)
+
+; Thanks to theNestruo for suggesting the idea for this pattern:
+pattern: Replace ld ?reg2,?const2 with ld ?reg2,?regpairh (as ?regpairh == ?const2 here)
+2: ld ?regpair,?const1
+1: *
+0: ld ?reg2,?const2
+replacement:
+2: ld ?regpair,?const1
+1: *
+0: ld ?reg2,?regpairh
+constraints:
+regpair(?regpair,?regpairh,?regpairl)
+in(?reg2,A,B,C,D,E,H,L)
+equal(?const2, ?const1 / 256)
+regsNotModified(1,?regpairh)
