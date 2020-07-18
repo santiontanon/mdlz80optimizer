@@ -69,9 +69,22 @@ public class Pattern {
                     }
                     case 3: // constraints:
                     {
-                        String split[] = line.split(",|\\(|\\)");
-                        for(int i = 0;i<split.length;i++) {
-                            split[i] = split[i].trim();
+                        List<String> tokens = Tokenizer.tokenize(line);
+                        String name = tokens.remove(0);
+                        List<Expression> expressions = new ArrayList<>();
+                        if (!tokens.get(0).equals("(")) throw new RuntimeException("cannot parse constraint: " + line);
+                        tokens.remove(0);
+                        while(!tokens.get(0).equals(")")) {
+                            Expression exp = config.expressionParser.parse(tokens, null, patternCB);
+                            if (exp == null) throw new RuntimeException("cannot parse constraint: " + line);
+                            expressions.add(exp);
+                            if (tokens.get(0).equals(",")) tokens.remove(0);
+                        }
+                        
+                        String split[] = new String[expressions.size()+1];
+                        split[0] = name;
+                        for(int i = 1;i<split.length;i++) {
+                            split[i] = expressions.get(i-1).toString();
                         }
                         constraints.add(split);
                         break;
@@ -379,6 +392,9 @@ public class Pattern {
                     Expression exp1 = config.expressionParser.parse(v1_tokens, null, code);
                     Expression exp2 = config.expressionParser.parse(v2_tokens, null, code);
 
+                    if (exp1 == null) System.out.println(v1_tokens);
+                    if (exp2 == null) System.out.println(v2_tokens);
+                    
                     if (exp1.evaluatesToNumericConstant() != exp2.evaluatesToNumericConstant()) return null;
                     if (exp1.evaluatesToNumericConstant()) {
                         // If the expressions are numeric, we evaluate them:
