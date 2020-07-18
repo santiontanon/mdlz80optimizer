@@ -32,8 +32,8 @@ public class TextUtils {
 
     /**
      * Compares a string against a pattern allowing wildcards ("?", "*")
-     * @param pattern the pattern to check as a string
-     * @param string the string to check against the pattern
+     * @param pPattern the pattern to check as a string
+     * @param pString the string to check against the pattern
      * @param caseSensitive to perform the comparison in a case-sensitive manner
      * @return {@code true} if the string matches the pattern
      */
