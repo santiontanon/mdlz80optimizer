@@ -362,8 +362,10 @@ public class SjasmDialect implements Dialect {
                     return null;
                 }
             }
-            if (pageStartExp != null) pageStart.put(pageExp.evaluate(s, code, false), pageStartExp);
-            if (pageSizeExp != null) pageStart.put(pageExp.evaluate(s, code, false), pageSizeExp);
+            if (pageStartExp != null) {
+                pageStart.put(pageExp.evaluate(s, code, false), pageStartExp);
+            }
+            if (pageSizeExp != null) pageSize.put(pageExp.evaluate(s, code, false), pageSizeExp);
             if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
         }
         if (tokens.size() >= 1 && tokens.get(0).equalsIgnoreCase("code")) {
@@ -479,13 +481,15 @@ public class SjasmDialect implements Dialect {
             // ds virtual (((($-1)/exp)+1)*exp-$)
             s.space = Expression.operatorExpression(Expression.EXPRESSION_SUB,
                         Expression.operatorExpression(Expression.EXPRESSION_MUL, 
-                          Expression.operatorExpression(Expression.EXPRESSION_SUM, 
-                            Expression.operatorExpression(Expression.EXPRESSION_DIV, 
-                              Expression.operatorExpression(Expression.EXPRESSION_SUB, 
-                                  Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, code, config), 
-                                  Expression.constantExpression(1, config), config),
-                              exp, config),
-                            Expression.constantExpression(1, config), config),
+                          Expression.parenthesisExpression(
+                            Expression.operatorExpression(Expression.EXPRESSION_SUM, 
+                              Expression.operatorExpression(Expression.EXPRESSION_DIV, 
+                                Expression.parenthesisExpression(
+                                  Expression.operatorExpression(Expression.EXPRESSION_SUB, 
+                                      Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, code, config), 
+                                      Expression.constantExpression(1, config), config), config),
+                                  exp, config), 
+                              Expression.constantExpression(1, config), config), config), 
                           exp, config),
                         Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, code, config), config);
             return l;
