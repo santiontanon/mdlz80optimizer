@@ -44,6 +44,12 @@ public class CPUOpPattern {
         return str;
     }
 
+    
+    public boolean isWildcard()
+    {
+        return opName.equals(WILDCARD);
+    }
+    
 
     public CPUOp instantiate(PatternMatch match, MDLConfig config)
     {

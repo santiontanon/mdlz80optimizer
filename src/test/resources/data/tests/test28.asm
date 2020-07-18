@@ -9,7 +9,7 @@ ONE: equ 1
 	ld a,(ix)	; this should be optimized to use hl too
 	ld (var),a
 
-	ld hl,0
+	ld hl,#ffff
 	ld ix,list
 	ld a,(ix)	; this should not be optimized, as we would modify hl
 	ld (var),a

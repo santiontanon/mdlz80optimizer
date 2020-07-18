@@ -6,6 +6,7 @@ package workers.pattopt;
 import code.Expression;
 import code.SourceStatement;
 import java.util.HashMap;
+import java.util.List;
 
 /**
  *
@@ -13,7 +14,20 @@ import java.util.HashMap;
  */
 public class PatternMatch {
     public HashMap<Integer, SourceStatement> opMap = new HashMap<>();
+    public HashMap<Integer, List<SourceStatement>> wildCardMap = new HashMap<>();
     public HashMap<String, Expression> variables = new HashMap<>();
+    
+    public PatternMatch()
+    {
+    }
+    
+    
+    public PatternMatch(PatternMatch m)
+    {
+        opMap.putAll(m.opMap);
+        wildCardMap.putAll(m.wildCardMap);
+        variables.putAll(m.variables);
+    }
     
     
     public boolean addVariableMatch(String variable, Expression value)

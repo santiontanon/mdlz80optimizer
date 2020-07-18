@@ -155,6 +155,12 @@ public class CPUOp {
     }
     
     
+    public boolean mightJump()
+    {
+        return spec.mightJump();
+    }
+    
+    
     public boolean evaluateAllExpressions(SourceStatement s, CodeBase code, MDLConfig config)
     {
         for(int i = 0;i<args.size();i++) {

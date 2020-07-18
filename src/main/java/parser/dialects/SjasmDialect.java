@@ -287,7 +287,11 @@ public class SjasmDialect implements Dialect {
                 config.error("Field expression does not have a label at " + sl);
                 return null;
             }
-            s.label.exp = exp;
+            if (struct != null) {
+                s.label.exp = exp;
+            } else {
+                s.label.exp = Expression.constantExpression(mapCounter, config);
+            }
             s.type = SourceStatement.STATEMENT_CONSTANT;
             mapCounter += exp.evaluate(s, code, false);
             if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;

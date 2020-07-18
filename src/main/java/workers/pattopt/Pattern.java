@@ -30,8 +30,6 @@ public class Pattern {
     List<CPUOpPattern> pattern = new ArrayList<>();
     List<CPUOpPattern> replacement = new ArrayList<>();
     List<String []> constraints = new ArrayList<>();
-    Integer spaceSaving = null; // cache
-    int timeSaving[] = null;    // cache
 
     public Pattern(String patternString, MDLConfig a_config)
     {
@@ -72,6 +70,9 @@ public class Pattern {
                     case 3: // constraints:
                     {
                         String split[] = line.split(",|\\(|\\)");
+                        for(int i = 0;i<split.length;i++) {
+                            split[i] = split[i].trim();
+                        }
                         constraints.add(split);
                         break;
                     }
@@ -79,6 +80,17 @@ public class Pattern {
                         throw new RuntimeException("Unexpected line parsing a pattern: " + line);
                 }
             }
+        }
+        
+        // make sure that at least one of the lines in "pattern" has id 0 (and is not a wildcard):
+        boolean found = false;
+        for(CPUOpPattern pat:pattern) {
+            if (pat.ID == 0 && !pat.isWildcard()) {
+                found = true;
+            }
+        }
+        if (!found) {
+            config.error("Pattern \""+name+"\" does not contain a non wildcard line with ID 0!");
         }
 
         config.trace("parsed pattern: " + name);
@@ -89,7 +101,7 @@ public class Pattern {
     {
         return name;
     }
-    
+        
     
     public String getInstantiatedName(PatternMatch match)
     {
@@ -103,46 +115,53 @@ public class Pattern {
 
     public int getSpaceSaving(PatternMatch match)
     {
-        if (spaceSaving != null) return spaceSaving;
         int patternSize = 0;
         int replacementSize = 0;
         for(CPUOpPattern pat:pattern) {
-            patternSize += pat.instantiate(match, config).sizeInBytes();
+            if (!pat.isWildcard()) {
+                CPUOp ipat = pat.instantiate(match, config);
+                patternSize += ipat.sizeInBytes();
+            }
         }
         for(CPUOpPattern pat:replacement) {
-            replacementSize += pat.instantiate(match, config).sizeInBytes();
+            if (!pat.isWildcard()) {
+                CPUOp ipat = pat.instantiate(match, config);
+                replacementSize += ipat.sizeInBytes();
+            }
         }
-        spaceSaving = patternSize - replacementSize;
+        int spaceSaving = patternSize - replacementSize;
         return spaceSaving;
     }
     
     
     public int[] getTimeSaving(PatternMatch match)
     {
-        if (timeSaving != null) return timeSaving;
         int patternTime[] = {0,0};
         int replacementTime[] = {0,0};
         for(CPUOpPattern pat:pattern) {
-            int tmp[] = pat.instantiate(match, config).timing();
-            patternTime[0] += tmp[0];
-            if (tmp.length>1) {
-                patternTime[1] += tmp[1];
-            } else {
-                patternTime[1] += tmp[0];
+            if (!pat.isWildcard()) {
+                int tmp[] = pat.instantiate(match, config).timing();
+                patternTime[0] += tmp[0];
+                if (tmp.length>1) {
+                    patternTime[1] += tmp[1];
+                } else {
+                    patternTime[1] += tmp[0];
+                }
             }
         }
         for(CPUOpPattern pat:replacement) {
-            int tmp[] = pat.instantiate(match, config).timing();
-            replacementTime[0] += tmp[0];
-            if (tmp.length>1) {            
-                replacementTime[1] += tmp[1];
-            } else {
-                replacementTime[1] += tmp[0];
+            if (!pat.isWildcard()) {
+                int tmp[] = pat.instantiate(match, config).timing();
+                replacementTime[0] += tmp[0];
+                if (tmp.length>1) {            
+                    replacementTime[1] += tmp[1];
+                } else {
+                    replacementTime[1] += tmp[0];
+                }
             }
         }
-        timeSaving = new int[]{patternTime[0] - replacementTime[0],
-                               patternTime[1] - replacementTime[1]};
-        return timeSaving;
+        return new int[]{patternTime[0] - replacementTime[0],
+                         patternTime[1] - replacementTime[1]};
     }
     
     
@@ -234,6 +253,23 @@ public class Pattern {
         return true;
     }
 
+    
+    public List<String> applyBindingsToTokens(List<String> tokens, PatternMatch match)
+    {
+        // apply bindings:
+        List<String> tokens2 = new ArrayList<>();
+        for(int i = 0;i<tokens.size();i++) {
+            if (tokens.get(i).equals("?") && match.variables.containsKey("?" + tokens.get(i+1))) {                            
+                List<String> tokensTmp = Tokenizer.tokenize(match.variables.get("?" + tokens.get(i+1)).toString());
+                tokens2.addAll(tokensTmp);
+                i++;    // we skip the second token we used
+            } else {
+                tokens2.add(tokens.get(i));
+            }
+        }
+        return tokens2;
+    }
+    
 
     public PatternMatch match(int a_index, SourceFile f, CodeBase code, MDLConfig config,
                               boolean logPatternsMatchedWithViolatedConstraints)
@@ -242,18 +278,54 @@ public class Pattern {
         List<SourceStatement> l = f.getStatements();
         if (l.get(index).type != SourceStatement.STATEMENT_CPUOP) return null;
         PatternMatch match = new PatternMatch();
+        
+        // Match the CPU ops:
         for(int i = 0;i<pattern.size();i++) {
-            while(true) {
-                if (index >= l.size()) return null;
-                SourceStatement s = l.get(index);
-                if (s.comment != null && s.comment.contains(config.PRAGMA_NO_OPTIMIZATION)) return null;
-                if (s.type == SourceStatement.STATEMENT_CPUOP) break;
-                if (!s.isEmptyAllowingComments()) return null;
+            CPUOpPattern patt = pattern.get(i);
+            if (patt.isWildcard()) {
+                if (i == pattern.size() - 1) {
+                    // wildcard cannot be the last thing in a pattern!
+                    return null;
+                }
+                CPUOpPattern nextPatt = pattern.get(i+1);
+                List<SourceStatement> wildcardMatches = new ArrayList<>();
+
+                while(true) {
+                    if (index >= l.size()) return null;
+                    SourceStatement s = l.get(index);
+                    if (s.comment != null && s.comment.contains(config.PRAGMA_NO_OPTIMIZATION)) return null;
+                    if (s.type == SourceStatement.STATEMENT_CPUOP) {
+                        PatternMatch matchTmp = new PatternMatch(match);
+                        if (opMatch(nextPatt, s.op, s, code, matchTmp)) {
+                            // we are done!
+                            break;
+                        } else {
+                            // make sure it's not statement involving jumps (ret/call/jp/jr/djnz/reti/retn/...):
+                            if (s.op.mightJump()) {
+                                return null;
+                            }
+                            wildcardMatches.add(s);
+                        }
+                    } else if (!s.isEmptyAllowingComments()) {
+                        return null;
+                    }
+                    index++;
+                }
+
+                match.wildCardMap.put(patt.ID, wildcardMatches);
+            } else {
+                while(true) {
+                    if (index >= l.size()) return null;
+                    SourceStatement s = l.get(index);
+                    if (s.comment != null && s.comment.contains(config.PRAGMA_NO_OPTIMIZATION)) return null;
+                    if (s.type == SourceStatement.STATEMENT_CPUOP) break;
+                    if (!s.isEmptyAllowingComments()) return null;
+                    index++;
+                }
+                if (!opMatch(patt, l.get(index).op, l.get(index), code, match)) return null;
+                match.opMap.put(patt.ID, l.get(index));
                 index++;
             }
-            if (!opMatch(pattern.get(i), l.get(index).op, l.get(index), code, match)) return null;
-            match.opMap.put(i, l.get(index));
-            index++;
         }
 
         // potential match! check constraints:
@@ -271,6 +343,7 @@ public class Pattern {
                 case "regsNotUsedAfter":
                 {
                     int idx = Integer.parseInt(constraint[1]);
+                    if (!match.opMap.containsKey(idx)) return null;
                     for(int i = 2;i<constraint.length;i++) {
                         String reg = constraint[i];
                         if (!regNotUsed(match.opMap.get(idx), reg, f, code)) {
@@ -284,6 +357,7 @@ public class Pattern {
                 case "flagsNotUsedAfter":
                 {
                     int idx = Integer.parseInt(constraint[1]);
+                    if (!match.opMap.containsKey(idx)) return null;
                     for(int i = 2;i<constraint.length;i++) {
                         String flag = constraint[i];
 
@@ -299,19 +373,19 @@ public class Pattern {
                 {
                     String v1_str = constraint[1];
                     String v2_str = constraint[2];
-                    List<String> v1_tokens = Tokenizer.tokenize(v1_str);
-                    List<String> v2_tokens = Tokenizer.tokenize(v2_str);
-
-                    System.out.println("v1_tokens: " + v1_tokens);
-                    System.out.println("v2_tokens: " + v2_tokens);
+                    List<String> v1_tokens = applyBindingsToTokens(Tokenizer.tokenize(v1_str), match);
+                    List<String> v2_tokens = applyBindingsToTokens(Tokenizer.tokenize(v2_str), match);
                     
                     Expression exp1 = config.expressionParser.parse(v1_tokens, null, code);
                     Expression exp2 = config.expressionParser.parse(v2_tokens, null, code);
 
-                    if (exp1.evaluatesToNumericConstant() == exp2.evaluatesToNumericConstant()) break;
+                    if (exp1.evaluatesToNumericConstant() != exp2.evaluatesToNumericConstant()) return null;
                     if (exp1.evaluatesToNumericConstant()) {
                         // If the expressions are numeric, we evaluate them:
-                        if (!exp1.evaluate(null, code, true).equals(exp2.evaluate(null, code, true))) return null;
+                        Integer v1 = exp1.evaluate(null, code, true);
+                        Integer v2 = exp2.evaluate(null, code, true);
+                        if (v1 == null || v2 == null) return null;
+                        if ((int)v1 != (int)v2) return null;
                     } else {
                         // If they are not, then there is no need to evaluate, as they should just string match:
                         if (!v1_str.equalsIgnoreCase(v2_str)) return null;
@@ -322,8 +396,8 @@ public class Pattern {
                 {
                     String v1_str = constraint[1];
                     String v2_str = constraint[2];
-                    List<String> v1_tokens = Tokenizer.tokenize(v1_str);
-                    List<String> v2_tokens = Tokenizer.tokenize(v2_str);
+                    List<String> v1_tokens = applyBindingsToTokens(Tokenizer.tokenize(v1_str), match);
+                    List<String> v2_tokens = applyBindingsToTokens(Tokenizer.tokenize(v2_str), match);
 
                     Expression exp1 = config.expressionParser.parse(v1_tokens, null, code);
                     Expression exp2 = config.expressionParser.parse(v2_tokens, null, code);
@@ -331,6 +405,9 @@ public class Pattern {
                     if (exp1.evaluatesToNumericConstant() != exp2.evaluatesToNumericConstant()) break;
                     if (exp1.evaluatesToNumericConstant()) {
                         // If the expressions are numeric, we evaluate them:
+                        Integer v1 = exp1.evaluate(null, code, true);
+                        Integer v2 = exp2.evaluate(null, code, true);
+                        if (v1 == null || v2 == null) return null;
                         if (exp1.evaluate(null, code, true).equals(exp2.evaluate(null, code, true))) return null;
                     } else {
                         // If they are not, then there is no need to evaluate, as they should just string match:
@@ -441,6 +518,30 @@ public class Pattern {
                     if (diff < -128 || diff > 127) return null;
                     break;
                 }
+                case "regsNotModified":
+                {
+                    int idx = Integer.parseInt(constraint[1]);
+                    List<SourceStatement> statements = new ArrayList<>();
+                    if (match.opMap.containsKey(idx)) {
+                        statements.add(match.opMap.get(idx));
+                    } else if (match.wildCardMap.containsKey(idx)) {
+                        statements.addAll(match.wildCardMap.get(idx));
+                    } else {
+                        return null;
+                    }
+                    for(int i = 2;i<constraint.length;i++) {
+                        String reg = constraint[i];
+                        for(SourceStatement s:statements) {
+                            if (!regNotModified(s, reg, f, code)) {
+                                return null;
+                            }
+                        }
+                        config.debug("regsNotModified " + reg + " satisfied in: " + statements);
+                        config.debug("    mapping was: " + match.variables);
+                    }
+                    break;
+                }
+                
                 default:
                     throw new UnsupportedOperationException("Unknown pattern constraint " + constraint[0]);
             }
@@ -453,14 +554,34 @@ public class Pattern {
     public boolean apply(List<SourceStatement> l, PatternMatch match)
     {
         for(int i = 0;i<pattern.size();i++) {
-            int insertionPoint = l.indexOf(match.opMap.get(i));
-            SourceStatement removed = l.remove(insertionPoint);
-            for(int j = 0;j<replacement.size();j++) {
-                if (replacement.get(j).ID == pattern.get(i).ID) {
-                    SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_CPUOP, removed.sl, removed.source, null);
-                    s.op = new CPUOp(replacement.get(j).instantiate(match, config));
-                    l.add(insertionPoint, s);
-                    insertionPoint++;
+            int key = pattern.get(i).ID;
+            if (match.opMap.containsKey(key)) {
+                int insertionPoint = l.indexOf(match.opMap.get(key));
+                SourceStatement removed = l.remove(insertionPoint);
+                for(int j = 0;j<replacement.size();j++) {
+                    if (replacement.get(j).ID == pattern.get(i).ID) {
+                        SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_CPUOP, removed.sl, removed.source, null);
+                        s.op = new CPUOp(replacement.get(j).instantiate(match, config));
+                        l.add(insertionPoint, s);
+                        insertionPoint++;
+                    }
+                }
+            } else if (match.wildCardMap.containsKey(key)) {
+                boolean found = false;
+                for(int j = 0;j<replacement.size();j++) {
+                    if (replacement.get(j).ID == pattern.get(i).ID) {
+                        if (!replacement.get(j).isWildcard()) {
+                            config.error("Replacing instructions matched with a wildcard is not yet supported!");
+                            return false;
+                        } else {
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+                if (!found) {
+                    config.error("Removing instructions matched with a wildcard is not yet supported!");
+                    return false;
                 }
             }
         }
@@ -468,6 +589,26 @@ public class Pattern {
     }
 
 
+    public boolean regNotModified(SourceStatement s, String reg, SourceFile f, CodeBase code)
+    {
+        CPUOpDependency dep = new CPUOpDependency(reg.toUpperCase(), null, null, null, null);        
+        if (s.type == SourceStatement.STATEMENT_CPUOP) {
+            CPUOp op = s.op;            
+            if (op.isRet()) {
+                // It's hard to tell where is this instruction going to jump,
+                // so we act conservatively, and block the optimization:
+                config.trace("    ret!");
+                return false;
+            }
+            
+            CPUOpDependency dep2 = op.checkOutputDependency(dep);
+            return dep.equals(dep2);
+        } else {
+            return true;
+        }
+    }
+    
+    
     public boolean regNotUsed(SourceStatement s, String reg, SourceFile f, CodeBase code)
     {
         CPUOpDependency dep = new CPUOpDependency(reg.toUpperCase(), null, null, null, null);
@@ -524,7 +665,6 @@ public class Pattern {
                 } else {
                     // add successors:
                     List<SourceStatement> nextNext_l = next.source.nextStatements(next, true, code);
-//                    System.out.println("   next: " + nextNext_l);
                     if (nextNext_l == null) {
                         // It's hard to tell where is this instruction going to jump,
                         // so we act conservatively, and block the optimization:

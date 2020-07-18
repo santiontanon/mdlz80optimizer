@@ -3,6 +3,15 @@
 ; - Patterns suggested by others are credited to them below.
 ; - If you do a pull request with more patterns, please credit yourself in a comment before the pattern.
 
+; Notes:
+; - variables must start with the following prefixes:
+; - ?const: for example ?const1, ?constant, etc. These match with constant expressions, like "(VAR+2)/$", or "1".
+; - ?reg: for example ?reg1, ?regpair, etc. These match with register names.
+; - ?any: for example ?any, ?any1. These match with anything.
+; Notice the numbers in front of each line int he pattern and the replacement. The order does not matter as long as numbers are unique.
+; These are used to match lines from pattern to replacement. Any number appearing in pattern, and not in replacement will be deleted.
+; The optimization will be reported to the line in pattern with number 0 (at least one line must have number 0)
+
 ; thanks to pgimeno for noticing the needed constraint
 pattern: Replace cp nn; jp c,mm; jp z,mm with cp nn+1; jp c,mm
 0: cp ?const1
@@ -451,13 +460,50 @@ constraints:
 regpair(?regpair,?regpairh,?regpairl)
 regsNotUsedAfter(0,?regpairl)
 
-; pattern commented out, since I'm still working on support for this:
-; pattern: Remove duplicate ld ?reg,?any that appears below this line
-; 0: ld ?reg,?any
-; 1: *
-; 2: ld ?reg,?any
-; replacement:
-; 0: ld ?reg,?any
-; 1: *
-; constraints:
-; regsNotModified(1, ?reg)
+pattern: Remove duplicate ld ?reg,?const
+2: ld ?reg,?const
+1: *
+0: ld ?reg,?const
+replacement:
+2: ld ?reg,?const
+1: *
+constraints:
+regsNotModified(1, ?reg)
+
+pattern: Remove duplicate ld ?reg1,?reg2
+2: ld ?reg1,?reg2
+1: *
+0: ld ?reg1,?reg2
+replacement:
+2: ld ?reg1,?reg2
+1: *
+constraints:
+regsNotModified(1, ?reg1, ?reg2)
+
+; Thanks to Metalion/theNestruo for suggesting the idea for this pattern:
+pattern: Replace ld ?regpair,?const2 with ld ?regpairl,(?const2) % 256
+2: ld ?regpair,?const1 
+1: *
+0: ld ?regpair,?const2 
+replacement:
+2: ld ?regpair,?const1 
+1: * 
+0: ld ?regpairl,(?const2) % 256
+constraints:
+regsNotModified(1, ?regpair)
+regpair(?regpair,?regpairh,?regpairl)
+equal(?const1 / 256, ?const2 / 256)
+
+; Thanks to theNestruo for suggesting the idea for this pattern:
+pattern: Replace ld ?regpair,?const2 with ld ?regpairh,(?const2) / 256
+2: ld ?regpair,?const1 
+1: * 
+0: ld ?regpair,?const2 
+replacement:
+2: ld ?regpair,?const1 
+1: * 
+0: ld ?regpairh,(?const2) / 256
+constraints:
+regsNotModified(1, ?regpair)
+regpair(?regpair,?regpairh,?regpairl)
+equal(?const1 % 256, ?const2 % 256)

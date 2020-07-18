@@ -199,26 +199,6 @@ public class CPUOpSpec {
     }
 
 
-    /*
-    public List<CPUOpDependency> checkDependencies(List<Expression> opArgs, List<CPUOpDependency> inputDeps)
-    {
-        List<CPUOpDependency> deps = new ArrayList<>();
-        List<CPUOpDependency> outputDeps = getOutputDependencies(opArgs);
-
-        for(CPUOpDependency d1:inputDeps) {
-            for(CPUOpDependency d2:outputDeps) {
-                if (d1.match(d2)) {
-                    deps.add(d1);
-                    break;
-                }
-            }
-        }
-
-        return deps;
-    }
-    */
-
-
     public boolean isConditional()
     {
         // TODO(santi@): move this info to the CPU definition file
@@ -239,7 +219,6 @@ public class CPUOpSpec {
     {
         // TODO(santi@): move this info to the CPU definition file
         if (opName.equalsIgnoreCase("call") ||
-            // opName.equalsIgnoreCase("ret") ||
             opName.equalsIgnoreCase("jp") ||
             opName.equalsIgnoreCase("jr") ||
             opName.equalsIgnoreCase("djnz")) {
@@ -251,10 +230,20 @@ public class CPUOpSpec {
 
     public boolean isRet()
     {
+        // TODO(santi@): move this info to the CPU definition file
         if (opName.equalsIgnoreCase("ret")) return true;
         if (opName.equalsIgnoreCase("retni")) return true;
         if (opName.equalsIgnoreCase("ret")) return true;
         return false;
     }
 
+    
+    public boolean mightJump()
+    {
+        // TODO(santi@): move this info to the CPU definition file
+        if (isRet()) return true;
+        if (jumpLabelArgument() != -1) return true;
+        return false;
+    }
+    
 }

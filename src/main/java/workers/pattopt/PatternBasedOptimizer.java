@@ -180,16 +180,19 @@ public class PatternBasedOptimizer implements MDLWorker {
         for (SourceFile f : code.getSourceFiles()) {
             for (int i = 0; i < f.getStatements().size(); i++) {
                 PatternMatch match = patt.match(i, f, code, config, logPatternsMatchedWithViolatedConstraints);
-                if (match == null) {
-                    continue;
-                }
+                if (match == null) continue;
 
-                SourceStatement startStatement = f.getStatements().get(i);
+                SourceStatement statementToDisplayMessageOn = null;
                 int startIndex = i;
                 int endIndex = startIndex;
                 for(int id:match.opMap.keySet()) {
+                    if (id == 0) statementToDisplayMessageOn = match.opMap.get(id);
                     int idx = f.getStatements().indexOf(match.opMap.get(id));
                     if (idx > endIndex) endIndex = idx;
+                }
+                if (statementToDisplayMessageOn == null) {
+                    config.warn("Could not identify the statement to display the optimization message on...");
+                    statementToDisplayMessageOn = f.getStatements().get(i);
                 }
                 SourceStatement endStatement = null;
                 if (f.getStatements().size()>endIndex+1) {
@@ -200,25 +203,23 @@ public class PatternBasedOptimizer implements MDLWorker {
                     if (config.isInfoEnabled()) {
                         int bytesSaved = patt.getSpaceSaving(match);
                         String timeSavedString = patt.getTimeSavingString(match);
-                        config.info("Pattern-based optimization", startStatement.fileNameLineString(), 
+                        config.info("Pattern-based optimization", statementToDisplayMessageOn.fileNameLineString(), 
                                 patt.getInstantiatedName(match)+" ("+bytesSaved+" bytes, " +
                                 timeSavedString + " " +config.timeUnit+"s saved)");
 
                         if (config.isDebugEnabled()) {
                             StringBuilder previousCode = new StringBuilder();
                             for(int line = startIndex;line<endIndex;line++) {
-                                previousCode
-                                        .append('\n')
-                                        .append(f.getStatements().get(line).toString());
+                                previousCode.append('\n')
+                                            .append(f.getStatements().get(line).toString());
                             }
 
                             StringBuilder newCode = new StringBuilder();
                             endIndex = f.getStatements().size();
                             if (endStatement != null) endIndex = f.getStatements().indexOf(endStatement);
                             for(int line = startIndex;line<endIndex;line++) {
-                                newCode
-                                        .append('\n')
-                                        .append(f.getStatements().get(line).toString());
+                                newCode.append('\n')
+                                       .append(f.getStatements().get(line).toString());
                             }
 
                             config.debug(previousCode + "\nReplaced by:" + newCode);

@@ -170,15 +170,15 @@ EX (SP),IY	23	25	7	FD E3	2	HL,IY			[SP:SP+1]	IY			[SP:SP+1]	true
 IM 0	8	10	2	ED 46	2									true
 IM 1	8	10	2	ED 56	2									true
 IM 2	8	10	2	ED 5E	2									true
-IN A,(C)	12	14	4	ED 78	2			C		A	S,Z,N			true
+IN A,(C)	12	14	4	ED 78	2	C		C		A	S,Z,N			true
 IN A,(n)	11	12	3	DB n	2			n		A	S,Z,N			true
-IN B,(C)	12	14	4	ED 40	2			C		B	S,Z,N			true
-IN C,(C)	12	14	4	ED 48	2			C		C	S,Z,N			true
-IN D,(C)	12	14	4	ED 50	2			C		D	S,Z,N			true
-IN E,(C)	12	14	4	ED 58	2			C		E	S,Z,N			true
-IN F,(C)	12	14	4	ED 70	2			C		F	S,Z,N			true
-IN H,(C)	12	14	4	ED 60	2			C		H	S,Z,N			true
-IN L,(C)	12	14	4	ED 68	2			C		L	S,Z,N			true
+IN B,(C)	12	14	4	ED 40	2	C		C		B	S,Z,N			true
+IN C,(C)	12	14	4	ED 48	2	C		C		C	S,Z,N			true
+IN D,(C)	12	14	4	ED 50	2	C		C		D	S,Z,N			true
+IN E,(C)	12	14	4	ED 58	2	C		C		E	S,Z,N			true
+IN F,(C)	12	14	4	ED 70	2	C		C		F	S,Z,N			true
+IN H,(C)	12	14	4	ED 60	2	C		C		H	S,Z,N			true
+IN L,(C)	12	14	4	ED 68	2	C		C		L	S,Z,N			true
 INC IX	10	12	3	DD 23	2	IX				IX				true
 INC IXp	8	10	2	DD 04+8*p	2	IXp				IXp	S,Z,H,P/V,N			true
 INC IY	10	12	3	FD 23	2	IY				IY				true
@@ -224,9 +224,9 @@ LD L,n	7	8	2	2E n	2					L				true
 LD R,A	9	11	3	ED 4F	2	A				R				true
 LD SP,IX	10	12	3	DD F9	2	IX				SP				true
 LD SP,IY	10	12	3	FD F9	2	IY				SP				true
-LDD	16	18	5	ED A8	2	BC,DE,HL			HL	BC,HL	H,P/V,N		DE	true
+LDD	16	18	5	ED A8	2	BC,DE,HL			HL	BC,HL,DE	H,P/V,N		DE	true
 LDDR	21/16	23/18	6/5	ED B8	2	BC,DE,HL			[HL-BC:HL]	BC,DE,HL			[DE-BC:DE]	true
-LDI	16	18	5	ED A0	2	BC,DE,HL			HL	BC,HL	H,P/V,N		DE	true
+LDI	16	18	5	ED A0	2	BC,DE,HL			HL	BC,HL,DE	H,P/V,N		DE	true
 LDIR	21/16	23/18	6/5	ED B0	2	BC,DE,HL			[HL:HL+BC]	BC,DE,HL			[DE:DE+BC]	true
 NEG	8	10	2	ED 44	2	A				A	S,Z,H,P/V,N,C			true
 OR IXp	8	10	2	DD B0+p	2	A,IXp				A	S,Z,H,P/V,N,C			true
