@@ -45,7 +45,7 @@ public class CPUOpSpecArg {
                     exp2.type == Expression.EXPRESSION_SUB) {
                     if (exp2.args.get(0).type == Expression.EXPRESSION_REGISTER_OR_FLAG &&
                         spec.regMatch(regOffsetIndirection, exp2.args.get(0).registerOrFlagName) &&
-                        exp2.args.get(1).evaluatesToNumericConstant()) {
+                        exp2.args.get(1).evaluatesToIntegerConstant()) {
                         return true;
                     }
                 }
@@ -54,7 +54,7 @@ public class CPUOpSpecArg {
         if (byteConstantIndirectionAllowed ||
             wordConstantIndirectionAllowed) {
             if (exp.type == Expression.EXPRESSION_PARENTHESIS &&
-                exp.args.get(0).evaluatesToNumericConstant()) {
+                exp.args.get(0).evaluatesToIntegerConstant()) {
                 return true;
             }
         }
@@ -62,7 +62,7 @@ public class CPUOpSpecArg {
             wordConstantAllowed ||
             relativeLabelAllowed) {
             if (exp.type != Expression.EXPRESSION_PARENTHESIS &&
-                exp.evaluatesToNumericConstant()) {
+                exp.evaluatesToIntegerConstant()) {
                 if (exp.isConstant()) {
                     Integer v = exp.evaluate(s, code, true);
                     if (v == null) return true;

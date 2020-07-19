@@ -395,8 +395,8 @@ public class ExpressionParser {
             tokens.remove(0);
             Expression exp = parseInternal(tokens, s, code);
             if (exp != null) {
-                if (exp.type == Expression.EXPRESSION_NUMERIC_CONSTANT) {
-                    exp.numericConstant = -exp.numericConstant;
+                if (exp.type == Expression.EXPRESSION_INTEGER_CONSTANT) {
+                    exp.integerConstant = -exp.integerConstant;
                     return exp;
                 } else {
                     return Expression.signChangeExpression(exp, config);
@@ -410,7 +410,7 @@ public class ExpressionParser {
                 tokens.remove(0);
                 Expression exp = parseInternal(tokens, s, code);
                 if (exp != null) {
-                    if (exp.type == Expression.EXPRESSION_NUMERIC_CONSTANT) {
+                    if (exp.type == Expression.EXPRESSION_INTEGER_CONSTANT) {
                         return exp;
                     } else {
                         // something weird happened:

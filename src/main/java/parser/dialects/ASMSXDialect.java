@@ -64,7 +64,6 @@ public class ASMSXDialect implements Dialect {
         config.lineParser.KEYWORD_INCLUDE = ".include";
         config.lineParser.KEYWORD_INCBIN = ".incbin";
         config.lineParser.addKeywordSynonym(".equ", config.lineParser.KEYWORD_EQU);
-        config.lineParser.addKeywordSynonym("=", config.lineParser.KEYWORD_EQU);
 
         config.lineParser.addKeywordSynonym(".db", config.lineParser.KEYWORD_DB);
         config.lineParser.addKeywordSynonym("defb", config.lineParser.KEYWORD_DB);
@@ -86,6 +85,7 @@ public class ASMSXDialect implements Dialect {
         config.lineParser.defineSpaceVirtualByDefault = true;
 
         config.warningJpHlWithParenthesis = false;
+        config.lineParser.keywordsHintingALabel.add("=");
         
         config.expressionParser.dialectFunctions.add(".random");
         config.expressionParser.dialectFunctions.add("random");
@@ -120,6 +120,7 @@ public class ASMSXDialect implements Dialect {
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("basic")) return true;
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase(".start")) return true;
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("start")) return true;
+        if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("=")) return true;
         
         // weird syntax that for some reason asMSX swallows (undocumented):
         // if a line is all dashes, it's ignored:
@@ -415,6 +416,29 @@ public class ASMSXDialect implements Dialect {
             }
             if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
         }
+        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("=")) {
+            // This is like an equ, but with a variable that changes value throughout parsing.
+            // This only makes sense in eager execution, so, we check for that:
+            if (!config.eagerMacroEvaluation) {
+                config.error("Non final variable defined in lazy evaluation mode at " + sl);
+                return null;
+            }
+            
+            tokens.remove(0);
+            s.label.resolveEagerly = true;
+            if (!config.lineParser.parseEqu(tokens, sl, s, source, code)) return null;
+            s.label.clearCache();
+            Integer value = s.label.exp.evaluate(s, code, false);
+            if (value == null) {
+                config.error("Cannot resolve eager variable in " + sl);
+                return null;
+            }
+            s.label.exp = Expression.constantExpression(value, config);
+            
+            // these variables should not be part of the source code:
+            l.clear();
+            return l;
+        }        
 
         // weird syntax that for some reason asMSX swallows (undocumented):
         // if a line is all dashes, it's ignored:

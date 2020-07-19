@@ -202,7 +202,7 @@ public class Pattern {
                 }
             } else if (pattern.symbolName.startsWith("?const")) {
                 // We expluce matches with "parenthesis" expressions, as those might be indirections
-                if (arg2.evaluatesToNumericConstant() &&
+                if (arg2.evaluatesToIntegerConstant() &&
                     arg2.type != Expression.EXPRESSION_PARENTHESIS) {
                     return match.addVariableMatch(pattern.symbolName, arg2);
                 } else {
@@ -215,15 +215,15 @@ public class Pattern {
             }     
         }
 
-        if (pattern.type == Expression.EXPRESSION_NUMERIC_CONSTANT) {
+        if (pattern.type == Expression.EXPRESSION_INTEGER_CONSTANT) {
             // if the pattern is a numeric constant, and the argument is an expression that
             // evaluates to a number, the evaluate to check equality:
             // An exception is the "parenthesis" operation, which we assume is for an indirection if we
             // are at the top level of the expression
-            if (arg2.evaluatesToNumericConstant()) {
+            if (arg2.evaluatesToIntegerConstant()) {
                 if (!expressionRoot || arg2.type != Expression.EXPRESSION_PARENTHESIS) {
                     Integer arg2_val = arg2.evaluate(s, code, true);
-                    if (arg2_val != null && arg2_val == pattern.numericConstant) return true;
+                    if (arg2_val != null && arg2_val == pattern.integerConstant) return true;
                 }
             }
         }
@@ -232,8 +232,8 @@ public class Pattern {
         if (pattern.type == Expression.EXPRESSION_REGISTER_OR_FLAG) {
             return pattern.registerOrFlagName.equals(arg2.registerOrFlagName);
         }
-        if (pattern.type == Expression.EXPRESSION_NUMERIC_CONSTANT) {
-            return pattern.numericConstant == arg2.numericConstant;
+        if (pattern.type == Expression.EXPRESSION_INTEGER_CONSTANT) {
+            return pattern.integerConstant == arg2.integerConstant;
         }
         if (pattern.type == Expression.EXPRESSION_STRING_CONSTANT) {
             return pattern.stringConstant.equals(arg2.stringConstant);
@@ -395,8 +395,8 @@ public class Pattern {
                     if (exp1 == null) System.out.println(v1_tokens);
                     if (exp2 == null) System.out.println(v2_tokens);
                     
-                    if (exp1.evaluatesToNumericConstant() != exp2.evaluatesToNumericConstant()) return null;
-                    if (exp1.evaluatesToNumericConstant()) {
+                    if (exp1.evaluatesToIntegerConstant() != exp2.evaluatesToIntegerConstant()) return null;
+                    if (exp1.evaluatesToIntegerConstant()) {
                         // If the expressions are numeric, we evaluate them:
                         Integer v1 = exp1.evaluate(null, code, true);
                         Integer v2 = exp2.evaluate(null, code, true);
@@ -418,8 +418,8 @@ public class Pattern {
                     Expression exp1 = config.expressionParser.parse(v1_tokens, null, code);
                     Expression exp2 = config.expressionParser.parse(v2_tokens, null, code);
 
-                    if (exp1.evaluatesToNumericConstant() != exp2.evaluatesToNumericConstant()) break;
-                    if (exp1.evaluatesToNumericConstant()) {
+                    if (exp1.evaluatesToIntegerConstant() != exp2.evaluatesToIntegerConstant()) break;
+                    if (exp1.evaluatesToIntegerConstant()) {
                         // If the expressions are numeric, we evaluate them:
                         Integer v1 = exp1.evaluate(null, code, true);
                         Integer v2 = exp2.evaluate(null, code, true);

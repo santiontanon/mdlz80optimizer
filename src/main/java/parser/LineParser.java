@@ -254,7 +254,8 @@ public class LineParser {
                     }
                 }
                 if (isLabel) {
-                    if (config.warningLabelWithoutColon && !tokens.get(1).startsWith(":")) {
+                    if (config.warningLabelWithoutColon && 
+                        tokens.get(1).equals(":=") && tokens.get(1).equals("=")) {
                         config.warn("Style suggestion", s.fileNameLineString(),
                                 "Label "+token+" defined without a colon.");
                     }

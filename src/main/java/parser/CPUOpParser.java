@@ -67,7 +67,7 @@ public class CPUOpParser {
             boolean anyChange = false;
             for(int i = 0;i<a_args.size();i++) {
                 Expression arg = a_args.get(i);
-                if (arg.evaluatesToNumericConstant() && arg.type == Expression.EXPRESSION_PARENTHESIS) {
+                if (arg.evaluatesToIntegerConstant() && arg.type == Expression.EXPRESSION_PARENTHESIS) {
                     a_args.set(i, arg.args.get(0));
                     anyChange = true;
                 }
@@ -101,11 +101,17 @@ public class CPUOpParser {
         }
 
         if (!spec.official) {
-            if (config.warningUnofficialOps) {
-                config.warn("Style suggestion", s.fileNameLineString(), "Unofficial op syntax.");
-            }
             if (config.convertToOfficial) {
-                return officialFromUnofficial(spec.officialEquivalent, spec, a_args, code);
+                CPUOp unofficial = new CPUOp(spec, a_args, config);
+                CPUOp official = officialFromUnofficial(spec.officialEquivalent, spec, a_args, code);
+                if (config.warningUnofficialOps) {
+                    config.warn("Style suggestion", s.fileNameLineString(), "Unofficial op syntax: " + unofficial + " converted to " + official);
+                }                
+                return official;
+            } else {
+                if (config.warningUnofficialOps) {
+                    config.warn("Style suggestion", s.fileNameLineString(), "Unofficial op syntax: " + new CPUOp(spec, a_args, config));
+                }    
             }
         }    
         return new CPUOp(spec, a_args, config);

@@ -169,10 +169,15 @@ public class SourceMacro {
                 config.lineParser.parseLabel(tokens, sl, s, sl.source, code, false);
             }
             if (s.label != null) {
-                macroDefinedLabels.add(s.label.name);
+                SourceConstant sc = code.getSymbol(s.label.name);
+                if (sc == null || !sc.resolveEagerly) {
+                    macroDefinedLabels.add(s.label.name);
+                }
             }
         }
 
+        System.out.println("scopeMacroExpansionLines, scope = " + scope +", definedLabels = " + macroDefinedLabels);
+        
         for(SourceLine sl:lines) {
             for(String definedLabel:macroDefinedLabels) {
                 List<String> tokens = Tokenizer.tokenizeIncludingBlanks(sl.line);

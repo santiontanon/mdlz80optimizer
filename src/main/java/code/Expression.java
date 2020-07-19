@@ -14,7 +14,7 @@ public class Expression {
     public static final int FALSE = 0;
 
     public static final int EXPRESSION_REGISTER_OR_FLAG = 0;
-    public static final int EXPRESSION_NUMERIC_CONSTANT = 1;
+    public static final int EXPRESSION_INTEGER_CONSTANT = 1;
     public static final int EXPRESSION_STRING_CONSTANT = 2;
     public static final int EXPRESSION_SYMBOL = 3;
     public static final int EXPRESSION_SIGN_CHANGE = 4;
@@ -41,6 +41,7 @@ public class Expression {
     public static final int EXPRESSION_BITXOR = 25;
     public static final int EXPRESSION_LOGICAL_NEGATION = 26;
     public static final int EXPRESSION_DIALECT_FUNCTION = 27;
+    
 
     // indexed by the numbers above:
     // Precedences obtained from the ones used by c++: https://en.cppreference.com/w/cpp/language/operator_precedence
@@ -54,7 +55,7 @@ public class Expression {
 
     MDLConfig config;
     public int type;
-    public int numericConstant;
+    public int integerConstant;
     public String stringConstant;
     public String symbolName;
     public String registerOrFlagName;
@@ -68,8 +69,8 @@ public class Expression {
 
     public Integer evaluate(SourceStatement s, CodeBase code, boolean silent) {
         switch (type) {
-            case EXPRESSION_NUMERIC_CONSTANT:
-                return numericConstant;
+            case EXPRESSION_INTEGER_CONSTANT:
+                return integerConstant;
 
             case EXPRESSION_STRING_CONSTANT:
                 if (stringConstant.length() == 1) {
@@ -393,8 +394,8 @@ public class Expression {
                 } else {
                     return registerOrFlagName;
                 }
-            case EXPRESSION_NUMERIC_CONSTANT:
-                return "" + numericConstant;
+            case EXPRESSION_INTEGER_CONSTANT:
+                return "" + integerConstant;
             case EXPRESSION_STRING_CONSTANT:
             {
                 String tmp = stringConstant.replace("\n", "\\n");
@@ -408,7 +409,7 @@ public class Expression {
                 return symbolName;
             case EXPRESSION_SIGN_CHANGE:
                 if (args.get(0).type == EXPRESSION_REGISTER_OR_FLAG
-                        || args.get(0).type == EXPRESSION_NUMERIC_CONSTANT
+                        || args.get(0).type == EXPRESSION_INTEGER_CONSTANT
                         || args.get(0).type == EXPRESSION_STRING_CONSTANT
                         || args.get(0).type == EXPRESSION_PARENTHESIS
                         || args.get(0).type == EXPRESSION_SYMBOL) {
@@ -618,7 +619,7 @@ public class Expression {
             }
             case EXPRESSION_BITNEGATION:
                 if (args.get(0).type == EXPRESSION_REGISTER_OR_FLAG
-                        || args.get(0).type == EXPRESSION_NUMERIC_CONSTANT
+                        || args.get(0).type == EXPRESSION_INTEGER_CONSTANT
                         || args.get(0).type == EXPRESSION_STRING_CONSTANT
                         || args.get(0).type == EXPRESSION_PARENTHESIS
                         || args.get(0).type == EXPRESSION_SYMBOL) {
@@ -639,7 +640,7 @@ public class Expression {
             }
             case EXPRESSION_LOGICAL_NEGATION:
                 if (args.get(0).type == EXPRESSION_REGISTER_OR_FLAG
-                        || args.get(0).type == EXPRESSION_NUMERIC_CONSTANT
+                        || args.get(0).type == EXPRESSION_INTEGER_CONSTANT
                         || args.get(0).type == EXPRESSION_STRING_CONSTANT
                         || args.get(0).type == EXPRESSION_PARENTHESIS
                         || args.get(0).type == EXPRESSION_SYMBOL) {
@@ -672,12 +673,12 @@ public class Expression {
     }
 
     public boolean isConstant() {
-        return (type == EXPRESSION_NUMERIC_CONSTANT)
+        return (type == EXPRESSION_INTEGER_CONSTANT)
                 || (type == EXPRESSION_STRING_CONSTANT);
     }
 
-    public boolean evaluatesToNumericConstant() {
-        if (type == EXPRESSION_NUMERIC_CONSTANT) {
+    public boolean evaluatesToIntegerConstant() {
+        if (type == EXPRESSION_INTEGER_CONSTANT) {
             return true;
         }
         if (type == EXPRESSION_SYMBOL) {
@@ -710,14 +711,14 @@ public class Expression {
                 || type == EXPRESSION_BITXOR
                 || type == EXPRESSION_LOGICAL_NEGATION) {
             for (Expression arg : args) {
-                if (!arg.evaluatesToNumericConstant()) {
+                if (!arg.evaluatesToIntegerConstant()) {
                     return false;
                 }
             }
             return true;
         }
         if (type == EXPRESSION_TERNARY_IF) {
-            return args.get(1).evaluatesToNumericConstant() && args.get(2).evaluatesToNumericConstant();
+            return args.get(1).evaluatesToIntegerConstant() && args.get(2).evaluatesToIntegerConstant();
         }
         if (type == EXPRESSION_DIALECT_FUNCTION) {
             return true;
@@ -734,8 +735,8 @@ public class Expression {
     }
 
     public static Expression constantExpression(int v, MDLConfig config) {
-        Expression exp = new Expression(EXPRESSION_NUMERIC_CONSTANT, config);
-        exp.numericConstant = v;
+        Expression exp = new Expression(EXPRESSION_INTEGER_CONSTANT, config);
+        exp.integerConstant = v;
         return exp;
     }
 
@@ -760,8 +761,8 @@ public class Expression {
                     config.error("Cannot resolve eager variable " + symbol + "!");
                     return null;
                 }
-                Expression exp = new Expression(EXPRESSION_NUMERIC_CONSTANT, config);
-                exp.numericConstant = value;
+                Expression exp = new Expression(EXPRESSION_INTEGER_CONSTANT, config);
+                exp.integerConstant = value;
                 return exp;
             }
             

@@ -50,8 +50,8 @@ public class CodeBaseParser {
                 config.error("Cannot resolve expression " + exp + " after loading all the source code!");
                 return false;
             }
-            exp.type = Expression.EXPRESSION_NUMERIC_CONSTANT;
-            exp.numericConstant = value;
+            exp.type = Expression.EXPRESSION_INTEGER_CONSTANT;
+            exp.integerConstant = value;
         }
 
         return true;

@@ -52,7 +52,7 @@ public class ExpressionTest {
         Expression exp = expressionParser.parse(tokens, null, codeBase);
         System.out.println(exp);
 
-        return exp.evaluatesToNumericConstant()
+        return exp.evaluatesToIntegerConstant()
                 ? exp.evaluate(null, codeBase, false)
                 : null;
     }
