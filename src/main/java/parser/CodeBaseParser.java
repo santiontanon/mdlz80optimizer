@@ -34,6 +34,8 @@ public class CodeBaseParser {
 
 
     public boolean parseMainSourceFile(String fileName, CodeBase code) throws IOException {
+        if (config.dialectParser != null) config.dialectParser.performAnyInitialActions(code);
+        
         if (parseSourceFile(fileName, code, null, null) == null) return false;
 
         // Expand all macros that were not expanded initially:
@@ -45,13 +47,18 @@ public class CodeBaseParser {
         if (config.dialectParser != null) config.dialectParser.performAnyFinalActions(code);
         for(Pair<Expression, SourceStatement> pair:expressionsToReplaceByValueAtTheEnd) {
             Expression exp = pair.getLeft();
-            Integer value = exp.evaluateToInteger(pair.getRight(), code, false);
+            Number value = exp.evaluate(pair.getRight(), code, false);
             if (value == null) {
                 config.error("Cannot resolve expression " + exp + " after loading all the source code!");
                 return false;
             }
-            exp.type = Expression.EXPRESSION_INTEGER_CONSTANT;
-            exp.integerConstant = value;
+            if (value instanceof Integer) {
+                exp.type = Expression.EXPRESSION_INTEGER_CONSTANT;
+                exp.integerConstant = value.intValue();
+            } else {
+                exp.type = Expression.EXPRESSION_DOUBLE_CONSTANT;
+                exp.doubleConstant = value.doubleValue();
+            }
         }
 
         return true;

@@ -115,7 +115,6 @@ public class SourceStatement {
 
         if (recurse) {
             if (address != null) return address;
-         
             
             // go back iteratively to prevent a stack overflow:
             List<SourceStatement> trail = new ArrayList<>();

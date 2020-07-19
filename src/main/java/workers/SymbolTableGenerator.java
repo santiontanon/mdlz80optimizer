@@ -86,7 +86,7 @@ public class SymbolTableGenerator implements MDLWorker {
                 if (symbol.exp.isConstant()) {
                     sb.append(symbol.getValue(code, true));
                 } else if (symbol.isLabel()) {
-                    sb.append(Tokenizer.toHexWord(symbol.getValue(code, true), config.hexStyle));
+                    sb.append(Tokenizer.toHexWord(symbol.getValue(code, true).intValue(), config.hexStyle));
                 } else {
                     sb.append(symbol.getValue(code, true));
                     sb.append("  ; ");

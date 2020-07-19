@@ -175,8 +175,6 @@ public class SourceMacro {
                 }
             }
         }
-
-        System.out.println("scopeMacroExpansionLines, scope = " + scope +", definedLabels = " + macroDefinedLabels);
         
         for(SourceLine sl:lines) {
             for(String definedLabel:macroDefinedLabels) {

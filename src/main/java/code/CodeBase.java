@@ -67,7 +67,7 @@ public class CodeBase {
     }
 
 
-    public Integer getSymbolValue(String name, boolean silent)
+    public Number getSymbolValue(String name, boolean silent)
     {
         if (symbols.containsKey(name)) {
             return symbols.get(name).getValue(this, silent);

@@ -6,14 +6,14 @@ package code;
 public class SourceConstant {
     public String name;
     public Expression exp;
-    Integer valueCache;  // null if not yet evaluated
+    Number valueCache;  // null if not yet evaluated
     
     public boolean resolveEagerly = false; // Variables where this is true, will be evaluated right away
                                            // This is needed for := variables in sjasm and asMSX
     
     SourceStatement s;  // the statement where it was defined
     
-    public SourceConstant(String a_name, Integer a_value, Expression a_exp, SourceStatement a_s)
+    public SourceConstant(String a_name, Number a_value, Expression a_exp, SourceStatement a_s)
     {
         name = a_name;
         valueCache = a_value;
@@ -22,12 +22,12 @@ public class SourceConstant {
     }
     
     
-    public Integer getValue(CodeBase code, boolean silent)
+    public Number getValue(CodeBase code, boolean silent)
     {
         if (valueCache != null) {
             return valueCache;
         } else {
-            valueCache = exp.evaluateToInteger(s, code, silent);
+            valueCache = exp.evaluate(s, code, silent);
             return valueCache;
         }
     }

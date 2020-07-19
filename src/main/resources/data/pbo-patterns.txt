@@ -139,7 +139,7 @@ replacement:
 constraints:
 regpair(?regpair1,?regpair1h,?regpair1l)
 
-pattern: Replace ld a,n; ld (hl),a with ld (hl),n
+pattern: Replace ld a,?const1; ld (hl),a with ld (hl),?const1
 0: ld a,?const1
 1: ld (hl),a
 replacement:
@@ -239,7 +239,7 @@ replacement:
 constraints:
 in(?regpair,bc,de)
 
-pattern: Replace neg; add a,n with cpl; add a,n+1
+pattern: Replace neg; add a,?const1 with cpl; add a,?const1+1
 0: neg
 1: add a,?const1
 replacement:
@@ -260,7 +260,7 @@ replacement:
 0: xor a
 1: sub ?reg
 
-pattern: Replace ld a,?reg; sub n; neg with ld a,n; sub ?reg
+pattern: Replace ld a,?reg; sub ?const; neg with ld a,?const; sub ?reg
 0: ld a,?reg
 1: sub ?const
 2: neg

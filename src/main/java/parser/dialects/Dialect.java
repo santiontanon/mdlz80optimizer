@@ -59,7 +59,7 @@ public interface Dialect {
     // Some dialects implement custom functions (e.g., asMSX has a "random" function). They cannot
     // be included in the general parser, as if someone uses a different assembler, those could be used
     // as macro names, causing a collision. So, they are implemented via this function:
-    default Integer evaluateExpression(String functionName, List<Expression> args, SourceStatement s, CodeBase code, boolean silent) {
+    default Number evaluateExpression(String functionName, List<Expression> args, SourceStatement s, CodeBase code, boolean silent) {
         // (no-op by default)
         return null;
     }
@@ -74,6 +74,12 @@ public interface Dialect {
     default MacroExpansion instantiateMacro(SourceMacro macro, List<Expression> args, SourceStatement macroCall, CodeBase code) {
         // (no-op by default)
         return null;
+    }
+
+    // Called right before the code is going to be parsed (this can be used, for example,
+    // to predefine constants in the CodeBase class, like "pi" in asMSX):
+    default void performAnyInitialActions(CodeBase code) {
+        // (no-op by default)
     }
 
     // Called after all the code is parsed and all macros expanded

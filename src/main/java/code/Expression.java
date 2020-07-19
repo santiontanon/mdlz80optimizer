@@ -95,7 +95,7 @@ public class Expression {
                 if (symbolName.equals(CodeBase.CURRENT_ADDRESS)) {
                     return s.getAddress(code);
                 }
-                Integer value = code.getSymbolValue(symbolName, silent);
+                Number value = code.getSymbolValue(symbolName, silent);
                 if (value == null) {
                     if (!silent) {
                         config.error("Undefined symbol " + symbolName);
@@ -436,6 +436,8 @@ public class Expression {
                 }
             case EXPRESSION_INTEGER_CONSTANT:
                 return "" + integerConstant;
+            case EXPRESSION_DOUBLE_CONSTANT:
+                return "" + doubleConstant;
             case EXPRESSION_STRING_CONSTANT:
             {
                 String tmp = stringConstant.replace("\n", "\\n");
@@ -855,14 +857,20 @@ public class Expression {
             // check if it's a variable that needs to be evaluated eagerly:
             SourceConstant c = code.getSymbol(symbol);
             if (c != null && c.resolveEagerly) {
-                Integer value = c.getValue(code, false);
+                Number value = c.getValue(code, false);
                 if (value == null) {
                     config.error("Cannot resolve eager variable " + symbol + "!");
                     return null;
+                } 
+                if (value instanceof Integer) {
+                    Expression exp = new Expression(EXPRESSION_INTEGER_CONSTANT, config);
+                    exp.integerConstant = value.intValue();
+                    return exp;
+                } else {
+                    Expression exp = new Expression(EXPRESSION_DOUBLE_CONSTANT, config);
+                    exp.doubleConstant = value.doubleValue();
+                    return exp;
                 }
-                Expression exp = new Expression(EXPRESSION_INTEGER_CONSTANT, config);
-                exp.integerConstant = value;
-                return exp;
             }
             
             Expression exp = new Expression(EXPRESSION_SYMBOL, config);

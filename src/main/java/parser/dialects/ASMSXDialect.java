@@ -49,7 +49,7 @@ public class ASMSXDialect implements Dialect {
     String lastAbsoluteLabel = null;
     SourceStatement romHeaderStatement = null;
     SourceStatement basicHeaderStatement = null;
-    Expression startLabel = null;
+    Expression startAddressLabel = null;
     
     // Addresses are not resolved until the very end, so, when printing values, we just queue them up here, and
     // print them all at the very end:
@@ -89,6 +89,12 @@ public class ASMSXDialect implements Dialect {
         
         config.expressionParser.dialectFunctions.add(".random");
         config.expressionParser.dialectFunctions.add("random");
+        config.expressionParser.dialectFunctions.add(".fix");
+        config.expressionParser.dialectFunctions.add("fix");
+        config.expressionParser.dialectFunctions.add(".sin");
+        config.expressionParser.dialectFunctions.add("sin");
+        config.expressionParser.dialectFunctions.add(".cos");
+        config.expressionParser.dialectFunctions.add("cos");
     }
 
 
@@ -121,6 +127,10 @@ public class ASMSXDialect implements Dialect {
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase(".start")) return true;
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("start")) return true;
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("=")) return true;
+        if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase(".wav")) return true;
+        if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("wav")) return true;
+        if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase(".cas")) return true;
+        if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("cas")) return true;
         
         // weird syntax that for some reason asMSX swallows (undocumented):
         // if a line is all dashes, it's ignored:
@@ -342,15 +352,15 @@ public class ASMSXDialect implements Dialect {
             s.type = SourceStatement.STATEMENT_DATA_BYTES;
             s.data = data;
             data.add(Expression.constantExpression("AB", config));
-            if (startLabel == null) {
+            if (startAddressLabel == null) {
                 data.add(Expression.constantExpression(0, config)); // start address place holder
                 data.add(Expression.constantExpression(0, config)); 
             } else {
                 data.add(Expression.operatorExpression(Expression.EXPRESSION_MOD, 
-                        startLabel, 
+                        startAddressLabel, 
                         Expression.constantExpression(256, config), config)); 
                 data.add(Expression.operatorExpression(Expression.EXPRESSION_DIV, 
-                        startLabel, 
+                        startAddressLabel, 
                         Expression.constantExpression(256, config), config)); 
             }
             for(int i = 0;i<12;i++) data.add(Expression.constantExpression(0, config));
@@ -364,30 +374,26 @@ public class ASMSXDialect implements Dialect {
             s.type = SourceStatement.STATEMENT_DATA_BYTES;
             s.data = data;
             data.add(Expression.constantExpression(0xfe, config));
-            data.add(Expression.operatorExpression(Expression.EXPRESSION_MOD, 
-                    Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, code, config), 
-                    Expression.constantExpression(256, config), config)); 
-            data.add(Expression.operatorExpression(Expression.EXPRESSION_DIV, 
-                    Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, code, config), 
-                    Expression.constantExpression(256, config), config)); 
+            data.add(Expression.constantExpression(0, config)); 
+            data.add(Expression.constantExpression(0, config));             
             for(int i = 0;i<2;i++) data.add(Expression.constantExpression(0, config));
-            if (startLabel == null) {
+            if (startAddressLabel == null) {
                 data.add(Expression.constantExpression(0, config)); // start address place holder
                 data.add(Expression.constantExpression(0, config)); 
             } else {
                 data.add(Expression.operatorExpression(Expression.EXPRESSION_MOD, 
-                        startLabel, 
+                        startAddressLabel, 
                         Expression.constantExpression(256, config), config)); 
                 data.add(Expression.operatorExpression(Expression.EXPRESSION_DIV, 
-                        startLabel, 
+                        startAddressLabel, 
                         Expression.constantExpression(256, config), config)); 
             }
             // the header of a basic program should not use any space, so we add an org statement afterwards to compensate for its space:
-            SourceStatement auxiliarOrg = new SourceStatement(SourceStatement.STATEMENT_ORG, sl, source, null);
-            auxiliarOrg.org = Expression.operatorExpression(Expression.EXPRESSION_SUB, 
-                    Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, code, config), 
-                    Expression.constantExpression(7, config), config);
-            l.add(auxiliarOrg);
+//            SourceStatement auxiliarOrg = new SourceStatement(SourceStatement.STATEMENT_ORG, sl, source, null);
+//            auxiliarOrg.org = Expression.operatorExpression(Expression.EXPRESSION_SUB, 
+//                    Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, code, config), 
+//                    Expression.constantExpression(7, config), config);
+//            l.add(auxiliarOrg);
             if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
         }        
         if (tokens.size()>=2 && (tokens.get(0).equalsIgnoreCase(".start") || tokens.get(0).equalsIgnoreCase("start"))) {
@@ -397,21 +403,21 @@ public class ASMSXDialect implements Dialect {
                 config.error("Cannot parse expression in "+sl.fileNameLineString()+": " + sl.line);
                 return null;
             }
-            startLabel = exp;
+            startAddressLabel = exp;
             if (romHeaderStatement != null) {
                 romHeaderStatement.data.set(1,Expression.operatorExpression(Expression.EXPRESSION_MOD, 
-                        startLabel, 
+                        startAddressLabel, 
                         Expression.constantExpression(256, config), config)); 
                 romHeaderStatement.data.set(2,Expression.operatorExpression(Expression.EXPRESSION_DIV, 
-                        startLabel, 
+                        startAddressLabel, 
                         Expression.constantExpression(256, config), config)); 
             }
             if (basicHeaderStatement != null) {
                 basicHeaderStatement.data.set(5,Expression.operatorExpression(Expression.EXPRESSION_MOD, 
-                        startLabel, 
+                        startAddressLabel, 
                         Expression.constantExpression(256, config), config)); 
                 basicHeaderStatement.data.set(6,Expression.operatorExpression(Expression.EXPRESSION_DIV, 
-                        startLabel, 
+                        startAddressLabel, 
                         Expression.constantExpression(256, config), config)); 
             }
             if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
@@ -438,6 +444,16 @@ public class ASMSXDialect implements Dialect {
             // these variables should not be part of the source code:
             l.clear();
             return l;
+        }        
+        if (tokens.size() >= 2 && (tokens.get(0).equalsIgnoreCase(".wav") || tokens.get(0).equalsIgnoreCase("wav"))) {
+            tokens.remove(0);
+            // just ignore
+            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
+        }        
+        if (tokens.size() >= 2 && (tokens.get(0).equalsIgnoreCase(".cas") || tokens.get(0).equalsIgnoreCase("cas"))) {
+            tokens.remove(0);
+            // just ignore
+            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
         }        
 
         // weird syntax that for some reason asMSX swallows (undocumented):
@@ -471,7 +487,7 @@ public class ASMSXDialect implements Dialect {
     
 
     @Override
-    public Integer evaluateExpression(String functionName, List<Expression> args, SourceStatement s, CodeBase code, boolean silent)
+    public Number evaluateExpression(String functionName, List<Expression> args, SourceStatement s, CodeBase code, boolean silent)
     {
         if ((functionName.equalsIgnoreCase(".random") || 
              functionName.equalsIgnoreCase("random")) && args.size() == 1) {
@@ -479,13 +495,96 @@ public class ASMSXDialect implements Dialect {
             if (range == null) return null;
             return r.nextInt(range);
         }
+        if ((functionName.equalsIgnoreCase(".sin") || 
+             functionName.equalsIgnoreCase("sin")) && args.size() == 1) {
+            Number range = args.get(0).evaluate(s, code, silent);
+            if (range == null) return null;
+            return Math.sin(range.doubleValue());
+        }
+        if ((functionName.equalsIgnoreCase(".cos") || 
+             functionName.equalsIgnoreCase("cos")) && args.size() == 1) {
+            Number range = args.get(0).evaluate(s, code, silent);
+            if (range == null) return null;
+            return Math.cos(range.doubleValue());
+        }
+        if ((functionName.equalsIgnoreCase(".fix") || 
+             functionName.equalsIgnoreCase("fix")) && args.size() == 1) {
+            Number input = args.get(0).evaluate(s, code, silent);
+            if (input == null) return null;
+            return (int)(input.doubleValue()*256);
+        }
         return null;
+    }
+    
+    
+    @Override
+    public boolean expressionEvaluatesToIntegerConstant(String functionName) {
+        if (functionName.equalsIgnoreCase(".sin") || 
+            functionName.equalsIgnoreCase("sin")) {
+            return false;
+        }
+        if (functionName.equalsIgnoreCase(".cos") || 
+            functionName.equalsIgnoreCase("cos")) {
+            return false;
+        }
+
+        return true;
+    }
+    
+    
+    @Override    
+    public void performAnyInitialActions(CodeBase code) {
+        SourceConstant sc = new SourceConstant("pi", null, Expression.constantExpression(Math.PI, config), null);
+        code.addSymbol("pi", sc);
     }
     
     
     @Override
     public void performAnyFinalActions(CodeBase code)
     {
+        // start/load addresses for rom/basic headers if not yet set:
+        if (basicHeaderStatement != null && startAddressLabel == null) {
+            // Look for the very first assembler instruction:
+            SourceStatement s = code.getMain().getNextStatementTo(null, code);
+            while(s != null) {
+                if (s.type == SourceStatement.STATEMENT_CPUOP) {
+                    // found it!
+                    basicHeaderStatement.data.set(5,Expression.operatorExpression(Expression.EXPRESSION_MOD, 
+                            Expression.constantExpression(s.getAddress(code), config), 
+                            Expression.constantExpression(256, config), config)); 
+                    basicHeaderStatement.data.set(6,Expression.operatorExpression(Expression.EXPRESSION_DIV, 
+                            Expression.constantExpression(s.getAddress(code), config), 
+                            Expression.constantExpression(256, config), config)); 
+                    break;
+                }
+                s = s.source.getNextStatementTo(s, code);
+            }
+        }
+        
+        if (basicHeaderStatement != null) {
+            // Look for the very first org (and make sure the basic header is BEFORE the org):
+            SourceStatement s = code.getMain().getNextStatementTo(null, code);
+            while(s != null) {
+                if (s.type == SourceStatement.STATEMENT_ORG) {
+                    // found it! We should insert the basic header right before this!
+                    basicHeaderStatement.source.getStatements().remove(basicHeaderStatement);
+                    int idx = s.source.getStatements().indexOf(s);
+                    s.source.getStatements().add(idx, basicHeaderStatement);
+                    
+                    // set the load address:
+                    basicHeaderStatement.data.set(1, Expression.operatorExpression(Expression.EXPRESSION_MOD, 
+                            Expression.parenthesisExpression(s.org, config), 
+                            Expression.constantExpression(256, config), config)); 
+                    basicHeaderStatement.data.set(2, Expression.operatorExpression(Expression.EXPRESSION_DIV, 
+                            Expression.parenthesisExpression(s.org, config), 
+                            Expression.constantExpression(256, config), config));
+                    break;
+                }
+                s = s.source.getNextStatementTo(s, code);
+            }
+        }
+        
+        
         for(PrintRecord pr:toPrint) {
             switch(pr.keyword) {
                 case "printtext":

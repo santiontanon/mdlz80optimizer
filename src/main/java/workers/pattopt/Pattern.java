@@ -391,9 +391,6 @@ public class Pattern {
                     
                     Expression exp1 = config.expressionParser.parse(v1_tokens, null, code);
                     Expression exp2 = config.expressionParser.parse(v2_tokens, null, code);
-
-                    if (exp1 == null) System.out.println(v1_tokens);
-                    if (exp2 == null) System.out.println(v2_tokens);
                     
                     if (exp1.evaluatesToIntegerConstant() != exp2.evaluatesToIntegerConstant()) return null;
                     if (exp1.evaluatesToIntegerConstant()) {
@@ -528,7 +525,7 @@ public class Pattern {
                     Integer startAddress = start.getAddress(code);
                     SourceConstant sc = code.getSymbol(constraint[2]);
                     if (sc == null) return null;
-                    Integer endAddress = sc.getValue(code, false);
+                    Integer endAddress = sc.getValue(code, false).intValue();
                     if (startAddress == null || endAddress == null) return null;
                     int diff = endAddress - startAddress;
                     if (diff < -128 || diff > 127) return null;
