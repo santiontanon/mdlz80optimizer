@@ -428,7 +428,7 @@ public class ASMSXDialect implements Dialect {
             s.label.resolveEagerly = true;
             if (!config.lineParser.parseEqu(tokens, sl, s, source, code)) return null;
             s.label.clearCache();
-            Integer value = s.label.exp.evaluate(s, code, false);
+            Integer value = s.label.exp.evaluateToInteger(s, code, false);
             if (value == null) {
                 config.error("Cannot resolve eager variable in " + sl);
                 return null;
@@ -475,7 +475,7 @@ public class ASMSXDialect implements Dialect {
     {
         if ((functionName.equalsIgnoreCase(".random") || 
              functionName.equalsIgnoreCase("random")) && args.size() == 1) {
-            Integer range = args.get(0).evaluate(s, code, silent);
+            Integer range = args.get(0).evaluateToInteger(s, code, silent);
             if (range == null) return null;
             return r.nextInt(range);
         }
@@ -497,7 +497,7 @@ public class ASMSXDialect implements Dialect {
                     int idx = f.getStatements().indexOf(pr.previousStatement);
                     SourceStatement s = null;
                     if (f.getStatements().size() > idx+1) s = f.getStatements().get(idx+1);
-                    Integer value = pr.exp.evaluate(s, code, false);
+                    Integer value = pr.exp.evaluateToInteger(s, code, false);
                     if (value == null) {
                         config.error("Cannot evaluate expression " + pr.exp);
                     } else {
@@ -511,7 +511,7 @@ public class ASMSXDialect implements Dialect {
                     int idx = f.getStatements().indexOf(pr.previousStatement);
                     SourceStatement s = null;
                     if (f.getStatements().size() > idx+1) s = f.getStatements().get(idx+1);
-                    Integer value = pr.exp.evaluate(s, code, false);
+                    Integer value = pr.exp.evaluateToInteger(s, code, false);
                     if (value == null) {
                         config.error("Cannot evaluate expression " + pr.exp);
                     } else {

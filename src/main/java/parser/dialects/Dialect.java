@@ -63,6 +63,12 @@ public interface Dialect {
         // (no-op by default)
         return null;
     }
+
+    // Returns true if a function returns an integer
+    default boolean expressionEvaluatesToIntegerConstant(String functionName) {
+        // (no-op by default)
+        return true;
+    }
     
     // Called to expand any dialect-specific macros:
     default MacroExpansion instantiateMacro(SourceMacro macro, List<Expression> args, SourceStatement macroCall, CodeBase code) {

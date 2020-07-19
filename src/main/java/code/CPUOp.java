@@ -167,11 +167,11 @@ public class CPUOp {
             // preserve indirections:
             if (args.get(i).type == Expression.EXPRESSION_PARENTHESIS) {
                 if (args.get(i).args.get(0).evaluatesToIntegerConstant()) {
-                    args.get(i).args.set(0, Expression.constantExpression(args.get(i).args.get(0).evaluate(s, code, false), config));
+                    args.get(i).args.set(0, Expression.constantExpression(args.get(i).args.get(0).evaluateToInteger(s, code, false), config));
                 }
             } else {
                 if (args.get(i).evaluatesToIntegerConstant()) {
-                    Integer value = args.get(i).evaluate(s, code, false);
+                    Integer value = args.get(i).evaluateToInteger(s, code, false);
                     if (value == null) {
                         config.error("Cannot evaluate expression: " + args.get(i));
                         return false;

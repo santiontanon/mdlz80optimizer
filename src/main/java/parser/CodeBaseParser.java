@@ -45,7 +45,7 @@ public class CodeBaseParser {
         if (config.dialectParser != null) config.dialectParser.performAnyFinalActions(code);
         for(Pair<Expression, SourceStatement> pair:expressionsToReplaceByValueAtTheEnd) {
             Expression exp = pair.getLeft();
-            Integer value = exp.evaluate(pair.getRight(), code, false);
+            Integer value = exp.evaluateToInteger(pair.getRight(), code, false);
             if (value == null) {
                 config.error("Cannot resolve expression " + exp + " after loading all the source code!");
                 return false;

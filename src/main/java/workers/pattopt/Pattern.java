@@ -217,12 +217,12 @@ public class Pattern {
 
         if (pattern.type == Expression.EXPRESSION_INTEGER_CONSTANT) {
             // if the pattern is a numeric constant, and the argument is an expression that
-            // evaluates to a number, the evaluate to check equality:
+            // evaluates to a number, the evaluateToInteger to check equality:
             // An exception is the "parenthesis" operation, which we assume is for an indirection if we
             // are at the top level of the expression
             if (arg2.evaluatesToIntegerConstant()) {
                 if (!expressionRoot || arg2.type != Expression.EXPRESSION_PARENTHESIS) {
-                    Integer arg2_val = arg2.evaluate(s, code, true);
+                    Integer arg2_val = arg2.evaluateToInteger(s, code, true);
                     if (arg2_val != null && arg2_val == pattern.integerConstant) return true;
                 }
             }
@@ -397,13 +397,13 @@ public class Pattern {
                     
                     if (exp1.evaluatesToIntegerConstant() != exp2.evaluatesToIntegerConstant()) return null;
                     if (exp1.evaluatesToIntegerConstant()) {
-                        // If the expressions are numeric, we evaluate them:
-                        Integer v1 = exp1.evaluate(null, code, true);
-                        Integer v2 = exp2.evaluate(null, code, true);
+                        // If the expressions are numeric, we evaluateToInteger them:
+                        Integer v1 = exp1.evaluateToInteger(null, code, true);
+                        Integer v2 = exp2.evaluateToInteger(null, code, true);
                         if (v1 == null || v2 == null) return null;
                         if ((int)v1 != (int)v2) return null;
                     } else {
-                        // If they are not, then there is no need to evaluate, as they should just string match:
+                        // If they are not, then there is no need to evaluateToInteger, as they should just string match:
                         if (!v1_str.equalsIgnoreCase(v2_str)) return null;
                     }
                     break;
@@ -420,13 +420,13 @@ public class Pattern {
 
                     if (exp1.evaluatesToIntegerConstant() != exp2.evaluatesToIntegerConstant()) break;
                     if (exp1.evaluatesToIntegerConstant()) {
-                        // If the expressions are numeric, we evaluate them:
-                        Integer v1 = exp1.evaluate(null, code, true);
-                        Integer v2 = exp2.evaluate(null, code, true);
+                        // If the expressions are numeric, we evaluateToInteger them:
+                        Integer v1 = exp1.evaluateToInteger(null, code, true);
+                        Integer v2 = exp2.evaluateToInteger(null, code, true);
                         if (v1 == null || v2 == null) return null;
-                        if (exp1.evaluate(null, code, true).equals(exp2.evaluate(null, code, true))) return null;
+                        if (exp1.evaluateToInteger(null, code, true).equals(exp2.evaluateToInteger(null, code, true))) return null;
                     } else {
-                        // If they are not, then there is no need to evaluate, as they should just string match:
+                        // If they are not, then there is no need to evaluateToInteger, as they should just string match:
                         if (v1_str.equalsIgnoreCase(v2_str)) return null;
                     }
                     break;

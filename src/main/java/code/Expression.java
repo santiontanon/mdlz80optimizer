@@ -16,6 +16,7 @@ public class Expression {
     public static final int EXPRESSION_REGISTER_OR_FLAG = 0;
     public static final int EXPRESSION_INTEGER_CONSTANT = 1;
     public static final int EXPRESSION_STRING_CONSTANT = 2;
+    public static final int EXPRESSION_DOUBLE_CONSTANT = 28;
     public static final int EXPRESSION_SYMBOL = 3;
     public static final int EXPRESSION_SIGN_CHANGE = 4;
     public static final int EXPRESSION_PARENTHESIS = 5;
@@ -51,11 +52,12 @@ public class Expression {
         5, 13, 11, 10, 9,
         9, 9, 9, 10, 16,
         7, 7, 11, 13, 3,
-        12, 3, -1};
+        12, 3, -1, -1};
 
     MDLConfig config;
     public int type;
     public int integerConstant;
+    public double doubleConstant;
     public String stringConstant;
     public String symbolName;
     public String registerOrFlagName;
@@ -67,11 +69,20 @@ public class Expression {
         config = a_config;
     }
 
-    public Integer evaluate(SourceStatement s, CodeBase code, boolean silent) {
+    
+    public Integer evaluateToInteger(SourceStatement s, CodeBase code, boolean silent) {
+        return (Integer)evaluate(s, code, silent);
+    }
+    
+    
+    public Number evaluate(SourceStatement s, CodeBase code, boolean silent) {
         switch (type) {
             case EXPRESSION_INTEGER_CONSTANT:
                 return integerConstant;
 
+            case EXPRESSION_DOUBLE_CONSTANT:
+                return doubleConstant;
+                
             case EXPRESSION_STRING_CONSTANT:
                 if (stringConstant.length() == 1) {
                     return (int) stringConstant.charAt(0);
@@ -96,15 +107,18 @@ public class Expression {
             }
 
             case EXPRESSION_SIGN_CHANGE: {
-                Integer v = args.get(0).evaluate(s, code, silent);
+                Number v = args.get(0).evaluate(s, code, silent);
                 if (v == null) {
                     return null;
+                } else if (v instanceof Integer) {
+                    return -(Integer)v;
+                } else {
+                    return -(Double)v;
                 }
-                return -v;
             }
 
             case EXPRESSION_PARENTHESIS: {
-                Integer v = args.get(0).evaluate(s, code, silent);
+                Number v = args.get(0).evaluate(s, code, silent);
                 if (v == null) {
                     return null;
                 }
@@ -112,13 +126,18 @@ public class Expression {
             }
 
             case EXPRESSION_SUM: {
-                int accum = 0;
+                Number accum = 0;
+                boolean turnToDouble = false;
                 for (Expression arg : args) {
-                    Integer v = arg.evaluate(s, code, silent);
+                    Number v = arg.evaluate(s, code, silent);
                     if (v == null) {
                         return null;
+                    } else if (turnToDouble || (v instanceof Double)) {
+                        turnToDouble = true;
+                        accum = accum.doubleValue() + v.doubleValue();
+                    } else {
+                        accum = accum.intValue() + v.intValue();
                     }
-                    accum += v;
                 }
                 return accum;
             }
@@ -127,22 +146,31 @@ public class Expression {
                 if (args.size() != 2) {
                     return null;
                 }
-                Integer v1 = args.get(0).evaluate(s, code, silent);
-                Integer v2 = args.get(1).evaluate(s, code, silent);
+                Number v1 = args.get(0).evaluate(s, code, silent);
+                Number v2 = args.get(1).evaluate(s, code, silent);
                 if (v1 == null || v2 == null) {
                     return null;
                 }
-                return v1 - v2;
+                if ((v1 instanceof Double) || (v2 instanceof Double)) {
+                    return v1.doubleValue() - v2.doubleValue();
+                } else {
+                    return v1.intValue() - v2.intValue();
+                }
             }
 
             case EXPRESSION_MUL: {
-                int accum = 1;
+                Number accum = 1;
+                boolean turnToDouble = false;
                 for (Expression arg : args) {
-                    Integer v = arg.evaluate(s, code, silent);
+                    Number v = arg.evaluate(s, code, silent);
                     if (v == null) {
                         return null;
+                    } else if (turnToDouble || (v instanceof Double)) {
+                        turnToDouble = true;
+                        accum = accum.doubleValue() * v.doubleValue();
+                    } else {
+                        accum = accum.intValue() * v.intValue();
                     }
-                    accum *= v;
                 }
                 return accum;
             }
@@ -151,32 +179,40 @@ public class Expression {
                 if (args.size() != 2) {
                     return null;
                 }
-                Integer v1 = args.get(0).evaluate(s, code, silent);
-                Integer v2 = args.get(1).evaluate(s, code, silent);
+                Number v1 = args.get(0).evaluate(s, code, silent);
+                Number v2 = args.get(1).evaluate(s, code, silent);
                 if (v1 == null || v2 == null) {
                     return null;
                 }
-                return v1 / v2;
+                if ((v1 instanceof Double) || (v2 instanceof Double)) {
+                    return v1.doubleValue() / v2.doubleValue();
+                } else {
+                    return v1.intValue() / v2.intValue();
+                }
             }
 
             case EXPRESSION_MOD: {
                 if (args.size() != 2) {
                     return null;
                 }
-                Integer v1 = args.get(0).evaluate(s, code, silent);
-                Integer v2 = args.get(1).evaluate(s, code, silent);
+                Number v1 = args.get(0).evaluate(s, code, silent);
+                Number v2 = args.get(1).evaluate(s, code, silent);
                 if (v1 == null || v2 == null) {
                     return null;
                 }
-                return v1 % v2;
+                if ((v1 instanceof Double) || (v2 instanceof Double)) {
+                    return v1.doubleValue() % v2.doubleValue();
+                } else {
+                    return v1.intValue() % v2.intValue();
+                }
             }
 
             case EXPRESSION_OR: {
                 if (args.size() != 2) {
                     return null;
                 }
-                Integer v1 = args.get(0).evaluate(s, code, silent);
-                Integer v2 = args.get(1).evaluate(s, code, silent);
+                Integer v1 = args.get(0).evaluateToInteger(s, code, silent);
+                Integer v2 = args.get(1).evaluateToInteger(s, code, silent);
                 if (v1 == null || v2 == null) {
                     return null;
                 }
@@ -189,8 +225,8 @@ public class Expression {
                 if (args.size() != 2) {
                     return null;
                 }
-                Integer v1 = args.get(0).evaluate(s, code, silent);
-                Integer v2 = args.get(1).evaluate(s, code, silent);
+                Integer v1 = args.get(0).evaluateToInteger(s, code, silent);
+                Integer v2 = args.get(1).evaluateToInteger(s, code, silent);
                 if (v1 == null || v2 == null) {
                     return null;
                 }
@@ -203,8 +239,8 @@ public class Expression {
                 if (args.size() != 2) {
                     return null;
                 }
-                Integer v1 = args.get(0).evaluate(s, code, silent);
-                Integer v2 = args.get(1).evaluate(s, code, silent);
+                Number v1 = args.get(0).evaluate(s, code, silent);
+                Number v2 = args.get(1).evaluate(s, code, silent);
                 if (v1 == null || v2 == null) {
                     return null;
                 }
@@ -218,68 +254,72 @@ public class Expression {
                 if (args.size() != 2) {
                     return null;
                 }
-                Integer v1 = args.get(0).evaluate(s, code, silent);
-                Integer v2 = args.get(1).evaluate(s, code, silent);
+                Number v1 = args.get(0).evaluate(s, code, silent);
+                Number v2 = args.get(1).evaluate(s, code, silent);
                 if (v1 == null || v2 == null) {
                     return null;
                 }
-                if (v1 < v2) {
-                    return TRUE;
+                if ((v1 instanceof Double) || (v2 instanceof Double)) {
+                    return v1.doubleValue() < v2.doubleValue() ? TRUE:FALSE;
+                } else {
+                    return v1.intValue() < v2.intValue() ? TRUE:FALSE;
                 }
-                return FALSE;
             }
 
             case EXPRESSION_GREATERTHAN: {
                 if (args.size() != 2) {
                     return null;
                 }
-                Integer v1 = args.get(0).evaluate(s, code, silent);
-                Integer v2 = args.get(1).evaluate(s, code, silent);
+                Number v1 = args.get(0).evaluate(s, code, silent);
+                Number v2 = args.get(1).evaluate(s, code, silent);
                 if (v1 == null || v2 == null) {
                     return null;
                 }
-                if (v1 > v2) {
-                    return TRUE;
+                if ((v1 instanceof Double) || (v2 instanceof Double)) {
+                    return v1.doubleValue() > v2.doubleValue() ? TRUE:FALSE;
+                } else {
+                    return v1.intValue() > v2.intValue() ? TRUE:FALSE;
                 }
-                return FALSE;
             }
 
             case EXPRESSION_LEQTHAN: {
                 if (args.size() != 2) {
                     return null;
                 }
-                Integer v1 = args.get(0).evaluate(s, code, silent);
-                Integer v2 = args.get(1).evaluate(s, code, silent);
+                Number v1 = args.get(0).evaluate(s, code, silent);
+                Number v2 = args.get(1).evaluate(s, code, silent);
                 if (v1 == null || v2 == null) {
                     return null;
                 }
-                if (v1 <= v2) {
-                    return TRUE;
+                if ((v1 instanceof Double) || (v2 instanceof Double)) {
+                    return v1.doubleValue() <= v2.doubleValue() ? TRUE:FALSE;
+                } else {
+                    return v1.intValue() <= v2.intValue() ? TRUE:FALSE;
                 }
-                return FALSE;
             }
 
             case EXPRESSION_GEQTHAN: {
                 if (args.size() != 2) {
                     return null;
                 }
-                Integer v1 = args.get(0).evaluate(s, code, silent);
-                Integer v2 = args.get(1).evaluate(s, code, silent);
+                Number v1 = args.get(0).evaluate(s, code, silent);
+                Number v2 = args.get(1).evaluate(s, code, silent);
                 if (v1 == null || v2 == null) {
                     return null;
                 }
-                if (v1 >= v2) {
-                    return TRUE;
+                if ((v1 instanceof Double) || (v2 instanceof Double)) {
+                    return v1.doubleValue() >= v2.doubleValue() ? TRUE:FALSE;
+                } else {
+                    return v1.intValue() >= v2.intValue() ? TRUE:FALSE;
                 }
-                return FALSE;
             }
 
             case EXPRESSION_DIFF: {
                 if (args.size() != 2) {
                     return null;
                 }
-                Integer v1 = args.get(0).evaluate(s, code, silent);
-                Integer v2 = args.get(1).evaluate(s, code, silent);
+                Number v1 = args.get(0).evaluate(s, code, silent);
+                Number v2 = args.get(1).evaluate(s, code, silent);
                 if (v1 == null || v2 == null) {
                     return null;
                 }
@@ -290,14 +330,14 @@ public class Expression {
             }
 
             case EXPRESSION_TERNARY_IF: {
-                Integer cond = args.get(0).evaluate(s, code, silent);
+                Integer cond = args.get(0).evaluateToInteger(s, code, silent);
                 if (cond == null) {
                     return null;
                 }
                 if (cond != FALSE) {
-                    return args.get(1).evaluate(s, code, silent);
+                    return args.get(1).evaluateToInteger(s, code, silent);
                 } else {
-                    return args.get(2).evaluate(s, code, silent);
+                    return args.get(2).evaluateToInteger(s, code, silent);
                 }
             }
 
@@ -305,8 +345,8 @@ public class Expression {
                 if (args.size() != 2) {
                     return null;
                 }
-                Integer v1 = args.get(0).evaluate(s, code, silent);
-                Integer v2 = args.get(1).evaluate(s, code, silent);
+                Integer v1 = args.get(0).evaluateToInteger(s, code, silent);
+                Integer v2 = args.get(1).evaluateToInteger(s, code, silent);
                 if (v1 == null || v2 == null) {
                     return null;
                 }
@@ -317,8 +357,8 @@ public class Expression {
                 if (args.size() != 2) {
                     return null;
                 }
-                Integer v1 = args.get(0).evaluate(s, code, silent);
-                Integer v2 = args.get(1).evaluate(s, code, silent);
+                Integer v1 = args.get(0).evaluateToInteger(s, code, silent);
+                Integer v2 = args.get(1).evaluateToInteger(s, code, silent);
                 if (v1 == null || v2 == null) {
                     return null;
                 }
@@ -329,8 +369,8 @@ public class Expression {
                 if (args.size() != 2) {
                     return null;
                 }
-                Integer v1 = args.get(0).evaluate(s, code, silent);
-                Integer v2 = args.get(1).evaluate(s, code, silent);
+                Integer v1 = args.get(0).evaluateToInteger(s, code, silent);
+                Integer v2 = args.get(1).evaluateToInteger(s, code, silent);
                 if (v1 == null || v2 == null) {
                     return null;
                 }
@@ -341,15 +381,15 @@ public class Expression {
                 if (args.size() != 2) {
                     return null;
                 }
-                Integer v1 = args.get(0).evaluate(s, code, silent);
-                Integer v2 = args.get(1).evaluate(s, code, silent);
+                Integer v1 = args.get(0).evaluateToInteger(s, code, silent);
+                Integer v2 = args.get(1).evaluateToInteger(s, code, silent);
                 if (v1 == null || v2 == null) {
                     return null;
                 }
                 return v1 & v2;
             }
             case EXPRESSION_BITNEGATION: {
-                Integer v = args.get(0).evaluate(s, code, silent);
+                Integer v = args.get(0).evaluateToInteger(s, code, silent);
                 if (v == null) {
                     return null;
                 }
@@ -359,15 +399,15 @@ public class Expression {
                 if (args.size() != 2) {
                     return null;
                 }
-                Integer v1 = args.get(0).evaluate(s, code, silent);
-                Integer v2 = args.get(1).evaluate(s, code, silent);
+                Integer v1 = args.get(0).evaluateToInteger(s, code, silent);
+                Integer v2 = args.get(1).evaluateToInteger(s, code, silent);
                 if (v1 == null || v2 == null) {
                     return null;
                 }
                 return v1 ^ v2;
             }
             case EXPRESSION_LOGICAL_NEGATION: {
-                Integer v = args.get(0).evaluate(s, code, silent);
+                Integer v = args.get(0).evaluateToInteger(s, code, silent);
                 if (v == null) {
                     return null;
                 }
@@ -677,6 +717,59 @@ public class Expression {
                 || (type == EXPRESSION_STRING_CONSTANT);
     }
 
+    public boolean evaluatesToNumericConstant() {
+        if (type == EXPRESSION_INTEGER_CONSTANT) {
+            return true;
+        }
+        if (type == EXPRESSION_DOUBLE_CONSTANT) {
+            return true;
+        }
+        if (type == EXPRESSION_SYMBOL) {
+            return true;
+        }
+        if (type == EXPRESSION_STRING_CONSTANT
+                && stringConstant.length() == 1) {
+            return true;
+        }
+        if (type == EXPRESSION_SIGN_CHANGE
+                || type == EXPRESSION_PARENTHESIS
+                || type == EXPRESSION_SUM
+                || type == EXPRESSION_SUB
+                || type == EXPRESSION_MUL
+                || type == EXPRESSION_DIV
+                || type == EXPRESSION_MOD
+                || type == EXPRESSION_OR
+                || type == EXPRESSION_AND
+                || type == EXPRESSION_EQUAL
+                || type == EXPRESSION_LOWERTHAN
+                || type == EXPRESSION_GREATERTHAN
+                || type == EXPRESSION_LEQTHAN
+                || type == EXPRESSION_GEQTHAN
+                || type == EXPRESSION_DIFF
+                || type == EXPRESSION_LSHIFT
+                || type == EXPRESSION_RSHIFT
+                || type == EXPRESSION_BITOR
+                || type == EXPRESSION_BITAND
+                || type == EXPRESSION_BITNEGATION
+                || type == EXPRESSION_BITXOR
+                || type == EXPRESSION_LOGICAL_NEGATION) {
+            for (Expression arg : args) {
+                if (!arg.evaluatesToNumericConstant()) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        if (type == EXPRESSION_TERNARY_IF) {
+            return args.get(1).evaluatesToIntegerConstant() && args.get(2).evaluatesToIntegerConstant();
+        }
+        if (type == EXPRESSION_DIALECT_FUNCTION) {
+            return config.dialectParser.expressionEvaluatesToIntegerConstant(dialectFunction);
+        }
+        return false;
+    }    
+    
+    
     public boolean evaluatesToIntegerConstant() {
         if (type == EXPRESSION_INTEGER_CONSTANT) {
             return true;
@@ -721,7 +814,7 @@ public class Expression {
             return args.get(1).evaluatesToIntegerConstant() && args.get(2).evaluatesToIntegerConstant();
         }
         if (type == EXPRESSION_DIALECT_FUNCTION) {
-            return true;
+            return config.dialectParser.expressionEvaluatesToIntegerConstant(dialectFunction);
         }
         return false;
     }
@@ -737,6 +830,12 @@ public class Expression {
     public static Expression constantExpression(int v, MDLConfig config) {
         Expression exp = new Expression(EXPRESSION_INTEGER_CONSTANT, config);
         exp.integerConstant = v;
+        return exp;
+    }
+
+    public static Expression constantExpression(double v, MDLConfig config) {
+        Expression exp = new Expression(EXPRESSION_DOUBLE_CONSTANT, config);
+        exp.doubleConstant = v;
         return exp;
     }
 

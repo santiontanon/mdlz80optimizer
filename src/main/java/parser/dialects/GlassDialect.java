@@ -233,7 +233,7 @@ public class GlassDialect implements Dialect {
                 Pair<SourceLine, Integer> tmp = getNextLine(lines, f, lineNumber, tokens, preProcessor);
                 if (tmp == null) {
                     if (config.preProcessor.withinMacroDefinition()) {
-                        // we fail to evaluate the macro, but it's ok, some times it can happen
+                        // we fail to evaluateToInteger the macro, but it's ok, some times it can happen
                         succeeded = false;
                         break;
                     } else {
@@ -247,7 +247,7 @@ public class GlassDialect implements Dialect {
                 if (preProcessor.withinMacroDefinition()) {
                     List<SourceStatement> newStatements = preProcessor.parseMacroLine(tokens, sl, f, code, config);
                     if (newStatements == null) {
-                        // we fail to evaluate the macro, but it's ok, some times it can happen
+                        // we fail to evaluateToInteger the macro, but it's ok, some times it can happen
                         succeeded = false;
                         break;
                     } else {
@@ -273,7 +273,7 @@ public class GlassDialect implements Dialect {
                 }
             }
         } catch (Exception e) {
-            // we fail to evaluate the macro, but it's ok, some times it can happen
+            // we fail to evaluateToInteger the macro, but it's ok, some times it can happen
             succeeded = false;
         }
         config.logger.resume();

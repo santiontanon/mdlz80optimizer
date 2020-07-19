@@ -256,9 +256,15 @@ public class ExpressionParser {
     {
         if (tokens.size() >= 1 &&
             Tokenizer.isInteger(tokens.get(0))) {
-            // decimal constant:
+            // integer constant:
             String token = tokens.remove(0);
             return Expression.constantExpression(Integer.parseInt(token), config);
+        }
+        if (tokens.size() >= 1 &&
+            Tokenizer.isDouble(tokens.get(0))) {
+            // double constant:
+            String token = tokens.remove(0);
+            return Expression.constantExpression(Double.parseDouble(token), config);
         }
         if (tokens.size() >= 1 &&
             Tokenizer.isString(tokens.get(0))) {

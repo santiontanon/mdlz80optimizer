@@ -267,7 +267,7 @@ public class SjasmDialect implements Dialect {
                 return null;
             }
             mapCounterStack.add(0, mapCounter);
-            mapCounter = exp.evaluate(s, code, false);
+            mapCounter = exp.evaluateToInteger(s, code, false);
             if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
         }
         if (tokens.size() >= 1 && tokens.get(0).equalsIgnoreCase("endmap")) {
@@ -293,7 +293,7 @@ public class SjasmDialect implements Dialect {
                 s.label.exp = Expression.constantExpression(mapCounter, config);
             }
             s.type = SourceStatement.STATEMENT_CONSTANT;
-            mapCounter += exp.evaluate(s, code, false);
+            mapCounter += exp.evaluateToInteger(s, code, false);
             if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
         }
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("assert")) {
@@ -303,7 +303,7 @@ public class SjasmDialect implements Dialect {
                 config.error("Cannot parse expression at " + sl);
                 return null;
             }
-            Integer value = exp.evaluate(s, code, false);
+            Integer value = exp.evaluateToInteger(s, code, false);
             if (value == null || value == Expression.FALSE) {
                 config.error("Assertion failed at " + sl);
                 return null;
@@ -363,9 +363,9 @@ public class SjasmDialect implements Dialect {
                 }
             }
             if (pageStartExp != null) {
-                pageStart.put(pageExp.evaluate(s, code, false), pageStartExp);
+                pageStart.put(pageExp.evaluateToInteger(s, code, false), pageStartExp);
             }
-            if (pageSizeExp != null) pageSize.put(pageExp.evaluate(s, code, false), pageSizeExp);
+            if (pageSizeExp != null) pageSize.put(pageExp.evaluateToInteger(s, code, false), pageSizeExp);
             if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
         }
         if (tokens.size() >= 1 && tokens.get(0).equalsIgnoreCase("code")) {
@@ -392,7 +392,7 @@ public class SjasmDialect implements Dialect {
                 tokens.remove(0);
                 Expression pageExp = config.expressionParser.parse(tokens, s, code);
                 if (addressExp == null) {
-                    int page = pageExp.evaluate(s, code, false);
+                    int page = pageExp.evaluateToInteger(s, code, false);
                     addressExp = pageStart.get(page);
                     if (addressExp == null) {
                         config.error("Undefined page at " + sl);
@@ -419,7 +419,7 @@ public class SjasmDialect implements Dialect {
                 return null;
             }
             tokens.remove(0);
-            int number = numberExp.evaluate(s, code, false);
+            int number = numberExp.evaluateToInteger(s, code, false);
             l.clear();
             for(int i = 0;i<number;i++) {
                 List<String> tokensCopy = new ArrayList<>();
@@ -447,7 +447,7 @@ public class SjasmDialect implements Dialect {
             s.label.resolveEagerly = true;
             if (!config.lineParser.parseEqu(tokens, sl, s, source, code)) return null;
             s.label.clearCache();
-            Integer value = s.label.exp.evaluate(s, code, false);
+            Integer value = s.label.exp.evaluateToInteger(s, code, false);
             if (value == null) {
                 config.error("Cannot resolve eager variable in " + sl);
                 return null;
@@ -563,12 +563,12 @@ public class SjasmDialect implements Dialect {
     public Integer evaluateExpression(String functionName, List<Expression> args, SourceStatement s, CodeBase code, boolean silent)
     {
         if (functionName.equalsIgnoreCase("high") && args.size() == 1) {
-            Integer value = args.get(0).evaluate(s, code, silent);
+            Integer value = args.get(0).evaluateToInteger(s, code, silent);
             if (value == null) return null;
             return (value >> 8)&0xff;
         }
         if (functionName.equalsIgnoreCase("low") && args.size() == 1) {
-            Integer value = args.get(0).evaluate(s, code, silent);
+            Integer value = args.get(0).evaluateToInteger(s, code, silent);
             if (value == null) return null;
             return value&0xff;
         }
@@ -584,7 +584,7 @@ public class SjasmDialect implements Dialect {
         
         if (macro.name.equals("repeat")) {
             if (args.isEmpty()) return null;
-            int iterations = args.get(0).evaluate(macroCall, code, false);
+            int iterations = args.get(0).evaluateToInteger(macroCall, code, false);
 //            String scope;
 //            if (macroCall.label != null) {
 //                scope = macroCall.label.name;

@@ -27,7 +27,7 @@ public class SourceConstant {
         if (valueCache != null) {
             return valueCache;
         } else {
-            valueCache = exp.evaluate(s, code, silent);
+            valueCache = exp.evaluateToInteger(s, code, silent);
             return valueCache;
         }
     }

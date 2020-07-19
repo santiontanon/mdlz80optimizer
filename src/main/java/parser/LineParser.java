@@ -230,7 +230,7 @@ public class LineParser {
                             "Label "+token+" defined without a colon.");
                 }
                 Expression exp = Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, code, config);
-                int address = exp.evaluate(s, code, false);
+                int address = exp.evaluateToInteger(s, code, false);
                 tokens.remove(0);
 
                 String symbolName = newSymbolName(labelPrefix + token, exp);
@@ -313,7 +313,7 @@ public class LineParser {
                 return false;
             }
             // (for the moment, just ignore the second argument)
-            // TODO This should validate that the second argument is an expression (and potentially evaluate it)
+            // TODO This should validate that the second argument is an expression (and potentially evaluateToInteger it)
             tokens.clear();
         }
 

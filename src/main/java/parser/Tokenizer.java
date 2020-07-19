@@ -151,7 +151,16 @@ public class Tokenizer {
             return false;
         }
     }
-    
+
+    public static boolean isDouble(String token)
+    {
+        try{
+            Double.parseDouble(token);
+            return true;
+        } catch(Exception e) {
+            return false;
+        }
+    }
     
     public static boolean isHexCharacter(int c)
     {

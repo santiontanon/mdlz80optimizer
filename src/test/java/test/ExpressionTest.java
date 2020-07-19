@@ -45,14 +45,17 @@ public class ExpressionTest {
     @Test public void test14() { Assert.assertEquals(Integer.valueOf(0x4), evaluate("7 & ~3")); }
     @Test public void test15() { Assert.assertEquals(Integer.valueOf(2), evaluate("#01+$01")); }
     @Test public void test16() { Assert.assertEquals(Integer.valueOf(Expression.FALSE), evaluate("!(3 <= 4)")); }
+//    @Test public void test17() { Assert.assertEquals(Double.valueOf(0.05), evaluate("0.05")); }
+    @Test public void test18() { Assert.assertEquals(Double.valueOf(0.10), evaluate("0.05 * 2")); }
+    @Test public void test19() { Assert.assertEquals(Integer.valueOf(Expression.TRUE), evaluate("0.05 < 1")); }
 
-    private Integer evaluate(String line)
+    private Number evaluate(String line)
     {
         List<String> tokens = Tokenizer.tokenize(line);
         Expression exp = expressionParser.parse(tokens, null, codeBase);
         System.out.println(exp);
 
-        return exp.evaluatesToIntegerConstant()
+        return exp.evaluatesToNumericConstant()
                 ? exp.evaluate(null, codeBase, false)
                 : null;
     }

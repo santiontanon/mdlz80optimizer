@@ -64,7 +64,7 @@ public class CPUOpSpecArg {
             if (exp.type != Expression.EXPRESSION_PARENTHESIS &&
                 exp.evaluatesToIntegerConstant()) {
                 if (exp.isConstant()) {
-                    Integer v = exp.evaluate(s, code, true);
+                    Integer v = exp.evaluateToInteger(s, code, true);
                     if (v == null) return true;
                     if (min == null) {
                         if (max == null) {
@@ -80,7 +80,7 @@ public class CPUOpSpecArg {
                         }
                     }                    
                 } else {
-                    // do not evaluate if it's not a constant, as this can trigger complex address dereferencing...
+                    // do not evaluateToInteger if it's not a constant, as this can trigger complex address dereferencing...
                     return true;
                 }
             }

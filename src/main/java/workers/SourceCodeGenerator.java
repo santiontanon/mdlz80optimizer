@@ -94,8 +94,8 @@ public class SourceCodeGenerator implements MDLWorker {
             } else if (ss.type == SourceStatement.STATEMENT_INCBIN && expandIncbin) {
                 int skip = 0;
                 int size = 0;
-                if (ss.incbinSkip != null) skip = ss.incbinSkip.evaluate(ss, code, false);
-                if (ss.incbinSize != null) size = ss.incbinSize.evaluate(ss, code, false);
+                if (ss.incbinSkip != null) skip = ss.incbinSkip.evaluateToInteger(ss, code, false);
+                if (ss.incbinSize != null) size = ss.incbinSize.evaluateToInteger(ss, code, false);
                 try (InputStream is = new FileInputStream(ss.incbin)) {
                     int count = 0;
                     while(is.available() != 0) {

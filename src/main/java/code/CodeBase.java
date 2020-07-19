@@ -83,7 +83,7 @@ public class CodeBase {
             if (previous.resolveEagerly) {
                 if (sc.exp != null) {
                     // resolve it right away, before replacing:
-                    Integer value = sc.exp.evaluate(sc.s, this, false);
+                    Integer value = sc.exp.evaluateToInteger(sc.s, this, false);
                     if (value == null) {
                         config.error("Cannot resolve eager variable in " + sc.s.sl);
                         return false;

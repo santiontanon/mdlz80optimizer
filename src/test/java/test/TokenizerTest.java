@@ -66,6 +66,12 @@ public class TokenizerTest {
     @Test public void test16() {
         Assert.assertArrayEquals(new String[]{";\"J\" \"I\" \"H\" \"G\" \"F\" \"E\" \"D\" \"C\""}, tokenize(";\"J\" \"I\" \"H\" \"G\" \"F\" \"E\" \"D\" \"C\""));
     }
+    @Test public void test17() {
+        Assert.assertArrayEquals(new String[]{"dw","fix","(","0.05",")"}, tokenize("dw	fix(0.05)"));
+    }
+    @Test public void test18() {
+        Assert.assertArrayEquals(new String[]{"db","(","fix","(","0.2","*","cos","(","angle","*","pi","/","180.0",")",")",")","&","0FFh"}, tokenize("db	(fix(0.2*cos(angle*pi/180.0)))&0FFh"));
+    }
 
     
     private static String[] tokenize(String line)
