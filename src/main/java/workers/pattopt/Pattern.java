@@ -528,7 +528,8 @@ public class Pattern {
                     Integer endAddress = sc.getValue(code, false).intValue();
                     if (startAddress == null || endAddress == null) return null;
                     int diff = endAddress - startAddress;
-                    if (diff < -128 || diff > 127) return null;
+                    System.out.println(diff);
+                    if (diff < -126 || diff > 130) return null;
                     break;
                 }
                 case "regsNotModified":
