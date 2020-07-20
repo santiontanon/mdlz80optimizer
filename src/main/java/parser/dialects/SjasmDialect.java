@@ -625,7 +625,9 @@ public class SjasmDialect implements Dialect {
     @Override
     public void performAnyFinalActions(CodeBase code)
     {
-        config.warn("Use of sjasm reusable labels, which are conductive to human error.");
+        if (reusableLabelCounts.size() > 0) {
+            config.warn("Use of sjasm reusable labels, which are conductive to human error.");
+        }
     }
     
 }
