@@ -36,6 +36,7 @@ public class CPUOpSpecTest {
     @Test public void test5() throws IOException { Assert.assertEquals(null, test("ld a,(hl++)", null)); }
     @Test public void test6() throws IOException { Assert.assertEquals("ld a, (hl)\ninc hl", test("ld a,(hl++)", "sjasm")); }
     @Test public void test7() throws IOException { Assert.assertEquals("dec ix\nld c, (ix + 1)", test("ld c,(--ix+1)", "sjasm")); }
+    @Test public void test8() throws IOException { Assert.assertEquals("ld (ix + (3 + 4)), l", test("ld (ix+(3+4)),l", null)); }
     
     private String test(String opString, String dialect) throws IOException
     {

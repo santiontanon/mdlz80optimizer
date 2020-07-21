@@ -46,8 +46,10 @@ public class SjasmDialect implements Dialect {
     int mapCounter = 0;
     List<Integer> mapCounterStack = new ArrayList<>();
     
+    Integer currentPage = null;
     HashMap<Integer,Expression> pageStart = new HashMap<>();
     HashMap<Integer,Expression> pageSize = new HashMap<>();
+    HashMap<String,Integer> symbolPage = new HashMap<>();
     
     HashMap<String, Integer> reusableLabelCounts = new HashMap<>();
 
@@ -78,6 +80,7 @@ public class SjasmDialect implements Dialect {
         
         config.expressionParser.dialectFunctionsSingleArgumentNoParenthesis.add("high");
         config.expressionParser.dialectFunctionsSingleArgumentNoParenthesis.add("low");
+        config.expressionParser.dialectFunctionsSingleArgumentNoParenthesis.add(":");
         
         // We define it as a dialectMacro instead of as a synonym of "REPT", as it has some special syntax for
         // indicating the current iteration
@@ -128,7 +131,7 @@ public class SjasmDialect implements Dialect {
             return null;
         }
         if (name.startsWith(".")) {
-            return lastAbsoluteLabel + "." + name.substring(1);
+            name = lastAbsoluteLabel + "." + name.substring(1);
         } else if (Tokenizer.isInteger(name)) {
             // it's a reusable label:
             int count = 1;
@@ -136,7 +139,7 @@ public class SjasmDialect implements Dialect {
                 count = reusableLabelCounts.get(name);
             }
             reusableLabelCounts.put(name, count+1);
-            return "_sjasm_reusable_" + name + "_" + count;
+            name =  "_sjasm_reusable_" + name + "_" + count;
         } else {
             // When a name has "CURRENT_ADDRESS" as its value, it means it's a label.
             // If it does not start by ".", then it's an absolute label:
@@ -146,6 +149,8 @@ public class SjasmDialect implements Dialect {
                 lastAbsoluteLabel = name;
             }
         }
+        
+        symbolPage.put(name, currentPage);
 
         return name;
     }
@@ -394,6 +399,7 @@ public class SjasmDialect implements Dialect {
                 Expression pageExp = config.expressionParser.parse(tokens, s, code);
                 if (addressExp == null) {
                     int page = pageExp.evaluateToInteger(s, code, false);
+                    currentPage = page;
                     addressExp = pageStart.get(page);
                     if (addressExp == null) {
                         config.error("Undefined page at " + sl);
@@ -572,6 +578,18 @@ public class SjasmDialect implements Dialect {
             Integer value = args.get(0).evaluateToInteger(s, code, silent);
             if (value == null) return null;
             return value&0xff;
+        }
+        if (functionName.equalsIgnoreCase(":") && args.size() == 1) {
+            if (args.get(0).type != Expression.EXPRESSION_SYMBOL) {
+                config.error("':' operator used on a non-symbol expression at " + s.sl);
+                return null;
+            }
+            Integer page = symbolPage.get(args.get(0).symbolName);
+            if (page == null) {
+                config.error("Unknown page of symbol "+args.get(0).symbolName+" at " + s.sl);
+                return null;
+            }
+            return page;
         }
         return null;
     }

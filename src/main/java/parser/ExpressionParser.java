@@ -320,12 +320,10 @@ public class ExpressionParser {
                 return Expression.constantExpression(Tokenizer.parseHex(token), config);
             }
         }
-        if (tokens.size() >= 1 &&
-            Tokenizer.isSymbol(tokens.get(0))) {
-            // symbol:
-            String token = tokens.remove(0);
-
-            if (dialectFunctions.contains(token.toLowerCase())) {
+        if (tokens.size() >= 1) {
+            // check if it's a dialect function:
+            if (dialectFunctions.contains(tokens.get(0).toLowerCase())) {
+                String token = tokens.remove(0);
                 String functionName = token;
                 List<Expression> args = new ArrayList<>();
                 if (!tokens.isEmpty() && tokens.get(0).equals("(")) {
@@ -364,7 +362,8 @@ public class ExpressionParser {
                 }
                 return exp;
                 
-            } else if (dialectFunctionsSingleArgumentNoParenthesis.contains(token.toLowerCase())) {
+            } else if (dialectFunctionsSingleArgumentNoParenthesis.contains(tokens.get(0).toLowerCase())) {
+                String token = tokens.remove(0);
                 String functionName = token;
                 List<Expression> args = new ArrayList<>();
                 Expression arg = parse(tokens, s, code);
@@ -380,7 +379,8 @@ public class ExpressionParser {
                     }
                 }
                 return exp;
-            } else {
+            } else if (Tokenizer.isSymbol(tokens.get(0))) {
+                String token = tokens.remove(0);
                 if (config.dialectParser != null) token = config.dialectParser.symbolName(token);
                 return Expression.symbolExpression(token, code, config);
             }
