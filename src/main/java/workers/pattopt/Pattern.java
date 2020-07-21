@@ -132,13 +132,13 @@ public class Pattern {
         int replacementSize = 0;
         for(CPUOpPattern pat:pattern) {
             if (!pat.isWildcard()) {
-                CPUOp ipat = pat.instantiate(match, config);
+                CPUOp ipat = pat.instantiate(match, this, config);
                 patternSize += ipat.sizeInBytes();
             }
         }
         for(CPUOpPattern pat:replacement) {
             if (!pat.isWildcard()) {
-                CPUOp ipat = pat.instantiate(match, config);
+                CPUOp ipat = pat.instantiate(match, this, config);
                 replacementSize += ipat.sizeInBytes();
             }
         }
@@ -153,7 +153,7 @@ public class Pattern {
         int replacementTime[] = {0,0};
         for(CPUOpPattern pat:pattern) {
             if (!pat.isWildcard()) {
-                int tmp[] = pat.instantiate(match, config).timing();
+                int tmp[] = pat.instantiate(match, this, config).timing();
                 patternTime[0] += tmp[0];
                 if (tmp.length>1) {
                     patternTime[1] += tmp[1];
@@ -164,7 +164,7 @@ public class Pattern {
         }
         for(CPUOpPattern pat:replacement) {
             if (!pat.isWildcard()) {
-                int tmp[] = pat.instantiate(match, config).timing();
+                int tmp[] = pat.instantiate(match, this, config).timing();
                 replacementTime[0] += tmp[0];
                 if (tmp.length>1) {            
                     replacementTime[1] += tmp[1];
@@ -574,7 +574,12 @@ public class Pattern {
                 for(int j = 0;j<replacement.size();j++) {
                     if (replacement.get(j).ID == pattern.get(i).ID) {
                         SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_CPUOP, removed.sl, removed.source, null);
-                        s.op = new CPUOp(replacement.get(j).instantiate(match, config));
+                        s.op = new CPUOp(replacement.get(j).instantiate(match, this, config));
+                        if (s.op == null) {
+                            config.error("Problem applying optimization to replace: " + removed);
+                            config.error("The replacement was: " + replacement.get(j));
+                            return false;
+                        }
                         l.add(insertionPoint, s);
                         insertionPoint++;
                     }

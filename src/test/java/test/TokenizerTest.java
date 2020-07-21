@@ -58,7 +58,7 @@ public class TokenizerTest {
         Assert.assertArrayEquals(new String[]{"ld","a",",","(","hl",")","//C style comment"}, tokenize("ld a,(hl) //C style comment"));
     }
     @Test public void test14() {
-        Assert.assertArrayEquals(new String[]{"/*","C","+","+","style","comment","*/"}, tokenize("/*C++ style comment*/"));
+        Assert.assertArrayEquals(new String[]{"/*","C","++","style","comment","*/"}, tokenize("/*C++ style comment*/"));
     }
     @Test public void test15() {
         Assert.assertArrayEquals(new String[]{"\"string\t\r\n\""}, tokenize("\"string\\t\\r\\n\""));
@@ -72,6 +72,13 @@ public class TokenizerTest {
     @Test public void test18() {
         Assert.assertArrayEquals(new String[]{"db","(","fix","(","0.2","*","cos","(","angle","*","pi","/","180.0",")",")",")","&","0FFh"}, tokenize("db	(fix(0.2*cos(angle*pi/180.0)))&0FFh"));
     }
+    @Test public void test19() {
+        Assert.assertArrayEquals(new String[]{"ld","a",",","(","hl","++",")"}, tokenize("ld	a,(hl++)"));
+    }
+    @Test public void test20() {
+        Assert.assertArrayEquals(new String[]{"ld","a",",","(","hl","+","+",")"}, tokenize("ld	a,(hl+ +)"));
+    }
+
 
     
     private static String[] tokenize(String line)

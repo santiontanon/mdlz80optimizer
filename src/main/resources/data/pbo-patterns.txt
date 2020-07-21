@@ -13,7 +13,7 @@
 ; The optimization will be reported to the line in pattern with number 0 (at least one line must have number 0)
 
 ; thanks to pgimeno for noticing the needed constraint
-pattern: Replace cp nn; jp c,mm; jp z,mm with cp nn+1; jp c,mm
+pattern: Replace cp ?const1; jp c,?const2; jp z,?const2 with cp ?const1+1; jp c,?const2
 0: cp ?const1
 1: jp c,?const2
 2: jp z,?const2
@@ -24,7 +24,7 @@ constraints:
 notEqual(?const1,255)
 
 ; thanks to pgimeno for noticing the needed constraint
-pattern: Replace cp nn; jr c,mm; jr z,mm with cp nn+1; jr c,mm
+pattern: Replace cp ?const1; jr c,?const2; jr z,?const2 with cp ?const1+1; jr c,?const2
 0: cp ?const1
 1: jr c,?const2
 2: jr z,?const2
@@ -102,7 +102,7 @@ regpair(?regpair2,?regpair2h,?regpair2l)
 in(?regpair2,BC,DE,HL)
 regsNotUsedAfter(2,?regpair1)
 
-pattern: Replace 0: ld a,(nn); inc a; ld (nn),a with  ld hl,nn; inc (hl)
+pattern: Replace 0: ld a,(?const1); inc a; ld (?const1),a with  ld hl,?const1; inc (hl)
 0: ld a,(?const1)
 1: inc a
 2: ld (?const1),a
@@ -112,7 +112,7 @@ replacement:
 constraints:
 regsNotUsedAfter(2,A,HL)
 
-pattern: Replace ld a,(nn); inc a; ld (nn),a with  ld hl,nn; inc (hl); ld a,(hl)
+pattern: Replace ld a,(?const1); inc a; ld (?const1),a with  ld hl,?const1; inc (hl); ld a,(hl)
 0: ld a,(?const1)
 1: inc a
 2: ld (?const1),a
@@ -218,23 +218,23 @@ replacement:
 constraints:
 regsNotUsedAfter(3,A)
 
-pattern: Replace ld ?regpair,nn; or a; sbc hl,?regpair with ld ?regpair,-nn; add hl,regpair
+pattern: Replace ld ?regpair,?const1; or a; sbc hl,?regpair with ld ?regpair,-(?const1); add hl,regpair
 0: ld ?regpair,?const1
 1: or a
 2: sbc hl,?regpair
 replacement:
-0: ld ?regpair,-?const1
+0: ld ?regpair,-(?const1)
 1: add hl,?regpair
 constraints:
 in(?regpair,bc,de)
 
 ; thanks to grauw for suggesting this variation
-pattern: Replace ld ?regpair,nn; and a; sbc hl,?regpair with ld ?regpair,-nn; add hl,regpair
+pattern: Replace ld ?regpair,?const1; and a; sbc hl,?regpair with ld ?regpair,-(?const1); add hl,regpair
 0: ld ?regpair,?const1
 1: and a
 2: sbc hl,?regpair
 replacement:
-0: ld ?regpair,-?const1
+0: ld ?regpair,-(?const1)
 1: add hl,?regpair
 constraints:
 in(?regpair,bc,de)
@@ -285,13 +285,13 @@ constraints:
 flagsNotUsedAfter(0,H,P/V)
 
 ; theNestruo
-pattern: Replace call nn; ret with jp nn
+pattern: Replace call ?const; ret with jp ?const
 0: call ?const
 1: ret
 replacement:
 0: jp ?const
 
-pattern: Replace and 1; cp 1; jr z,nn with rra; jr nz,nn
+pattern: Replace and 1; cp 1; jr z,?const with rra; jr nz,?const
 0: and 1
 1: cp 1
 2: jr z,?const
@@ -301,7 +301,7 @@ replacement:
 constraints:
 regsNotUsedAfter(2,A)
 
-pattern: Replace and 1; cp 1; jp z,nn with rra; jp nz,nn
+pattern: Replace and 1; cp 1; jp z,?const with rra; jp nz,?const
 0: and 1
 1: cp 1
 2: jp z,?const
@@ -311,7 +311,7 @@ replacement:
 constraints:
 regsNotUsedAfter(2,A)
 
-pattern: Replace and 1; cp 1; call z,nn with rra; call nz,nn
+pattern: Replace and 1; cp 1; call z,?const with rra; call nz,?const
 0: and 1
 1: cp 1
 2: call z,?const
@@ -321,7 +321,7 @@ replacement:
 constraints:
 regsNotUsedAfter(2,A)
 
-pattern: Replace and 1; cp 1; jr z,nn with and 1; jr nz,nn
+pattern: Replace and 1; cp 1; jr z,?const with and 1; jr nz,?const
 0: and 1
 1: cp 1
 2: jr z,?const
@@ -329,7 +329,7 @@ replacement:
 0: and 1
 1: jr nz,?const
 
-pattern: Replace and 1; cp 1; jp z,nn with and 1; jp nz,nn
+pattern: Replace and 1; cp 1; jp z,?const with and 1; jp nz,?const
 0: and 1
 1: cp 1
 2: jp z,?const
@@ -337,7 +337,7 @@ replacement:
 0: and 1
 1: jp nz,?const
 
-pattern: Replace and 1; cp 1; call z,nn with and 1; call nz,nn
+pattern: Replace and 1; cp 1; call z,?const with and 1; call nz,?const
 0: and 1
 1: cp 1
 2: call z,?const
@@ -345,7 +345,7 @@ replacement:
 0: and 1
 1: call nz,?const
 
-pattern: Replace bit 0,a; jr z,nn with rra; jr nc,nn
+pattern: Replace bit 0,a; jr z,?const with rra; jr nc,?const
 0: bit 0,a
 1: jr z,?const
 replacement:
@@ -354,7 +354,7 @@ replacement:
 constraints:
 regsNotUsedAfter(1,A)
 
-pattern: Replace bit 7,a; jr z,nn with rla; jr nc,nn
+pattern: Replace bit 7,a; jr z,?const with rla; jr nc,?const
 0: bit 7,a
 1: jr z,?const
 replacement:
@@ -363,7 +363,7 @@ replacement:
 constraints:
 regsNotUsedAfter(1,A)
 
-pattern: Replace bit 0,a; jp z,nn with rra; jp nc,nn
+pattern: Replace bit 0,a; jp z,?const with rra; jp nc,?const
 0: bit 0,a
 1: jp z,?const
 replacement:
@@ -372,7 +372,7 @@ replacement:
 constraints:
 regsNotUsedAfter(1,A)
 
-pattern: Replace bit 7,a; jp z,nn with rla; jp nc,nn
+pattern: Replace bit 7,a; jp z,?const with rla; jp nc,?const
 0: bit 7,a
 1: jp z,?const
 replacement:
@@ -381,7 +381,7 @@ replacement:
 constraints:
 regsNotUsedAfter(1,A)
 
-pattern: Replace bit 0,a; call z,nn with rra; call nc,nn
+pattern: Replace bit 0,a; call z,?const with rra; call nc,?const
 0: bit 0,a
 1: call z,?const
 replacement:
@@ -390,7 +390,7 @@ replacement:
 constraints:
 regsNotUsedAfter(1,A)
 
-pattern: Replace bit 7,a; call z,nn with rla; call nc,nn
+pattern: Replace bit 7,a; call z,?const with rla; call nc,?const
 0: bit 7,a
 1: call z,?const
 replacement:
@@ -399,7 +399,7 @@ replacement:
 constraints:
 regsNotUsedAfter(1,A)
 
-pattern: Replace ld ?regixiy,nn; ld r,(?regixiy+mm) with ld hl,nn+mm; ld r,(hl)
+pattern: Replace ld ?regixiy,?const1; ld r,(?regixiy+?const2) with ld hl,?const1+?const2; ld ?reg,(hl)
 0: ld ?regixiy,?const1
 1: ld ?reg,(?regixiy+?const2)
 replacement:
@@ -409,7 +409,7 @@ constraints:
 in(?regixiy,IX,IY)
 regsNotUsedAfter(1,?regixiy,HL)
 
-pattern: Replace ld ?regixiy,nn; ld r,(?regixiy) with ld hl,nn+mm; ld r,(hl)
+pattern: Replace ld ?regixiy,?const1; ld ?reg,(?regixiy) with ld hl,?const1; ld ?reg,(hl)
 0: ld ?regixiy,?const1
 1: ld ?reg,(?regixiy)
 replacement:
@@ -424,7 +424,7 @@ pattern: Remove ld ?reg,?reg
 replacement:
 
 ; theNestruo
-pattern: Replace ld r,n; ld (?regixiy+m),r with ld (?regixiy+m),n
+pattern: Replace ld ?reg,?const1; ld (?regixiy+?const2),?reg with ld (?regixiy+?const2),?const1
 0: ld ?reg,?const1
 1: ld (?regixiy+?const2),?reg
 replacement:
@@ -434,7 +434,7 @@ in(?regixiy,IX,IY)
 regsNotUsedAfter(1,?reg)
 
 ; theNestruo
-pattern: Replace xor a; ld (?regixiy+m),a with ld (?regixiy+m),0
+pattern: Replace xor a; ld (?regixiy+?const2),a with ld (?regixiy+?const2),0
 0: xor a
 1: ld (?regixiy+?const2),a
 replacement:

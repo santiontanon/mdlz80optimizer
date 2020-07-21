@@ -51,7 +51,7 @@ public class CPUOpPattern {
     }
     
 
-    public CPUOp instantiate(PatternMatch match, MDLConfig config)
+    public CPUOp instantiate(PatternMatch match, Pattern pattern, MDLConfig config)
     {
         // replace variables by the matched values:
         CodeBase code = new CodeBase(config);
@@ -63,7 +63,12 @@ public class CPUOpPattern {
             for(String variable:match.variables.keySet()) {
                 argStr = argStr.replace(variable, match.variables.get(variable).toString());
             }
-            instantiatedArgs.add(config.expressionParser.parse(Tokenizer.tokenize(argStr), null, code));
+            Expression exp = config.expressionParser.parse(Tokenizer.tokenize(argStr), null, code);
+            if (exp == null) {
+                config.error("Cannot parse argument '" + argStr + "' when instantiating pattern " + pattern.name);
+                return null;
+            }
+            instantiatedArgs.add(exp);
         }
 
         return config.opParser.parseOp(opName, instantiatedArgs, s, code);

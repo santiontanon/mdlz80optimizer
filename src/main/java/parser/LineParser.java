@@ -36,6 +36,7 @@ public class LineParser {
     public boolean defineSpaceVirtualByDefault = false;
     public boolean allowEmptyDB_DW_DD_definitions = false;
     public boolean allowIncludesWithoutQuotes = false;
+    public boolean allowExtendedSjasmInstructions = false;
     
     // sjasm defines macros like: "macro macroname arg1,...,agn" instead of "macroname: macro arg1,...,argn":
     public boolean macroNameIsFirstArgumentOfMacro = false;
@@ -160,7 +161,7 @@ public class LineParser {
             // try to parseArgs it as an assembler instruction or macro call:
             tokens.remove(0);
             if (config.opParser.isOpName(token)) {
-                if (parseCPUOp(tokens, token, sl, s, source, code)) return l;
+                if (parseCPUOp(tokens, token, sl, l, source, code)) return l;
             } else {
                 if (parseMacroCall(tokens, token, sl, s, source, code)) return l;
             }
@@ -544,8 +545,44 @@ public class LineParser {
 
     public boolean parseCPUOp(List<String> tokens, String opName,
             SourceLine sl,
-            SourceStatement s, SourceFile source, CodeBase code) {
+            List<SourceStatement> l, SourceFile source, CodeBase code) {
         List<Expression> arguments = new ArrayList<>();
+        SourceStatement s = l.get(0);
+        
+        if (allowExtendedSjasmInstructions) {
+            // see if there is a pre/post increment of a registerpair:
+            for(int i = 0;i<tokens.size();i++) {
+                if (i<tokens.size()-1 &&
+                    (tokens.get(i).equals("++") || tokens.get(i).equals("--")) &&
+                    code.isRegisterPair(tokens.get(i+1))) {
+                    // pre increment/decrement:
+                    SourceStatement auxiliaryS = new SourceStatement(SourceStatement.STATEMENT_CPUOP, sl, source, null);
+                    List<Expression> auxiliaryArguments = new ArrayList<>();
+                    auxiliaryArguments.add(Expression.symbolExpression(tokens.get(i+1), code, config));
+                    CPUOp op = config.opParser.parseOp(tokens.get(i).equals("++") ? "inc":"dec", 
+                                                       auxiliaryArguments, s, code);
+                    auxiliaryS.op = op;
+                    l.add(0, auxiliaryS);
+                    tokens.remove(i);
+                    break;
+                }
+                if (i>0 &&
+                    (tokens.get(i).equals("++") || tokens.get(i).equals("--")) &&
+                    code.isRegisterPair(tokens.get(i-1))) {
+                    // post increment/decrement:
+                    SourceStatement auxiliaryS = new SourceStatement(SourceStatement.STATEMENT_CPUOP, sl, source, null);
+                    List<Expression> auxiliaryArguments = new ArrayList<>();
+                    auxiliaryArguments.add(Expression.symbolExpression(tokens.get(i-1), code, config));
+                    CPUOp op = config.opParser.parseOp(tokens.get(i).equals("++") ? "inc":"dec", 
+                                                       auxiliaryArguments, s, code);
+                    auxiliaryS.op = op;
+                    l.add(auxiliaryS);
+                    tokens.remove(i);
+                    break;
+                }
+            }
+        }
+        
         while (!tokens.isEmpty()) {
             if (Tokenizer.isSingleLineComment(tokens.get(0))) {
                 break;

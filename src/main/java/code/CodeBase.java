@@ -40,6 +40,18 @@ public class CodeBase {
         return false;
     }
 
+    
+    public boolean isRegisterPair(String name)
+    {
+        String registers[] = {"af", "bc", "de", "hl",
+                              "sp", "ix", "iy", "pc","af'"};
+        for(String reg:registers) {
+            if (name.equalsIgnoreCase(reg)) return true;
+        }
+
+        return false;
+    }
+    
 
     public boolean isCondition(String name)
     {

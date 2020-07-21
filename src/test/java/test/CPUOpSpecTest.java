@@ -29,21 +29,35 @@ public class CPUOpSpecTest {
         codeBase = new CodeBase(mdlConfig);   
     }
 
-    @Test public void test1() throws IOException { Assert.assertEquals("ld a, 1", test("ld a,1")); }
-    @Test public void test2() throws IOException { Assert.assertEquals("add a, 1", test("add 1")); }
-    @Test public void test3() throws IOException { Assert.assertEquals("ex de, hl", test("EX HL, DE")); }
-    @Test public void test4() throws IOException { Assert.assertEquals(null, test("EX HL, BC")); }
+    @Test public void test1() throws IOException { Assert.assertEquals("ld a, 1", test("ld a,1", null)); }
+    @Test public void test2() throws IOException { Assert.assertEquals("add a, 1", test("add 1", null)); }
+    @Test public void test3() throws IOException { Assert.assertEquals("ex de, hl", test("EX HL, DE", null)); }
+    @Test public void test4() throws IOException { Assert.assertEquals(null, test("EX HL, BC", null)); }
+    @Test public void test5() throws IOException { Assert.assertEquals(null, test("ld a,(hl++)", null)); }
+    @Test public void test6() throws IOException { Assert.assertEquals("ld a, (hl)\ninc hl", test("ld a,(hl++)", "sjasm")); }
+    @Test public void test7() throws IOException { Assert.assertEquals("dec ix\nld c, (ix + 1)", test("ld c,(--ix+1)", "sjasm")); }
     
-    private String test(String opString) throws IOException
+    private String test(String opString, String dialect) throws IOException
     {
-        Assert.assertTrue(mdlConfig.parseArgs("dummy.asm"));
+        if (dialect == null) {
+            Assert.assertTrue(mdlConfig.parseArgs("dummy.asm"));
+        } else {
+            Assert.assertTrue(mdlConfig.parseArgs("dummy.asm","-dialect",dialect));
+        }
         SourceFile dummy = new SourceFile("dummy.asm", null, null, mdlConfig);
         
         List<SourceStatement> l = mdlConfig.lineParser.parse(Tokenizer.tokenize(opString), new SourceLine("", dummy, 0), dummy, codeBase, mdlConfig);
-        if (l == null || l.size() != 1) return null;
-        SourceStatement s = l.get(0);
-        if (s == null || s.type != SourceStatement.STATEMENT_CPUOP ||
-            s.op == null) return null;
-        return s.op.toString();
+        if (l == null || l.isEmpty()) return null;
+        String output = null;
+        for(SourceStatement s:l) {
+            if (s == null || s.type != SourceStatement.STATEMENT_CPUOP ||
+                s.op == null) return null;
+            if (output == null) {
+                output = s.op.toString();
+            } else {
+                output += "\n" + s.op.toString();
+            }
+        }
+        return output;
     }    
 }

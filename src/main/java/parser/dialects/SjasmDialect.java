@@ -74,6 +74,7 @@ public class SjasmDialect implements Dialect {
         config.lineParser.allowIncludesWithoutQuotes = true;
         config.lineParser.macroNameIsFirstArgumentOfMacro = true;
         config.lineParser.allowNumberLabels = true;
+        config.lineParser.allowExtendedSjasmInstructions = true;
         
         config.expressionParser.dialectFunctionsSingleArgumentNoParenthesis.add("high");
         config.expressionParser.dialectFunctionsSingleArgumentNoParenthesis.add("low");
