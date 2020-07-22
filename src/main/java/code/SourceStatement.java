@@ -276,8 +276,8 @@ public class SourceStatement {
             }
             case STATEMENT_INCBIN:
             {
-                // String path = incbinOriginalStr;
-                String path = incbin;
+                 String path = incbinOriginalStr;
+//                String path = incbin;
                 // Make sure we don't have a windows/Unix path separator problem:
                 if (path.contains("\\")) {
                     path = path.replace("\\", File.separator);
