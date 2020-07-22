@@ -809,7 +809,7 @@ public class LineParser {
     }
 
     public String pathConcat(String path, String fileName) {
-        if (path.endsWith(File.separator)) {
+        if (path.endsWith(File.separator) || path.isEmpty()) {
             return path + fileName;
         } else {
             return path + File.separator + fileName;

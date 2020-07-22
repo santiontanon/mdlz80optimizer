@@ -4,6 +4,7 @@
 package code;
 
 import cl.MDLConfig;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import parser.SourceLine;
@@ -264,19 +265,34 @@ public class SourceStatement {
                 str += "    org " + org.toString();
                 break;
             case STATEMENT_INCLUDE:
-                str += "    include \"" + include.fileName + "\"";
+            {
+                String path = include.fileName;
+                // Make sure we don't have a windows/Unix path separator problem:
+                if (path.contains("\\")) {
+                    path = path.replace("\\", File.separator);
+                }                
+                str += "    include \"" + path + "\"";
                 break;
+            }
             case STATEMENT_INCBIN:
+            {
+                // String path = incbinOriginalStr;
+                String path = incbin;
+                // Make sure we don't have a windows/Unix path separator problem:
+                if (path.contains("\\")) {
+                    path = path.replace("\\", File.separator);
+                }                
                 if (incbinSkip != null) {
                     if (incbinSizeSpecified) {
-                        str += "    incbin \"" + incbinOriginalStr + "\", " + incbinSkip + ", " + incbinSize;
+                        str += "    incbin \"" + path + "\", " + incbinSkip + ", " + incbinSize;
                     } else {
-                        str += "    incbin \"" + incbinOriginalStr + "\", " + incbinSkip;
+                        str += "    incbin \"" + path + "\", " + incbinSkip;
                     }
                 } else {
-                    str += "    incbin \"" + incbinOriginalStr + "\"";
+                    str += "    incbin \"" + path + "\"";
                 }
                 break;
+            }
             case STATEMENT_CONSTANT:
                 str += " equ " + label.exp.toString();
                 break;
