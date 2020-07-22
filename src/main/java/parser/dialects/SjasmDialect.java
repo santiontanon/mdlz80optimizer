@@ -649,4 +649,116 @@ public class SjasmDialect implements Dialect {
         }
     }
     
+    
+    // Sjasm is an eager-evaluated assembler, which clashes with the lazy 
+    // evaluation done by MDL. So, in order to capture the "rotate" syntax used
+    // in sjasm when used together with variable number of argument macros in
+    // order to have a similar functionality as Glass' IRP macro, we cover 
+    // here a basic common case (if needed, more cases will be covered in the 
+    // future, but this syntax is very problematic given the way macros are
+    // resolved in MDL...):    
+    public List<SourceLine> expandVariableNumberOfArgsMacro(List<Expression> args, SourceStatement macroCall, SourceMacro macro, CodeBase code, MDLConfig config)
+    {
+        List<SourceLine> lines2 = new ArrayList<>();
+        
+        List<String> argNames = new ArrayList<>();
+        for(int i = 0;i<args.size()+1;i++) {
+            argNames.add("@" + i);
+        }
+        // first argument is the number of args:
+        args.add(0, Expression.constantExpression(args.size(), config));
+                
+        List<SourceLine> repeatLines = null;
+        List<SourceLine> repeatLinesToExecute = null;
+        
+        for(SourceLine sl:macro.lines) {
+            String line2 = sl.line;
+            List<String> tokens = Tokenizer.tokenizeIncludingBlanks(line2);
+            line2 = "";
+
+            boolean allEmptySoFar = true;
+            for(String token:tokens) {
+                if (allEmptySoFar) {
+                    if (token.equalsIgnoreCase("repeat")) {
+                        if (repeatLines != null) {
+                            config.error("nested repeats in variable argument macros not yet supported in " + sl);
+                            return null;
+                        }
+                        repeatLines = new ArrayList<>();
+                    } else if (token.equalsIgnoreCase("endrepeat")) {
+                        if (repeatLines == null) {
+                            config.error("mismatched endrepeat in " + sl);
+                            return null;
+                        }
+                        repeatLinesToExecute = repeatLines;
+                        repeatLines = null;
+                    }
+                }
+                
+                if (!token.trim().equals("")) allEmptySoFar = false;
+                
+                if (repeatLines == null || repeatLines.isEmpty()) {
+                    String newToken = token;
+                    for(int i = 0;i<argNames.size();i++) {
+                        if (token.equals(argNames.get(i))) {
+                            newToken = args.get(i).toString();
+                        }
+                    }
+                    line2 += newToken;
+                } else {
+                    line2 += token;
+                }
+            }
+            
+            if (repeatLinesToExecute != null) {
+                SourceLine repeatStatement = repeatLinesToExecute.remove(0);
+                List<String> tokens2 = Tokenizer.tokenize(repeatStatement.line);
+                tokens2.remove(0);  // skip "repeat"
+                Expression exp = config.expressionParser.parse(tokens2, macroCall, code);
+                int nIterations = exp.evaluateToInteger(macroCall, code, false);
+                for(int i = 0;i<nIterations;i++) {
+                    for(SourceLine sl3:repeatLinesToExecute) {
+                        List<String> tokens3 = Tokenizer.tokenizeIncludingBlanks(sl3.line);
+                        String line3 = "";
+                        for(String token:tokens3) {
+                            String newToken = token;
+                            for(int j = 0;j<argNames.size();j++) {
+                                if (token.equals(argNames.get(j))) {
+                                    newToken = args.get(j).toString();
+                                }
+                            }
+                            line3 += newToken;
+                        }
+                        
+                        if (line3.trim().toLowerCase().startsWith("rotate ")) {
+                            // execute a rotate:
+                            List<String> tokensRotate = Tokenizer.tokenize(line3);
+                            tokensRotate.remove(0); // skip "rotate"
+                            Expression expRotate = config.expressionParser.parse(tokensRotate, macroCall, code);
+                            int nRotations = expRotate.evaluateToInteger(macroCall, code, false);
+                            while(nRotations>0) {
+                                Expression argExp = args.remove(1);
+                                args.add(argExp);
+                                nRotations--;
+                            }
+                            while(nRotations<0) {
+                                Expression argExp = args.remove(args.size()-1);
+                                args.add(0, argExp);
+                                nRotations++;
+                            }
+                        } else {                            
+                            lines2.add(new SourceLine(line3, sl3.source, sl3.lineNumber, macroCall));
+                        }
+                    }
+                }
+                repeatLinesToExecute = null;
+            } else if (repeatLines == null) {
+                lines2.add(new SourceLine(line2, sl.source, sl.lineNumber, macroCall));
+            } else {
+                repeatLines.add(new SourceLine(line2, sl.source, sl.lineNumber, macroCall));
+            }
+        }   
+
+        return lines2;
+    }
 }

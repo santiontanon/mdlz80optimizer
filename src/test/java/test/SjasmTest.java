@@ -41,6 +41,10 @@ public class SjasmTest {
                                                                           "data/dialecttests/sjasm-repeat1-expected.asm")); }
     @Test public void test5() throws IOException { Assert.assertTrue(test("data/dialecttests/sjasm-repeat2.asm",
                                                                           "data/dialecttests/sjasm-repeat2-expected.asm")); }
+    @Test public void test6() throws IOException { Assert.assertTrue(test("data/dialecttests/sjasm-macro2.asm",
+                                                                          "data/dialecttests/sjasm-macro2-expected.asm")); }
+    @Test public void test7() throws IOException { Assert.assertTrue(test("data/dialecttests/sjasm-macro3.asm",
+                                                                          "data/dialecttests/sjasm-macro3-expected.asm")); }
 
     private boolean test(String inputFile, String expectedOutputFile) throws IOException
     {

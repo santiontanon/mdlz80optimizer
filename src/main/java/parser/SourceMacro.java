@@ -11,12 +11,14 @@ import code.CodeBase;
 import code.Expression;
 import code.SourceConstant;
 import code.SourceStatement;
+import parser.dialects.SjasmDialect;
 
 
 public class SourceMacro {
     public String name = null;
     public SourceStatement definingStatement = null;
     public List<String> argNames = new ArrayList<>();
+    public boolean variableNumberofArgs = false;
     public List<Expression> defaultValues = new ArrayList<>();
     // line + lineNumber:
     public List<SourceLine> lines = new ArrayList<>();
@@ -40,6 +42,20 @@ public class SourceMacro {
         argNames = a_args;
         defaultValues = a_defaultValues;
         definingStatement = a_ds;
+        
+        // check for macros with numeric arguments:
+        if (argNames.size() == 1 && Tokenizer.isInteger(argNames.get(0))) {
+            // macro with numeric arguments!
+            int nargs = Integer.parseInt(argNames.get(0));
+            argNames.clear();
+            for(int i = 0;i<nargs;i++) {
+                argNames.add("@" + i);
+            }
+        } else if (argNames.size() == 2 && argNames.get(0).endsWith("..") && argNames.get(1).equals("*")) {
+            // macro with a variable number of arguments:
+            argNames.clear();
+            variableNumberofArgs = true;
+        }
     }
 
 
@@ -109,38 +125,48 @@ public class SourceMacro {
             return config.dialectParser.instantiateMacro(this, args, macroCall, code);
         } else {
             // instantiate arguments:
-            while(args.size() < argNames.size()) {
-                Expression defaultValue = defaultValues.get(args.size());
-                if (defaultValue == null) {
-                    config.error("Number of parameters in macro call incorrect!");
-                    return null;
-                } else {
-                    args.add(defaultValue);
+            if (!variableNumberofArgs) {
+                while(args.size() < argNames.size()) {
+                    Expression defaultValue = defaultValues.get(args.size());
+                    if (defaultValue == null) {
+                        config.error("Number of parameters in macro call incorrect!");
+                        return null;
+                    } else {
+                        args.add(defaultValue);
+                    }
                 }
-            }
 
-            for(SourceLine sl:lines) {
-                String line2 = sl.line;
-                List<String> tokens = Tokenizer.tokenizeIncludingBlanks(line2);
-                line2 = "";
-                
-                String previous = null;
-                for(String token:tokens) {
-                    if (previous != null && previous.equals("?") && Tokenizer.isSymbol(token)) {
-                        // variable name starting with "?":
-                        line2 = line2.substring(0, line2.length()-1);
-                        token = previous + token;
-                    }
-                    String newToken = token;
-                    for(int i = 0;i<argNames.size();i++) {
-                        if (token.equals(argNames.get(i))) {
-                            newToken = args.get(i).toString();
+                for(SourceLine sl:lines) {
+                    String line2 = sl.line;
+                    List<String> tokens = Tokenizer.tokenizeIncludingBlanks(line2);
+                    line2 = "";
+
+                    String previous = null;
+                    for(String token:tokens) {
+                        if (previous != null && previous.equals("?") && Tokenizer.isSymbol(token)) {
+                            // variable name starting with "?":
+                            line2 = line2.substring(0, line2.length()-1);
+                            token = previous + token;
                         }
+                        String newToken = token;
+                        for(int i = 0;i<argNames.size();i++) {
+                            if (token.equals(argNames.get(i))) {
+                                newToken = args.get(i).toString();
+                            }
+                        }
+                        line2 += newToken;
+                        previous = token;
                     }
-                    line2 += newToken;
-                    previous = token;
+                    lines2.add(new SourceLine(line2, sl.source, sl.lineNumber, macroCall));
+                }                
+            } else {
+                // this can only happen in sjasm:
+                if (config.dialectParser instanceof SjasmDialect) {
+                    lines2.addAll(((SjasmDialect)config.dialectParser).expandVariableNumberOfArgsMacro(args, macroCall, this, code, config));
+                } else {
+                    config.error("macro with a variable number of patterns in a dialect different than sjasm!");
+                    return null;
                 }
-                lines2.add(new SourceLine(line2, sl.source, sl.lineNumber, macroCall));
             }
 
             // rename all the macro-defined, labels with the new scope:
