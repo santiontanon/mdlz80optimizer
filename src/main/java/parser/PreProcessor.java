@@ -30,7 +30,7 @@ public class PreProcessor {
 
     public HashMap<String, String> macroSynonyms = new HashMap<>();
     // start/end keyword, e.g.: "repeat","endrepeat":
-    public HashMap<String,String> dialectMacros = new HashMap<>();
+    public HashMap<String, String> dialectMacros = new HashMap<>();
     
     MDLConfig config;
 
@@ -42,7 +42,10 @@ public class PreProcessor {
     // Each Pair has a line and a line number:
     List<MacroExpansion> macroExpansions = new ArrayList<>();
 
-    LinkedHashMap<String, SourceMacro> macros = new LinkedHashMap<>();
+    // We might have more than one macro with the same name (with different # of parameters).
+    // However, we cannot do the usual name/#params key as some might have a variable number.
+    // So, we just associate macro names with a list, and then see which one are we calling:
+    LinkedHashMap<String, List<SourceMacro>> macros = new LinkedHashMap<>();
 
 
     public PreProcessor(MDLConfig a_config)
@@ -89,7 +92,7 @@ public class PreProcessor {
     
     public boolean isMacro(String name)
     {
-        if (getMacro(name) != null) return true;
+        if (getMacro(name, null) != null) return true;
         if (dialectMacros.containsKey(name)) return true;
         return  (isMacroName(name, MACRO_REPT) ||
                  isMacroName(name, MACRO_IF) ||
@@ -99,7 +102,7 @@ public class PreProcessor {
     
     public boolean isMacroIncludingEnds(String name)
     {
-        if (getMacro(name) != null) return true;
+        if (getMacro(name, null) != null) return true;
         if (dialectMacros.containsKey(name)) return true;
         if (dialectMacros.containsValue(name)) return true;
         return  (isMacroName(name, MACRO_REPT) ||
@@ -284,7 +287,7 @@ public class PreProcessor {
 
             } else {
                 
-                SourceMacro m = getMacro(s.macroCallName);
+                SourceMacro m = getMacro(s.macroCallName, s.macroCallArguments.size());
                 if (m != null) {
                     MacroExpansion expandedMacro = m.instantiate(s.macroCallArguments, s, code, config);
                     if (expandedMacro == null) {
@@ -315,16 +318,34 @@ public class PreProcessor {
     }
 
 
-    public SourceMacro getMacro(String name)
+    public SourceMacro getMacro(String name, Integer nParams)
     {
-        if (macros.containsKey(name)) return macros.get(name);
+        if (macros.containsKey(name)) {
+            List<SourceMacro> l = macros.get(name);
+            
+            // If we don't know the number of parameters, just return the first:
+            if (nParams == null) return l.get(0);
+            
+            // If we know, and there's several alternatives, see if any matches:
+            for(SourceMacro m:l) {
+                if (m.variableNumberofArgs || m.argNames.size() == nParams) return m;
+            }
+            
+            // Otherwise, maybe there are default arguments, so, just return the first:
+            return l.get(0);
+        }
         return null;
     }
 
 
     public boolean addMacro(SourceMacro m, CodeBase code)
     {
-        macros.put(m.name, m);
+        List<SourceMacro> l = macros.get(m.name);
+        if (l == null) {
+            l = new ArrayList<>();
+            macros.put(m.name, l);
+        }
+        l.add(m);
         if (config.dialectParser != null) {
             return config.dialectParser.newMacro(m, code);
         }

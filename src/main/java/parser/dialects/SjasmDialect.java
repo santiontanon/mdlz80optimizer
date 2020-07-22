@@ -101,6 +101,7 @@ public class SjasmDialect implements Dialect {
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("output")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("defpage")) return true;
         if (tokens.size() >= 1 && tokens.get(0).equalsIgnoreCase("code")) return true;
+        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("page")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("dz")) return true;
         if (tokens.size() >= 3 && tokens.get(0).equalsIgnoreCase("[")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase(":=")) return true;
@@ -415,9 +416,30 @@ public class SjasmDialect implements Dialect {
                 s.org = addressExp;                
             } else {
                 // ignore
+                l.remove(s);
             }
             if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
         }
+        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("page")) {
+            tokens.remove(0);
+            Expression pageExp = null;
+            pageExp = config.expressionParser.parse(tokens, s, code);
+            if (pageExp == null) {
+                config.error("Cannot parse expression at " + sl);
+                return null;
+            }
+            int page = pageExp.evaluateToInteger(s, code, false);
+            currentPage = page;
+            Expression addressExp = pageStart.get(page);
+            if (addressExp == null) {
+                config.error("Undefined page at " + sl);
+                return null;
+            }
+            // parse it as an "org"
+            s.type = SourceStatement.STATEMENT_ORG;
+            s.org = addressExp;                
+            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
+        }        
         if (tokens.size() >= 3 && tokens.get(0).equalsIgnoreCase("[")) {
             tokens.remove(0);
             Expression numberExp = config.expressionParser.parse(tokens, s, code);

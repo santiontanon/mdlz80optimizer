@@ -277,7 +277,7 @@ public class LineParser {
                     config.error("Problem defining symbol " + labelPrefix + token + " in " + sl);
                     return false;
                 }
-                SourceConstant c = new SourceConstant(symbolName, address, exp, s);
+                SourceConstant c = new SourceConstant(symbolName, null, exp, s);
                 s.type = SourceStatement.STATEMENT_NONE;
                 s.label = c;
                 if (defineInCodeBase) {
@@ -317,6 +317,10 @@ public class LineParser {
                         if (!code.addSymbol(c.name, c)) {
                             return false;
                         }
+                    }
+                    // If it did not have a previous value, we assign one:
+                    if (c.exp == null) {
+                        c.exp = Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, code, config);
                     }
                 }
             }

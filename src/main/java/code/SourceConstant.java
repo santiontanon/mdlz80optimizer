@@ -41,7 +41,8 @@ public class SourceConstant {
     
     public boolean isLabel()
     {
-        return exp.type == Expression.EXPRESSION_SYMBOL && 
+        return exp != null &&
+               exp.type == Expression.EXPRESSION_SYMBOL && 
                exp.symbolName.equalsIgnoreCase(CodeBase.CURRENT_ADDRESS);
     }
 }
