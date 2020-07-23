@@ -12,6 +12,7 @@ import cl.MDLConfig;
 import code.CodeBase;
 import code.SourceFile;
 import code.SourceStatement;
+import java.nio.file.Paths;
 
 /**
  *
@@ -123,7 +124,7 @@ public class SourceCodeGenerator implements MDLWorker {
                     config.error("Cannot expand incbin: " + ss.incbin);
                 }
             } else {
-                sb.append(ss.toString());
+                sb.append(ss.toStringUsingRootPath(Paths.get(code.getMain().getPath())));
                 sb.append("\n");
             }
         }

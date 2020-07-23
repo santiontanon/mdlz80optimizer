@@ -5,6 +5,8 @@ package code;
 
 import cl.MDLConfig;
 import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import parser.SourceLine;
@@ -254,6 +256,12 @@ public class SourceStatement {
     @Override
     public String toString()
     {
+        return toStringUsingRootPath(null);
+    }
+
+
+    public String toStringUsingRootPath(Path rootPath)
+    {
         String str = "";
         if (label != null) str = label.name + ":";
         
@@ -276,8 +284,10 @@ public class SourceStatement {
             }
             case STATEMENT_INCBIN:
             {
-                 String path = incbinOriginalStr;
-//                String path = incbin;
+                String path = incbinOriginalStr;
+                if (rootPath != null) {
+                    path = rootPath.relativize(Paths.get(incbin)).toString();
+                }
                 // Make sure we don't have a windows/Unix path separator problem:
                 if (path.contains("\\")) {
                     path = path.replace("\\", File.separator);
