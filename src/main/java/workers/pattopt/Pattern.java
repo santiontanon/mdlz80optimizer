@@ -361,7 +361,7 @@ public class Pattern {
                     if (!match.opMap.containsKey(idx)) return null;
                     for(int i = 2;i<constraint.length;i++) {
                         String reg = constraint[i];
-                        if (!regNotUsed(match.opMap.get(idx), reg, f, code)) {
+                        if (!regNotUsedAfter(match.opMap.get(idx), reg, f, code)) {
                             if (logPatternsMatchedWithViolatedConstraints)
                                 config.info("Potential optimization ("+name+") in " + f.getStatements().get(a_index).sl);
                             return null;
@@ -376,7 +376,7 @@ public class Pattern {
                     for(int i = 2;i<constraint.length;i++) {
                         String flag = constraint[i];
 
-                        if (!flagNotUsed(match.opMap.get(idx), flag, f, code)) {
+                        if (!flagNotUsedAfter(match.opMap.get(idx), flag, f, code)) {
                             if (logPatternsMatchedWithViolatedConstraints)
                                 config.info("Potential optimization ("+name+") in " + f.getStatements().get(a_index).sl);
                             return null;
@@ -556,6 +556,29 @@ public class Pattern {
                     }
                     break;
                 }
+                case "regsNotUsed":
+                {
+                    int idx = Integer.parseInt(constraint[1]);
+                    List<SourceStatement> statements = new ArrayList<>();
+                    if (match.opMap.containsKey(idx)) {
+                        statements.add(match.opMap.get(idx));
+                    } else if (match.wildCardMap.containsKey(idx)) {
+                        statements.addAll(match.wildCardMap.get(idx));
+                    } else {
+                        return null;
+                    }
+                    for(int i = 2;i<constraint.length;i++) {
+                        String reg = constraint[i];
+                        for(SourceStatement s:statements) {
+                            if (!regNotUsed(s, reg, f, code)) {
+                                return null;
+                            }
+                        }
+                        config.debug("regsNotModified " + reg + " satisfied in: " + statements);
+                        config.debug("    mapping was: " + match.variables);
+                    }
+                    break;
+                }
                 
                 default:
                     throw new UnsupportedOperationException("Unknown pattern constraint " + constraint[0]);
@@ -571,8 +594,10 @@ public class Pattern {
         for(int i = 0;i<pattern.size();i++) {
             int key = pattern.get(i).ID;
             if (match.opMap.containsKey(key)) {
+                // It is a regular op (not a wildcard):
                 int insertionPoint = l.indexOf(match.opMap.get(key));
                 SourceStatement removed = l.remove(insertionPoint);
+                boolean replaced = false;
                 for(int j = 0;j<replacement.size();j++) {
                     if (replacement.get(j).ID == pattern.get(i).ID) {
                         SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_CPUOP, removed.sl, removed.source, null);
@@ -586,9 +611,18 @@ public class Pattern {
                         }
                         l.add(insertionPoint, s);
                         insertionPoint++;
+                        replaced = true;
                     }
                 }
+                if (!replaced && removed.label != null) {
+                    // We were losing a label. Insert a dummy statement with the label we lost:
+                    SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_NONE, removed.sl, removed.source, null);
+                    s.label = removed.label;
+                    l.add(insertionPoint, s);
+                    insertionPoint++;
+                }
             } else if (match.wildCardMap.containsKey(key)) {
+                // It is a wildcard:
                 boolean found = false;
                 for(int j = 0;j<replacement.size();j++) {
                     if (replacement.get(j).ID == pattern.get(i).ID) {
@@ -631,21 +665,41 @@ public class Pattern {
     }
     
     
+
     public boolean regNotUsed(SourceStatement s, String reg, SourceFile f, CodeBase code)
     {
+        CPUOpDependency dep = new CPUOpDependency(reg.toUpperCase(), null, null, null, null);        
+        if (s.type == SourceStatement.STATEMENT_CPUOP) {
+            CPUOp op = s.op;            
+            if (op.isRet()) {
+                // It's hard to tell where is this instruction going to jump,
+                // so we act conservatively, and block the optimization:
+                config.trace("    ret!");
+                return false;
+            }
+            
+            return !op.checkInputDependency(dep);
+        } else {
+            return true;
+        }
+    }
+    
+    
+    public boolean regNotUsedAfter(SourceStatement s, String reg, SourceFile f, CodeBase code)
+    {
         CPUOpDependency dep = new CPUOpDependency(reg.toUpperCase(), null, null, null, null);
-        return depNotUsed(s, dep, f, code);
+        return depNotUsedAfter(s, dep, f, code);
     }
 
 
-    public boolean flagNotUsed(SourceStatement s, String flag, SourceFile f, CodeBase code)
+    public boolean flagNotUsedAfter(SourceStatement s, String flag, SourceFile f, CodeBase code)
     {
         CPUOpDependency dep = new CPUOpDependency(null, flag.toUpperCase(), null, null, null);
-        return depNotUsed(s, dep, f, code);
+        return depNotUsedAfter(s, dep, f, code);
     }
 
 
-    public boolean depNotUsed(SourceStatement s, CPUOpDependency a_dep, SourceFile f, CodeBase code)
+    public boolean depNotUsedAfter(SourceStatement s, CPUOpDependency a_dep, SourceFile f, CodeBase code)
     {
         List<Pair<SourceStatement,CPUOpDependency>> open = new ArrayList<>();
         HashMap<SourceStatement,List<CPUOpDependency>> closed = new HashMap<>();

@@ -125,27 +125,36 @@ regsNotUsedAfter(2,HL)
 
 pattern: Replace ld ?regpair1h,?const1; ld ?regpair1l,?const2 with ld ?regpair1,((?const2) & #ff) + ((?const1) << 8)
 0: ld ?regpair1h,?const1
-1: ld ?regpair1l,?const2
+1: *
+2: ld ?regpair1l,?const2
 replacement:
 0: ld ?regpair1,((?const2) & #ff) + ((?const1) << 8)
+1: *
 constraints:
 regpair(?regpair1,?regpair1h,?regpair1l)
+regsNotUsed(1,?regpair1h)
 
 pattern: Replace ld ?regpair1l,?const2; ld ?regpair1h,?const1 with ld ?regpair1,((?const2) & #ff) + ((?const1) << 8)
 0: ld ?regpair1l,?const2
-1: ld ?regpair1h,?const1
+1: *
+2: ld ?regpair1h,?const1
 replacement:
 0: ld ?regpair1,((?const2) & #ff) + ((?const1) << 8)
+1: *
 constraints:
 regpair(?regpair1,?regpair1h,?regpair1l)
+regsNotUsed(1,?regpair1l)
 
 pattern: Replace ld a,?const1; ld (hl),a with ld (hl),?const1
 0: ld a,?const1
-1: ld (hl),a
+1: *
+2: ld (hl),a
 replacement:
 0: ld (hl),?const1
+1: *
 constraints:
 regsNotUsedAfter(1,A)
+regsNotUsed(1,A)
 
 pattern: Replace dec b; jr nz,label with djnz label
 0: dec b

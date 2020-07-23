@@ -10,6 +10,11 @@ import org.junit.Test;
 
 import cl.MDLConfig;
 import code.CodeBase;
+import code.SourceConstant;
+import code.SourceFile;
+import code.SourceStatement;
+import java.util.ArrayList;
+import java.util.List;
 import workers.SourceCodeGenerator;
 import workers.pattopt.PatternBasedOptimizer;
 
@@ -63,6 +68,7 @@ public class PatternBasedOptimizerTest {
     @Test public void test31() throws IOException { Assert.assertEquals(8, test("data/tests/test31.asm")); }
     @Test public void test32() throws IOException { Assert.assertEquals(4, test("data/tests/test32.asm")); }
     @Test public void test33() throws IOException { Assert.assertEquals(3, test("data/tests/test33.asm")); }
+    @Test public void test34() throws IOException { Assert.assertEquals(1, test("data/tests/test34.asm")); }
 
     private int test(String inputFile) throws IOException
     {
@@ -71,8 +77,32 @@ public class PatternBasedOptimizerTest {
                 "Could not parse file " + inputFile,
                 mdlConfig.codeBaseParser.parseMainSourceFile(mdlConfig.inputFile, codeBase));
 
+        // Make sure we don't lose any labels:
+        List<SourceConstant> labelsBefore = new ArrayList<>();
+        List<SourceConstant> labelsAfter = new ArrayList<>();
+        for(SourceFile f:codeBase.getSourceFiles()) {
+            for(SourceStatement s:f.getStatements()) {
+                if (s.label != null && s.label.isLabel()) {
+                    labelsBefore.add(s.label);
+                }
+            }
+        }
+        
         PatternBasedOptimizer.OptimizationResult r = pbo.optimize(codeBase);
 
+        for(SourceFile f:codeBase.getSourceFiles()) {
+            for(SourceStatement s:f.getStatements()) {
+                if (s.label != null && s.label.isLabel()) {
+                    labelsAfter.add(s.label);
+                }
+            }
+        }
+        
+        if (labelsBefore.size() != labelsAfter.size()) {
+            System.out.println("We lost labels!");
+            return -1;  // some wrong value
+        }
+        
         SourceCodeGenerator scg = new SourceCodeGenerator(mdlConfig);
 
         String result = scg.sourceFileString(codeBase.getMain(), codeBase);
