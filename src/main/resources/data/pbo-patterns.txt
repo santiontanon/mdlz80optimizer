@@ -481,18 +481,18 @@ constraints:
 regsNotModified(1, ?reg1, ?reg2)
 
 ; Thanks to Metalion/theNestruo for suggesting the idea for this pattern:
-pattern: Replace ld ?regpair,?const2 with ld ?regpairl,(?const2) % 256
+pattern: Replace ld ?regpair,?const2 with ld ?regpairl,(?const2) & #00ff
 2: ld ?regpair,?const1 
 1: *
 0: ld ?regpair,?const2 
 replacement:
 2: ld ?regpair,?const1 
 1: * 
-0: ld ?regpairl,(?const2) % 256
+0: ld ?regpairl,(?const2) & #00ff
 constraints:
 regsNotModified(1, ?regpair)
 regpair(?regpair,?regpairh,?regpairl)
-equal((?const1) >> 8, (?const2) >> 8)
+equal((?const1) & #ff00, (?const2) & #ff00)
 
 ; Thanks to theNestruo for suggesting the idea for this pattern:
 pattern: Replace ld ?regpair,?const2 with ld ?regpairh,(?const2) >> 8
@@ -506,7 +506,7 @@ replacement:
 constraints:
 regsNotModified(1, ?regpair)
 regpair(?regpair,?regpairh,?regpairl)
-equal((?const1) % 256, (?const2) % 256)
+equal((?const1) & #00ff, (?const2) & #00ff)
 
 ; Thanks to theNestruo for suggesting the idea for this pattern:
 pattern: Replace ld (?reg2),?const with ld (?reg2),?reg (as ?reg == ?const here)
@@ -534,7 +534,7 @@ replacement:
 constraints:
 regpair(?regpair,?regpairh,?regpairl)
 in(?reg2,HL,IX,IY)
-equal(?const2, (?const1) % 256)
+equal(?const2, (?const1) & #00ff)
 regsNotModified(1,?regpairl)
 
 ; Thanks to theNestruo for suggesting the idea for this pattern:
@@ -578,7 +578,7 @@ replacement:
 constraints:
 regpair(?regpair,?regpairh,?regpairl)
 in(?reg2,A,B,C,D,E,H,L)
-equal(?const2, ?const1 % 256)
+equal(?const2, (?const1) & #00ff)
 regsNotModified(1,?regpairl)
 
 ; Thanks to theNestruo for suggesting the idea for this pattern:

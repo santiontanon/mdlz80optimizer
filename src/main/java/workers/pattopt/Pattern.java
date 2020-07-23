@@ -306,6 +306,7 @@ public class Pattern {
                 while(true) {
                     if (index >= l.size()) return null;
                     SourceStatement s = l.get(index);
+                    if (i!=0 && s.label != null) return null;
                     if (s.comment != null && s.comment.contains(config.PRAGMA_NO_OPTIMIZATION)) return null;
                     if (s.type == SourceStatement.STATEMENT_CPUOP) {
                         PatternMatch matchTmp = new PatternMatch(match);
@@ -330,6 +331,7 @@ public class Pattern {
                 while(true) {
                     if (index >= l.size()) return null;
                     SourceStatement s = l.get(index);
+                    if (i!=0 && s.label != null) return null;
                     if (s.comment != null && s.comment.contains(config.PRAGMA_NO_OPTIMIZATION)) return null;
                     if (s.type == SourceStatement.STATEMENT_CPUOP) break;
                     if (!s.isEmptyAllowingComments()) return null;
@@ -574,6 +576,8 @@ public class Pattern {
                 for(int j = 0;j<replacement.size();j++) {
                     if (replacement.get(j).ID == pattern.get(i).ID) {
                         SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_CPUOP, removed.sl, removed.source, null);
+                        // if the original statement had a label, we need to keep it!
+                        if (removed.label != null) s.label = removed.label;
                         s.op = new CPUOp(replacement.get(j).instantiate(match, this, config));
                         if (s.op == null) {
                             config.error("Problem applying optimization to replace: " + removed);

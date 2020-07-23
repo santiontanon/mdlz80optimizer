@@ -151,7 +151,8 @@ public class SourceMacro {
                         String newToken = token;
                         for(int i = 0;i<argNames.size();i++) {
                             if (token.equals(argNames.get(i))) {
-                                newToken = args.get(i).toString();
+                                // we wrap it spaces, to prevent funny interaction of tokens, e.g., two "-" in a row forming a "--":
+                                newToken = " " + args.get(i).toString() + " ";
                             }
                         }
                         line2 += newToken;
