@@ -76,7 +76,7 @@ public class SourceCodeTableGenerator implements MDLWorker {
                     if (s.type == SourceStatement.STATEMENT_INCBIN) {
                         String data2 = s.incbin + "\t" + s.incbinSize +
                                                  "\t" + s.incbinSize;
-                        fileInfo.put(s.incbin, data2);
+                        fileInfo.put(s.incbin.getName(), data2);
                     }
                 }
             }

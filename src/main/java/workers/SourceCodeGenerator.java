@@ -13,6 +13,7 @@ import code.CodeBase;
 import code.SourceFile;
 import code.SourceStatement;
 import java.nio.file.Paths;
+import java.util.Arrays;
 
 /**
  *
@@ -72,6 +73,7 @@ public class SourceCodeGenerator implements MDLWorker {
                 fw.flush();
             } catch (Exception e) {
                 config.error("Cannot write to file " + outputFileName + ": " + e);
+                config.error(Arrays.toString(e.getStackTrace()));
                 return false;
             }
         }

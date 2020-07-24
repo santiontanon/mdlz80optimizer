@@ -447,7 +447,7 @@ public class LineParser {
             return false;
         }
         s.type = SourceStatement.STATEMENT_INCBIN;
-        s.incbin = path;
+        s.incbin = new File(path);
         s.incbinOriginalStr = rawFileName;
         File f = new File(path);
         if (!f.exists()) {

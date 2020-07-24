@@ -71,7 +71,7 @@ public class DotGenerator implements MDLWorker {
                 if (config.includeBinariesInAnalysis) {
                     if (s.type == SourceStatement.STATEMENT_INCBIN) {
                         sName = "" + (nodeNames.size()+1);
-                        nodeNames.put(s.incbin, sName);
+                        nodeNames.put(s.incbin.getName(), sName);
 
                         sb.append(sName);
                         sb.append(" [style=filled fillcolor=");

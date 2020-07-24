@@ -49,7 +49,7 @@ public class SourceStatement {
     public Expression org;
     public SourceFile include = null;
     
-    public String incbin = null;
+    public File incbin = null;
     public String incbinOriginalStr = null;
     public boolean incbinSizeSpecified = false;
     public Expression incbinSize = null;
@@ -286,7 +286,7 @@ public class SourceStatement {
             {
                 String path = incbinOriginalStr;
                 if (rootPath != null) {
-                    path = rootPath.relativize(Paths.get(incbin)).toString();
+                    path = rootPath.toAbsolutePath().normalize().relativize(incbin.toPath().toAbsolutePath().normalize()).toString();
                 }
                 // Make sure we don't have a windows/Unix path separator problem:
                 if (path.contains("\\")) {
