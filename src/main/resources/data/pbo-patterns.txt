@@ -604,3 +604,48 @@ regpair(?regpair,?regpairh,?regpairl)
 in(?reg2,A,B,C,D,E,H,L)
 equal((?const2) & #ff, (?const1 & #ffff) >> 8)
 regsNotModified(1,?regpairh)
+
+; Thanks to Jitursan for suggesting this pattern:
+pattern: Replace inc hl; dec bc; ld a,?reg1; or ?reg2; jr nz,?const with cpi; jp pe,?const
+0: inc hl
+1: *
+2: dec bc
+3: ld a,?reg1
+4: or ?reg2
+5: jr nz,?const
+replacement:
+1: *
+2: cpi
+5: jp pe,?const
+constraints:
+in(?reg1,B,C)
+in(?reg2,C,B)
+notEqual(?reg1,?reg2)
+flagsNotUsedAfter(5,S,Z,H,P/V,N,C)
+regsNotUsedAfter(5,A)
+regsNotUsed(1,HL)
+regsNotModified(1,HL)
+
+; Thanks to Artrag for this variation:
+pattern: Replace dec hl; dec bc; ld a,?reg1; or ?reg2; jr nz,?const with cpd; jp pe,?const
+0: dec ?regpair1
+1: *
+2: dec ?regpair2
+3: ld a,?reg1
+4: or ?reg2
+5: jr nz,?const
+replacement:
+1: *
+2: cpd
+5: jp pe,?const
+constraints:
+in(?regpair1,BC,HL)
+in(?regpair2,BC,HL)
+in(?reg1,B,C)
+in(?reg2,C,B)
+notEqual(?reg1,?reg2)
+notEqual(?regpair1,?regpair2)
+flagsNotUsedAfter(5,S,Z,H,P/V,N,C)
+regsNotUsedAfter(5,A)
+regsNotUsed(1,HL)
+regsNotModified(1,HL)
