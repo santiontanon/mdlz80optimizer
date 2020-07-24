@@ -736,3 +736,15 @@ replacement:
 2: *
 constraints:
 regsNotModified(2,B)
+
+pattern:
+0: dec a
+1: add a, ?const
+replacement:
+1: add a, (?const)-1
+
+pattern:
+0: inc a
+1: add a, ?const
+replacement:
+1: add a, (?const)+1

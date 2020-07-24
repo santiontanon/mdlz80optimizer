@@ -177,10 +177,8 @@ public class CodeBaseParser {
                     List<SourceStatement> l = config.lineParser.parse(tokens, sl, f, code, config);
                     if (l == null) return false;
                     for(SourceStatement s:l) {
-                        if (!s.isEmpty()) {
-                            if (!config.preProcessor.handleStatement(sl, s, f, code, false)) {
-                                f.addStatement(s);
-                            }
+                        if (!config.preProcessor.handleStatement(sl, s, f, code, false)) {
+                            f.addStatement(s);
                         }
                     }
                 }
@@ -278,11 +276,9 @@ public class CodeBaseParser {
                         List<SourceStatement> l = config.lineParser.parse(tokens, sl, f, code, config);
                         if (l == null) return null;
                         for(SourceStatement s:l) {
-                            if (!s.isEmpty()) {
-                                if (!config.preProcessor.handleStatement(sl, s, f, code, true)) {
-                                    f.addStatement(insertionPoint, s);
-                                    insertionPoint++;
-                                }
+                            if (!config.preProcessor.handleStatement(sl, s, f, code, true)) {
+                                f.addStatement(insertionPoint, s);
+                                insertionPoint++;
                             }
                         }
                     }

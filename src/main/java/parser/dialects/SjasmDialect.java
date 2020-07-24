@@ -36,6 +36,20 @@ public class SjasmDialect implements Dialect {
         List<Integer> attributeSizes = new ArrayList<>();
     }
     
+    
+    public static class CodeBlock {
+        SourceStatement s;
+        int page;
+        Expression address;
+        
+        public CodeBlock(SourceStatement a_s, int a_page, Expression a_address)
+        {
+            s = a_s;
+            page = a_page;
+            address = a_address;
+        }
+    }
+    
 
     MDLConfig config;
 
@@ -53,6 +67,8 @@ public class SjasmDialect implements Dialect {
     
     HashMap<String, Integer> reusableLabelCounts = new HashMap<>();
 
+    List<CodeBlock> codeBlocks = new ArrayList<>();
+    
     
     public SjasmDialect(MDLConfig a_config) {
         config = a_config;
@@ -410,13 +426,16 @@ public class SjasmDialect implements Dialect {
                     // ignore
                 }
             }
+            
+            codeBlocks.add(new CodeBlock(s, currentPage, addressExp));
+            
             if (addressExp != null) {
                 // parse it as an "org"
                 s.type = SourceStatement.STATEMENT_ORG;
                 s.org = addressExp;                
             } else {
-                // ignore
-                l.remove(s);
+                // ignore (but still add the statement, so we know where the codeblock starts)
+                s.type = SourceStatement.STATEMENT_NONE;
             }
             if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
         }
@@ -669,6 +688,9 @@ public class SjasmDialect implements Dialect {
         if (reusableLabelCounts.size() > 0) {
             config.warn("Use of sjasm reusable labels, which are conductive to human error.");
         }
+        
+        // Reorganize all the "code" blocks into the different pages:
+        // ...
     }
     
     

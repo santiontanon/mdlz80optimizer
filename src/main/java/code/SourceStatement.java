@@ -6,7 +6,6 @@ package code;
 import cl.MDLConfig;
 import java.io.File;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import parser.SourceLine;
@@ -80,13 +79,6 @@ public class SourceStatement {
         address = a_address;
     }
     
-    
-    public boolean isEmpty()
-    {
-        if (type == STATEMENT_NONE && comment == null && label == null) return true;
-        return false;
-    }
-
 
     public boolean isEmptyAllowingComments()
     {
