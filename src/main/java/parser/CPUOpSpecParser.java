@@ -98,10 +98,10 @@ public class CPUOpSpecParser {
                 argStr.equals("L") ||
                 argStr.equals("I") ||
                 argStr.equals("R") ||
-                argStr.equals("IXl") ||
-                argStr.equals("IXh") ||
-                argStr.equals("IYl") ||
-                argStr.equals("IYh") ||
+                argStr.equals("IXL") ||
+                argStr.equals("IXH") ||
+                argStr.equals("IYL") ||
+                argStr.equals("IYH") ||
                 argStr.equals("AF") ||
                 argStr.equals("AF'") ||
                 argStr.equals("BC") ||

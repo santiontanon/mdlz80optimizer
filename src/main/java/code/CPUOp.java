@@ -94,13 +94,13 @@ public class CPUOp {
     public CPUOpDependency checkOutputDependency(CPUOpDependency dep)
     {
         getOutputDependencies();
-
+        
         // remove from "dep" all the dependencies that are overwritten:
         CPUOpDependency dep2 = new CPUOpDependency(dep);
         for(CPUOpDependency outDep:outputDeps) {
             dep2.remove(outDep);
         }
-
+        
         if (dep2.isEmpty()) return null;
 
         return dep2;

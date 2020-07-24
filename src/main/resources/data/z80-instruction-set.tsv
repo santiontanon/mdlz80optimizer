@@ -216,10 +216,10 @@ LD E,IYq	8	10	2	FD 58+q	2	IYq				E				true
 LD E,n	7	8	2	1E n	2					E				true
 LD H,n	7	8	2	26 n	2					H				true
 LD I,A	9	11	3	ED 47	2	A				I				true
-LD IXh,p	8	10	3	DD 60+p	2	p				IXh				true
-LD IXl,p	8	10	3	DD 68+p	2	p				IXl				true
-LD IYh,q	8	10	3	FD 60+q	2	q				IYh				true
-LD IYl,q	8	10	3	FD 68+q	2	q				IYl				true
+LD IXH,p	8	10	3	DD 60+p	2	p				IXH				true
+LD IXL,p	8	10	3	DD 68+p	2	p				IXL				true
+LD IYH,q	8	10	3	FD 60+q	2	q				IYH				true
+LD IYL,q	8	10	3	FD 68+q	2	q				IYL				true
 LD L,n	7	8	2	2E n	2					L				true
 LD R,A	9	11	3	ED 4F	2	A				R				true
 LD SP,IX	10	12	3	DD F9	2	IX				SP				true
@@ -334,10 +334,10 @@ LD H,(IX+o)	19	21	5	DD 66 o	3	IX			IX+o	H				true
 LD H,(IY+o)	19	21	5	FD 66 o	3	IY			IY+o	H				true
 LD HL,(nn)	16	17	5	2A nn nn	3				[nn:nn+1]	HL				true
 LD HL,nn	10	11	3	21 nn nn	3					HL				true
-LD IXh,n	11	13	3	DD 26 n	3					IXh				true
-LD IXl,n	11	13	3	DD 2E n	3					IXl				true
-LD IYh,n	11	13	3	FD 26 n	3					IYh				true
-LD IYl,n	11	13	3	FD 2E n	3					IYl				true
+LD IXH,n	11	13	3	DD 26 n	3					IXH				true
+LD IXL,n	11	13	3	DD 2E n	3					IXL				true
+LD IYH,n	11	13	3	FD 26 n	3					IYH				true
+LD IYL,n	11	13	3	FD 2E n	3					IYL				true
 LD L,(IX+o)	19	21	5	DD 6E o	3	IX			IX+o	L				true
 LD L,(IY+o)	19	21	5	FD 6E o	3	IY			IY+o	L				true
 LD SP,nn	10	11	3	31 nn nn	3					SP				true

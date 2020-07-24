@@ -579,6 +579,70 @@ public class Pattern {
                     }
                     break;
                 }
+                case "evenPushPops":
+                {
+                    int idx = Integer.parseInt(constraint[1]);
+                    List<SourceStatement> statements = new ArrayList<>();
+                    if (match.opMap.containsKey(idx)) {
+                        statements.add(match.opMap.get(idx));
+                    } else if (match.wildCardMap.containsKey(idx)) {
+                        statements.addAll(match.wildCardMap.get(idx));
+                    } else {
+                        return null;
+                    }
+                    int stackMovements = 0;
+                    for(SourceStatement s:statements) {
+                        if (s.type == SourceStatement.STATEMENT_CPUOP) {
+                            if (s.op.spec.opName.equalsIgnoreCase("push")) {
+                                stackMovements -= 2;
+                            } else if (s.op.spec.opName.equalsIgnoreCase("pop")) {
+                                stackMovements += 2;
+                            } else if (s.op.spec.opName.equalsIgnoreCase("inc") &&
+                                       s.op.args.get(0).registerOrFlagName.equalsIgnoreCase("sp")) {
+                                stackMovements ++;
+                            } else if (s.op.spec.opName.equalsIgnoreCase("dec") &&
+                                       s.op.args.get(0).registerOrFlagName.equalsIgnoreCase("sp")) {
+                                stackMovements --;
+                            } else if (!s.op.args.isEmpty()) {
+                                // check if the 1st operand is SP in any form:
+                                Expression arg = s.op.args.get(0);
+                                if (arg.type == Expression.EXPRESSION_REGISTER_OR_FLAG && 
+                                    arg.registerOrFlagName.equalsIgnoreCase("sp")) {
+                                    return null;
+                                }
+                                if (arg.type == Expression.EXPRESSION_PARENTHESIS && 
+                                    arg.args.get(0).type == Expression.EXPRESSION_REGISTER_OR_FLAG &&
+                                    arg.args.get(0).registerOrFlagName.equalsIgnoreCase("sp")) {
+                                    return null;
+                                }
+                            }
+                        }
+                    }
+                    if (stackMovements != 0) return null;
+                    break;
+                }
+                
+                case "atLeastOneCPUOp":
+                {
+                    int idx = Integer.parseInt(constraint[1]);
+                    List<SourceStatement> statements = new ArrayList<>();
+                    if (match.opMap.containsKey(idx)) {
+                        statements.add(match.opMap.get(idx));
+                    } else if (match.wildCardMap.containsKey(idx)) {
+                        statements.addAll(match.wildCardMap.get(idx));
+                    } else {
+                        return null;
+                    }
+                    boolean found = false;
+                    for(SourceStatement s:statements) {
+                        if (s.type == SourceStatement.STATEMENT_CPUOP) {
+                            found = true;
+                            break;
+                        }
+                    }                    
+                    if (!found) return null;
+                    break;
+                }
                 
                 default:
                     throw new UnsupportedOperationException("Unknown pattern constraint " + constraint[0]);
@@ -658,6 +722,7 @@ public class Pattern {
             }
             
             CPUOpDependency dep2 = op.checkOutputDependency(dep);
+            
             return dep.equals(dep2);
         } else {
             return true;

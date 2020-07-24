@@ -102,22 +102,22 @@ public class CPUOpSpec {
                 regName.equalsIgnoreCase("c") ||
                 regName.equalsIgnoreCase("d") ||
                 regName.equalsIgnoreCase("e") ||
-                regName.equalsIgnoreCase("IXh") ||
-                regName.equalsIgnoreCase("IXl")) return true;
+                regName.equalsIgnoreCase("IXH") ||
+                regName.equalsIgnoreCase("IXL")) return true;
         } else if (pattern.equals("q")) {
             if (regName.equalsIgnoreCase("a") ||
                 regName.equalsIgnoreCase("b") ||
                 regName.equalsIgnoreCase("c") ||
                 regName.equalsIgnoreCase("d") ||
                 regName.equalsIgnoreCase("e") ||
-                regName.equalsIgnoreCase("IYh") ||
-                regName.equalsIgnoreCase("IYl")) return true;
+                regName.equalsIgnoreCase("IYH") ||
+                regName.equalsIgnoreCase("IYL")) return true;
         } else if (pattern.equals("IXp")) {
-            if (regName.equalsIgnoreCase("IXh") ||
-                regName.equalsIgnoreCase("IXl")) return true;
+            if (regName.equalsIgnoreCase("IXH") ||
+                regName.equalsIgnoreCase("IXL")) return true;
         } else if (pattern.equals("IYq")) {
-            if (regName.equalsIgnoreCase("IYh") ||
-                regName.equalsIgnoreCase("IYl")) return true;
+            if (regName.equalsIgnoreCase("IYH") ||
+                regName.equalsIgnoreCase("IYL")) return true;
         } else {
             return pattern.equalsIgnoreCase(regName);
         }

@@ -649,3 +649,27 @@ flagsNotUsedAfter(5,S,Z,H,P/V,N,C)
 regsNotUsedAfter(5,A)
 regsNotUsed(1,HL)
 regsNotModified(1,HL)
+
+; Note that we include the "atLeastOneCPUOp" constraint, to prevent eliminating the usual push af; pop af combination used for timing
+pattern: Remove push ?reg / pop ?reg as register is not modified in between
+0: push ?reg
+1: *
+2: pop ?reg
+replacement:
+1: *
+constraints:
+regsNotModified(1,?reg)
+evenPushPops(1)
+atLeastOneCPUOp(1)
+
+; Note that we include the "atLeastOneCPUOp" constraint, to prevent eliminating the usual push af; pop af combination used for timing
+pattern: Remove push ?reg / pop ?reg as register is not used afterwards
+0: push ?reg
+1: *
+2: pop ?reg
+replacement:
+1: *
+constraints:
+regsNotUsedAfter(2,?reg)
+evenPushPops(1)
+atLeastOneCPUOp(1)
