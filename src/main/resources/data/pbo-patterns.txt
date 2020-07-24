@@ -673,3 +673,66 @@ constraints:
 regsNotUsedAfter(2,?reg)
 evenPushPops(1)
 atLeastOneCPUOp(1)
+
+; Thanks to theNestruo for suggesting the idea for this pattern:
+pattern: Remove unnecessary xor a (a must be zero here)
+1: or a
+2: jr nz,?const
+3: *
+0: xor a
+replacement:
+1: or a
+2: jr nz,?const
+3: *
+constraints:
+regsNotModified(3,A)
+
+; Thanks to theNestruo for suggesting the idea for this pattern:
+pattern: Remove unnecessary xor a (a must be 0 here)
+1: or a
+2: jp nz,?const
+3: *
+0: xor a
+replacement:
+1: or a
+2: jp nz,?const
+3: *
+constraints:
+regsNotModified(3,A)
+
+; Thanks to theNestruo for suggesting the idea for this pattern:
+pattern: Remove unnecessary ld a,0 (a must be zero here)
+1: or a
+2: jr nz,?const
+3: *
+0: ld a,0
+replacement:
+1: or a
+2: jr nz,?const
+3: *
+constraints:
+regsNotModified(3,A)
+
+; Thanks to theNestruo for suggesting the idea for this pattern:
+pattern: Remove unnecessary ld a,0 (a must be 0 here)
+1: or a
+2: jp nz,?const
+3: *
+0: ld a,0
+replacement:
+1: or a
+2: jp nz,?const
+3: *
+constraints:
+regsNotModified(3,A)
+
+; Thanks to theNestruo for suggesting the idea for this pattern:
+pattern: Remove unnecessary ld b,0 (b must be 0 here)
+1: djnz ?const
+2: *
+0: ld b,0
+replacement:
+1: jp nz,?const
+2: *
+constraints:
+regsNotModified(2,B)
