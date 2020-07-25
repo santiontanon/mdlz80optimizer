@@ -227,7 +227,7 @@ replacement:
 constraints:
 regsNotUsedAfter(3,A)
 
-pattern: Replace ld ?regpair,?const1; or a; sbc hl,?regpair with ld ?regpair,-(?const1); add hl,regpair
+pattern: Replace ld ?regpair,?const1; or a; sbc hl,?regpair with ld ?regpair,-(?const1); add hl,?regpair
 0: ld ?regpair,?const1
 1: or a
 2: sbc hl,?regpair
@@ -236,9 +236,10 @@ replacement:
 1: add hl,?regpair
 constraints:
 in(?regpair,bc,de)
+flagsNotUsedAfter(2,S,Z,P/V,N)
 
 ; thanks to grauw for suggesting this variation
-pattern: Replace ld ?regpair,?const1; and a; sbc hl,?regpair with ld ?regpair,-(?const1); add hl,regpair
+pattern: Replace ld ?regpair,?const1; and a; sbc hl,?regpair with ld ?regpair,-(?const1); add hl,?regpair
 0: ld ?regpair,?const1
 1: and a
 2: sbc hl,?regpair
@@ -247,6 +248,7 @@ replacement:
 1: add hl,?regpair
 constraints:
 in(?regpair,bc,de)
+flagsNotUsedAfter(2,S,Z,P/V,N)
 
 pattern: Replace neg; add a,?const1 with cpl; add a,?const1+1
 0: neg
@@ -817,18 +819,18 @@ pattern: Remove unnecessary ld b,0 (b must be 0 here)
 2: *
 0: ld b,0
 replacement:
-1: jp nz,?const
+1: djnz ?const
 2: *
 constraints:
 regsNotModified(2,B)
 
-pattern:
+pattern: Replace dec a; add a, ?const with add a, (?const)-1
 0: dec a
 1: add a, ?const
 replacement:
 1: add a, (?const)-1
 
-pattern:
+pattern: Replace inc a; add a, ?const with add a, (?const)+1
 0: inc a
 1: add a, ?const
 replacement:

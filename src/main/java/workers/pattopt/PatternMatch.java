@@ -5,6 +5,7 @@ package workers.pattopt;
 
 import code.Expression;
 import code.SourceStatement;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
@@ -16,6 +17,9 @@ public class PatternMatch {
     public HashMap<Integer, SourceStatement> opMap = new HashMap<>();
     public HashMap<Integer, List<SourceStatement>> wildCardMap = new HashMap<>();
     public HashMap<String, Expression> variables = new HashMap<>();
+    
+    // If the pattern is applied, these will be added to the list of equalities to check later on:
+    public List<EqualityConstraint> newEqualities = new ArrayList<>();
     
     public PatternMatch()
     {

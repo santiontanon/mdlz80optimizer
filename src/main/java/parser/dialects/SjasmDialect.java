@@ -820,6 +820,9 @@ public class SjasmDialect implements Dialect {
         
         // Create a new source file, and add all the code blocks:
         SourceFile reconstructedFile = new SourceFile(code.getMain().fileName, null, null, config);
+        code.getSourceFiles().clear();
+        code.addSourceFile(reconstructedFile);
+        code.setMain(reconstructedFile);
 
         // start by adding initialBlock:
         for(SourceStatement s:initialBlock.statements) {
@@ -844,7 +847,10 @@ public class SjasmDialect implements Dialect {
                 if (block.actualAddress > currentAddress) {
                     // insert space:
                     SourceStatement space = new SourceStatement(SourceStatement.STATEMENT_DEFINE_SPACE, new SourceLine("", reconstructedFile, reconstructedFile.getStatements().size()+1), reconstructedFile, null);
-                    space.space = Expression.constantExpression(block.actualAddress-currentAddress, config);
+                    space.space = Expression.operatorExpression(Expression.EXPRESSION_SUB,
+                                    Expression.constantExpression(block.actualAddress, config),
+                                    Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, code, config),
+                                    config);
                     space.space_value = Expression.constantExpression(0, config);
                     reconstructedFile.addStatement(space);
                     config.debug("inserting space (end of block) of " + (block.actualAddress-currentAddress));
@@ -853,24 +859,23 @@ public class SjasmDialect implements Dialect {
                     s.source = reconstructedFile;
                     reconstructedFile.addStatement(s);
                 }
-                reconstructedFile.resetAddresses();
+                code.resetAddresses();
                 currentAddress = block.actualAddress + block.size(code);
             }
             if (currentAddress < pageStart + pageSize) {
                 // insert space:
                 SourceStatement space = new SourceStatement(SourceStatement.STATEMENT_DEFINE_SPACE, new SourceLine("", reconstructedFile, reconstructedFile.getStatements().size()+1), reconstructedFile, null);
-                space.space = Expression.constantExpression((pageStart + pageSize) - currentAddress, config);
+                space.space = Expression.operatorExpression(Expression.EXPRESSION_SUB,
+                                Expression.constantExpression(pageStart + pageSize, config),
+                                Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, code, config),
+                                config);
                 space.space_value = Expression.constantExpression(0, config);
                 reconstructedFile.addStatement(space);
                 config.debug("inserting space (end of page) of " + ((pageStart + pageSize) - currentAddress) + " from " + currentAddress + " to " + (pageStart + pageSize));
             }
             config.debug("page " + idx + " from " + pageStart + " to " + (pageStart+pageSize));
         }
-                
-        code.getSourceFiles().clear();
-        code.addSourceFile(reconstructedFile);
-        code.setMain(reconstructedFile);
-        
+                        
         code.resetAddresses();
         
         return true;

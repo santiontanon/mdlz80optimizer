@@ -401,6 +401,8 @@ public class Pattern {
                         Integer v2 = exp2.evaluateToInteger(null, code, true);
                         if (v1 == null || v2 == null) return null;
                         if ((int)v1 != (int)v2) return null;
+                        
+                        match.newEqualities.add(new EqualityConstraint(exp1, null, exp2, null, false));
                     } else {
                         // If they are not, then there is no need to evaluateToInteger, as they should just string match:
                         if (!v1_str.equalsIgnoreCase(v2_str)) return null;
@@ -424,6 +426,8 @@ public class Pattern {
                         Integer v2 = exp2.evaluateToInteger(null, code, true);
                         if (v1 == null || v2 == null) return null;
                         if (exp1.evaluateToInteger(null, code, true).equals(exp2.evaluateToInteger(null, code, true))) return null;
+                        
+                        match.newEqualities.add(new EqualityConstraint(exp1, null, exp2, null, true));
                     } else {
                         // If they are not, then there is no need to evaluateToInteger, as they should just string match:
                         if (v1_str.equalsIgnoreCase(v2_str)) return null;
@@ -663,8 +667,13 @@ public class Pattern {
     }
 
 
-    public boolean apply(List<SourceStatement> l, PatternMatch match)
+    public boolean apply(List<SourceStatement> l, PatternMatch match, 
+                         CodeBase code,
+                         List<EqualityConstraint> equalitiesToMaintain)
     {
+        // undo record:
+        List<Pair<Integer, SourceStatement>> undo = new ArrayList<>();
+        
         List<Integer> replacementIndexes = new ArrayList<>();
         int insertionPoint = -1;
         SourceStatement lastRemoved = null;
@@ -677,6 +686,7 @@ public class Pattern {
                 // It is a regular op (not a wildcard):
                 insertionPoint = l.indexOf(match.opMap.get(key));
                 SourceStatement removed = l.remove(insertionPoint);
+                undo.add(Pair.of(insertionPoint, removed));
                 lastRemoved = removed;
                 boolean replaced = false;
                 for(int j = 0;j<replacement.size();j++) {
@@ -694,6 +704,7 @@ public class Pattern {
                         l.add(insertionPoint, s);
                         insertionPoint++;
                         replaced = true;
+                        undo.add(Pair.of(null, s));
                         break;
                     }
                 }
@@ -703,6 +714,7 @@ public class Pattern {
                     s.label = removed.label;
                     l.add(insertionPoint, s);
                     insertionPoint++;
+                    undo.add(Pair.of(null, s));
                 }
             } else if (match.wildCardMap.containsKey(key)) {
                 // It is a wildcard:
@@ -744,7 +756,34 @@ public class Pattern {
             }
             l.add(insertionPoint, s);
             insertionPoint++;
+            undo.add(Pair.of(null, s));
         }
+        
+        // Add new equality constraints (we add them first, in case the optimization itself breaks them):
+        equalitiesToMaintain.addAll(match.newEqualities);
+
+        code.resetAddresses();
+        
+        // Check the equalities:
+        config.debug("Checking " + equalitiesToMaintain.size() + " equalities!");
+        for(EqualityConstraint eq:equalitiesToMaintain) {
+            if (!eq.check(code, config)) {                
+                // undo the optimization:
+                for(int i = undo.size()-1; i>=0; i--) {
+                    if (undo.get(i).getLeft() == null) {
+                        // remove:
+                        l.remove(undo.get(i).getRight());
+                    } else {
+                        // add:
+                        l.add(undo.get(i).getLeft(), undo.get(i).getRight());
+                    }
+                }
+                config.info("Optimization undone, as it was breaking an equality constraint...");                
+                code.resetAddresses();
+                return false;
+            }
+        }
+                
         return true;
     }
 

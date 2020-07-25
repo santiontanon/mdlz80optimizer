@@ -24,15 +24,15 @@ import workers.pattopt.PatternBasedOptimizer;
  */
 public class PatternBasedOptimizerTest {
 
-    private final MDLConfig mdlConfig;
-    private final CodeBase codeBase;
+    private final MDLConfig config;
+    private final CodeBase code;
     private final PatternBasedOptimizer pbo;
 
     public PatternBasedOptimizerTest() {
-        mdlConfig = new MDLConfig();
-        pbo = new PatternBasedOptimizer(mdlConfig);
-        mdlConfig.registerWorker(pbo);
-        codeBase = new CodeBase(mdlConfig);
+        config = new MDLConfig();
+        pbo = new PatternBasedOptimizer(config);
+        config.registerWorker(pbo);
+        code = new CodeBase(config);
     }
 
     @Test public void test1() throws IOException { Assert.assertEquals(4, test("data/tests/test1.asm")); }
@@ -73,18 +73,19 @@ public class PatternBasedOptimizerTest {
     @Test public void test36() throws IOException { Assert.assertEquals(4, test("data/tests/test36.asm")); }
     @Test public void test37() throws IOException { Assert.assertEquals(3, test("data/tests/test37.asm")); }
     @Test public void test38() throws IOException { Assert.assertEquals(4, test("data/tests/test38.asm")); }
+    @Test public void test39() throws IOException { Assert.assertEquals(0, test("data/tests/test39.asm")); }
 
     private int test(String inputFile) throws IOException
     {
-        Assert.assertTrue(mdlConfig.parseArgs(inputFile,"-popatterns","data/pbo-patterns-size.txt"));
+        Assert.assertTrue(config.parseArgs(inputFile,"-popatterns","data/pbo-patterns-size.txt"));
         Assert.assertTrue(
                 "Could not parse file " + inputFile,
-                mdlConfig.codeBaseParser.parseMainSourceFile(mdlConfig.inputFile, codeBase));
+                config.codeBaseParser.parseMainSourceFile(config.inputFile, code));
 
         // Make sure we don't lose any labels:
         List<SourceConstant> labelsBefore = new ArrayList<>();
         List<SourceConstant> labelsAfter = new ArrayList<>();
-        for(SourceFile f:codeBase.getSourceFiles()) {
+        for(SourceFile f:code.getSourceFiles()) {
             for(SourceStatement s:f.getStatements()) {
                 if (s.label != null && s.label.isLabel()) {
                     labelsBefore.add(s.label);
@@ -92,9 +93,9 @@ public class PatternBasedOptimizerTest {
             }
         }
         
-        PatternBasedOptimizer.OptimizationResult r = pbo.optimize(codeBase);
+        PatternBasedOptimizer.OptimizationResult r = pbo.optimize(code);
 
-        for(SourceFile f:codeBase.getSourceFiles()) {
+        for(SourceFile f:code.getSourceFiles()) {
             for(SourceStatement s:f.getStatements()) {
                 if (s.label != null && s.label.isLabel()) {
                     labelsAfter.add(s.label);
@@ -107,11 +108,16 @@ public class PatternBasedOptimizerTest {
             return -1;  // some wrong value
         }
         
-        SourceCodeGenerator scg = new SourceCodeGenerator(mdlConfig);
+        SourceCodeGenerator scg = new SourceCodeGenerator(config);
 
-        String result = scg.sourceFileString(codeBase.getMain(), codeBase);
+        String result = scg.sourceFileString(code.getMain(), code);
         System.out.println("\n--------------------------------------");
         System.out.println(result);
+        System.out.println("--------------------------------------\n");
+        for(String symbol:code.getSymbols()) {
+            SourceConstant sc = code.getSymbol(symbol);
+            System.out.println(sc.name + ": " + sc.getValue(code, true));
+        }
         System.out.println("--------------------------------------\n");
 
         return r.bytesSaved;
