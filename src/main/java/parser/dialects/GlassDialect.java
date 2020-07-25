@@ -354,10 +354,11 @@ public class GlassDialect implements Dialect {
 
     
     @Override
-    public void performAnyFinalActions(CodeBase code)
+    public boolean performAnyFinalActions(CodeBase code)
     {
         if (usedSectionKeyword) {
             config.warn("Glass's 'section' keyword was used. If you are asking MDL to generate assembler output, the result might not be compilable, as 'section' requires re-organizing the input lines, which is currently not done.");
         }
+        return true;
     }    
 }

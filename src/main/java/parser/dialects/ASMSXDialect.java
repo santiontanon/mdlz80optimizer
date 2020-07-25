@@ -540,7 +540,7 @@ public class ASMSXDialect implements Dialect {
     
     
     @Override
-    public void performAnyFinalActions(CodeBase code)
+    public boolean performAnyFinalActions(CodeBase code)
     {
         // start/load addresses for rom/basic headers if not yet set:
         if (basicHeaderStatement != null && startAddressLabel == null) {
@@ -620,6 +620,8 @@ public class ASMSXDialect implements Dialect {
                 }
             }
         }
+        
+        return true;
     }
     
 }

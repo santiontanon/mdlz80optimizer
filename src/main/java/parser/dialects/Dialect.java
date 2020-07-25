@@ -83,8 +83,9 @@ public interface Dialect {
     }
 
     // Called after all the code is parsed and all macros expanded
-    default void performAnyFinalActions(CodeBase code) {
+    default boolean performAnyFinalActions(CodeBase code) {
         // (no-op by default)
+        return true;
     }
     
 }
