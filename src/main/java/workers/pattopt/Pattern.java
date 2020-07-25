@@ -439,9 +439,19 @@ public class Pattern {
                             break;
                         }
                     }
-                    if (!found) {
-                        return null;
+                    if (!found) return null;
+                    break;
+                }
+                case "notIn":
+                {
+                    boolean found = false;
+                    for(int i = 2;i<constraint.length;i++) {
+                        if (constraint[1].equalsIgnoreCase(constraint[i])) {
+                            found = true;
+                            break;
+                        }
                     }
+                    if (found) return null;
                     break;
                 }
                 case "regpair":
@@ -655,15 +665,23 @@ public class Pattern {
 
     public boolean apply(List<SourceStatement> l, PatternMatch match)
     {
+        List<Integer> replacementIndexes = new ArrayList<>();
+        int insertionPoint = -1;
+        SourceStatement lastRemoved = null;
+        for(CPUOpPattern p:replacement) {
+            replacementIndexes.add(p.ID);
+        }
         for(int i = 0;i<pattern.size();i++) {
             int key = pattern.get(i).ID;
             if (match.opMap.containsKey(key)) {
                 // It is a regular op (not a wildcard):
-                int insertionPoint = l.indexOf(match.opMap.get(key));
+                insertionPoint = l.indexOf(match.opMap.get(key));
                 SourceStatement removed = l.remove(insertionPoint);
+                lastRemoved = removed;
                 boolean replaced = false;
                 for(int j = 0;j<replacement.size();j++) {
                     if (replacement.get(j).ID == pattern.get(i).ID) {
+                        replacementIndexes.remove((Integer)replacement.get(j).ID);
                         SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_CPUOP, removed.sl, removed.source, null);
                         // if the original statement had a label, we need to keep it!
                         if (removed.label != null) s.label = removed.label;
@@ -676,6 +694,7 @@ public class Pattern {
                         l.add(insertionPoint, s);
                         insertionPoint++;
                         replaced = true;
+                        break;
                     }
                 }
                 if (!replaced && removed.label != null) {
@@ -690,11 +709,13 @@ public class Pattern {
                 boolean found = false;
                 for(int j = 0;j<replacement.size();j++) {
                     if (replacement.get(j).ID == pattern.get(i).ID) {
+                        replacementIndexes.remove((Integer)replacement.get(j).ID);
                         if (!replacement.get(j).isWildcard()) {
                             config.error("Replacing instructions matched with a wildcard is not yet supported!");
                             return false;
                         } else {
                             found = true;
+                            insertionPoint = -1;
                             break;
                         }
                     }
@@ -704,6 +725,25 @@ public class Pattern {
                     return false;
                 }
             }
+        }
+        // add the missing replacements:
+        for(int idx:replacementIndexes) {
+            if (insertionPoint == -1) {
+                config.error("Could not determine the insertion point in an additional replacement for: " + replacement.get(idx));
+                return false;
+            }
+            if (lastRemoved == null) {
+                config.error("Could not determine the source for an additional replacement for: " + replacement.get(idx));
+                return false;
+            }
+            SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_CPUOP, lastRemoved.sl, lastRemoved.source, null);
+            s.op = new CPUOp(replacement.get(idx).instantiate(match, this, config));
+            if (s.op == null) {
+                config.error("The replacement was: " + replacement.get(idx));
+                return false;
+            }
+            l.add(insertionPoint, s);
+            insertionPoint++;
         }
         return true;
     }
