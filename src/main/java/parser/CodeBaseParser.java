@@ -75,15 +75,19 @@ public class CodeBaseParser {
         if (parent == null)
             code.setMain(f);
         code.addSourceFile(f);
+        config.preProcessor.pushState();
         try {
-            if (parseSourceFileInternal(f, code, config))
+            if (parseSourceFileInternal(f, code, config)) {
+                config.preProcessor.popState();
                 return f;
+            }
         } catch (Exception e) {
             config.error("Problem parsing file " + fileName + ": " + e);
             for(Object st:e.getStackTrace()) {
                 config.error("    " + st);
             }
         }
+        config.preProcessor.popState();
         return null;
     }
 

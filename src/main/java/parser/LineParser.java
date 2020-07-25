@@ -488,8 +488,16 @@ public class LineParser {
             s.incbinSize = size_exp;
             s.incbinSizeSpecified = true;
         } else {
-            s.incbinSize = Expression.constantExpression((int) f.length(), config);
-            s.incbinSizeSpecified = false;
+            if (skip_exp != null) {
+                s.incbinSize = Expression.operatorExpression(
+                        Expression.EXPRESSION_SUB,
+                        Expression.constantExpression((int) f.length(), config),
+                        skip_exp, config);
+                s.incbinSizeSpecified = false;
+            } else {
+                s.incbinSize = Expression.constantExpression((int) f.length(), config);
+                s.incbinSizeSpecified = false;
+            }
         }
         return parseRestofTheLine(tokens, sl, s, source);
     }
