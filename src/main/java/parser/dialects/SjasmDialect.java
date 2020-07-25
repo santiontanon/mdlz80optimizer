@@ -701,6 +701,27 @@ public class SjasmDialect implements Dialect {
 
     
     @Override
+    public Expression translateToStandardExpression(String functionName, List<Expression> args, SourceStatement s, CodeBase code) {
+        if (functionName.equalsIgnoreCase("high") && args.size() == 1) {
+            return Expression.operatorExpression(Expression.EXPRESSION_RSHIFT,
+                    Expression.parenthesisExpression(
+                        Expression.operatorExpression(Expression.EXPRESSION_BITAND, 
+                            args.get(0),
+                            Expression.constantExpression(0xff00, config), config), 
+                        config),
+                    Expression.constantExpression(8, config), config);
+        }
+        if (functionName.equalsIgnoreCase("low") && args.size() == 1) {
+            return Expression.operatorExpression(Expression.EXPRESSION_BITAND, 
+                    args.get(0),
+                    Expression.constantExpression(0xff, config), config);
+        }
+
+        return null;
+    }
+    
+    
+    @Override
     public MacroExpansion instantiateMacro(SourceMacro macro, List<Expression> args, SourceStatement macroCall, CodeBase code)
     {
         List<SourceLine> lines2 = new ArrayList<>();

@@ -64,6 +64,13 @@ public interface Dialect {
         return null;
     }
 
+    // Some dialect functions can be translated to standard expressions. This is preferable than direct evaluation, 
+    // if possible, since expressions that contain labels might change value during optimization:
+    default Expression translateToStandardExpression(String functionName, List<Expression> args, SourceStatement s, CodeBase code) {
+        // (no-op by default)
+        return null;
+    }
+    
     // Returns true if a function returns an integer
     default boolean expressionEvaluatesToIntegerConstant(String functionName) {
         // (no-op by default)

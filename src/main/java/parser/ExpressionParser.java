@@ -354,10 +354,15 @@ public class ExpressionParser {
                         first = false;
                     }
                 }
-                Expression exp = Expression.dialectFunctionExpression(functionName, args, config);
-                if (exp != null) {
-                    if (config.evaluateDialectFunctions) {
-                        config.codeBaseParser.expressionsToReplaceByValueAtTheEnd.add(Pair.of(exp, s));
+                // First, try to translate it:
+                Expression exp = config.dialectParser.translateToStandardExpression(functionName, args, s, code);
+                if (exp == null) {
+                    // otherwise, we just create it as is:
+                    exp = Expression.dialectFunctionExpression(functionName, args, config);
+                    if (exp != null) {
+                        if (config.evaluateDialectFunctions) {
+                            config.codeBaseParser.expressionsToReplaceByValueAtTheEnd.add(Pair.of(exp, s));
+                        }
                     }
                 }
                 return exp;
@@ -372,10 +377,15 @@ public class ExpressionParser {
                     return null;
                 }
                 args.add(arg);
-                Expression exp = Expression.dialectFunctionExpression(functionName, args, config);
-                if (exp != null) {
-                    if (config.evaluateDialectFunctions) {
-                        config.codeBaseParser.expressionsToReplaceByValueAtTheEnd.add(Pair.of(exp, s));
+                // First, try to translate it:
+                Expression exp = config.dialectParser.translateToStandardExpression(functionName, args, s, code);
+                if (exp == null) {
+                    // otherwise, we just create it as is:
+                    exp = Expression.dialectFunctionExpression(functionName, args, config);
+                    if (exp != null) {
+                        if (config.evaluateDialectFunctions) {
+                            config.codeBaseParser.expressionsToReplaceByValueAtTheEnd.add(Pair.of(exp, s));
+                        }
                     }
                 }
                 return exp;
