@@ -15,7 +15,7 @@ import code.SourceFile;
 import code.SourceStatement;
 import java.util.ArrayList;
 import java.util.List;
-import workers.SourceCodeGenerator;
+import workers.AnnotatedSourceCodeGenerator;
 import workers.pattopt.PatternBasedOptimizer;
 
 /**
@@ -108,7 +108,7 @@ public class PatternBasedOptimizerTest {
             return -1;  // some wrong value
         }
         
-        SourceCodeGenerator scg = new SourceCodeGenerator(config);
+        AnnotatedSourceCodeGenerator scg = new AnnotatedSourceCodeGenerator(config);
 
         String result = scg.sourceFileString(code.getMain(), code);
         System.out.println("\n--------------------------------------");

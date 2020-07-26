@@ -146,12 +146,29 @@ public class Tokenizer {
     
     public static boolean isInteger(String token)
     {
-        try{
-            Integer.parseInt(token);
-            return true;
-        } catch(Exception e) {
+        // From: https://stackoverflow.com/questions/237159/whats-the-best-way-to-check-if-a-string-represents-an-integer-in-java
+        // Much faster than regexps, external libraries, or Integer.parseInt:
+        if (token == null) {
             return false;
         }
+        int length = token.length();
+        if (length == 0) {
+            return false;
+        }
+        int i = 0;
+        if (token.charAt(0) == '-') {
+            if (length == 1) {
+                return false;
+            }
+            i = 1;
+        }
+        for (; i < length; i++) {
+            char c = token.charAt(i);
+            if (c < '0' || c > '9') {
+                return false;
+            }
+        }
+        return true;
     }
 
     public static boolean isDouble(String token)

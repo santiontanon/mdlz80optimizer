@@ -541,7 +541,9 @@ public class Pattern {
                     Integer startAddress = start.getAddress(code);
                     SourceConstant sc = code.getSymbol(constraint[2]);
                     if (sc == null) return null;
-                    Integer endAddress = sc.getValue(code, false).intValue();
+                    Number tmp = sc.getValue(code, false);
+                    if (tmp == null) return null;
+                    Integer endAddress = tmp.intValue();
                     if (startAddress == null || endAddress == null) return null;
                     int diff = endAddress - startAddress;
                     if (diff < -126 || diff > 130) return null;

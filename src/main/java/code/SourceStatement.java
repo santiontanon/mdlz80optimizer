@@ -114,25 +114,44 @@ public class SourceStatement {
             // go back iteratively to prevent a stack overflow:
             List<SourceStatement> trail = new ArrayList<>();
             SourceStatement prev = source.getPreviousStatementTo(this, code);
+            SourceFile prevSource = prev == null ? null : prev.source;
+            int prevIdx = prevSource == null ? -1 : prevSource.getStatements().indexOf(prev);
+            Integer prevAddressAfter = null;
             while(prev != null) {
-                if (prev.getAddressAfterInternal(code, false) != null) {
+                prevAddressAfter = prev.getAddressAfterInternal(code, false);
+                if (prevAddressAfter != null) {
                     break;
                 } else {
                     trail.add(0, prev);
-                    prev = prev.source.getPreviousStatementTo(prev, code);
-                }
+                    if (prevIdx > 0) {
+                        prevIdx --;
+                        prev = prevSource.getStatements().get(prevIdx);
+                    } else {
+                        prev = prevSource.getPreviousStatementTo(prev, code);
+                        if (prev != null) {
+                            prevSource = prev.source;
+                            prevIdx = prevSource.getStatements().indexOf(prev);
+                        }
+                    }
+                }                
             }
-            // now it should be possible to do it:
+            
+            if (prevAddressAfter == null) {
+                // reached beginning of code:
+                prevAddressAfter = 0;
+            }
+            
+            // trace forward and update all addresses:
             for(SourceStatement s:trail) {
-                if (s.getAddress(code) == null) return null;
+                s.address = prevAddressAfter;
+                if (s.type == STATEMENT_INCLUDE) {
+                    prevAddressAfter = s.getAddressAfterInternal(code, true);
+                } else {
+                    prevAddressAfter = s.getAddressAfterInternal(code, false);
+                }
+                if (prevAddressAfter == null) return null;
             }
-
-            prev = source.getPreviousStatementTo(this, code);
-            if (prev == null) {
-                address = 0;
-            } else {
-                address = prev.getAddressAfter(code);
-            }
+            address = prevAddressAfter;
             return address;
             
         } else {
@@ -140,25 +159,8 @@ public class SourceStatement {
         }        
     }
     
-    
-    public Integer getAddressAfter(CodeBase code)
-    {
-        switch (type) {
-            case STATEMENT_ORG:
-                return org.evaluateToInteger(this, code, true);
-            case STATEMENT_INCLUDE:
-                return include.getStatements().get(include.getStatements().size()-1).getAddressAfter(code);
-            default:
-                if (address == null) getAddress(code);
-                if (address == null) return null;
-                Integer size = sizeInBytes(code, true, true, true);
-                if (size == null) return null;
-                return address + size;
-        }
-    }
 
-
-    public Integer getAddressAfterInternal(CodeBase code, boolean recurse)
+    Integer getAddressAfterInternal(CodeBase code, boolean recurse)
     {
         switch (type) {
             case STATEMENT_ORG:
