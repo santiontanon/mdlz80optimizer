@@ -612,9 +612,11 @@ public class Pattern {
                             } else if (s.op.spec.opName.equalsIgnoreCase("pop")) {
                                 stackMovements += 2;
                             } else if (s.op.spec.opName.equalsIgnoreCase("inc") &&
+                                       s.op.args.get(0).type == Expression.EXPRESSION_REGISTER_OR_FLAG &&
                                        s.op.args.get(0).registerOrFlagName.equalsIgnoreCase("sp")) {
                                 stackMovements ++;
                             } else if (s.op.spec.opName.equalsIgnoreCase("dec") &&
+                                       s.op.args.get(0).type == Expression.EXPRESSION_REGISTER_OR_FLAG &&
                                        s.op.args.get(0).registerOrFlagName.equalsIgnoreCase("sp")) {
                                 stackMovements --;
                             } else if (!s.op.args.isEmpty()) {
