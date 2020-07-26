@@ -71,7 +71,11 @@ public class CPUOpPattern {
             instantiatedArgs.add(exp);
         }
 
-        return config.opParser.parseOp(opName, instantiatedArgs, s, code);
+        CPUOp op =  config.opParser.parseOp(opName, instantiatedArgs, s, code);
+        if (op == null) {
+            config.error("Cannot parse: " + opName + " " + instantiatedArgs);
+        }
+        return op;
     }
 
 

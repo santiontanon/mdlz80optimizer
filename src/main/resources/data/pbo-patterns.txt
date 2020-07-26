@@ -835,3 +835,229 @@ pattern: Replace inc a; add a, ?const with add a, (?const)+1
 1: add a, ?const
 replacement:
 1: add a, (?const)+1
+
+pattern: Replace add a,?const with inc a
+0: add a,?const
+replacement:
+0: inc a
+constraints:
+equal(?const,1)
+
+pattern: Replace add a,?const with dec a
+0: add a,?const
+replacement:
+0: dec a
+constraints:
+equal(?const,-1)
+
+pattern: Replace add a,?const with add a,?reg (as ?reg == ?const here)
+2: ld ?reg,?const
+1: *
+0: add a,?const
+replacement:
+2: ld ?reg,?const
+1: *
+0: add a,?reg
+constraints:
+in(?reg,A,B,C,D,E,H,L)
+regsNotModified(1,?reg)
+
+pattern: Replace sub ?const with sub ?reg (as ?reg == ?const here)
+2: ld ?reg,?const
+1: *
+0: sub ?const
+replacement:
+2: ld ?reg,?const
+1: *
+0: sub ?reg
+constraints:
+in(?reg,A,B,C,D,E,H,L)
+regsNotModified(1,?reg)
+
+pattern: Replace and ?const with and ?reg (as ?reg == ?const here)
+2: ld ?reg,?const
+1: *
+0: and ?const
+replacement:
+2: ld ?reg,?const
+1: *
+0: and ?reg
+constraints:
+in(?reg,A,B,C,D,E,H,L)
+regsNotModified(1,?reg)
+
+pattern: Replace or ?const with or ?reg (as ?reg == ?const here)
+2: ld ?reg,?const
+1: *
+0: or ?const
+replacement:
+2: ld ?reg,?const
+1: *
+0: or ?reg
+constraints:
+in(?reg,A,B,C,D,E,H,L)
+regsNotModified(1,?reg)
+
+pattern: Replace add a,?const with add a,?regl (as ?regl == ?const2 here)
+2: ld ?regpair,?const1
+1: *
+0: add a,?const2
+replacement:
+2: ld ?regpair,?const1
+1: *
+0: add a,?regl
+constraints:
+regpair(?regpair,?regh,?regl)
+in(?regpair,HL,BC,DE)
+regsNotModified(1,?regl)
+equal(?const1&#ff,const2)
+
+pattern: Replace sub ?const with sub ?regl (as ?regl == ?const2 here)
+2: ld ?regpair,?const1
+1: *
+0: sub ?const2
+replacement:
+2: ld ?regpair,?const1
+1: *
+0: sub ?regl
+constraints:
+regpair(?regpair,?regh,?regl)
+in(?regpair,HL,BC,DE)
+regsNotModified(1,?regl)
+equal(?const1&#ff,const2)
+
+pattern: Replace and ?const with and ?regl (as ?regl == ?const2 here)
+2: ld ?regpair,?const1
+1: *
+0: and ?const2
+replacement:
+2: ld ?regpair,?const1
+1: *
+0: and ?regl
+constraints:
+regpair(?regpair,?regh,?regl)
+in(?regpair,HL,BC,DE)
+regsNotModified(1,?regl)
+equal(?const1&#ff,const2)
+
+pattern: Replace or ?const with or ?regl (as ?regl == ?const2 here)
+2: ld ?regpair,?const1
+1: *
+0: or ?const2
+replacement:
+2: ld ?regpair,?const1
+1: *
+0: or ?regl
+constraints:
+regpair(?regpair,?regh,?regl)
+in(?regpair,HL,BC,DE)
+regsNotModified(1,?regl)
+equal(?const1&#ff,const2)
+
+pattern: Replace add a,?const2 with add a,?regh (as ?regh == ?const2 here)
+2: ld ?regpair,?const1
+1: *
+0: add a,?const2
+replacement:
+2: ld ?regpair,?const
+1: *
+0: add a,?regh
+constraints:
+regpair(?regpair,?regh,?regl)
+in(?regpair,HL,BC,DE)
+regsNotModified(1,?regh)
+equal((?const1&#ff00)>>8,const2)
+
+pattern: Replace sub ?const2 with sub ?regh (as ?regh == ?const2 here)
+2: ld ?regpair,?const1
+1: *
+0: sub ?const2
+replacement:
+2: ld ?regpair,?const1
+1: *
+0: sub ?regh
+constraints:
+regpair(?regpair,?regh,?regl)
+in(?regpair,HL,BC,DE)
+regsNotModified(1,?regh)
+equal((?const1&#ff00)>>8,const2)
+
+pattern: Replace and ?const2 with and ?regh (as ?regh == ?const2 here)
+2: ld ?regpair,?const1
+1: *
+0: and ?const2
+replacement:
+2: ld ?regpair,?const1
+1: *
+0: and ?regh
+constraints:
+regpair(?regpair,?regh,?regl)
+in(?regpair,HL,BC,DE)
+regsNotModified(1,?regh)
+equal((?const1&#ff00)>>8,const2)
+
+pattern: Replace or ?const2 with or ?regh (as ?regh == ?const2 here)
+2: ld ?regpair,?const1
+1: *
+0: or ?const2
+replacement:
+2: ld ?regpair,?const1
+1: *
+0: or ?regh
+constraints:
+regpair(?regpair,?regh,?regl)
+in(?regpair,HL,BC,DE)
+regsNotModified(1,?regh)
+equal((?const1&#ff00)>>8,const2)
+
+pattern: Replace ld ?regpair,?const2 with ld ?regpairh,?reg; ld ?regpairl,?reg (as ?Reg == ?const1 here)
+2: ld ?reg,?const1
+1: *
+0: ld ?regpair,?const2
+replacement:
+2: ld ?reg,?const1
+1: *
+0: ld ?regpairh,?reg
+3: ld ?regpairl,?reg
+constraints:
+in(?reg,A,B,C,D,E,H,L)
+regpair(?regpair,?regpairl,?regpairh)
+in(?regpair,HL,DE,BC)
+equal(?const2,(?const1&#ff)*256+(?const1&#ff))
+
+pattern: Replace ld a,(?const); and ?any; ld (?const),a with ld hl,?const; ld a,(hl); and ?any; ld (hl),a
+0: ld a,(?const)
+1: and ?any
+2: ld (?const),a
+replacement:
+0: ld hl,?const
+1: ld a,(hl)
+2: and ?any
+3: ld (hl),a
+constraints:
+regsNotUsedAfter(0,HL)
+
+; The following two patterns are alternatives to the one above, in case the one above does not match:
+pattern: Replace ld a,(?const); and ?any; ld (?const),a with ld de,?const; ld a,(de); and ?any; ld (de),a
+0: ld a,(?const)
+1: and ?any
+2: ld (?const),a
+replacement:
+0: ld de,?const
+1: ld a,(de)
+2: and ?any
+3: ld (de),a
+constraints:
+regsNotUsedAfter(0,DE)
+
+pattern: Replace ld a,(?const); and ?any; ld (?const),a with ld bc,?const; ld a,(bc); and ?any; ld (bc),a
+0: ld a,(?const)
+1: and ?any
+2: ld (?const),a
+replacement:
+0: ld bc,?const
+1: ld a,(bc)
+2: and ?any
+3: ld (bc),a
+constraints:
+regsNotUsedAfter(0,BC)

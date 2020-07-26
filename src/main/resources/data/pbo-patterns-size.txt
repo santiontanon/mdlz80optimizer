@@ -19,3 +19,27 @@ replacement:
 constraints:
 in(?any,C,NC,Z,NZ)
 reachableByJr(0,?const1)
+
+pattern: Replace ld ?reg1l,?reg2l; ld ?reg1h,?reg2h with push ?regpair2; pop ?regpair1
+0: ld ?reg1l,?reg2l
+1: ld ?reg1h,?reg2h
+replacement:
+0: push ?regpair2
+1: pop ?regpair1
+constraints:
+regpair(?regpair1,?reg1h,?reg1l)
+regpair(?regpair2,?reg2h,?reg2l)
+in(?regpair2,IX,IY)
+in(?regpair1,BC,DE,HL)
+
+pattern: Replace ld ?reg1h,?reg2h; ld ?reg1l,?reg2l with push ?regpair2; pop ?regpair1
+0: ld ?reg1h,?reg2h
+1: ld ?reg1l,?reg2l
+replacement:
+0: push ?regpair2
+1: pop ?regpair1
+constraints:
+regpair(?regpair1,?reg1h,?reg1l)
+regpair(?regpair2,?reg2h,?reg2l)
+in(?regpair2,IX,IY)
+in(?regpair1,BC,DE,HL)
