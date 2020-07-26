@@ -707,14 +707,14 @@ public class SjasmDialect implements Dialect {
                     Expression.parenthesisExpression(
                         Expression.operatorExpression(Expression.EXPRESSION_BITAND, 
                             args.get(0),
-                            Expression.constantExpression(0xff00, config), config), 
+                            Expression.constantExpression(0xff00, true, config), config), 
                         config),
                     Expression.constantExpression(8, config), config);
         }
         if (functionName.equalsIgnoreCase("low") && args.size() == 1) {
             return Expression.operatorExpression(Expression.EXPRESSION_BITAND, 
                     args.get(0),
-                    Expression.constantExpression(0xff, config), config);
+                    Expression.constantExpression(0xff, true, config), config);
         }
 
         return null;

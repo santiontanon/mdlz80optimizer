@@ -279,7 +279,7 @@ public class ExpressionParser {
             String token = tokens.get(0);
             if (Tokenizer.isHex(token)) {
                 tokens.remove(0);
-                return Expression.constantExpression(Tokenizer.parseHex(token), config);
+                return Expression.constantExpression(Tokenizer.parseHex(token), true, config);
             }
         }
         if (tokens.size() >= 1 &&
@@ -308,7 +308,7 @@ public class ExpressionParser {
             String token = tokens.get(0);
             if (Tokenizer.isHex(token)) {
                 tokens.remove(0);
-                return Expression.constantExpression(Tokenizer.parseHex(token), config);
+                return Expression.constantExpression(Tokenizer.parseHex(token), true, config);
             }
         }
         if (tokens.size() >= 1 &&
@@ -317,7 +317,7 @@ public class ExpressionParser {
             String token = tokens.get(0).substring(2);
             if (Tokenizer.isHex(token)) {
                 tokens.remove(0);
-                return Expression.constantExpression(Tokenizer.parseHex(token), config);
+                return Expression.constantExpression(Tokenizer.parseHex(token), true, config);
             }
         }
         if (tokens.size() >= 1) {

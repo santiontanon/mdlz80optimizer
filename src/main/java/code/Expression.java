@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import cl.MDLConfig;
+import parser.Tokenizer;
 
 public class Expression {
 
@@ -57,6 +58,7 @@ public class Expression {
     MDLConfig config;
     public int type;
     public int integerConstant;
+    public boolean renderAsHex = false; // only applicable to intergerConstant
     public double doubleConstant;
     public String stringConstant;
     public String symbolName;
@@ -435,7 +437,11 @@ public class Expression {
                     return registerOrFlagName;
                 }
             case EXPRESSION_INTEGER_CONSTANT:
-                return "" + integerConstant;
+                if (renderAsHex && integerConstant >= 0 && integerConstant <= 0xffff) {
+                    return Tokenizer.toHexWord(integerConstant, config.hexStyle);
+                } else {
+                    return "" + integerConstant;
+                }
             case EXPRESSION_DOUBLE_CONSTANT:
                 return "" + doubleConstant;
             case EXPRESSION_STRING_CONSTANT:
@@ -832,9 +838,17 @@ public class Expression {
     public static Expression constantExpression(int v, MDLConfig config) {
         Expression exp = new Expression(EXPRESSION_INTEGER_CONSTANT, config);
         exp.integerConstant = v;
+        exp.renderAsHex = false;
         return exp;
     }
 
+    public static Expression constantExpression(int v, boolean renderAsHex, MDLConfig config) {
+        Expression exp = new Expression(EXPRESSION_INTEGER_CONSTANT, config);
+        exp.integerConstant = v;
+        exp.renderAsHex = renderAsHex;
+        return exp;
+    }
+    
     public static Expression constantExpression(double v, MDLConfig config) {
         Expression exp = new Expression(EXPRESSION_DOUBLE_CONSTANT, config);
         exp.doubleConstant = v;
