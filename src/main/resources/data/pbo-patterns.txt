@@ -153,7 +153,7 @@ replacement:
 0: ld (hl),?const1
 1: *
 constraints:
-regsNotUsedAfter(1,A)
+regsNotUsedAfter(2,A)
 regsNotUsed(1,A)
 
 pattern: Replace dec b; jr nz,label with djnz label
@@ -235,7 +235,7 @@ replacement:
 0: ld ?regpair,-(?const1)
 1: add hl,?regpair
 constraints:
-in(?regpair,bc,de)
+in(?regpair,BC,DE)
 flagsNotUsedAfter(2,S,Z,P/V,N)
 
 ; thanks to grauw for suggesting this variation
@@ -247,7 +247,7 @@ replacement:
 0: ld ?regpair,-(?const1)
 1: add hl,?regpair
 constraints:
-in(?regpair,bc,de)
+in(?regpair,BC,DE)
 flagsNotUsedAfter(2,S,Z,P/V,N)
 
 pattern: Replace neg; add a,?const1 with cpl; add a,?const1+1
@@ -480,6 +480,26 @@ pattern: Replace ld ?regixiy,?const1; ld ?reg,(?regixiy) with ld hl,?const1; ld 
 replacement:
 0: ld hl,?const1
 1: ld ?reg,(hl)
+constraints:
+in(?regixiy,IX,IY)
+regsNotUsedAfter(1,?regixiy,HL)
+
+pattern: Replace ld ?regixiy,?const1; ld (?regixiy+?const2),?const3 with ld hl,?const1+?const2; ld (hl),?const3
+0: ld ?regixiy,?const1
+1: ld (?regixiy+?const2),?const3
+replacement:
+0: ld hl,?const1+?const2
+1: ld (hl),?const3
+constraints:
+in(?regixiy,IX,IY)
+regsNotUsedAfter(1,?regixiy,HL)
+
+pattern: Replace ld ?regixiy,?const1; ld (?regixiy),?const3 with ld hl,?const1; ld (hl),?const3
+0: ld ?regixiy,?const1
+1: ld (?regixiy),?const3
+replacement:
+0: ld hl,?const1
+1: ld (hl),?const3
 constraints:
 in(?regixiy,IX,IY)
 regsNotUsedAfter(1,?regixiy,HL)
@@ -1061,3 +1081,73 @@ replacement:
 3: ld (bc),a
 constraints:
 regsNotUsedAfter(0,BC)
+
+pattern: Replace push de; ld de, ?const1; add hl, de; pop de with ld bc, ?const1; add hl, bc
+0: push de
+1: ld de, ?const1
+2: add hl, de
+3: pop de
+replacement:
+1: ld bc, ?const1
+2: add hl, bc
+constraints:
+regsNotUsedAfter(3,BC)
+
+pattern: Replace push bc; ld bc, ?const1; add hl, bc; pop bc with ld de, ?const1; add hl, de
+0: push bc
+1: ld bc, ?const1
+2: add hl, bc
+3: pop bc
+replacement:
+1: ld de, ?const1
+2: add hl, de
+constraints:
+regsNotUsedAfter(3,DE)
+
+pattern: Replace inc ?reg; ... inc ?reg with ld a,?reg; add a,?const; ld ?reg,a
+0: [?const] inc ?reg
+replacement:
+0: ld a,?reg
+1: add a,?const
+2: ld ?reg,a
+constraints:
+in(?reg,B,C,D,E,H,L,IXL,IYL)
+regsNotUsedAfter(0,A)
+equal(?const >= 4, -1) 
+
+pattern: Replace inc ?regixiy; ... inc ?regixiy with push bc; ld bc,?const; add ?regixiy,bc; pop bc
+0: [?const] inc ?regixiy
+replacement:
+0: push bc
+1: ld bc,?const
+2: add ?regixiy,bc
+3: pop bc
+constraints:
+in(?regixiy,IX,IY)
+equal(?const >= 5, -1) 
+
+pattern: Replace dec ?regixiy; ... dec ?regixiy with push bc; ld bc,-?const; add ?regixiy,bc; pop bc
+0: [?const] dec ?regixiy
+replacement:
+0: push bc
+1: ld bc,-?const
+2: add ?regixiy,bc
+3: pop bc
+constraints:
+in(?regixiy,IX,IY)
+equal(?const >= 5, -1) 
+
+pattern: Replace inc a; ... inc a with add a,?const
+0: [?const] inc a
+replacement:
+0: add a,?const
+constraints:
+equal(?const >= 2, -1) 
+
+pattern: Replace dec a; ... dec a with add a,-?const
+0: [?const] dec a
+replacement:
+0: add a,-?const
+constraints:
+equal(?const >= 2, -1) 
+

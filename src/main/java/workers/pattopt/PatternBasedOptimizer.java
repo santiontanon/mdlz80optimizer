@@ -177,10 +177,12 @@ public class PatternBasedOptimizer implements MDLWorker {
                     SourceStatement statementToDisplayMessageOn = null;
                     int startIndex = i;
                     int endIndex = startIndex;
-                    for(int id:match.opMap.keySet()) {
-                        if (id == 0) statementToDisplayMessageOn = match.opMap.get(id);
-                        int idx = f.getStatements().indexOf(match.opMap.get(id));
-                        if (idx > endIndex) endIndex = idx;
+                    for(int id:match.map.keySet()) {
+                        if (id == 0) statementToDisplayMessageOn = match.map.get(id).get(0);
+                        for(SourceStatement s:match.map.get(id)) {
+                            int idx = f.getStatements().indexOf(s);
+                            if (idx > endIndex) endIndex = idx;
+                        }
                     }
                     if (statementToDisplayMessageOn == null) {
                         config.warn("Could not identify the statement to display the optimization message on...");
@@ -193,8 +195,8 @@ public class PatternBasedOptimizer implements MDLWorker {
 
                     if (patt.apply(f.getStatements(), match, code, equalitiesToMaintain)) {
                         if (config.isInfoEnabled()) {
-                            int bytesSaved = patt.getSpaceSaving(match);
-                            String timeSavedString = patt.getTimeSavingString(match);
+                            int bytesSaved = patt.getSpaceSaving(match, code);
+                            String timeSavedString = patt.getTimeSavingString(match, code);
                             config.info("Pattern-based optimization", statementToDisplayMessageOn.fileNameLineString(), 
                                     patt.getInstantiatedName(match)+" ("+bytesSaved+" bytes, " +
                                     timeSavedString + " " +config.timeUnit+"s saved)");
@@ -218,9 +220,9 @@ public class PatternBasedOptimizer implements MDLWorker {
                             }
                         }
                         r.patternApplications++;
-                        r.bytesSaved += patt.getSpaceSaving(match);
-                        r.timeSaved[0] += patt.getTimeSaving(match)[0];
-                        r.timeSaved[1] += patt.getTimeSaving(match)[1];
+                        r.bytesSaved += patt.getSpaceSaving(match, code);
+                        r.timeSaved[0] += patt.getTimeSaving(match, code)[0];
+                        r.timeSaved[1] += patt.getTimeSaving(match, code)[1];
                         i--;    // re-check this statement, as more optimizations might chain
                         break;  // a pattern just matched, so, we restart the pattern loop
                     }

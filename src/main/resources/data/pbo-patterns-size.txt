@@ -43,3 +43,26 @@ regpair(?regpair1,?reg1h,?reg1l)
 regpair(?regpair2,?reg2h,?reg2l)
 in(?regpair2,IX,IY)
 in(?regpair1,BC,DE,HL)
+
+pattern: Replace inc ?regixiy; ... inc ?regixiy with push bc; ld bc,?const; add ?regixiy,bc; pop bc
+0: [?const] inc ?regixiy
+replacement:
+0: push bc
+1: ld bc,?const
+2: add ?regixiy,bc
+3: pop bc
+constraints:
+in(?regixiy,IX,IY)
+equal(?const >= 4, -1) 
+
+pattern: Replace dec ?regixiy; ... dec ?regixiy with push bc; ld bc,-?const; add ?regixiy,bc; pop bc
+0: [?const] dec ?regixiy
+replacement:
+0: push bc
+1: ld bc,-?const
+2: add ?regixiy,bc
+3: pop bc
+constraints:
+in(?regixiy,IX,IY)
+equal(?const >= 4, -1)
+ 

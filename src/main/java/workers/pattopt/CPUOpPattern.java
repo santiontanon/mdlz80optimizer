@@ -24,6 +24,7 @@ public class CPUOpPattern {
     
     int ID;
     boolean wildcard = false;   // if this is true, "opName" and "args" will be "*" and empty.
+    String repetitionVariable = null;   // if this is not null, it means we can match this line many times in a row (its number will be matched to "repetitionVariable")
     String opName;
     List<Expression> args = new ArrayList<>();
 
@@ -88,8 +89,24 @@ public class CPUOpPattern {
             config.error("Cannot parse CPUOpPattern: " + line);
             return null;
         }
-        pat.opName = tokens.remove(0);
+        String token = tokens.remove(0);
+        if (token.equals("[")) {
+            // it's a repetition pattern:
+            token = tokens.remove(0);
+            if (!token.equals("?")) {
+                config.error("Cannot parse CPUOpPattern: " + line);
+                return null;                
+            }
+            pat.repetitionVariable = "?" + tokens.remove(0);
+            if (!tokens.remove(0).equals("]")) {
+                config.error("Cannot parse CPUOpPattern: " + line);
+                return null;                
+            }
+            token = tokens.remove(0);
+        }
+        pat.opName = token;
         if (pat.opName.equals(WILDCARD)) return pat;
+        
         while(!tokens.isEmpty()) {
             if (Tokenizer.isSingleLineComment(tokens.get(0))) break;
             Expression exp = config.expressionParser.parse(tokens, null, code);

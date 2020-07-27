@@ -55,6 +55,8 @@ public class Pattern {
                         CPUOpPattern patt = CPUOpPattern.parse(line, patternCB, config);
                         if (patt != null) {
                             pattern.add(patt);
+                        } else {
+                            config.error("Cannot parse pattern line: " + line);
                         }
                         break;
                     }
@@ -64,6 +66,11 @@ public class Pattern {
                         CPUOpPattern patt = CPUOpPattern.parse(line, patternCB, config);
                         if (patt != null) {
                             replacement.add(patt);
+                        } else {
+                            config.error("Cannot parse replacement line: " + line);
+                        }
+                        if (patt.repetitionVariable != null) {
+                            config.error("repetition variables will be ignored in replacement pattern lines!");
                         }
                         break;
                     }
@@ -126,14 +133,19 @@ public class Pattern {
     }
 
 
-    public int getSpaceSaving(PatternMatch match)
+    public int getSpaceSaving(PatternMatch match, CodeBase code)
     {
         int patternSize = 0;
         int replacementSize = 0;
         for(CPUOpPattern pat:pattern) {
             if (!pat.isWildcard()) {
                 CPUOp ipat = pat.instantiate(match, this, config);
-                patternSize += ipat.sizeInBytes();
+                int ipatSize = ipat.sizeInBytes();
+                int n = 1;
+                if (pat.repetitionVariable != null) {
+                    n = match.variables.get(pat.repetitionVariable).evaluateToInteger(null, code, true);
+                }
+                patternSize += n * ipatSize;
             }
         }
         for(CPUOpPattern pat:replacement) {
@@ -147,18 +159,22 @@ public class Pattern {
     }
     
     
-    public int[] getTimeSaving(PatternMatch match)
+    public int[] getTimeSaving(PatternMatch match, CodeBase code)
     {
         int patternTime[] = {0,0};
         int replacementTime[] = {0,0};
         for(CPUOpPattern pat:pattern) {
             if (!pat.isWildcard()) {
                 int tmp[] = pat.instantiate(match, this, config).timing();
-                patternTime[0] += tmp[0];
+                int n = 1;
+                if (pat.repetitionVariable != null) {
+                    n = match.variables.get(pat.repetitionVariable).evaluateToInteger(null, code, true);
+                }
+                patternTime[0] += n * tmp[0];
                 if (tmp.length>1) {
-                    patternTime[1] += tmp[1];
+                    patternTime[1] += n * tmp[1];
                 } else {
-                    patternTime[1] += tmp[0];
+                    patternTime[1] += n *tmp[0];
                 }
             }
         }
@@ -178,9 +194,9 @@ public class Pattern {
     }
     
     
-    public String getTimeSavingString(PatternMatch match)
+    public String getTimeSavingString(PatternMatch match, CodeBase code)
     {
-        int tmp[] = getTimeSaving(match);
+        int tmp[] = getTimeSaving(match, code);
         if (tmp[0] == tmp[1]) {
             return ""+tmp[0];
         } else {
@@ -326,8 +342,43 @@ public class Pattern {
                     index++;
                 }
 
-                match.wildCardMap.put(patt.ID, wildcardMatches);
+                match.map.put(patt.ID, wildcardMatches);
+            } else if (patt.repetitionVariable != null) {
+                // it's a potentially repeated line:
+                List<SourceStatement> statementsMatched = new ArrayList<>();
+                int count = 0;
+                while(true) {
+                    if (index >= l.size()) return null;
+                    SourceStatement s = l.get(index);
+                    if (i!=0 && s.label != null) return null;
+                    if (i==0 && s.label != null && count>0) break;
+                    if (s.comment != null && s.comment.contains(config.PRAGMA_NO_OPTIMIZATION)) return null;
+                    if (s.type == SourceStatement.STATEMENT_CPUOP) {
+                        if (opMatch(patt, l.get(index).op, l.get(index), code, match)) {
+                            count += 1;
+                        } else {
+                            if (count == 0) return null;
+                            break;
+                        }
+                    } else if (!s.isEmptyAllowingComments()) {
+                        return null;
+                    }
+                    if (count > 0) {
+                        // matching started!
+                        statementsMatched.add(l.get(index));
+                    }
+                    index++;
+                }
+                                
+                // add matching to count:
+                if (!match.addVariableMatch(patt.repetitionVariable, Expression.constantExpression(count, config))) {
+                    return null;
+                }
+                match.map.put(patt.ID, statementsMatched);
+                index++;
+                
             } else {
+                // not a wildcard, not a repetition:
                 while(true) {
                     if (index >= l.size()) return null;
                     SourceStatement s = l.get(index);
@@ -338,7 +389,9 @@ public class Pattern {
                     index++;
                 }
                 if (!opMatch(patt, l.get(index).op, l.get(index), code, match)) return null;
-                match.opMap.put(patt.ID, l.get(index));
+                List<SourceStatement> tmp = new ArrayList<>();
+                tmp.add(l.get(index));
+                match.map.put(patt.ID, tmp);
                 index++;
             }
         }
@@ -358,10 +411,10 @@ public class Pattern {
                 case "regsNotUsedAfter":
                 {
                     int idx = Integer.parseInt(constraint[1]);
-                    if (!match.opMap.containsKey(idx)) return null;
+                    if (!match.map.containsKey(idx)) return null;
                     for(int i = 2;i<constraint.length;i++) {
                         String reg = constraint[i];
-                        if (!regNotUsedAfter(match.opMap.get(idx), reg, f, code)) {
+                        if (!regNotUsedAfter(match.map.get(idx).get(match.map.get(idx).size()-1), reg, f, code)) {
                             if (logPatternsMatchedWithViolatedConstraints)
                                 config.info("Potential optimization ("+name+") in " + f.getStatements().get(a_index).sl);
                             return null;
@@ -372,11 +425,11 @@ public class Pattern {
                 case "flagsNotUsedAfter":
                 {
                     int idx = Integer.parseInt(constraint[1]);
-                    if (!match.opMap.containsKey(idx)) return null;
+                    if (!match.map.containsKey(idx)) return null;
                     for(int i = 2;i<constraint.length;i++) {
                         String flag = constraint[i];
 
-                        if (!flagNotUsedAfter(match.opMap.get(idx), flag, f, code)) {
+                        if (!flagNotUsedAfter(match.map.get(idx).get(match.map.get(idx).size()-1), flag, f, code)) {
                             if (logPatternsMatchedWithViolatedConstraints)
                                 config.info("Potential optimization ("+name+") in " + f.getStatements().get(a_index).sl);
                             return null;
@@ -385,7 +438,7 @@ public class Pattern {
                     break;
                 }
                 case "equal":
-                {
+                {                    
                     String v1_str = constraint[1];
                     String v2_str = constraint[2];
                     List<String> v1_tokens = applyBindingsToTokens(Tokenizer.tokenize(v1_str), match);
@@ -537,14 +590,14 @@ public class Pattern {
                 }
                 case "reachableByJr":
                 {
-                    SourceStatement start = match.opMap.get(Integer.parseInt(constraint[1]));
+                    SourceStatement start = match.map.get(Integer.parseInt(constraint[1])).get(0);
                     Integer startAddress = start.getAddress(code);
+                    if (startAddress == null) return null;
                     SourceConstant sc = code.getSymbol(constraint[2]);
                     if (sc == null) return null;
                     Number tmp = sc.getValue(code, false);
                     if (tmp == null) return null;
                     Integer endAddress = tmp.intValue();
-                    if (startAddress == null || endAddress == null) return null;
                     int diff = endAddress - startAddress;
                     if (diff < -126 || diff > 130) return null;
                     break;
@@ -553,10 +606,8 @@ public class Pattern {
                 {
                     int idx = Integer.parseInt(constraint[1]);
                     List<SourceStatement> statements = new ArrayList<>();
-                    if (match.opMap.containsKey(idx)) {
-                        statements.add(match.opMap.get(idx));
-                    } else if (match.wildCardMap.containsKey(idx)) {
-                        statements.addAll(match.wildCardMap.get(idx));
+                    if (match.map.containsKey(idx)) {
+                        statements.addAll(match.map.get(idx));
                     } else {
                         return null;
                     }
@@ -576,10 +627,8 @@ public class Pattern {
                 {
                     int idx = Integer.parseInt(constraint[1]);
                     List<SourceStatement> statements = new ArrayList<>();
-                    if (match.opMap.containsKey(idx)) {
-                        statements.add(match.opMap.get(idx));
-                    } else if (match.wildCardMap.containsKey(idx)) {
-                        statements.addAll(match.wildCardMap.get(idx));
+                    if (match.map.containsKey(idx)) {
+                        statements.addAll(match.map.get(idx));
                     } else {
                         return null;
                     }
@@ -599,10 +648,8 @@ public class Pattern {
                 {
                     int idx = Integer.parseInt(constraint[1]);
                     List<SourceStatement> statements = new ArrayList<>();
-                    if (match.opMap.containsKey(idx)) {
-                        statements.add(match.opMap.get(idx));
-                    } else if (match.wildCardMap.containsKey(idx)) {
-                        statements.addAll(match.wildCardMap.get(idx));
+                    if (match.map.containsKey(idx)) {
+                        statements.addAll(match.map.get(idx));
                     } else {
                         return null;
                     }
@@ -644,10 +691,8 @@ public class Pattern {
                 {
                     int idx = Integer.parseInt(constraint[1]);
                     List<SourceStatement> statements = new ArrayList<>();
-                    if (match.opMap.containsKey(idx)) {
-                        statements.add(match.opMap.get(idx));
-                    } else if (match.wildCardMap.containsKey(idx)) {
-                        statements.addAll(match.wildCardMap.get(idx));
+                    if (match.map.containsKey(idx)) {
+                        statements.addAll(match.map.get(idx));
                     } else {
                         return null;
                     }
@@ -686,42 +731,8 @@ public class Pattern {
         }
         for(int i = 0;i<pattern.size();i++) {
             int key = pattern.get(i).ID;
-            if (match.opMap.containsKey(key)) {
-                // It is a regular op (not a wildcard):
-                insertionPoint = l.indexOf(match.opMap.get(key));
-                SourceStatement removed = l.remove(insertionPoint);
-                undo.add(Pair.of(insertionPoint, removed));
-                lastRemoved = removed;
-                boolean replaced = false;
-                for(int j = 0;j<replacement.size();j++) {
-                    if (replacement.get(j).ID == pattern.get(i).ID) {
-                        replacementIndexes.remove((Integer)replacement.get(j).ID);
-                        SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_CPUOP, removed.sl, removed.source, null);
-                        // if the original statement had a label, we need to keep it!
-                        if (removed.label != null) s.label = removed.label;
-                        s.op = new CPUOp(replacement.get(j).instantiate(match, this, config));
-                        if (s.op == null) {
-                            config.error("Problem applying optimization to replace: " + removed);
-                            config.error("The replacement was: " + replacement.get(j));
-                            return false;
-                        }
-                        l.add(insertionPoint, s);
-                        insertionPoint++;
-                        replaced = true;
-                        undo.add(Pair.of(null, s));
-                        break;
-                    }
-                }
-                if (!replaced && removed.label != null) {
-                    // We were losing a label. Insert a dummy statement with the label we lost:
-                    SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_NONE, removed.sl, removed.source, null);
-                    s.label = removed.label;
-                    l.add(insertionPoint, s);
-                    insertionPoint++;
-                    undo.add(Pair.of(null, s));
-                }
-            } else if (match.wildCardMap.containsKey(key)) {
-                // It is a wildcard:
+            if (pattern.get(i).isWildcard()) {
+                // It's a wildcard:
                 boolean found = false;
                 for(int j = 0;j<replacement.size();j++) {
                     if (replacement.get(j).ID == pattern.get(i).ID) {
@@ -739,7 +750,58 @@ public class Pattern {
                 if (!found) {
                     config.error("Removing instructions matched with a wildcard is not yet supported!");
                     return false;
+                }                
+            } else {
+                // It is a regular op (not a wildcard):
+                SourceStatement removedLabel = null;
+                for(SourceStatement s:match.map.get(key)) {
+                    insertionPoint = l.indexOf(s);
+                    lastRemoved = l.remove(insertionPoint);
+                    if (lastRemoved.label != null) {
+                        if (removedLabel != null) {
+                            config.error("There were more than one label in the matched instructions of a pattern, which should not have happened!");
+                            return false;
+                        } else {
+                            removedLabel = lastRemoved;
+                        }
+                    }
+                    undo.add(Pair.of(insertionPoint, lastRemoved));
                 }
+                if (lastRemoved == null) {
+                    config.error("optimization pattern line matched with one of its lines mathcing to zero ops. This should not have happened!");
+                    return false;
+                }
+                boolean replaced = false;
+                for(int j = 0;j<replacement.size();j++) {
+                    if (replacement.get(j).ID == pattern.get(i).ID) {
+                        replacementIndexes.remove((Integer)replacement.get(j).ID);
+                        SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_CPUOP, lastRemoved.sl, lastRemoved.source, null);
+                        // if the original statement had a label, we need to keep it!
+                        if (removedLabel != null) {
+                            s.label = removedLabel.label;
+                            removedLabel = null;
+                        }
+                        s.op = new CPUOp(replacement.get(j).instantiate(match, this, config));
+                        if (s.op == null) {
+                            config.error("Problem applying optimization to replace: " + lastRemoved);
+                            config.error("The replacement was: " + replacement.get(j));
+                            return false;
+                        }
+                        l.add(insertionPoint, s);
+                        insertionPoint++;
+                        replaced = true;
+                        undo.add(Pair.of(null, s));
+                        break;
+                    }
+                }
+                if (!replaced && removedLabel != null) {
+                    // We were losing a label. Insert a dummy statement with the label we lost:
+                    SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_NONE, removedLabel.sl, removedLabel.source, null);
+                    s.label = removedLabel.label;
+                    l.add(insertionPoint, s);
+                    insertionPoint++;
+                    undo.add(Pair.of(null, s));
+                }                
             }
         }
         // add the missing replacements:

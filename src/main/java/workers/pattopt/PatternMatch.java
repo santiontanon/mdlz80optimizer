@@ -14,8 +14,9 @@ import java.util.List;
  * @author santi
  */
 public class PatternMatch {
-    public HashMap<Integer, SourceStatement> opMap = new HashMap<>();
-    public HashMap<Integer, List<SourceStatement>> wildCardMap = new HashMap<>();
+//    public HashMap<Integer, SourceStatement> opMap = new HashMap<>();
+//    public HashMap<Integer, List<SourceStatement>> wildCardMap = new HashMap<>();
+    public HashMap<Integer, List<SourceStatement>> map = new HashMap<>();
     public HashMap<String, Expression> variables = new HashMap<>();
     
     // If the pattern is applied, these will be added to the list of equalities to check later on:
@@ -28,8 +29,7 @@ public class PatternMatch {
     
     public PatternMatch(PatternMatch m)
     {
-        opMap.putAll(m.opMap);
-        wildCardMap.putAll(m.wildCardMap);
+        map.putAll(m.map);
         variables.putAll(m.variables);
     }
     
