@@ -25,13 +25,28 @@ import parser.Tokenizer;
  * @author santi
  */
 public class GlassDialect implements Dialect {
+    public static class SectionRecord {
+        String name;
+        List<SourceStatement> start = new ArrayList<>();
+        List<SourceStatement> end = new ArrayList<>();
+        SourceStatement dsStatement = null;
+        
+        public SectionRecord(String a_name) {
+            name = a_name;
+        }
+    }
+    
+    
     MDLConfig config;
-    List<String> sectionStack = new ArrayList<>();
+    
+    HashMap<String, SectionRecord> sections = new HashMap<>();
+    List<SectionRecord> sectionStack = new ArrayList<>();
     
     // Although this is not documented, it seems you can have the same "section XXX" command multiple times
     // in the same codebase, and the address counters just continue from the last time. So, we need to keep
     // track of how many times each section has appeared:
     HashMap<String,Integer> sectionAppearanceCounters = new HashMap<>();
+    List<String> sectionAppearanceCounterStack = new ArrayList<>();
     
     // We keep track, to give a warning at the end, since Section is not fully supported yet if MDL is asked to generate output assembler
     boolean usedSectionKeyword = false;
@@ -130,7 +145,7 @@ public class GlassDialect implements Dialect {
                 appearanceCounter = sectionAppearanceCounters.get(sectionName);
             }
 
-            sectionStack.add(0, sectionName + "_" + appearanceCounter);
+            sectionAppearanceCounterStack.add(0, sectionName + "_" + appearanceCounter);
 
             // it's not the first time we have seen this section:
             if (appearanceCounter > 1) {
@@ -146,12 +161,22 @@ public class GlassDialect implements Dialect {
 
             sectionAppearanceCounters.put(sectionName, appearanceCounter+1);
             
+            // Add a section record entry:
+            SectionRecord sr = sections.get(sectionName);
+            if (sr == null) {
+                sr = new SectionRecord(sectionName);
+                sections.put(sectionName, sr);
+            }
+            sr.start.add(s);
+            sectionStack.add(0,sr);
+            
+            
             if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
         }
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("ends")) {
             if (!sectionStack.isEmpty()) {
                 tokens.remove(0);
-                String sectionName_appearanceCounter = sectionStack.remove(0);
+                String sectionName_appearanceCounter = sectionAppearanceCounterStack.remove(0);
 //                int appearanceCounter = sectionAppearanceCounters.get(sectionName);
                 
                 // Insert two helper statements, so we can restore the address counter after the section is complete, and continue the section later on
@@ -165,6 +190,8 @@ public class GlassDialect implements Dialect {
                 l.add(1,sectionHelper2);
 //                sectionAppearanceCounters.put(sectionName, appearanceCounter+1);
                 
+                sectionStack.remove(0).end.add(s);
+
                 if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
             } else {
                 config.error("No section to terminate at " + sl);
@@ -359,6 +386,28 @@ public class GlassDialect implements Dialect {
         if (usedSectionKeyword) {
             config.warn("Glass's 'section' keyword was used. If you are asking MDL to generate assembler output, the result might not be compilable, as 'section' requires re-organizing the input lines, which is currently not done.");
         }
+        
+        // Find the corresponding "ds" for each section:
+        for(SectionRecord sr: sections.values()) {
+            SourceConstant sc = code.getSymbol(sr.name);
+            if (sc == null) {
+                config.error("Cannot find 'ds' statement corresponding to section " + sr.name);
+                return false;
+            }
+            if(!sc.isLabel()) {
+                config.error("Cannot find 'ds' statement corresponding to section " + sr.name);
+                return false;
+            }
+            sr.dsStatement = code.statementDefiningLabel(sc.name);
+            if (sr.dsStatement == null || sr.dsStatement.type != SourceStatement.STATEMENT_DEFINE_SPACE) {
+                config.error("Cannot find 'ds' statement corresponding to section " + sr.name);
+                return false;
+            }
+        }
+        
+        // Move the section blocks to their respective places:
+        // ...
+        
         return true;
     }    
 }

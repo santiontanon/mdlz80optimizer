@@ -117,6 +117,17 @@ public class CodeBase {
         return true;
     }
 
+    
+    public SourceStatement statementDefiningLabel(String name)
+    {
+        for(SourceFile f:sources.values()) {
+            for(SourceStatement s:f.getStatements()) {
+                if (s.label != null && s.label.name.equals(name)) return s;
+            }
+        }
+        return null;
+    }
+    
 
     public Collection<SourceFile> getSourceFiles()
     {

@@ -44,7 +44,9 @@ public class CodeBaseParser {
             return false;
         }
 
-        if (config.dialectParser != null) config.dialectParser.performAnyFinalActions(code);
+        if (config.dialectParser != null) {
+            if (!config.dialectParser.performAnyFinalActions(code)) return false;
+        }
         for(Pair<Expression, SourceStatement> pair:expressionsToReplaceByValueAtTheEnd) {
             Expression exp = pair.getLeft();
             Number value = exp.evaluate(pair.getRight(), code, false);
