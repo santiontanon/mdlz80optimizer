@@ -425,6 +425,11 @@ public class SourceStatement {
     {
         if (labelPrefix == null || labelPrefix.isEmpty()) return;
         
+        if (label != null) {
+            if (label.exp != null) {
+                label.exp.resolveLocalLabels(labelPrefix, this, code);
+            }
+        }
         if (org != null) org.resolveLocalLabels(labelPrefix, this, code);
         if (incbinSize != null) incbinSize.resolveLocalLabels(labelPrefix, this, code);
         if (incbinSkip != null) incbinSkip.resolveLocalLabels(labelPrefix, this, code);
@@ -439,6 +444,11 @@ public class SourceStatement {
             for(Expression exp:op.args) {
                 exp.resolveLocalLabels(labelPrefix, this, code);
             }
+        }
+        if (macroCallArguments != null) {
+            for(Expression exp:macroCallArguments) {
+                exp.resolveLocalLabels(labelPrefix, this, code);
+            }            
         }
     }
 }

@@ -268,6 +268,7 @@ public class PreProcessor {
                 if (s.label != null) {
                     SourceStatement auxiliar = new SourceStatement(SourceStatement.STATEMENT_NONE, s.sl, s.source);
                     auxiliar.label = s.label;
+                    auxiliar.labelPrefix = s.labelPrefix;
                     l.add(auxiliar);
                 }
                 
@@ -324,6 +325,7 @@ public class PreProcessor {
                     if (s.label != null) {
                         SourceStatement auxiliar = new SourceStatement(SourceStatement.STATEMENT_NONE, s.sl, s.source);
                         auxiliar.label = s.label;
+                        auxiliar.labelPrefix = s.labelPrefix;
                         l.add(auxiliar);
                     }                    
                     currentState.macroExpansions.add(0, expandedMacro);

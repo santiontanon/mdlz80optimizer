@@ -97,7 +97,7 @@ public class SourceMacro {
         } else if (config.preProcessor.isMacroName(name, config.preProcessor.MACRO_IF)) {
             Integer ifCondition_value = args.get(0).evaluateToInteger(macroCall, code, false);
             if (ifCondition_value == null) {
-                config.error("Could not evaluate IF argument " + args.get(0) + ": " + macroCall);
+                config.error("Could not evaluate IF argument " + args.get(0) + ": " + macroCall.sl);
                 args.get(0).evaluateToInteger(macroCall, code, false);
                 return null;
             }

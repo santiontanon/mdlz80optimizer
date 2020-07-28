@@ -409,6 +409,8 @@ public class GlassDialect implements Dialect {
     
     public boolean assembleMacro(SourceMacro macro, CodeBase code)
     {
+//        System.out.println("Trying to assemble macro: " + macro.name);
+        
         // Attempt to assemble the macro content at address 0, and define all the internal symbols as macroname.symbol:
         // To do that, I instantiate the macro with all the parameters that do not have defaults taking the value 0:
         // However, it is not always possible to do this, so, this is only attempted, and if it fails
@@ -481,10 +483,12 @@ public class GlassDialect implements Dialect {
                 }
             }
             
-//            config.info("\n------------- MACRO " + macro.name + " ----------------\n");
-//            for(SourceStatement s:f.getStatements()) {
-//                config.info(s);
-//            }
+//            System.out.println("\n------------- MACRO " + macro.name + " ----------------\n");
+            for(SourceStatement s:f.getStatements()) {
+                s.resolveLocalLabels(code);
+//                System.out.println(s.toString());
+            }            
+            
         } catch (Exception e) {
             // we fail to evaluateToInteger the macro, but it's ok, some times it can happen
             succeeded = false;
