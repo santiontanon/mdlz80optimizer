@@ -834,6 +834,27 @@ public class Expression {
             return granularity;
         }
     }
+    
+    public void resolveLocalLabels(String labelPrefix, SourceStatement s, CodeBase code)
+    {
+        if (type == EXPRESSION_SYMBOL) {
+            if (symbolName.equals(CodeBase.CURRENT_ADDRESS)) return;
+            SourceConstant sc = code.getSymbol(symbolName);
+            if (sc == null) {
+                sc = code.getSymbol(labelPrefix + symbolName);
+                if (sc == null) {
+                    config.warn("Cannot resolve label: " + symbolName + " in " + s.sl);
+                } else {
+                    symbolName = sc.name;
+                }
+            }
+        } else if (args != null) {
+            for(Expression exp:args) {
+                exp.resolveLocalLabels(labelPrefix, s, code);
+            }
+        }
+    }
+    
 
     public static Expression constantExpression(int v, MDLConfig config) {
         Expression exp = new Expression(EXPRESSION_INTEGER_CONSTANT, config);

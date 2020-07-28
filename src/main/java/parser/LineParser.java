@@ -90,11 +90,13 @@ public class LineParser {
     }
 
     public void pushLabelPrefix(String a_lp) {
+//        System.out.println("pushLabelPrefix: " + a_lp);
         labelPrefixStack.add(0, labelPrefix);
         labelPrefix = a_lp;
     }
 
     public void popLabelPrefix() {
+//        System.out.println("popLabelPrefix: back to " + labelPrefixStack.get(0));
         labelPrefix = labelPrefixStack.remove(0);
     }
 
@@ -102,7 +104,12 @@ public class LineParser {
         return labelPrefix;
     }
 
-    public String newSymbolName(String name, Expression value) {
+    public String newSymbolName(String rawName, Expression value) {
+        String name = labelPrefix + rawName;
+        if (allowNumberLabels && Tokenizer.isInteger(rawName)) {
+            name = rawName;
+        }
+//        System.out.println("newSymbolName: " + labelPrefix + "  +  " + rawName);
         if (config.dialectParser != null) {
             return config.dialectParser.newSymbolName(name, value);
         } else {
@@ -112,7 +119,10 @@ public class LineParser {
 
     public List<SourceStatement> parse(List<String> tokens, SourceLine sl,
             SourceFile f, CodeBase code, MDLConfig config) {
-        SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_NONE, sl, f, null);
+        SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_NONE, sl, f);
+        if (sl.labelPrefixToPush != null) pushLabelPrefix(sl.labelPrefixToPush);
+        if (sl.labelPrefixToPop != null) popLabelPrefix();
+        if (labelPrefix != null) s.labelPrefix = labelPrefix;
         List<SourceStatement> l = parseInternal(tokens, sl, s, f, code);
         return l;
     }
@@ -228,7 +238,7 @@ public class LineParser {
                 tokens.remove(0);
                 tokens.remove(0);
 
-                String symbolName = newSymbolName(labelPrefix + token, exp);
+                String symbolName = newSymbolName(token, exp);
                 if (symbolName == null) {
                     config.error("Problem defining symbol " + labelPrefix + token + " in " + sl);
                     return false;
@@ -245,7 +255,7 @@ public class LineParser {
                 tokens.remove(0);
                 tokens.remove(0);
 
-                String symbolName = newSymbolName(labelPrefix + token, exp);
+                String symbolName = newSymbolName(token, exp);
                 if (symbolName == null) {
                     config.error("Problem defining symbol " + labelPrefix + token + " in " + sl);
                     return false;
@@ -269,10 +279,9 @@ public class LineParser {
                             "Label " + token + " defined without a colon.");
                 }
                 Expression exp = Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, code, config);
-                int address = exp.evaluateToInteger(s, code, false);
                 tokens.remove(0);
 
-                String symbolName = newSymbolName(labelPrefix + token, exp);
+                String symbolName = newSymbolName(token, exp);
                 if (symbolName == null) {
                     config.error("Problem defining symbol " + labelPrefix + token + " in " + sl);
                     return false;
@@ -305,7 +314,7 @@ public class LineParser {
                                 "Label " + token + " defined without a colon.");
                     }
                     tokens.remove(0);
-                    String symbolName = newSymbolName(labelPrefix + token, null);
+                    String symbolName = newSymbolName(token, null);
                     if (symbolName == null) {
                         config.error("Problem defining symbol " + labelPrefix + token + " in " + sl);
                         return false;
@@ -617,7 +626,7 @@ public class LineParser {
                         && (tokens.get(i).equals("++") || tokens.get(i).equals("--"))
                         && code.isRegisterPair(tokens.get(i + 1))) {
                     // pre increment/decrement:
-                    SourceStatement auxiliaryS = new SourceStatement(SourceStatement.STATEMENT_CPUOP, sl, source, null);
+                    SourceStatement auxiliaryS = new SourceStatement(SourceStatement.STATEMENT_CPUOP, sl, source);
                     List<Expression> auxiliaryArguments = new ArrayList<>();
                     auxiliaryArguments.add(Expression.symbolExpression(tokens.get(i + 1), code, config));
                     CPUOp op = config.opParser.parseOp(tokens.get(i).equals("++") ? "inc" : "dec",
@@ -631,7 +640,7 @@ public class LineParser {
                         && (tokens.get(i).equals("++") || tokens.get(i).equals("--"))
                         && code.isRegisterPair(tokens.get(i - 1))) {
                     // post increment/decrement:
-                    SourceStatement auxiliaryS = new SourceStatement(SourceStatement.STATEMENT_CPUOP, sl, source, null);
+                    SourceStatement auxiliaryS = new SourceStatement(SourceStatement.STATEMENT_CPUOP, sl, source);
                     List<Expression> auxiliaryArguments = new ArrayList<>();
                     auxiliaryArguments.add(Expression.symbolExpression(tokens.get(i - 1), code, config));
                     CPUOp op = config.opParser.parseOp(tokens.get(i).equals("++") ? "inc" : "dec",

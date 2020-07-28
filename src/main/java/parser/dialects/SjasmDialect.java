@@ -638,13 +638,13 @@ public class SjasmDialect implements Dialect {
                     SourceStatement s2;
                     switch(st.attributeSizes.get(i)) {
                         case 1:
-                            s2 = new SourceStatement(SourceStatement.STATEMENT_DATA_BYTES, sl, source, null);
+                            s2 = new SourceStatement(SourceStatement.STATEMENT_DATA_BYTES, sl, source);
                             break;
                         case 2:
-                            s2 = new SourceStatement(SourceStatement.STATEMENT_DATA_WORDS, sl, source, null);
+                            s2 = new SourceStatement(SourceStatement.STATEMENT_DATA_WORDS, sl, source);
                             break;
                         case 4:
-                            s2 = new SourceStatement(SourceStatement.STATEMENT_DATA_DOUBLE_WORDS, sl, source, null);
+                            s2 = new SourceStatement(SourceStatement.STATEMENT_DATA_DOUBLE_WORDS, sl, source);
                             break;
                         default:
                             config.error("Field " + st.attributeNames.get(i) + " of struct " + st.name + " has an unsupported size in: " + sl);
@@ -665,12 +665,6 @@ public class SjasmDialect implements Dialect {
     }
 
 
-    @Override
-    public boolean newMacro(SourceMacro macro, CodeBase code) {
-        return true;
-    }
-    
-    
     @Override
     public Integer evaluateExpression(String functionName, List<Expression> args, SourceStatement s, CodeBase code, boolean silent)
     {
@@ -858,7 +852,7 @@ public class SjasmDialect implements Dialect {
         
         for(int idx:pageIndexes) {
             CodePage page = pages.get(idx);
-            SourceStatement org = new SourceStatement(SourceStatement.STATEMENT_ORG, new SourceLine("", reconstructedFile, reconstructedFile.getStatements().size()+1), reconstructedFile, null);
+            SourceStatement org = new SourceStatement(SourceStatement.STATEMENT_ORG, new SourceLine("", reconstructedFile, reconstructedFile.getStatements().size()+1), reconstructedFile);
             org.org = page.start;
             reconstructedFile.addStatement(org);
             int pageStart = page.start.evaluateToInteger(page.s, code, true);
@@ -867,7 +861,7 @@ public class SjasmDialect implements Dialect {
             for(CodeBlock block:page.blocks) {
                 if (block.actualAddress > currentAddress) {
                     // insert space:
-                    SourceStatement space = new SourceStatement(SourceStatement.STATEMENT_DEFINE_SPACE, new SourceLine("", reconstructedFile, reconstructedFile.getStatements().size()+1), reconstructedFile, null);
+                    SourceStatement space = new SourceStatement(SourceStatement.STATEMENT_DEFINE_SPACE, new SourceLine("", reconstructedFile, reconstructedFile.getStatements().size()+1), reconstructedFile);
                     space.space = Expression.operatorExpression(Expression.EXPRESSION_SUB,
                                     Expression.constantExpression(block.actualAddress, config),
                                     Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, code, config),
@@ -885,7 +879,7 @@ public class SjasmDialect implements Dialect {
             }
             if (currentAddress < pageStart + pageSize) {
                 // insert space:
-                SourceStatement space = new SourceStatement(SourceStatement.STATEMENT_DEFINE_SPACE, new SourceLine("", reconstructedFile, reconstructedFile.getStatements().size()+1), reconstructedFile, null);
+                SourceStatement space = new SourceStatement(SourceStatement.STATEMENT_DEFINE_SPACE, new SourceLine("", reconstructedFile, reconstructedFile.getStatements().size()+1), reconstructedFile);
                 space.space = Expression.operatorExpression(Expression.EXPRESSION_SUB,
                                 Expression.constantExpression(pageStart + pageSize, config),
                                 Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, code, config),

@@ -262,7 +262,7 @@ public class ASMSXDialect implements Dialect {
                 return null;                
             }
             for(String []biosCall:biosCalls) {
-                SourceStatement biosCallStatement = new SourceStatement(SourceStatement.STATEMENT_CONSTANT, sl, source, null);
+                SourceStatement biosCallStatement = new SourceStatement(SourceStatement.STATEMENT_CONSTANT, sl, source);
                 int address = Tokenizer.parseHex(biosCall[1]);
                 biosCallStatement.label = new SourceConstant(biosCall[0], address, Expression.constantExpression(address, config), biosCallStatement);
                 code.addSymbol(biosCall[0], biosCallStatement.label);
@@ -479,12 +479,6 @@ public class ASMSXDialect implements Dialect {
         return null;
     }
 
-
-    @Override
-    public boolean newMacro(SourceMacro macro, CodeBase code) {
-        return true;
-    }
-    
 
     @Override
     public Number evaluateExpression(String functionName, List<Expression> args, SourceStatement s, CodeBase code, boolean silent)

@@ -87,6 +87,12 @@ public class CodeBase {
         return null;
     }
 
+    
+    public void removeSymbol(String name)
+    {
+        symbols.remove(name);
+    }
+    
 
     public boolean addSymbol(String name, SourceConstant sc)
     {

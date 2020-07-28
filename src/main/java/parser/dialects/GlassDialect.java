@@ -27,11 +27,20 @@ import parser.Tokenizer;
 public class GlassDialect implements Dialect {
     public static class SectionRecord {
         String name;
-        List<SourceStatement> start = new ArrayList<>();
-        List<SourceStatement> end = new ArrayList<>();
         SourceStatement dsStatement = null;
+        List<SectionPortionRecord> portions = new ArrayList<>();
         
         public SectionRecord(String a_name) {
+            name = a_name;
+        }
+    }
+    
+    public static class SectionPortionRecord {
+        String name;
+        SourceStatement start = null;
+        SourceStatement end = null;
+        
+        public SectionPortionRecord(String a_name) {
             name = a_name;
         }
     }
@@ -40,13 +49,13 @@ public class GlassDialect implements Dialect {
     MDLConfig config;
     
     HashMap<String, SectionRecord> sections = new HashMap<>();
-    List<SectionRecord> sectionStack = new ArrayList<>();
+    List<SectionPortionRecord> sectionStack = new ArrayList<>();
     
     // Although this is not documented, it seems you can have the same "section XXX" command multiple times
     // in the same codebase, and the address counters just continue from the last time. So, we need to keep
     // track of how many times each section has appeared:
-    HashMap<String,Integer> sectionAppearanceCounters = new HashMap<>();
-    List<String> sectionAppearanceCounterStack = new ArrayList<>();
+//    HashMap<String,Integer> sectionAppearanceCounters = new HashMap<>();
+//    List<String> sectionAppearanceCounterStack = new ArrayList<>();
     
     // We keep track, to give a warning at the end, since Section is not fully supported yet if MDL is asked to generate output assembler
     boolean usedSectionKeyword = false;
@@ -137,61 +146,63 @@ public class GlassDialect implements Dialect {
                 return null;
             }
             String sectionName = getSectionName(exp.symbolName, code);
-            s.type = SourceStatement.STATEMENT_ORG;
-            s.org = exp;
+//            s.type = SourceStatement.STATEMENT_ORG;
+//            s.org = exp;
             
-            int appearanceCounter = 1;
-            if (sectionAppearanceCounters.containsKey(sectionName)) {
-                appearanceCounter = sectionAppearanceCounters.get(sectionName);
-            }
+//            int appearanceCounter = 1;
+//            if (sectionAppearanceCounters.containsKey(sectionName)) {
+//                appearanceCounter = sectionAppearanceCounters.get(sectionName);
+//            }
 
-            sectionAppearanceCounterStack.add(0, sectionName + "_" + appearanceCounter);
+//            sectionAppearanceCounterStack.add(0, sectionName + "_" + appearanceCounter);
 
             // it's not the first time we have seen this section:
-            if (appearanceCounter > 1) {
-                s.org = Expression.symbolExpression("__address_before_section_"+sectionName+"_"+(appearanceCounter-1)+"_ends", code, config);
-            } 
+//            if (appearanceCounter > 1) {
+//                s.org = Expression.symbolExpression("__address_before_section_"+sectionName+"_"+(appearanceCounter-1)+"_ends", code, config);
+//            } 
             
             // Insert a helper statement, so we can restore the address counter after the section is complete:
-            SourceStatement sectionHelper = new SourceStatement(SourceStatement.STATEMENT_NONE, sl, source, null);
-            sectionHelper.label = new SourceConstant("__address_before_section_"+sectionName+"_"+appearanceCounter+"_starts", null, 
-                    Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, code, config), sectionHelper);
-            code.addSymbol(sectionHelper.label.name, sectionHelper.label);
-            l.add(0, sectionHelper);
+//            SourceStatement sectionHelper = new SourceStatement(SourceStatement.STATEMENT_NONE, sl, source);
+//            sectionHelper.label = new SourceConstant("__address_before_section_"+sectionName+"_"+appearanceCounter+"_starts", null, 
+//                    Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, code, config), sectionHelper);
+//            code.addSymbol(sectionHelper.label.name, sectionHelper.label);
+//            l.add(0, sectionHelper);
 
-            sectionAppearanceCounters.put(sectionName, appearanceCounter+1);
+//            sectionAppearanceCounters.put(sectionName, appearanceCounter+1);
             
             // Add a section record entry:
-            SectionRecord sr = sections.get(sectionName);
+            SectionPortionRecord spr = new SectionPortionRecord(sectionName);
+            spr.start = s;
+            sectionStack.add(0,spr);
+            SectionRecord sr = sections.get(spr.name);
             if (sr == null) {
-                sr = new SectionRecord(sectionName);
-                sections.put(sectionName, sr);
+                sr = new SectionRecord(spr.name);
+                sections.put(spr.name, sr);
             }
-            sr.start.add(s);
-            sectionStack.add(0,sr);
-            
+            sr.portions.add(spr);
             
             if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
         }
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("ends")) {
             if (!sectionStack.isEmpty()) {
                 tokens.remove(0);
-                String sectionName_appearanceCounter = sectionAppearanceCounterStack.remove(0);
+//                String sectionName_appearanceCounter = sectionAppearanceCounterStack.remove(0);
 //                int appearanceCounter = sectionAppearanceCounters.get(sectionName);
                 
                 // Insert two helper statements, so we can restore the address counter after the section is complete, and continue the section later on
-                SourceStatement sectionHelper1 = new SourceStatement(SourceStatement.STATEMENT_NONE, sl, source, null);
-                sectionHelper1.label = new SourceConstant("__address_before_section_"+sectionName_appearanceCounter+"_ends", null, 
-                        Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, code, config), sectionHelper1);
-                code.addSymbol(sectionHelper1.label.name, sectionHelper1.label);
-                SourceStatement sectionHelper2 = new SourceStatement(SourceStatement.STATEMENT_ORG, sl, source, null);
-                sectionHelper2.org = Expression.symbolExpression("__address_before_section_"+sectionName_appearanceCounter+"_starts", code, config);
-                l.add(0,sectionHelper1);
-                l.add(1,sectionHelper2);
+//                SourceStatement sectionHelper1 = new SourceStatement(SourceStatement.STATEMENT_NONE, sl, source);
+//                sectionHelper1.label = new SourceConstant("__address_before_section_"+sectionName_appearanceCounter+"_ends", null, 
+//                        Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, code, config), sectionHelper1);
+//                code.addSymbol(sectionHelper1.label.name, sectionHelper1.label);
+//                SourceStatement sectionHelper2 = new SourceStatement(SourceStatement.STATEMENT_ORG, sl, source);
+//                sectionHelper2.org = Expression.symbolExpression("__address_before_section_"+sectionName_appearanceCounter+"_starts", code, config);
+//                l.add(0,sectionHelper1);
+//                l.add(1,sectionHelper2);
 //                sectionAppearanceCounters.put(sectionName, appearanceCounter+1);
                 
-                sectionStack.remove(0).end.add(s);
-
+                SectionPortionRecord spr = sectionStack.remove(0);
+                spr.end = s;
+                
                 if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
             } else {
                 config.error("No section to terminate at " + sl);
@@ -225,88 +236,6 @@ public class GlassDialect implements Dialect {
             if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
         }
         return null;
-    }
-
-
-    @Override
-    public boolean newMacro(SourceMacro macro, CodeBase code)
-    {
-        // Attempt to assemble the macro content at address 0, and define all the internal symbols as macroname.symbol:
-        // To do that, I instantiate the macro with all the parameters that do not have defaults taking the value 0:
-        // However, it is not always possible to do this, so, this is only attempted, and if it fails
-        // no compilation happens:
-        List<Expression> args = new ArrayList<>();
-        for(int i=0;i<macro.argNames.size();i++) {
-            if (macro.defaultValues.get(i) != null) {
-                args.add(macro.defaultValues.get(i));
-            } else {
-                args.add(Expression.constantExpression(0, config));
-            }
-        }
-
-        // Assemble the macro at address 0:
-        boolean succeeded = true;
-        try {
-            // supress error messages when attempting to assemble a macro, as it might fail:
-            config.logger.silence();
-            MacroExpansion expansion = macro.instantiate(args, macro.definingStatement, code, config);
-            List<SourceLine> lines = expansion.lines;
-            PreProcessor preProcessor = new PreProcessor(config.preProcessor);
-
-            SourceFile f = new SourceFile(macro.definingStatement.source.fileName + ":macro(" + macro.name+")", null, null, config);
-            int lineNumber = macro.definingStatement.sl.lineNumber;
-            while(true) {
-                List<String> tokens = new ArrayList<>();
-                Pair<SourceLine, Integer> tmp = getNextLine(lines, f, lineNumber, tokens, preProcessor);
-                if (tmp == null) {
-                    if (config.preProcessor.withinMacroDefinition()) {
-                        // we fail to evaluateToInteger the macro, but it's ok, some times it can happen
-                        succeeded = false;
-                        break;
-                    } else {
-                        config.debug("Glass: successfully assembled macro " + macro.name);
-                    }
-                    break;
-                }
-                lineNumber = tmp.getRight();
-                SourceLine sl = tmp.getLeft();
-                
-                if (preProcessor.withinMacroDefinition()) {
-                    List<SourceStatement> newStatements = preProcessor.parseMacroLine(tokens, sl, f, code, config);
-                    if (newStatements == null) {
-                        // we fail to evaluateToInteger the macro, but it's ok, some times it can happen
-                        succeeded = false;
-                        break;
-                    } else {
-                        for(SourceStatement s:newStatements) {
-                            f.addStatement(s);
-                        }
-                    }
-                } else {
-                    List<SourceStatement> l = config.lineParser.parse(Tokenizer.tokenize(sl.line), 
-                            sl, f, code, config);
-                    if (l == null) {
-                        // we fail to assemble the macro, but it's ok, some times it can happen
-                        succeeded = false;
-                        break;
-                    }
-                    for(SourceStatement s:l) {
-                        if (!preProcessor.handleStatement(sl, s, f, code, false)) {
-                            f.addStatement(s);
-                        }
-                    }
-                }
-            }
-        } catch (Exception e) {
-            // we fail to evaluateToInteger the macro, but it's ok, some times it can happen
-            succeeded = false;
-        }
-        config.logger.resume();
-
-        // this is a debug message, not a warning, as it can definitively happen if macros contain unresolved symbols:
-        if (!succeeded) config.debug("Glass: failed to assemble macro " + macro.name);
-
-        return true;
     }
     
     
@@ -381,12 +310,23 @@ public class GlassDialect implements Dialect {
 
     
     @Override
-    public boolean performAnyFinalActions(CodeBase code)
+    public boolean performAnyPostParsingActions(CodeBase code)
     {
-        if (usedSectionKeyword) {
-            config.warn("Glass's 'section' keyword was used. If you are asking MDL to generate assembler output, the result might not be compilable, as 'section' requires re-organizing the input lines, which is currently not done.");
-        }
+        // Assemble Macros:
+        for(List<SourceMacro> l:config.preProcessor.macros.values()) {
+            for(SourceMacro macro:l) {
+                assembleMacro(macro, code);
+            }
+        }   
         
+        return true;
+    }
+    
+    
+    @Override
+    public boolean performAnyFinalActions(CodeBase code)
+    {                        
+        // Resolve sections:
         // Find the corresponding "ds" for each section:
         for(SectionRecord sr: sections.values()) {
             SourceConstant sc = code.getSymbol(sr.name);
@@ -403,11 +343,157 @@ public class GlassDialect implements Dialect {
                 config.error("Cannot find 'ds' statement corresponding to section " + sr.name);
                 return false;
             }
+            if (sr.dsStatement.label == null) {
+                config.error("Section 'ds' statement does not have a label for section " + sr.name + "!");
+                return false;                
+            }
+            
+            // update the ds statement to have the label and the space in two separate statements, to insert all the section portions in between:
+            SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_NONE, sr.dsStatement.sl, sr.dsStatement.source);
+            s.labelPrefix = sr.dsStatement.labelPrefix;
+            s.label = sr.dsStatement.label;
+            sr.dsStatement.space = Expression.operatorExpression(Expression.EXPRESSION_SUB, 
+                    Expression.parenthesisExpression(
+                            Expression.operatorExpression(Expression.EXPRESSION_SUM,
+                                    Expression.symbolExpression(sr.dsStatement.label.name, code, config), 
+                                    Expression.parenthesisExpression(sr.dsStatement.space, config), config),
+                            config), 
+                    Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, code, config), 
+                    config);
+            sr.dsStatement.label = null;
+            sr.dsStatement.source.getStatements().add(sr.dsStatement.source.getStatements().indexOf(sr.dsStatement), s);
         }
         
         // Move the section blocks to their respective places:
-        // ...
-        
+        for(SectionRecord sr: sections.values()) {
+            for(SectionPortionRecord spr: sr.portions) {
+                SourceFile ds_source = sr.dsStatement.source;
+                SourceStatement start = spr.start;
+                SourceStatement end = spr.end;
+
+                if (start.source != end.source) {
+                    config.error("Section "+sr.name+" starts and ends in a different source file. This case is not yet supported!");
+                    config.error("start is in " + start.sl);
+                    config.error("end is in " + end.sl);
+                    return false;
+                }
+
+                SourceFile source = start.source;
+                int start_idx = source.getStatements().indexOf(start);
+                int end_idx = source.getStatements().indexOf(end);
+                if (start_idx > end_idx) {
+                    config.error("inconsistent start and end of a portion of section " + sr.name + "!");
+                    return false;                    
+                }
+
+                if (start_idx == -1 || end_idx == -1) {
+                    config.error("Cannot find start/end statements of section " + sr.name + "!");
+                    return false;
+                }
+
+                List<SourceStatement> l = new ArrayList<>();
+                for(int j = 0;j<=(end_idx - start_idx);j++) {
+                    SourceStatement s = source.getStatements().remove(start_idx);
+                    s.source = ds_source;
+                    l.add(s);
+                }
+
+                int insertion_idx = ds_source.getStatements().indexOf(sr.dsStatement);
+                ds_source.getStatements().addAll(insertion_idx, l);
+            }
+        }
+            
+        return true;
+    }    
+    
+    
+    public boolean assembleMacro(SourceMacro macro, CodeBase code)
+    {
+        // Attempt to assemble the macro content at address 0, and define all the internal symbols as macroname.symbol:
+        // To do that, I instantiate the macro with all the parameters that do not have defaults taking the value 0:
+        // However, it is not always possible to do this, so, this is only attempted, and if it fails
+        // no compilation happens:
+        List<Expression> args = new ArrayList<>();
+        for(int i=0;i<macro.argNames.size();i++) {
+            if (macro.defaultValues.get(i) != null) {
+                args.add(macro.defaultValues.get(i));
+            } else {
+                args.add(Expression.constantExpression(0, config));
+            }
+        }
+
+        // Assemble the macro at address 0:
+        boolean succeeded = true;
+        try {
+            // supress error messages when attempting to assemble a macro, as it might fail:
+            config.logger.silence();
+            MacroExpansion expansion = macro.instantiate(args, macro.definingStatement, code, config);
+            List<SourceLine> lines = expansion.lines;
+            PreProcessor preProcessor = new PreProcessor(config.preProcessor);
+
+            SourceFile f = new SourceFile(macro.definingStatement.source.fileName + ":macro(" + macro.name+")", null, null, config);
+            int lineNumber = macro.definingStatement.sl.lineNumber;
+            while(true) {
+                List<String> tokens = new ArrayList<>();
+                Pair<SourceLine, Integer> tmp = getNextLine(lines, f, lineNumber, tokens, preProcessor);
+                if (tmp == null) {
+                    if (config.preProcessor.withinMacroDefinition()) {
+                        // we fail to evaluateToInteger the macro, but it's ok, some times it can happen
+                        succeeded = false;
+                        break;
+                    } else {
+                        config.debug("Glass: successfully assembled macro " + macro.name);
+                    }
+                    break;
+                }
+                lineNumber = tmp.getRight();
+                SourceLine sl = tmp.getLeft();
+                
+                if (preProcessor.withinMacroDefinition()) {
+                    List<SourceStatement> newStatements = preProcessor.parseMacroLine(tokens, sl, f, code, config);
+                    if (newStatements == null) {
+                        // we fail to evaluateToInteger the macro, but it's ok, some times it can happen
+                        succeeded = false;
+                        break;
+                    } else {
+                        for(SourceStatement s:newStatements) {
+                            f.addStatement(s);
+                        }
+                    }
+                } else {
+                    List<SourceStatement> l = config.lineParser.parse(Tokenizer.tokenize(sl.line), 
+                            sl, f, code, config);
+                    if (l == null) {
+                        // we fail to assemble the macro, but it's ok, some times it can happen
+                        succeeded = false;
+                        break;
+                    }
+                    for(SourceStatement s:l) {
+                        List<SourceStatement> l2 = preProcessor.handleStatement(sl, s, f, code, false);
+                        if (l2 == null) {
+                            f.addStatement(s);
+                        } else {
+                            for(SourceStatement s2:l2) {
+                                f.addStatement(s2);
+                            }
+                        }
+                    }
+                }
+            }
+            
+//            config.info("\n------------- MACRO " + macro.name + " ----------------\n");
+//            for(SourceStatement s:f.getStatements()) {
+//                config.info(s);
+//            }
+        } catch (Exception e) {
+            // we fail to evaluateToInteger the macro, but it's ok, some times it can happen
+            succeeded = false;
+        }
+        config.logger.resume();
+
+        // this is a debug message, not a warning, as it can definitively happen if macros contain unresolved symbols:
+        if (!succeeded) config.debug("Glass: failed to assemble macro " + macro.name);
+
         return true;
     }    
 }

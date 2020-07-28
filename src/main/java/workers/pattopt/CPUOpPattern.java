@@ -57,7 +57,7 @@ public class CPUOpPattern {
         // replace variables by the matched values:
         CodeBase code = new CodeBase(config);
         SourceFile f = new SourceFile("", null, null, config);
-        SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_CPUOP, new SourceLine("", f, 0), f, 0);
+        SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_CPUOP, new SourceLine("", f, 0), f);
         List<Expression> instantiatedArgs = new ArrayList<>();
         for(Expression arg:args) {
             String argStr = arg.toString();

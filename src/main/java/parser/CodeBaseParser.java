@@ -38,11 +38,23 @@ public class CodeBaseParser {
         
         if (parseSourceFile(fileName, code, null, null) == null) return false;
 
+        // Dialect actions before expanding all macros:
+        if (config.dialectParser != null) {
+            if (!config.dialectParser.performAnyPostParsingActions(code)) return false;
+        }
+        
         // Expand all macros that were not expanded initially:
         if (!expandAllMacros(code)) {
             config.error("Problem expanding macros after loading all the source code!");
             return false;
         }
+        
+        // Resolve local labels:
+        for(SourceFile f:code.getSourceFiles()) {
+            for(SourceStatement s:f.getStatements()) {
+                s.resolveLocalLabels(code);
+            }
+        }        
 
         if (config.dialectParser != null) {
             if (!config.dialectParser.performAnyFinalActions(code)) return false;
@@ -171,9 +183,14 @@ public class CodeBaseParser {
                     } else {
                         for(SourceStatement s:newStatements) {
                             if (config.eagerMacroEvaluation) {
-                                if (!config.preProcessor.handleStatement(sl, s, f, code, false)) {
+                                List<SourceStatement> l2 = config.preProcessor.handleStatement(sl, s, f, code, false);
+                                if (l2 == null) {
                                     f.addStatement(s);
-                                }                                
+                                } else {
+                                    for(SourceStatement s2:l2) {
+                                        f.addStatement(s2);
+                                    }
+                                }
                             } else {
                                 f.addStatement(s);                            
                             }
@@ -183,8 +200,13 @@ public class CodeBaseParser {
                     List<SourceStatement> l = config.lineParser.parse(tokens, sl, f, code, config);
                     if (l == null) return false;
                     for(SourceStatement s:l) {
-                        if (!config.preProcessor.handleStatement(sl, s, f, code, false)) {
+                        List<SourceStatement> l2 = config.preProcessor.handleStatement(sl, s, f, code, false);
+                        if (l2 == null) {
                             f.addStatement(s);
+                        } else {
+                            for(SourceStatement s2:l2) {
+                                f.addStatement(s2);
+                            }
                         }
                     }
                 }
@@ -236,13 +258,15 @@ public class CodeBaseParser {
                 // expand macro!
                 config.trace("expandAllMacros: Expanding macro: " + s_macro.macroCallName != null ? s_macro.macroCallName : s_macro.macroCallMacro.name);
 
-                if (!config.preProcessor.handleStatement(s_macro.sl, s_macro, f, code, true)) {
+                List<SourceStatement> l2 = config.preProcessor.handleStatement(s_macro.sl, s_macro, f, code, true);
+                if (l2 == null) {
                     config.debug("Cannot yet expand macro "+s_macro.macroCallName+" in "+s_macro.sl);
                     n_failed++;
                     continue;
                 } else {
                     n_expanded++;
                     f.getStatements().remove(i);
+                    f.getStatements().addAll(i, l2);
                 }
 
 
@@ -282,9 +306,15 @@ public class CodeBaseParser {
                         List<SourceStatement> l = config.lineParser.parse(tokens, sl, f, code, config);
                         if (l == null) return null;
                         for(SourceStatement s:l) {
-                            if (!config.preProcessor.handleStatement(sl, s, f, code, true)) {
+                            List<SourceStatement> l3 = config.preProcessor.handleStatement(sl, s, f, code, true);
+                            if (l3 == null) {
                                 f.addStatement(insertionPoint, s);
                                 insertionPoint++;
+                            } else {
+                                for(SourceStatement s3:l3) {
+                                    f.addStatement(insertionPoint, s3);
+                                    insertionPoint++;
+                                }                                
                             }
                         }
                     }

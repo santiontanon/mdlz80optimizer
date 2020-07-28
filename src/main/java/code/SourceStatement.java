@@ -70,13 +70,15 @@ public class SourceStatement {
     public SourceConstant label = null; 
     public String comment = null;
     
+    // If this statement was created while being inside of some label context (e.g. inside of proc/endp),
+    // the context is stored here, in order to resolve labels after code is fully parsed:
+    public String labelPrefix = null;
     
-    public SourceStatement(int a_type, SourceLine a_sl, SourceFile a_source, Integer a_address)
+    public SourceStatement(int a_type, SourceLine a_sl, SourceFile a_source)
     {
         type = a_type;
         sl = a_sl;
         source = a_source;
-        address = a_address;
     }
     
 
@@ -416,5 +418,27 @@ public class SourceStatement {
                 }
             }
         }        
+    }
+    
+    
+    public void resolveLocalLabels(CodeBase code)
+    {
+        if (labelPrefix == null || labelPrefix.isEmpty()) return;
+        
+        if (org != null) org.resolveLocalLabels(labelPrefix, this, code);
+        if (incbinSize != null) incbinSize.resolveLocalLabels(labelPrefix, this, code);
+        if (incbinSkip != null) incbinSkip.resolveLocalLabels(labelPrefix, this, code);
+        if (space != null) space.resolveLocalLabels(labelPrefix, this, code);
+        if (space_value != null) space_value.resolveLocalLabels(labelPrefix, this, code);
+        if (data != null) {
+            for(Expression exp:data) {
+                exp.resolveLocalLabels(labelPrefix, this, code);
+            }
+        }
+        if (op != null) {
+            for(Expression exp:op.args) {
+                exp.resolveLocalLabels(labelPrefix, this, code);
+            }
+        }
     }
 }

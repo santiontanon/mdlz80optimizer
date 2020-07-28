@@ -47,15 +47,7 @@ public interface Dialect {
         return null;
     }
 
-    // Some dialects might do special things when macros are defined. For example,
-    // Glass actually compiles the code inside macros, rather than treating it simply as
-    // text to be copy/pasted when the macro is expanded (as the default parser of MDL does).
-    // @return false if an error occurred
-    default boolean newMacro(SourceMacro macro, CodeBase code) {
-        // (no-op by default)
-        return true;
-    }
-
+    
     // Some dialects implement custom functions (e.g., asMSX has a "random" function). They cannot
     // be included in the general parser, as if someone uses a different assembler, those could be used
     // as macro names, causing a collision. So, they are implemented via this function:
@@ -87,6 +79,12 @@ public interface Dialect {
     // to predefine constants in the CodeBase class, like "pi" in asMSX):
     default void performAnyInitialActions(CodeBase code) {
         // (no-op by default)
+    }
+    
+    // Called after all the code is parsed before all macros are expanded
+    default boolean performAnyPostParsingActions(CodeBase code) {
+        // (no-op by default)
+        return true;        
     }
 
     // Called after all the code is parsed and all macros expanded

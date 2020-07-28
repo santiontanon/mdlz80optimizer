@@ -185,12 +185,22 @@ public class SourceMacro {
     }
 
 
+    
     public void scopeMacroExpansionLines(String scope, List<SourceLine> lines, CodeBase code, MDLConfig config)
     {
+        if (!lines.isEmpty()) {
+//            System.out.println("scopeMacroExpansionLines.scope: " + scope);
+            lines.get(0).labelPrefixToPush = scope + ".";
+            
+            SourceLine l2 = new SourceLine("", lines.get(0).source, lines.get(0).lineNumber);
+            l2.labelPrefixToPop = scope + ".";            
+            lines.add(l2);
+        }
+        /*
         List<String> macroDefinedLabels = new ArrayList<>();
         for(SourceLine sl:lines) {
             // Find if the macro defined a label, to properly scope it:
-            SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_NONE, sl, sl.source, null);
+            SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_NONE, sl, sl.source);
             List<String> tokens = Tokenizer.tokenize(sl.line);
             if (tokens != null) {
                 config.lineParser.parseLabel(tokens, sl, s, sl.source, code, false);
@@ -226,5 +236,6 @@ public class SourceMacro {
                 }
             }
         }
+        */
     }
 }

@@ -18,6 +18,10 @@ public class SourceLine {
     public Integer lineNumber;
     public SourceStatement expandedFrom;
     
+    public String labelPrefixToPush = null;
+    public String labelPrefixToPop = null;
+    
+    
     public SourceLine(String a_line, SourceFile a_f, Integer a_ln)
     {
         line = a_line;
