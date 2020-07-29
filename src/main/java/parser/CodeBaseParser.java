@@ -260,6 +260,7 @@ public class CodeBaseParser {
                 config.trace("expandAllMacros: Expanding macro: " + s_macro.macroCallName != null ? s_macro.macroCallName : s_macro.macroCallMacro.name);
 
                 List<SourceStatement> l2 = config.preProcessor.handleStatement(s_macro.sl, s_macro, f, code, true);
+                int insertionPoint = i;
                 if (l2 == null) {
                     config.debug("Cannot yet expand macro "+s_macro.macroCallName+" in "+s_macro.sl);
                     n_failed++;
@@ -268,14 +269,13 @@ public class CodeBaseParser {
                     n_expanded++;
                     f.getStatements().remove(i);
                     f.getStatements().addAll(i, l2);
+                    insertionPoint += l2.size();
                 }
-
 
                 // We need to reset the addresses, as when we expand a macro, these can all change!
                 code.resetAddresses();
 
                 // Parse the new lines (which could, potentially trigger other macros!):
-                int insertionPoint = i;
                 while(true) {
                     List<String> tokens = new ArrayList<>();
                     Pair<SourceLine, Integer> tmp = getNextLine(null, f, s_macro.sl.lineNumber, tokens);
@@ -324,6 +324,14 @@ public class CodeBaseParser {
                 i--;
             }
         }
+
+        if (n_expanded > 0) {
+            // resolve local labels again for all the new lines:
+            for(SourceStatement s:f.getStatements()) {
+                s.resolveLocalLabels(code);
+            }
+        }
+ 
         return Pair.of(n_expanded, n_failed);
     }
 

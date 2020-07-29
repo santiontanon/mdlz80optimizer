@@ -253,12 +253,14 @@ public class PreProcessor {
 
 
     public List<SourceStatement> handleStatement(SourceLine sl,
-            SourceStatement s, SourceFile source, CodeBase code, boolean complainIfUndefined)
+            SourceStatement s, SourceFile source, CodeBase code, boolean expandMacroCalls)
     {
         List<SourceStatement> l = new ArrayList<>();
         
         if (s.type == SourceStatement.STATEMENT_MACROCALL) {
-            if (s.macroCallMacro != null) {
+            if (s.macroCallMacro != null) {                
+                if (!expandMacroCalls) return null;
+                
                 MacroExpansion expandedMacro = s.macroCallMacro.instantiate(s.macroCallArguments, s, code, config);
                 if (expandedMacro == null) {
                     config.error("Problem instantiating macro "+s.macroCallMacro.name+" in " + sl);
@@ -314,6 +316,7 @@ public class PreProcessor {
                 return l;
 
             } else {
+                if (!expandMacroCalls) return null;
                 
                 SourceMacro m = getMacro(s.macroCallName, s.macroCallArguments.size());
                 if (m != null) {
@@ -332,7 +335,7 @@ public class PreProcessor {
                     return l;
                 } else {
                     // macro is not yet defined, keep it in the code, and we will evaluate later
-                    if (complainIfUndefined) {
+                    if (expandMacroCalls) {
                         config.error("Could not expand macro in " + sl);
                     }
                     return null;

@@ -842,10 +842,10 @@ public class Expression {
             SourceConstant sc = code.getSymbol(symbolName);
             if (sc == null) {
                 sc = code.getSymbol(labelPrefix + symbolName);
-                if (sc == null) {
-                    config.warn("Cannot resolve label: " + symbolName + " in " + s.sl);
-                } else {
+                if (sc != null) {
                     symbolName = sc.name;
+                } else {
+//                    config.warn("Cannot resolve label: " + symbolName + " in " + s.sl);
                 }
             }
         } else if (args != null) {

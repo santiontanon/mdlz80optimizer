@@ -101,9 +101,9 @@ public class CodeBase {
             if (previous.resolveEagerly) {
                 if (sc.exp != null) {
                     // resolve it right away, before replacing:
-                    Integer value = sc.exp.evaluateToInteger(sc.s, this, false);
+                    Integer value = sc.exp.evaluateToInteger(sc.definingStatement, this, false);
                     if (value == null) {
-                        config.error("Cannot resolve eager variable in " + sc.s.sl);
+                        config.error("Cannot resolve eager variable in " + sc.definingStatement.sl);
                         return false;
                     }
                     sc.exp = Expression.constantExpression(value, config);
@@ -113,8 +113,8 @@ public class CodeBase {
             } else {
                 if (symbols.get(name).exp != null) {
                     config.error("Redefining symbol " + name);
-                    config.error("First defined in " + symbols.get(name).s.sl.source.fileName + ", " + symbols.get(name).s.sl.lineNumber + " as " + symbols.get(name).exp + ": " +  symbols.get(name).s);
-                    config.error("Redefined in " + sc.s.sl.source.fileName + ", "+ sc.s.sl.lineNumber + " as " + symbols.get(name).exp + ": " + sc.s);
+                    config.error("First defined in " + symbols.get(name).definingStatement.sl.source.fileName + ", " + symbols.get(name).definingStatement.sl.lineNumber + " as " + symbols.get(name).exp + ": " +  symbols.get(name).definingStatement);
+                    config.error("Redefined in " + sc.definingStatement.sl.source.fileName + ", "+ sc.definingStatement.sl.lineNumber + " as " + symbols.get(name).exp + ": " + sc.definingStatement);
                     return false;
                 }
             }
@@ -126,12 +126,15 @@ public class CodeBase {
     
     public SourceStatement statementDefiningLabel(String name)
     {
-        for(SourceFile f:sources.values()) {
-            for(SourceStatement s:f.getStatements()) {
-                if (s.label != null && s.label.name.equals(name)) return s;
-            }
-        }
-        return null;
+        SourceConstant sc = getSymbol(name);
+        if (sc == null) return null;
+        return sc.definingStatement;
+//        for(SourceFile f:sources.values()) {
+//            for(SourceStatement s:f.getStatements()) {
+//                if (s.label != null && s.label.name.equals(name)) return s;
+//            }
+//        }
+//        return null;
     }
     
 

@@ -79,18 +79,39 @@ public class SourceMacro {
                 config.error("Could not evaluate REPT argument " + args.get(0));
                 return null;
             }
+            String counterName = null;
+            List<String> reptArgNames = new ArrayList<>();
+            if (args.size()>=2 && args.get(1).type == Expression.EXPRESSION_SYMBOL) {
+                counterName = args.get(1).symbolName;
+                reptArgNames.add(counterName);
+            }
+                        
             String scope;
             if (macroCall.label != null) {
                 scope = macroCall.label.name;
             } else {
-                scope = config.preProcessor.nextMacroExpansionContextName();
+                // check if the label was in the previous statement:
+                SourceStatement previous = macroCall.source.getPreviousStatementTo(macroCall, code);
+                if (previous.source == macroCall.source && previous.label != null && previous.type == SourceStatement.STATEMENT_NONE) {
+                    scope = previous.label.name;
+                } else {
+                    scope = config.preProcessor.nextMacroExpansionContextName();                
+                }
             }
             for(int i = 0;i<reptNRepetitions_value;i++) {
+                List<Expression> reptArgs = new ArrayList<>();
+                reptArgs.add(Expression.constantExpression(i, config));
                 List<SourceLine> linesTmp = new ArrayList<>();
                 for(SourceLine sl:lines) {
                     // we create new instances, as we will modify them:
-                    linesTmp.add(new SourceLine(sl.line, sl.source, sl.lineNumber));
+                    if (counterName != null) {
+                        SourceLine sl2 = replaceMacroArg(sl, reptArgNames, reptArgs, macroCall);
+                        linesTmp.add(sl2);
+                    } else {
+                        linesTmp.add(new SourceLine(sl.line, sl.source, sl.lineNumber));
+                    }
                 }
+                lines2.add(new SourceLine(scope + "." + i + ":", macroCall.sl.source, macroCall.sl.lineNumber));                
                 scopeMacroExpansionLines(scope+"."+i, linesTmp, code, config);
                 lines2.addAll(linesTmp);
             }
@@ -137,28 +158,8 @@ public class SourceMacro {
                 }
 
                 for(SourceLine sl:lines) {
-                    String line2 = sl.line;
-                    List<String> tokens = Tokenizer.tokenizeIncludingBlanks(line2);
-                    line2 = "";
-
-                    String previous = null;
-                    for(String token:tokens) {
-                        if (previous != null && previous.equals("?") && Tokenizer.isSymbol(token)) {
-                            // variable name starting with "?":
-                            line2 = line2.substring(0, line2.length()-1);
-                            token = previous + token;
-                        }
-                        String newToken = token;
-                        for(int i = 0;i<argNames.size();i++) {
-                            if (token.equals(argNames.get(i))) {
-                                // we wrap it spaces, to prevent funny interaction of tokens, e.g., two "-" in a row forming a "--":
-                                newToken = " " + args.get(i).toString() + " ";
-                            }
-                        }
-                        line2 += newToken;
-                        previous = token;
-                    }
-                    lines2.add(new SourceLine(line2, sl.source, sl.lineNumber, macroCall));
+                    SourceLine sl2 = replaceMacroArg(sl, argNames, args, macroCall);
+                    lines2.add(sl2);
                 }                
             } else {
                 // this can only happen in sjasm:
@@ -175,7 +176,12 @@ public class SourceMacro {
             if (macroCall.label != null) {
                 scope = macroCall.label.name;
             } else {
-                scope = config.preProcessor.nextMacroExpansionContextName();
+                SourceStatement previous = macroCall.source.getPreviousStatementTo(macroCall, code);
+                if (previous.source == macroCall.source && previous.label != null && previous.type == SourceStatement.STATEMENT_NONE) {
+                    scope = previous.label.name;
+                } else {
+                    scope = config.preProcessor.nextMacroExpansionContextName();                
+                }
             }
 
             scopeMacroExpansionLines(scope, lines2, code, config);
@@ -184,58 +190,42 @@ public class SourceMacro {
         return me;
     }
 
+    
+    public SourceLine replaceMacroArg(SourceLine sl, List<String> names, List<Expression> args, SourceStatement macroCall)
+    {
+        String line2 = sl.line;
+        List<String> tokens = Tokenizer.tokenizeIncludingBlanks(line2);
+        line2 = "";
+
+        String previous = null;
+        for(String token:tokens) {
+            if (previous != null && previous.equals("?") && Tokenizer.isSymbol(token)) {
+                // variable name starting with "?":
+                line2 = line2.substring(0, line2.length()-1);
+                token = previous + token;
+            }
+            String newToken = token;
+            for(int i = 0;i<names.size();i++) {
+                if (token.equals(names.get(i))) {
+                    // we wrap it spaces, to prevent funny interaction of tokens, e.g., two "-" in a row forming a "--":
+                    newToken = " " + args.get(i).toString() + " ";
+                }
+            }
+            line2 += newToken;
+            previous = token;
+        }
+        return new SourceLine(line2, sl.source, sl.lineNumber, macroCall);
+    }
 
     
     public void scopeMacroExpansionLines(String scope, List<SourceLine> lines, CodeBase code, MDLConfig config)
     {
         if (!lines.isEmpty()) {
-//            System.out.println("scopeMacroExpansionLines.scope: " + scope);
             lines.get(0).labelPrefixToPush = scope + ".";
             
             SourceLine l2 = new SourceLine("", lines.get(0).source, lines.get(0).lineNumber);
             l2.labelPrefixToPop = scope + ".";            
             lines.add(l2);
         }
-        /*
-        List<String> macroDefinedLabels = new ArrayList<>();
-        for(SourceLine sl:lines) {
-            // Find if the macro defined a label, to properly scope it:
-            SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_NONE, sl, sl.source);
-            List<String> tokens = Tokenizer.tokenize(sl.line);
-            if (tokens != null) {
-                config.lineParser.parseLabel(tokens, sl, s, sl.source, code, false);
-            }
-            if (s.label != null) {
-                SourceConstant sc = code.getSymbol(s.label.name);
-                if (sc == null || !sc.resolveEagerly) {
-                    macroDefinedLabels.add(s.label.name);
-                }
-            }
-        }
-        
-        for(SourceLine sl:lines) {
-            for(String definedLabel:macroDefinedLabels) {
-                List<String> tokens = Tokenizer.tokenizeIncludingBlanks(sl.line);
-                if (!tokens.isEmpty()) {
-                    for(int i = 0;i<tokens.size();i++) {
-                        String token = tokens.get(i);
-                        String token2 = config.lineParser.getLabelPrefix() + token;
-                        if (token.equals(definedLabel)) {
-                            tokens.set(i, scope + "." + definedLabel);
-                        } else if (token2.equals(definedLabel)) {
-                            tokens.set(i, scope + "." + definedLabel);
-                        } else if (token.startsWith(definedLabel + ".")) {
-                            tokens.set(i, scope + "." + definedLabel + token.substring(definedLabel.length()));
-                        } else if (token2.startsWith(definedLabel + ".")) {
-                            tokens.set(i, scope + "." + definedLabel + token2.substring(definedLabel.length()));
-                        }
-                    }
-                    String reconstructedLine = "";
-                    for(String token:tokens) reconstructedLine += token;
-                    sl.line = reconstructedLine;
-                }
-            }
-        }
-        */
     }
 }

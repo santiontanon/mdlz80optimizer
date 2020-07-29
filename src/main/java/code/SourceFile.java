@@ -134,7 +134,7 @@ public class SourceFile {
                 }
                 SourceStatement jumpTargetStatement = null;
                 if (label != null && label.isLabel()) {
-                    jumpTargetStatement = label.s;
+                    jumpTargetStatement = label.definingStatement;
                 } else if (label != null) {
                     // not all next statements can be determined:
                     return null;
