@@ -723,7 +723,12 @@ public class SjasmDialect implements Dialect {
         
         if (macro.name.equals("repeat")) {
             if (args.isEmpty()) return null;
-            int iterations = args.get(0).evaluateToInteger(macroCall, code, false);
+            Number iterations_tmp = args.get(0).evaluate(macroCall, code, false);
+            if (iterations_tmp == null) {
+                config.error("Could not evaluate nmber of iterations when expanding macro in " + macroCall.sl);
+                return null;
+            }
+            int iterations = iterations_tmp.intValue();
 //            String scope;
 //            if (macroCall.label != null) {
 //                scope = macroCall.label.name;
