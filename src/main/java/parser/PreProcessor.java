@@ -114,7 +114,7 @@ public class PreProcessor {
     public boolean isMacro(String name)
     {
         if (getMacro(name, null) != null) return true;
-        if (dialectMacros.containsKey(name)) return true;
+        if (dialectMacros.containsKey(name.toLowerCase())) return true;
         return  (isMacroName(name, MACRO_REPT) ||
                  isMacroName(name, MACRO_IF) ||
                  isMacroName(name, MACRO_IFDEF));
@@ -124,8 +124,8 @@ public class PreProcessor {
     public boolean isMacroIncludingEnds(String name)
     {
         if (getMacro(name, null) != null) return true;
-        if (dialectMacros.containsKey(name)) return true;
-        if (dialectMacros.containsValue(name)) return true;
+        if (dialectMacros.containsKey(name.toLowerCase())) return true;
+        if (dialectMacros.containsValue(name.toLowerCase())) return true;
         return  (isMacroName(name, MACRO_REPT) ||
                  isMacroName(name, MACRO_IF) ||
                  isMacroName(name, MACRO_IFDEF) ||

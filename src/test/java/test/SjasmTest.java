@@ -45,6 +45,8 @@ public class SjasmTest {
                                                                           "data/dialecttests/sjasm-macro2-expected.asm")); }
     @Test public void test7() throws IOException { Assert.assertTrue(test("data/dialecttests/sjasm-macro3.asm",
                                                                           "data/dialecttests/sjasm-macro3-expected.asm")); }
+    @Test public void test8() throws IOException { Assert.assertTrue(test("data/dialecttests/sjasm-labels.asm",
+                                                                          "data/dialecttests/sjasm-labels-expected.asm")); }
 
     private boolean test(String inputFile, String expectedOutputFile) throws IOException
     {
@@ -77,7 +79,7 @@ public class SjasmTest {
             String line = lines.size() > i ? lines.get(i):"";
             String expectedLine = expectedLines.size() > i ? expectedLines.get(i):"";
             if (!line.equals(expectedLine)) {
-                System.out.println("Line " + i + " was expected to be:\n" + expectedLine + "\nbut was:\n" + line);
+                System.out.println("Line " + i + " was expected to be:\n'" + expectedLine + "'\nbut was:\n'" + line + "'");
                 return false;
             }
         }

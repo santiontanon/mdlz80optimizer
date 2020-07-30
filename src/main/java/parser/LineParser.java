@@ -274,9 +274,8 @@ public class LineParser {
                 }
                 return parseRestofTheLine(tokens, sl, s, source);
             }
-        } else if (canBeLabel(token)) {
-            if (sl.line.startsWith(token) && (tokens.size() == 1 || Tokenizer.isSingleLineComment(tokens.get(1)))
-                    && !config.preProcessor.isMacroIncludingEnds(token)) {
+        } else if (canBeLabel(token) && !config.preProcessor.isMacroIncludingEnds(token)) {
+            if (sl.line.startsWith(token) && (tokens.size() == 1 || Tokenizer.isSingleLineComment(tokens.get(1)))) {
                 // it is just a label without colon:
                 if (config.warningLabelWithoutColon) {
                     config.warn("Style suggestion", s.fileNameLineString(),
@@ -301,15 +300,12 @@ public class LineParser {
                 return parseRestofTheLine(tokens, sl, s, source);
             } else if (tokens.size() >= 2) {
                 boolean isLabel = false;
+                if (sl.line.startsWith(token)) isLabel = true;
                 for (String keyword : keywordsHintingALabel) {
                     if (isKeyword(tokens.get(1), keyword)) {
                         isLabel = true;
                         break;
                     }
-                }
-                if (allowNumberLabels && Tokenizer.isInteger(token) && sl.line.startsWith(token)) {
-                    // Line starts with a number label without colon:
-                    isLabel = true;
                 }
                 if (isLabel) {
                     if (config.warningLabelWithoutColon
