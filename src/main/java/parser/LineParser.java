@@ -90,15 +90,20 @@ public class LineParser {
     }
 
     public void pushLabelPrefix(String a_lp) {
-//        System.out.println("pushLabelPrefix: " + a_lp);
         labelPrefixStack.add(0, labelPrefix);
         labelPrefix = a_lp;
     }
 
     public void popLabelPrefix() {
-//        System.out.println("popLabelPrefix: back to " + labelPrefixStack.get(0));
         labelPrefix = labelPrefixStack.remove(0);
     }
+    
+    
+    public void clearPrefixStack() {
+        labelPrefixStack.clear();
+        labelPrefix = "";
+    }
+    
 
     public String getLabelPrefix() {
         return labelPrefix;
@@ -109,7 +114,6 @@ public class LineParser {
         if (allowNumberLabels && Tokenizer.isInteger(rawName)) {
             name = rawName;
         }
-//        System.out.println("newSymbolName: " + labelPrefix + "  +  " + rawName);
         if (config.dialectParser != null) {
             return config.dialectParser.newSymbolName(name, value);
         } else {

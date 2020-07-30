@@ -315,7 +315,9 @@ public class GlassDialect implements Dialect {
         // Assemble Macros:
         for(List<SourceMacro> l:config.preProcessor.macros.values()) {
             for(SourceMacro macro:l) {
+                config.lineParser.clearPrefixStack();
                 assembleMacro(macro, code);
+                config.lineParser.clearPrefixStack();
             }
         }   
         
@@ -425,6 +427,7 @@ public class GlassDialect implements Dialect {
 
         // Assemble the macro at address 0:
         boolean succeeded = true;
+        SourceFile f = new SourceFile(macro.definingStatement.source.fileName + ":macro(" + macro.name+")", null, null, config);
         try {
             // supress error messages when attempting to assemble a macro, as it might fail:
             config.logger.silence();
@@ -432,7 +435,6 @@ public class GlassDialect implements Dialect {
             List<SourceLine> lines = expansion.lines;
             PreProcessor preProcessor = new PreProcessor(config.preProcessor);
 
-            SourceFile f = new SourceFile(macro.definingStatement.source.fileName + ":macro(" + macro.name+")", null, null, config);
             int lineNumber = macro.definingStatement.sl.lineNumber;
             while(true) {
                 List<String> tokens = new ArrayList<>();
@@ -488,12 +490,6 @@ public class GlassDialect implements Dialect {
             }
             
             config.codeBaseParser.expandAllMacros(f, code);
-            
-//            config.info("\n------------- MACRO " + macro.name + " ----------------\n");
-//            for(SourceStatement s:f.getStatements()) {
-//                config.info(s.toString());
-//            }            
-            
         } catch (Exception e) {
             // we fail to evaluateToInteger the macro, but it's ok, some times it can happen
             succeeded = false;
@@ -501,7 +497,26 @@ public class GlassDialect implements Dialect {
         config.logger.resume();
 
         // this is a debug message, not a warning, as it can definitively happen if macros contain unresolved symbols:
-        if (!succeeded) config.debug("Glass: failed to assemble macro " + macro.name);
+        if (succeeded) {
+            // Add all the new symbols to the source:
+//            config.info("\n------------- MACRO " + macro.name + " ----------------\n");
+            for(SourceStatement s:f.getStatements()) {
+//                config.info(s.toString());
+                if (s.label != null &&
+                    !s.label.name.startsWith(config.preProcessor.unnamedMacroPrefix)) {
+                    Number value = s.label.getValue(code, true);
+                    if (value != null) {
+                        SourceStatement label_s = new SourceStatement(SourceStatement.STATEMENT_CONSTANT, macro.definingStatement.sl, macro.definingStatement.source);
+                        label_s.label = s.label;
+                        label_s.label.exp = Expression.constantExpression(value.intValue(), config);
+                        SourceFile label_f = macro.definingStatement.source;
+                        label_f.addStatement(0, label_s);
+                    }
+                }
+            }                        
+        } else {
+            config.debug("Glass: failed to assemble macro " + macro.name);
+        }
 
         return true;
     }    

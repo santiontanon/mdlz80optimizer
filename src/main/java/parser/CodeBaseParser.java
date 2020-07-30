@@ -13,7 +13,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import cl.MDLConfig;
 import code.CodeBase;
 import code.Expression;
-import code.SourceConstant;
 import code.SourceFile;
 import code.SourceStatement;
 import util.Resources;
@@ -44,19 +43,19 @@ public class CodeBaseParser {
             if (!config.dialectParser.performAnyPostParsingActions(code)) return false;
         }
         
-        // Expand all macros that were not expanded initially:
-        if (!expandAllMacros(code)) {
-            config.error("Problem expanding macros after loading all the source code!");
-            return false;
-        }
-        
         // Resolve local labels:
         for(SourceFile f:code.getSourceFiles()) {
             for(SourceStatement s:f.getStatements()) {
                 s.resolveLocalLabels(code);
             }
         }        
-
+        
+        // Expand all macros that were not expanded initially:
+        if (!expandAllMacros(code)) {
+            config.error("Problem expanding macros after loading all the source code!");
+            return false;
+        }
+        
         if (config.dialectParser != null) {
             if (!config.dialectParser.performAnyFinalActions(code)) return false;
         }
@@ -225,13 +224,16 @@ public class CodeBaseParser {
         int n_failed;
 
         do {
+            Pair<Integer,Integer> expanded;
             n_expanded = 0;
             n_failed = 0;
             for (SourceFile f : l) {
-                Pair<Integer,Integer> expanded = expandAllMacros(f, code);
-                if (expanded == null) return false;
-                n_expanded += expanded.getLeft();
-                n_failed += expanded.getRight();
+                do{
+                    expanded = expandAllMacros(f, code);
+                    if (expanded == null) return false;
+                    n_expanded += expanded.getLeft();
+                    n_failed += expanded.getRight();
+                } while(expanded.getLeft() != 0);
             }
             config.debug("expandAllMacros: " + n_expanded + " / " + (n_expanded+n_failed));
             if (n_expanded == 0 && n_failed > 0) {
@@ -275,7 +277,7 @@ public class CodeBaseParser {
                 // We need to reset the addresses, as when we expand a macro, these can all change!
                 code.resetAddresses();
 
-                // Parse the new lines (which could, potentially trigger other macros!):
+                // Parse the new lines (which could, potentially contain other macros, to be expanded later):
                 while(true) {
                     List<String> tokens = new ArrayList<>();
                     Pair<SourceLine, Integer> tmp = getNextLine(null, f, s_macro.sl.lineNumber, tokens);
@@ -285,7 +287,7 @@ public class CodeBaseParser {
                             SourceLine macroLine = macro.lines.iterator().next(); // (first macro line)
                             config.error(
                                     "File " + f.fileName + " ended while inside a macro definition of \"" + macro.name + "\" "
-                                    + "at #" + macroLine.lineNumber + ": " + macroLine.line);
+                                    + "at " + macroLine);
                             return null;
                         }
                         break;
@@ -307,7 +309,8 @@ public class CodeBaseParser {
                         List<SourceStatement> l = config.lineParser.parse(tokens, sl, f, code, config);
                         if (l == null) return null;
                         for(SourceStatement s:l) {
-                            List<SourceStatement> l3 = config.preProcessor.handleStatement(sl, s, f, code, true);
+                            // only expand one macro (that's why parameter is "n_expanded == 0")
+                            List<SourceStatement> l3 = config.preProcessor.handleStatement(sl, s, f, code, n_expanded == 0);
                             if (l3 == null) {
                                 f.addStatement(insertionPoint, s);
                                 insertionPoint++;

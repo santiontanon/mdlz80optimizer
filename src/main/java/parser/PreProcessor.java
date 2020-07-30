@@ -9,6 +9,7 @@ import java.util.List;
 
 import cl.MDLConfig;
 import code.CodeBase;
+import code.SourceConstant;
 import code.SourceFile;
 import code.SourceStatement;
 import java.util.HashMap;
@@ -27,6 +28,8 @@ public class PreProcessor {
     public final String MACRO_IFDEF = "ifdef";
     public final String MACRO_ELSE = "else";
     public final String MACRO_ENDIF = "endif";
+    
+    public final String unnamedMacroPrefix = "___expanded_macro___";
     
     public static class PreProcessorFileState {
         // current Macro we are parsing (should be null at the end of parsing a file):
@@ -145,6 +148,20 @@ public class PreProcessor {
         }
     }
 
+    
+    SourceConstant macroCallLabel(SourceStatement macroCall, CodeBase code)
+    {
+        if (macroCall.label != null) {
+            return macroCall.label;
+//        } else {
+//            SourceStatement previous = macroCall.source.getPreviousStatementTo(macroCall, code);
+//            if (previous.source == macroCall.source && previous.label != null && previous.type == SourceStatement.STATEMENT_NONE) {
+//                return previous.label;
+//            }
+        }
+        return null;
+    }
+    
 
     // Since the statements to be added might have to be added somewhere in the middle of a file, when expanding macros at the very end of parsing,
     // we cannot insert them directly here. So, we just return a list of statements to be inserted wherever necessary by the calling code:
@@ -159,6 +176,8 @@ public class PreProcessor {
                     SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_MACROCALL, sl, f);
                     s.macroCallMacro = m;
                     s.macroCallArguments = m.preDefinedMacroArgs;
+                    s.label = macroCallLabel(m.definingStatement, code);
+                    m.definingStatement = s;
                     newStatements.add(s);
                     currentState.currentMacro = null;
 
@@ -170,6 +189,8 @@ public class PreProcessor {
                     SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_MACROCALL, sl, f);
                     s.macroCallMacro = m;
                     s.macroCallArguments = m.preDefinedMacroArgs;
+                    s.label = macroCallLabel(m.definingStatement, code);
+                    m.definingStatement = s;
                     newStatements.add(s);
                     currentState.currentMacro = null;                    
                 } else {
@@ -188,6 +209,8 @@ public class PreProcessor {
                     SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_MACROCALL, sl, f);
                     s.macroCallMacro = m;
                     s.macroCallArguments = m.preDefinedMacroArgs;
+                    s.label = macroCallLabel(m.definingStatement, code);
+                    m.definingStatement = s;
                     newStatements.add(s);
                     currentState.currentMacro = null;
                 } else {
@@ -204,6 +227,8 @@ public class PreProcessor {
                     SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_MACROCALL, sl, f);
                     s.macroCallMacro = m;
                     s.macroCallArguments = m.preDefinedMacroArgs;
+                    s.label = macroCallLabel(m.definingStatement, code);
+                    m.definingStatement = s;
                     newStatements.add(s);
                     currentState.currentMacro = null;
                 } else {
@@ -238,6 +263,7 @@ public class PreProcessor {
                 SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_MACROCALL, sl, f);
                 s.macroCallMacro = m;
                 s.macroCallArguments = m.preDefinedMacroArgs;
+                s.label = macroCallLabel(m.definingStatement, code);
                 newStatements.add(s);
                 currentState.currentMacro = null;
             } else {
@@ -390,7 +416,7 @@ public class PreProcessor {
     public String nextMacroExpansionContextName()
     {
         macroExpansionCounter++;
-        return "___expanded_macro___" + macroExpansionCounter;
+        return unnamedMacroPrefix + macroExpansionCounter;
     }
 
 }

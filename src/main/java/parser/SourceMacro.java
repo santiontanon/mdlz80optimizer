@@ -209,6 +209,12 @@ public class SourceMacro {
                 if (token.equals(names.get(i))) {
                     // we wrap it spaces, to prevent funny interaction of tokens, e.g., two "-" in a row forming a "--":
                     newToken = " " + args.get(i).toString() + " ";
+                } else {
+                    // special case for Glass when we have something like "?parametername.field":
+                    if (names.get(i).startsWith("?") && token.startsWith(names.get(i)) &&
+                        token.charAt(names.get(i).length()) == '.') {
+                        newToken = " " + args.get(i).toString() + token.substring(names.get(i).length());
+                    }
                 }
             }
             line2 += newToken;
