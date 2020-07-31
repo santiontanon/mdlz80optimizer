@@ -523,6 +523,12 @@ public class LineParser {
             config.error("parseEqu: Cannot parse line " + sl);
             return false;
         }
+
+        // remove unnecessary parenthesis:
+        while(exp.type == Expression.EXPRESSION_PARENTHESIS) {
+            exp = exp.args.get(0);
+        }
+        
         s.type = SourceStatement.STATEMENT_CONSTANT;
         s.label.exp = exp;
         return parseRestofTheLine(tokens, sl, s, source);

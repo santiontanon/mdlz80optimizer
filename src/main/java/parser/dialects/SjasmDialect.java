@@ -193,7 +193,7 @@ public class SjasmDialect implements Dialect {
         if (tokens.size() >= 1 && tokens.get(0).equalsIgnoreCase("end")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("map")) return true;
         if (tokens.size() >= 1 && tokens.get(0).equalsIgnoreCase("endmap")) return true;
-        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("#")) return true;
+        if (tokens.size() >= 1 && tokens.get(0).startsWith("#")) return true; 
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("field")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("assert")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("incdir")) return true;
@@ -380,9 +380,15 @@ public class SjasmDialect implements Dialect {
             mapCounter = mapCounterStack.remove(0);
             if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
         }
-        if (tokens.size() >= 2 &&
-            (tokens.get(0).equalsIgnoreCase("#") || tokens.get(0).equalsIgnoreCase("field"))) {
-            tokens.remove(0);
+        if ((tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("field")) ||
+            tokens.get(0).startsWith("#")) {
+            if (tokens.get(0).startsWith("#") && tokens.get(0).length() > 1) {
+                // this is a "#" plus a number attached together inside of a "map" group...
+                config.warn(tokens.get(0) + " is ambiguous syntax, please add a space between the # token and the field size in "+tokens.get(0)+" to differentiate it from a hex constant.");
+                tokens.set(0, tokens.get(0).substring(1));
+            } else {
+                tokens.remove(0);
+            }
             Expression exp = config.expressionParser.parse(tokens, s, code);
             if (exp == null) {
                 config.error("Cannot parse expression at " + sl);
@@ -395,7 +401,7 @@ public class SjasmDialect implements Dialect {
             if (struct != null) {
                 s.label.exp = exp;
             } else {
-                s.label.exp = Expression.constantExpression(mapCounter, config);
+                s.label.exp = Expression.constantExpression(mapCounter, true, config);
             }
             s.type = SourceStatement.STATEMENT_CONSTANT;
             mapCounter += exp.evaluateToInteger(s, code, false);
