@@ -835,33 +835,29 @@ public class Expression {
         }
     }
     
-    public void resolveLocalLabels(String labelPrefix, SourceStatement s, CodeBase code)
+    public boolean resolveLocalLabels(String labelPrefix, SourceStatement s, CodeBase code)
     {
         if (type == EXPRESSION_SYMBOL) {
-            if (symbolName.equals(CodeBase.CURRENT_ADDRESS)) return;
+            if (symbolName.equals(CodeBase.CURRENT_ADDRESS)) return true;
             SourceConstant sc = code.getSymbol(labelPrefix + symbolName);
             if (sc != null) {
                 symbolName = sc.name;
+                return true;
             } else if (!labelPrefix.isEmpty()) {
                 int idx = labelPrefix.substring(0,labelPrefix.length()-1).lastIndexOf(".");
                 if (idx >= 0) {
-                    resolveLocalLabels(labelPrefix.substring(0, idx+1), s, code);
+                    return resolveLocalLabels(labelPrefix.substring(0, idx+1), s, code);
                 }
             }
-//            SourceConstant sc = code.getSymbol(symbolName);
-//            if (sc == null) {
-//                sc = code.getSymbol(labelPrefix + symbolName);
-//                if (sc != null) {
-//                    symbolName = sc.name;
-//                } else {
-////                    config.warn("Cannot resolve label: " + symbolName + " in " + s.sl);
-//                }
-//            }
+            return false;
         } else if (args != null) {
+            boolean allResolved = true;
             for(Expression exp:args) {
-                exp.resolveLocalLabels(labelPrefix, s, code);
+                if (!exp.resolveLocalLabels(labelPrefix, s, code)) allResolved = false;
             }
+            return allResolved;
         }
+        return true;
     }
     
 

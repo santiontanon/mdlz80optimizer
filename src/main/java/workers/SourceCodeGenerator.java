@@ -93,6 +93,11 @@ public class SourceCodeGenerator implements MDLWorker {
     {
         for (SourceStatement ss:sf.getStatements()) {
             if (ss.type == SourceStatement.STATEMENT_INCLUDE) {
+                if (ss.label != null) {
+                    // make sure we don't lose the label:
+                    sb.append(ss.label.name);
+                    sb.append(":\n");
+                }
                 sourceFileString(ss.include, code, sb);
             } else if (ss.type == SourceStatement.STATEMENT_INCBIN && expandIncbin) {
                 int skip = 0;

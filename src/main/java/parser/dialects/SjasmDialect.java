@@ -185,7 +185,7 @@ public class SjasmDialect implements Dialect {
         config.expressionParser.dialectFunctionsSingleArgumentNoParenthesis.add("high");
         config.expressionParser.dialectFunctionsSingleArgumentNoParenthesis.add("low");
         config.expressionParser.dialectFunctionsSingleArgumentNoParenthesis.add(":");
-        
+                
         // We define it as a dialectMacro instead of as a synonym of "REPT", as it has some special syntax for
         // indicating the current iteration
         config.preProcessor.dialectMacros.put("repeat", "endrepeat");

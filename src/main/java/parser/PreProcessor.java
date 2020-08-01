@@ -29,7 +29,7 @@ public class PreProcessor {
     public final String MACRO_ELSE = "else";
     public final String MACRO_ENDIF = "endif";
     
-    public final String unnamedMacroPrefix = "___expanded_macro___";
+    public String unnamedMacroPrefix = "___expanded_macro___";
     
     public static class PreProcessorFileState {
         // current Macro we are parsing (should be null at the end of parsing a file):
@@ -412,11 +412,10 @@ public class PreProcessor {
         return true;
     }
 
-
-    public String nextMacroExpansionContextName()
+    
+    public String nextMacroExpansionContextName(String labelPrefix)
     {
         macroExpansionCounter++;
-        return unnamedMacroPrefix + macroExpansionCounter;
+        return labelPrefix + unnamedMacroPrefix + macroExpansionCounter;
     }
-
 }
