@@ -99,7 +99,7 @@ public class DotGenerator implements MDLWorker {
                     if (config.includeBinariesInAnalysis) {
                         sb.append(nodeNames.get(f.fileName));
                         sb.append(" -> ");
-                        sb.append(nodeNames.get(s.incbin));
+                        sb.append(nodeNames.get(s.incbin.getName()));
                         sb.append("\n");
                     }
                 }
