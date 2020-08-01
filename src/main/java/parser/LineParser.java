@@ -110,15 +110,15 @@ public class LineParser {
     }
 
     public String newSymbolName(String rawName, Expression value) {
-        String name = labelPrefix + rawName;
-        if (allowNumberLabels && Tokenizer.isInteger(rawName)) {
-            name = rawName;
-        }
+        String name = rawName;
         if (config.dialectParser != null) {
-            return config.dialectParser.newSymbolName(name, value);
-        } else {
-            return name;
+            name = config.dialectParser.newSymbolName(name, value);
         }
+
+        if (!allowNumberLabels || !Tokenizer.isInteger(name)) {
+            name = labelPrefix + name;
+        }
+        return name;
     }
 
     public List<SourceStatement> parse(List<String> tokens, SourceLine sl,

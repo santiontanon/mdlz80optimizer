@@ -154,6 +154,8 @@ public class SjasmDialect implements Dialect {
 
     List<CodeBlock> codeBlocks = new ArrayList<>();
     
+    List<String> modules = new ArrayList<>();
+    
     
     public SjasmDialect(MDLConfig a_config) {
         config = a_config;
@@ -414,6 +416,8 @@ public class SjasmDialect implements Dialect {
         if (tokens.size() >= 3 && tokens.get(0).equalsIgnoreCase("[")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase(":=")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("align")) return true;
+        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("module")) return true;
+        if (tokens.size() >= 1 && tokens.get(0).equalsIgnoreCase("endmodule")) return true;
         for(SjasmStruct s:structs) {
             if (tokens.get(0).equals(s.name)) return true;
         }
@@ -436,7 +440,10 @@ public class SjasmDialect implements Dialect {
                 || name.equalsIgnoreCase("incdir")
                 || name.equalsIgnoreCase("output")
                 || name.equalsIgnoreCase("defpage")
-                || name.equalsIgnoreCase("code")) {
+                || name.equalsIgnoreCase("code")
+                || name.equalsIgnoreCase("align")
+                || name.equalsIgnoreCase("module")
+                || name.equalsIgnoreCase("endmodule")) {
             return null;
         }
         if (name.startsWith(".")) {
@@ -450,11 +457,16 @@ public class SjasmDialect implements Dialect {
             reusableLabelCounts.put(name, count+1);
             name =  "_sjasm_reusable_" + name + "_" + count;
         } else {
-            // When a name has "CURRENT_ADDRESS" as its value, it means it'startStatement a label.
-            // If it does not start by ".", then it'startStatement an absolute label:
+            // When a name has "CURRENT_ADDRESS" as its value, it means it's a label.
+            // If it does not start by ".", then it's an absolute label:
             if (value != null &&
                 value.type == Expression.EXPRESSION_SYMBOL &&
                 value.symbolName.equalsIgnoreCase(CodeBase.CURRENT_ADDRESS)) {
+                
+//                if (!modules.isEmpty()) {
+//                    name = modules.get(0) + "." + name;
+//                }
+                
                 lastAbsoluteLabel = name;
             }
         }
@@ -482,7 +494,7 @@ public class SjasmDialect implements Dialect {
             name = name.substring(0, name.length()-1);
             int count = reusableLabelCounts.get(name);
             return "_sjasm_reusable_" + name + "_" + (count-1);
-        } else {
+        } else {            
             return name;
         }
     }
@@ -513,6 +525,7 @@ public class SjasmDialect implements Dialect {
             s.label = c;
             if (!code.addSymbol(c.name, c)) return null;
             if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
+            return null;
         }
         if (tokens.size() >= 1 && tokens.get(0).equalsIgnoreCase("ends")) {
             tokens.remove(0);
@@ -567,11 +580,13 @@ public class SjasmDialect implements Dialect {
             config.lineParser.popLabelPrefix();
             struct = null;
             if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
+            return null;
         }
         if (tokens.size() >= 1 && tokens.get(0).equalsIgnoreCase("end")) {
             tokens.remove(0);
             // just ignore
             if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
+            return null;
         }
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("map")) {
             tokens.remove(0);
@@ -583,11 +598,13 @@ public class SjasmDialect implements Dialect {
             mapCounterStack.add(0, mapCounter);
             mapCounter = exp.evaluateToInteger(s, code, false);
             if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
+            return null;
         }
         if (tokens.size() >= 1 && tokens.get(0).equalsIgnoreCase("endmap")) {
             tokens.remove(0);
             mapCounter = mapCounterStack.remove(0);
             if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
+            return null;
         }
         if ((tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("field")) ||
             tokens.get(0).startsWith("#")) {
@@ -615,6 +632,7 @@ public class SjasmDialect implements Dialect {
             s.type = SourceStatement.STATEMENT_CONSTANT;
             mapCounter += exp.evaluateToInteger(s, code, false);
             if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
+            return null;
         }
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("assert")) {
             tokens.remove(0);
@@ -629,6 +647,7 @@ public class SjasmDialect implements Dialect {
                 return null;
             }
             if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
+            return null;
         }
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("incdir")) {
             tokens.remove(0);
@@ -646,6 +665,7 @@ public class SjasmDialect implements Dialect {
             config.includeDirectories.add(path);
             
             if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
+            return null;
         }
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("output")) {
             // Just ignore ...
@@ -656,6 +676,7 @@ public class SjasmDialect implements Dialect {
             }
             
             if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
+            return null;
         }
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("defpage")) {
             tokens.remove(0);
@@ -686,6 +707,7 @@ public class SjasmDialect implements Dialect {
             CodePage page = new CodePage(s, pageStartExp, pageSizeExp);
             pages.put(pageNumber, page);
             if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
+            return null;
         }
         if (tokens.size() >= 1 && tokens.get(0).equalsIgnoreCase("code")) {
             tokens.remove(0);
@@ -718,6 +740,7 @@ public class SjasmDialect implements Dialect {
             // ignore (but still add the statement, so we know where the codeblock starts)
             s.type = SourceStatement.STATEMENT_NONE;
             if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
+            return null;
         }
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("page")) {
             tokens.remove(0);
@@ -736,6 +759,7 @@ public class SjasmDialect implements Dialect {
             // parse it as an "org"
             s.type = SourceStatement.STATEMENT_NONE;
             if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
+            return null;
         }        
         if (tokens.size() >= 3 && tokens.get(0).equalsIgnoreCase("[")) {
             tokens.remove(0);
@@ -797,6 +821,7 @@ public class SjasmDialect implements Dialect {
             }
             s.data = newData;
             if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
+            return null;
         }        
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("align")) {
             tokens.remove(0);
@@ -822,7 +847,52 @@ public class SjasmDialect implements Dialect {
                         Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, code, config), config);
             s.space_value = Expression.constantExpression(0, config);
             if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
+            return null;
         }   
+        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("module")) {
+            tokens.remove(0);
+            String moduleName = tokens.remove(0);
+            
+            modules.add(0, moduleName);
+            config.lineParser.pushLabelPrefix(moduleName + ".");
+            
+            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
+            return null;
+        }
+        if (tokens.size() >= 1 && tokens.get(0).equalsIgnoreCase("endmodule")) {
+            tokens.remove(0);
+            String moduleName = null;
+            if (tokens.size() >= 1) {
+                moduleName = tokens.remove(0);
+            }
+            
+            if (moduleName == null) {
+                modules.remove(0);
+                config.lineParser.popLabelPrefix();
+            } else {
+                boolean found = false;
+                while(!modules.isEmpty()) {
+                    if (modules.get(0).equals(moduleName)) {
+                        modules.remove(0);
+                        config.lineParser.popLabelPrefix();
+                        found = true;
+                        break;
+                    } else {
+                        modules.remove(0);
+                        config.lineParser.popLabelPrefix();
+                    }
+                }
+                if (!found) {
+                    config.error("Cannot close unexistent module at " + sl);
+                    return null;
+                }
+            }
+            
+            System.out.println("modules after endmodule: " + modules);
+            
+            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
+            return null;
+        }
         
         // struct definitions:
         for(SjasmStruct st:structs) {
@@ -877,56 +947,16 @@ public class SjasmDialect implements Dialect {
             }
         }
         
-        
         return null;
     }
 
-    
-//    private boolean parseCPUOpInternal(List<String> tokens, List<SourceStatement> l, SourceLine sl, SourceFile source, CodeBase code)
-//    {
-//        SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_CPUOP, sl, source);
-//        if (!config.lineParser.parseCPUOpInternal(tokens, s, sl, source, code)) return false;
-//        l.add(s);
-//        return true;
-//    }
-    
-    
+
     @Override
     public boolean parseFakeCPUOps(List<String> tokens, SourceLine sl, List<SourceStatement> l, SourceFile source, CodeBase code) 
     {
         // This function only adds the additional instructions beyond the first one. So, it will leave in "tokens", the set of
         // tokens necessary for MDL's regular parser to still parse the first op
         SourceStatement s = l.get(0);
-
-        /*
-        for(Pair<List<String>, List<List<String>>> fake: fakeInstructions) {
-            if (tokens.size()>=fake.getLeft().size()) {
-                boolean found = true;
-                for(int i = 0;i<fake.getLeft().size();i++) {
-                    String fakeToken = fake.getLeft().get(i);
-                    if (fakeToken.equals("nn")) {
-                        // 
-                    } else {
-                        if (!tokens.get(i).equalsIgnoreCase(fakeToken)) {
-                            found = false;
-                            break;
-                        }
-                    }
-                }
-                if (found) {
-                    for(int i = 0;i<fake.getLeft().size();i++) tokens.remove(0);
-                    tokens.addAll(0, fake.getRight().get(0));
-                    for(int i = 1;i<fake.getRight().size();i++) {
-                        if (!parseCPUOpInternal(fake.getRight().get(i), l, sl, source, code)) return false;
-                    }
-                    if (config.warningUnofficialOps) {
-                        config.warn("Unofficial op (fake instruction) used in " + sl);
-                    }
-                    return true;
-                }
-            }
-        }
-        */
         
         // see if there is a pre/post increment of a registerpair:
         for (int i = 0; i < tokens.size(); i++) {
