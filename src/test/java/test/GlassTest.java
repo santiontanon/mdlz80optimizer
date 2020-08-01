@@ -31,12 +31,12 @@ public class GlassTest {
         codeBase = new CodeBase(mdlConfig);
     }
 
-    @Test public void test1() throws IOException { Assert.assertTrue(test("data/dialecttests/glass-irp.asm",
-                                                                          "data/dialecttests/glass-irp-expected.asm")); }
-    @Test public void test2() throws IOException { Assert.assertTrue(test("data/dialecttests/glass-proc.asm",
-                                                                          "data/dialecttests/glass-proc-expected.asm")); }
-    @Test public void test3() throws IOException { Assert.assertTrue(test("data/dialecttests/glass-macroproc.asm",
-                                                                          "data/dialecttests/glass-macroproc-expected.asm")); }
+    @Test public void test1() throws IOException { Assert.assertTrue(test("data/generationtests/glass-irp.asm",
+                                                                          "data/generationtests/glass-irp-expected.asm")); }
+    @Test public void test2() throws IOException { Assert.assertTrue(test("data/generationtests/glass-proc.asm",
+                                                                          "data/generationtests/glass-proc-expected.asm")); }
+    @Test public void test3() throws IOException { Assert.assertTrue(test("data/generationtests/glass-macroproc.asm",
+                                                                          "data/generationtests/glass-macroproc-expected.asm")); }
 
     private boolean test(String inputFile, String expectedOutputFile) throws IOException
     {

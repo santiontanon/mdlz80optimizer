@@ -31,26 +31,26 @@ public class SjasmTest {
         codeBase = new CodeBase(mdlConfig);
     }
 
-    @Test public void test1() throws IOException { Assert.assertTrue(test("data/dialecttests/sjasm-rept1.asm",
-                                                                          "data/dialecttests/sjasm-rept1-expected.asm")); }
-    @Test public void test2() throws IOException { Assert.assertTrue(test("data/dialecttests/sjasm-macro.asm",
-                                                                          "data/dialecttests/sjasm-macro-expected.asm")); }
-    @Test public void test3() throws IOException { Assert.assertTrue(test("data/dialecttests/sjasm-rept2.asm",
-                                                                          "data/dialecttests/sjasm-rept2-expected.asm")); }
-    @Test public void test4() throws IOException { Assert.assertTrue(test("data/dialecttests/sjasm-repeat1.asm",
-                                                                          "data/dialecttests/sjasm-repeat1-expected.asm")); }
-    @Test public void test5() throws IOException { Assert.assertTrue(test("data/dialecttests/sjasm-repeat2.asm",
-                                                                          "data/dialecttests/sjasm-repeat2-expected.asm")); }
-    @Test public void test6() throws IOException { Assert.assertTrue(test("data/dialecttests/sjasm-macro2.asm",
-                                                                          "data/dialecttests/sjasm-macro2-expected.asm")); }
-    @Test public void test7() throws IOException { Assert.assertTrue(test("data/dialecttests/sjasm-macro3.asm",
-                                                                          "data/dialecttests/sjasm-macro3-expected.asm")); }
-    @Test public void test8() throws IOException { Assert.assertTrue(test("data/dialecttests/sjasm-labels.asm",
-                                                                          "data/dialecttests/sjasm-labels-expected.asm")); }
-    @Test public void test9() throws IOException { Assert.assertTrue(test("data/dialecttests/sjasm-mixed.asm",
-                                                                          "data/dialecttests/sjasm-mixed-expected.asm")); }
-    @Test public void test10() throws IOException { Assert.assertTrue(test("data/dialecttests/sjasm-modules.asm",
-                                                                           "data/dialecttests/sjasm-modules-expected.asm")); }
+    @Test public void test1() throws IOException { Assert.assertTrue(test("data/generationtests/sjasm-rept1.asm",
+                                                                          "data/generationtests/sjasm-rept1-expected.asm")); }
+    @Test public void test2() throws IOException { Assert.assertTrue(test("data/generationtests/sjasm-macro.asm",
+                                                                          "data/generationtests/sjasm-macro-expected.asm")); }
+    @Test public void test3() throws IOException { Assert.assertTrue(test("data/generationtests/sjasm-rept2.asm",
+                                                                          "data/generationtests/sjasm-rept2-expected.asm")); }
+    @Test public void test4() throws IOException { Assert.assertTrue(test("data/generationtests/sjasm-repeat1.asm",
+                                                                          "data/generationtests/sjasm-repeat1-expected.asm")); }
+    @Test public void test5() throws IOException { Assert.assertTrue(test("data/generationtests/sjasm-repeat2.asm",
+                                                                          "data/generationtests/sjasm-repeat2-expected.asm")); }
+    @Test public void test6() throws IOException { Assert.assertTrue(test("data/generationtests/sjasm-macro2.asm",
+                                                                          "data/generationtests/sjasm-macro2-expected.asm")); }
+    @Test public void test7() throws IOException { Assert.assertTrue(test("data/generationtests/sjasm-macro3.asm",
+                                                                          "data/generationtests/sjasm-macro3-expected.asm")); }
+    @Test public void test8() throws IOException { Assert.assertTrue(test("data/generationtests/sjasm-labels.asm",
+                                                                          "data/generationtests/sjasm-labels-expected.asm")); }
+    @Test public void test9() throws IOException { Assert.assertTrue(test("data/generationtests/sjasm-mixed.asm",
+                                                                          "data/generationtests/sjasm-mixed-expected.asm")); }
+    @Test public void test10() throws IOException { Assert.assertTrue(test("data/generationtests/sjasm-modules.asm",
+                                                                           "data/generationtests/sjasm-modules-expected.asm")); }
 
     private boolean test(String inputFile, String expectedOutputFile) throws IOException
     {
