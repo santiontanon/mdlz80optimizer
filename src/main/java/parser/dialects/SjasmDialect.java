@@ -168,6 +168,7 @@ public class SjasmDialect implements Dialect {
         config.lineParser.addKeywordSynonym("defw", config.lineParser.KEYWORD_DW);
         config.lineParser.addKeywordSynonym("dword", config.lineParser.KEYWORD_DD);
         config.lineParser.addKeywordSynonym("=", config.lineParser.KEYWORD_EQU);
+        config.lineParser.addKeywordSynonym(".equ", config.lineParser.KEYWORD_EQU);
         
         config.preProcessor.macroSynonyms.put("endmacro", config.preProcessor.MACRO_ENDM);
         
@@ -888,8 +889,6 @@ public class SjasmDialect implements Dialect {
                 }
             }
             
-            System.out.println("modules after endmodule: " + modules);
-            
             if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
             return null;
         }
@@ -957,6 +956,48 @@ public class SjasmDialect implements Dialect {
         // This function only adds the additional instructions beyond the first one. So, it will leave in "tokens", the set of
         // tokens necessary for MDL's regular parser to still parse the first op
         SourceStatement s = l.get(0);
+        
+        if (tokens.size()>=4 && 
+            (tokens.get(0).equalsIgnoreCase("push") || tokens.get(0).equalsIgnoreCase("pop"))) {
+            // instructions of the style: push bc,de,hl
+            List<String> regpairs = new ArrayList<>();
+            boolean process = true;
+            int idx = 1;
+            while(true) {
+                if (tokens.size()<=idx) {
+                    process = false;
+                    break;
+                }
+                String regpair = tokens.get(idx);
+                if (!code.isRegisterPair(regpair)) {
+                    process = false;
+                    break;
+                }
+                regpairs.add(regpair);
+                idx++;
+                if (tokens.size()<=idx) break;
+                if (Tokenizer.isSingleLineComment(tokens.get(idx))) break;
+                if (!tokens.get(idx).equals(",")) {
+                    process = false;
+                    break;
+                }
+                idx++;
+            }
+            if (process && regpairs.size()>1) {
+                int toremove = (regpairs.size()-1)*2;
+                for(int i = 0;i<toremove;i++) tokens.remove(2);
+                for(int i = 1;i<regpairs.size();i++) {
+                    SourceStatement auxiliaryS = new SourceStatement(SourceStatement.STATEMENT_CPUOP, sl, source);
+                    List<Expression> auxiliaryArguments = new ArrayList<>();
+                    auxiliaryArguments.add(Expression.symbolExpression(regpairs.get(i), code, config));
+                    List<CPUOp> op_l = config.opParser.parseOp(tokens.get(0), auxiliaryArguments, s, code);
+                    if (op_l == null || op_l.size() != 1) return false;
+                    auxiliaryS.op = op_l.get(0);
+                    l.add(auxiliaryS);                    
+                }
+                return true;
+            }
+        }
         
         // see if there is a pre/post increment of a registerpair:
         for (int i = 0; i < tokens.size(); i++) {

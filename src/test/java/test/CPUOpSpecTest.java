@@ -43,6 +43,7 @@ public class CPUOpSpecTest {
     @Test public void test12() throws IOException { Assert.assertEquals("push hl\npop ix", test("ld ix, hl", "sjasm")); }
     @Test public void test13() throws IOException { Assert.assertEquals("ld c, (ix + (3 + 4))\nld b, (ix + (3 + 4) + 1)", test("ld bc,(ix+(3+4))", "sjasm")); }
     @Test public void test14() throws IOException { Assert.assertEquals("sbc a, (ix + 1)", test("sbc (ix+1)", null)); }
+    @Test public void test15() throws IOException { Assert.assertEquals("pop bc\npop af\npop hl", test("pop bc,af,hl", "sjasm")); }
     
     private String test(String opString, String dialect) throws IOException
     {
