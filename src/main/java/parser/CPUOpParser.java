@@ -37,6 +37,17 @@ public class CPUOpParser {
             opSpecHash.get(spec.getName()).add(spec);
         }
     }
+    
+    
+    public void addOpSpec(CPUOpSpec fake)
+    {
+        List<CPUOpSpec> l = opSpecHash.get(fake.opName);
+        if (l == null) {
+            l = new ArrayList<>();
+            opSpecHash.put(fake.opName, l);
+        }
+        l.add(fake);
+    }
 
 
     public boolean isOpName(String name)
@@ -53,13 +64,14 @@ public class CPUOpParser {
     }
 
 
-    public CPUOp parseOp(String a_op, List<Expression> a_args, SourceStatement s, CodeBase code)
+    public List<CPUOp> parseOp(String a_op, List<Expression> a_args, SourceStatement s, CodeBase code)
     {
-        CPUOp op;
         List<CPUOpSpec> candidates = getOpSpecs(a_op);
         for(CPUOpSpec opSpec:candidates) {
-            op = parseOp(a_op, opSpec, a_args, s, code);
-            if (op != null) return op;
+            List<CPUOp> l = parseOp(a_op, opSpec, a_args, s, code);
+            if (l != null) {
+                return l;
+            }
         }
         if (candidates != null && !candidates.isEmpty()) {
             // try to see if any of the arguments was a constant with parenthesis that had been interpreted
@@ -75,8 +87,8 @@ public class CPUOpParser {
             if (anyChange) {
                 // try again!
                 for(CPUOpSpec opSpec:candidates) {
-                    op = parseOp(a_op, opSpec, a_args, s, code);
-                    if (op != null) return op;
+                    List<CPUOp> l = parseOp(a_op, opSpec, a_args, s, code);
+                    if (l != null) return l;
                 }
             }
         }
@@ -85,7 +97,7 @@ public class CPUOpParser {
     }
 
 
-    public CPUOp parseOp(String a_op, CPUOpSpec spec, List<Expression> a_args, SourceStatement s, CodeBase code)
+    public List<CPUOp> parseOp(String a_op, CPUOpSpec spec, List<Expression> a_args, SourceStatement s, CodeBase code)
     {
         if (!a_op.equalsIgnoreCase(spec.opName)) return null;
         if (spec.args.size() != a_args.size()) return null;
@@ -99,6 +111,53 @@ public class CPUOpParser {
             config.warn("Style suggestion", s.fileNameLineString(),
                     "Prefer using 'jp reg' rather than the confusing z80 'jp (reg)' syntax.");
         }
+        
+        if (spec.fakeInstructionEquivalent != null) {
+            // it's a fake instruction!
+            List<CPUOp> l = new ArrayList<>();
+            
+            for(List<String> tokens_raw:spec.fakeInstructionEquivalent) {
+                List<String> tokens = new ArrayList<>();
+                for(String token:tokens_raw) {
+                    if (token.equals("o")) {
+                        // replace it with the value in the args:
+                        if (spec.args.get(0).regOffsetIndirection != null) {
+                            Expression exp = a_args.get(0).args.get(0).args.get(1);
+                            tokens.addAll(Tokenizer.tokenize(exp.toString()));
+                        } else if (spec.args.get(1).regOffsetIndirection != null) {
+                            Expression exp = a_args.get(1).args.get(0).args.get(1);
+                            tokens.addAll(Tokenizer.tokenize(exp.toString()));
+                        } else {
+                            return null;
+                        }
+                    } else {
+                        tokens.add(token);
+                    }
+                }
+                String opName = tokens.remove(0);
+                List<Expression> arguments = new ArrayList<>();
+                while (!tokens.isEmpty()) {
+                    if (Tokenizer.isSingleLineComment(tokens.get(0))) break;
+                    Expression exp = config.expressionParser.parse(tokens, s, code);
+                    if (exp == null) return null;
+                    arguments.add(exp);
+                    if (!tokens.isEmpty() && tokens.get(0).equals(",")) {
+                        tokens.remove(0);
+                    } else {
+                        break;
+                    }
+                }
+
+                List<CPUOp> op_l = parseOp(opName, arguments, s, code);                
+                if (op_l == null || op_l.size() != 1) {
+                    config.error("Cannot parse fake instruction replacement for token list: " + tokens_raw);
+                    return null;
+                }
+                l.add(op_l.get(0));
+            }
+            
+            return l;
+        }
 
         if (!spec.official) {
             if (config.convertToOfficial) {
@@ -107,14 +166,18 @@ public class CPUOpParser {
                 if (config.warningUnofficialOps) {
                     config.warn("Style suggestion", s.fileNameLineString(), "Unofficial op syntax: " + unofficial + " converted to " + official);
                 }                
-                return official;
+                List<CPUOp> l = new ArrayList<>();
+                l.add(official);
+                return l;
             } else {
                 if (config.warningUnofficialOps) {
                     config.warn("Style suggestion", s.fileNameLineString(), "Unofficial op syntax: " + new CPUOp(spec, a_args, config));
                 }    
             }
-        }    
-        return new CPUOp(spec, a_args, config);
+        }
+        List<CPUOp> l = new ArrayList<>();
+        l.add(new CPUOp(spec, a_args, config));
+        return l;
     }        
     
     

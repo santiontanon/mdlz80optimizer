@@ -622,42 +622,16 @@ public class LineParser {
     public boolean parseCPUOp(List<String> tokens, String opName,
             SourceLine sl,
             List<SourceStatement> l, SourceFile source, CodeBase code) {
-        List<Expression> arguments = new ArrayList<>();
         SourceStatement s = l.get(0);
-
-        if (allowExtendedSjasmInstructions) {
-            // see if there is a pre/post increment of a registerpair:
-            for (int i = 0; i < tokens.size(); i++) {
-                if (i < tokens.size() - 1
-                        && (tokens.get(i).equals("++") || tokens.get(i).equals("--"))
-                        && code.isRegisterPair(tokens.get(i + 1))) {
-                    // pre increment/decrement:
-                    SourceStatement auxiliaryS = new SourceStatement(SourceStatement.STATEMENT_CPUOP, sl, source);
-                    List<Expression> auxiliaryArguments = new ArrayList<>();
-                    auxiliaryArguments.add(Expression.symbolExpression(tokens.get(i + 1), code, config));
-                    CPUOp op = config.opParser.parseOp(tokens.get(i).equals("++") ? "inc" : "dec",
-                            auxiliaryArguments, s, code);
-                    auxiliaryS.op = op;
-                    l.add(0, auxiliaryS);
-                    tokens.remove(i);
-                    break;
-                }
-                if (i > 0
-                        && (tokens.get(i).equals("++") || tokens.get(i).equals("--"))
-                        && code.isRegisterPair(tokens.get(i - 1))) {
-                    // post increment/decrement:
-                    SourceStatement auxiliaryS = new SourceStatement(SourceStatement.STATEMENT_CPUOP, sl, source);
-                    List<Expression> auxiliaryArguments = new ArrayList<>();
-                    auxiliaryArguments.add(Expression.symbolExpression(tokens.get(i - 1), code, config));
-                    CPUOp op = config.opParser.parseOp(tokens.get(i).equals("++") ? "inc" : "dec",
-                            auxiliaryArguments, s, code);
-                    auxiliaryS.op = op;
-                    l.add(auxiliaryS);
-                    tokens.remove(i);
-                    break;
-                }
-            }
+        
+        tokens.add(0, opName);
+        if (config.dialectParser != null) {
+            // put the opName back into the tokens (in case the tokens are modified by the fake CPU op parsing:
+            if (!config.dialectParser.parseFakeCPUOps(tokens, sl, l, source, code)) return false;
         }
+        
+        opName = tokens.remove(0);
+        List<Expression> arguments = new ArrayList<>();
 
         while (!tokens.isEmpty()) {
             if (Tokenizer.isSingleLineComment(tokens.get(0))) {
@@ -695,16 +669,26 @@ public class LineParser {
             }
         }
 
-        CPUOp op = config.opParser.parseOp(opName, arguments, s, code);
-        if (op == null) {
+        List<CPUOp> op_l = config.opParser.parseOp(opName, arguments, s, code);
+        if (op_l == null) {
             config.error("No op spec matches with operator in line " + sl);
             return false;
         }
 
+        
         s.type = SourceStatement.STATEMENT_CPUOP;
-        s.op = op;
+        s.op = op_l.get(0);
+        
+        for(int i = 1;i<op_l.size();i++) {
+            SourceStatement s2 = new SourceStatement(SourceStatement.STATEMENT_CPUOP, sl, source);
+            s2.type = SourceStatement.STATEMENT_CPUOP;
+            s2.op = op_l.get(i);
+            l.add(s2);
+        }
+
         return parseRestofTheLine(tokens, sl, s, source);
     }
+    
 
     public boolean parseMacroDefinition(List<String> tokens,
             SourceLine sl,

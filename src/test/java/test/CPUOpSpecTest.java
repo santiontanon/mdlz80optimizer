@@ -37,6 +37,12 @@ public class CPUOpSpecTest {
     @Test public void test6() throws IOException { Assert.assertEquals("ld a, (hl)\ninc hl", test("ld a,(hl++)", "sjasm")); }
     @Test public void test7() throws IOException { Assert.assertEquals("dec ix\nld c, (ix + 1)", test("ld c,(--ix+1)", "sjasm")); }
     @Test public void test8() throws IOException { Assert.assertEquals("ld (ix + (3 + 4)), l", test("ld (ix+(3+4)),l", null)); }
+    @Test public void test9() throws IOException { Assert.assertEquals("ex af, af'", test("EX AF, AF", null)); }
+    @Test public void test10() throws IOException { Assert.assertEquals("ld d, b\nld e, c", test("ld de, bc", "sjasm")); }
+    @Test public void test11() throws IOException { Assert.assertEquals("ld e, (hl)\ninc hl\nld d, (hl)\ndec hl", test("ld de, (hl)", "sjasm")); }
+    @Test public void test12() throws IOException { Assert.assertEquals("push hl\npop ix", test("ld ix, hl", "sjasm")); }
+    @Test public void test13() throws IOException { Assert.assertEquals("ld c, (ix + (3 + 4))\nld b, (ix + (3 + 4) + 1)", test("ld bc,(ix+(3+4))", "sjasm")); }
+    @Test public void test14() throws IOException { Assert.assertEquals("sbc a, (ix + 1)", test("sbc (ix+1)", null)); }
     
     private String test(String opString, String dialect) throws IOException
     {

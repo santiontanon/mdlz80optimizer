@@ -16,8 +16,10 @@ public class CPUOpSpec {
     int times[];
     String byteRepresentation = null;   // even if MDL does not compile,
                                         // this is useful to check if two instructions are the same
+    
     public boolean official;
     public CPUOpSpec officialEquivalent = null;
+    public List<List<String>> fakeInstructionEquivalent = null;
 
     public boolean isJpRegWithParenthesis = false;
 

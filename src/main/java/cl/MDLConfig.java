@@ -71,6 +71,7 @@ public class MDLConfig {
     public LineParser lineParser;
     public ExpressionParser expressionParser;
     public CodeBaseParser codeBaseParser;
+    public CPUOpSpecParser opSpecParser;
     public CPUOpParser opParser;
 
     List<MDLWorker> workers = new ArrayList<>();
@@ -338,8 +339,7 @@ public class MDLConfig {
         }
 
 
-        CPUOpSpecParser opSpecParser = new CPUOpSpecParser(this);
-
+        opSpecParser = new CPUOpSpecParser(this);
         preProcessor = new PreProcessor(this);
         codeBaseParser = new CodeBaseParser(this);
         lineParser = new LineParser(this, codeBaseParser);

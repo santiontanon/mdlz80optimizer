@@ -9,6 +9,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import cl.MDLConfig;
+import code.CPUOp;
+import code.CPUOpSpec;
 import code.CodeBase;
 import code.Expression;
 import code.SourceConstant;
@@ -184,7 +186,214 @@ public class SjasmDialect implements Dialect {
         // We define it as a dialectMacro instead of as a synonym of "REPT", as it has some special syntax for
         // indicating the current iteration
         config.preProcessor.dialectMacros.put("repeat", "endrepeat");
+        
+        addFakeInstruction("RL BC", "rl c\nrl b");
+        addFakeInstruction("RL DE", "rl e\nrl d");
+        addFakeInstruction("RL BC", "rl c\nrl b");
+        addFakeInstruction("RL DE", "rl e\nrl d");
+        addFakeInstruction("RL HL", "rl l\nrl h");
+        addFakeInstruction("RR BC", "rr b\nrr c");
+        addFakeInstruction("RR DE", "rr d\nrr e");
+        addFakeInstruction("RR HL", "rr h\nrr l");
+        addFakeInstruction("SLA BC", "sla c\nrl b");
+        addFakeInstruction("SLA DE", "sla e\nrl d");
+        addFakeInstruction("SLA HL", "add hl,hl");
+        addFakeInstruction("SLL BC", "sli c\nrl b");
+        addFakeInstruction("SLL DE", "sli e\nrl d");
+        addFakeInstruction("SLL HL", "sli l\nrl h");
+        addFakeInstruction("SLI BC", "sli c\nrl b");
+        addFakeInstruction("SLI DE", "sli e\nrl d");
+        addFakeInstruction("SLI HL", "sli l\nrl h");
+        addFakeInstruction("SRA BC", "sra b\nrr c");
+        addFakeInstruction("SRA DE", "sra d\nrr e");
+        addFakeInstruction("SRA HL", "sra h\nrr l");
+        addFakeInstruction("SRL BC", "srl b\nrr c");
+        addFakeInstruction("SRL DE", "srl d\nrr e");
+        addFakeInstruction("SRL HL", "srl h\nrr l");
+        addFakeInstruction("LD BC,BC", "ld b,b\nld c,c");
+        addFakeInstruction("LD BC,DE", "ld b,d\nld c,e");
+        addFakeInstruction("LD BC,HL", "ld b,h\nld c,l");
+        addFakeInstruction("LD BC,IX", "ld b,ixh\nld c,ixl");
+        addFakeInstruction("LD BC,IY", "ld b,iyh\nld c,iyl");
+        addFakeInstruction("LD BC,(HL)", "ld c,(hl)\ninc hl\nld b,(hl)\ndec hl");
+        addFakeInstruction("LD DE,BC", "ld d,b\nld e,c");
+        addFakeInstruction("LD DE,DE", "ld d,d\nld e,e");
+        addFakeInstruction("LD DE,HL", "ld d,h\nld e,l");
+        addFakeInstruction("LD DE,IX", "ld d,ixh\nld e,ixl");
+        addFakeInstruction("LD DE,IY", "ld d,iyh\nld e,iyl");
+        addFakeInstruction("LD DE,(HL)", "ld e,(hl)\ninc hl\nld d,(hl)\ndec hl");
+        addFakeInstruction("LD HL,BC", "ld h,b\nld l,c");
+        addFakeInstruction("LD HL,DE", "ld h,d\nld l,e");
+        addFakeInstruction("LD HL,HL", "ld h,h\nld l,l");
+        addFakeInstruction("LD HL,IX", "push ix\npop hl");
+        addFakeInstruction("LD HL,IY", "push iy\npop hl");
+        addFakeInstruction("LD IX,BC", "ld ixh,b\nld ixl,c");
+        addFakeInstruction("LD IX,DE", "ld ixh,d\nld ixl,e");
+        addFakeInstruction("LD IX,HL", "push hl\npop ix");
+        addFakeInstruction("LD IX,IX", "ld ixh,ixh\nld ixl,ixl");
+        addFakeInstruction("LD IX,IY", "push iy\npop ix");
+        addFakeInstruction("LD IY,BC", "ld iyh,b\nld iyl,c");
+        addFakeInstruction("LD IY,DE", "ld iyh,d\nld iyl,e");
+        addFakeInstruction("LD IY,HL", "push hl\npop iy");
+        addFakeInstruction("LD IY,IX", "push ix\npop iy");
+        addFakeInstruction("LD IY,IY", "ld iyh,iyh\nld iyl,iyl");
+        addFakeInstruction("LD (HL),BC", "ld (hl),c\ninc hl\nld (hl),b\ndec hl");
+        addFakeInstruction("LD (HL),DE", "ld (hl),e\ninc hl\nld (hl),d\ndec hl");
+        addFakeInstruction("LDI BC,(HL)", "ld c,(hl)\ninc hl\nld b,(hl)\ninc hl");
+        addFakeInstruction("LDI DE,(HL)", "ld e,(hl)\ninc hl\nld d,(hl)\ninc hl");
+        addFakeInstruction("LDI (HL),BC", "ld (hl),c\ninc hl\nld (hl),b\ninc hl");
+        addFakeInstruction("LDI (HL),DE", "ld (hl),e\ninc hl\nld (hl),d\ninc hl");
+        addFakeInstruction("LDI A,(BC)", "ld a,(bc)\ninc bc");
+        addFakeInstruction("LDI A,(DE)", "ld a,(de)\ninc de");
+        addFakeInstruction("LDI A,(HL)", "ld a,(hl)\ninc hl");
+        addFakeInstruction("LDI B,(HL)", "ld b,(hl)\ninc hl");
+        addFakeInstruction("LDI C,(HL)", "ld c,(hl)\ninc hl");
+        addFakeInstruction("LDI D,(HL)", "ld d,(hl)\ninc hl");
+        addFakeInstruction("LDI E,(HL)", "ld e,(hl)\ninc hl");
+        addFakeInstruction("LDI H,(HL)", "ld h,(hl)\ninc hl");
+        addFakeInstruction("LDI L,(HL)", "ld l,(hl)\ninc hl");
+        addFakeInstruction("LDD A,(BC)", "ld a,(bc)\ndec bc");
+        addFakeInstruction("LDD A,(DE)", "ld a,(de)\ndec de");
+        addFakeInstruction("LDD A,(HL)", "ld a,(hl)\ndec hl");
+        addFakeInstruction("LDD B,(HL)", "ld b,(hl)\ndec hl");
+        addFakeInstruction("LDD C,(HL)", "ld c,(hl)\ndec hl");
+        addFakeInstruction("LDD D,(HL)", "ld d,(hl)\ndec hl");
+        addFakeInstruction("LDD E,(HL)", "ld e,(hl)\ndec hl");
+        addFakeInstruction("LDD H,(HL)", "ld h,(hl)\ndec hl");
+        addFakeInstruction("LDD L,(HL)", "ld l,(hl)\ndec hl");
+        addFakeInstruction("LDI (BC),A", "ld (bc),a\ninc bc");
+        addFakeInstruction("LDI (DE),A", "ld (de),a\ninc de");
+        addFakeInstruction("LDI (HL),A", "ld (hl),a\ninc hl");
+        addFakeInstruction("LDI (HL),B", "ld (hl),b\ninc hl");
+        addFakeInstruction("LDI (HL),C", "ld (hl),c\ninc hl");
+        addFakeInstruction("LDI (HL),D", "ld (hl),d\ninc hl");
+        addFakeInstruction("LDI (HL),E", "ld (hl),e\ninc hl");
+        addFakeInstruction("LDI (HL),H", "ld (hl),h\ninc hl");
+        addFakeInstruction("LDI (HL),L", "ld (hl),l\ninc hl");
+        addFakeInstruction("LDD (BC),A", "ld (bc),a\ndec bc");
+        addFakeInstruction("LDD (DE),A", "ld (de),a\ndec de");
+        addFakeInstruction("LDD (HL),A", "ld (hl),a\ndec hl");
+        addFakeInstruction("LDD (HL),B", "ld (hl),b\ndec hl");
+        addFakeInstruction("LDD (HL),C", "ld (hl),c\ndec hl");
+        addFakeInstruction("LDD (HL),D", "ld (hl),d\ndec hl");
+        addFakeInstruction("LDD (HL),E", "ld (hl),e\ndec hl");
+        addFakeInstruction("LDD (HL),H", "ld (hl),h\ndec hl");
+        addFakeInstruction("LDD (HL),L", "ld (hl),l\ndec hl");
+        addFakeInstruction("SUB HL,BC", "or a\nsbc hl,bc");
+        addFakeInstruction("SUB HL,DE", "or a\nsbc hl,de");
+        addFakeInstruction("SUB HL,HL", "or a\nsbc hl,hl");
+        addFakeInstruction("SUB HL,SP", "or a\nsbc hl,sp");
+        
+        addFakeInstruction("LD BC,(IX+o)", "ld c,(ix+o)\nld b,(ix+o+1)");
+        addFakeInstruction("LD BC,(IY+o)", "ld c,(iy+o)\nld b,(iy+o+1)");
+        addFakeInstruction("LD DE,(IX+o)", "ld e,(ix+o)\nld d,(ix+o+1)");
+        addFakeInstruction("LD DE,(IY+o)", "ld e,(iy+o)\nld d,(iy+o+1)");
+        addFakeInstruction("LD HL,(IX+o)", "ld l,(ix+o)\nld h,(ix+o+1)");
+        addFakeInstruction("LD HL,(IY+o)", "ld l,(iy+o)\nld h,(iy+o+1)");
+        addFakeInstruction("LD (IX+o),BC", "ld (ix+o),c\nld (ix+o+1),b");
+        addFakeInstruction("LD (IX+o),DE", "ld (ix+o),e\nld (ix+o+1),d");
+        addFakeInstruction("LD (IX+o),HL", "ld (ix+o),l\nld (ix+o+1),h");
+        addFakeInstruction("LD (IY+o),BC", "ld (iy+o),c\nld (iy+o+1),b");
+        addFakeInstruction("LD (IY+o),DE", "ld (iy+o),e\nld (iy+o+1),d");
+        addFakeInstruction("LD (IY+o),HL", "ld (iy+o),l\nld (iy+o+1),h");
+        // (not all of them supported yet)
+        /*
+  ldi bc,(ix+nn)  ; ld c,(ix+nn) : inc ix : ld b,(ix+nn) : inc ix
+  ldi bc,(iy+nn)  ; ld c,(iy+nn) : inc iy : ld b,(iy+nn) : inc iy
+  ldi de,(ix+nn)  ; ld e,(ix+nn) : inc ix : ld d,(ix+nn) : inc ix
+  ldi de,(iy+nn)  ; ld e,(iy+nn) : inc iy : ld d,(iy+nn) : inc iy
+  ldi hl,(ix+nn)  ; ld l,(ix+nn) : inc ix : ld h,(ix+nn) : inc ix
+  ldi hl,(iy+nn)  ; ld l,(iy+nn) : inc iy : ld h,(iy+nn) : inc iy
+  ldi (ix+nn),bc  ; ld (ix+nn),c : inc ix : ld (ix+nn),b : inc ix
+  ldi (ix+nn),de  ; ld (ix+nn),e : inc ix : ld (ix+nn),d : inc ix
+  ldi (ix+nn),hl  ; ld (ix+nn),l : inc ix : ld (ix+nn),h : inc ix
+  ldi (iy+nn),bc  ; ld (iy+nn),c : inc iy : ld (iy+nn),b : inc iy
+  ldi (iy+nn),de  ; ld (iy+nn),e : inc iy : ld (iy+nn),d : inc iy
+  ldi (iy+nn),hl  ; ld (iy+nn),l : inc iy : ld (iy+nn),h : inc iy
+  ldi a,(ix+nn)   ; ld a,(ix+nn) : inc ix
+  ldi b,(ix+nn)   ; ld b,(ix+nn) : inc ix
+  ldi c,(ix+nn)   ; ld c,(ix+nn) : inc ix
+  ldi d,(ix+nn)   ; ld d,(ix+nn) : inc ix
+  ldi e,(ix+nn)   ; ld e,(ix+nn) : inc ix
+  ldi h,(ix+nn)   ; ld h,(ix+nn) : inc ix
+  ldi l,(ix+nn)   ; ld l,(ix+nn) : inc ix
+  ldi a,(iy+nn)   ; ld a,(iy+nn) : inc iy
+  ldi b,(iy+nn)   ; ld b,(iy+nn) : inc iy
+  ldi c,(iy+nn)   ; ld c,(iy+nn) : inc iy
+  ldi d,(iy+nn)   ; ld d,(iy+nn) : inc iy
+  ldi e,(iy+nn)   ; ld e,(iy+nn) : inc iy
+  ldi h,(iy+nn)   ; ld h,(iy+nn) : inc iy
+  ldi l,(iy+nn)   ; ld l,(iy+nn) : inc iy
+  ldd a,(ix+nn)   ; ld a,(ix+nn) : dec ix
+  ldd b,(ix+nn)   ; ld b,(ix+nn) : dec ix
+  ldd c,(ix+nn)   ; ld c,(ix+nn) : dec ix
+  ldd d,(ix+nn)   ; ld d,(ix+nn) : dec ix
+  ldd e,(ix+nn)   ; ld e,(ix+nn) : dec ix
+  ldd h,(ix+nn)   ; ld h,(ix+nn) : dec ix
+  ldd l,(ix+nn)   ; ld l,(ix+nn) : dec ix
+  ldd a,(iy+nn)   ; ld a,(iy+nn) : dec iy
+  ldd b,(iy+nn)   ; ld b,(iy+nn) : dec iy
+  ldd c,(iy+nn)   ; ld c,(iy+nn) : dec iy
+  ldd d,(iy+nn)   ; ld d,(iy+nn) : dec iy
+  ldd e,(iy+nn)   ; ld e,(iy+nn) : dec iy
+  ldd h,(iy+nn)   ; ld h,(iy+nn) : dec iy
+  ldd l,(iy+nn)   ; ld l,(iy+nn) : dec iy
+  ldi (ix+nn),a   ; ld (ix+nn),a : inc ix
+  ldi (ix+nn),b   ; ld (ix+nn),b : inc ix
+  ldi (ix+nn),c   ; ld (ix+nn),c : inc ix
+  ldi (ix+nn),d   ; ld (ix+nn),d : inc ix
+  ldi (ix+nn),e   ; ld (ix+nn),e : inc ix
+  ldi (ix+nn),h   ; ld (ix+nn),h : inc ix
+  ldi (ix+nn),l   ; ld (ix+nn),l : inc ix
+  ldi (iy+nn),a   ; ld (iy+nn),a : inc iy
+  ldi (iy+nn),b   ; ld (iy+nn),b : inc iy
+  ldi (iy+nn),c   ; ld (iy+nn),c : inc iy
+  ldi (iy+nn),d   ; ld (iy+nn),d : inc iy
+  ldi (iy+nn),e   ; ld (iy+nn),e : inc iy
+  ldi (iy+nn),h   ; ld (iy+nn),h : inc iy
+  ldi (iy+nn),l   ; ld (iy+nn),l : inc iy
+  ldd (ix+nn),a   ; ld (ix+nn),a : dec ix
+  ldd (ix+nn),b   ; ld (ix+nn),b : dec ix
+  ldd (ix+nn),c   ; ld (ix+nn),c : dec ix
+  ldd (ix+nn),d   ; ld (ix+nn),d : dec ix
+  ldd (ix+nn),e   ; ld (ix+nn),e : dec ix
+  ldd (ix+nn),h   ; ld (ix+nn),h : dec ix
+  ldd (ix+nn),l   ; ld (ix+nn),l : dec ix
+  ldd (iy+nn),a   ; ld (iy+nn),a : dec iy
+  ldd (iy+nn),b   ; ld (iy+nn),b : dec iy
+  ldd (iy+nn),c   ; ld (iy+nn),c : dec iy
+  ldd (iy+nn),d   ; ld (iy+nn),d : dec iy
+  ldd (iy+nn),e   ; ld (iy+nn),e : dec iy
+  ldd (iy+nn),h   ; ld (iy+nn),h : dec iy
+  ldd (iy+nn),l   ; ld (iy+nn),l : dec iy
+  ldi (hl),mm     ; ld (hl),mm : inc hl
+  ldi (ix+nn),mm  ; ld (ix+nn),mm : inc ix
+  ldi (iy+nn),mm  ; ld (iy+nn),mm : inc iy
+  ldd (hl),mm     ; ld (hl),mm : dec hl
+  ldd (ix+nn),mm  ; ld (ix+nn),mm : dec ix
+  ldd (iy+nn),mm  ; ld (iy+nn),mm : dec iy
+*/
     }
+    
+    
+    private boolean addFakeInstruction(String in, String out)
+    {
+        String data[] = {in,"0","0","2","ff","0", "","","","", "","","","", "false"};
+        CPUOpSpec fakeSpec = config.opSpecParser.parseOpSpecLine(data, config);
+        if (fakeSpec == null) {
+            config.error("cannot parse fake instruction " + in);
+            return false;
+        } 
+
+        fakeSpec.fakeInstructionEquivalent = new ArrayList<>();
+        for(String line:out.split("\n")) {
+            fakeSpec.fakeInstructionEquivalent.add(Tokenizer.tokenize(line));
+        }
+        
+        config.opParser.addOpSpec(fakeSpec);        
+        return true;
+    }
+    
 
     @Override
     public boolean recognizeIdiom(List<String> tokens) {
@@ -668,6 +877,94 @@ public class SjasmDialect implements Dialect {
         
         
         return null;
+    }
+
+    
+//    private boolean parseCPUOpInternal(List<String> tokens, List<SourceStatement> l, SourceLine sl, SourceFile source, CodeBase code)
+//    {
+//        SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_CPUOP, sl, source);
+//        if (!config.lineParser.parseCPUOpInternal(tokens, s, sl, source, code)) return false;
+//        l.add(s);
+//        return true;
+//    }
+    
+    
+    @Override
+    public boolean parseFakeCPUOps(List<String> tokens, SourceLine sl, List<SourceStatement> l, SourceFile source, CodeBase code) 
+    {
+        // This function only adds the additional instructions beyond the first one. So, it will leave in "tokens", the set of
+        // tokens necessary for MDL's regular parser to still parse the first op
+        SourceStatement s = l.get(0);
+
+        /*
+        for(Pair<List<String>, List<List<String>>> fake: fakeInstructions) {
+            if (tokens.size()>=fake.getLeft().size()) {
+                boolean found = true;
+                for(int i = 0;i<fake.getLeft().size();i++) {
+                    String fakeToken = fake.getLeft().get(i);
+                    if (fakeToken.equals("nn")) {
+                        // 
+                    } else {
+                        if (!tokens.get(i).equalsIgnoreCase(fakeToken)) {
+                            found = false;
+                            break;
+                        }
+                    }
+                }
+                if (found) {
+                    for(int i = 0;i<fake.getLeft().size();i++) tokens.remove(0);
+                    tokens.addAll(0, fake.getRight().get(0));
+                    for(int i = 1;i<fake.getRight().size();i++) {
+                        if (!parseCPUOpInternal(fake.getRight().get(i), l, sl, source, code)) return false;
+                    }
+                    if (config.warningUnofficialOps) {
+                        config.warn("Unofficial op (fake instruction) used in " + sl);
+                    }
+                    return true;
+                }
+            }
+        }
+        */
+        
+        // see if there is a pre/post increment of a registerpair:
+        for (int i = 0; i < tokens.size(); i++) {
+            if (i < tokens.size() - 1
+                    && (tokens.get(i).equals("++") || tokens.get(i).equals("--"))
+                    && code.isRegisterPair(tokens.get(i + 1))) {
+                // pre increment/decrement:
+                SourceStatement auxiliaryS = new SourceStatement(SourceStatement.STATEMENT_CPUOP, sl, source);
+                List<Expression> auxiliaryArguments = new ArrayList<>();
+                auxiliaryArguments.add(Expression.symbolExpression(tokens.get(i + 1), code, config));
+                List<CPUOp> op_l = config.opParser.parseOp(tokens.get(i).equals("++") ? "inc" : "dec", auxiliaryArguments, s, code);
+                if (op_l == null || op_l.size() != 1) return false;
+                auxiliaryS.op = op_l.get(0);
+                l.add(0, auxiliaryS);
+                tokens.remove(i);
+                if (config.warningUnofficialOps) {
+                    config.warn("Unofficial op (fake instruction) used in " + sl);
+                }
+                break;
+            }
+            if (i > 0
+                    && (tokens.get(i).equals("++") || tokens.get(i).equals("--"))
+                    && code.isRegisterPair(tokens.get(i - 1))) {
+                // post increment/decrement:
+                SourceStatement auxiliaryS = new SourceStatement(SourceStatement.STATEMENT_CPUOP, sl, source);
+                List<Expression> auxiliaryArguments = new ArrayList<>();
+                auxiliaryArguments.add(Expression.symbolExpression(tokens.get(i - 1), code, config));
+                List<CPUOp> op_l = config.opParser.parseOp(tokens.get(i).equals("++") ? "inc" : "dec", auxiliaryArguments, s, code);
+                if (op_l == null || op_l.size() != 1) return false;
+                auxiliaryS.op = op_l.get(0);
+                l.add(auxiliaryS);
+                tokens.remove(i);
+                if (config.warningUnofficialOps) {
+                    config.warn("Unofficial op (fake instruction) used in " + sl);
+                }
+                break;
+            }
+        }
+
+        return true;
     }
 
 

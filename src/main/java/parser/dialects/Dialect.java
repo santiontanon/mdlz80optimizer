@@ -47,6 +47,14 @@ public interface Dialect {
         return null;
     }
 
+    // Some dialects allow "fake" instructions (like "ld de,hl", which do not really, exist, but expand to sequence of ops)
+    // This is dangerous for several reasons, as they hide different instructions and it might not be obvious how flags are
+    // affected, or what is happening under the hood, making debugging harder. So, MDL generates a warning message 
+    // when these are found.
+    default boolean parseFakeCPUOps(List<String> tokens, SourceLine sl, List<SourceStatement> l, SourceFile source, CodeBase code) {
+        // (no-op by default)
+        return true;
+    }
     
     // Some dialects implement custom functions (e.g., asMSX has a "random" function). They cannot
     // be included in the general parser, as if someone uses a different assembler, those could be used

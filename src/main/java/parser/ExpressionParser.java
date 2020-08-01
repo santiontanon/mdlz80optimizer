@@ -312,7 +312,7 @@ public class ExpressionParser {
             }
         }
         if (tokens.size() >= 1 &&
-            (tokens.get(0).startsWith("0x") || tokens.get(0).startsWith("0x"))) {
+            (tokens.get(0).startsWith("0x") || tokens.get(0).startsWith("0X"))) {
             // should be a hex constant:
             String token = tokens.get(0).substring(2);
             if (Tokenizer.isHex(token)) {

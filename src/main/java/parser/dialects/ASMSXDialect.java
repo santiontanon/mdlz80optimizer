@@ -18,7 +18,6 @@ import java.util.StringTokenizer;
 import java.util.stream.Collectors;
 import org.apache.commons.io.IOUtils;
 import parser.SourceLine;
-import parser.SourceMacro;
 import parser.Tokenizer;
 import util.Resources;
 
