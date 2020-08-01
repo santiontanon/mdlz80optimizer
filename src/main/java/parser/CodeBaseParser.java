@@ -327,7 +327,6 @@ public class CodeBaseParser {
         }
 
         if (n_expanded > 0) {
-            System.out.println("---- n_expanded: " + n_expanded + " ------------");
             // resolve local labels again for all the new lines:
             for(SourceStatement s:f.getStatements()) {
                 s.resolveLocalLabels(code);
