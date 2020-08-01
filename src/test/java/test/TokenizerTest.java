@@ -78,6 +78,9 @@ public class TokenizerTest {
     @Test public void test20() {
         Assert.assertArrayEquals(new String[]{"ld","a",",","(","hl","+","+",")"}, tokenize("ld	a,(hl+ +)"));
     }
+    @Test public void test21() {
+        Assert.assertArrayEquals(new String[]{"db","(","%","+","1",")","*","(","%%","+","1",")","/","(","%","%","8",")"}, tokenize("db (%+1)*(%%+1)/(% % 8)"));
+    }
 
 
     

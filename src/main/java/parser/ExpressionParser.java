@@ -21,6 +21,8 @@ public class ExpressionParser {
     public List<String> dialectFunctions = new ArrayList<>();
     public List<String> dialectFunctionsSingleArgumentNoParenthesis = new ArrayList<>();
 
+    // dialect-specific variables:
+    public List<Integer> sjasmConterVariables = new ArrayList<>();
 
     public ExpressionParser(MDLConfig a_config)
     {
@@ -395,6 +397,36 @@ public class ExpressionParser {
                 return Expression.symbolExpression(token, code, config);
             }
         }
+        // Check if it's a "%", "%%", "%%%", etc. sjasm counter variable:
+        if (tokens.size() >= 1 && !sjasmConterVariables.isEmpty()) {
+            String token = tokens.get(0);
+            boolean allPercent = true;
+            for(int i = 0;i<token.length();i++) {
+                if (token.charAt(i) != '%') {
+                    allPercent = false;
+                    break;
+                }
+            }
+            if (allPercent) {
+                // Make sure it's not a binary constant:
+                int counterVariableIdx = token.length()-1;
+                boolean canBeCounterVariable = true;
+                if (sjasmConterVariables.size() <= counterVariableIdx) {
+                    canBeCounterVariable = false;
+                }
+                if (canBeCounterVariable && tokens.size() >= 2) {
+                    if (Tokenizer.isInteger(tokens.get(1))) {
+                        canBeCounterVariable = false;
+                    }
+                }
+                if (canBeCounterVariable) {
+                    int value = sjasmConterVariables.get(counterVariableIdx);
+                    tokens.remove(0);
+                    return Expression.constantExpression(value, config);
+                }
+            }
+        }
+        
         if (tokens.size() >= 2 &&
             (tokens.get(0).equals("%"))) {
             // should be a binary constant:

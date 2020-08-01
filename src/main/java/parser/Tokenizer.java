@@ -70,6 +70,21 @@ public class Tokenizer {
                     previous = previous+next;
                     continue;
                 }
+                if (next.equals("%")) {
+                    boolean allPercents = true;
+                    for(int i = 0;i<previous.length();i++) {
+                        if (previous.charAt(i) != '%') {
+                            allPercents = false;
+                            break;
+                        }
+                    }
+                    if (allPercents) {
+                        tokens.remove(tokens.size()-1);
+                        tokens.add(previous+next);
+                        previous = previous+next;
+                        continue;
+                    }
+                }
             }
             if (previous != null && Tokenizer.isSingleLineComment(previous)) {
                 String token = previous + next;

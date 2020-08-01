@@ -751,7 +751,9 @@ public class SjasmDialect implements Dialect {
                 List<String> tokensCopy = new ArrayList<>();
                 tokensCopy.addAll(tokens);
                 // we need to parse it every time, to create multiple different copies of the statements:
+                config.expressionParser.sjasmConterVariables.add(i);
                 List<SourceStatement> l2 = config.lineParser.parse(tokensCopy, sl, source, code, config);
+                config.expressionParser.sjasmConterVariables.remove(config.expressionParser.sjasmConterVariables.size()-1);
                 if (l2 == null) {
                     config.error("Cannot parse line at " + sl);
                     return null;
