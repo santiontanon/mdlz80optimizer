@@ -24,11 +24,11 @@ import workers.SourceCodeGenerator;
 public class ASMSXTest {
 
     private final MDLConfig mdlConfig;
-    private final CodeBase codeBase;
+    private final CodeBase code;
 
     public ASMSXTest() {
         mdlConfig = new MDLConfig();
-        codeBase = new CodeBase(mdlConfig);
+        code = new CodeBase(mdlConfig);
     }
 
     @Test public void test1() throws IOException { Assert.assertTrue(test("data/generationtests/asmsx-builtin.asm",
@@ -39,11 +39,11 @@ public class ASMSXTest {
         Assert.assertTrue(mdlConfig.parseArgs(inputFile,"-dialect","asmsx"));
         Assert.assertTrue(
                 "Could not parse file " + inputFile,
-                mdlConfig.codeBaseParser.parseMainSourceFile(mdlConfig.inputFile, codeBase));
+                mdlConfig.codeBaseParser.parseMainSourceFile(mdlConfig.inputFile, code));
 
         SourceCodeGenerator scg = new SourceCodeGenerator(mdlConfig);
 
-        String result = scg.sourceFileString(codeBase.getMain(), codeBase);
+        String result = scg.sourceFileString(code.getMain(), code);
         List<String> lines = new ArrayList<>();
         StringTokenizer st = new StringTokenizer(result, "\n");
         while(st.hasMoreTokens()) {

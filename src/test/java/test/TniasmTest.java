@@ -21,22 +21,22 @@ import workers.SourceCodeGenerator;
  *
  * @author santi
  */
-public class GenerationTest {
+public class TniasmTest {
 
     private final MDLConfig mdlConfig;
     private final CodeBase code;
 
-    public GenerationTest() {
+    public TniasmTest() {
         mdlConfig = new MDLConfig();
         code = new CodeBase(mdlConfig);
     }
 
-    @Test public void test1() throws IOException { Assert.assertTrue(test("data/generationtests/mdl-include.asm",
-                                                                          "data/generationtests/mdl-include-expected.asm")); }
+    @Test public void test1() throws IOException { Assert.assertTrue(test("data/generationtests/tniasm-ifdef.asm",
+                                                                          "data/generationtests/tniasm-ifdef-expected.asm")); }
 
     private boolean test(String inputFile, String expectedOutputFile) throws IOException
     {
-        Assert.assertTrue(mdlConfig.parseArgs(inputFile));
+        Assert.assertTrue(mdlConfig.parseArgs(inputFile,"-dialect","tniasm"));
         Assert.assertTrue(
                 "Could not parse file " + inputFile,
                 mdlConfig.codeBaseParser.parseMainSourceFile(mdlConfig.inputFile, code));

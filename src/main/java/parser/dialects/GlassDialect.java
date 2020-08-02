@@ -82,7 +82,7 @@ public class GlassDialect implements Dialect {
 
 
     @Override
-    public String newSymbolName(String name, Expression value) {
+    public String newSymbolName(String name, Expression value, SourceStatement previous) {
         if (name.equalsIgnoreCase("org") ||
             name.equalsIgnoreCase("db") ||
             name.equalsIgnoreCase("dw") ||
@@ -101,7 +101,7 @@ public class GlassDialect implements Dialect {
 
 
     @Override
-    public String symbolName(String name)
+    public String symbolName(String name, SourceStatement previous)
     {
         return name;
     }
@@ -123,7 +123,7 @@ public class GlassDialect implements Dialect {
     @Override
     public List<SourceStatement> parseLine(List<String> tokens,
             SourceLine sl,
-            SourceStatement s, SourceFile source, CodeBase code)
+            SourceStatement s, SourceStatement previous, SourceFile source, CodeBase code)
     {
         List<SourceStatement> l = new ArrayList<>();
         l.add(s);
@@ -133,7 +133,7 @@ public class GlassDialect implements Dialect {
             
             tokens.remove(0);
 
-            Expression exp = config.expressionParser.parse(tokens, s, code);
+            Expression exp = config.expressionParser.parse(tokens, s, previous, code);
             if (exp == null) {
                 config.error("Cannot parse line " + sl);
                 return null;
@@ -426,7 +426,7 @@ public class GlassDialect implements Dialect {
                     }
                 } else {
                     List<SourceStatement> l = config.lineParser.parse(Tokenizer.tokenize(sl.line), 
-                            sl, f, code, config);
+                            sl, f, f.getStatements().size(), code, config);
                     if (l == null) {
                         // we fail to assemble the macro, but it's ok, some times it can happen
                         succeeded = false;

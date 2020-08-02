@@ -21,7 +21,6 @@ public class TniAsmDialect implements Dialect {
 
     private final MDLConfig config;
 
-    private String lastAbsoluteLabel;
 
     /**
      * Constructor
@@ -33,8 +32,6 @@ public class TniAsmDialect implements Dialect {
         config = a_config;
         
         config.warningJpHlWithParenthesis = false;  // I don't think tniasm supports "jp hl"
-
-        lastAbsoluteLabel = null;
 
         config.preProcessor.macroSynonyms.put("ifexist", config.preProcessor.MACRO_IFDEF);
 
@@ -49,21 +46,28 @@ public class TniAsmDialect implements Dialect {
         return false;
     }
     
+    
+    private String getLastAbsoluteLabel(SourceStatement s) 
+    {
+        while(s != null) {
+            if (s.label != null && s.label.isLabel() && !s.label.originalName.startsWith(".")) {
+                return s.label.originalName;
+            } else {
+                s = s.source.getPreviousStatementTo(s, s.source.code);
+            }
+        }
+        return null;        
+    }
+    
 
     @Override
-    public String newSymbolName(String name, Expression value) {
-
+    public String newSymbolName(String name, Expression value, SourceStatement s) {        
         // A relative label
         if (name.startsWith(".")) {
-            return lastAbsoluteLabel + name;
-        }
-
-        // When a name has "CURRENT_ADDRESS" as its value, it means it's a label.
-        // If it does not start by ".", then it's an absolute label:
-        if ((value != null)
-                && (value.type == Expression.EXPRESSION_SYMBOL)
-                && value.symbolName.equalsIgnoreCase(CodeBase.CURRENT_ADDRESS)) {
-            lastAbsoluteLabel = name;
+            String lastAbsoluteLabel = getLastAbsoluteLabel(s);        
+            if (lastAbsoluteLabel != null) {
+                return lastAbsoluteLabel + name;
+            }
         }
 
         // An absolute label
@@ -72,18 +76,24 @@ public class TniAsmDialect implements Dialect {
 
 
     @Override
-    public String symbolName(String name) {
+    public String symbolName(String name, SourceStatement s) {
+        // A relative label
+        if (name.startsWith(".")) {
+            String lastAbsoluteLabel = getLastAbsoluteLabel(s);
+            if (lastAbsoluteLabel != null) {
+                return lastAbsoluteLabel + name;
+            }
+        }
 
-        return name.startsWith(".")
-                ? lastAbsoluteLabel + name
-                : name;
+        // An absolute label
+        return name;
     }
     
     
     @Override
     public List<SourceStatement> parseLine(List<String> tokens,
             SourceLine sl,
-            SourceStatement s, SourceFile source, CodeBase code)
+            SourceStatement s, SourceStatement previous, SourceFile source, CodeBase code)
     {
         List<SourceStatement> l = new ArrayList<>();
         l.add(s);
@@ -92,7 +102,7 @@ public class TniAsmDialect implements Dialect {
             tokens.remove(0);
             
             // Parse it as a "ds", but multiply the number by 2:
-            if (!config.lineParser.parseDefineSpace(tokens, sl, s, source, code)) return null;
+            if (!config.lineParser.parseDefineSpace(tokens, sl, s, previous, source, code)) return null;
             if (s.space != null) {
                 s.space = Expression.operatorExpression(Expression.EXPRESSION_MUL, 
                         s.space, 

@@ -20,12 +20,12 @@ import parser.Tokenizer;
  */
 public class ExpressionTest {
 
-    private final CodeBase codeBase;
+    private final CodeBase code;
     private final ExpressionParser expressionParser;
 
     public ExpressionTest() {
         MDLConfig mdlConfig = new MDLConfig();
-        codeBase = new CodeBase(mdlConfig);
+        code = new CodeBase(mdlConfig);
         expressionParser = new ExpressionParser(mdlConfig);
     }
 
@@ -59,11 +59,11 @@ public class ExpressionTest {
     private Number evaluate(String line)
     {
         List<String> tokens = Tokenizer.tokenize(line);
-        Expression exp = expressionParser.parse(tokens, null, codeBase);
+        Expression exp = expressionParser.parse(tokens, null, null, code);
         System.out.println(exp);
 
         return exp.evaluatesToNumericConstant()
-                ? exp.evaluate(null, codeBase, false)
+                ? exp.evaluate(null, code, false)
                 : null;
     }
 }

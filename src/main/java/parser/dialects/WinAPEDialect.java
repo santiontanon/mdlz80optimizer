@@ -48,7 +48,7 @@ public class WinAPEDialect implements Dialect {
     
 
     @Override
-    public String newSymbolName(String name, Expression value) 
+    public String newSymbolName(String name, Expression value, SourceStatement previous) 
     {
         if (name.equalsIgnoreCase("write") ||
             name.equalsIgnoreCase("close")) {
@@ -59,16 +59,15 @@ public class WinAPEDialect implements Dialect {
 
 
     @Override
-    public String symbolName(String name) 
+    public String symbolName(String name, SourceStatement previous) 
     {
         return name;
     }
     
     
     @Override
-    public List<SourceStatement> parseLine(List<String> tokens,
-            SourceLine sl,
-            SourceStatement s, SourceFile source, CodeBase code)
+    public List<SourceStatement> parseLine(List<String> tokens, SourceLine sl,
+            SourceStatement s, SourceStatement previous, SourceFile source, CodeBase code)
     {
         List<SourceStatement> l = new ArrayList<>();
         l.add(s);

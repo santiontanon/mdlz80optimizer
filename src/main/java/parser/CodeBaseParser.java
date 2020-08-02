@@ -199,7 +199,7 @@ public class CodeBaseParser {
                         }
                     }
                 } else {
-                    List<SourceStatement> l = config.lineParser.parse(tokens, sl, f, code, config);
+                    List<SourceStatement> l = config.lineParser.parse(tokens, sl, f, f.getStatements().size(), code, config);
                     if (l == null) return false;
                     for(SourceStatement s:l) {
                         List<SourceStatement> l2 = config.preProcessor.handleStatement(sl, s, f, code, false);
@@ -306,11 +306,10 @@ public class CodeBaseParser {
                             }
                         }
                     } else {
-                        List<SourceStatement> l = config.lineParser.parse(tokens, sl, f, code, config);
+                        List<SourceStatement> l = config.lineParser.parse(tokens, sl, f, insertionPoint, code, config);
                         if (l == null) return null;
                         for(SourceStatement s:l) {
-                            // only expand one macro (that's why parameter is "n_expanded == 0")
-                            List<SourceStatement> l3 = config.preProcessor.handleStatement(sl, s, f, code, n_expanded == 0);
+                            List<SourceStatement> l3 = config.preProcessor.handleStatement(sl, s, f, code, false);
                             if (l3 == null) {
                                 f.addStatement(insertionPoint, s);
                                 insertionPoint++;

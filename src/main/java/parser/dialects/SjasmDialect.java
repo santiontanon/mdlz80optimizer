@@ -139,7 +139,6 @@ public class SjasmDialect implements Dialect {
 
     MDLConfig config;
 
-    String lastAbsoluteLabel = null;
     SjasmStruct struct = null;
     List<SjasmStruct> structs = new ArrayList<>();
 
@@ -421,9 +420,25 @@ public class SjasmDialect implements Dialect {
         }
         return false;
     }
+    
+    
+    private String getLastAbsoluteLabel(SourceStatement s) 
+    {
+        while(s != null) {
+            if (s.label != null && s.label.isLabel() && 
+                !s.label.originalName.startsWith(".") &&
+                !Tokenizer.isInteger(s.label.originalName)) {
+                return s.label.originalName;
+            } else {
+                s = s.source.getPreviousStatementTo(s, s.source.code);
+            }
+        }
+        return null;        
+    }
+    
 
     @Override
-    public String newSymbolName(String name, Expression value) {
+    public String newSymbolName(String name, Expression value, SourceStatement previous) {
         if (name.equalsIgnoreCase("struct")
                 || name.equalsIgnoreCase("ends")
                 || name.equalsIgnoreCase("byte")
@@ -445,7 +460,12 @@ public class SjasmDialect implements Dialect {
             return null;
         }
         if (name.startsWith(".")) {
-            name = lastAbsoluteLabel + "." + name.substring(1);
+            String lastAbsoluteLabel = getLastAbsoluteLabel(previous);
+            if (lastAbsoluteLabel != null) {
+                return lastAbsoluteLabel + name;
+            } else {
+                return name;
+            }
         } else if (Tokenizer.isInteger(name)) {
             // it'startStatement a reusable label:
             int count = 1;
@@ -454,19 +474,6 @@ public class SjasmDialect implements Dialect {
             }
             reusableLabelCounts.put(name, count+1);
             name =  "_sjasm_reusable_" + name + "_" + count;
-        } else {
-            // When a name has "CURRENT_ADDRESS" as its value, it means it's a label.
-            // If it does not start by ".", then it's an absolute label:
-            if (value != null &&
-                value.type == Expression.EXPRESSION_SYMBOL &&
-                value.symbolName.equalsIgnoreCase(CodeBase.CURRENT_ADDRESS)) {
-                
-//                if (!modules.isEmpty()) {
-//                    name = modules.get(0) + "." + name;
-//                }
-                
-                lastAbsoluteLabel = name;
-            }
         }
         
         symbolPage.put(name, currentPage);
@@ -476,9 +483,14 @@ public class SjasmDialect implements Dialect {
 
     
     @Override
-    public String symbolName(String name) {
+    public String symbolName(String name, SourceStatement previous) {
         if (name.startsWith(".")) {
-            return lastAbsoluteLabel + "." + name.substring(1);
+            String lastAbsoluteLabel = getLastAbsoluteLabel(previous);
+            if (lastAbsoluteLabel != null) {
+                return lastAbsoluteLabel + name;
+            } else {
+                return name;
+            }
         } else if ((name.endsWith("f") || name.endsWith("F")) && Tokenizer.isInteger(name.substring(0, name.length()-1))) {
             // it'startStatement a reusable label:
             name = name.substring(0, name.length()-1);
@@ -499,9 +511,8 @@ public class SjasmDialect implements Dialect {
 
     
     @Override
-    public List<SourceStatement> parseLine(List<String> tokens,
-            SourceLine sl,
-            SourceStatement s, SourceFile source, CodeBase code) {
+    public List<SourceStatement> parseLine(List<String> tokens, SourceLine sl,
+            SourceStatement s, SourceStatement previous, SourceFile source, CodeBase code) {
         List<SourceStatement> l = new ArrayList<>();
         l.add(s);
         
@@ -519,7 +530,7 @@ public class SjasmDialect implements Dialect {
             struct.file = source;
             struct.start = s;
             s.type = SourceStatement.STATEMENT_CONSTANT;
-            SourceConstant c = new SourceConstant(struct.name, null, null, s);
+            SourceConstant c = new SourceConstant(struct.name, struct.name, null, null, s);
             s.label = c;
             if (!code.addSymbol(c.name, c)) return null;
             if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
@@ -588,7 +599,7 @@ public class SjasmDialect implements Dialect {
         }
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("map")) {
             tokens.remove(0);
-            Expression exp = config.expressionParser.parse(tokens, s, code);
+            Expression exp = config.expressionParser.parse(tokens, s, previous, code);
             if (exp == null) {
                 config.error("Cannot parse expression at " + sl);
                 return null;
@@ -613,7 +624,7 @@ public class SjasmDialect implements Dialect {
             } else {
                 tokens.remove(0);
             }
-            Expression exp = config.expressionParser.parse(tokens, s, code);
+            Expression exp = config.expressionParser.parse(tokens, s, previous, code);
             if (exp == null) {
                 config.error("Cannot parse expression at " + sl);
                 return null;
@@ -634,7 +645,7 @@ public class SjasmDialect implements Dialect {
         }
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("assert")) {
             tokens.remove(0);
-            Expression exp = config.expressionParser.parse(tokens, s, code);
+            Expression exp = config.expressionParser.parse(tokens, s, previous, code);
             if (exp == null) {
                 config.error("Cannot parse expression at " + sl);
                 return null;
@@ -678,7 +689,7 @@ public class SjasmDialect implements Dialect {
         }
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("defpage")) {
             tokens.remove(0);
-            Expression pageExp = config.expressionParser.parse(tokens, s, code);
+            Expression pageExp = config.expressionParser.parse(tokens, s, previous, code);
             Expression pageStartExp = null;
             Expression pageSizeExp = null;
             if (pageExp == null) {
@@ -687,7 +698,7 @@ public class SjasmDialect implements Dialect {
             }
             if (!tokens.isEmpty() && tokens.get(0).equals(",")) {
                 tokens.remove(0);
-                pageStartExp = config.expressionParser.parse(tokens, s, code);
+                pageStartExp = config.expressionParser.parse(tokens, s, previous, code);
                 if (pageStartExp == null) {
                     config.error("Cannot parse expression at " + sl);
                     return null;
@@ -695,7 +706,7 @@ public class SjasmDialect implements Dialect {
             }
             if (!tokens.isEmpty() && tokens.get(0).equals(",")) {
                 tokens.remove(0);
-                pageSizeExp = config.expressionParser.parse(tokens, s, code);
+                pageSizeExp = config.expressionParser.parse(tokens, s, previous, code);
                 if (pageSizeExp == null) {
                     config.error("Cannot parse expression at " + sl);
                     return null;
@@ -716,7 +727,7 @@ public class SjasmDialect implements Dialect {
             }                    
             if (!tokens.isEmpty() && tokens.get(0).equals("@")) {
                 tokens.remove(0);
-                addressExp = config.expressionParser.parse(tokens, s, code);
+                addressExp = config.expressionParser.parse(tokens, s, previous, code);
                 if (addressExp == null) {
                     config.error("Cannot parse expression at " + sl);
                     return null;
@@ -729,7 +740,7 @@ public class SjasmDialect implements Dialect {
             }
             if (!tokens.isEmpty() && tokens.get(0).equalsIgnoreCase("page")) {
                 tokens.remove(0);
-                Expression pageExp = config.expressionParser.parse(tokens, s, code);
+                Expression pageExp = config.expressionParser.parse(tokens, s, previous, code);
                 int page = pageExp.evaluateToInteger(s, code, false);
                 currentPage = page;
             }            
@@ -743,7 +754,7 @@ public class SjasmDialect implements Dialect {
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("page")) {
             tokens.remove(0);
             Expression pageExp = null;
-            pageExp = config.expressionParser.parse(tokens, s, code);
+            pageExp = config.expressionParser.parse(tokens, s, previous, code);
             if (pageExp == null) {
                 config.error("Cannot parse expression at " + sl);
                 return null;
@@ -761,7 +772,7 @@ public class SjasmDialect implements Dialect {
         }        
         if (tokens.size() >= 3 && tokens.get(0).equalsIgnoreCase("[")) {
             tokens.remove(0);
-            Expression numberExp = config.expressionParser.parse(tokens, s, code);
+            Expression numberExp = config.expressionParser.parse(tokens, s, previous, code);
             if (tokens.isEmpty() || !tokens.get(0).equals("]")) {
                 config.error("Cannot parse line at " + sl);
                 return null;
@@ -774,7 +785,7 @@ public class SjasmDialect implements Dialect {
                 tokensCopy.addAll(tokens);
                 // we need to parse it every time, to create multiple different copies of the statements:
                 config.expressionParser.sjasmConterVariables.add(i);
-                List<SourceStatement> l2 = config.lineParser.parse(tokensCopy, sl, source, code, config);
+                List<SourceStatement> l2 = config.lineParser.parse(tokensCopy, sl, source, previous, code, config);
                 config.expressionParser.sjasmConterVariables.remove(config.expressionParser.sjasmConterVariables.size()-1);
                 if (l2 == null) {
                     config.error("Cannot parse line at " + sl);
@@ -795,7 +806,7 @@ public class SjasmDialect implements Dialect {
             
             tokens.remove(0);
             s.label.resolveEagerly = true;
-            if (!config.lineParser.parseEqu(tokens, sl, s, source, code)) return null;
+            if (!config.lineParser.parseEqu(tokens, sl, s, previous, source, code)) return null;
             s.label.clearCache();
             Integer value = s.label.exp.evaluateToInteger(s, code, false);
             if (value == null) {
@@ -810,7 +821,7 @@ public class SjasmDialect implements Dialect {
         }
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("dz")) {
             tokens.remove(0);
-            if (!config.lineParser.parseData(tokens, "db", sl, s, source, code)) return null;
+            if (!config.lineParser.parseData(tokens, "db", sl, s, previous, source, code)) return null;
             // insert a "0" at the end of each string:
             List<Expression> newData = new ArrayList<>();
             for(Expression exp:s.data) {
@@ -823,7 +834,7 @@ public class SjasmDialect implements Dialect {
         }        
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("align")) {
             tokens.remove(0);
-            Expression exp = config.expressionParser.parse(tokens, s, code);
+            Expression exp = config.expressionParser.parse(tokens, s, previous, code);
             if (exp == null) {
                 config.error("Cannot parse expression in " + sl);
                 return null;
@@ -898,7 +909,7 @@ public class SjasmDialect implements Dialect {
                 boolean done = false;
                 List<Expression> data = new ArrayList<>();
                 while (!done) {
-                    Expression exp = config.expressionParser.parse(tokens, s, code);
+                    Expression exp = config.expressionParser.parse(tokens, s, previous, code);
                     if (exp == null) {
                         config.error("Cannot parse line " + sl);
                         return null;
@@ -948,7 +959,7 @@ public class SjasmDialect implements Dialect {
 
 
     @Override
-    public boolean parseFakeCPUOps(List<String> tokens, SourceLine sl, List<SourceStatement> l, SourceFile source, CodeBase code) 
+    public boolean parseFakeCPUOps(List<String> tokens, SourceLine sl, List<SourceStatement> l, SourceStatement previous, SourceFile source, CodeBase code) 
     {
         // This function only adds the additional instructions beyond the first one. So, it will leave in "tokens", the set of
         // tokens necessary for MDL's regular parser to still parse the first op
@@ -987,7 +998,7 @@ public class SjasmDialect implements Dialect {
                     SourceStatement auxiliaryS = new SourceStatement(SourceStatement.STATEMENT_CPUOP, sl, source);
                     List<Expression> auxiliaryArguments = new ArrayList<>();
                     auxiliaryArguments.add(Expression.symbolExpression(regpairs.get(i), code, config));
-                    List<CPUOp> op_l = config.opParser.parseOp(tokens.get(0), auxiliaryArguments, s, code);
+                    List<CPUOp> op_l = config.opParser.parseOp(tokens.get(0), auxiliaryArguments, s, previous, code);
                     if (op_l == null || op_l.size() != 1) return false;
                     auxiliaryS.op = op_l.get(0);
                     l.add(auxiliaryS);                    
@@ -1005,7 +1016,7 @@ public class SjasmDialect implements Dialect {
                 SourceStatement auxiliaryS = new SourceStatement(SourceStatement.STATEMENT_CPUOP, sl, source);
                 List<Expression> auxiliaryArguments = new ArrayList<>();
                 auxiliaryArguments.add(Expression.symbolExpression(tokens.get(i + 1), code, config));
-                List<CPUOp> op_l = config.opParser.parseOp(tokens.get(i).equals("++") ? "inc" : "dec", auxiliaryArguments, s, code);
+                List<CPUOp> op_l = config.opParser.parseOp(tokens.get(i).equals("++") ? "inc" : "dec", auxiliaryArguments, s, previous, code);
                 if (op_l == null || op_l.size() != 1) return false;
                 auxiliaryS.op = op_l.get(0);
                 l.add(0, auxiliaryS);
@@ -1022,7 +1033,7 @@ public class SjasmDialect implements Dialect {
                 SourceStatement auxiliaryS = new SourceStatement(SourceStatement.STATEMENT_CPUOP, sl, source);
                 List<Expression> auxiliaryArguments = new ArrayList<>();
                 auxiliaryArguments.add(Expression.symbolExpression(tokens.get(i - 1), code, config));
-                List<CPUOp> op_l = config.opParser.parseOp(tokens.get(i).equals("++") ? "inc" : "dec", auxiliaryArguments, s, code);
+                List<CPUOp> op_l = config.opParser.parseOp(tokens.get(i).equals("++") ? "inc" : "dec", auxiliaryArguments, s, previous, code);
                 if (op_l == null || op_l.size() != 1) return false;
                 auxiliaryS.op = op_l.get(0);
                 l.add(auxiliaryS);
@@ -1349,7 +1360,7 @@ public class SjasmDialect implements Dialect {
                 SourceLine repeatStatement = repeatLinesToExecute.remove(0);
                 List<String> tokens2 = Tokenizer.tokenize(repeatStatement.line);
                 tokens2.remove(0);  // skip "repeat"
-                Expression exp = config.expressionParser.parse(tokens2, macroCall, code);
+                Expression exp = config.expressionParser.parse(tokens2, macroCall, macroCall.source.getPreviousStatementTo(macroCall, code), code);
                 int nIterations = exp.evaluateToInteger(macroCall, code, false);
                 for(int i = 0;i<nIterations;i++) {
                     for(SourceLine sl3:repeatLinesToExecute) {
@@ -1369,7 +1380,7 @@ public class SjasmDialect implements Dialect {
                             // execute a rotate:
                             List<String> tokensRotate = Tokenizer.tokenize(line3);
                             tokensRotate.remove(0); // skip "rotate"
-                            Expression expRotate = config.expressionParser.parse(tokensRotate, macroCall, code);
+                            Expression expRotate = config.expressionParser.parse(tokensRotate, macroCall, macroCall.source.getPreviousStatementTo(macroCall, code), code);
                             int nRotations = expRotate.evaluateToInteger(macroCall, code, false);
                             while(nRotations>0) {
                                 Expression argExp = args.remove(1);

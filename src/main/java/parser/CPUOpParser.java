@@ -64,11 +64,13 @@ public class CPUOpParser {
     }
 
 
-    public List<CPUOp> parseOp(String a_op, List<Expression> a_args, SourceStatement s, CodeBase code)
+    // "previous" is used for label scoping (it should be the statement that will be right before "s", after inserting "s"
+    // into the SourceFile, since "s" might not have been yet inserted into it:    
+    public List<CPUOp> parseOp(String a_op, List<Expression> a_args, SourceStatement s, SourceStatement previous, CodeBase code)
     {
         List<CPUOpSpec> candidates = getOpSpecs(a_op);
         for(CPUOpSpec opSpec:candidates) {
-            List<CPUOp> l = parseOp(a_op, opSpec, a_args, s, code);
+            List<CPUOp> l = parseOp(a_op, opSpec, a_args, s, previous, code);
             if (l != null) {
                 return l;
             }
@@ -87,7 +89,7 @@ public class CPUOpParser {
             if (anyChange) {
                 // try again!
                 for(CPUOpSpec opSpec:candidates) {
-                    List<CPUOp> l = parseOp(a_op, opSpec, a_args, s, code);
+                    List<CPUOp> l = parseOp(a_op, opSpec, a_args, s, previous, code);
                     if (l != null) return l;
                 }
             }
@@ -97,7 +99,7 @@ public class CPUOpParser {
     }
 
 
-    public List<CPUOp> parseOp(String a_op, CPUOpSpec spec, List<Expression> a_args, SourceStatement s, CodeBase code)
+    public List<CPUOp> parseOp(String a_op, CPUOpSpec spec, List<Expression> a_args, SourceStatement s, SourceStatement previous, CodeBase code)
     {
         if (!a_op.equalsIgnoreCase(spec.opName)) return null;
         if (spec.args.size() != a_args.size()) return null;
@@ -201,7 +203,7 @@ public class CPUOpParser {
                 List<Expression> arguments = new ArrayList<>();
                 while (!tokens.isEmpty()) {
                     if (Tokenizer.isSingleLineComment(tokens.get(0))) break;
-                    Expression exp = config.expressionParser.parse(tokens, s, code);
+                    Expression exp = config.expressionParser.parse(tokens, s, previous, code);
                     if (exp == null) return null;
                     arguments.add(exp);
                     if (!tokens.isEmpty() && tokens.get(0).equals(",")) {
@@ -211,7 +213,7 @@ public class CPUOpParser {
                     }
                 }
 
-                List<CPUOp> op_l = parseOp(opName, arguments, s, code);                
+                List<CPUOp> op_l = parseOp(opName, arguments, s, previous, code);                
                 if (op_l == null || op_l.size() != 1) {
                     config.error("Cannot parse fake instruction replacement for token list: " + tokens_raw);
                     return null;

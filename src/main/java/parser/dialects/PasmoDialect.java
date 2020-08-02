@@ -54,7 +54,7 @@ public class PasmoDialect implements Dialect {
     
 
     @Override
-    public String newSymbolName(String name, Expression value) 
+    public String newSymbolName(String name, Expression value, SourceStatement previous) 
     {
         if (name.equalsIgnoreCase("proc") ||
             name.equalsIgnoreCase("endp") ||
@@ -72,7 +72,7 @@ public class PasmoDialect implements Dialect {
 
 
     @Override
-    public String symbolName(String name) 
+    public String symbolName(String name, SourceStatement previous) 
     {
         if (localLabels.contains(name)) {
             return currentScope + name;
@@ -83,9 +83,8 @@ public class PasmoDialect implements Dialect {
     
     
     @Override
-    public List<SourceStatement> parseLine(List<String> tokens,
-            SourceLine sl,
-            SourceStatement s, SourceFile source, CodeBase code)
+    public List<SourceStatement> parseLine(List<String> tokens, SourceLine sl,
+            SourceStatement s, SourceStatement previous, SourceFile source, CodeBase code)
     {
         List<SourceStatement> l = new ArrayList<>();
         l.add(s);

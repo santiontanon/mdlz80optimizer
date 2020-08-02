@@ -45,7 +45,6 @@ public class ASMSXDialect implements Dialect {
 
     String biosCallsFileName = "data/msx-bios-calls.asm";    
 
-    String lastAbsoluteLabel = null;
     SourceStatement romHeaderStatement = null;
     SourceStatement basicHeaderStatement = null;
     Expression startAddressLabel = null;
@@ -147,9 +146,22 @@ public class ASMSXDialect implements Dialect {
         return false;
     }
 
+    
+    private String getLastAbsoluteLabel(SourceStatement s) 
+    {
+        while(s != null) {
+            if (s.label != null && s.label.isLabel() && !s.label.originalName.startsWith(".")) {
+                return s.label.originalName;
+            } else {
+                s = s.source.getPreviousStatementTo(s, s.source.code);
+            }
+        }
+        return null;        
+    }
+    
 
     @Override
-    public String newSymbolName(String name, Expression value) {
+    public String newSymbolName(String name, Expression value, SourceStatement s) {
         // TODO(santi@): complete this list (or maybe have a better way than an if-then rule list!
         if (name.equalsIgnoreCase(".bios") ||
             name.equalsIgnoreCase("bios") ||
@@ -179,17 +191,17 @@ public class ASMSXDialect implements Dialect {
             name.equalsIgnoreCase("start")) {
             return null;
         }
+        
+        // A relative label
         if (name.startsWith("@@")) {
-            return lastAbsoluteLabel + "." + name.substring(2);
+            String lastAbsoluteLabel = getLastAbsoluteLabel(s);        
+            if (lastAbsoluteLabel != null) {
+                return lastAbsoluteLabel + "." + name.substring(2);
+            }
         } else if (name.startsWith(".")) {
-            return lastAbsoluteLabel + "." + name.substring(1);
-        } else {
-            // When a name has "CURRENT_ADDRESS" as its value, it means it's a label.
-            // If it does not start by ".", then it's an absolute label:
-            if (value != null &&
-                value.type == Expression.EXPRESSION_SYMBOL &&
-                value.symbolName.equalsIgnoreCase(CodeBase.CURRENT_ADDRESS)) {
-                lastAbsoluteLabel = name;
+            String lastAbsoluteLabel = getLastAbsoluteLabel(s);        
+            if (lastAbsoluteLabel != null) {
+                return lastAbsoluteLabel + name;
             }
         }
         return name;
@@ -197,14 +209,19 @@ public class ASMSXDialect implements Dialect {
 
 
     @Override
-    public String symbolName(String name) {
+    public String symbolName(String name, SourceStatement s) {
         if (name.startsWith("@@")) {
-            return lastAbsoluteLabel + "." + name.substring(2);
+            String lastAbsoluteLabel = getLastAbsoluteLabel(s);        
+            if (lastAbsoluteLabel != null) {
+                return lastAbsoluteLabel + "." + name.substring(2);
+            }
         } else if (name.startsWith(".")) {
-            return lastAbsoluteLabel + "." + name.substring(1);
-        } else {
-            return name;
-        }
+            String lastAbsoluteLabel = getLastAbsoluteLabel(s);        
+            if (lastAbsoluteLabel != null) {
+                return lastAbsoluteLabel + name;
+            }
+        }   
+        return name;
     }
     
     
@@ -248,7 +265,8 @@ public class ASMSXDialect implements Dialect {
     
 
     @Override
-    public List<SourceStatement> parseLine(List<String> tokens, SourceLine sl, SourceStatement s, SourceFile source, CodeBase code) 
+    public List<SourceStatement> parseLine(List<String> tokens, SourceLine sl, 
+            SourceStatement s, SourceStatement previous, SourceFile source, CodeBase code) 
     {
         List<SourceStatement> l = new ArrayList<>();
         l.add(s);
@@ -264,7 +282,7 @@ public class ASMSXDialect implements Dialect {
             for(String []biosCall:biosCalls) {
                 SourceStatement biosCallStatement = new SourceStatement(SourceStatement.STATEMENT_CONSTANT, sl, source);
                 int address = Tokenizer.parseHex(biosCall[1]);
-                biosCallStatement.label = new SourceConstant(biosCall[0], address, Expression.constantExpression(address, config), biosCallStatement);
+                biosCallStatement.label = new SourceConstant(biosCall[0], biosCall[0], address, Expression.constantExpression(address, config), biosCallStatement);
                 code.addSymbol(biosCall[0], biosCallStatement.label);
                 l.add(biosCallStatement);
             }
@@ -272,7 +290,7 @@ public class ASMSXDialect implements Dialect {
         }
         if (tokens.size()>=2 && (tokens.get(0).equalsIgnoreCase(".filename") || tokens.get(0).equalsIgnoreCase("filename"))) {
             tokens.remove(0);
-            Expression filename_exp = config.expressionParser.parse(tokens, s, code);
+            Expression filename_exp = config.expressionParser.parse(tokens, s, previous, code);
             if (filename_exp == null) {
                 config.error("Cannot parse expression in "+sl.fileNameLineString()+": " + sl.line);
                 return null;
@@ -281,7 +299,7 @@ public class ASMSXDialect implements Dialect {
         }
         if (tokens.size()>=1 && (tokens.get(0).equalsIgnoreCase(".size") || tokens.get(0).equalsIgnoreCase("size"))) {
             tokens.remove(0);
-            Expression size_exp = config.expressionParser.parse(tokens, s, code);
+            Expression size_exp = config.expressionParser.parse(tokens, s, previous, code);
             if (size_exp == null) {
                 config.error("Cannot parse .size parameter in "+sl.fileNameLineString()+": " + sl.line);
                 return null;
@@ -291,7 +309,7 @@ public class ASMSXDialect implements Dialect {
         }
         if (tokens.size()>=1 && (tokens.get(0).equalsIgnoreCase(".page") || tokens.get(0).equalsIgnoreCase("page"))) {
             tokens.remove(0);
-            Expression page_exp = config.expressionParser.parse(tokens, s, code);
+            Expression page_exp = config.expressionParser.parse(tokens, s, previous, code);
             if (page_exp == null) {
                 config.error("Cannot parse .page parameter in "+sl.fileNameLineString()+": " + sl.line);
                 return null;
@@ -314,7 +332,7 @@ public class ASMSXDialect implements Dialect {
         if (tokens.size()>=2 && (tokens.get(0).equalsIgnoreCase(".printdec") || tokens.get(0).equalsIgnoreCase(".print") ||
                                  tokens.get(0).equalsIgnoreCase("printdec") || tokens.get(0).equalsIgnoreCase("print"))) {
             tokens.remove(0);
-            Expression exp = config.expressionParser.parse(tokens, s, code);
+            Expression exp = config.expressionParser.parse(tokens, s, previous, code);
             toPrint.add(new PrintRecord("printdec", 
                     source.getStatements().get(source.getStatements().size()-1), 
                     exp));
@@ -323,7 +341,7 @@ public class ASMSXDialect implements Dialect {
         }
         if (tokens.size()>=2 && (tokens.get(0).equalsIgnoreCase(".printhex") || tokens.get(0).equalsIgnoreCase("printhex"))) {
             tokens.remove(0);
-            Expression exp = config.expressionParser.parse(tokens, s, code);
+            Expression exp = config.expressionParser.parse(tokens, s, previous, code);
             toPrint.add(new PrintRecord("printhex", 
                     source.getStatements().get(source.getStatements().size()-1), 
                     exp));
@@ -398,7 +416,7 @@ public class ASMSXDialect implements Dialect {
         }        
         if (tokens.size()>=2 && (tokens.get(0).equalsIgnoreCase(".start") || tokens.get(0).equalsIgnoreCase("start"))) {
             tokens.remove(0);
-            Expression exp = config.expressionParser.parse(tokens, s, code);
+            Expression exp = config.expressionParser.parse(tokens, s, previous, code);
             if (exp == null) {
                 config.error("Cannot parse expression in "+sl.fileNameLineString()+": " + sl.line);
                 return null;
@@ -432,7 +450,7 @@ public class ASMSXDialect implements Dialect {
             
             tokens.remove(0);
             s.label.resolveEagerly = true;
-            if (!config.lineParser.parseEqu(tokens, sl, s, source, code)) return null;
+            if (!config.lineParser.parseEqu(tokens, sl, s, previous, source, code)) return null;
             s.label.clearCache();
             Integer value = s.label.exp.evaluateToInteger(s, code, false);
             if (value == null) {
@@ -528,7 +546,7 @@ public class ASMSXDialect implements Dialect {
     
     @Override    
     public void performAnyInitialActions(CodeBase code) {
-        SourceConstant sc = new SourceConstant("pi", null, Expression.constantExpression(Math.PI, config), null);
+        SourceConstant sc = new SourceConstant("pi", "pi", null, Expression.constantExpression(Math.PI, config), null);
         code.addSymbol("pi", sc);
     }
     

@@ -24,11 +24,11 @@ import workers.SourceCodeGenerator;
 public class SjasmTest {
 
     private final MDLConfig mdlConfig;
-    private final CodeBase codeBase;
+    private final CodeBase code;
 
     public SjasmTest() {
         mdlConfig = new MDLConfig();
-        codeBase = new CodeBase(mdlConfig);
+        code = new CodeBase(mdlConfig);
     }
 
     @Test public void test1() throws IOException { Assert.assertTrue(test("data/generationtests/sjasm-rept1.asm",
@@ -53,17 +53,19 @@ public class SjasmTest {
                                                                            "data/generationtests/sjasm-modules-expected.asm")); }
     @Test public void test11() throws IOException { Assert.assertTrue(test("data/generationtests/sjasm-pletter.asm",
                                                                            "data/generationtests/sjasm-pletter-expected.asm")); }
+    @Test public void test12() throws IOException { Assert.assertTrue(test("data/generationtests/sjasm-ifdef.asm",
+                                                                           "data/generationtests/sjasm-ifdef-expected.asm")); }
 
     private boolean test(String inputFile, String expectedOutputFile) throws IOException
     {
         Assert.assertTrue(mdlConfig.parseArgs(inputFile,"-dialect","sjasm"));
         Assert.assertTrue(
                 "Could not parse file " + inputFile,
-                mdlConfig.codeBaseParser.parseMainSourceFile(mdlConfig.inputFile, codeBase));
+                mdlConfig.codeBaseParser.parseMainSourceFile(mdlConfig.inputFile, code));
 
         SourceCodeGenerator scg = new SourceCodeGenerator(mdlConfig);
 
-        String result = scg.sourceFileString(codeBase.getMain(), codeBase);
+        String result = scg.sourceFileString(code.getMain(), code);
         List<String> lines = new ArrayList<>();
         StringTokenizer st = new StringTokenizer(result, "\n");
         while(st.hasMoreTokens()) {

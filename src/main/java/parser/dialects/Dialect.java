@@ -29,12 +29,18 @@ public interface Dialect {
     // Called when a new symbol is defined (so that the dialect parser can do whatever special it
     // needs to do with it, e.g. define local labels, etc.)
     // returns false if we are trying to redefine a pre-defined symbol according to this dialect
-    String newSymbolName(String name, Expression value);
+    // - "s" here is used to determine the label context. So, it should be a statement that is already in a
+    //   SourceFile. If parsing a new statement that is not yet in the SourceFile, here, pass the previous statement (after
+    //   which "s" will be inserted).
+    String newSymbolName(String name, Expression value, SourceStatement s);
 
     // Like {@link #newSymbolName the previous function}, but called just when a symbol is used, not when it is defined
     // Should return the actual symbol name (e.g., just "name" if this is an absolute symbol,
     // or some concatenation with a prefix if it's a relative symbol)
-    String symbolName(String name);
+    // - "s" here is used to determine the label context. So, it should be a statement that is already in a
+    //   SourceFile. If parsing a new statement that is not yet in the SourceFile, here, pass the previous statement (after
+    //   which "s" will be inserted).
+    String symbolName(String name, SourceStatement s);
 
     // If the previous function returns true, instead of trying to parse the line with the
     // default parser, this function will be invoked instead. Returns true if it could
@@ -42,7 +48,7 @@ public interface Dialect {
     // @return {@code null} if an error occurred;
     // a list of statements to add as a result of parsing the line otherwise
     default List<SourceStatement> parseLine(List<String> tokens,
-            SourceLine sl, SourceStatement s, SourceFile source, CodeBase code) {
+            SourceLine sl, SourceStatement s, SourceStatement previous, SourceFile source, CodeBase code) {
         // (no-op by default)
         return null;
     }
@@ -51,7 +57,7 @@ public interface Dialect {
     // This is dangerous for several reasons, as they hide different instructions and it might not be obvious how flags are
     // affected, or what is happening under the hood, making debugging harder. So, MDL generates a warning message 
     // when these are found.
-    default boolean parseFakeCPUOps(List<String> tokens, SourceLine sl, List<SourceStatement> l, SourceFile source, CodeBase code) {
+    default boolean parseFakeCPUOps(List<String> tokens, SourceLine sl, List<SourceStatement> l, SourceStatement previous, SourceFile source, CodeBase code) {
         // (no-op by default)
         return true;
     }

@@ -64,7 +64,7 @@ public class CPUOpPattern {
             for(String variable:match.variables.keySet()) {
                 argStr = argStr.replace(variable, match.variables.get(variable).toString());
             }
-            Expression exp = config.expressionParser.parse(Tokenizer.tokenize(argStr), null, code);
+            Expression exp = config.expressionParser.parse(Tokenizer.tokenize(argStr), null, null, code);
             if (exp == null) {
                 config.error("Cannot parse argument '" + argStr + "' when instantiating pattern " + pattern.name);
                 return null;
@@ -72,7 +72,7 @@ public class CPUOpPattern {
             instantiatedArgs.add(exp);
         }
 
-        List<CPUOp> op_l =  config.opParser.parseOp(opName, instantiatedArgs, s, code);
+        List<CPUOp> op_l =  config.opParser.parseOp(opName, instantiatedArgs, s, null, code);
         if (op_l == null) {
             config.error("Cannot parse: " + opName + " " + instantiatedArgs);
         }
@@ -112,7 +112,7 @@ public class CPUOpPattern {
         
         while(!tokens.isEmpty()) {
             if (Tokenizer.isSingleLineComment(tokens.get(0))) break;
-            Expression exp = config.expressionParser.parse(tokens, null, code);
+            Expression exp = config.expressionParser.parse(tokens, null, null ,code);
             if (exp == null) {
                 config.error("Cannot parse CPUOpPattern: " + line);
                 return null;

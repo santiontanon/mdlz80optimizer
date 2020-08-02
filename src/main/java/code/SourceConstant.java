@@ -5,6 +5,7 @@ package code;
 
 public class SourceConstant {
     public String name;
+    public String originalName; // name before scoping
     public Expression exp;
     Number valueCache;  // null if not yet evaluated
     
@@ -13,9 +14,10 @@ public class SourceConstant {
     
     public SourceStatement definingStatement;  // the statement where it was defined
     
-    public SourceConstant(String a_name, Number a_value, Expression a_exp, SourceStatement a_s)
+    public SourceConstant(String a_name, String a_originalName, Number a_value, Expression a_exp, SourceStatement a_s)
     {
         name = a_name;
+        originalName = a_originalName;
         valueCache = a_value;
         exp = a_exp;
         definingStatement = a_s;

@@ -82,7 +82,7 @@ public class Pattern {
                         if (!tokens.get(0).equals("(")) throw new RuntimeException("cannot parse constraint: " + line);
                         tokens.remove(0);
                         while(!tokens.get(0).equals(")")) {
-                            Expression exp = config.expressionParser.parse(tokens, null, patternCB);
+                            Expression exp = config.expressionParser.parse(tokens, null, null, patternCB);
                             if (exp == null) throw new RuntimeException("cannot parse constraint: " + line);
                             expressions.add(exp);
                             if (tokens.get(0).equals(",")) tokens.remove(0);
@@ -444,8 +444,8 @@ public class Pattern {
                     List<String> v1_tokens = applyBindingsToTokens(Tokenizer.tokenize(v1_str), match);
                     List<String> v2_tokens = applyBindingsToTokens(Tokenizer.tokenize(v2_str), match);
                     
-                    Expression exp1 = config.expressionParser.parse(v1_tokens, null, code);
-                    Expression exp2 = config.expressionParser.parse(v2_tokens, null, code);
+                    Expression exp1 = config.expressionParser.parse(v1_tokens, null, null, code);
+                    Expression exp2 = config.expressionParser.parse(v2_tokens, null, null, code);
                     
                     if (exp1.evaluatesToIntegerConstant() != exp2.evaluatesToIntegerConstant()) return null;
                     if (exp1.evaluatesToIntegerConstant()) {
@@ -469,8 +469,8 @@ public class Pattern {
                     List<String> v1_tokens = applyBindingsToTokens(Tokenizer.tokenize(v1_str), match);
                     List<String> v2_tokens = applyBindingsToTokens(Tokenizer.tokenize(v2_str), match);
 
-                    Expression exp1 = config.expressionParser.parse(v1_tokens, null, code);
-                    Expression exp2 = config.expressionParser.parse(v2_tokens, null, code);
+                    Expression exp1 = config.expressionParser.parse(v1_tokens, null, null, code);
+                    Expression exp2 = config.expressionParser.parse(v2_tokens, null, null, code);
 
                     if (exp1.evaluatesToIntegerConstant() != exp2.evaluatesToIntegerConstant()) break;
                     if (exp1.evaluatesToIntegerConstant()) {
