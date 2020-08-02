@@ -101,6 +101,32 @@ public class CPUOpParser {
     {
         if (!a_op.equalsIgnoreCase(spec.opName)) return null;
         if (spec.args.size() != a_args.size()) return null;
+        
+        // replace S/NS by M/P as flags:
+        if (spec.opName.equalsIgnoreCase("ret") && !a_args.isEmpty()) {
+            if (a_args.get(0).type == Expression.EXPRESSION_SYMBOL) {
+                if (a_args.get(0).symbolName.equalsIgnoreCase("s")) {
+                    a_args.get(0).type = Expression.EXPRESSION_REGISTER_OR_FLAG;
+                    a_args.get(0).registerOrFlagName = "m";
+                } else if (a_args.get(0).symbolName.equalsIgnoreCase("ns")) {
+                    a_args.get(0).type = Expression.EXPRESSION_REGISTER_OR_FLAG;
+                    a_args.get(0).registerOrFlagName = "p";
+                }
+            }
+        } else if ((spec.opName.equalsIgnoreCase("call") ||
+                    spec.opName.equalsIgnoreCase("jp")) && a_args.size() == 2) {
+            if (a_args.get(0).type == Expression.EXPRESSION_SYMBOL) {
+                if (a_args.get(0).symbolName.equalsIgnoreCase("s")) {
+                    a_args.get(0).type = Expression.EXPRESSION_REGISTER_OR_FLAG;
+                    a_args.get(0).registerOrFlagName = "m";
+                } else if (a_args.get(0).symbolName.equalsIgnoreCase("ns")) {
+                    a_args.get(0).type = Expression.EXPRESSION_REGISTER_OR_FLAG;
+                    a_args.get(0).registerOrFlagName = "p";
+                }
+            }            
+        }
+        
+        
         for(int i = 0; i<spec.args.size(); i++) {
             if (!spec.args.get(i).match(a_args.get(i), spec, s, code)) {
                 return null;
