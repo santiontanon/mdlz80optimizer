@@ -48,15 +48,12 @@ public class GlassDialect implements Dialect {
     
     MDLConfig config;
     
-    HashMap<String, SectionRecord> sections = new HashMap<>();
-    List<SectionPortionRecord> sectionStack = new ArrayList<>();
-    
     // Although this is not documented, it seems you can have the same "section XXX" command multiple times
     // in the same codebase, and the address counters just continue from the last time. So, we need to keep
     // track of how many times each section has appeared:
-//    HashMap<String,Integer> sectionAppearanceCounters = new HashMap<>();
-//    List<String> sectionAppearanceCounterStack = new ArrayList<>();
-    
+    HashMap<String, SectionRecord> sections = new HashMap<>();
+    List<SectionPortionRecord> sectionStack = new ArrayList<>();
+        
     // We keep track, to give a warning at the end, since Section is not fully supported yet if MDL is asked to generate output assembler
     boolean usedSectionKeyword = false;
     
@@ -146,29 +143,6 @@ public class GlassDialect implements Dialect {
                 return null;
             }
             String sectionName = getSectionName(exp.symbolName, code);
-//            s.type = SourceStatement.STATEMENT_ORG;
-//            s.org = exp;
-            
-//            int appearanceCounter = 1;
-//            if (sectionAppearanceCounters.containsKey(sectionName)) {
-//                appearanceCounter = sectionAppearanceCounters.get(sectionName);
-//            }
-
-//            sectionAppearanceCounterStack.add(0, sectionName + "_" + appearanceCounter);
-
-            // it's not the first time we have seen this section:
-//            if (appearanceCounter > 1) {
-//                s.org = Expression.symbolExpression("__address_before_section_"+sectionName+"_"+(appearanceCounter-1)+"_ends", code, config);
-//            } 
-            
-            // Insert a helper statement, so we can restore the address counter after the section is complete:
-//            SourceStatement sectionHelper = new SourceStatement(SourceStatement.STATEMENT_NONE, sl, source);
-//            sectionHelper.label = new SourceConstant("__address_before_section_"+sectionName+"_"+appearanceCounter+"_starts", null, 
-//                    Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, code, config), sectionHelper);
-//            code.addSymbol(sectionHelper.label.name, sectionHelper.label);
-//            l.add(0, sectionHelper);
-
-//            sectionAppearanceCounters.put(sectionName, appearanceCounter+1);
             
             // Add a section record entry:
             SectionPortionRecord spr = new SectionPortionRecord(sectionName);
@@ -186,19 +160,6 @@ public class GlassDialect implements Dialect {
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("ends")) {
             if (!sectionStack.isEmpty()) {
                 tokens.remove(0);
-//                String sectionName_appearanceCounter = sectionAppearanceCounterStack.remove(0);
-//                int appearanceCounter = sectionAppearanceCounters.get(sectionName);
-                
-                // Insert two helper statements, so we can restore the address counter after the section is complete, and continue the section later on
-//                SourceStatement sectionHelper1 = new SourceStatement(SourceStatement.STATEMENT_NONE, sl, source);
-//                sectionHelper1.label = new SourceConstant("__address_before_section_"+sectionName_appearanceCounter+"_ends", null, 
-//                        Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, code, config), sectionHelper1);
-//                code.addSymbol(sectionHelper1.label.name, sectionHelper1.label);
-//                SourceStatement sectionHelper2 = new SourceStatement(SourceStatement.STATEMENT_ORG, sl, source);
-//                sectionHelper2.org = Expression.symbolExpression("__address_before_section_"+sectionName_appearanceCounter+"_starts", code, config);
-//                l.add(0,sectionHelper1);
-//                l.add(1,sectionHelper2);
-//                sectionAppearanceCounters.put(sectionName, appearanceCounter+1);
                 
                 SectionPortionRecord spr = sectionStack.remove(0);
                 spr.end = s;
@@ -427,7 +388,7 @@ public class GlassDialect implements Dialect {
 
         // Assemble the macro at address 0:
         boolean succeeded = true;
-        SourceFile f = new SourceFile(macro.definingStatement.source.fileName + ":macro(" + macro.name+")", null, null, config);
+        SourceFile f = new SourceFile(macro.definingStatement.source.fileName + ":macro(" + macro.name+")", null, null, code, config);
         try {
             // supress error messages when attempting to assemble a macro, as it might fail:
             config.logger.silence();
@@ -499,9 +460,7 @@ public class GlassDialect implements Dialect {
         // this is a debug message, not a warning, as it can definitively happen if macros contain unresolved symbols:
         if (succeeded) {
             // Add all the new symbols to the source:
-//            config.info("\n------------- MACRO " + macro.name + " ----------------\n");
             for(SourceStatement s:f.getStatements()) {
-//                config.info(s.toString());
                 if (s.label != null &&
                     !s.label.name.startsWith(config.preProcessor.unnamedMacroPrefix)) {
                     Number value = s.label.getValue(code, true);

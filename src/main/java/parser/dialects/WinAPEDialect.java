@@ -50,6 +50,10 @@ public class WinAPEDialect implements Dialect {
     @Override
     public String newSymbolName(String name, Expression value) 
     {
+        if (name.equalsIgnoreCase("write") ||
+            name.equalsIgnoreCase("close")) {
+            return null;
+        }
         return name;
     }
 

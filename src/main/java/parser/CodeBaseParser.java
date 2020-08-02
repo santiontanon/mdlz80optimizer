@@ -49,6 +49,8 @@ public class CodeBaseParser {
                 s.resolveLocalLabels(code);
             }
         }        
+
+        code.resetAddresses();
         
         // Expand all macros that were not expanded initially:
         if (!expandAllMacros(code)) {
@@ -85,7 +87,7 @@ public class CodeBaseParser {
             return null;
         }
 
-        SourceFile f = new SourceFile(fileName, parent, parentInclude, config);
+        SourceFile f = new SourceFile(fileName, parent, parentInclude, code, config);
         if (parent == null)
             code.setMain(f);
         code.addSourceFile(f);

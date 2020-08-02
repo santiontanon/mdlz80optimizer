@@ -17,11 +17,13 @@ public class SourceFile {
     List<SourceStatement> statements = new ArrayList<>();
     SourceFile parent = null;
     SourceStatement parentInclude = null;
+    CodeBase code = null;
 
-    public SourceFile(String a_fileName, SourceFile a_parent, SourceStatement a_parentInclude, MDLConfig a_config) {
+    public SourceFile(String a_fileName, SourceFile a_parent, SourceStatement a_parentInclude, CodeBase a_code, MDLConfig a_config) {
         fileName = a_fileName;
         parent = a_parent;
         parentInclude = a_parentInclude;
+        code = a_code;
         config = a_config;
     }
 

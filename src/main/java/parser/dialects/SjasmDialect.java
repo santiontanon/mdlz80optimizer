@@ -1212,7 +1212,7 @@ public class SjasmDialect implements Dialect {
         }
         
         // Create a new source file, and add all the code blocks:
-        SourceFile reconstructedFile = new SourceFile(code.getMain().fileName, null, null, config);
+        SourceFile reconstructedFile = new SourceFile(code.getMain().fileName, null, null, code, config);
         code.getSourceFiles().clear();
         code.addSourceFile(reconstructedFile);
         code.setMain(reconstructedFile);

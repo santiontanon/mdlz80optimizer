@@ -22,11 +22,11 @@ import parser.Tokenizer;
  */
 public class CPUOpSpecTest {    
     private final MDLConfig mdlConfig;
-    private final CodeBase codeBase;
+    private final CodeBase code;
 
     public CPUOpSpecTest() {
         mdlConfig = new MDLConfig();
-        codeBase = new CodeBase(mdlConfig);   
+        code = new CodeBase(mdlConfig);   
     }
 
     @Test public void test1() throws IOException { Assert.assertEquals("ld a, 1", test("ld a,1", null)); }
@@ -57,9 +57,9 @@ public class CPUOpSpecTest {
         } else {
             Assert.assertTrue(mdlConfig.parseArgs("dummy.asm","-dialect",dialect));
         }
-        SourceFile dummy = new SourceFile("dummy.asm", null, null, mdlConfig);
+        SourceFile dummy = new SourceFile("dummy.asm", null, null, code, mdlConfig);
         
-        List<SourceStatement> l = mdlConfig.lineParser.parse(Tokenizer.tokenize(opString), new SourceLine("", dummy, 0), dummy, codeBase, mdlConfig);
+        List<SourceStatement> l = mdlConfig.lineParser.parse(Tokenizer.tokenize(opString), new SourceLine("", dummy, 0), dummy, code, mdlConfig);
         if (l == null || l.isEmpty()) return null;
         String output = null;
         for(SourceStatement s:l) {

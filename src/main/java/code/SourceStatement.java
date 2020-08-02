@@ -259,8 +259,27 @@ public class SourceStatement {
     public String toStringUsingRootPath(Path rootPath)
     {
         String str = "";
-        if (label != null) str = label.name + ":";
-        
+        if (label != null) {
+            str = label.name + ":";
+            if (type == STATEMENT_NONE) {
+                // check if the next statement is an equ, and generate an additinoal "equ $", since 
+                // some assemblers (Glass in particular), interpret this as two labels being defined with
+                // the same value, thus misinterpreting the code of other assemblers.
+                SourceStatement next = source.getNextStatementTo(this, source.code);
+                while(next != null) {
+                    if (next.type == STATEMENT_NONE && next.label == null) {
+                        next = next.source.getNextStatementTo(next, source.code);
+                    } else if (next.type == STATEMENT_INCLUDE && next.label == null) {
+                        next = next.include.getNextStatementTo(null, source.code);
+                    } else if (next.type == STATEMENT_CONSTANT) {
+                        str += " equ " + CodeBase.CURRENT_ADDRESS;
+                        break;
+                    } else {
+                        break;
+                    }
+                }
+            }
+        }
         
         switch(type) {
             case STATEMENT_NONE:
