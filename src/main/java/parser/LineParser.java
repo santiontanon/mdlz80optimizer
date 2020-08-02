@@ -307,6 +307,9 @@ public class LineParser {
                         break;
                     }
                 }
+                if (config.dialectParser != null) {
+                    if (config.dialectParser.recognizeIdiom(tokens)) isLabel = false;
+                }
                 if (isLabel) {
                     if (config.warningLabelWithoutColon
                             && !tokens.get(1).equals(":=") && !tokens.get(1).equals("=")) {

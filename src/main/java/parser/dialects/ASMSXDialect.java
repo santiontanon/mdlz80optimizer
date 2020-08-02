@@ -59,9 +59,10 @@ public class ASMSXDialect implements Dialect {
     {
         config = a_config;
 
-        config.lineParser.KEYWORD_ORG = ".org";
-        config.lineParser.KEYWORD_INCLUDE = ".include";
-        config.lineParser.KEYWORD_INCBIN = ".incbin";
+        config.lineParser.addKeywordSynonym(".org", config.lineParser.KEYWORD_ORG);
+        config.lineParser.addKeywordSynonym(".include", config.lineParser.KEYWORD_INCLUDE);
+        config.lineParser.addKeywordSynonym(".incbin", config.lineParser.KEYWORD_INCBIN);
+
         config.lineParser.addKeywordSynonym(".equ", config.lineParser.KEYWORD_EQU);
 
         config.lineParser.addKeywordSynonym(".db", config.lineParser.KEYWORD_DB);
