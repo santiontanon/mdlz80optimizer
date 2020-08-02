@@ -276,6 +276,8 @@ public class LineParser {
             }
         } else if (canBeLabel(token) && !config.preProcessor.isMacroIncludingEnds(token)) {
             if (sl.line.startsWith(token) && (tokens.size() == 1 || Tokenizer.isSingleLineComment(tokens.get(1)))) {
+                if (!config.opParser.getOpSpecs(tokens.get(0)).isEmpty()) return true;
+                
                 // it is just a label without colon:
                 if (config.warningLabelWithoutColon) {
                     config.warn("Style suggestion", s.fileNameLineString(),
@@ -301,14 +303,17 @@ public class LineParser {
             } else if (tokens.size() >= 2) {
                 boolean isLabel = false;
                 if (sl.line.startsWith(token)) isLabel = true;
+                if (config.dialectParser != null && isLabel) {
+                    if (config.dialectParser.recognizeIdiom(tokens)) isLabel = false;
+                }
+                if (isLabel) {
+                    if (!config.opParser.getOpSpecs(tokens.get(0)).isEmpty()) isLabel = false;
+                }
                 for (String keyword : keywordsHintingALabel) {
                     if (isKeyword(tokens.get(1), keyword)) {
                         isLabel = true;
                         break;
                     }
-                }
-                if (config.dialectParser != null) {
-                    if (config.dialectParser.recognizeIdiom(tokens)) isLabel = false;
                 }
                 if (isLabel) {
                     if (config.warningLabelWithoutColon

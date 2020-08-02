@@ -142,6 +142,23 @@ public class SourceMacro {
             } else {
                 lines2.addAll(elseLines);
             }
+            
+        } else if (config.preProcessor.isMacroName(name, config.preProcessor.MACRO_IFNDEF)) {
+            Expression exp = args.get(0);
+            boolean defined = false;
+            if (exp.type == Expression.EXPRESSION_SYMBOL) {
+                SourceConstant sc = code.getSymbol(exp.symbolName);
+                if (sc != null && sc.exp != null) defined = true;
+            } else {
+                config.error("Incorrect parameter to " + config.preProcessor.MACRO_IFDEF + ": " + args.get(0));
+                return null;
+            }
+            if (defined) {
+                lines2.addAll(elseLines);
+            } else {
+                lines2.addAll(lines);
+            }
+            
         } else if (config.preProcessor.dialectMacros.containsKey(name)) {
             return config.dialectParser.instantiateMacro(this, args, macroCall, code);
         } else {

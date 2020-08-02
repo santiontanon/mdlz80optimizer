@@ -50,6 +50,11 @@ public class ExpressionTest {
     @Test public void test19() { Assert.assertEquals(Integer.valueOf(Expression.TRUE), evaluate("0.05 < 1")); }
     @Test public void test20() { Assert.assertEquals(Integer.valueOf(0x99), evaluate("0x99")); }
     @Test public void test21() { Assert.assertEquals(Integer.valueOf(0x99), evaluate("0X99")); }
+    @Test public void test22() { 
+        Tokenizer.allowAndpersandHex = true;
+        Assert.assertEquals(Integer.valueOf(0xc0de), evaluate("&C0DE")); 
+        Tokenizer.allowAndpersandHex = false;
+    }
 
     private Number evaluate(String line)
     {

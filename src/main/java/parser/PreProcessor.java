@@ -26,6 +26,7 @@ public class PreProcessor {
     public final String MACRO_ENDR = "endr";
     public final String MACRO_IF = "if";
     public final String MACRO_IFDEF = "ifdef";
+    public final String MACRO_IFNDEF = "ifndef";
     public final String MACRO_ELSE = "else";
     public final String MACRO_ENDIF = "endif";
     
@@ -117,7 +118,8 @@ public class PreProcessor {
         if (dialectMacros.containsKey(name.toLowerCase())) return true;
         return  (isMacroName(name, MACRO_REPT) ||
                  isMacroName(name, MACRO_IF) ||
-                 isMacroName(name, MACRO_IFDEF));
+                 isMacroName(name, MACRO_IFDEF) ||
+                 isMacroName(name, MACRO_IFNDEF));
     }
 
     
@@ -129,6 +131,7 @@ public class PreProcessor {
         return  (isMacroName(name, MACRO_REPT) ||
                  isMacroName(name, MACRO_IF) ||
                  isMacroName(name, MACRO_IFDEF) ||
+                 isMacroName(name, MACRO_IFNDEF) ||
                  isMacroName(name, MACRO_ENDM) ||
                  isMacroName(name, MACRO_ENDR) ||
                  isMacroName(name, MACRO_ELSE) ||
@@ -182,7 +185,8 @@ public class PreProcessor {
                     currentState.currentMacro = null;
 
                 } else if (isMacroName(m.name, MACRO_IF) ||
-                           isMacroName(m.name, MACRO_IFDEF)) {
+                           isMacroName(m.name, MACRO_IFDEF) ||
+                           isMacroName(m.name, MACRO_IFNDEF)) {
                     m.addLine(sl);
 
                 } else if (dialectMacros.containsKey(m.name)) {
@@ -223,7 +227,8 @@ public class PreProcessor {
         } else if (!tokens.isEmpty() && isMacroName(tokens.get(0), MACRO_ENDIF)) {
             if (currentState.currentMacroNameStack.isEmpty()) {
                 if (isMacroName(m.name, MACRO_IF) ||
-                    isMacroName(m.name, MACRO_IFDEF)) {
+                    isMacroName(m.name, MACRO_IFDEF) ||
+                    isMacroName(m.name, MACRO_IFNDEF)) {
                     SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_MACROCALL, sl, f);
                     s.macroCallMacro = m;
                     s.macroCallArguments = m.preDefinedMacroArgs;
@@ -241,7 +246,8 @@ public class PreProcessor {
         } else if (!tokens.isEmpty() && isMacroName(tokens.get(0), MACRO_ELSE)) {
             if (currentState.currentMacroNameStack.isEmpty() &&
                 (isMacroName(m.name, MACRO_IF) ||
-                 isMacroName(m.name, MACRO_IFDEF))) {
+                 isMacroName(m.name, MACRO_IFDEF) ||
+                 isMacroName(m.name, MACRO_IFNDEF))) {
                 m.insideElse = true;
             } else {
                 m.addLine(sl);
@@ -251,6 +257,9 @@ public class PreProcessor {
             m.addLine(sl);
         } else if (!tokens.isEmpty() && isMacroName(tokens.get(0), MACRO_IFDEF)) {
             currentState.currentMacroNameStack.add(0, MACRO_IFDEF);
+            m.addLine(sl);
+        } else if (!tokens.isEmpty() && isMacroName(tokens.get(0), MACRO_IFNDEF)) {
+            currentState.currentMacroNameStack.add(0, MACRO_IFNDEF);
             m.addLine(sl);
         } else if (!tokens.isEmpty() && isMacroName(tokens.get(0), MACRO_REPT)) {
             currentState.currentMacroNameStack.add(0, MACRO_REPT);
@@ -314,6 +323,16 @@ public class PreProcessor {
 
             } else if (isMacroName(s.macroCallName, MACRO_IFDEF)) {
                 SourceMacro m = new SourceMacro(MACRO_IFDEF, s);
+                m.preDefinedMacroArgs = s.macroCallArguments;
+                if (currentState.currentMacro != null) {
+                    config.error("Something weird just happend (expanding two macros at once, contact the developer) in " + sl);
+                    return null;
+                }
+                currentState.currentMacro = m;
+                return l;
+                
+            } else if (isMacroName(s.macroCallName, MACRO_IFNDEF)) {
+                SourceMacro m = new SourceMacro(MACRO_IFNDEF, s);
                 m.preDefinedMacroArgs = s.macroCallArguments;
                 if (currentState.currentMacro != null) {
                     config.error("Something weird just happend (expanding two macros at once, contact the developer) in " + sl);

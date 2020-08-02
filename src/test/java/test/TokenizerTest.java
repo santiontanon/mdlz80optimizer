@@ -81,7 +81,11 @@ public class TokenizerTest {
     @Test public void test21() {
         Assert.assertArrayEquals(new String[]{"db","(","%","+","1",")","*","(","%%","+","1",")","/","(","%","%","8",")"}, tokenize("db (%+1)*(%%+1)/(% % 8)"));
     }
-
+    @Test public void test22() {
+        Tokenizer.allowAndpersandHex = true;
+        Assert.assertArrayEquals(new String[]{"&C0DE"}, tokenize("&C0DE"));
+        Tokenizer.allowAndpersandHex = false;
+    }
 
     
     private static String[] tokenize(String line)

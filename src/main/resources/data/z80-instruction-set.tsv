@@ -418,3 +418,4 @@ SUB A, n	7	8	2	D6 n	2	A				A	S,Z,H,P/V,N,C			false
 EX AF,AF	4	5	1	8	1	AF				AF				false
 SBC (IX+o)	19	21	5	DD 9E o	3	A,IX	C		IX+o	A	S,Z,H,P/V,N,C			false
 SBC (IY+o)	19	21	5	FD 9E o	3	A,IY	C		IY+o	A	S,Z,H,P/V,N,C			false
+AND A, n	7	8	2	E6 n	2	A				A	S,Z,H,P/V,N,C			false

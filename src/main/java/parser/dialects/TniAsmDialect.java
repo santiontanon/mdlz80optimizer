@@ -4,8 +4,6 @@
 package parser.dialects;
 
 
-import org.apache.commons.lang3.StringUtils;
-
 import cl.MDLConfig;
 import code.CodeBase;
 import code.Expression;
@@ -56,7 +54,7 @@ public class TniAsmDialect implements Dialect {
     public String newSymbolName(String name, Expression value) {
 
         // A relative label
-        if (StringUtils.startsWith(name, ".")) {
+        if (name.startsWith(".")) {
             return lastAbsoluteLabel + name;
         }
 
@@ -76,7 +74,7 @@ public class TniAsmDialect implements Dialect {
     @Override
     public String symbolName(String name) {
 
-        return StringUtils.startsWith(name, ".")
+        return name.startsWith(".")
                 ? lastAbsoluteLabel + name
                 : name;
     }

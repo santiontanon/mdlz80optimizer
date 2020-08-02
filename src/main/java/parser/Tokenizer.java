@@ -27,6 +27,8 @@ public class Tokenizer {
         doubleTokens.add("++");
         doubleTokens.add("--");
     }
+    
+    public static boolean allowAndpersandHex = false;
 
     
     public static List<String> tokenizeIncludingBlanks(String line) {
@@ -69,6 +71,15 @@ public class Tokenizer {
                     tokens.add(previous+next);
                     previous = previous+next;
                     continue;
+                }
+                if (allowAndpersandHex) {
+                    if (previous.equals("&") && isHexCharacter(next.charAt(0))) {
+                        // merge, as this is just a single symbol
+                        tokens.remove(tokens.size()-1);
+                        tokens.add(previous+next);
+                        previous = previous+next;
+                        continue;
+                    }
                 }
                 if (next.equals("%")) {
                     boolean allPercents = true;
@@ -217,7 +228,7 @@ public class Tokenizer {
         int startIndex = 0;
         String allowed = "0123456789abcdef";
         
-        if (token.charAt(0) == '#' || token.charAt(0) == '$') startIndex = 1;
+        if (token.charAt(0) == '#' || token.charAt(0) == '$' || token.charAt(0) == '&') startIndex = 1;
         for(int i = startIndex;i<token.length();i++) {
             char c = (char)token.charAt(i);
             c = Character.toLowerCase(c);

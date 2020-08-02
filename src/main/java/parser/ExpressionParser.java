@@ -305,7 +305,7 @@ public class ExpressionParser {
             }
         }
         if (tokens.size() >= 1 && tokens.get(0).length() > 1 &&
-            (tokens.get(0).startsWith("#") || tokens.get(0).startsWith("$"))) {
+            (tokens.get(0).startsWith("#") || tokens.get(0).startsWith("$")  || tokens.get(0).startsWith("&"))) {
             // should be a hex constant:
             String token = tokens.get(0);
             if (Tokenizer.isHex(token)) {
