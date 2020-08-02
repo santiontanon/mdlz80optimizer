@@ -190,6 +190,7 @@ public class SjasmDialect implements Dialect {
         // indicating the current iteration
         config.preProcessor.dialectMacros.put("repeat", "endrepeat");
         
+        // It is important that registers on the left-hand-side are capitalized (the right hand side does not matter):
         addFakeInstruction("RL BC", "rl c\nrl b");
         addFakeInstruction("RL DE", "rl e\nrl d");
         addFakeInstruction("RL BC", "rl c\nrl b");
@@ -286,7 +287,6 @@ public class SjasmDialect implements Dialect {
         addFakeInstruction("SUB HL,DE", "or a\nsbc hl,de");
         addFakeInstruction("SUB HL,HL", "or a\nsbc hl,hl");
         addFakeInstruction("SUB HL,SP", "or a\nsbc hl,sp");
-        
         addFakeInstruction("LD BC,(IX+o)", "ld c,(ix+o)\nld b,(ix+o+1)");
         addFakeInstruction("LD BC,(IY+o)", "ld c,(iy+o)\nld b,(iy+o+1)");
         addFakeInstruction("LD DE,(IX+o)", "ld e,(ix+o)\nld d,(ix+o+1)");
@@ -299,83 +299,80 @@ public class SjasmDialect implements Dialect {
         addFakeInstruction("LD (IY+o),BC", "ld (iy+o),c\nld (iy+o+1),b");
         addFakeInstruction("LD (IY+o),DE", "ld (iy+o),e\nld (iy+o+1),d");
         addFakeInstruction("LD (IY+o),HL", "ld (iy+o),l\nld (iy+o+1),h");
-        // (not all of them supported yet)
-        /*
-  ldi bc,(ix+nn)  ; ld c,(ix+nn) : inc ix : ld b,(ix+nn) : inc ix
-  ldi bc,(iy+nn)  ; ld c,(iy+nn) : inc iy : ld b,(iy+nn) : inc iy
-  ldi de,(ix+nn)  ; ld e,(ix+nn) : inc ix : ld d,(ix+nn) : inc ix
-  ldi de,(iy+nn)  ; ld e,(iy+nn) : inc iy : ld d,(iy+nn) : inc iy
-  ldi hl,(ix+nn)  ; ld l,(ix+nn) : inc ix : ld h,(ix+nn) : inc ix
-  ldi hl,(iy+nn)  ; ld l,(iy+nn) : inc iy : ld h,(iy+nn) : inc iy
-  ldi (ix+nn),bc  ; ld (ix+nn),c : inc ix : ld (ix+nn),b : inc ix
-  ldi (ix+nn),de  ; ld (ix+nn),e : inc ix : ld (ix+nn),d : inc ix
-  ldi (ix+nn),hl  ; ld (ix+nn),l : inc ix : ld (ix+nn),h : inc ix
-  ldi (iy+nn),bc  ; ld (iy+nn),c : inc iy : ld (iy+nn),b : inc iy
-  ldi (iy+nn),de  ; ld (iy+nn),e : inc iy : ld (iy+nn),d : inc iy
-  ldi (iy+nn),hl  ; ld (iy+nn),l : inc iy : ld (iy+nn),h : inc iy
-  ldi a,(ix+nn)   ; ld a,(ix+nn) : inc ix
-  ldi b,(ix+nn)   ; ld b,(ix+nn) : inc ix
-  ldi c,(ix+nn)   ; ld c,(ix+nn) : inc ix
-  ldi d,(ix+nn)   ; ld d,(ix+nn) : inc ix
-  ldi e,(ix+nn)   ; ld e,(ix+nn) : inc ix
-  ldi h,(ix+nn)   ; ld h,(ix+nn) : inc ix
-  ldi l,(ix+nn)   ; ld l,(ix+nn) : inc ix
-  ldi a,(iy+nn)   ; ld a,(iy+nn) : inc iy
-  ldi b,(iy+nn)   ; ld b,(iy+nn) : inc iy
-  ldi c,(iy+nn)   ; ld c,(iy+nn) : inc iy
-  ldi d,(iy+nn)   ; ld d,(iy+nn) : inc iy
-  ldi e,(iy+nn)   ; ld e,(iy+nn) : inc iy
-  ldi h,(iy+nn)   ; ld h,(iy+nn) : inc iy
-  ldi l,(iy+nn)   ; ld l,(iy+nn) : inc iy
-  ldd a,(ix+nn)   ; ld a,(ix+nn) : dec ix
-  ldd b,(ix+nn)   ; ld b,(ix+nn) : dec ix
-  ldd c,(ix+nn)   ; ld c,(ix+nn) : dec ix
-  ldd d,(ix+nn)   ; ld d,(ix+nn) : dec ix
-  ldd e,(ix+nn)   ; ld e,(ix+nn) : dec ix
-  ldd h,(ix+nn)   ; ld h,(ix+nn) : dec ix
-  ldd l,(ix+nn)   ; ld l,(ix+nn) : dec ix
-  ldd a,(iy+nn)   ; ld a,(iy+nn) : dec iy
-  ldd b,(iy+nn)   ; ld b,(iy+nn) : dec iy
-  ldd c,(iy+nn)   ; ld c,(iy+nn) : dec iy
-  ldd d,(iy+nn)   ; ld d,(iy+nn) : dec iy
-  ldd e,(iy+nn)   ; ld e,(iy+nn) : dec iy
-  ldd h,(iy+nn)   ; ld h,(iy+nn) : dec iy
-  ldd l,(iy+nn)   ; ld l,(iy+nn) : dec iy
-  ldi (ix+nn),a   ; ld (ix+nn),a : inc ix
-  ldi (ix+nn),b   ; ld (ix+nn),b : inc ix
-  ldi (ix+nn),c   ; ld (ix+nn),c : inc ix
-  ldi (ix+nn),d   ; ld (ix+nn),d : inc ix
-  ldi (ix+nn),e   ; ld (ix+nn),e : inc ix
-  ldi (ix+nn),h   ; ld (ix+nn),h : inc ix
-  ldi (ix+nn),l   ; ld (ix+nn),l : inc ix
-  ldi (iy+nn),a   ; ld (iy+nn),a : inc iy
-  ldi (iy+nn),b   ; ld (iy+nn),b : inc iy
-  ldi (iy+nn),c   ; ld (iy+nn),c : inc iy
-  ldi (iy+nn),d   ; ld (iy+nn),d : inc iy
-  ldi (iy+nn),e   ; ld (iy+nn),e : inc iy
-  ldi (iy+nn),h   ; ld (iy+nn),h : inc iy
-  ldi (iy+nn),l   ; ld (iy+nn),l : inc iy
-  ldd (ix+nn),a   ; ld (ix+nn),a : dec ix
-  ldd (ix+nn),b   ; ld (ix+nn),b : dec ix
-  ldd (ix+nn),c   ; ld (ix+nn),c : dec ix
-  ldd (ix+nn),d   ; ld (ix+nn),d : dec ix
-  ldd (ix+nn),e   ; ld (ix+nn),e : dec ix
-  ldd (ix+nn),h   ; ld (ix+nn),h : dec ix
-  ldd (ix+nn),l   ; ld (ix+nn),l : dec ix
-  ldd (iy+nn),a   ; ld (iy+nn),a : dec iy
-  ldd (iy+nn),b   ; ld (iy+nn),b : dec iy
-  ldd (iy+nn),c   ; ld (iy+nn),c : dec iy
-  ldd (iy+nn),d   ; ld (iy+nn),d : dec iy
-  ldd (iy+nn),e   ; ld (iy+nn),e : dec iy
-  ldd (iy+nn),h   ; ld (iy+nn),h : dec iy
-  ldd (iy+nn),l   ; ld (iy+nn),l : dec iy
-  ldi (hl),mm     ; ld (hl),mm : inc hl
-  ldi (ix+nn),mm  ; ld (ix+nn),mm : inc ix
-  ldi (iy+nn),mm  ; ld (iy+nn),mm : inc iy
-  ldd (hl),mm     ; ld (hl),mm : dec hl
-  ldd (ix+nn),mm  ; ld (ix+nn),mm : dec ix
-  ldd (iy+nn),mm  ; ld (iy+nn),mm : dec iy
-*/
+        addFakeInstruction("ldi BC,(IX+o)", "ld C,(IX+o)\ninc IX\nld b,(IX+o)\ninc IX");
+        addFakeInstruction("ldi BC,(IY+o)", "ld C,(IY+o)\ninc IY\nld b,(IY+o)\ninc IY");
+        addFakeInstruction("ldi DE,(IX+o)", "ld E,(IX+o)\ninc IX\nld d,(IX+o)\ninc IX");
+        addFakeInstruction("ldi DE,(IY+o)", "ld E,(IY+o)\ninc IY\nld d,(IY+o)\ninc IY");
+        addFakeInstruction("ldi HL,(IX+o)", "ld L,(IX+o)\ninc IX\nld h,(IX+o)\ninc IX");
+        addFakeInstruction("ldi HL,(IY+o)", "ld L,(IY+o)\ninc IY\nld h,(IY+o)\ninc IY");
+        addFakeInstruction("ldi (IX+o),BC", "ld (IX+o),C\ninc IX\nld (IX+o),B\ninc IX");
+        addFakeInstruction("ldi (IX+o),DE", "ld (IX+o),E\ninc IX\nld (IX+o),D\ninc IX");
+        addFakeInstruction("ldi (IX+o),HL", "ld (IX+o),L\ninc IX\nld (IX+o),H\ninc IX");
+        addFakeInstruction("ldi (IY+o),BC", "ld (IY+o),C\ninc IY\nld (IY+o),B\ninc IY");
+        addFakeInstruction("ldi (IY+o),DE", "ld (IY+o),E\ninc IY\nld (IY+o),D\ninc IY");
+        addFakeInstruction("ldi (IY+o),HL", "ld (IY+o),L\ninc IY\nld (IY+o),H\ninc IY");
+        addFakeInstruction("ldi A,(IX+o)", "ld A,(IX+o)\ninc IX");
+        addFakeInstruction("ldi B,(IX+o)", "ld B,(IX+o)\ninc IX");
+        addFakeInstruction("ldi C,(IX+o)", "ld C,(IX+o)\ninc IX");
+        addFakeInstruction("ldi D,(IX+o)", "ld D,(IX+o)\ninc IX");
+        addFakeInstruction("ldi E,(IX+o)", "ld E,(IX+o)\ninc IX");
+        addFakeInstruction("ldi H,(IX+o)", "ld H,(IX+o)\ninc IX");
+        addFakeInstruction("ldi L,(IX+o)", "ld L,(IX+o)\ninc IX");
+        addFakeInstruction("ldi A,(IY+o)", "ld A,(IY+o)\ninc IY");
+        addFakeInstruction("ldi B,(IY+o)", "ld B,(IY+o)\ninc IY");
+        addFakeInstruction("ldi C,(IY+o)", "ld C,(IY+o)\ninc IY");
+        addFakeInstruction("ldi D,(IY+o)", "ld D,(IY+o)\ninc IY");
+        addFakeInstruction("ldi E,(IY+o)", "ld E,(IY+o)\ninc IY");
+        addFakeInstruction("ldi H,(IY+o)", "ld H,(IY+o)\ninc IY");
+        addFakeInstruction("ldi L,(IY+o)", "ld L,(IY+o)\ninc IY");
+        addFakeInstruction("ldd A,(IX+o)", "ld A,(IX+o)\ndec IX");
+        addFakeInstruction("ldd B,(IX+o)", "ld B,(IX+o)\ndec IX");
+        addFakeInstruction("ldd C,(IX+o)", "ld C,(IX+o)\ndec IX");
+        addFakeInstruction("ldd D,(IX+o)", "ld D,(IX+o)\ndec IX");
+        addFakeInstruction("ldd E,(IX+o)", "ld E,(IX+o)\ndec IX");
+        addFakeInstruction("ldd H,(IX+o)", "ld H,(IX+o)\ndec IX");
+        addFakeInstruction("ldd L,(IX+o)", "ld L,(IX+o)\ndec IX");
+        addFakeInstruction("ldd A,(IY+o)", "ld A,(IY+o)\ndec IY");
+        addFakeInstruction("ldd B,(IY+o)", "ld B,(IY+o)\ndec IY");
+        addFakeInstruction("ldd C,(IY+o)", "ld C,(IY+o)\ndec IY");
+        addFakeInstruction("ldd D,(IY+o)", "ld D,(IY+o)\ndec IY");
+        addFakeInstruction("ldd E,(IY+o)", "ld E,(IY+o)\ndec IY");
+        addFakeInstruction("ldd H,(IY+o)", "ld H,(IY+o)\ndec IY");
+        addFakeInstruction("ldd L,(IY+o)", "ld L,(IY+o)\ndec IY");
+        addFakeInstruction("ldi (IX+o),A", "ld (IX+o),a\ninc IX");
+        addFakeInstruction("ldi (IX+o),B", "ld (IX+o),b\ninc IX");
+        addFakeInstruction("ldi (IX+o),C", "ld (IX+o),c\ninc IX");
+        addFakeInstruction("ldi (IX+o),D", "ld (IX+o),d\ninc IX");
+        addFakeInstruction("ldi (IX+o),E", "ld (IX+o),e\ninc IX");
+        addFakeInstruction("ldi (IX+o),H", "ld (IX+o),h\ninc IX");
+        addFakeInstruction("ldi (IX+o),L", "ld (IX+o),l\ninc IX");
+        addFakeInstruction("ldi (IY+o),A", "ld (IY+o),a\ninc IY");
+        addFakeInstruction("ldi (IY+o),B", "ld (IY+o),b\ninc IY");
+        addFakeInstruction("ldi (IY+o),C", "ld (IY+o),c\ninc IY");
+        addFakeInstruction("ldi (IY+o),D", "ld (IY+o),d\ninc IY");
+        addFakeInstruction("ldi (IY+o),E", "ld (IY+o),e\ninc IY");
+        addFakeInstruction("ldi (IY+o),H", "ld (IY+o),h\ninc IY");
+        addFakeInstruction("ldi (IY+o),L", "ld (IY+o),l\ninc IY");
+        addFakeInstruction("ldd (IX+o),A", "ld (IX+o),a\ndec IX");
+        addFakeInstruction("ldd (IX+o),B", "ld (IX+o),b\ndec IX");
+        addFakeInstruction("ldd (IX+o),C", "ld (IX+o),c\ndec IX");
+        addFakeInstruction("ldd (IX+o),D", "ld (IX+o),d\ndec IX");
+        addFakeInstruction("ldd (IX+o),E", "ld (IX+o),e\ndec IX");
+        addFakeInstruction("ldd (IX+o),H", "ld (IX+o),h\ndec IX");
+        addFakeInstruction("ldd (IX+o),L", "ld (IX+o),l\ndec IX");
+        addFakeInstruction("ldd (IY+o),A", "ld (IY+o),a\ndec IY");
+        addFakeInstruction("ldd (IY+o),B", "ld (IY+o),b\ndec IY");
+        addFakeInstruction("ldd (IY+o),C", "ld (IY+o),c\ndec IY");
+        addFakeInstruction("ldd (IY+o),D", "ld (IY+o),d\ndec IY");
+        addFakeInstruction("ldd (IY+o),E", "ld (IY+o),e\ndec IY");
+        addFakeInstruction("ldd (IY+o),H", "ld (IY+o),h\ndec IY");
+        addFakeInstruction("ldd (IY+o),L", "ld (IY+o),l\ndec IY");
+        addFakeInstruction("ldi (HL),nn", "ld (HL),nn\ninc HL");
+        addFakeInstruction("ldi (IX+o),nn", "ld (IX+o),nn\ninc IX");
+        addFakeInstruction("ldi (IY+o),nn", "ld (IY+o),nn\ninc IY");
+        addFakeInstruction("ldd (HL),nn", "ld (HL),nn\ndec HL");
+        addFakeInstruction("ldd (IX+o),nn", "ld (IX+o),nn\ndec IX");
+        addFakeInstruction("ldd (IY+o),nn", "ld (IY+o),nn\ndec IY");
     }
     
     

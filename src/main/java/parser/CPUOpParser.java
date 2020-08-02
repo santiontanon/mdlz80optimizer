@@ -122,14 +122,51 @@ public class CPUOpParser {
                     if (token.equals("o")) {
                         // replace it with the value in the args:
                         if (spec.args.get(0).regOffsetIndirection != null) {
-                            Expression exp = a_args.get(0).args.get(0).args.get(1);
-                            tokens.addAll(Tokenizer.tokenize(exp.toString()));
+                            Expression exp = null;
+                            switch (a_args.get(0).args.get(0).type) {
+                                case Expression.EXPRESSION_SUM:
+                                    exp = a_args.get(0).args.get(0).args.get(1);
+                                    break;
+                                case Expression.EXPRESSION_SUB:
+                                    if (!tokens.remove(tokens.size()-1).equals("+")) {
+                                        return null;
+                                    }   tokens.add("-");
+                                    exp = a_args.get(0).args.get(0).args.get(1);
+                                    break;
+                                default:
+                                    if (!tokens.remove(tokens.size()-1).equals("+")) {                                
+                                        return null;
+                                    }   break;
+                            }
+                            if (exp != null) {
+                                tokens.addAll(Tokenizer.tokenize(exp.toString()));
+                            }
                         } else if (spec.args.get(1).regOffsetIndirection != null) {
-                            Expression exp = a_args.get(1).args.get(0).args.get(1);
-                            tokens.addAll(Tokenizer.tokenize(exp.toString()));
+                            Expression exp = null;
+                            switch (a_args.get(1).args.get(0).type) {
+                                case Expression.EXPRESSION_SUM:
+                                    exp = a_args.get(1).args.get(0).args.get(1);
+                                    break;
+                                case Expression.EXPRESSION_SUB:
+                                    if (!tokens.remove(tokens.size()-1).equals("+")) {
+                                        return null;
+                                    }   tokens.add("-");
+                                    exp = a_args.get(1).args.get(0).args.get(1);
+                                    break;
+                                default:
+                                    if (!tokens.remove(tokens.size()-1).equals("+")) {                                
+                                        return null;
+                                    }   break;
+                            }
+                            if (exp != null) {
+                                tokens.addAll(Tokenizer.tokenize(exp.toString()));
+                            }
                         } else {
                             return null;
                         }
+                    } else if (token.equals("nn")) {
+                        // we assume this occurs only as the second argument:
+                        tokens.addAll(Tokenizer.tokenize(a_args.get(1).toString()));
                     } else {
                         tokens.add(token);
                     }
