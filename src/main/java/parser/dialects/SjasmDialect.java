@@ -425,7 +425,9 @@ public class SjasmDialect implements Dialect {
     private String getLastAbsoluteLabel(SourceStatement s) 
     {
         while(s != null) {
-            if (s.label != null && s.label.isLabel() && 
+            // sjasm considers any label as an absolute label, even if it's associated with an equ,
+            // so, no need to check if s.label.isLabel() (as in asMSX):
+            if (s.label != null &&
                 !s.label.originalName.startsWith(".") &&
                 !Tokenizer.isInteger(s.label.originalName)) {
                 return s.label.originalName;

@@ -49,8 +49,10 @@ public class TniAsmDialect implements Dialect {
     
     private String getLastAbsoluteLabel(SourceStatement s) 
     {
+        // sjasm considers any label as an absolute label, even if it's associated with an equ,
+        // so, no need to check if s.label.isLabel() (as in asMSX):
         while(s != null) {
-            if (s.label != null && s.label.isLabel() && !s.label.originalName.startsWith(".")) {
+            if (s.label != null && !s.label.originalName.startsWith(".")) {
                 return s.label.originalName;
             } else {
                 s = s.source.getPreviousStatementTo(s, s.source.code);
