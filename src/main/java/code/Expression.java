@@ -887,7 +887,13 @@ public class Expression {
         return exp;
     }
 
+    
     public static Expression symbolExpression(String symbol, CodeBase code, MDLConfig config) {
+        return symbolExpressionInternal(symbol, code, true, config);
+    }    
+    
+    
+    public static Expression symbolExpressionInternal(String symbol, CodeBase code, boolean evaluateEagerSymbols, MDLConfig config) {
         if (code.isRegister(symbol)
                 || code.isCondition(symbol)) {
             Expression exp = new Expression(EXPRESSION_REGISTER_OR_FLAG, config);
@@ -896,7 +902,7 @@ public class Expression {
         } else {
             // check if it's a variable that needs to be evaluated eagerly:
             SourceConstant c = code.getSymbol(symbol);
-            if (c != null && c.resolveEagerly) {
+            if (c != null && c.resolveEagerly && evaluateEagerSymbols) {
                 Number value = c.getValue(code, false);
                 if (value == null) {
                     config.error("Cannot resolve eager variable " + symbol + "!");

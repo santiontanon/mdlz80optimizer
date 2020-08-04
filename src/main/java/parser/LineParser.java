@@ -773,11 +773,24 @@ public class LineParser {
             SourceLine sl,
             SourceStatement s, SourceStatement previous, SourceFile source, CodeBase code) {
         List<Expression> arguments = new ArrayList<>();
+        // special case for "IFDEF", which takes a special kind of argument (which should never be
+        // evaluated, regardless if it's an eager variable or not):
+        boolean isIfDef = false;
+        if (config.preProcessor.isMacroName(macroName, config.preProcessor.MACRO_IFDEF)) {
+            isIfDef = true;
+        }
         while (!tokens.isEmpty()) {
             if (Tokenizer.isSingleLineComment(tokens.get(0))) {
                 break;
             }
-            Expression exp = config.expressionParser.parse(tokens, s, previous, code);
+            Expression exp;
+            if (isIfDef) {
+                String token = tokens.remove(0);
+                if (config.dialectParser != null) token = config.dialectParser.symbolName(token, previous);
+                exp = Expression.symbolExpressionInternal(token, code, false, config);
+            } else {
+                exp = config.expressionParser.parse(tokens, s, previous, code);
+            }
             if (exp == null) {
                 config.error("parseMacroCall: Cannot parse line " + sl);
                 return false;

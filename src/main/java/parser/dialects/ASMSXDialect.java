@@ -136,7 +136,7 @@ public class ASMSXDialect implements Dialect {
         {
             boolean allDashes = true;
             for(String token:tokens) {
-                if (!token.equals("-")) {
+                if (!token.equals("-") && !token.equals("--")) {
                     allDashes = false;
                     break;
                 }
@@ -150,7 +150,9 @@ public class ASMSXDialect implements Dialect {
     private String getLastAbsoluteLabel(SourceStatement s) 
     {
         while(s != null) {
-            if (s.label != null && s.label.isLabel() && !s.label.originalName.startsWith(".")) {
+            if (s.label != null && s.label.isLabel() && 
+                !s.label.originalName.startsWith(".") &&
+                !s.label.originalName.startsWith("@@")) {
                 return s.label.originalName;
             } else {
                 s = s.source.getPreviousStatementTo(s, s.source.code);
@@ -479,7 +481,7 @@ public class ASMSXDialect implements Dialect {
         {
             boolean allDashes = true;
             for(String token:tokens) {
-                if (!token.equals("-")) {
+                if (!token.equals("-") && !token.equals("--")) {
                     allDashes = false;
                     break;
                 }
