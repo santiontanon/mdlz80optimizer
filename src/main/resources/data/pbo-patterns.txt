@@ -1082,6 +1082,80 @@ replacement:
 constraints:
 regsNotUsedAfter(0,BC)
 
+pattern: Replace ld a,(?const); or ?any; ld (?const),a with ld hl,?const; ld a,(hl); or ?any; ld (hl),a
+0: ld a,(?const)
+1: or ?any
+2: ld (?const),a
+replacement:
+0: ld hl,?const
+1: ld a,(hl)
+2: or ?any
+3: ld (hl),a
+constraints:
+regsNotUsedAfter(0,HL)
+
+; The following two patterns are alternatives to the one above, in case the one above does not match:
+pattern: Replace ld a,(?const); or ?any; ld (?const),a with ld de,?const; ld a,(de); or ?any; ld (de),a
+0: ld a,(?const)
+1: or ?any
+2: ld (?const),a
+replacement:
+0: ld de,?const
+1: ld a,(de)
+2: or ?any
+3: ld (de),a
+constraints:
+regsNotUsedAfter(0,DE)
+
+pattern: Replace ld a,(?const); and ?any; ld (?const),a with ld bc,?const; ld a,(bc); and ?any; ld (bc),a
+0: ld a,(?const)
+1: or ?any
+2: ld (?const),a
+replacement:
+0: ld bc,?const
+1: ld a,(bc)
+2: or ?any
+3: ld (bc),a
+constraints:
+regsNotUsedAfter(0,BC)
+
+pattern: Replace ld a,(?const); xor ?any; ld (?const),a with ld hl,?const; ld a,(hl); xor ?any; ld (hl),a
+0: ld a,(?const)
+1: xor ?any
+2: ld (?const),a
+replacement:
+0: ld hl,?const
+1: ld a,(hl)
+2: xor ?any
+3: ld (hl),a
+constraints:
+regsNotUsedAfter(0,HL)
+
+; The following two patterns are alternatives to the one above, in case the one above does not match:
+pattern: Replace ld a,(?const); xor ?any; ld (?const),a with ld de,?const; ld a,(de); xor ?any; ld (de),a
+0: ld a,(?const)
+1: xor ?any
+2: ld (?const),a
+replacement:
+0: ld de,?const
+1: ld a,(de)
+2: xor ?any
+3: ld (de),a
+constraints:
+regsNotUsedAfter(0,DE)
+
+pattern: Replace ld a,(?const); xor ?any; ld (?const),a with ld bc,?const; ld a,(bc); xor ?any; ld (bc),a
+0: ld a,(?const)
+1: xor ?any
+2: ld (?const),a
+replacement:
+0: ld bc,?const
+1: ld a,(bc)
+2: xor ?any
+3: ld (bc),a
+constraints:
+regsNotUsedAfter(0,BC)
+
 pattern: Replace push de; ld de, ?const1; add hl, de; pop de with ld bc, ?const1; add hl, bc
 0: push de
 1: ld de, ?const1
@@ -1151,3 +1225,20 @@ replacement:
 constraints:
 equal(?const >= 2, -1) 
 
+pattern: Replace scf; ccf with or a
+0: scf
+1: ccf
+replacement:
+0: or a
+
+pattern: Replace push ?regpair1; pop ?regpair2 with ld ?reg2h,?reg1h; ld ?reg2l,?reg1l
+0: push ?regpair1
+1: pop ?regpair2
+replacement:
+0: ld ?reg2h,?reg1h
+1: ld ?reg2l,?reg1l
+constraints:
+in(?regpair1,BC,DE,HL)
+in(?regpair2,BC,DE,HL)
+regpair(?regpair1,?reg1h,?reg1l)
+regpair(?regpair2,?reg2h,?reg2l)

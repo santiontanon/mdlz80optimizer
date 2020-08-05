@@ -776,7 +776,8 @@ public class LineParser {
         // special case for "IFDEF", which takes a special kind of argument (which should never be
         // evaluated, regardless if it's an eager variable or not):
         boolean isIfDef = false;
-        if (config.preProcessor.isMacroName(macroName, config.preProcessor.MACRO_IFDEF)) {
+        if (config.preProcessor.isMacroName(macroName, config.preProcessor.MACRO_IFDEF) ||
+            config.preProcessor.isMacroName(macroName, config.preProcessor.MACRO_IFNDEF)) {
             isIfDef = true;
         }
         while (!tokens.isEmpty()) {
