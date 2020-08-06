@@ -894,8 +894,7 @@ public class Expression {
     
     
     public static Expression symbolExpressionInternal(String symbol, CodeBase code, boolean evaluateEagerSymbols, MDLConfig config) {
-        if (code.isRegister(symbol)
-                || code.isCondition(symbol)) {
+        if (code.isRegister(symbol) || code.isCondition(symbol)) {
             Expression exp = new Expression(EXPRESSION_REGISTER_OR_FLAG, config);
             exp.registerOrFlagName = symbol;
             return exp;

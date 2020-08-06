@@ -71,8 +71,12 @@ public class CPUOpPattern {
             }
             instantiatedArgs.add(exp);
         }
+        String instantiatedOpName = opName;
+        if (opName.startsWith("?op") && match.variables.containsKey(opName)) {
+            instantiatedOpName = match.variables.get(opName).toString();
+        }
 
-        List<CPUOp> op_l =  config.opParser.parseOp(opName, instantiatedArgs, s, null, code);
+        List<CPUOp> op_l =  config.opParser.parseOp(instantiatedOpName, instantiatedArgs, s, null, code);
         if (op_l == null) {
             config.error("Cannot parse: " + opName + " " + instantiatedArgs);
         }
@@ -109,6 +113,9 @@ public class CPUOpPattern {
         }
         pat.opName = token;
         if (pat.opName.equals(WILDCARD)) return pat;
+        if (pat.opName.equals("?")) {
+            pat.opName = "?" + tokens.remove(0);
+        }
         
         while(!tokens.isEmpty()) {
             if (Tokenizer.isSingleLineComment(tokens.get(0))) break;

@@ -17,6 +17,7 @@ import code.Expression;
 import code.SourceConstant;
 import code.SourceFile;
 import code.SourceStatement;
+import java.util.Arrays;
 import parser.Tokenizer;
 
 /**
@@ -269,7 +270,13 @@ public class Pattern {
 
     public boolean opMatch(CPUOpPattern pat1, CPUOp op2, SourceStatement s, CodeBase code, PatternMatch match)
     {
-        if (!pat1.opName.equals(op2.spec.opName)) return false;
+        if (pat1.opName.startsWith("?op")) {
+            if (!match.addVariableMatch(pat1.opName, Expression.symbolExpressionInternal(op2.spec.opName, code, false, config))) {
+                return false;
+            }
+        } else {
+            if (!pat1.opName.equals(op2.spec.opName)) return false;
+        }
         if (pat1.args.size() != op2.args.size()) return false;
 
         for(int i = 0;i<pat1.args.size();i++) {
@@ -496,7 +503,9 @@ public class Pattern {
                             break;
                         }
                     }
-                    if (!found) return null;
+                    if (!found) {
+                        return null;
+                    }
                     break;
                 }
                 case "notIn":
