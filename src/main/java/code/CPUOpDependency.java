@@ -28,7 +28,7 @@ public class CPUOpDependency {
     {
         register = dep.register;
         flag = dep.flag;
-        port = dep.flag;
+        port = dep.port;
         memoryStart = dep.memoryStart;
         memoryEnd = dep.memoryEnd;
     }    

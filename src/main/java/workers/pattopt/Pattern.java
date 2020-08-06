@@ -17,7 +17,6 @@ import code.Expression;
 import code.SourceConstant;
 import code.SourceFile;
 import code.SourceStatement;
-import java.util.Arrays;
 import parser.Tokenizer;
 
 /**
@@ -434,7 +433,7 @@ public class Pattern {
                     int idx = Integer.parseInt(constraint[1]);
                     if (!match.map.containsKey(idx)) return null;
                     for(int i = 2;i<constraint.length;i++) {
-                        String flag = constraint[i];
+                        String flag = constraint[i].replace(" ", "");   // this is because the P/V flag, otherwise, it's generated as "P / V" and there is no match
 
                         if (!flagNotUsedAfter(match.map.get(idx).get(match.map.get(idx).size()-1), flag, f, code)) {
                             if (logPatternsMatchedWithViolatedConstraints)

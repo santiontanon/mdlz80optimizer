@@ -57,6 +57,12 @@ replacement:
 constraints:
 regsNotUsedAfter(0,A)
 
+pattern: Remove unused ld ?reg,?any
+0: ld ?reg,?any
+replacement:
+constraints:
+regsNotUsedAfter(0,?reg)
+
 pattern: Replace ld a,0 with xor a
 0: ld a,0
 replacement:
@@ -73,12 +79,6 @@ replacement:
 1: rrca
 2: rrca
 2: and #1f
-
-pattern: Remove unused ld ?reg,?any
-0: ld ?reg,?any
-replacement:
-constraints:
-regsNotUsedAfter(0,?reg)
 
 pattern: Replace pop ?regpair1; ld ?regpair2h,?regpair1h; ld ?regpair2l,?regpair1l with pop ?regpair2
 0: pop ?regpair1
