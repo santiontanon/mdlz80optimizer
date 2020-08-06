@@ -123,6 +123,29 @@ replacement:
 constraints:
 regsNotUsedAfter(2,HL)
 
+
+pattern: Replace 0: ld a,(?const1); dec a; ld (?const1),a with  ld hl,?const1; dec (hl)
+0: ld a,(?const1)
+1: dec a
+2: ld (?const1),a
+replacement:
+0: ld hl,?const1
+1: dec (hl)
+constraints:
+regsNotUsedAfter(2,A,HL)
+
+pattern: Replace ld a,(?const1); dec a; ld (?const1),a with  ld hl,?const1; dec (hl); ld a,(hl)
+0: ld a,(?const1)
+1: dec a
+2: ld (?const1),a
+replacement:
+0: ld hl,?const1
+1: dec (hl)
+2: ld a,(hl)
+constraints:
+regsNotUsedAfter(2,HL)
+
+
 pattern: Replace ld ?regpair1h,?const1; ld ?regpair1l,?const2 with ld ?regpair1,((?const2) & #ff) + ((?const1) << 8)
 0: ld ?regpair1h,?const1
 1: *
@@ -183,7 +206,7 @@ replacement:
 constraints:
 regsNotUsedAfter(3,A,BC)
 
-pattern: Replace ld a,(hl); lde (de),a; inc de; inc hl; with ldi
+pattern: Replace ld a,(hl); ld (de),a; inc de; inc hl; with ldi
 0: ld a,(hl)
 1: ld (de),a
 3: inc de
