@@ -631,6 +631,27 @@ public class Pattern {
                     }
                     break;
                 }
+                case "flagsNotModified":
+                {
+                    int idx = Integer.parseInt(constraint[1]);
+                    List<SourceStatement> statements = new ArrayList<>();
+                    if (match.map.containsKey(idx)) {
+                        statements.addAll(match.map.get(idx));
+                    } else {
+                        return null;
+                    }
+                    for(int i = 2;i<constraint.length;i++) {
+                        String flag = constraint[i];
+                        for(SourceStatement s:statements) {
+                            if (!flagNotModified(s, flag, f, code)) {
+                                return null;
+                            }
+                        }
+                        config.debug("flagsNotModified " + flag + " satisfied in: " + statements);
+                        config.debug("    mapping was: " + match.variables);
+                    }
+                    break;
+                }
                 case "regsNotUsed":
                 {
                     int idx = Integer.parseInt(constraint[1]);
@@ -648,6 +669,27 @@ public class Pattern {
                             }
                         }
                         config.debug("regsNotModified " + reg + " satisfied in: " + statements);
+                        config.debug("    mapping was: " + match.variables);
+                    }
+                    break;
+                }
+                case "flagsNotUsed":
+                {
+                    int idx = Integer.parseInt(constraint[1]);
+                    List<SourceStatement> statements = new ArrayList<>();
+                    if (match.map.containsKey(idx)) {
+                        statements.addAll(match.map.get(idx));
+                    } else {
+                        return null;
+                    }
+                    for(int i = 2;i<constraint.length;i++) {
+                        String flag = constraint[i];
+                        for(SourceStatement s:statements) {
+                            if (!flagNotUsed(s, flag, f, code)) {
+                                return null;
+                            }
+                        }
+                        config.debug("flagsNotUsed " + flag + " satisfied in: " + statements);
                         config.debug("    mapping was: " + match.variables);
                     }
                     break;
@@ -875,13 +917,31 @@ public class Pattern {
             }
             
             CPUOpDependency dep2 = op.checkOutputDependency(dep);
-            
             return dep.equals(dep2);
         } else {
             return true;
         }
     }
     
+    
+    public boolean flagNotModified(SourceStatement s, String flag, SourceFile f, CodeBase code)
+    {
+        CPUOpDependency dep = new CPUOpDependency(null, flag.toUpperCase(), null, null, null);        
+        if (s.type == SourceStatement.STATEMENT_CPUOP) {
+            CPUOp op = s.op;            
+            if (op.isRet()) {
+                // It's hard to tell where is this instruction going to jump,
+                // so we act conservatively, and block the optimization:
+                config.trace("    ret!");
+                return false;
+            }
+            
+            CPUOpDependency dep2 = op.checkOutputDependency(dep);
+            return dep.equals(dep2);
+        } else {
+            return true;
+        }
+    }    
     
 
     public boolean regNotUsed(SourceStatement s, String reg, SourceFile f, CodeBase code)
@@ -901,6 +961,25 @@ public class Pattern {
             return true;
         }
     }
+    
+    
+    public boolean flagNotUsed(SourceStatement s, String flag, SourceFile f, CodeBase code)
+    {
+        CPUOpDependency dep = new CPUOpDependency(null, flag.toUpperCase(), null, null, null);        
+        if (s.type == SourceStatement.STATEMENT_CPUOP) {
+            CPUOp op = s.op;            
+            if (op.isRet()) {
+                // It's hard to tell where is this instruction going to jump,
+                // so we act conservatively, and block the optimization:
+                config.trace("    ret!");
+                return false;
+            }
+            
+            return !op.checkInputDependency(dep);
+        } else {
+            return true;
+        }
+    }    
     
     
     public boolean regNotUsedAfter(SourceStatement s, String reg, SourceFile f, CodeBase code)

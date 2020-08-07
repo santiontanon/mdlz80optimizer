@@ -14,9 +14,11 @@
 ; The optimization will be reported to the line in pattern with number 0 (at least one line must have number 0)
 ; supported constraints:
 ; - regsNotUsedAfter(#, reg1, ..., reg)
-; - flagsNotUsedAfter(#, flag1, ..., flagn)
 ; - regsNotModified(#, reg1, ..., reg)
 ; - regsNotUsed(#, reg1, ..., reg)
+; - flagsNotUsedAfter(#, flag1, ..., flagn)
+; - flagsNotModified(#, flag1, ..., flagn)
+; - flagsNotUsed(#, flag1, ..., flagn)
 ; - equal(exp1, exp2)
 ; - notEqual(exp1, exp2)
 ; - in(variable, value1, ..., valuen)
@@ -63,11 +65,12 @@ replacement:
 constraints:
 regsNotUsedAfter(0,?reg)
 
-pattern: Replace ld a,0 with xor a
-0: ld a,0
+pattern: Replace ld a,?const with xor a
+0: ld a,?const
 replacement:
 0: xor a
 constraints:
+equal(?const,0)
 flagsNotUsedAfter(0,S,Z,H,P/V,N,C)
 
 pattern: Replace srl a; srl a; srl a with rrca; rrca; rrca; and #1f
@@ -1070,3 +1073,28 @@ in(?regpair1,BC,DE,HL)
 in(?regpair2,BC,DE,HL)
 regpair(?regpair1,?reg1h,?reg1l)
 regpair(?regpair2,?reg2h,?reg2l)
+
+pattern: Replace ld ?reg, a; ld a, ?const; add a, ?reg with add a, ?const
+0: ld ?reg, a
+1: ld a, ?const
+2: add a, ?reg
+replacement:
+0: add a, ?const
+constraints:
+regsNotUsedAfter(2, ?reg)
+
+pattern: Remove unnecessary ?op ?const
+0: ?op ?const
+replacement:
+constraints:
+equal(?const,0)
+in(?op,and,or,xor,sub)
+flagsNotUsedAfter(0,S,Z,H,P/V,N,C)
+
+pattern: Remove unnecessary ?op a,?const
+0: ?op a,?const
+replacement:
+constraints:
+equal(?const,0)
+in(?op,add)
+flagsNotUsedAfter(0,S,Z,H,P/V,N,C)

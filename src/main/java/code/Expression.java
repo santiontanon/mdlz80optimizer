@@ -95,7 +95,11 @@ public class Expression {
 
             case EXPRESSION_SYMBOL: {
                 if (symbolName.equals(CodeBase.CURRENT_ADDRESS)) {
-                    return s.getAddress(code);
+                    if (s != null) {
+                        return s.getAddress(code);
+                    } else {
+                        return null;
+                    }
                 }
                 Number value = code.getSymbolValue(symbolName, silent);
                 if (value == null) {
