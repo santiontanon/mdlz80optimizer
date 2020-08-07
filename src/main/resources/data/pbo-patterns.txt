@@ -1099,7 +1099,7 @@ equal(?const,0)
 in(?op,add)
 flagsNotUsedAfter(0,S,Z,H,P/V,N,C)
 
-pattern: Remove unnecessary ?opandor a
+pattern: Remove unnecessary and a / or a
 0: ?opjrjp c,?const
 1: *
 2: ?opandor a
@@ -1114,7 +1114,7 @@ in(?opandor,and,or)
 flagsNotModified(1,C)
 in(?reg,BC,DE,HL,SP)
 
-pattern: Remove unnecessary ?opandor a
+pattern: Remove unnecessary and a / or a
 0: ?opresCarry ?any
 1: *
 2: ?opandor a
@@ -1130,7 +1130,7 @@ flagsNotModified(1,C)
 in(?reg,BC,DE,HL,SP)
 in(?any,A,B,C,D,E,H,L,IXL,IXH,IYL,IYH,(HL),(IX+?const),(IY+?const),?const)
 
-pattern: Remove unnecessary conditional jumps
+pattern: Remove unnecessary conditional jumps (mainly this is a warning) 
 0: ?opresCarry ?any
 1: *
 2: ?opjrjp nc,?const
@@ -1144,7 +1144,7 @@ flagsNotModified(1,C)
 in(?any,A,B,C,D,E,H,L,IXL,IXH,IYL,IYH,(HL),(IX+?const),(IY+?const),?const)
 in(?opjrjp,jr,jp,call)
 
-pattern: Remove unnecessary conditional ret
+pattern: Remove unnecessary conditional ret (mainly this is a warning)
 0: ?opresCarry ?any
 1: *
 2: ret nc
@@ -1156,5 +1156,30 @@ constraints:
 in(?opresCarry,and,or,xor)
 flagsNotModified(1,C)
 in(?any,A,B,C,D,E,H,L,IXL,IXH,IYL,IYH,(HL),(IX+?const),(IY+?const),?const)
+
+pattern: Remove unnecessary conditional jumps (mainly this is a warning) 
+0: ?opjrjp c,?const
+1: *
+2: ?opjrjp nc,?const
+replacement:
+0:?opjrjp nc,?const
+1: *
+2: ?opjrjp ?const
+constraints:
+flagsNotModified(1,C)
+in(?opjrjp,jr,jp,call)
+
+pattern: Remove unnecessary conditional jumps (mainly this is a warning)
+0: ?opjrjp nc,?const
+1: *
+2: ?opjrjp c,?const
+replacement:
+0: ?opjrjp nc,?const
+1: *
+2: ?opjrjp ?const
+constraints:
+flagsNotModified(1,C)
+in(?opjrjp,jr,jp,call)
+
 
 
