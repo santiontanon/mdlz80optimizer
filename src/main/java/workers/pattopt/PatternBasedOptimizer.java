@@ -67,7 +67,7 @@ public class PatternBasedOptimizer implements MDLWorker {
 
     @Override
     public String docString() {
-        return "  -po: Runs the pattern-based optimizer.\n" +
+        return "  -po: Runs the pattern-based optimizer. You can pass an optimal parameter, like '-po size' or '-po speed', which are shortcuts for '-po -popatterns data/pbo-patterns-size.txt' and '-po -popatterns data/pbo-patterns-speed.txt'\n" +
                "  -posilent: Supresses the pattern-based-optimizer output\n" +
                "  -popotential: Reports lines where a potential optimization was not applied for safety, but could maybe be done manually.\n" +
                "  -popatterns <file>: specifies the file to load optimization patterns from (default 'data/pbo-patterns.txt', " +
@@ -79,6 +79,15 @@ public class PatternBasedOptimizer implements MDLWorker {
     public boolean parseFlag(List<String> flags) {
         if (flags.get(0).equals("-po")) {
             flags.remove(0);
+            if (!flags.isEmpty()) {
+                if (flags.get(0).equals("size")) {
+                    inputPatternsFileName = "data/pbo-patterns-size.txt";
+                    flags.remove(0);
+                } else if (flags.get(0).equals("speed")) {
+                    inputPatternsFileName = "data/pbo-patterns-speed.txt";
+                    flags.remove(0);
+                }
+            }
             activate = true;
             return true;
         }
