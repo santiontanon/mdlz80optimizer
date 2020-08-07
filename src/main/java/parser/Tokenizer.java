@@ -7,6 +7,8 @@ import cl.MDLConfig;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class Tokenizer {    
     public static final List<String> doubleTokens = new ArrayList<>();
@@ -26,10 +28,13 @@ public class Tokenizer {
         doubleTokens.add(":=");
         doubleTokens.add("++");
         doubleTokens.add("--");
-    }
+    }    
     
     public static boolean allowAndpersandHex = false;
-
+    
+    
+    static Matcher doubleMatcher = Pattern.compile("[\\x00-\\x20]*[+-]?(((((\\p{Digit}+)(\\.)?((\\p{Digit}+)?)([eE][+-]?(\\p{Digit}+))?)|(\\.((\\p{Digit}+))([eE][+-]?(\\p{Digit}+))?)|(((0[xX](\\p{XDigit}+)(\\.)?)|(0[xX](\\p{XDigit}+)?(\\.)(\\p{XDigit}+)))[pP][+-]?(\\p{Digit}+)))[fFdD]?))[\\x00-\\x20]*")
+            .matcher("");        
     
     public static List<String> tokenizeIncludingBlanks(String line) {
         return tokenize(line, new ArrayList<>(), true);
@@ -199,13 +204,17 @@ public class Tokenizer {
 
     public static boolean isDouble(String token)
     {
+        /*
         try{
             Double.parseDouble(token);
             return true;
         } catch(Exception e) {
             return false;
         }
+        */
+        return doubleMatcher.reset(token).matches();
     }
+    
     
     public static boolean isHexCharacter(int c)
     {

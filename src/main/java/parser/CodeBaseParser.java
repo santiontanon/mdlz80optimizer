@@ -155,7 +155,7 @@ public class CodeBaseParser {
 
     boolean parseSourceFileInternal(SourceFile f, CodeBase code, MDLConfig config) throws IOException
     {
-        config.trace("Parsing "+f.fileName+"...");
+        // config.trace("Parsing "+f.fileName+"...");
 
         try (BufferedReader br = Resources.asReader(f.fileName)) {
             int file_lineNumber = 0;
@@ -261,7 +261,7 @@ public class CodeBaseParser {
 
             if (s_macro.type == SourceStatement.STATEMENT_MACROCALL) {
                 // expand macro!
-                config.trace("expandAllMacros: Expanding macro: " + s_macro.macroCallName != null ? s_macro.macroCallName : s_macro.macroCallMacro.name);
+                // config.trace("expandAllMacros: Expanding macro: " + s_macro.macroCallName != null ? s_macro.macroCallName : s_macro.macroCallMacro.name);
 
                 List<SourceStatement> l2 = config.preProcessor.handleStatement(s_macro.sl, s_macro, f, code, true);
                 int insertionPoint = i;

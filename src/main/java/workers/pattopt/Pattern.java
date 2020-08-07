@@ -113,7 +113,7 @@ public class Pattern {
             config.error("Pattern \""+name+"\" does not contain a non wildcard line with ID 0!");
         }
 
-        config.trace("parsed pattern: " + name);
+        // config.trace("parsed pattern: " + name);
     }
 
 
@@ -284,7 +284,7 @@ public class Pattern {
             if (!unifyExpressions(arg1, arg2, true, match, s, code)) return false;
         }
 
-        config.trace("opMatch: "+pat1+" with "+op2+" ("+match.variables+")");
+        // config.trace("opMatch: "+pat1+" with "+op2+" ("+match.variables+")");
         return true;
     }
 
@@ -626,8 +626,8 @@ public class Pattern {
                                 return null;
                             }
                         }
-                        config.debug("regsNotModified " + reg + " satisfied in: " + statements);
-                        config.debug("    mapping was: " + match.variables);
+                        // config.debug("regsNotModified " + reg + " satisfied in: " + statements);
+                        // config.debug("    mapping was: " + match.variables);
                     }
                     break;
                 }
@@ -647,8 +647,8 @@ public class Pattern {
                                 return null;
                             }
                         }
-                        config.debug("flagsNotModified " + flag + " satisfied in: " + statements);
-                        config.debug("    mapping was: " + match.variables);
+                        // config.debug("flagsNotModified " + flag + " satisfied in: " + statements);
+                        // config.debug("    mapping was: " + match.variables);
                     }
                     break;
                 }
@@ -668,8 +668,8 @@ public class Pattern {
                                 return null;
                             }
                         }
-                        config.debug("regsNotModified " + reg + " satisfied in: " + statements);
-                        config.debug("    mapping was: " + match.variables);
+                        // config.debug("regsNotModified " + reg + " satisfied in: " + statements);
+                        // config.debug("    mapping was: " + match.variables);
                     }
                     break;
                 }
@@ -689,8 +689,8 @@ public class Pattern {
                                 return null;
                             }
                         }
-                        config.debug("flagsNotUsed " + flag + " satisfied in: " + statements);
-                        config.debug("    mapping was: " + match.variables);
+                        // config.debug("flagsNotUsed " + flag + " satisfied in: " + statements);
+                        // config.debug("    mapping was: " + match.variables);
                     }
                     break;
                 }
@@ -881,7 +881,7 @@ public class Pattern {
         code.resetAddresses();
         
         // Check the equalities:
-        config.debug("Checking " + equalitiesToMaintain.size() + " equalities!");
+        // config.debug("Checking " + equalitiesToMaintain.size() + " equalities!");
         for(EqualityConstraint eq:equalitiesToMaintain) {
             if (!eq.check(code, config)) {                
                 // undo the optimization:
@@ -912,7 +912,7 @@ public class Pattern {
             if (op.isRet()) {
                 // It's hard to tell where is this instruction going to jump,
                 // so we act conservatively, and block the optimization:
-                config.trace("    ret!");
+                // config.trace("    ret!");
                 return false;
             }
             
@@ -932,7 +932,7 @@ public class Pattern {
             if (op.isRet()) {
                 // It's hard to tell where is this instruction going to jump,
                 // so we act conservatively, and block the optimization:
-                config.trace("    ret!");
+                // config.trace("    ret!");
                 return false;
             }
             
@@ -952,7 +952,7 @@ public class Pattern {
             if (op.isRet()) {
                 // It's hard to tell where is this instruction going to jump,
                 // so we act conservatively, and block the optimization:
-                config.trace("    ret!");
+                // config.trace("    ret!");
                 return false;
             }
             
@@ -971,7 +971,7 @@ public class Pattern {
             if (op.isRet()) {
                 // It's hard to tell where is this instruction going to jump,
                 // so we act conservatively, and block the optimization:
-                config.trace("    ret!");
+                // config.trace("    ret!");
                 return false;
             }
             
@@ -1004,7 +1004,7 @@ public class Pattern {
         if (tmp == null) {
             // It's hard to tell where is this instruction going to jump,
             // so we act conservatively, and block the optimization:
-            config.trace("    unclear next statement after " + s);
+            // config.trace("    unclear next statement after " + s);
             return false;
         }
         for(SourceStatement s2:tmp) {
@@ -1017,31 +1017,31 @@ public class Pattern {
             Pair<SourceStatement, CPUOpDependency> pair = open.remove(0);
             SourceStatement next = pair.getLeft();
             CPUOpDependency dep = pair.getRight();
-            config.trace("    "+next.sl.lineNumber+": "+next);
+            // config.trace("    "+next.sl.lineNumber+": "+next);
 
             if (next.type == SourceStatement.STATEMENT_CPUOP) {
                 CPUOp op = next.op;
                 if (op.isRet()) {
                     // It's hard to tell where is this instruction going to jump,
                     // so we act conservatively, and block the optimization:
-                    config.trace("    ret!");
+                    // config.trace("    ret!");
                     return false;
                 }
                 if (op.checkInputDependency(dep)) {
                     // register is actually used!
-                    config.trace("    dependency found!");
+                    // config.trace("    dependency found!");
                     return false;
                 }
                 dep = op.checkOutputDependency(dep);
                 if (dep == null) {
-                    config.trace("    dependency broken!");
+                    // config.trace("    dependency broken!");
                 } else {
                     // add successors:
                     List<SourceStatement> nextNext_l = next.source.nextStatements(next, true, code);
                     if (nextNext_l == null) {
                         // It's hard to tell where is this instruction going to jump,
                         // so we act conservatively, and block the optimization:
-                        config.trace("    unclear next statement after: "+next);
+                        // config.trace("    unclear next statement after: "+next);
                         return false;
                     }
                     for(SourceStatement nextNext: nextNext_l) {
