@@ -1130,3 +1130,31 @@ flagsNotModified(1,C)
 in(?reg,BC,DE,HL,SP)
 in(?any,A,B,C,D,E,H,L,IXL,IXH,IYL,IYH,(HL),(IX+?const),(IY+?const),?const)
 
+pattern: Remove unnecessary conditional jumps
+0: ?opresCarry ?any
+1: *
+2: ?opjrjp nc,?const
+replacement:
+0: ?opresCarry ?any
+1: *
+2: ?opjrjp ?const
+constraints:
+in(?opresCarry,and,or,xor)
+flagsNotModified(1,C)
+in(?any,A,B,C,D,E,H,L,IXL,IXH,IYL,IYH,(HL),(IX+?const),(IY+?const),?const)
+in(?opjrjp,jr,jp,call)
+
+pattern: Remove unnecessary conditional ret
+0: ?opresCarry ?any
+1: *
+2: ret nc
+replacement:
+0: ?opresCarry ?any
+1: *
+2: ret
+constraints:
+in(?opresCarry,and,or,xor)
+flagsNotModified(1,C)
+in(?any,A,B,C,D,E,H,L,IXL,IXH,IYL,IYH,(HL),(IX+?const),(IY+?const),?const)
+
+
