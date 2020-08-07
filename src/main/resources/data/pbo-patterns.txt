@@ -1128,5 +1128,5 @@ in(?opresCarry,and,or,xor)
 in(?opandor,and,or)
 flagsNotModified(1,C)
 in(?reg,BC,DE,HL,SP)
-in(?any,A,B,C,D,E,H,L,?const)
+in(?any,A,B,C,D,E,H,L,IXL,IXH,IYL,IYH,(HL),(IX+?const),(IY+?const),?const)
 
