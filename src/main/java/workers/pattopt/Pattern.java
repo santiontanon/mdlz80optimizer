@@ -876,8 +876,9 @@ public class Pattern {
         }
         
         // Add new equality constraints (we add them first, in case the optimization itself breaks them):
+        int previousLength = equalitiesToMaintain.size();
         equalitiesToMaintain.addAll(match.newEqualities);
-
+        
         code.resetAddresses();
         
         // Check the equalities:
@@ -894,7 +895,8 @@ public class Pattern {
                         l.add(undo.get(i).getLeft(), undo.get(i).getRight());
                     }
                 }
-                config.info("Optimization undone, as it was breaking an equality constraint...");                
+                 while(equalitiesToMaintain.size() > previousLength) equalitiesToMaintain.remove(equalitiesToMaintain.size()-1);
+                config.info("Optimization undone, as it was breaking the equality constraint: " + eq.exp1 + " == " + eq.exp2);
                 code.resetAddresses();
                 return false;
             }

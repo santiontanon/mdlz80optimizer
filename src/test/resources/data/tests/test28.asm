@@ -5,7 +5,7 @@ ONE: equ 1
 	ld a,(ix+ONE)	; this should be optimized to use hl
 	ld (var),a
 
-	ld ix,list
+	ld ix,list2
 	ld a,(ix)	; this should be optimized to use hl too
 	ld (var),a
 
@@ -24,3 +24,5 @@ var:
 
 list:
 	db 1,2,3,4
+list2:
+	db 5,6,7,8
