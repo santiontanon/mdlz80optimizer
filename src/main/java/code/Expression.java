@@ -58,7 +58,8 @@ public class Expression {
     MDLConfig config;
     public int type;
     public int integerConstant;
-    public boolean renderAsHex = false; // only applicable to intergerConstant
+    public boolean renderAs8bitHex = false; // only applicable to intergerConstant
+    public boolean renderAs16bitHex = false; // only applicable to intergerConstant
     public double doubleConstant;
     public String stringConstant;
     public String symbolName;
@@ -441,8 +442,10 @@ public class Expression {
                     return registerOrFlagName;
                 }
             case EXPRESSION_INTEGER_CONSTANT:
-                if (renderAsHex && integerConstant >= 0 && integerConstant <= 0xffff) {
+                if (renderAs16bitHex && integerConstant >= 0 && integerConstant <= 0xffff) {
                     return Tokenizer.toHexWord(integerConstant, config.hexStyle);
+                } else if (renderAs8bitHex && integerConstant >= 0 && integerConstant <= 0xff) {
+                    return Tokenizer.toHexByte(integerConstant, config.hexStyle);
                 } else {
                     return "" + integerConstant;
                 }
@@ -868,14 +871,14 @@ public class Expression {
     public static Expression constantExpression(int v, MDLConfig config) {
         Expression exp = new Expression(EXPRESSION_INTEGER_CONSTANT, config);
         exp.integerConstant = v;
-        exp.renderAsHex = false;
         return exp;
     }
 
-    public static Expression constantExpression(int v, boolean renderAsHex, MDLConfig config) {
+    public static Expression constantExpression(int v, boolean renderAs8bitHex, boolean renderAs16bitHex, MDLConfig config) {
         Expression exp = new Expression(EXPRESSION_INTEGER_CONSTANT, config);
         exp.integerConstant = v;
-        exp.renderAsHex = renderAsHex;
+        exp.renderAs8bitHex = renderAs8bitHex;
+        exp.renderAs16bitHex = renderAs16bitHex;
         return exp;
     }
     

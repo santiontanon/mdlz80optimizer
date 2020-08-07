@@ -191,10 +191,8 @@ public class PatternBasedOptimizer implements MDLWorker {
                     Pattern bestPatt = null;
                     PatternMatch bestMatch = null;
                     int bestSavings = 0;    // selection is based on bytes saved
-                    System.out.println("Matches: " + matches.size());
                     for(Pair<Pattern,PatternMatch> p:matches) {
                         int savings = p.getLeft().getSpaceSaving(p.getRight(), code);
-                        System.out.println("    savings: " + savings);
                         if (bestPatt == null || savings > bestSavings) {
                             bestPatt = p.getLeft();
                             bestMatch = p.getRight();

@@ -256,8 +256,7 @@ public class Tokenizer {
     {
         String allowed = "0123456789abcdef";
         String hex = "";
-        while(value < 0) value += 0x10000;
-        value = value % 0x10000;
+        value = value & 0xffff;
         while(value != 0) {
             int digit = value%16;
             value = value/16;
@@ -269,6 +268,24 @@ public class Tokenizer {
         
         return hex;
     }
+    
+    
+    public static String toHexByte(int value)
+    {
+        String allowed = "0123456789abcdef";
+        String hex = "";
+        value = value & 0xff;
+        while(value != 0) {
+            int digit = value%16;
+            value = value/16;
+            hex = allowed.charAt(digit) + hex;
+        }
+        while(hex.length() < 2) {
+            hex = "0" + hex;
+        }
+        
+        return hex;
+    }    
 
     
     public static String toHexWord(int value, int hex_style)
@@ -289,6 +306,35 @@ public class Tokenizer {
             case MDLConfig.HEX_STYLE_H_CAPS:
             {
                 String hex = Tokenizer.toHexWord(value);
+                if (hex.charAt(0) >= 'a' && hex.charAt(0) <= 'f') {
+                    hex = "0" + hex;
+                }
+                return (hex + "h").toUpperCase();
+            }
+            default:
+                return null;
+        }
+    }
+    
+    
+    public static String toHexByte(int value, int hex_style)
+    {
+        switch (hex_style) {
+            case MDLConfig.HEX_STYLE_HASH:
+                return "#" + toHexByte(value);
+            case MDLConfig.HEX_STYLE_HASH_CAPS:
+                return "#" + toHexByte(value).toUpperCase();
+            case MDLConfig.HEX_STYLE_H:
+            {
+                String hex = Tokenizer.toHexByte(value);
+                if (hex.charAt(0) >= 'a' && hex.charAt(0) <= 'f') {
+                    hex = "0" + hex;
+                }
+                return hex + "h";
+            }
+            case MDLConfig.HEX_STYLE_H_CAPS:
+            {
+                String hex = Tokenizer.toHexByte(value);
                 if (hex.charAt(0) >= 'a' && hex.charAt(0) <= 'f') {
                     hex = "0" + hex;
                 }

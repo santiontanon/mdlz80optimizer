@@ -14,10 +14,10 @@ pletter._unpack:
     ld hl, pletter._modes
     add hl, de
     ld e, (hl)
-    db #00dd, #006b  ; ld ixl,e
+    db #dd, #6b  ; ld ixl,e
     inc hl
     ld e, (hl)
-    db #00dd, #0063  ; ld ixh,e
+    db #dd, #63  ; ld ixh,e
     ld e, 1
     exx
     ld iy, pletter.loop

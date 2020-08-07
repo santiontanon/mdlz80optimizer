@@ -393,7 +393,7 @@ public class ASMSXDialect implements Dialect {
             basicHeaderStatement = s;
             s.type = SourceStatement.STATEMENT_DATA_BYTES;
             s.data = data;
-            data.add(Expression.constantExpression(0xfe, true, config));
+            data.add(Expression.constantExpression(0xfe, true, false, config));
             data.add(Expression.constantExpression(0, config)); 
             data.add(Expression.constantExpression(0, config));             
             for(int i = 0;i<2;i++) data.add(Expression.constantExpression(0, config));
