@@ -1120,7 +1120,7 @@ pattern: Remove unnecessary ?opandor a
 2: ?opandor a
 3: sbc hl,?reg
 replacement:
-0: ?opjrjp c,?const
+0: ?opresCarry ?any
 1: *
 3: sbc hl,?reg
 constraints:
