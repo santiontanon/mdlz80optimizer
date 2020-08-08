@@ -1173,7 +1173,7 @@ pattern: Remove unnecessary conditional jumps (mainly this is a warning)
 1: *
 2: ?opjrjp nc,?const2
 replacement:
-0:?opjrjp nc,?const1
+0:?opjrjp c,?const1
 1: *
 2: ?opjrjp ?const2
 constraints:
@@ -1193,4 +1193,27 @@ flagsNotModified(1,C)
 in(?opjrjp,jr,jp,call)
 
 
+pattern: Remove unnecessary conditional jumps (mainly this is a warning) 
+0: ?opjrjp z,?const1
+1: *
+2: ?opjrjp nz,?const2
+replacement:
+0:?opjrjp z,?const1
+1: *
+2: ?opjrjp ?const2
+constraints:
+flagsNotModified(1,Z)
+in(?opjrjp,jr,jp,call)
+
+pattern: Remove unnecessary conditional jumps (mainly this is a warning)
+0: ?opjrjp nz,?const1
+1: *
+2: ?opjrjp z,?const2
+replacement:
+0: ?opjrjp nz,?const1
+1: *
+2: ?opjrjp ?const2
+constraints:
+flagsNotModified(1,Z)
+in(?opjrjp,jr,jp,call)
 
