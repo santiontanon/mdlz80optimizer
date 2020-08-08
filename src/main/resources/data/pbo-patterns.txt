@@ -1141,7 +1141,6 @@ replacement:
 constraints:
 in(?opresCarry,and,or,xor)
 flagsNotModified(1,C)
-in(?any,A,B,C,D,E,H,L,IXL,IXH,IYL,IYH,(HL),(IX+?const),(IY+?const),?const)
 in(?opjrjp,jr,jp,call)
 
 pattern: Remove unnecessary conditional ret (mainly this is a warning)
@@ -1155,28 +1154,27 @@ replacement:
 constraints:
 in(?opresCarry,and,or,xor)
 flagsNotModified(1,C)
-in(?any,A,B,C,D,E,H,L,IXL,IXH,IYL,IYH,(HL),(IX+?const),(IY+?const),?const)
 
 pattern: Remove unnecessary conditional jumps (mainly this is a warning) 
-0: ?opjrjp c,?const
+0: ?opjrjp c,?const1
 1: *
-2: ?opjrjp nc,?const
+2: ?opjrjp nc,?const2
 replacement:
-0:?opjrjp nc,?const
+0:?opjrjp nc,?const1
 1: *
-2: ?opjrjp ?const
+2: ?opjrjp ?const2
 constraints:
 flagsNotModified(1,C)
 in(?opjrjp,jr,jp,call)
 
 pattern: Remove unnecessary conditional jumps (mainly this is a warning)
-0: ?opjrjp nc,?const
+0: ?opjrjp nc,?const1
 1: *
-2: ?opjrjp c,?const
+2: ?opjrjp c,?const2
 replacement:
-0: ?opjrjp nc,?const
+0: ?opjrjp nc,?const1
 1: *
-2: ?opjrjp ?const
+2: ?opjrjp ?const2
 constraints:
 flagsNotModified(1,C)
 in(?opjrjp,jr,jp,call)
