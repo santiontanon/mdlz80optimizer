@@ -850,12 +850,12 @@ public class SjasmDialect implements Dialect {
                               Expression.operatorExpression(Expression.EXPRESSION_DIV, 
                                 Expression.parenthesisExpression(
                                   Expression.operatorExpression(Expression.EXPRESSION_SUB, 
-                                      Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, code, config), 
+                                      Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, s, code, config), 
                                       Expression.constantExpression(1, config), config), config),
                                   exp, config), 
                               Expression.constantExpression(1, config), config), config), 
                           exp, config),
-                        Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, code, config), config);
+                        Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, s, code, config), config);
             s.space_value = Expression.constantExpression(0, config);
             if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
             return null;
@@ -999,7 +999,7 @@ public class SjasmDialect implements Dialect {
                 for(int i = 1;i<regpairs.size();i++) {
                     SourceStatement auxiliaryS = new SourceStatement(SourceStatement.STATEMENT_CPUOP, sl, source);
                     List<Expression> auxiliaryArguments = new ArrayList<>();
-                    auxiliaryArguments.add(Expression.symbolExpression(regpairs.get(i), code, config));
+                    auxiliaryArguments.add(Expression.symbolExpression(regpairs.get(i), auxiliaryS, code, config));
                     List<CPUOp> op_l = config.opParser.parseOp(tokens.get(0), auxiliaryArguments, s, previous, code);
                     if (op_l == null || op_l.size() != 1) return false;
                     auxiliaryS.op = op_l.get(0);
@@ -1017,7 +1017,7 @@ public class SjasmDialect implements Dialect {
                 // pre increment/decrement:
                 SourceStatement auxiliaryS = new SourceStatement(SourceStatement.STATEMENT_CPUOP, sl, source);
                 List<Expression> auxiliaryArguments = new ArrayList<>();
-                auxiliaryArguments.add(Expression.symbolExpression(tokens.get(i + 1), code, config));
+                auxiliaryArguments.add(Expression.symbolExpression(tokens.get(i + 1), auxiliaryS, code, config));
                 List<CPUOp> op_l = config.opParser.parseOp(tokens.get(i).equals("++") ? "inc" : "dec", auxiliaryArguments, s, previous, code);
                 if (op_l == null || op_l.size() != 1) return false;
                 auxiliaryS.op = op_l.get(0);
@@ -1034,7 +1034,7 @@ public class SjasmDialect implements Dialect {
                 // post increment/decrement:
                 SourceStatement auxiliaryS = new SourceStatement(SourceStatement.STATEMENT_CPUOP, sl, source);
                 List<Expression> auxiliaryArguments = new ArrayList<>();
-                auxiliaryArguments.add(Expression.symbolExpression(tokens.get(i - 1), code, config));
+                auxiliaryArguments.add(Expression.symbolExpression(tokens.get(i - 1), auxiliaryS, code, config));
                 List<CPUOp> op_l = config.opParser.parseOp(tokens.get(i).equals("++") ? "inc" : "dec", auxiliaryArguments, s, previous, code);
                 if (op_l == null || op_l.size() != 1) return false;
                 auxiliaryS.op = op_l.get(0);
@@ -1255,7 +1255,7 @@ public class SjasmDialect implements Dialect {
                     SourceStatement space = new SourceStatement(SourceStatement.STATEMENT_DEFINE_SPACE, new SourceLine("", reconstructedFile, reconstructedFile.getStatements().size()+1), reconstructedFile);
                     space.space = Expression.operatorExpression(Expression.EXPRESSION_SUB,
                                     Expression.constantExpression(block.actualAddress, config),
-                                    Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, code, config),
+                                    Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, space, code, config),
                                     config);
                     space.space_value = Expression.constantExpression(0, config);
                     reconstructedFile.addStatement(space);
@@ -1273,7 +1273,7 @@ public class SjasmDialect implements Dialect {
                 SourceStatement space = new SourceStatement(SourceStatement.STATEMENT_DEFINE_SPACE, new SourceLine("", reconstructedFile, reconstructedFile.getStatements().size()+1), reconstructedFile);
                 space.space = Expression.operatorExpression(Expression.EXPRESSION_SUB,
                                 Expression.constantExpression(pageStart + pageSize, config),
-                                Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, code, config),
+                                Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, space, code, config),
                                 config);
                 space.space_value = Expression.constantExpression(0, config);
                 reconstructedFile.addStatement(space);

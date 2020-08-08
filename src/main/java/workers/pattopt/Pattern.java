@@ -270,7 +270,7 @@ public class Pattern {
     public boolean opMatch(CPUOpPattern pat1, CPUOp op2, SourceStatement s, CodeBase code, PatternMatch match)
     {
         if (pat1.opName.startsWith("?op")) {
-            if (!match.addVariableMatch(pat1.opName, Expression.symbolExpressionInternal(op2.spec.opName, code, false, config))) {
+            if (!match.addVariableMatch(pat1.opName, Expression.symbolExpressionInternal(op2.spec.opName, s, code, false, config))) {
                 return false;
             }
         } else {
@@ -580,17 +580,17 @@ public class Pattern {
                     }
                     if (expected1 == null || expected2 == null || expected3 == null) return null;
                     if (constraint[1].startsWith("?")) {
-                        if (!match.addVariableMatch(constraint[1], Expression.symbolExpression(expected1, code, config))) return null;
+                        if (!match.addVariableMatch(constraint[1], Expression.symbolExpression(expected1, null, code, config))) return null;
                     } else {
                         if (!constraint[1].equalsIgnoreCase(expected1)) return null;
                     }
                     if (constraint[2].startsWith("?")) {
-                        if (!match.addVariableMatch(constraint[2], Expression.symbolExpression(expected2, code, config))) return null;
+                        if (!match.addVariableMatch(constraint[2], Expression.symbolExpression(expected2, null, code, config))) return null;
                     } else {
                         if (!constraint[2].equalsIgnoreCase(expected2)) return null;
                     }
                     if (constraint[3].startsWith("?")) {
-                        if (!match.addVariableMatch(constraint[3], Expression.symbolExpression(expected3, code, config))) return null;
+                        if (!match.addVariableMatch(constraint[3], Expression.symbolExpression(expected3, null, code, config))) return null;
                     } else {
                         if (!constraint[3].equalsIgnoreCase(expected3)) return null;
                     }

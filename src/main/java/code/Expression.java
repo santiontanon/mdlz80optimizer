@@ -895,19 +895,22 @@ public class Expression {
     }
 
     
-    public static Expression symbolExpression(String symbol, CodeBase code, MDLConfig config) {
-        return symbolExpressionInternal(symbol, code, true, config);
+    public static Expression symbolExpression(String symbol, SourceStatement s, CodeBase code, MDLConfig config) {
+        return symbolExpressionInternal(symbol, s, code, true, config);
     }    
     
     
-    public static Expression symbolExpressionInternal(String symbol, CodeBase code, boolean evaluateEagerSymbols, MDLConfig config) {
+    public static Expression symbolExpressionInternal(String symbol, SourceStatement s, CodeBase code, boolean evaluateEagerSymbols, MDLConfig config) {
         if (code.isRegister(symbol) || code.isCondition(symbol)) {
             Expression exp = new Expression(EXPRESSION_REGISTER_OR_FLAG, config);
             exp.registerOrFlagName = symbol;
             return exp;
         } else {
-            // check if it's a variable that needs to be evaluated eagerly:
-            SourceConstant c = code.getSymbol(symbol);
+            Expression exp = new Expression(EXPRESSION_SYMBOL, config);
+            exp.symbolName = symbol;
+            
+            // check if it's a variable that needs to be evaluated eagerly:            
+            SourceConstant c = code.getSymbol(exp.symbolName);
             if (c != null && c.resolveEagerly && evaluateEagerSymbols) {
                 Number value = c.getValue(code, false);
                 if (value == null) {
@@ -915,18 +918,13 @@ public class Expression {
                     return null;
                 } 
                 if (value instanceof Integer) {
-                    Expression exp = new Expression(EXPRESSION_INTEGER_CONSTANT, config);
+                    exp = new Expression(EXPRESSION_INTEGER_CONSTANT, config);
                     exp.integerConstant = value.intValue();
-                    return exp;
                 } else {
-                    Expression exp = new Expression(EXPRESSION_DOUBLE_CONSTANT, config);
+                    exp = new Expression(EXPRESSION_DOUBLE_CONSTANT, config);
                     exp.doubleConstant = value.doubleValue();
-                    return exp;
                 }
-            }
-            
-            Expression exp = new Expression(EXPRESSION_SYMBOL, config);
-            exp.symbolName = symbol;
+            }            
             return exp;
         }
     }

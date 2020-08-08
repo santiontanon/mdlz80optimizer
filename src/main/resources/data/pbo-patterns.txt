@@ -1128,7 +1128,6 @@ in(?opresCarry,and,or,xor)
 in(?opandor,and,or)
 flagsNotModified(1,C)
 in(?reg,BC,DE,HL,SP)
-in(?any,A,B,C,D,E,H,L,IXL,IXH,IYL,IYH,(HL),(IX+?const),(IY+?const),?const)
 
 pattern: Remove unnecessary conditional jumps (mainly this is a warning) 
 0: ?opresCarry ?any

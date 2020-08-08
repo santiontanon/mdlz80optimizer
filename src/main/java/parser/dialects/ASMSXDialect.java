@@ -319,7 +319,7 @@ public class ASMSXDialect implements Dialect {
             s.type = SourceStatement.STATEMENT_ORG;
             s.org = Expression.operatorExpression(Expression.EXPRESSION_MUL,
                     Expression.parenthesisExpression(page_exp, config),
-                    Expression.constantExpression(16*1024, config), config);
+                    Expression.constantExpression(16*1024, false, true, config), config);
             // Since we are not producing compiled output, we ignore this directive
             if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
         }
@@ -408,12 +408,6 @@ public class ASMSXDialect implements Dialect {
                         startAddressLabel, 
                         Expression.constantExpression(256, config), config)); 
             }
-            // the header of a basic program should not use any space, so we add an org statement afterwards to compensate for its space:
-//            SourceStatement auxiliarOrg = new SourceStatement(SourceStatement.STATEMENT_ORG, sl, source, null);
-//            auxiliarOrg.org = Expression.operatorExpression(Expression.EXPRESSION_SUB, 
-//                    Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, code, config), 
-//                    Expression.constantExpression(7, config), config);
-//            l.add(auxiliarOrg);
             if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
         }        
         if (tokens.size()>=2 && (tokens.get(0).equalsIgnoreCase(".start") || tokens.get(0).equalsIgnoreCase("start"))) {
@@ -451,15 +445,17 @@ public class ASMSXDialect implements Dialect {
             }
             
             tokens.remove(0);
-            s.label.resolveEagerly = true;
             if (!config.lineParser.parseEqu(tokens, sl, s, previous, source, code)) return null;
-            s.label.clearCache();
             Integer value = s.label.exp.evaluateToInteger(s, code, false);
             if (value == null) {
                 config.error("Cannot resolve eager variable in " + sl);
                 return null;
             }
-            s.label.exp = Expression.constantExpression(value, config);
+            Expression exp = Expression.constantExpression(value, config);
+            SourceConstant c = code.getSymbol(s.label.originalName);
+            c.clearCache();
+            c.exp = exp;            
+            s.label.resolveEagerly = true;
             
             // these variables should not be part of the source code:
             l.clear();
@@ -555,7 +551,33 @@ public class ASMSXDialect implements Dialect {
     
     @Override
     public boolean performAnyFinalActions(CodeBase code)
-    {
+    {        
+        if (basicHeaderStatement != null) {
+            // Look for the very first org (and make sure the basic header is BEFORE the org):
+            SourceStatement s = code.getMain().getNextStatementTo(null, code);
+            while(s != null) {
+                if (s.type == SourceStatement.STATEMENT_ORG) {
+                    // set the load address:
+                    basicHeaderStatement.data.set(1, Expression.operatorExpression(Expression.EXPRESSION_MOD, 
+                            Expression.parenthesisExpression(s.org, config), 
+                            Expression.constantExpression(256, config), config)); 
+                    basicHeaderStatement.data.set(2, Expression.operatorExpression(Expression.EXPRESSION_DIV, 
+                            Expression.parenthesisExpression(s.org, config), 
+                            Expression.constantExpression(256, config), config));
+                    
+                    // found it! We should insert the basic header right before this!
+                    basicHeaderStatement.source.getStatements().remove(basicHeaderStatement);
+                    int idx = s.source.getStatements().indexOf(s);
+                    s.source.getStatements().add(idx, basicHeaderStatement);                    
+                    break;
+                } else if (s.type == SourceStatement.STATEMENT_CPUOP) {
+                    // give up
+                    break;
+                }
+                s = s.source.getNextStatementTo(s, code);
+            }
+        }
+
         // start/load addresses for rom/basic headers if not yet set:
         if (basicHeaderStatement != null && startAddressLabel == null) {
             // Look for the very first assembler instruction:
@@ -564,10 +586,10 @@ public class ASMSXDialect implements Dialect {
                 if (s.type == SourceStatement.STATEMENT_CPUOP) {
                     // found it!
                     basicHeaderStatement.data.set(5,Expression.operatorExpression(Expression.EXPRESSION_MOD, 
-                            Expression.constantExpression(s.getAddress(code), config), 
+                            Expression.constantExpression(s.getAddress(code), false, true, config), 
                             Expression.constantExpression(256, config), config)); 
                     basicHeaderStatement.data.set(6,Expression.operatorExpression(Expression.EXPRESSION_DIV, 
-                            Expression.constantExpression(s.getAddress(code), config), 
+                            Expression.constantExpression(s.getAddress(code), false, true, config), 
                             Expression.constantExpression(256, config), config)); 
                     break;
                 }
@@ -575,27 +597,49 @@ public class ASMSXDialect implements Dialect {
             }
         }
         
-        if (basicHeaderStatement != null) {
-            // Look for the very first org (and make sure the basic header is BEFORE the org):
+        {
+            SourceStatement firstGeneratingBytes = null;
+            SourceStatement lastGeneratingBytes = null;
             SourceStatement s = code.getMain().getNextStatementTo(null, code);
             while(s != null) {
-                if (s.type == SourceStatement.STATEMENT_ORG) {
-                    // found it! We should insert the basic header right before this!
-                    basicHeaderStatement.source.getStatements().remove(basicHeaderStatement);
-                    int idx = s.source.getStatements().indexOf(s);
-                    s.source.getStatements().add(idx, basicHeaderStatement);
-                    
-                    // set the load address:
-                    basicHeaderStatement.data.set(1, Expression.operatorExpression(Expression.EXPRESSION_MOD, 
-                            Expression.parenthesisExpression(s.org, config), 
-                            Expression.constantExpression(256, config), config)); 
-                    basicHeaderStatement.data.set(2, Expression.operatorExpression(Expression.EXPRESSION_DIV, 
-                            Expression.parenthesisExpression(s.org, config), 
-                            Expression.constantExpression(256, config), config));
-                    break;
+                if (s.type == SourceStatement.STATEMENT_INCLUDE && !s.include.getStatements().isEmpty()) {
+                    s = s.include.getStatements().get(0);
+                }
+                if (s.sizeInBytes(code, false, true, false) > 0) {
+                    if (firstGeneratingBytes == null) firstGeneratingBytes = s;
+                    lastGeneratingBytes = s;
                 }
                 s = s.source.getNextStatementTo(s, code);
             }
+
+
+            if (romHeaderStatement != null) {
+                // If a ROM is generated, asMSX fills the rom all the way to the nearest multiple of 8192 
+                // (this is not documented, but it is what it does, based on inspecting its source code):
+                // Find the last instruction that generates actual bytes in the ROM:
+                if (firstGeneratingBytes != null && lastGeneratingBytes != null) {
+                    int start_address = firstGeneratingBytes.getAddress(code);
+                    int end_address = lastGeneratingBytes.getAddress(code) + lastGeneratingBytes.sizeInBytes(code, false, true, false);
+                    int size = end_address - start_address;
+                    int target_size = (((size + 8191) / 8192) * 8192);
+                    int pad = target_size - size;
+                    SourceStatement padStatement = new SourceStatement(SourceStatement.STATEMENT_DEFINE_SPACE, null, lastGeneratingBytes.source);
+                    padStatement.space = Expression.constantExpression(pad, config);
+                    padStatement.space_value = Expression.constantExpression(0, config);
+                    lastGeneratingBytes.source.addStatement(lastGeneratingBytes.source.getStatements().indexOf(lastGeneratingBytes)+1, padStatement);
+                }
+            } else if (basicHeaderStatement != null) {
+                // set the end address:
+                if (lastGeneratingBytes != null) {
+                    int end_address = lastGeneratingBytes.getAddress(code) + lastGeneratingBytes.sizeInBytes(code, false, true, false);
+                    basicHeaderStatement.data.set(3,Expression.operatorExpression(Expression.EXPRESSION_MOD, 
+                            Expression.constantExpression(end_address-1, false, true, config), 
+                            Expression.constantExpression(256, config), config)); 
+                    basicHeaderStatement.data.set(4,Expression.operatorExpression(Expression.EXPRESSION_DIV, 
+                            Expression.constantExpression(end_address-1, false, true, config), 
+                            Expression.constantExpression(256, config), config)); 
+                }
+            } 
         }
         
         

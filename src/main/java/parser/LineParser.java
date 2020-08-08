@@ -252,7 +252,7 @@ public class LineParser {
         if (tokens.size() >= 2
                 && canBeLabel(token)
                 && tokens.get(1).equals(":")) {
-            Expression exp = Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, code, config);
+            Expression exp = Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, s, code, config);
 
             if (tokens.size() >= 3) {
                 tokens.remove(0);
@@ -299,7 +299,7 @@ public class LineParser {
                     config.warn("Style suggestion", s.fileNameLineString(),
                             "Label " + token + " defined without a colon.");
                 }
-                Expression exp = Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, code, config);
+                Expression exp = Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, s, code, config);
                 tokens.remove(0);
 
                 String symbolName = newSymbolName(token, exp, previous);
@@ -353,7 +353,7 @@ public class LineParser {
                     }
                     // If it did not have a previous value, we assign one:
                     if (c.exp == null) {
-                        c.exp = Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, code, config);
+                        c.exp = Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, s, code, config);
                     }
                 }
             }
@@ -671,7 +671,7 @@ public class LineParser {
                     if ((token.endsWith("f") || token.endsWith("F") || token.endsWith("b") || token.endsWith("B"))
                             && Tokenizer.isInteger(token.substring(0, token.length() - 1))) {
                         token = config.dialectParser.symbolName(token, s);
-                        exp = Expression.symbolExpression(token, code, config);
+                        exp = Expression.symbolExpression(token, s, code, config);
                         tokens.remove(0);
                     }
                 }
@@ -788,7 +788,7 @@ public class LineParser {
             if (isIfDef) {
                 String token = tokens.remove(0);
                 if (config.dialectParser != null) token = config.dialectParser.symbolName(token, previous);
-                exp = Expression.symbolExpressionInternal(token, code, false, config);
+                exp = Expression.symbolExpressionInternal(token, s, code, false, config);
             } else {
                 exp = config.expressionParser.parse(tokens, s, previous, code);
             }

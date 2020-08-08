@@ -319,10 +319,10 @@ public class GlassDialect implements Dialect {
             sr.dsStatement.space = Expression.operatorExpression(Expression.EXPRESSION_SUB, 
                     Expression.parenthesisExpression(
                             Expression.operatorExpression(Expression.EXPRESSION_SUM,
-                                    Expression.symbolExpression(sr.dsStatement.label.name, code, config), 
+                                    Expression.symbolExpression(sr.dsStatement.label.name, s, code, config), 
                                     Expression.parenthesisExpression(sr.dsStatement.space, config), config),
                             config), 
-                    Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, code, config), 
+                    Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, s, code, config), 
                     config);
             sr.dsStatement.label = null;
             sr.dsStatement.source.getStatements().add(sr.dsStatement.source.getStatements().indexOf(sr.dsStatement), s);

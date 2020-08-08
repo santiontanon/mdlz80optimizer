@@ -272,7 +272,7 @@ public class CPUOpParser {
                 // if the missing argument is a register, that is precisely specified (in upper case), we fill it in:
                 if (officialArgSpec.reg != null && 
                     officialArgSpec.reg.equals(officialArgSpec.reg.toUpperCase())) {
-                    officialArgs.add(Expression.symbolExpression(officialArgSpec.reg.toLowerCase(), code, config));
+                    officialArgs.add(Expression.symbolExpression(officialArgSpec.reg.toLowerCase(), null, code, config));
                 } else {
                     // case not supported:
                     config.error("Cannot turn unofficial assembler op to official!");

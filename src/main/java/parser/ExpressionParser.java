@@ -414,7 +414,7 @@ public class ExpressionParser {
             } else if (Tokenizer.isSymbol(tokens.get(0))) {
                 String token = tokens.remove(0);
                 if (config.dialectParser != null) token = config.dialectParser.symbolName(token, previous);
-                return Expression.symbolExpression(token, code, config);
+                return Expression.symbolExpression(token, s, code, config);
             }
         }
         // Check if it's a "%", "%%", "%%%", etc. sjasm counter variable:
@@ -512,7 +512,7 @@ public class ExpressionParser {
             tokens.remove(0);
             // variable name symbol:
             String token = "?" + tokens.remove(0);
-            return Expression.symbolExpression(token, code, config);
+            return Expression.symbolExpression(token, s, code, config);
         }
         if (tokens.size() >= 3 &&
             (tokens.get(0).equals("(") || tokens.get(0).equals("["))) {

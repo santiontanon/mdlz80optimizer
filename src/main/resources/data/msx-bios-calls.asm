@@ -89,6 +89,7 @@ DOWNC:  equ #0108
 TDOWNC: equ #010b
 SCALXY: equ #010e
 MAPXY:  equ #0111
+MAPXYC: equ #0111
 FETCHC: equ #0114
 STOREC: equ #0117
 SETATR: equ #011a
