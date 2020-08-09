@@ -434,9 +434,9 @@ public class Expression {
     public String toString() {
         switch (type) {
             case EXPRESSION_REGISTER_OR_FLAG:
-                if (config.opsInLowerCase) {
+                if (config.output_opsInLowerCase) {
                     return registerOrFlagName.toLowerCase();
-                } else if (config.opsInUpperCase) {
+                } else if (config.output_opsInUpperCase) {
                     return registerOrFlagName.toUpperCase();
                 } else {
                     return registerOrFlagName;
@@ -457,11 +457,14 @@ public class Expression {
                 tmp = tmp.replace("\r", "\\r");
                 tmp = tmp.replace("\t", "\\t");
                 tmp = tmp.replace("\"", "\\\"");
-                tmp = tmp.replace("\'", "\\\'");
                 return "\"" + tmp + "\"";
             }
             case EXPRESSION_SYMBOL:
-                return symbolName;
+                if (config.output_replaceLabelDotsByUnderscores) {
+                    return symbolName.replace(".", "_");
+                } else {
+                    return symbolName;
+                }
             case EXPRESSION_SIGN_CHANGE:
                 if (args.get(0).type == EXPRESSION_REGISTER_OR_FLAG
                         || args.get(0).type == EXPRESSION_INTEGER_CONSTANT

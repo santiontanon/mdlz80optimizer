@@ -856,7 +856,7 @@ public class Pattern {
                 for(int j = 0;j<replacement.size();j++) {
                     if (replacement.get(j).ID == pattern.get(i).ID) {
                         replacementIndexes.remove((Integer)replacement.get(j).ID);
-                        SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_CPUOP, lastRemoved.sl, lastRemoved.source);
+                        SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_CPUOP, lastRemoved.sl, lastRemoved.source, config);
                         // if the original statement had a label, we need to keep it!
                         if (removedLabel != null) {
                             s.label = removedLabel.label;
@@ -877,7 +877,7 @@ public class Pattern {
                 }
                 if (!replaced && removedLabel != null) {
                     // We were losing a label. Insert a dummy statement with the label we lost:
-                    SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_NONE, removedLabel.sl, removedLabel.source);
+                    SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_NONE, removedLabel.sl, removedLabel.source, config);
                     s.label = removedLabel.label;
                     l.add(insertionPoint, s);
                     insertionPoint++;
@@ -895,7 +895,7 @@ public class Pattern {
                 config.error("Could not determine the source for an additional replacement for: " + replacement.get(idx));
                 return false;
             }
-            SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_CPUOP, lastRemoved.sl, lastRemoved.source);
+            SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_CPUOP, lastRemoved.sl, lastRemoved.source, config);
             s.op = new CPUOp(replacement.get(idx).instantiate(match, this, config));
             if (s.op == null) {
                 config.error("The replacement was: " + replacement.get(idx));

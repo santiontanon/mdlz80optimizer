@@ -36,6 +36,7 @@ public class SourceStatement {
     public static final int STATEMENT_MACROCALL = 9;
     public static final int STATEMENT_CPUOP = 10;
     
+    MDLConfig config;
     
     public int type;
     
@@ -74,11 +75,12 @@ public class SourceStatement {
     // the context is stored here, in order to resolve labels after code is fully parsed:
     public String labelPrefix = null;
     
-    public SourceStatement(int a_type, SourceLine a_sl, SourceFile a_source)
+    public SourceStatement(int a_type, SourceLine a_sl, SourceFile a_source, MDLConfig a_config)
     {
         type = a_type;
         sl = a_sl;
         source = a_source;
+        config = a_config;
     }
     
 
@@ -260,8 +262,15 @@ public class SourceStatement {
     {
         String str = "";
         if (label != null) {
-            str = label.name + ":";
-            if (type == STATEMENT_NONE) {
+            if (config.output_replaceLabelDotsByUnderscores) {
+                str = label.name.replace(".", "_");
+            } else {
+                str = label.name;
+            }
+            if (type != STATEMENT_CONSTANT || !config.output_equsWithoutColon) {
+                str += ":";
+            }
+            if (type == STATEMENT_NONE && config.output_safetyEquDollar) {
                 // check if the next statement is an equ, and generate an additinoal "equ $", since 
                 // some assemblers (Glass in particular), interpret this as two labels being defined with
                 // the same value, thus misinterpreting the code of other assemblers.
@@ -356,9 +365,32 @@ public class SourceStatement {
                 break;
             case STATEMENT_DEFINE_SPACE:
                 if (space_value == null) {
-                    str += "    ds virtual " + space;
+                    if (config.output_allowDSVirtual) {
+                        str += "    ds virtual " + space;
+                    } else {
+                        str += "\n    org $ + " + space;
+                    }
                 } else {
-                    str += "    ds " + space + ", " + space_value;
+                    if (config.output_replaceDsByData) {
+                        int break_each = 16;
+                        int space_as_int = space.evaluateToInteger(this, this.source.code, true);
+                        String space_str = space_value.toString();
+                        str += "    db ";
+                        {
+                            for(int i = 0;i<space_as_int;i++) {
+                                str += space_str;
+                                if (i != space_as_int-1) {
+                                    if (((i+1)%break_each) == 0) {
+                                        str += "\n    db ";
+                                    } else {
+                                        str += ", ";
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        str += "    ds " + space + ", " + space_value;
+                    }
                 }
                 break;
                 

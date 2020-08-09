@@ -312,7 +312,7 @@ public class GlassDialect implements Dialect {
             }
             
             // update the ds statement to have the label and the space in two separate statements, to insert all the section portions in between:
-            SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_NONE, sr.dsStatement.sl, sr.dsStatement.source);
+            SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_NONE, sr.dsStatement.sl, sr.dsStatement.source, config);
             s.labelPrefix = sr.dsStatement.labelPrefix;
             s.label = sr.dsStatement.label;
             s.label.definingStatement = s;
@@ -465,7 +465,7 @@ public class GlassDialect implements Dialect {
                     !s.label.name.startsWith(config.preProcessor.unnamedMacroPrefix)) {
                     Number value = s.label.getValue(code, true);
                     if (value != null) {
-                        SourceStatement label_s = new SourceStatement(SourceStatement.STATEMENT_CONSTANT, macro.definingStatement.sl, macro.definingStatement.source);
+                        SourceStatement label_s = new SourceStatement(SourceStatement.STATEMENT_CONSTANT, macro.definingStatement.sl, macro.definingStatement.source, config);
                         label_s.label = s.label;
                         label_s.label.exp = Expression.constantExpression(value.intValue(), config);
                         SourceFile label_f = macro.definingStatement.source;

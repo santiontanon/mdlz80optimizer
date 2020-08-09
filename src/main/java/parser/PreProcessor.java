@@ -176,7 +176,7 @@ public class PreProcessor {
         if (!tokens.isEmpty() && isMacroName(tokens.get(0), MACRO_ENDM)) {
             if (currentState.currentMacroNameStack.isEmpty()) {
                 if (isMacroName(m.name, MACRO_REPT)) {
-                    SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_MACROCALL, sl, f);
+                    SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_MACROCALL, sl, f, config);
                     s.macroCallMacro = m;
                     s.macroCallArguments = m.preDefinedMacroArgs;
                     s.label = macroCallLabel(m.definingStatement, code);
@@ -190,7 +190,7 @@ public class PreProcessor {
                     m.addLine(sl);
 
                 } else if (dialectMacros.containsKey(m.name)) {
-                    SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_MACROCALL, sl, f);
+                    SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_MACROCALL, sl, f, config);
                     s.macroCallMacro = m;
                     s.macroCallArguments = m.preDefinedMacroArgs;
                     s.label = macroCallLabel(m.definingStatement, code);
@@ -210,7 +210,7 @@ public class PreProcessor {
         } else if (!tokens.isEmpty() && isMacroName(tokens.get(0), MACRO_ENDR)) {
             if (currentState.currentMacroNameStack.isEmpty()) {
                 if (isMacroName(m.name, MACRO_REPT)) {
-                    SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_MACROCALL, sl, f);
+                    SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_MACROCALL, sl, f, config);
                     s.macroCallMacro = m;
                     s.macroCallArguments = m.preDefinedMacroArgs;
                     s.label = macroCallLabel(m.definingStatement, code);
@@ -229,7 +229,7 @@ public class PreProcessor {
                 if (isMacroName(m.name, MACRO_IF) ||
                     isMacroName(m.name, MACRO_IFDEF) ||
                     isMacroName(m.name, MACRO_IFNDEF)) {
-                    SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_MACROCALL, sl, f);
+                    SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_MACROCALL, sl, f, config);
                     s.macroCallMacro = m;
                     s.macroCallArguments = m.preDefinedMacroArgs;
                     s.label = macroCallLabel(m.definingStatement, code);
@@ -269,7 +269,7 @@ public class PreProcessor {
             m.addLine(sl);
         } else if (!tokens.isEmpty() && dialectMacros.containsValue(tokens.get(0).toLowerCase())) {
             if (currentState.currentMacroNameStack.isEmpty()) {
-                SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_MACROCALL, sl, f);
+                SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_MACROCALL, sl, f, config);
                 s.macroCallMacro = m;
                 s.macroCallArguments = m.preDefinedMacroArgs;
                 s.label = macroCallLabel(m.definingStatement, code);
@@ -303,7 +303,7 @@ public class PreProcessor {
                 }
                 
                 if (s.label != null) {
-                    SourceStatement auxiliar = new SourceStatement(SourceStatement.STATEMENT_NONE, s.sl, s.source);
+                    SourceStatement auxiliar = new SourceStatement(SourceStatement.STATEMENT_NONE, s.sl, s.source, config);
                     auxiliar.label = s.label;
                     auxiliar.labelPrefix = s.labelPrefix;
                     l.add(auxiliar);
@@ -371,7 +371,7 @@ public class PreProcessor {
                         return null;
                     }
                     if (s.label != null) {
-                        SourceStatement auxiliar = new SourceStatement(SourceStatement.STATEMENT_NONE, s.sl, s.source);
+                        SourceStatement auxiliar = new SourceStatement(SourceStatement.STATEMENT_NONE, s.sl, s.source, config);
                         auxiliar.label = s.label;
                         auxiliar.labelPrefix = s.labelPrefix;
                         l.add(auxiliar);

@@ -55,8 +55,15 @@ public class MDLConfig {
     public boolean evaluateDialectFunctions = true;
 
     // Two variables, as if they are both false, no conversion is done
-    public boolean opsInLowerCase = true;
-    public boolean opsInUpperCase = false;
+    public boolean output_opsInLowerCase = true;
+    public boolean output_opsInUpperCase = false;
+    
+    public boolean output_allowDSVirtual = false;
+    public boolean output_equsWithoutColon = false;
+    public boolean output_safetyEquDollar = true;
+    public boolean output_replaceLabelDotsByUnderscores = false;
+    public boolean output_indirectionsWithSquareBrakets = false;
+    public boolean output_replaceDsByData = false;
 
     // code annotations:
     public String PRAGMA_NO_OPTIMIZATION = "mdl:no-opt";
@@ -93,11 +100,17 @@ public class MDLConfig {
             + "  -hexh: hex numbers render like 0ffffh.\n"
             + "  -HEXH: hex numbers render like 0FFFFh.\n"
             + "  -+bin: includes binary files (incbin) in the output analyses.\n"
-            + "  -opcase <case>: whether to convert the assembler operators to upper or lower case. Possible values are: none/lower/upper (none does no conversion). Default is 'lower'.\n"
             + "  -no-opt-pragma <value>: changes the pragma to be inserted in a comment on a line to prevent optimizing it (default: "
             + PRAGMA_NO_OPTIMIZATION + ")\n"
-            + "  -do-not-evaluate-dialect-functions: some assembler dialects define functions like random/sin/cos that can be used to form expressions. By default, MDL replaces them by the result of their execution before generating assembler output (as those might not be defined in other assemblers, and thus this keeps the assembler output as compatible as possible). Use this flag if you don't want this to happen.\n"
-            + "  -evaluate-all-expressions: this flag makes MDL resolve all expressions down to their ultimate numeric or string value when generating assembler code.\n";
+            + "  -out-opcase <case>: whether to convert the assembler operators to upper or lower case. Possible values are: none/lower/upper (none does no conversion). Default is 'lower'.\n"
+            + "  -out-allow-ds-virtual: allows 'ds virtual' in the generated assembler (not all assemblers support this, but simplifies output)\n"
+            + "  -out-colonless-equs: equs will look like 'label equ value' instead of 'label: equ value'\n"
+            + "  -out-remove-safety-equdollar: labels preceding an equ statement are rendered as 'label: equ $' by default for safety (some assemblers interpret them differently otherwise). USe this flag to deactivate this behavior.\n"
+            + "  -out-labels-no-dots: local labels get resolved to `context.label', some assemblers do not like '.' in labels however. This flag replaces them by underscores.\n"
+            + "  -out-squarebracket-ind: use [] for indirections in the output, rather than ().\n"
+            + "  -out-data-instead-of-ds: will replace statements like 'ds 4, 0' by 'db 0, 0, 0, 0.\n"
+            + "  -out-do-not-evaluate-dialect-functions: some assembler dialects define functions like random/sin/cos that can be used to form expressions. By default, MDL replaces them by the result of their execution before generating assembler output (as those might not be defined in other assemblers, and thus this keeps the assembler output as compatible as possible). Use this flag if you don't want this to happen.\n"
+            + "  -out-evaluate-all-expressions: this flag makes MDL resolve all expressions down to their ultimate numeric or string value when generating assembler code.\n";
 
 
     public MDLConfig() {
@@ -177,8 +190,7 @@ public class MDLConfig {
                         }
                         args.remove(0);
                         String dialectString = args.remove(0);
-                        dialect = Dialects.asKnownDialect(dialectString);
-                        if (dialect == null) {
+                        if (!Dialects.selectDialect(dialectString, this)) {
                             error("Unrecognized dialect " + dialectString);
                             return false;
                         }
@@ -269,21 +281,21 @@ public class MDLConfig {
                         }
                         break;
 
-                    case "-opcase":
+                    case "-out-opcase":
                         if (args.size()>=2) {
                             args.remove(0);
                             switch(args.remove(0)) {
                                 case "none":
-                                    opsInLowerCase = false;
-                                    opsInUpperCase = false;
+                                    output_opsInLowerCase = false;
+                                    output_opsInUpperCase = false;
                                     break;
                                 case "lower":
-                                    opsInLowerCase = false;
-                                    opsInUpperCase = true;
+                                    output_opsInLowerCase = false;
+                                    output_opsInUpperCase = true;
                                     break;
                                 case "upper":
-                                    opsInLowerCase = true;
-                                    opsInUpperCase = false;
+                                    output_opsInLowerCase = true;
+                                    output_opsInUpperCase = false;
                                     break;
                                 default:
                                     error("Unknown value for -opcase argument!");
@@ -295,13 +307,43 @@ public class MDLConfig {
                             return false;
                         }
                         break;
+                        
+                    case "-out-allow-ds-virtual":
+                        output_allowDSVirtual = true;
+                        args.remove(0);
+                        break;
 
-                    case "-do-not-evaluate-dialect-functions":
+                    case "-out-colonless-equs":
+                        output_equsWithoutColon = true;
+                        args.remove(0);
+                        break;
+
+                    case "-out-remove-safety-equdollar":
+                        output_safetyEquDollar = false;
+                        args.remove(0);
+                        break;
+                        
+                    case "-out-labels-no-dots":
+                        output_replaceLabelDotsByUnderscores = true;
+                        args.remove(0);
+                        break;
+                        
+                    case "-out-squarebracket-ind":
+                        output_indirectionsWithSquareBrakets = true;
+                        args.remove(0);
+                        break;
+                                                
+                    case "-out-do-not-evaluate-dialect-functions":
                         evaluateDialectFunctions = false;
                         args.remove(0);
                         break;
 
-                    case "-evaluate-all-expressions":
+                    case "-out-data-instead-of-ds":
+                        output_replaceDsByData = true;
+                        args.remove(0);
+                        break;
+                        
+                    case "-out-evaluate-all-expressions":
                         evaluateAllExpressions = true;
                         args.remove(0);
                         break;

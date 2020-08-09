@@ -96,7 +96,15 @@ public class SourceCodeGenerator implements MDLWorker {
                 if (ss.label != null) {
                     // make sure we don't lose the label:
                     sb.append(ss.label.name);
-                    sb.append(": equ $\n");
+                    if (config.output_safetyEquDollar) {
+                        if (config.output_equsWithoutColon) {
+                            sb.append(" equ $\n");
+                        } else {
+                            sb.append(": equ $\n");
+                        }
+                    } else {
+                        sb.append(":\n");                        
+                    }
                 }
                 sourceFileString(ss.include, code, sb);
             } else if (ss.type == SourceStatement.STATEMENT_INCBIN && expandIncbin) {

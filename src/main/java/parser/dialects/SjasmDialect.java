@@ -934,13 +934,13 @@ public class SjasmDialect implements Dialect {
                     SourceStatement s2;
                     switch(st.attributeSizes.get(i)) {
                         case 1:
-                            s2 = new SourceStatement(SourceStatement.STATEMENT_DATA_BYTES, sl, source);
+                            s2 = new SourceStatement(SourceStatement.STATEMENT_DATA_BYTES, sl, source, config);
                             break;
                         case 2:
-                            s2 = new SourceStatement(SourceStatement.STATEMENT_DATA_WORDS, sl, source);
+                            s2 = new SourceStatement(SourceStatement.STATEMENT_DATA_WORDS, sl, source, config);
                             break;
                         case 4:
-                            s2 = new SourceStatement(SourceStatement.STATEMENT_DATA_DOUBLE_WORDS, sl, source);
+                            s2 = new SourceStatement(SourceStatement.STATEMENT_DATA_DOUBLE_WORDS, sl, source, config);
                             break;
                         default:
                             config.error("Field " + st.attributeNames.get(i) + " of struct " + st.name + " has an unsupported size in: " + sl);
@@ -997,7 +997,7 @@ public class SjasmDialect implements Dialect {
                 int toremove = (regpairs.size()-1)*2;
                 for(int i = 0;i<toremove;i++) tokens.remove(2);
                 for(int i = 1;i<regpairs.size();i++) {
-                    SourceStatement auxiliaryS = new SourceStatement(SourceStatement.STATEMENT_CPUOP, sl, source);
+                    SourceStatement auxiliaryS = new SourceStatement(SourceStatement.STATEMENT_CPUOP, sl, source, config);
                     List<Expression> auxiliaryArguments = new ArrayList<>();
                     auxiliaryArguments.add(Expression.symbolExpression(regpairs.get(i), auxiliaryS, code, config));
                     List<CPUOp> op_l = config.opParser.parseOp(tokens.get(0), auxiliaryArguments, s, previous, code);
@@ -1015,7 +1015,7 @@ public class SjasmDialect implements Dialect {
                     && (tokens.get(i).equals("++") || tokens.get(i).equals("--"))
                     && code.isRegisterPair(tokens.get(i + 1))) {
                 // pre increment/decrement:
-                SourceStatement auxiliaryS = new SourceStatement(SourceStatement.STATEMENT_CPUOP, sl, source);
+                SourceStatement auxiliaryS = new SourceStatement(SourceStatement.STATEMENT_CPUOP, sl, source, config);
                 List<Expression> auxiliaryArguments = new ArrayList<>();
                 auxiliaryArguments.add(Expression.symbolExpression(tokens.get(i + 1), auxiliaryS, code, config));
                 List<CPUOp> op_l = config.opParser.parseOp(tokens.get(i).equals("++") ? "inc" : "dec", auxiliaryArguments, s, previous, code);
@@ -1032,7 +1032,7 @@ public class SjasmDialect implements Dialect {
                     && (tokens.get(i).equals("++") || tokens.get(i).equals("--"))
                     && code.isRegisterPair(tokens.get(i - 1))) {
                 // post increment/decrement:
-                SourceStatement auxiliaryS = new SourceStatement(SourceStatement.STATEMENT_CPUOP, sl, source);
+                SourceStatement auxiliaryS = new SourceStatement(SourceStatement.STATEMENT_CPUOP, sl, source, config);
                 List<Expression> auxiliaryArguments = new ArrayList<>();
                 auxiliaryArguments.add(Expression.symbolExpression(tokens.get(i - 1), auxiliaryS, code, config));
                 List<CPUOp> op_l = config.opParser.parseOp(tokens.get(i).equals("++") ? "inc" : "dec", auxiliaryArguments, s, previous, code);
@@ -1243,7 +1243,7 @@ public class SjasmDialect implements Dialect {
         
         for(int idx:pageIndexes) {
             CodePage page = pages.get(idx);
-            SourceStatement org = new SourceStatement(SourceStatement.STATEMENT_ORG, new SourceLine("", reconstructedFile, reconstructedFile.getStatements().size()+1), reconstructedFile);
+            SourceStatement org = new SourceStatement(SourceStatement.STATEMENT_ORG, new SourceLine("", reconstructedFile, reconstructedFile.getStatements().size()+1), reconstructedFile, config);
             org.org = page.start;
             reconstructedFile.addStatement(org);
             int pageStart = page.start.evaluateToInteger(page.s, code, true);
@@ -1252,7 +1252,7 @@ public class SjasmDialect implements Dialect {
             for(CodeBlock block:page.blocks) {
                 if (block.actualAddress > currentAddress) {
                     // insert space:
-                    SourceStatement space = new SourceStatement(SourceStatement.STATEMENT_DEFINE_SPACE, new SourceLine("", reconstructedFile, reconstructedFile.getStatements().size()+1), reconstructedFile);
+                    SourceStatement space = new SourceStatement(SourceStatement.STATEMENT_DEFINE_SPACE, new SourceLine("", reconstructedFile, reconstructedFile.getStatements().size()+1), reconstructedFile, config);
                     space.space = Expression.operatorExpression(Expression.EXPRESSION_SUB,
                                     Expression.constantExpression(block.actualAddress, config),
                                     Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, space, code, config),
@@ -1270,7 +1270,7 @@ public class SjasmDialect implements Dialect {
             }
             if (currentAddress < pageStart + pageSize) {
                 // insert space:
-                SourceStatement space = new SourceStatement(SourceStatement.STATEMENT_DEFINE_SPACE, new SourceLine("", reconstructedFile, reconstructedFile.getStatements().size()+1), reconstructedFile);
+                SourceStatement space = new SourceStatement(SourceStatement.STATEMENT_DEFINE_SPACE, new SourceLine("", reconstructedFile, reconstructedFile.getStatements().size()+1), reconstructedFile, config);
                 space.space = Expression.operatorExpression(Expression.EXPRESSION_SUB,
                                 Expression.constantExpression(pageStart + pageSize, config),
                                 Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, space, code, config),

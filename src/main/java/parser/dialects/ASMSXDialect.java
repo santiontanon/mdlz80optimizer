@@ -283,7 +283,7 @@ public class ASMSXDialect implements Dialect {
                 return null;                
             }
             for(String []biosCall:biosCalls) {
-                SourceStatement biosCallStatement = new SourceStatement(SourceStatement.STATEMENT_CONSTANT, sl, source);
+                SourceStatement biosCallStatement = new SourceStatement(SourceStatement.STATEMENT_CONSTANT, sl, source, config);
                 int address = Tokenizer.parseHex(biosCall[1]);
                 biosCallStatement.label = new SourceConstant(biosCall[0], biosCall[0], address, Expression.constantExpression(address, config), biosCallStatement);
                 code.addSymbol(biosCall[0], biosCallStatement.label);
@@ -634,7 +634,7 @@ public class ASMSXDialect implements Dialect {
                                 // we need to insert filler space:
                                 int pad = orgAddress - previousAddress;
                                 config.debug("asMSX: pad: " + pad + " to reach " + orgAddress);
-                                SourceStatement padStatement = new SourceStatement(SourceStatement.STATEMENT_DEFINE_SPACE, null, lastGeneratingBytes.source);
+                                SourceStatement padStatement = new SourceStatement(SourceStatement.STATEMENT_DEFINE_SPACE, null, lastGeneratingBytes.source, config);
                                 padStatement.space = Expression.constantExpression(pad, config);
                                 padStatement.space_value = Expression.constantExpression(0, config);
                                 previous.source.addStatement(previous.source.getStatements().indexOf(previous)+1, padStatement);                            
@@ -661,7 +661,7 @@ public class ASMSXDialect implements Dialect {
                     config.debug("asMSX: size: " + size);
                     config.debug("asMSX: target_size: " + target_size);
                     config.debug("asMSX: pad: " + pad);
-                    SourceStatement padStatement = new SourceStatement(SourceStatement.STATEMENT_DEFINE_SPACE, null, lastGeneratingBytes.source);
+                    SourceStatement padStatement = new SourceStatement(SourceStatement.STATEMENT_DEFINE_SPACE, null, lastGeneratingBytes.source, config);
                     padStatement.space = Expression.constantExpression(pad, config);
                     padStatement.space_value = Expression.constantExpression(0, config);
                     lastGeneratingBytes.source.addStatement(lastGeneratingBytes.source.getStatements().indexOf(lastGeneratingBytes)+1, padStatement);

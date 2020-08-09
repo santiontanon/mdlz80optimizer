@@ -56,7 +56,7 @@ public class CPUOp {
     {
         String str = spec.opName;
         
-        if (config.opsInLowerCase) str = str.toLowerCase();
+        if (config.output_opsInLowerCase) str = str.toLowerCase();
 
         for(int i = 0;i<args.size();i++) {
             if (i==0) {
@@ -64,7 +64,20 @@ public class CPUOp {
             } else {
                 str += ", ";
             }
-            str += args.get(i).toString();
+            if (config.output_indirectionsWithSquareBrakets && 
+                (spec.args.get(i).regIndirection != null ||
+                 spec.args.get(i).regOffsetIndirection != null ||
+                 spec.args.get(i).byteConstantIndirectionAllowed ||
+                 spec.args.get(i).wordConstantIndirectionAllowed)) {
+                if (args.get(i).type == Expression.EXPRESSION_PARENTHESIS &&
+                    args.get(i).args.size()==1) {
+                    str += "["+args.get(i).args.get(0).toString()+"]";
+                } else {
+                    str += args.get(i).toString();
+                }
+            } else {
+                str += args.get(i).toString();
+            }
         }
 
         return str;
@@ -75,7 +88,6 @@ public class CPUOp {
     {
         getInputDependencies();
 
-//        System.out.println("        inputDeps: " + inputDeps);
         for(CPUOpDependency inDep:inputDeps) {
             if (dep.match(inDep)) {
                 return true;

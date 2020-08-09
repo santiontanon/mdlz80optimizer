@@ -138,7 +138,7 @@ public class LineParser {
     
      public List<SourceStatement> parse(List<String> tokens, SourceLine sl,
             SourceFile f, SourceStatement previous, CodeBase code, MDLConfig config) {
-        SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_NONE, sl, f);
+        SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_NONE, sl, f, config);
         if (sl.labelPrefixToPush != null) pushLabelPrefix(sl.labelPrefixToPush);
         if (sl.labelPrefixToPop != null) popLabelPrefix();
         if (labelPrefix != null) s.labelPrefix = labelPrefix;
@@ -703,7 +703,7 @@ public class LineParser {
         s.op = op_l.get(0);
         
         for(int i = 1;i<op_l.size();i++) {
-            SourceStatement s2 = new SourceStatement(SourceStatement.STATEMENT_CPUOP, sl, source);
+            SourceStatement s2 = new SourceStatement(SourceStatement.STATEMENT_CPUOP, sl, source, config);
             s2.type = SourceStatement.STATEMENT_CPUOP;
             s2.op = op_l.get(i);
             l.add(s2);
