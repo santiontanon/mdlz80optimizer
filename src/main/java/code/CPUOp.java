@@ -155,11 +155,65 @@ public class CPUOp {
     }
     
     
+    public boolean isRst()
+    {
+        return spec.isRst();
+    }
+    
+    
     public boolean mightJump()
     {
         return spec.mightJump();
     }
+
+
+    public boolean isCall()
+    {
+        return spec.isCall();
+    }
+
     
+    public boolean isPush()
+    {
+        return spec.isPush();
+    }
+
+
+    public boolean isPop()
+    {
+        return spec.isPop();
+    }
+
+    
+    /*
+    Returns true if this is an instruction that modifies SP or contents, other than the
+    standard call/ret/push/pop. Specifically, it will return true if the instruction
+    is one of the following:
+    - inc/dec sp
+    - ex (sp),???
+    - ld sp,???
+    - rst ???    
+    */
+    public boolean modifiesStackInNonStandardWay()
+    {
+        if (spec.isRst()) return true;
+        if (!args.isEmpty() &&
+            args.get(0).type == Expression.EXPRESSION_REGISTER_OR_FLAG &&
+            args.get(0).registerOrFlagName.equalsIgnoreCase("sp")) {
+            if (spec.opName.equalsIgnoreCase("inc") ||
+                spec.opName.equalsIgnoreCase("dec") ||
+                spec.opName.equalsIgnoreCase("ld")) return true;
+        }
+        if (!args.isEmpty() &&
+            spec.opName.equalsIgnoreCase("ex") &&
+            args.get(0).type == Expression.EXPRESSION_PARENTHESIS &&
+            args.get(0).args.get(0).type == Expression.EXPRESSION_REGISTER_OR_FLAG &&
+            args.get(0).args.get(0).registerOrFlagName.equalsIgnoreCase("sp")) {
+            return true;
+        }
+        return false;
+    }
+
     
     public boolean evaluateAllExpressions(SourceStatement s, CodeBase code, MDLConfig config)
     {

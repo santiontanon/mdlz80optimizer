@@ -30,6 +30,37 @@ public class Pattern {
     List<CPUOpPattern> pattern = new ArrayList<>();
     List<CPUOpPattern> replacement = new ArrayList<>();
     List<String []> constraints = new ArrayList<>();
+    
+    
+    static class DepCheckNode {
+        SourceStatement s;
+        CPUOpDependency dep;
+        List<SourceStatement> callStack;
+        
+        public DepCheckNode(SourceStatement a_s, CPUOpDependency a_dep, List<SourceStatement> a_cs)
+        {
+            s = a_s;
+            dep = a_dep;
+            callStack = a_cs;
+        }
+        
+        
+        public boolean match(CPUOpDependency a_dep, List<SourceStatement> a_cs)
+        {
+            if (!a_dep.equals(dep)) return false;
+            if (callStack == null) {
+                if (a_cs != null) return false;
+            } else {
+                if (a_cs == null) return false;
+                if (a_cs.size() != callStack.size()) return false;
+                for(int i = 0;i<callStack.size();i++) {
+                    if (callStack.get(i) != a_cs.get(i)) return false;
+                }
+            }
+            return true;
+        }
+    }
+    
 
     public Pattern(String patternString, MDLConfig a_config)
     {
@@ -1000,94 +1031,79 @@ public class Pattern {
 
     public boolean depNotUsedAfter(SourceStatement s, CPUOpDependency a_dep, SourceFile f, CodeBase code)
     {
-        List<Pair<SourceStatement,CPUOpDependency>> open = new ArrayList<>();
-        HashMap<SourceStatement,List<CPUOpDependency>> closed = new HashMap<>();
-        List<SourceStatement> tmp = f.nextStatements(s, true, code);
+        List<DepCheckNode> open = new ArrayList<>();
+        HashMap<SourceStatement,List<DepCheckNode>> closed = new HashMap<>();
+        List<Pair<SourceStatement, List<SourceStatement>>> tmp = f.nextExecutionStatements(s, true, new ArrayList<>(), code);
         if (tmp == null) {
             // It's hard to tell where is this instruction going to jump,
             // so we act conservatively, and block the optimization:
             // config.trace("    unclear next statement after " + s);
             return false;
         }
-        for(SourceStatement s2:tmp) {
-            open.add(Pair.of(s2, a_dep));
-            List<CPUOpDependency> l = new ArrayList<>();
-            l.add(a_dep);
-            closed.put(s2, l);
+        for(Pair<SourceStatement, List<SourceStatement>> pair:tmp) {
+            DepCheckNode node = new DepCheckNode(pair.getLeft(), a_dep, pair.getRight());
+            open.add(node);
+            List<DepCheckNode> l = new ArrayList<>();
+            l.add(node);
+            closed.put(pair.getLeft(), l);
         }
         while(!open.isEmpty()) {
-            Pair<SourceStatement, CPUOpDependency> pair = open.remove(0);
-            SourceStatement next = pair.getLeft();
-            CPUOpDependency dep = pair.getRight();
+            DepCheckNode node = open.remove(0);
+            SourceStatement next = node.s;
+            CPUOpDependency dep = node.dep;
+            List<SourceStatement> callStack = node.callStack;
             // config.trace("    "+next.sl.lineNumber+": "+next);
 
             if (next.type == SourceStatement.STATEMENT_CPUOP) {
                 CPUOp op = next.op;
-                if (op.isRet()) {
-                    // It's hard to tell where is this instruction going to jump,
-                    // so we act conservatively, and block the optimization:
-                    // config.trace("    ret!");
-                    return false;
-                }
+//                if (op.isRet()) {
+//                    // It's hard to tell where is this instruction going to jump,
+//                    // so we act conservatively, and block the optimization:
+//                    // config.trace("    ret!");
+//                    return false;
+//                }
                 if (op.checkInputDependency(dep)) {
-                    // register is actually used!
+                    // dependency is actually used!
                     // config.trace("    dependency found!");
                     return false;
                 }
                 dep = op.checkOutputDependency(dep);
-                if (dep == null) {
-                    // config.trace("    dependency broken!");
-                } else {
-                    // add successors:
-                    List<SourceStatement> nextNext_l = next.source.nextStatements(next, true, code);
-                    if (nextNext_l == null) {
-                        // It's hard to tell where is this instruction going to jump,
-                        // so we act conservatively, and block the optimization:
-                        // config.trace("    unclear next statement after: "+next);
-                        return false;
-                    }
-                    for(SourceStatement nextNext: nextNext_l) {
-                        if (!closed.containsKey(nextNext)) {
-                            open.add(Pair.of(nextNext, dep));
-                            List<CPUOpDependency> l = new ArrayList<>();
-                            l.add(dep);
-                            closed.put(nextNext, l);
-                        } else {
-                            List<CPUOpDependency> l = closed.get(nextNext);
-                            boolean found = false;
-                            for(CPUOpDependency dep2:l) {
-                                if (dep.equals(dep2)) {
-                                    found = true;
-                                    break;
-                                }
-                            }
-                            if (!found) {
-                                l.add(dep);
-                                open.add(Pair.of(nextNext, dep));
-                            }
-                        }
-                    }
-                }
-            } else {
+//                if (dep == null) {
+//                    // config.trace("    dependency broken!");
+//                }
+            }
+            
+            if (dep != null) {
                 // add successors:
-                for(SourceStatement nextNext: next.source.nextStatements(next, true, code)) {
+                List<Pair<SourceStatement, List<SourceStatement>>> nextNext_l = next.source.nextExecutionStatements(next, true, callStack, code);
+                if (nextNext_l == null) {
+                    // It's hard to tell where is this instruction going to jump,
+                    // so we act conservatively, and block the optimization:
+                    // config.trace("    unclear next statement after: "+next);
+                    return false;
+                }
+                for(Pair<SourceStatement, List<SourceStatement>> nextNext_pair: nextNext_l) {
+                    SourceStatement nextNext = nextNext_pair.getLeft();
+                    List<SourceStatement> netNext_stack = nextNext_pair.getRight();
                     if (!closed.containsKey(nextNext)) {
-                        open.add(Pair.of(nextNext, dep));
-                        List<CPUOpDependency> l = new ArrayList<>();
-                        l.add(dep);
+                        DepCheckNode nextNode = new DepCheckNode(nextNext, dep, netNext_stack);
+                        open.add(nextNode);
+                        List<DepCheckNode> l = new ArrayList<>();
+                        l.add(nextNode);
                         closed.put(nextNext, l);
                     } else {
-                        List<CPUOpDependency> l = closed.get(nextNext);
+                        List<DepCheckNode> l = closed.get(nextNext);
                         boolean found = false;
-                        for(CPUOpDependency dep2:l) {
-                            if (dep.equals(dep2)) {
+                        for(DepCheckNode n:l) {
+                            if (n.match(dep, netNext_stack)) {
                                 found = true;
                                 break;
                             }
                         }
                         if (!found) {
-                            l.add(dep);
-                            open.add(Pair.of(nextNext, dep));
+                            DepCheckNode nextNode = new DepCheckNode(nextNext, dep, netNext_stack);
+                            l.add(nextNode);
+                            open.add(nextNode);
                         }
                     }
                 }

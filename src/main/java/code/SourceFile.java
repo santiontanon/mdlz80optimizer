@@ -9,6 +9,8 @@ import java.util.List;
 import org.apache.commons.io.FilenameUtils;
 
 import cl.MDLConfig;
+import com.sun.org.apache.xpath.internal.compiler.OpMap;
+import org.apache.commons.lang3.tuple.Pair;
 
 public class SourceFile {
     MDLConfig config;
@@ -103,10 +105,12 @@ public class SourceFile {
     }
 
 
-    public List<SourceStatement> nextStatements(SourceStatement s, boolean goInsideInclude, CodeBase code)
+    // returns <statement, callstack>
+    public List<Pair<SourceStatement, List<SourceStatement>>> nextExecutionStatements(SourceStatement s, boolean goInsideInclude, 
+                                                         List<SourceStatement> callStack, CodeBase code)
     {
         int index = statements.indexOf(s);
-        return nextStatements(index, goInsideInclude, code);
+        return nextExecutionStatements(index, goInsideInclude, callStack, code);
     }
 
 
@@ -114,12 +118,37 @@ public class SourceFile {
     This function returns "null" when there are some potential next statements that cannot be determined.
     For example, when encountering a "ret", a "jp hl", a "call CONSTANT", where CONSTANT is not a label (could be a system call)
     */
-    public List<SourceStatement> nextStatements(int index, boolean goInsideInclude, CodeBase code)
+    public List<Pair<SourceStatement, List<SourceStatement>>> nextExecutionStatements(int index, boolean goInsideInclude, 
+                                                         List<SourceStatement> callStack, CodeBase code)
     {
         SourceStatement s = statements.get(index);
         switch(s.type) {
             case SourceStatement.STATEMENT_CPUOP:
             {
+                if (s.op.isRst()) {
+                    // not currently suported
+                    return null;
+                }
+                if (s.op.isRet()) {
+                    // we don't know where are we going to jump to:
+                    if (callStack != null && !callStack.isEmpty()) {
+                        SourceStatement target = callStack.get(callStack.size()-1);
+                        if (target != null) {
+                            List<SourceStatement> newCallStack = new ArrayList<>();
+                            for(int i = 0;i<callStack.size()-1;i++) {
+                                newCallStack.add(callStack.get(i));
+                            }
+                            List<Pair<SourceStatement, List<SourceStatement>>> next = new ArrayList<>();
+                            next.add(Pair.of(target, newCallStack));
+                            if (s.op.isConditional()) {
+                                next.addAll(immediatelyNextExecutionStatements(index, callStack, code));
+                            }
+                            return next;
+                        }
+                    }
+                    return null;
+                }
+                
                 Expression labelExp = s.op.getTargetJumpExpression();
                 SourceConstant label = null;
                 if (labelExp != null) {
@@ -144,17 +173,45 @@ public class SourceFile {
 
                 if (jumpTargetStatement != null) {
                     // get target SourceStatement:
+                        List<Pair<SourceStatement, List<SourceStatement>>> next;
                     if (s.op.isConditional()) {
-                        List<SourceStatement> next = immediatelyNextStatements(index, code);
-                        next.add(jumpTargetStatement);
-                        return next;
+                        next = immediatelyNextExecutionStatements(index, callStack, code);
                     } else {
-                        List<SourceStatement> next = new ArrayList<>();
-                        next.add(jumpTargetStatement);
-                        return next;
+                        next = new ArrayList<>();
                     }
+                    List<SourceStatement> newCallStack = callStack;
+                    if (newCallStack != null && s.op.isCall()) {
+                        List<Pair<SourceStatement, List<SourceStatement>>> returnFromCall = immediatelyNextExecutionStatements(index, callStack, code);
+                        if (returnFromCall.size() != 1) {
+                            config.error("immediatelyNextExecutionStatements returned " + returnFromCall.size() + ", instead of 1!");
+                            return null;
+                        }
+                        newCallStack = new ArrayList<>();
+                        newCallStack.addAll(callStack);
+                        newCallStack.add(returnFromCall.get(0).getLeft());
+                    }
+                    next.add(Pair.of(jumpTargetStatement, newCallStack));
+                    return next;
                 } else {
-                    return immediatelyNextStatements(index, code);
+                    List<SourceStatement> newCallStack = callStack;
+                    if (newCallStack != null) {
+                        if (s.op.isPush()) {
+                            newCallStack = new ArrayList<>();
+                            newCallStack.addAll(callStack);
+                            newCallStack.add(null);
+                        } else if (s.op.isPop()) {
+                            newCallStack = new ArrayList<>();
+                            newCallStack.addAll(callStack);
+                            if (newCallStack.isEmpty()) {
+                                newCallStack = null;
+                            } else {
+                                newCallStack.remove(newCallStack.size()-1);
+                            }
+                        } else if (s.op.modifiesStackInNonStandardWay()) {
+                            newCallStack = null;
+                        }
+                    }
+                    return immediatelyNextExecutionStatements(index, newCallStack, code);
                 }
             }
 
@@ -162,12 +219,12 @@ public class SourceFile {
                 // go inside the include:
                 if (goInsideInclude && !s.include.statements.isEmpty()) {
                     SourceFile fi = s.include;
-                    List<SourceStatement> next = new ArrayList<>();
-                    next.add(fi.statements.get(0));
+                    List<Pair<SourceStatement, List<SourceStatement>>> next = new ArrayList<>();
+                    next.add(Pair.of(fi.statements.get(0), callStack));
                     return next;
                 } else {
                     // skip the include:
-                    return immediatelyNextStatements(index, code);
+                    return immediatelyNextExecutionStatements(index, callStack, code);
                 }
 
             case SourceStatement.STATEMENT_MACRO:
@@ -175,21 +232,22 @@ public class SourceFile {
                 throw new IllegalStateException("Macros should have been resolved before optimization!");
 
             default:
-                return immediatelyNextStatements(index, code);
+                return immediatelyNextExecutionStatements(index, callStack, code);
         }
     }
 
 
-    public List<SourceStatement> immediatelyNextStatements(int index, CodeBase code)
+    public List<Pair<SourceStatement, List<SourceStatement>>> immediatelyNextExecutionStatements(int index, 
+            List<SourceStatement> callStack, CodeBase code)
     {
         if (statements.size() > index+1) {
-            List<SourceStatement> next = new ArrayList<>();
-            next.add(statements.get(index+1));
+            List<Pair<SourceStatement, List<SourceStatement>>> next = new ArrayList<>();
+            next.add(Pair.of(statements.get(index+1), callStack));
             return next;
         }
         // file is over, go up one level:
         if (parentInclude!=null) {
-            return parent.nextStatements(parentInclude, false, code);
+            return parent.nextExecutionStatements(parentInclude, false, callStack, code);
         }
         // we are done, no next!
         return new ArrayList<>();

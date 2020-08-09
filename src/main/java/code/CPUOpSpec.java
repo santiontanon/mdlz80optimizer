@@ -234,12 +234,44 @@ public class CPUOpSpec {
     {
         // TODO(santi@): move this info to the CPU definition file
         if (opName.equalsIgnoreCase("ret")) return true;
-        if (opName.equalsIgnoreCase("retni")) return true;
-        if (opName.equalsIgnoreCase("ret")) return true;
+        if (opName.equalsIgnoreCase("reti")) return true;
+        if (opName.equalsIgnoreCase("retn")) return true;
+        return false;
+    }
+
+
+    public boolean isRst()
+    {
+        // TODO(santi@): move this info to the CPU definition file
+        if (opName.equalsIgnoreCase("rst")) return true;
         return false;
     }
 
     
+    public boolean isCall()
+    {
+        // TODO(santi@): move this info to the CPU definition file
+        if (opName.equalsIgnoreCase("call")) return true;
+        return false;
+    }
+
+
+    public boolean isPush()
+    {
+        // TODO(santi@): move this info to the CPU definition file
+        if (opName.equalsIgnoreCase("push")) return true;
+        return false;
+    }
+    
+    
+    public boolean isPop()
+    {
+        // TODO(santi@): move this info to the CPU definition file
+        if (opName.equalsIgnoreCase("pop")) return true;
+        return false;
+    }
+
+
     public boolean mightJump()
     {
         // TODO(santi@): move this info to the CPU definition file
