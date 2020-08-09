@@ -28,10 +28,6 @@ public class MDLConfig {
     public static final int HEX_STYLE_H = 2;
     public static final int HEX_STYLE_H_CAPS = 3;
 
-    public static final int CPU_Z80 = 0;
-    public static final int CPU_Z80MSX = 1;
-    public static final int CPU_Z80CPC = 2;
-
     // arguments:
     public String inputFile = null;
     public String symbolTableOutputFile = null;
@@ -40,7 +36,7 @@ public class MDLConfig {
     public String dotOutputFile = null;
     public boolean somethingToDo = true;
 
-    public int cpu = CPU_Z80MSX;
+    public String cpuInstructionSet = "data/z80msx-instruction-set.tsv";
     public String timeUnit = "t-state";
     public int hexStyle = HEX_STYLE_HASH;
     public String dialect = Dialects.defaultDialect();
@@ -153,15 +149,15 @@ public class MDLConfig {
                             String cpuString = args.remove(0);
                             switch(cpuString) {
                                 case "z80":
-                                    cpu = CPU_Z80;
+                                    cpuInstructionSet = "data/z80-instruction-set.tsv";
                                     timeUnit = "t-state";
                                     break;
                                 case "z80msx":
-                                    cpu = CPU_Z80MSX;
+                                    cpuInstructionSet = "data/z80msx-instruction-set.tsv";
                                     timeUnit = "t-state";
                                     break;
                                 case "z80cpc":
-                                    cpu = CPU_Z80CPC;
+                                    cpuInstructionSet = "data/z80cpc-instruction-set.tsv";
                                     timeUnit = "nop";
                                     break;
                                 default:

@@ -30,9 +30,7 @@ public class CPUOpSpecParser {
 
     public List<CPUOpSpec> parseSpecs() throws IOException
     {
-        String inputFile = "data/z80-instruction-set.tsv";
-
-        try (BufferedReader br = Resources.asReader(inputFile)) {
+        try (BufferedReader br = Resources.asReader(config.cpuInstructionSet)) {
             List<CPUOpSpec> specs = IOUtils.readLines(br)
                     .stream()
                     .filter(line -> !Tokenizer.isSingleLineComment(line))
@@ -54,14 +52,18 @@ public class CPUOpSpecParser {
 
     public CPUOpSpec parseOpSpecLine(String data[], MDLConfig config)
     {
+        int instructionColumn = 0;
         int timeColumn = 1;
-        if (config.cpu == MDLConfig.CPU_Z80MSX) timeColumn = 2;
-        if (config.cpu == MDLConfig.CPU_Z80CPC) timeColumn = 3;
+        int byteRepresentationColumn = 2;
+        int sizeColumn = 3;
+        int inputColumn = 4;
+        int outputColumn = 8;
+        int officialColumn = 12;
 
-        String op = data[0];
+        String op = data[instructionColumn];
         StringTokenizer st = new StringTokenizer(op, " ,");
         String opName = st.nextToken();
-        int size = Integer.parseInt(data[5]);
+        int size = Integer.parseInt(data[sizeColumn]);
         String timesStr[] = data[timeColumn].split("/");
         if (timesStr[0].length() == 0) return null;
         int times[] = new int[timesStr.length];
@@ -70,11 +72,11 @@ public class CPUOpSpecParser {
         }
 
         boolean official = true;
-        if (data.length > 14) {
-            official = Boolean.parseBoolean(data[14]);
+        if (data.length > officialColumn) {
+            official = Boolean.parseBoolean(data[officialColumn]);
         }
         CPUOpSpec spec = new CPUOpSpec(opName.toLowerCase(), 
-                size, times, data[4], official, config);
+                size, times, data[byteRepresentationColumn], official, config);
 
         while(st.hasMoreTokens()) {
             String argStr = st.nextToken();
@@ -207,7 +209,7 @@ public class CPUOpSpecParser {
             } else if (argStr.equals("(nn)")) {
                 arg.wordConstantIndirectionAllowed = true;
             } else {
-                throw new IllegalArgumentException("unsupported argument " + argStr);
+                throw new IllegalArgumentException("unsupported argument " + argStr + " in " + op);
             }
 
             spec.addArgSpec(arg);
@@ -215,18 +217,18 @@ public class CPUOpSpecParser {
 
         // parseArgs dependencies:
         // input:
-        if (data.length>6) {
-            spec.inputRegs = parseDeps(data[6]);
+        if (data.length>inputColumn) {
+            spec.inputRegs = parseDeps(data[inputColumn]);
         } else {
             spec.inputRegs = new ArrayList<>();
         }
-        if (data.length>7) {
-            spec.inputFlags = parseDeps(data[7]);
+        if (data.length>inputColumn+1) {
+            spec.inputFlags = parseDeps(data[inputColumn+1]);
         } else {
             spec.inputFlags = new ArrayList<>();
         }
-        if (data.length>8) {
-            List<String> l = parseDeps(data[8]);
+        if (data.length>inputColumn+2) {
+            List<String> l = parseDeps(data[inputColumn+2]);
             if (!l.isEmpty()) {
                 if (l.size() == 1) {
                     spec.inputPort = l.get(0);
@@ -236,8 +238,8 @@ public class CPUOpSpecParser {
                 }
             }
         }
-        if (data.length>9) {
-            List<String> l = parseDeps(data[9]);
+        if (data.length>inputColumn+3) {
+            List<String> l = parseDeps(data[inputColumn+3]);
             if (!l.isEmpty()) {
                 switch (l.size()) {
                     case 1:
@@ -248,24 +250,24 @@ public class CPUOpSpecParser {
                         spec.inputMemoryEnd = l.get(1);
                         break;
                     default:
-                        config.error("Cannot parse input memory dependency for CPUOpSpec: "+data[9]+"!");
+                        config.error("Cannot parse input memory dependency for CPUOpSpec: "+data[inputColumn+3]+"!");
                         return null;
                 }
             }
         }
         // output:
-        if (data.length>10) {
-            spec.outputRegs = parseDeps(data[10]);
+        if (data.length>outputColumn) {
+            spec.outputRegs = parseDeps(data[outputColumn]);
         } else {
             spec.outputRegs = new ArrayList<>();
         }
-        if (data.length>11) {
-            spec.outputFlags = parseDeps(data[11]);
+        if (data.length>outputColumn+1) {
+            spec.outputFlags = parseDeps(data[outputColumn+1]);
         } else {
             spec.outputFlags = new ArrayList<>();
         }
-        if (data.length>12) {
-            List<String> l = parseDeps(data[12]);
+        if (data.length>outputColumn+2) {
+            List<String> l = parseDeps(data[outputColumn+2]);
             if (!l.isEmpty()) {
                 if (l.size() == 1) {
                     spec.outputPort = l.get(0);
@@ -275,8 +277,8 @@ public class CPUOpSpecParser {
                 }
             }
         }
-        if (data.length>13) {
-            List<String> l = parseDeps(data[13]);
+        if (data.length>outputColumn+3) {
+            List<String> l = parseDeps(data[outputColumn+3]);
             if (!l.isEmpty()) {
                 switch (l.size()) {
                     case 1:
@@ -287,7 +289,7 @@ public class CPUOpSpecParser {
                         spec.outputMemoryEnd = l.get(1);
                         break;
                     default:
-                        config.error("Cannot parse output memory dependency for CPUOpSpec: " + data[9] + "!");
+                        config.error("Cannot parse output memory dependency for CPUOpSpec: " + data[outputColumn+3] + "!");
                         return null;
                 }
             }

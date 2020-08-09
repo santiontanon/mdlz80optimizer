@@ -1,0 +1,425 @@
+; Author: Santiago Ontañón Villar (Brain Games)
+; Information to construct this table was optained from the following resources:		
+; - http://map.grauw.nl/resources/z80instr.php (main source; the table in this website, removing the R800 info, is the basis over which I added additional info; check this page for an explanation on the notation)						
+; - https://wiki.octoate.de/lib/exe/fetch.php/amstradcpc:z80_cpc_timings_cheat_sheet.20131019.pdf (for the Amstrad CPC timings)
+; - Zilog Z80 User manual (for the registers, addresses, i/o ports and flags that affect and are affected by an instruction)
+; - The Undocumented Z80 Documented (for corrections on the above)
+; - R800 instruction details obtained from here: https://www.msx.org/wiki/R800_Programming
+; Instruction	Timing MSX	Opcode	Size	Input Registers	Input Flags	Input Ports	Input Memory	Output Registers	Output Flags	Output Ports	Output Memory	Official
+ADC A,(HL)	8	8E	1	A,HL	C		HL	A	S,Z,H,P/V,N,C			true
+ADC A,r	5	88+r	1	A,r	C			A	S,Z,H,P/V,N,C			true
+ADD A,(HL)	8	86	1	A,HL			HL	A	S,Z,H,P/V,N,C			true
+ADD A,r	5	80+r	1	A,r				A	S,Z,H,P/V,N,C			true
+ADD HL,BC	12	9	1	HL,BC				HL	H,N			true
+ADD HL,DE	12	19	1	HL,DE				HL	H,N			true
+ADD HL,HL	12	29	1	HL				HL	H,N			true
+ADD HL,SP	12	39	1	HL,SP				HL	H,N			true
+AND (HL)	8	A6	1	A,HL			HL	A	S,Z,H,P/V,N,C			true
+AND r	5	A0+r	1	A,r				A	S,Z,H,P/V,N,C			true
+CCF	5	3F	1		C				C,N,H			true
+CP (HL)	8	BE	1	A,HL			HL		S,Z,H,P/V,N,C			true
+CP r	5	B8+r	1	A,r					S,Z,H,P/V,N,C			true
+CPL	5	2F	1	A				A	H,N			true
+DAA	5	27	1	A					S,Z,H,P/V,C			true
+DEC (HL)	12	35	1	HL			HL		S,Z,H,P/V,N		HL	true
+DEC A	5	3D	1	A				A	S,Z,H,P/V,N			true
+DEC B	5	5	1	B				B	S,Z,H,P/V,N			true
+DEC BC	7	0B	1	BC				BC				true
+DEC C	5	0D	1	C				C	S,Z,H,P/V,N			true
+DEC D	5	15	1	D				D	S,Z,H,P/V,N			true
+DEC DE	7	1B	1	DE				DE				true
+DEC E	5	1D	1	E				E	S,Z,H,P/V,N			true
+DEC H	5	25	1	H				H	S,Z,H,P/V,N			true
+DEC HL	7	2B	1	HL				HL				true
+DEC L	5	2D	1	L				L	S,Z,H,P/V,N			true
+DEC SP	7	3B	1	SP				SP				true
+DI	5	F3	1									true
+EI	5	FB	1									true
+EX (SP),HL	20	E3	1	HL,SP			[SP:SP+1]	HL			[SP:SP+1]	true
+EX AF,AF'	5	8	1	AF				AF				true
+EX DE,HL	5	EB	1	DE,HL				DE,HL				true
+EXX	5	D9	1	BC,DE,HL				BC,DE,HL				true
+HALT	5	76	1									true
+INC (HL)	12	34	1	HL			HL		S,Z,H,P/V,N		HL	true
+INC A	5	3C	1	A				A	S,Z,H,P/V,N			true
+INC B	5	4	1	B				B	S,Z,H,P/V,N			true
+INC BC	7	3	1	BC				BC				true
+INC C	5	0C	1	C				C	S,Z,H,P/V,N			true
+INC D	5	14	1	D				D	S,Z,H,P/V,N			true
+INC DE	7	13	1	DE				DE				true
+INC E	5	1C	1	B				B	S,Z,H,P/V,N			true
+INC H	5	24	1	H				H	S,Z,H,P/V,N			true
+INC HL	7	23	1	HL				HL				true
+INC L	5	2C	1	L				L	S,Z,H,P/V,N			true
+INC SP	7	33	1	SP				SP				true
+JP HL	5	E9	1	HL				PC				true
+JP (HL)	5	E9	1	HL				PC				true
+LD (BC),A	8	2	1	A,BC							BC	true
+LD (DE),A	8	12	1	A,DE							DE	true
+LD (HL),r	8	70+r	1	r,HL							HL	true
+LD A,(BC)	8	0A	1	BC			BC	A				true
+LD A,(DE)	8	1A	1	DE			DE	A				true
+LD A,(HL)	8	7E	1	HL			HL	A				true
+LD A,r	5	78+r	1	r				A				true
+LD B,(HL)	8	46	1	HL			HL	B				true
+LD B,r	5	40+r	1	r				B				true
+LD C,(HL)	8	4E	1	HL			HL	C				true
+LD C,r	5	48+r	1	r				C				true
+LD D,(HL)	8	56	1	HL			HL	D				true
+LD D,r	5	50+r	1	r				D				true
+LD E,(HL)	8	5E	1	HL			HL	E				true
+LD E,r	5	58+r	1	r				E				true
+LD H,(HL)	8	66	1	HL			HL	H				true
+LD H,r	5	60+r	1	r				H				true
+LD L,(HL)	8	6E	1	HL			HL	L				true
+LD L,r	5	68+r	1	r				L				true
+LD SP,HL	7	F9	1	HL				SP				true
+NOP	5	0	1									true
+OR (HL)	8	B6	1	A,HL			HL	A	S,Z,H,P/V,N,C			true
+OR r	5	B0+r	1	A,r				A	S,Z,H,P/V,N,C			true
+POP AF	11	F1	1	SP			[SP:SP+1]	AF,SP				true
+POP BC	11	C1	1	SP			[SP:SP+1]	BC,SP				true
+POP DE	11	D1	1	SP			[SP:SP+1]	DE,SP				true
+POP HL	11	E1	1	SP			[SP:SP+1]	HL,SP				true
+PUSH AF	12	F5	1	AF,SP				SP			[SP-2:SP-1]	true
+PUSH BC	12	C5	1	BC,SP				SP			[SP-2:SP-1]	true
+PUSH DE	12	D5	1	DE,SP				SP			[SP-2:SP-1]	true
+PUSH HL	12	E5	1	HL,SP				SP			[SP-2:SP-1]	true
+RET	11	C9	1	SP			[SP:SP+1]	SP,PC				true
+RET C	6/12	D8	1	SP	C		[SP:SP+1]	SP,PC				true
+RET M	6/12	F8	1	SP	S		[SP:SP+1]	SP,PC				true
+RET NC	6/12	D0	1	SP	C		[SP:SP+1]	SP,PC				true
+RET NZ	6/12	C0	1	SP	Z		[SP:SP+1]	SP,PC				true
+RET P	6/12	F0	1	SP	S		[SP:SP+1]	SP,PC				true
+RET PE	6/12	E8	1	SP	P		[SP:SP+1]	SP,PC				true
+RET PO	6/12	E0	1	SP	P		[SP:SP+1]	SP,PC				true
+RET Z	6/12	C8	1	SP	Z		[SP:SP+1]	SP,PC				true
+RLA	5	17	1	A	C			A	H,N,C			true
+RLCA	5	7	1	A				A	H,N,C			true
+RRA	5	1F	1	A	C			A	H,N,C			true
+RRCA	5	0F	1	A				A	H,N,C			true
+RST 0	12	C7	1	SP				SP,PC			[SP-2:SP-1]	true
+RST 10H	12	D7	1	SP				SP,PC			[SP-2:SP-1]	true
+RST 18H	12	DF	1	SP				SP,PC			[SP-2:SP-1]	true
+RST 20H	12	E7	1	SP				SP,PC			[SP-2:SP-1]	true
+RST 28H	12	EF	1	SP				SP,PC			[SP-2:SP-1]	true
+RST 30H	12	F7	1	SP				SP,PC			[SP-2:SP-1]	true
+RST 38H	12	FF	1	SP				SP,PC			[SP-2:SP-1]	true
+RST 8H	12	CF	1	SP				SP,PC			[SP-2:SP-1]	true
+SBC A,(HL)	8	9E	1	A,HL	C		HL	A	S,Z,H,P/V,N,C			true
+SBC A,A	5	98+7	1		C			A	S,Z,H,P/V,N,C			true
+SBC A,B	5	98+0	1	A,B	C			A	S,Z,H,P/V,N,C			true
+SBC A,C	5	98+1	1	A,C	C			A	S,Z,H,P/V,N,C			true
+SBC A,D	5	98+2	1	A,D	C			A	S,Z,H,P/V,N,C			true
+SBC A,E	5	98+3	1	A,E	C			A	S,Z,H,P/V,N,C			true
+SBC A,H	5	98+4	1	A,H	C			A	S,Z,H,P/V,N,C			true
+SBC A,L	5	98+5	1	A,L	C			A	S,Z,H,P/V,N,C			true
+SCF	5	37	1						H,N,C			true
+SUB (HL)	8	96	1	A,HL			HL	A	S,Z,H,P/V,N,C			true
+SUB A	5	90+7	1					A	S,Z,H,P/V,N,C			true
+SUB B	5	90+0	1	A,B				A	S,Z,H,P/V,N,C			true
+SUB C	5	90+1	1	A,C				A	S,Z,H,P/V,N,C			true
+SUB D	5	90+2	1	A,D				A	S,Z,H,P/V,N,C			true
+SUB E	5	90+3	1	A,E				A	S,Z,H,P/V,N,C			true
+SUB H	5	90+4	1	A,H				A	S,Z,H,P/V,N,C			true
+SUB L	5	90+5	1	A,L				A	S,Z,H,P/V,N,C			true
+XOR (HL)	8	AE	1	A,HL			HL	A	S,Z,H,P/V,N,C			true
+XOR A	5	A8+7	1					A	S,Z,H,P/V,N,C			true
+XOR B	5	A8+0	1	A,B				A	S,Z,H,P/V,N,C			true
+XOR C	5	A8+1	1	A,C				A	S,Z,H,P/V,N,C			true
+XOR D	5	A8+2	1	A,D				A	S,Z,H,P/V,N,C			true
+XOR E	5	A8+3	1	A,E				A	S,Z,H,P/V,N,C			true
+XOR H	5	A8+4	1	A,H				A	S,Z,H,P/V,N,C			true
+XOR L	5	A8+5	1	A,L				A	S,Z,H,P/V,N,C			true
+ADC A,IXp	10	DD 88+p	2	A,IXp	C			A	S,Z,H,P/V,N,C			true
+ADC A,IYq	10	FD 88+q	2	A,IYq	C			A	S,Z,H,P/V,N,C			true
+ADC A,n	8	CE n	2	A	C			A	S,Z,H,P/V,N,C			true
+ADC HL,BC	17	ED 4A	2	HL,BC	C			HL	S,Z,H,P/V,N,C			true
+ADC HL,DE	17	ED 5A	2	HL,DE	C			HL	S,Z,H,P/V,N,C			true
+ADC HL,HL	17	ED 6A	2	HL	C			HL	S,Z,H,P/V,N,C			true
+ADC HL,SP	17	ED 7A	2	HL,SP	C			HL	S,Z,H,P/V,N,C			true
+ADD A,IXp	10	DD 80+p	2	A,IXp				A	S,Z,H,P/V,N,C			true
+ADD A,IYq	10	FD 80+q	2	A,IYq				A	S,Z,H,P/V,N,C			true
+ADD A,n	8	C6 n	2	A				A	S,Z,H,P/V,N,C			true
+ADD IX,BC	17	DD 09	2	IX,BC				IX	H,N,C			true
+ADD IX,DE	17	DD 19	2	IX,DE				IX	H,N,C			true
+ADD IX,IX	17	DD 29	2	IX				IX	H,N,C			true
+ADD IX,SP	17	DD 39	2	IX,SP				IX	H,N,C			true
+ADD IY,BC	17	FD 09	2	IY,BC				IY	H,N,C			true
+ADD IY,DE	17	FD 19	2	IY,DE				IY	H,N,C			true
+ADD IY,IY	17	FD 29	2	IY				IY	H,N,C			true
+ADD IY,SP	17	FD 39	2	IY,SP				IY	H,N,C			true
+AND IXp	10	DD A0+p	2	A,IXp				A	S,Z,H,P/V,N,C			true
+AND IYq	10	FD A0+q	2	A,IYq				A	S,Z,H,P/V,N,C			true
+AND n	8	E6 n	2	A				A	S,Z,H,P/V,N,C			true
+BIT b,(HL)	14	CB 46+8*b	2	HL			HL		S,Z,H,P/V,N			true
+BIT b,r	10	CB 40+8*b+r	2	r					S,Z,H,P/V,N			true
+CP IXp	10	DD B8+p	2	A,IXp					S,Z,H,P/V,N,C			true
+CP IYq	10	FD B8+q	2	A,IYq					S,Z,H,P/V,N,C			true
+CP n	8	FE n	2	A					S,Z,H,P/V,N,C			true
+CPD	18	ED A9	2	A,HL,BC			HL	HL,BC	S,Z,H,P/V,N			true
+CPDR	23/18	ED B9	2	A,HL,BC			[HL-B:HL]	HL,BC	S,Z,H,P/V,N			true
+CPI	18	ED A1	2	A,HL,BC			HL	HL,BC	S,Z,H,P/V,N			true
+CPIR	23/18	ED B1	2	A,HL,BC			[HL:HL+B]	HL,BC	S,Z,H,P/V,N			true
+DEC IX	12	DD 2B	2	IX				IX				true
+DEC IXp	10	DD 05+8*p	2	IXp				IXp	S,Z,H,P/V,N			true
+DEC IY	12	FD 2B	2	IY				IY				true
+DEC IYq	10	FD 05+8*q	2	IYq				IYq	S,Z,H,P/V,N			true
+DJNZ o	14/9	10 o	2	B				B,PC				true
+EX (SP),IX	25	DD E3	2	HL,IX			[SP:SP+1]	IX			[SP:SP+1]	true
+EX (SP),IY	25	FD E3	2	HL,IY			[SP:SP+1]	IY			[SP:SP+1]	true
+IM 0	10	ED 46	2									true
+IM 1	10	ED 56	2									true
+IM 2	10	ED 5E	2									true
+IN A,(C)	14	ED 78	2	C		C		A	S,Z,N			true
+IN A,(n)	12	DB n	2			n		A	S,Z,N			true
+IN B,(C)	14	ED 40	2	C		C		B	S,Z,N			true
+IN C,(C)	14	ED 48	2	C		C		C	S,Z,N			true
+IN D,(C)	14	ED 50	2	C		C		D	S,Z,N			true
+IN E,(C)	14	ED 58	2	C		C		E	S,Z,N			true
+IN F,(C)	14	ED 70	2	C		C		F	S,Z,N			true
+IN H,(C)	14	ED 60	2	C		C		H	S,Z,N			true
+IN L,(C)	14	ED 68	2	C		C		L	S,Z,N			true
+INC IX	12	DD 23	2	IX				IX				true
+INC IXp	10	DD 04+8*p	2	IXp				IXp	S,Z,H,P/V,N			true
+INC IY	12	FD 23	2	IY				IY				true
+INC IYq	10	FD 04+8*q	2	IYq				IYq	S,Z,H,P/V,N			true
+IND	18	ED AA	2	HL,B,C		C		HL,B	S,Z,H,P/V,N,C		HL	true
+INDR	23/18	ED BA	2	HL,B,C		C		HL,B	S,Z,H,P/V,N,C		[HL-B:HL]	true
+INI	18	ED A2	2	HL,B,C		C		HL,B	S,Z,H,P/V,N,C		HL	true
+INIR	23/18	ED B2	2	HL,B,C		C		HL,B	S,Z,H,P/V,N,C		[HL:HL+B]	true
+JP IX	10	DD E9	2	IX				PC				true
+JP (IX)	10	DD E9	2	IX				PC				true
+JP IY	10	FD E9	2	IY				PC				true
+JP (IY)	10	FD E9	2	IY				PC				true
+JR C,o	13/8	38 o	2		C			PC				true
+JR NC,o	13/8	30 o	2		C			PC				true
+JR NZ,o	13/8	20 o	2		Z			PC				true
+JR Z,o	13/8	28 o	2		Z			PC				true
+JR o	13	18 o	2					PC				true
+LD (HL),n	11	36 n	2	HL							HL	true
+LD A,I	11	ED 57	2	I				A				true
+LD A,IXp	10	DD 78+p	2	IXp				A				true
+LD A,IYq	10	FD 78+q	2	IYq				A				true
+LD A,R	11	ED 5F	2	R				A				true
+LD A,n	8	3E n	2					A				true
+LD B,IXp	10	DD 40+p	2	IXp				B				true
+LD B,IYq	10	FD 40+q	2	IYq				B				true
+LD B,n	8	06 n	2					B				true
+LD C,IXp	10	DD 48+p	2	IXp				C				true
+LD C,IYq	10	FD 48+q	2	IYq				C				true
+LD C,n	8	0E n	2					C				true
+LD D,IXp	10	DD 50+p	2	IXp				D				true
+LD D,IYq	10	FD 50+q	2	IYq				D				true
+LD D,n	8	16 n	2					D				true
+LD E,IXp	10	DD 58+p	2	IXp				E				true
+LD E,IYq	10	FD 58+q	2	IYq				E				true
+LD E,n	8	1E n	2					E				true
+LD H,n	8	26 n	2					H				true
+LD I,A	11	ED 47	2	A				I				true
+LD IXH,p	10	DD 60+p	2	p				IXH				true
+LD IXL,p	10	DD 68+p	2	p				IXL				true
+LD IYH,q	10	FD 60+q	2	q				IYH				true
+LD IYL,q	10	FD 68+q	2	q				IYL				true
+LD L,n	8	2E n	2					L				true
+LD R,A	11	ED 4F	2	A				R				true
+LD SP,IX	12	DD F9	2	IX				SP				true
+LD SP,IY	12	FD F9	2	IY				SP				true
+LDD	18	ED A8	2	BC,DE,HL			HL	BC,HL,DE	H,P/V,N		DE	true
+LDDR	23/18	ED B8	2	BC,DE,HL			[HL-BC:HL]	BC,DE,HL			[DE-BC:DE]	true
+LDI	18	ED A0	2	BC,DE,HL			HL	BC,HL,DE	H,P/V,N		DE	true
+LDIR	23/18	ED B0	2	BC,DE,HL			[HL:HL+BC]	BC,DE,HL			[DE:DE+BC]	true
+NEG	10	ED 44	2	A				A	S,Z,H,P/V,N,C			true
+OR IXp	10	DD B0+p	2	A,IXp				A	S,Z,H,P/V,N,C			true
+OR IYq	10	FD B0+q	2	A,IYq				A	S,Z,H,P/V,N,C			true
+OR n	8	F6 n	2	A				A	S,Z,H,P/V,N,C			true
+OTDR	23/18	ED BB	2	B,C,HL			[HL-B:HL]	B,HL	S,Z,H,P/V,N,C	C		true
+OTIR	23/18	ED B3	2	B,C,HL			[HL:HL+B]	B,HL	S,Z,H,P/V,N,C	C		true
+OUT (C),A	14	ED 79	2	A,C					S,Z,N	C		true
+OUT (C),B	14	ED 41	2	B,C					S,Z,N	C		true
+OUT (C),C	14	ED 49	2	C					S,Z,N	C		true
+OUT (C),D	14	ED 51	2	C,D					S,Z,N	C		true
+OUT (C),E	14	ED 59	2	C,E					S,Z,N	C		true
+OUT (C),H	14	ED 61	2	C,H					S,Z,N	C		true
+OUT (C),L	14	ED 69	2	C,L					S,Z,N	C		true
+OUT (n),A	12	D3 n	2	A					S,Z,N	n		true
+OUTD	18	ED AB	2	B,C,HL			HL	B,HL	S,Z,H,P/V,N,C	C		true
+OUTI	18	ED A3	2	B,C,HL			HL	B,HL	S,Z,H,P/V,N,C	C		true
+POP IX	16	DD E1	2				[SP:SP+1]	IX,SP				true
+POP IY	16	FD E1	2				[SP:SP+1]	IY,SP				true
+PUSH IX	17	DD E5	2	IX				SP			[SP-2:SP-1]	true
+PUSH IY	17	FD E5	2	IY				SP			[SP-2:SP-1]	true
+RES b,(HL)	17	CB 86+8*b	2	HL			HL				HL	true
+RES b,r	10	CB 80+8*b+r	2	r				r				true
+RETI	16	ED 4D	2				[SP:SP+1]	SP,PC				true
+RETN	16	ED 45	2				[SP:SP+1]	SP,PC				true
+RL (HL)	17	CB 16	2	HL	C			HL	S,Z,H,P/V,N,C		HL	true
+RL r	10	CB 10+r	2	r	C				S,Z,H,P/V,N,C			true
+RLC (HL)	17	CB 06	2	HL				HL	S,Z,H,P/V,N,C		HL	true
+RLC r	10	CB 00+r	2	r					S,Z,H,P/V,N,C			true
+RLD	20	ED 6F	2	A					S,Z,H,P/V,N			true
+RR (HL)	17	CB 1E	2	HL	C			HL	S,Z,H,P/V,N,C		HL	true
+RR r	10	CB 18+r	2	r	C				S,Z,H,P/V,N,C			true
+RRC (HL)	17	CB 0E	2	HL				HL	S,Z,H,P/V,N,C		HL	true
+RRC r	10	CB 08+r	2	r					S,Z,H,P/V,N,C			true
+RRD	20	ED 67	2	A					S,Z,H,P/V,N			true
+SBC A,IXp	10	DD 98+p	2	A,IXp	C			A	S,Z,H,P/V,N,C			true
+SBC A,IYq	10	FD 98+q	2	A,IYq	C			A	S,Z,H,P/V,N,C			true
+SBC A,n	8	DE n	2	A	C			A	S,Z,H,P/V,N,C			true
+SBC HL,BC	17	ED 42	2	HL,BC	C			HL	S,Z,H,P/V,N,C			true
+SBC HL,DE	17	ED 52	2	HL,DE	C			HL	S,Z,H,P/V,N,C			true
+SBC HL,HL	17	ED 62	2	HL	C			HL	S,Z,H,P/V,N,C			true
+SBC HL,SP	17	ED 72	2	HL,SP	C			HL	S,Z,H,P/V,N,C			true
+SET b,(HL)	17	CB C6+8*b	2	HL			HL				HL	true
+SET b,r	10	CB C0+8*b+r	2	r				r				true
+SLA (HL)	17	CB 26	2	HL			HL		S,Z,H,P/V,N,C		HL	true
+SLA r	10	CB 20+r	2	r				r	S,Z,H,P/V,N,C			true
+SRA (HL)	17	CB 2E	2	HL			HL		S,Z,H,P/V,N,C		HL	true
+SRA r	10	CB 28+r	2	r				r	S,Z,H,P/V,N,C			true
+SRL (HL)	17	CB 3E	2	HL			HL		S,Z,H,P/V,N,C		HL	true
+SRL r	10	CB 38+r	2	r				r	S,Z,H,P/V,N,C			true
+SUB IXp	10	DD 90+p	2	A,IXp				A	S,Z,H,P/V,N,C			true
+SUB IYq	10	FD 90+q	2	A,IYq				A	S,Z,H,P/V,N,C			true
+SUB n	8	D6 n	2	A				A	S,Z,H,P/V,N,C			true
+XOR IXp	10	DD A8+p	2	A,IXp				A	S,Z,H,P/V,N,C			true
+XOR IYq	10	FD A8+q	2	A,IYq				A	S,Z,H,P/V,N,C			true
+XOR n	8	EE n	2	A				A	S,Z,H,P/V,N,C			true
+ADC A,(IX+o)	21	DD 8E o	3	A,IX	C		IX+o	A	S,Z,H,P/V,N,C			true
+ADC A,(IY+o)	21	FD 8E o	3	A,IY	C		IY+o	A	S,Z,H,P/V,N,C			true
+ADD A,(IX+o)	21	DD 86 o	3	A,IX			IX+o	A	S,Z,H,P/V,N,C			true
+ADD A,(IY+o)	21	FD 86 o	3	A,IY			IY+o	A	S,Z,H,P/V,N,C			true
+AND (IX+o)	21	DD A6 o	3	A,IX			IX+o	A	S,Z,H,P/V,N,C			true
+AND (IY+o)	21	FD A6 o	3	A,IY			IY+o	A	S,Z,H,P/V,N,C			true
+CALL C,nn	18/11	DC nn nn	3	SP	C			SP,PC			[SP-2:SP-1]	true
+CALL M,nn	18/11	FC nn nn	3	SP	S			SP,PC			[SP-2:SP-1]	true
+CALL NC,nn	18/11	D4 nn nn	3	SP	C			SP,PC			[SP-2:SP-1]	true
+CALL NZ,nn	18/11	C4 nn nn	3	SP	Z			SP,PC			[SP-2:SP-1]	true
+CALL P,nn	18/11	F4 nn nn	3	SP	S			SP,PC			[SP-2:SP-1]	true
+CALL PE,nn	18/11	EC nn nn	3	SP	P/V			SP,PC			[SP-2:SP-1]	true
+CALL PO,nn	18/11	E4 nn nn	3	SP	P/V			SP,PC			[SP-2:SP-1]	true
+CALL Z,nn	18/11	CC nn nn	3	SP	Z			SP,PC			[SP-2:SP-1]	true
+CALL nn	18	CD nn nn	3	SP				SP,PC			[SP-2:SP-1]	true
+CP (IX+o)	21	DD BE o	3	A,IX			IX+o		S,Z,H,P/V,N,C			true
+CP (IY+o)	21	FD BE o	3	A,IY			IY+o		S,Z,H,P/V,N,C			true
+DEC (IX+o)	25	DD 35 o	3	IX			IX+o		S,Z,H,P/V,N		IX+o	true
+DEC (IY+o)	25	FD 35 o	3	IY			IY+o		S,Z,H,P/V,N		IY+o	true
+INC (IX+o)	25	DD 34 o	3	IX			IX+o		S,Z,H,P/V,N		IX+o	true
+INC (IY+o)	25	FD 34 o	3	IY			IY+o		S,Z,H,P/V,N		IY+o	true
+JP C,nn	11	DA nn nn	3		C			PC				true
+JP M,nn	11	FA nn nn	3		S			PC				true
+JP NC,nn	11	D2 nn nn	3		C			PC				true
+JP NZ,nn	11	C2 nn nn	3		Z			PC				true
+JP P,nn	11	F2 nn nn	3		S			PC				true
+JP PE,nn	11	EA nn nn	3		P/V			PC				true
+JP PO,nn	11	E2 nn nn	3		P/V			PC				true
+JP Z,nn	11	CA nn nn	3		Z			PC				true
+JP nn	11	C3 nn nn	3					PC				true
+LD (IX+o),r	21	DD 70+r o	3	IX,r							IX+o	true
+LD (IY+o),r	21	FD 70+r o	3	IY,r							IY+o	true
+LD (nn),A	14	32 nn nn	3	A							nn	true
+LD (nn),HL	17	22 nn nn	3	HL							[nn:nn+1]	true
+LD A,(IX+o)	21	DD 7E o	3	IX			IX+o	A				true
+LD A,(IY+o)	21	FD 7E o	3	IY			IY+o	A				true
+LD A,(nn)	14	3A nn nn	3				nn	A				true
+LD B,(IX+o)	21	DD 46 o	3	IX			IX+o	B				true
+LD B,(IY+o)	21	FD 46 o	3	IY			IY+o	B				true
+LD BC,nn	11	01 nn nn	3					BC				true
+LD C,(IX+o)	21	DD 4E o	3	IX			IX+o	C				true
+LD C,(IY+o)	21	FD 4E o	3	IY			IY+o	C				true
+LD D,(IX+o)	21	DD 56 o	3	IX			IX+o	D				true
+LD D,(IY+o)	21	FD 56 o	3	IY			IY+o	D				true
+LD DE,nn	11	11 nn nn	3					DE				true
+LD E,(IX+o)	21	DD 5E o	3	IX			IX+o	E				true
+LD E,(IY+o)	21	FD 5E o	3	IY			IY+o	E				true
+LD H,(IX+o)	21	DD 66 o	3	IX			IX+o	H				true
+LD H,(IY+o)	21	FD 66 o	3	IY			IY+o	H				true
+LD HL,(nn)	17	2A nn nn	3				[nn:nn+1]	HL				true
+LD HL,nn	11	21 nn nn	3					HL				true
+LD IXH,n	13	DD 26 n	3					IXH				true
+LD IXL,n	13	DD 2E n	3					IXL				true
+LD IYH,n	13	FD 26 n	3					IYH				true
+LD IYL,n	13	FD 2E n	3					IYL				true
+LD L,(IX+o)	21	DD 6E o	3	IX			IX+o	L				true
+LD L,(IY+o)	21	FD 6E o	3	IY			IY+o	L				true
+LD SP,nn	11	31 nn nn	3					SP				true
+OR (IX+o)	21	DD B6 o	3	A,IX			IX+o	A	S,Z,H,P/V,N,C			true
+OR (IY+o)	21	FD B6 o	3	A,IY			IY+o	A	S,Z,H,P/V,N,C			true
+SBC A,(IX+o)	21	DD 9E o	3	A,IX	C		IX+o	A	S,Z,H,P/V,N,C			true
+SBC A,(IY+o)	21	FD 9E o	3	A,IY	C		IY+o	A	S,Z,H,P/V,N,C			true
+SUB (IX+o)	21	DD 96 o	3	A,IX			IX+o	A	S,Z,H,P/V,N,C			true
+SUB (IY+o)	21	FD 96 o	3	A,IY			IY+o	A	S,Z,H,P/V,N,C			true
+XOR (IX+o)	21	DD AE o	3	A,IX			IX+o	A	S,Z,H,P/V,N,C			true
+XOR (IY+o)	21	FD AE o	3	A,IY			IY+o	A	S,Z,H,P/V,N,C			true
+BIT b,(IX+o)	22	DD CB o 46+8*b	4	IX			IX+o		S,Z,H,P/V,N			true
+BIT b,(IY+o)	22	FD CB o 46+8*b	4	IY			IY+o		S,Z,H,P/V,N			true
+LD (IX+o),n	21	DD 36 o n	4	IX							IX+o	true
+LD (IY+o),n	21	FD 36 o n	4	IY							IY+o	true
+LD (nn),BC	22	ED 43 nn nn	4	BC							[nn:nn+1]	true
+LD (nn),DE	22	ED 53 nn nn	4	DE							[nn:nn+1]	true
+LD (nn),IX	22	DD 22 nn nn	4	IX							[nn:nn+1]	true
+LD (nn),IY	22	FD 22 nn nn	4	IY							[nn:nn+1]	true
+LD (nn),SP	22	ED 73 nn nn	4	SP							[nn:nn+1]	true
+LD BC,(nn)	22	ED 4B nn nn	4				[nn:nn+1]	BC				true
+LD DE,(nn)	22	ED 5B nn nn	4				[nn:nn+1]	DE				true
+LD IX,(nn)	22	DD 2A nn nn	4				[nn:nn+1]	IX				true
+LD IX,nn	16	DD 21 nn nn	4					IX				true
+LD IY,(nn)	22	FD 2A nn nn	4				[nn:nn+1]	IY				true
+LD IY,nn	16	FD 21 nn nn	4					IY				true
+LD SP,(nn)	22	ED 7B nn nn	4				[nn:nn+1]	SP				true
+RES b,(IX+o)	25	DD CB o 86+8*b	4	IX			IX+o				IX+o	true
+RES b,(IY+o)	25	FD CB o 86+8*b	4	IY			IY+o				IY+o	true
+RL (IX+o)	25	DD CB o 16	4	IX	C		IX+o		S,Z,H,P/V,N,C		IX+o	true
+RL (IY+o)	25	FD CB o 16	4	IY	C		IY+o		S,Z,H,P/V,N,C		IY+o	true
+RLC (IX+o)	25	DD CB o 06	4	IX			IX+o		S,Z,H,P/V,N,C		IX+o	true
+RLC (IY+o)	25	FD CB o 06	4	IY			IY+o		S,Z,H,P/V,N,C		IY+o	true
+RR (IX+o)	25	DD CB o 1E	4	IX	C		IX+o		S,Z,H,P/V,N,C		IX+o	true
+RR (IY+o)	25	FD CB o 1E	4	IY	C		IY+o		S,Z,H,P/V,N,C		IY+o	true
+RRC (IX+o)	25	DD CB o 0E	4	IX			IX+o		S,Z,H,P/V,N,C		IX+o	true
+RRC (IY+o)	25	FD CB o 0E	4	IY			IY+o		S,Z,H,P/V,N,C		IY+o	true
+SET b,(IX+o)	25	DD CB o C6+8*b	4	IX			IX+o				IX+o	true
+SET b,(IY+o)	25	FD CB o C6+8*b	4	IY			IY+o				IY+o	true
+SLA (IX+o)	25	DD CB o 26	4	IX			IX+o		S,Z,H,P/V,N,C		IX+o	true
+SLA (IY+o)	25	FD CB o 26	4	IY			IY+o		S,Z,H,P/V,N,C		IY+o	true
+SRA (IX+o)	25	DD CB o 2E	4	IX			IX+o		S,Z,H,P/V,N,C		IX+o	true
+SRA (IY+o)	25	FD CB o 2E	4	IY			IY+o		S,Z,H,P/V,N,C		IY+o	true
+SRL (IX+o)	25	DD CB o 3E	4	IX			IX+o		S,Z,H,P/V,N,C		IX+o	true
+SRL (IY+o)	25	FD CB o 3E	4	IY			IY+o		S,Z,H,P/V,N,C		IY+o	true
+MULUB A,r	14	ED C1+8*r	2	A,r				HL	S,Z,P/V,C			true
+MULUW HL,BC	36	ED C3	2	HL,BC				DL,HL	S,Z,P/V,C			true
+MULUW HL,SP	36	ED F3	2	HL,SP				DL,HL	S,Z,P/V,C			true
+; Unofficial alternative way to write some instructions that some assemblers support:
+ADC (HL)	8	8E	1	A,HL	C		HL	A	S,Z,H,P/V,N,C			false
+ADC r	5	88+r	1	A,r	C			A	S,Z,H,P/V,N,C			false
+ADC n	8	CE n	2	A	C			A	S,Z,H,P/V,N,C			false
+ADC (IX+o)	21	DD 8E o	3	A,IX	C		IX+o	A	S,Z,H,P/V,N,C			false
+ADC (IY+o)	21	FD 8E o	3	A,IY	C		IY+o	A	S,Z,H,P/V,N,C			false
+ADD r	5	80+r	1	A,r				A	S,Z,H,P/V,N,C			false
+ADD (HL)	8	86	1	A,HL			HL	A	S,Z,H,P/V,N,C			false
+ADD n	8	C6 n	2	A				A	S,Z,H,P/V,N,C			false
+ADD (IX+o)	21	DD 86 o	3	A,IX			IX+o	A	S,Z,H,P/V,N,C			false
+ADD (IY+o)	21	FD 86 o	3	A,IY			IY+o	A	S,Z,H,P/V,N,C			false
+EX HL,DE	5	EB	1	DE,HL				DE,HL				false
+OUT n,A	12	D3 n	2	A					S,Z,N	n		false
+SBC (HL)	8	9E	1	A,HL	C		HL	A	S,Z,H,P/V,N,C			false
+SBC A	5	98+7	1		C			A	S,Z,H,P/V,N,C			false
+SBC B	5	98+0	1	A,B	C			A	S,Z,H,P/V,N,C			false
+SBC C	5	98+1	1	A,C	C			A	S,Z,H,P/V,N,C			false
+SBC D	5	98+2	1	A,D	C			A	S,Z,H,P/V,N,C			false
+SBC E	5	98+3	1	A,E	C			A	S,Z,H,P/V,N,C			false
+SBC H	5	98+4	1	A,H	C			A	S,Z,H,P/V,N,C			false
+SBC L	5	98+5	1	A,L	C			A	S,Z,H,P/V,N,C			false
+SUB A, (HL)	8	96	1	A,HL			HL	A	S,Z,H,P/V,N,C			false
+SUB A, A	5	90+7	1					A	S,Z,H,P/V,N,C			false
+SUB A, B	5	90+0	1	A,B				A	S,Z,H,P/V,N,C			false
+SUB A, C	5	90+1	1	A,C				A	S,Z,H,P/V,N,C			false
+SUB A, D	5	90+2	1	A,D				A	S,Z,H,P/V,N,C			false
+SUB A, E	5	90+3	1	A,E				A	S,Z,H,P/V,N,C			false
+SUB A, H	5	90+4	1	A,H				A	S,Z,H,P/V,N,C			false
+SUB A, L	5	90+5	1	A,L				A	S,Z,H,P/V,N,C			false
+SUB A, (IX+o)	21	DD 96 o	3	A,IX			IX+o	A	S,Z,H,P/V,N,C			false
+SUB A, (IY+o)	21	FD 96 o	3	A,IY			IY+o	A	S,Z,H,P/V,N,C			false
+SUB A, n	8	D6 n	2	A				A	S,Z,H,P/V,N,C			false
+EX AF,AF	5	8	1	AF				AF				false
+SBC (IX+o)	21	DD 9E o	3	A,IX	C		IX+o	A	S,Z,H,P/V,N,C			false
+SBC (IY+o)	21	FD 9E o	3	A,IY	C		IY+o	A	S,Z,H,P/V,N,C			false
+AND A, n	8	E6 n	2	A				A	S,Z,H,P/V,N,C			false
