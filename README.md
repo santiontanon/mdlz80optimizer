@@ -19,7 +19,7 @@ The latest version can always be downloaded from the "releases" section: https:/
 
   ```-cpu <type>```: to select a different CPU (z80/z80msx/z80cpc) (default: z80msx).
 
-  ```-dialect <type>```: to allow parsing different assembler dialects (mdl/glass/asmsx/sjasm/tniasm) (default: mdl, which supports some basic code idioms common to various assemblers).
+  ```-dialect <type>```: to allow parsing different assembler dialects (mdl/asmsx/glass/sjasm/tniasm/winape/pasmo/sdcc) (default: mdl, which supports some basic code idioms common to various assemblers).
                    Note that even when selecting a dialect, not all syntax of a given assembler might be supported.
 
   ```-I <folder>```: adds a folder to the include search path.
@@ -48,15 +48,27 @@ The latest version can always be downloaded from the "releases" section: https:/
 
   ```-+bin```: includes binary files (incbin) in the output analyses.
 
-  ```-opcase <case>```: whether to convert the assembler operators to upper or lower case. Possible values are: none/lower/upper (none does no conversion). Default is 'lower'.
-  
   ```-no-opt-pragma <value>```: changes the pragma to be inserted in a comment on a line to prevent optimizing it (default: mdl:no-opt)
 
+  ```-out-opcase <case>```: whether to convert the assembler operators to upper or lower case. Possible values are: none/lower/upper (none does no conversion). Default is 'lower'.
+  
+  ```-out-allow-ds-virtual```: allows 'ds virtual' in the generated assembler (not all assemblers support this, but simplifies output)
+  
+  ```-out-colonless-equs```: equs will look like 'label equ value' instead of 'label: equ value'
+  
+  ```-out-remove-safety-equdollar```: labels preceding an equ statement are rendered as 'label: equ $' by default for safety (some assemblers interpret them differently otherwise). USe this flag to deactivate this behavior.
+  
+  ```-out-labels-no-dots```: local labels get resolved to `context.label', some assemblers do not like '.' in labels however. This flag replaces them by underscores.
+  
+  ```-out-squarebracket-ind```: use [] for indirections in the output, rather than ().
+  
+  ```-out-data-instead-of-ds```: will replace statements like 'ds 4, 0' by 'db 0, 0, 0, 0.
+  
   ```-do-not-evaluate-dialect-functions```: some assembler dialects define functions like random/sin/cos that can be used to form expressions. By default, MDL replaces them by the result of their execution before generating assembler output (as those might not be defined in other assemblers, and thus this keeps the assembler output as compatible as possible). Use this flag if you don't want this to happen.
   
   ```-evaluate-all-expressions```: this flag makes MDL resolve all expressions down to their ultimate numeric or string value when generating assembler code.
   
-  ```-po```: Runs the pattern-based optimizer.
+  ```-po```: Runs the pattern-based optimizer. You can pass an optimal parameter, like '-po size' or '-po speed', which are shortcuts for '-po -popatterns data/pbo-patterns-size.txt' and '-po -popatterns data/pbo-patterns-speed.txt'
 
   ```-posilent```: Supresses the pattern-based-optimizer output
 
