@@ -29,6 +29,7 @@ public class LineParser {
     public String KEYWORD_DW = "dw";
     public String KEYWORD_DD = "dd";
     public String KEYWORD_DS = "ds";
+    public String KEYWORD_COLON = ":";
     HashMap<String, String> keywordSynonyms = new HashMap<>();
     public List<String> keywordsHintingALabel = new ArrayList<>();
 
@@ -42,6 +43,8 @@ public class LineParser {
     public boolean macroNameIsFirstArgumentOfMacro = false;
     public boolean allowNumberLabels = false;   // also for sjasm (for "reusable" labels)
 
+    public boolean sdccStyleOffsets = false;
+    
     MDLConfig config;
     CodeBaseParser codeBaseParser;
 
@@ -115,9 +118,12 @@ public class LineParser {
             name = config.dialectParser.newSymbolName(name, value, previous);
         }
 
-        if (!allowNumberLabels || !Tokenizer.isInteger(name)) {
+        if (allowNumberLabels && Tokenizer.isInteger(name)) {
+            return name;
+        } else {
             name = labelPrefix + name;
         }
+        
         return name;
     }
 
@@ -251,7 +257,7 @@ public class LineParser {
 
         if (tokens.size() >= 2
                 && canBeLabel(token)
-                && tokens.get(1).equals(":")) {
+                && isKeyword(tokens.get(1),KEYWORD_COLON)) {
             Expression exp = Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, s, code, config);
 
             if (tokens.size() >= 3) {
@@ -682,9 +688,25 @@ public class LineParser {
             if (exp == null) {
                 config.error("parseCPUOp: Cannot parse line " + sl);
                 return false;
-            } else {
-                arguments.add(exp);
             }
+            
+            if (sdccStyleOffsets && !tokens.isEmpty()) {
+                if (tokens.get(0).equals("(")) {
+                    // offset of the type: "offset (register)", meaning (register+offset):
+                    Expression exp2 = config.expressionParser.parse(tokens, s, previous, code);
+                    if (exp2 == null || exp2.type != Expression.EXPRESSION_PARENTHESIS ||
+                        exp2.args.size()!=1 || 
+                        exp2.args.get(0).type != Expression.EXPRESSION_REGISTER_OR_FLAG) {
+                        config.error("parseCPUOp: Cannot parse line " + sl);
+                        return false;                        
+                    }
+                    Expression exp_tmp = Expression.operatorExpression(Expression.EXPRESSION_SUM, exp2.args.get(0), exp, config);
+                    exp2.args.set(0, exp_tmp);
+                    exp = exp2;
+                }
+            }
+            
+            arguments.add(exp);
             if (!tokens.isEmpty() && tokens.get(0).equals(",")) {
                 tokens.remove(0);
             } else {

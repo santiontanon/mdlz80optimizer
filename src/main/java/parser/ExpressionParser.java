@@ -23,6 +23,9 @@ public class ExpressionParser {
 
     // dialect-specific variables:
     public List<Integer> sjasmConterVariables = new ArrayList<>();
+    
+    public boolean sdccStyleHashMarksForConstants = false;
+    
 
     public ExpressionParser(MDLConfig a_config)
     {
@@ -258,6 +261,10 @@ public class ExpressionParser {
 
     public Expression parseInternal(List<String> tokens, SourceStatement s, SourceStatement previous, CodeBase code)
     {
+        if (sdccStyleHashMarksForConstants && tokens.size() >= 1 && tokens.get(0).equals("#")) {
+            tokens.remove(0);
+        } 
+        
         if (tokens.size() >= 1 &&
             Tokenizer.isInteger(tokens.get(0))) {
             // integer constant:

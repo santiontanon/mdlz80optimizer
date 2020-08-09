@@ -244,10 +244,10 @@ OUT (C),L	12	ED 69	2	C,L					S,Z,N	C		true
 OUT (n),A	11	D3 n	2	A					S,Z,N	n		true
 OUTD	16	ED AB	2	B,C,HL			HL	B,HL	S,Z,H,P/V,N,C	C		true
 OUTI	16	ED A3	2	B,C,HL			HL	B,HL	S,Z,H,P/V,N,C	C		true
-POP IX	14	DD E1	2				[SP:SP+1]	IX,SP				true
-POP IY	14	FD E1	2				[SP:SP+1]	IY,SP				true
-PUSH IX	15	DD E5	2	IX				SP			[SP-2:SP-1]	true
-PUSH IY	15	FD E5	2	IY				SP			[SP-2:SP-1]	true
+POP IX	14	DD E1	2	SP			[SP:SP+1]	IX,SP				true
+POP IY	14	FD E1	2	SP			[SP:SP+1]	IY,SP				true
+PUSH IX	15	DD E5	2	SP,IX				SP			[SP-2:SP-1]	true
+PUSH IY	15	FD E5	2	SP,IY				SP			[SP-2:SP-1]	true
 RES b,(HL)	15	CB 86+8*b	2	HL			HL				HL	true
 RES b,r	8	CB 80+8*b+r	2	r				r				true
 RETI	14	ED 4D	2				[SP:SP+1]	SP,PC				true
@@ -419,3 +419,16 @@ EX AF,AF	4	8	1	AF				AF				false
 SBC (IX+o)	19	DD 9E o	3	A,IX	C		IX+o	A	S,Z,H,P/V,N,C			false
 SBC (IY+o)	19	FD 9E o	3	A,IY	C		IY+o	A	S,Z,H,P/V,N,C			false
 AND A, n	7	E6 n	2	A				A	S,Z,H,P/V,N,C			false
+OR A, (IX+o)	19	DD B6 o	3	A,IX			IX+o	A	S,Z,H,P/V,N,C			false
+OR A, (IY+o)	19	FD B6 o	3	A,IY			IY+o	A	S,Z,H,P/V,N,C			false
+OR A, r	4	B0+r	1	A,r				A	S,Z,H,P/V,N,C			false
+CP A, (HL)	7	BE	1	A,HL			HL		S,Z,H,P/V,N,C			false
+CP A, r	4	B8+r	1	A,r					S,Z,H,P/V,N,C			false
+XOR A, (HL)	7	AE	1	A,HL			HL	A	S,Z,H,P/V,N,C			false
+XOR A, A	4	A8+7	1					A	S,Z,H,P/V,N,C			false
+XOR A, B	4	A8+0	1	A,B				A	S,Z,H,P/V,N,C			false
+XOR A, C	4	A8+1	1	A,C				A	S,Z,H,P/V,N,C			false
+XOR A, D	4	A8+2	1	A,D				A	S,Z,H,P/V,N,C			false
+XOR A, E	4	A8+3	1	A,E				A	S,Z,H,P/V,N,C			false
+XOR A, H	4	A8+4	1	A,H				A	S,Z,H,P/V,N,C			false
+XOR A, L	4	A8+5	1	A,L				A	S,Z,H,P/V,N,C			false

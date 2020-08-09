@@ -28,9 +28,14 @@ public class Tokenizer {
         doubleTokens.add(":=");
         doubleTokens.add("++");
         doubleTokens.add("--");
+        doubleTokens.add("::");
+        doubleTokens.add("=:");
+        doubleTokens.add("==");
     }    
     
     public static boolean allowAndpersandHex = false;
+    public static boolean sdccStyleHashMarksForConstants = false;
+    public static boolean sdccStyleDollarInLabels = false;
     
     
     static Matcher doubleMatcher = Pattern.compile("[\\x00-\\x20]*[+-]?(((((\\p{Digit}+)(\\.)?((\\p{Digit}+)?)([eE][+-]?(\\p{Digit}+))?)|(\\.((\\p{Digit}+))([eE][+-]?(\\p{Digit}+))?)|(((0[xX](\\p{XDigit}+)(\\.)?)|(0[xX](\\p{XDigit}+)?(\\.)(\\p{XDigit}+)))[pP][+-]?(\\p{Digit}+)))[fFdD]?))[\\x00-\\x20]*")
@@ -51,8 +56,12 @@ public class Tokenizer {
     
     
     public static List<String> tokenize(String line, List<String> tokens, boolean includeBlanks) {
-        
-        StringTokenizer st = new StringTokenizer(line, " \r\n\t()[]#$,;:+-*/%|&'\"!?<>=~^{}", true);
+        StringTokenizer st;
+        if (sdccStyleDollarInLabels) {
+            st = new StringTokenizer(line, " \r\n\t()[]#,;:+-*/%|&'\"!?<>=~^{}", true);
+        } else {
+            st = new StringTokenizer(line, " \r\n\t()[]#$,;:+-*/%|&'\"!?<>=~^{}", true);
+        }
         String previous = null;
         while(st.hasMoreTokens()) {
             String next = st.nextToken();
@@ -63,12 +72,14 @@ public class Tokenizer {
                     previous = previous+next;
                     continue;
                 }
-                if (previous.equals("#") && isHexCharacter(next.charAt(0))) {
-                    // merge, as this is just a single symbol
-                    tokens.remove(tokens.size()-1);
-                    tokens.add(previous+next);
-                    previous = previous+next;
-                    continue;
+                if (!sdccStyleHashMarksForConstants) {
+                    if (previous.equals("#") && isHexCharacter(next.charAt(0))) {
+                        // merge, as this is just a single symbol
+                        tokens.remove(tokens.size()-1);
+                        tokens.add(previous+next);
+                        previous = previous+next;
+                        continue;
+                    }
                 }
                 if (previous.equals("$") && isHexCharacter(next.charAt(0))) {
                     // merge, as this is just a single symbol
@@ -172,6 +183,12 @@ public class Tokenizer {
         int c = token.charAt(0);
         if ((c>='a' && c<='z') || (c>='A' && c<='Z') || c=='_' ||
             c=='.' || c == '@') return true;
+        
+        if (sdccStyleDollarInLabels && token.charAt(token.length()-1) == '$' &&
+            c>='0' && c<='9') {
+            return true;
+        }
+        
         return false;
     }
     

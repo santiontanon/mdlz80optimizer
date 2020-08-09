@@ -86,6 +86,22 @@ public class TokenizerTest {
         Assert.assertArrayEquals(new String[]{"&C0DE"}, tokenize("&C0DE"));
         Tokenizer.allowAndpersandHex = false;
     }
+    @Test public void test23() {
+        Assert.assertArrayEquals(new String[]{"_main","::"}, tokenize("_main::"));
+    }
+    @Test public void test24() {
+        Assert.assertArrayEquals(new String[]{"ld","hl",",","#0x0000"}, tokenize("ld	hl, #0x0000"));
+    }
+    @Test public void test25() {
+        Tokenizer.sdccStyleHashMarksForConstants = true;
+        Assert.assertArrayEquals(new String[]{"ld","hl",",","#","0x0000"}, tokenize("ld	hl, #0x0000"));
+        Tokenizer.sdccStyleHashMarksForConstants = false;
+    }
+    @Test public void test26() {
+        Tokenizer.sdccStyleDollarInLabels = true;
+        Assert.assertArrayEquals(new String[]{"00102$",":"}, tokenize("00102$:"));
+        Tokenizer.sdccStyleDollarInLabels = true;
+    }
 
     
     private static String[] tokenize(String line)
