@@ -48,6 +48,7 @@ public class ASMSXDialect implements Dialect {
     SourceStatement romHeaderStatement = null;
     SourceStatement basicHeaderStatement = null;
     Expression startAddressLabel = null;
+    int targetSizeInKB = 0;
     
     // Addresses are not resolved until the very end, so, when printing values, we just queue them up here, and
     // print them all at the very end:
@@ -306,7 +307,7 @@ public class ASMSXDialect implements Dialect {
                 config.error("Cannot parse .size parameter in "+sl.fileNameLineString()+": " + sl.line);
                 return null;
             }
-            // Since we are not producing compiled output, we ignore this directive
+            targetSizeInKB = size_exp.evaluateToInteger(s, code, true);
             if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
         }
         if (tokens.size()>=1 && (tokens.get(0).equalsIgnoreCase(".page") || tokens.get(0).equalsIgnoreCase("page"))) {
@@ -596,7 +597,7 @@ public class ASMSXDialect implements Dialect {
                 s = s.source.getNextStatementTo(s, code);
             }
         }
-        
+                
         {
             SourceStatement firstGeneratingBytes = null;
             SourceStatement lastGeneratingBytes = null;
@@ -612,8 +613,40 @@ public class ASMSXDialect implements Dialect {
                 s = s.source.getNextStatementTo(s, code);
             }
 
+            // "org/page" in asMSX work different than in some other assemblers, and we need to fill with zeros 
+            // the space until reaching the address of the org/page! (also, if you have two orgs with the same
+            // address, the latter code will overwrite the first, which is very unfortunate, as there are many
+            // use cases where this is problematic (e.g., copying code to RAM to execute from there), since 
+            // you cannot have code assembled in the same address...):
+            if (firstGeneratingBytes != null && lastGeneratingBytes != null) {
+                SourceStatement previous = null;
+                s = firstGeneratingBytes;
+                while(s != lastGeneratingBytes) {
+                    if (s.type == SourceStatement.STATEMENT_INCLUDE && !s.include.getStatements().isEmpty()) {
+                        s = s.include.getStatements().get(0);
+                    }
+                    if (previous != null && s.type == SourceStatement.STATEMENT_ORG) {
+                        // make sure we don't do it for the first org:
+                        if (basicHeaderStatement != previous) {
+                            int previousAddress = previous.getAddress(code) + previous.sizeInBytes(code, false, true, false);
+                            int orgAddress = s.org.evaluateToInteger(s, code, false);
+                            if (orgAddress > previousAddress) {
+                                // we need to insert filler space:
+                                int pad = orgAddress - previousAddress;
+                                config.debug("asMSX: pad: " + pad + " to reach " + orgAddress);
+                                SourceStatement padStatement = new SourceStatement(SourceStatement.STATEMENT_DEFINE_SPACE, null, lastGeneratingBytes.source);
+                                padStatement.space = Expression.constantExpression(pad, config);
+                                padStatement.space_value = Expression.constantExpression(0, config);
+                                previous.source.addStatement(previous.source.getStatements().indexOf(previous)+1, padStatement);                            
+                            }
+                        }
+                    }
+                    previous = s;
+                    s = s.source.getNextStatementTo(s, code);                    
+                }
+            }
 
-            if (romHeaderStatement != null) {
+            if (romHeaderStatement != null || targetSizeInKB > 0) {
                 // If a ROM is generated, asMSX fills the rom all the way to the nearest multiple of 8192 
                 // (this is not documented, but it is what it does, based on inspecting its source code):
                 // Find the last instruction that generates actual bytes in the ROM:
@@ -621,8 +654,13 @@ public class ASMSXDialect implements Dialect {
                     int start_address = firstGeneratingBytes.getAddress(code);
                     int end_address = lastGeneratingBytes.getAddress(code) + lastGeneratingBytes.sizeInBytes(code, false, true, false);
                     int size = end_address - start_address;
-                    int target_size = (((size + 8191) / 8192) * 8192);
+                    int target_size = targetSizeInKB > 0 ? targetSizeInKB * 1024 : (((size + 8191) / 8192) * 8192);
                     int pad = target_size - size;
+                    config.debug("asMSX: start_address: " + start_address);
+                    config.debug("asMSX: end_address: " + end_address);
+                    config.debug("asMSX: size: " + size);
+                    config.debug("asMSX: target_size: " + target_size);
+                    config.debug("asMSX: pad: " + pad);
                     SourceStatement padStatement = new SourceStatement(SourceStatement.STATEMENT_DEFINE_SPACE, null, lastGeneratingBytes.source);
                     padStatement.space = Expression.constantExpression(pad, config);
                     padStatement.space_value = Expression.constantExpression(0, config);
