@@ -221,14 +221,6 @@ public class Tokenizer {
 
     public static boolean isDouble(String token)
     {
-        /*
-        try{
-            Double.parseDouble(token);
-            return true;
-        } catch(Exception e) {
-            return false;
-        }
-        */
         return doubleMatcher.reset(token).matches();
     }
     

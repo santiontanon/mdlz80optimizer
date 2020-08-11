@@ -95,6 +95,8 @@ public class ASMSXDialect implements Dialect {
         config.expressionParser.dialectFunctions.add("sin");
         config.expressionParser.dialectFunctions.add(".cos");
         config.expressionParser.dialectFunctions.add("cos");
+        
+        config.expressionParser.allowFloatingPointNumbers = true;
     }
 
 
@@ -552,7 +554,7 @@ public class ASMSXDialect implements Dialect {
     
     @Override
     public boolean performAnyFinalActions(CodeBase code)
-    {        
+    {                
         if (basicHeaderStatement != null) {
             // Look for the very first org (and make sure the basic header is BEFORE the org):
             SourceStatement s = code.getMain().getNextStatementTo(null, code);

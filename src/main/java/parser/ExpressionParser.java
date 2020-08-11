@@ -25,6 +25,7 @@ public class ExpressionParser {
     public List<Integer> sjasmConterVariables = new ArrayList<>();
     
     public boolean sdccStyleHashMarksForConstants = false;
+    public boolean allowFloatingPointNumbers = false;
     
 
     public ExpressionParser(MDLConfig a_config)
@@ -271,7 +272,7 @@ public class ExpressionParser {
             String token = tokens.remove(0);
             return Expression.constantExpression(Integer.parseInt(token), config);
         }
-        if (tokens.size() >= 1 &&
+        if (allowFloatingPointNumbers && tokens.size() >= 1 &&
             Tokenizer.isDouble(tokens.get(0))) {
             // double constant:
             String token = tokens.remove(0);

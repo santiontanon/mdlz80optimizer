@@ -613,38 +613,38 @@ public class LineParser {
         if (defineSpaceVirtualByDefault) {
             virtual = true;
         }
-        if (virtual) {
-            Expression exp = config.expressionParser.parse(tokens, s, previous, code);
-            if (exp == null) {
-                config.error("parseDefineSpace: Cannot parse line " + sl);
-                return false;
-            }
-            s.type = SourceStatement.STATEMENT_DEFINE_SPACE;
-            s.space = exp;
-            s.space_value = null;
-        } else {
-            // In this case, "ds" is just a short-hand for "db" with repeated values:
-            Expression exp_amount = config.expressionParser.parse(tokens, s, previous, code);
-            Expression exp_value;
-            if (exp_amount == null) {
-                config.error("parseDefineSpace: Cannot parse line " + sl);
-                return false;
-            }
-            if (!tokens.isEmpty() && tokens.get(0).startsWith(",")) {
-                tokens.remove(0);
-                exp_value = config.expressionParser.parse(tokens, s, previous, code);
-                if (exp_value == null) {
-                    config.error("parseDefineSpace: Cannot parse line " + sl);
-                    return false;
-                }
-            } else {
-                exp_value = Expression.constantExpression(0, config);
-            }
-
-            s.type = SourceStatement.STATEMENT_DEFINE_SPACE;
-            s.space = exp_amount;
-            s.space_value = exp_value;
+//        if (virtual) {
+//            Expression exp = config.expressionParser.parse(tokens, s, previous, code);
+//            if (exp == null) {
+//                config.error("parseDefineSpace: Cannot parse line " + sl);
+//                return false;
+//            }
+//            s.type = SourceStatement.STATEMENT_DEFINE_SPACE;
+//            s.space = exp;
+//            s.space_value = null;
+//        } else {
+        // In this case, "ds" is just a short-hand for "db" with repeated values:
+        Expression exp_amount = config.expressionParser.parse(tokens, s, previous, code);
+        Expression exp_value = null;
+        if (exp_amount == null) {
+            config.error("parseDefineSpace: Cannot parse line " + sl);
+            return false;
         }
+        if (!tokens.isEmpty() && tokens.get(0).startsWith(",")) {
+            tokens.remove(0);
+            exp_value = config.expressionParser.parse(tokens, s, previous, code);
+            if (exp_value == null) {
+                config.error("parseDefineSpace: Cannot parse line " + sl);
+                return false;
+            }
+        } else {
+            if (!virtual) exp_value = Expression.constantExpression(0, config);
+        }
+
+        s.type = SourceStatement.STATEMENT_DEFINE_SPACE;
+        s.space = exp_amount;
+        s.space_value = exp_value;
+//        }
 
         return parseRestofTheLine(tokens, sl, s, source);
     }

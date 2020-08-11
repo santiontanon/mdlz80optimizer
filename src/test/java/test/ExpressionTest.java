@@ -27,6 +27,7 @@ public class ExpressionTest {
         MDLConfig mdlConfig = new MDLConfig();
         code = new CodeBase(mdlConfig);
         expressionParser = new ExpressionParser(mdlConfig);
+        expressionParser.allowFloatingPointNumbers = true;
     }
 
     @Test public void test1() { Assert.assertEquals(Integer.valueOf(2), evaluate("2")); }

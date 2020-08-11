@@ -36,6 +36,8 @@ public class TniAsmDialect implements Dialect {
         config.preProcessor.macroSynonyms.put("ifexist", config.preProcessor.MACRO_IFDEF);
 
         config.lineParser.addKeywordSynonym("rb", config.lineParser.KEYWORD_DS);
+        
+        config.lineParser.defineSpaceVirtualByDefault = true;
     }
 
     
@@ -43,6 +45,7 @@ public class TniAsmDialect implements Dialect {
     public boolean recognizeIdiom(List<String> tokens)
     {
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("rw")) return true;
+        if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("fname")) return true;
         return false;
     }
     
@@ -112,6 +115,12 @@ public class TniAsmDialect implements Dialect {
             }
             if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
         }   
+        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("fname")) {
+            tokens.remove(0);
+            tokens.remove(0);   // file name
+            // just ignore
+            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
+        }        
         
         return null;
     }
