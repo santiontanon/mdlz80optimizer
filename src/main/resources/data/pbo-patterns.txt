@@ -1217,3 +1217,29 @@ constraints:
 flagsNotModified(1,Z)
 in(?opjrjp,jr,jp,call)
 
+pattern: Replace ld ?regpair,?const2 with inc ?regpair
+2: ld ?regpair,?const1
+1: *
+0: ld ?regpair,?const2
+replacement:
+2: ld ?regpair,?const1
+1: *
+0: inc ?regpair
+constraints:
+in(?regpair,BC,DE,HL,IC,IY)
+regsNotModified(1,?regpair)
+equal(?const2,?const1+1)
+
+pattern: Replace ld ?regpair,?const2 with dec ?regpair
+2: ld ?regpair,?const1
+1: *
+0: ld ?regpair,?const2
+replacement:
+2: ld ?regpair,?const1
+1: *
+0: dec ?regpair
+constraints:
+in(?regpair,BC,DE,HL,IC,IY)
+regsNotModified(1,?regpair)
+equal(?const2,?const1-1)
+
