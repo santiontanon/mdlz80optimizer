@@ -7,10 +7,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.tuple.Pair;
 
 import cl.MDLConfig;
-import com.sun.org.apache.xpath.internal.compiler.OpMap;
-import org.apache.commons.lang3.tuple.Pair;
 
 public class SourceFile {
     MDLConfig config;
@@ -29,7 +28,7 @@ public class SourceFile {
         config = a_config;
     }
 
-    
+
     public String getPath() {
         return FilenameUtils.getFullPath(fileName);
     }
@@ -58,7 +57,7 @@ public class SourceFile {
         }
     }
 
-    
+
     public SourceStatement getNextStatementTo(SourceStatement s, CodeBase code)
     {
         int index = statements.indexOf(s);
@@ -76,7 +75,7 @@ public class SourceFile {
         }
         return statements.get(index+1);
     }
-    
+
 
     public SourceStatement getPreviousStatementTo(SourceStatement s, CodeBase code)
     {
@@ -106,7 +105,7 @@ public class SourceFile {
 
 
     // returns <statement, callstack>
-    public List<Pair<SourceStatement, List<SourceStatement>>> nextExecutionStatements(SourceStatement s, boolean goInsideInclude, 
+    public List<Pair<SourceStatement, List<SourceStatement>>> nextExecutionStatements(SourceStatement s, boolean goInsideInclude,
                                                          List<SourceStatement> callStack, CodeBase code)
     {
         int index = statements.indexOf(s);
@@ -118,7 +117,7 @@ public class SourceFile {
     This function returns "null" when there are some potential next statements that cannot be determined.
     For example, when encountering a "ret", a "jp hl", a "call CONSTANT", where CONSTANT is not a label (could be a system call)
     */
-    public List<Pair<SourceStatement, List<SourceStatement>>> nextExecutionStatements(int index, boolean goInsideInclude, 
+    public List<Pair<SourceStatement, List<SourceStatement>>> nextExecutionStatements(int index, boolean goInsideInclude,
                                                          List<SourceStatement> callStack, CodeBase code)
     {
         SourceStatement s = statements.get(index);
@@ -148,7 +147,7 @@ public class SourceFile {
                     }
                     return null;
                 }
-                
+
                 Expression labelExp = s.op.getTargetJumpExpression();
                 SourceConstant label = null;
                 if (labelExp != null) {
@@ -237,7 +236,7 @@ public class SourceFile {
     }
 
 
-    public List<Pair<SourceStatement, List<SourceStatement>>> immediatelyNextExecutionStatements(int index, 
+    public List<Pair<SourceStatement, List<SourceStatement>>> immediatelyNextExecutionStatements(int index,
             List<SourceStatement> callStack, CodeBase code)
     {
         if (statements.size() > index+1) {
