@@ -17,6 +17,7 @@ import code.Expression;
 import code.SourceConstant;
 import code.SourceFile;
 import code.SourceStatement;
+import parser.SourceLine;
 import parser.Tokenizer;
 
 /**
@@ -336,11 +337,21 @@ public class Pattern {
         return tokens2;
     }
     
+    
+    public void maybeLogOptimization(PatternMatch match, boolean logPotentialOptimizations, SourceLine sl)
+    {
+        if (logPotentialOptimizations) {
+            String name2 = getInstantiatedName(match);
+            config.info("Potential optimization ("+name2+") in " + sl);
+        }
+    }
+    
 
     public PatternMatch match(int a_index, SourceFile f, CodeBase code, MDLConfig config,
-                              boolean logPatternsMatchedWithViolatedConstraints)
+                              boolean logPotentialOptimizations)
     {
         int index = a_index;
+        int index_to_display_message_on = -1;
         List<SourceStatement> l = f.getStatements();
         if (l.get(index).type != SourceStatement.STATEMENT_CPUOP) return null;
         PatternMatch match = new PatternMatch();
@@ -365,6 +376,7 @@ public class Pattern {
                         PatternMatch matchTmp = new PatternMatch(match);
                         if (opMatch(nextPatt, s.op, s, code, matchTmp)) {
                             // we are done!
+                            if (patt.ID == 0) index_to_display_message_on = index;
                             break;
                         } else {
                             // make sure it's not statement involving jumps (ret/call/jp/jr/djnz/reti/retn/...):
@@ -432,6 +444,8 @@ public class Pattern {
                 index++;
             }
         }
+        
+        if (index_to_display_message_on == -1) index_to_display_message_on = a_index;
 
         // potential match! check constraints:
         for(String[] raw_constraint:constraints) {
@@ -451,10 +465,12 @@ public class Pattern {
                     if (!match.map.containsKey(idx)) return null;
                     for(int i = 2;i<constraint.length;i++) {
                         String reg = constraint[i];
-                        if (!regNotUsedAfter(match.map.get(idx).get(match.map.get(idx).size()-1), reg, f, code)) {
-                            if (logPatternsMatchedWithViolatedConstraints)
-                                config.info("Potential optimization ("+name+") in " + f.getStatements().get(a_index).sl);
+                        Boolean result = regNotUsedAfter(match.map.get(idx).get(match.map.get(idx).size()-1), reg, f, code);
+                        if (result == null) {
+                            maybeLogOptimization(match, logPotentialOptimizations, f.getStatements().get(index_to_display_message_on).sl);
                             return null;
+                        } else {
+                            if (!result) return null;
                         }
                     }
                     break;
@@ -466,10 +482,12 @@ public class Pattern {
                     for(int i = 2;i<constraint.length;i++) {
                         String flag = constraint[i].replace(" ", "");   // this is because the P/V flag, otherwise, it's generated as "P / V" and there is no match
 
-                        if (!flagNotUsedAfter(match.map.get(idx).get(match.map.get(idx).size()-1), flag, f, code)) {
-                            if (logPatternsMatchedWithViolatedConstraints)
-                                config.info("Potential optimization ("+name+") in " + f.getStatements().get(a_index).sl);
+                        Boolean result = flagNotUsedAfter(match.map.get(idx).get(match.map.get(idx).size()-1), flag, f, code);
+                        if (result == null) {
+                            maybeLogOptimization(match, logPotentialOptimizations, f.getStatements().get(index_to_display_message_on).sl);
                             return null;
+                        } else {
+                            if (!result) return null;
                         }
                     }
                     break;
@@ -484,18 +502,26 @@ public class Pattern {
                     Expression exp1 = config.expressionParser.parse(v1_tokens, null, null, code);
                     Expression exp2 = config.expressionParser.parse(v2_tokens, null, null, code);
                     
-                    if (exp1.evaluatesToIntegerConstant() != exp2.evaluatesToIntegerConstant()) return null;
+                    if (exp1.evaluatesToIntegerConstant() != exp2.evaluatesToIntegerConstant()) {
+                        return null;
+                    }
                     if (exp1.evaluatesToIntegerConstant()) {
                         // If the expressions are numeric, we evaluateToInteger them:
                         Integer v1 = exp1.evaluateToInteger(null, code, true);
                         Integer v2 = exp2.evaluateToInteger(null, code, true);
-                        if (v1 == null || v2 == null) return null;
-                        if ((int)v1 != (int)v2) return null;
+                        if (v1 == null || v2 == null) {
+                            return null;
+                        }
+                        if ((int)v1 != (int)v2) {
+                            return null;
+                        }
                         
                         match.newEqualities.add(new EqualityConstraint(exp1, null, exp2, null, false));
                     } else {
                         // If they are not, then there is no need to evaluateToInteger, as they should just string match:
-                        if (!v1_str.equalsIgnoreCase(v2_str)) return null;
+                        if (!v1_str.equalsIgnoreCase(v2_str)) {
+                            return null;
+                        }
                     }
                     break;
                 }
@@ -514,13 +540,19 @@ public class Pattern {
                         // If the expressions are numeric, we evaluateToInteger them:
                         Integer v1 = exp1.evaluateToInteger(null, code, true);
                         Integer v2 = exp2.evaluateToInteger(null, code, true);
-                        if (v1 == null || v2 == null) return null;
-                        if (exp1.evaluateToInteger(null, code, true).equals(exp2.evaluateToInteger(null, code, true))) return null;
+                        if (v1 == null || v2 == null) {
+                            return null;
+                        }
+                        if (exp1.evaluateToInteger(null, code, true).equals(exp2.evaluateToInteger(null, code, true))) {
+                            return null;
+                        }
                         
                         match.newEqualities.add(new EqualityConstraint(exp1, null, exp2, null, true));
                     } else {
                         // If they are not, then there is no need to evaluateToInteger, as they should just string match:
-                        if (v1_str.equalsIgnoreCase(v2_str)) return null;
+                        if (v1_str.equalsIgnoreCase(v2_str)) {
+                            return null;
+                        }
                     }
                     break;
                 }                
@@ -547,7 +579,9 @@ public class Pattern {
                             break;
                         }
                     }
-                    if (found) return null;
+                    if (found) {
+                        return null;
+                    }
                     break;
                 }
                 case "regpair":
@@ -609,21 +643,35 @@ public class Pattern {
                             expected1 = "iy"; expected2 = "iyh"; expected3 = "iyl";
                         }
                     }
-                    if (expected1 == null || expected2 == null || expected3 == null) return null;
+                    if (expected1 == null || expected2 == null || expected3 == null) {
+                        return null;
+                    }
                     if (constraint[1].startsWith("?")) {
-                        if (!match.addVariableMatch(constraint[1], Expression.symbolExpression(expected1, null, code, config))) return null;
+                        if (!match.addVariableMatch(constraint[1], Expression.symbolExpression(expected1, null, code, config))) {
+                            return null;
+                        }
                     } else {
-                        if (!constraint[1].equalsIgnoreCase(expected1)) return null;
+                        if (!constraint[1].equalsIgnoreCase(expected1)) {
+                            return null;
+                        }
                     }
                     if (constraint[2].startsWith("?")) {
-                        if (!match.addVariableMatch(constraint[2], Expression.symbolExpression(expected2, null, code, config))) return null;
+                        if (!match.addVariableMatch(constraint[2], Expression.symbolExpression(expected2, null, code, config))) {
+                            return null;
+                        }
                     } else {
-                        if (!constraint[2].equalsIgnoreCase(expected2)) return null;
+                        if (!constraint[2].equalsIgnoreCase(expected2)) {
+                            return null;
+                        }
                     }
                     if (constraint[3].startsWith("?")) {
-                        if (!match.addVariableMatch(constraint[3], Expression.symbolExpression(expected3, null, code, config))) return null;
+                        if (!match.addVariableMatch(constraint[3], Expression.symbolExpression(expected3, null, code, config))) {
+                            return null;
+                        }
                     } else {
-                        if (!constraint[3].equalsIgnoreCase(expected3)) return null;
+                        if (!constraint[3].equalsIgnoreCase(expected3)) {
+                            return null;
+                        }
                     }
                     break;
                 }
@@ -631,11 +679,17 @@ public class Pattern {
                 {
                     SourceStatement start = match.map.get(Integer.parseInt(constraint[1])).get(0);
                     Integer startAddress = start.getAddress(code);
-                    if (startAddress == null) return null;
+                    if (startAddress == null) {
+                        return null;
+                    }
                     SourceConstant sc = code.getSymbol(constraint[2]);
-                    if (sc == null) return null;
+                    if (sc == null) {
+                        return null;
+                    }
                     Number tmp = sc.getValue(code, false);
-                    if (tmp == null) return null;
+                    if (tmp == null) {
+                        return null;
+                    }
                     Integer endAddress = tmp.intValue();
                     int diff = endAddress - startAddress;
                     if (diff < -126 || diff > 130) return null;
@@ -754,11 +808,13 @@ public class Pattern {
                                 Expression arg = s.op.args.get(0);
                                 if (arg.type == Expression.EXPRESSION_REGISTER_OR_FLAG && 
                                     arg.registerOrFlagName.equalsIgnoreCase("sp")) {
+                                    maybeLogOptimization(match, logPotentialOptimizations, f.getStatements().get(index_to_display_message_on).sl);
                                     return null;
                                 }
                                 if (arg.type == Expression.EXPRESSION_PARENTHESIS && 
                                     arg.args.get(0).type == Expression.EXPRESSION_REGISTER_OR_FLAG &&
                                     arg.args.get(0).registerOrFlagName.equalsIgnoreCase("sp")) {
+                                    maybeLogOptimization(match, logPotentialOptimizations, f.getStatements().get(index_to_display_message_on).sl);
                                     return null;
                                 }
                             }
@@ -1015,21 +1071,23 @@ public class Pattern {
     }    
     
     
-    public boolean regNotUsedAfter(SourceStatement s, String reg, SourceFile f, CodeBase code)
+    public Boolean regNotUsedAfter(SourceStatement s, String reg, SourceFile f, CodeBase code)
     {
         CPUOpDependency dep = new CPUOpDependency(reg.toUpperCase(), null, null, null, null);
         return depNotUsedAfter(s, dep, f, code);
     }
 
 
-    public boolean flagNotUsedAfter(SourceStatement s, String flag, SourceFile f, CodeBase code)
+    public Boolean flagNotUsedAfter(SourceStatement s, String flag, SourceFile f, CodeBase code)
     {
         CPUOpDependency dep = new CPUOpDependency(null, flag.toUpperCase(), null, null, null);
         return depNotUsedAfter(s, dep, f, code);
     }
 
 
-    public boolean depNotUsedAfter(SourceStatement s, CPUOpDependency a_dep, SourceFile f, CodeBase code)
+    // - returns true/false if we know for sure the dependency is or not used
+    // - returns null when it's unclear
+    public Boolean depNotUsedAfter(SourceStatement s, CPUOpDependency a_dep, SourceFile f, CodeBase code)
     {
         List<DepCheckNode> open = new ArrayList<>();
         HashMap<SourceStatement,List<DepCheckNode>> closed = new HashMap<>();
@@ -1060,7 +1118,7 @@ public class Pattern {
 //                    // It's hard to tell where is this instruction going to jump,
 //                    // so we act conservatively, and block the optimization:
 //                    // config.trace("    ret!");
-//                    return false;
+//                    return null;
 //                }
                 if (op.checkInputDependency(dep)) {
                     // dependency is actually used!
@@ -1080,7 +1138,7 @@ public class Pattern {
                     // It's hard to tell where is this instruction going to jump,
                     // so we act conservatively, and block the optimization:
                     // config.trace("    unclear next statement after: "+next);
-                    return false;
+                    return null;
                 }
                 for(Pair<SourceStatement, List<SourceStatement>> nextNext_pair: nextNext_l) {
                     SourceStatement nextNext = nextNext_pair.getLeft();

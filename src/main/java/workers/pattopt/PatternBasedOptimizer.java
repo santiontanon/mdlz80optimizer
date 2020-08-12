@@ -44,12 +44,12 @@ public class PatternBasedOptimizer implements MDLWorker {
             }        
         }
     }
-    
+
+    public boolean logPotentialOptimizations = false;    
 
     MDLConfig config;
     boolean activate = false;
     boolean silent = false;
-    boolean logPatternsMatchedWithViolatedConstraints = false;
     String inputPatternsFileName = "data/pbo-patterns.txt";
     List<Pattern> patterns = new ArrayList<>();
     
@@ -99,7 +99,7 @@ public class PatternBasedOptimizer implements MDLWorker {
         }
         if (flags.get(0).equals("-popotential")) {
             flags.remove(0);
-            logPatternsMatchedWithViolatedConstraints = true;
+            logPotentialOptimizations = true;
             return true;
         }
         if (flags.get(0).equals("-popatterns") && flags.size()>=2) {
@@ -182,7 +182,7 @@ public class PatternBasedOptimizer implements MDLWorker {
             for (int i = 0; i < f.getStatements().size(); i++) {
                 matches.clear();
                 for(Pattern patt: patterns) {
-                    PatternMatch match = patt.match(i, f, code, config, logPatternsMatchedWithViolatedConstraints);
+                    PatternMatch match = patt.match(i, f, code, config, logPotentialOptimizations);
                     if (match != null) matches.add(Pair.of(patt,match));
                 }
 

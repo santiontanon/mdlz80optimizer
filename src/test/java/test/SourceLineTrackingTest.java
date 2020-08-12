@@ -24,12 +24,12 @@ import workers.pattopt.PatternBasedOptimizer;
  */
 public class SourceLineTrackingTest {
 
-    private final MDLConfig mdlConfig;
+    private final MDLConfig config;
     private final CodeBase code;
 
     public SourceLineTrackingTest() {
-        mdlConfig = new MDLConfig();
-        code = new CodeBase(mdlConfig);
+        config = new MDLConfig();
+        code = new CodeBase(config);
     }
 
     @Test public void test1() throws IOException {
@@ -47,18 +47,18 @@ public class SourceLineTrackingTest {
 
     private void optimizeAndLookFor(String inputFile, String ... expectedOutputLines) throws IOException
     {
-        Assert.assertTrue(mdlConfig.parseArgs(inputFile,"-dialect","glass"));
+        Assert.assertTrue(config.parseArgs(inputFile,"-dialect","glass"));
         Assert.assertTrue(
                 "Could not parse file " + inputFile,
-                mdlConfig.codeBaseParser.parseMainSourceFile(mdlConfig.inputFile, code));
+                config.codeBaseParser.parseMainSourceFile(config.inputFile, code));
 
         // Optimizes
         String lines[];
         try (ByteArrayOutputStream optimizerOutput = new ByteArrayOutputStream();
-                PrintStream printStream = new PrintStream(optimizerOutput)) {
+             PrintStream printStream = new PrintStream(optimizerOutput)) {
 
-            mdlConfig.logger = new MDLLogger(MDLLogger.INFO, printStream, System.err);
-            PatternBasedOptimizer po = new PatternBasedOptimizer(mdlConfig);
+            config.logger = new MDLLogger(MDLLogger.INFO, printStream, System.err);
+            PatternBasedOptimizer po = new PatternBasedOptimizer(config);
             po.optimize(code);
 
             printStream.flush();
