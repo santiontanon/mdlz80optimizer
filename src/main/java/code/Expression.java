@@ -432,6 +432,11 @@ public class Expression {
     
     @Override
     public String toString() {
+        return toStringInternal(false);
+    }    
+    
+
+    public String toStringInternal(boolean splitSpecialCharactersInStrings) {
         switch (type) {
             case EXPRESSION_REGISTER_OR_FLAG:
                 if (config.output_opsInLowerCase) {
@@ -453,11 +458,36 @@ public class Expression {
                 return "" + doubleConstant;
             case EXPRESSION_STRING_CONSTANT:
             {
-                String tmp = stringConstant.replace("\n", "\\n");
-                tmp = tmp.replace("\r", "\\r");
-                tmp = tmp.replace("\t", "\\t");
-                tmp = tmp.replace("\"", "\\\"");
-                return "\"" + tmp + "\"";
+                if (splitSpecialCharactersInStrings) {
+                    String tmp = "\"";
+                    boolean insideQuotes = true;
+                    for(int i = 0;i<stringConstant.length();i++) {
+                        int c = stringConstant.charAt(i);
+                        if (c<32 || c=='\\') {
+                            if (insideQuotes) {
+                                tmp += "\"";
+                                insideQuotes = false;
+                            }
+                            tmp += ", " + c;
+                        } else {
+                            if (insideQuotes) {
+                                tmp += stringConstant.substring(i,i+1);
+                            } else {
+                                tmp += ", \"" + stringConstant.substring(i,i+1);
+                                insideQuotes = true;
+                            }
+                        }
+                    }
+                    if (insideQuotes) tmp += "\"";
+                    return tmp;
+                } else {
+//                    String tmp = stringConstant.replace("\n", "\\n");
+//                    tmp = tmp.replace("\\", "\\\\");
+//                    tmp = tmp.replace("\r", "\\r");
+//                    tmp = tmp.replace("\t", "\\t");
+//                    tmp = tmp.replace("\"", "\\\"");
+                    return "\"" + stringConstant + "\"";                    
+                }
             }
             case EXPRESSION_SYMBOL:
                 if (config.output_replaceLabelDotsByUnderscores) {

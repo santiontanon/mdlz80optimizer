@@ -334,7 +334,7 @@ public class SourceStatement {
                 str += "    db ";
                 {
                     for(int i = 0;i<data.size();i++) {
-                        str += data.get(i).toString();
+                        str += data.get(i).toStringInternal(true);
                         if (i != data.size()-1) {
                             str += ", ";
                         }

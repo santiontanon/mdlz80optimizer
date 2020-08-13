@@ -19,6 +19,7 @@ import parser.PreProcessor;
 import parser.SourceLine;
 import parser.SourceMacro;
 import parser.Tokenizer;
+import static parser.Tokenizer.stringEscapeSequences;
 
 /**
  *
@@ -64,6 +65,17 @@ public class GlassDialect implements Dialect {
         config.eagerMacroEvaluation = false;  // Glass expects lazy evaluation of macros
         
         config.preProcessor.dialectMacros.put("irp", "endm");
+        
+        Tokenizer.stringEscapeSequences.put("\u0000","\\0");
+        Tokenizer.stringEscapeSequences.put("\u0007","\\a");
+        Tokenizer.stringEscapeSequences.put("\t","\\t");
+        Tokenizer.stringEscapeSequences.put("\n","\\n");
+        Tokenizer.stringEscapeSequences.put("\f","\\f");
+        Tokenizer.stringEscapeSequences.put("\r","\\r");
+        Tokenizer.stringEscapeSequences.put("\u0027","\\e");
+        Tokenizer.stringEscapeSequences.put("\"","\\\"");
+        Tokenizer.stringEscapeSequences.put("'","\\'");
+        Tokenizer.stringEscapeSequences.put("\\","\\\\");
     }
 
 

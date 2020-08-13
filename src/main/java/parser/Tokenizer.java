@@ -5,6 +5,7 @@ package parser;
 
 import cl.MDLConfig;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.StringTokenizer;
 import java.util.regex.Matcher;
@@ -32,6 +33,9 @@ public class Tokenizer {
         doubleTokens.add("=:");
         doubleTokens.add("==");
     }    
+    
+    public static HashMap<String,String> stringEscapeSequences = new HashMap<>();
+    
     
     public static boolean allowAndpersandHex = false;
     public static boolean sdccStyleHashMarksForConstants = false;
@@ -128,12 +132,9 @@ public class Tokenizer {
                     }
                 }
                 if (token.length()<2 || !token.endsWith("\"")) return null;
-                
-                token = token.replace("\\n", "\n");
-                token = token.replace("\\r", "\r");
-                token = token.replace("\\t", "\t");
-                token = token.replace("\\\"", "\"");
-                token = token.replace("\\\'", "\'");
+                for(String symbol:stringEscapeSequences.keySet()) {
+                    token = token.replace(stringEscapeSequences.get(symbol), symbol);
+                }
                 tokens.add(token);
             } else if (next.equals("'")) {
                 String token = next;
