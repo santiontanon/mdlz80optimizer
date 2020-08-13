@@ -26,6 +26,7 @@ public class ExpressionParser {
     
     public boolean sdccStyleHashMarksForConstants = false;
     public boolean allowFloatingPointNumbers = false;
+    public boolean caseSensitiveSymbols = true;
     
 
     public ExpressionParser(MDLConfig a_config)
@@ -421,6 +422,7 @@ public class ExpressionParser {
                 return exp;
             } else if (Tokenizer.isSymbol(tokens.get(0))) {
                 String token = tokens.remove(0);
+                if (!caseSensitiveSymbols) token = token.toLowerCase();
                 if (config.dialectParser != null) token = config.dialectParser.symbolName(token, previous);
                 return Expression.symbolExpression(token, s, code, config);
             }
@@ -481,22 +483,15 @@ public class ExpressionParser {
         }
         if (tokens.size() >= 2 &&
             tokens.get(0).equals("+")) {
-            // Check if it's just a number with a plus in the front:
-            if (Tokenizer.isInteger(tokens.get(1))) {
-                tokens.remove(0);
-                Expression exp = parseInternal(tokens, s, previous, code);
-                if (exp != null) {
-                    if (exp.type == Expression.EXPRESSION_INTEGER_CONSTANT) {
-                        return exp;
-                    } else {
-                        // something weird happened:
-                        config.error("expression failed to parse with token list: " + tokens);
-                        return null;
-                    }
+            // might be something of the form: +1, or +(2-3)
+            tokens.remove(0);
+            Expression exp = parseInternal(tokens, s, previous, code);
+            if (exp != null) {
+                if (exp.type == Expression.EXPRESSION_INTEGER_CONSTANT) {
+                    exp.integerConstant = -exp.integerConstant;
+                    return exp;
                 } else {
-                    // something weird happened:
-                    config.error("expression failed to parse with token list: " + tokens);
-                    return null;
+                    return Expression.operatorExpression(Expression.EXPRESSION_PLUS_SIGN, exp, config);
                 }
             }
         }
@@ -520,6 +515,7 @@ public class ExpressionParser {
             tokens.remove(0);
             // variable name symbol:
             String token = "?" + tokens.remove(0);
+            if (!caseSensitiveSymbols) token = token.toLowerCase();
             return Expression.symbolExpression(token, s, code, config);
         }
         if (tokens.size() >= 3 &&

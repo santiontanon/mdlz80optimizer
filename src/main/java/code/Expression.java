@@ -43,6 +43,7 @@ public class Expression {
     public static final int EXPRESSION_BITXOR = 25;
     public static final int EXPRESSION_LOGICAL_NEGATION = 26;
     public static final int EXPRESSION_DIALECT_FUNCTION = 27;
+    public static final int EXPRESSION_PLUS_SIGN = 29;  // just something like: +1, or +(3-5)
     
 
     // indexed by the numbers above:
@@ -423,6 +424,8 @@ public class Expression {
             case EXPRESSION_DIALECT_FUNCTION: {
                 return config.dialectParser.evaluateExpression(dialectFunction, args, s, code, silent);
             }
+            case EXPRESSION_PLUS_SIGN:
+                return args.get(0).evaluate(s, code, silent);
 
         }
 
@@ -459,8 +462,9 @@ public class Expression {
             case EXPRESSION_STRING_CONSTANT:
             {
                 if (splitSpecialCharactersInStrings) {
-                    String tmp = "\"";
-                    boolean insideQuotes = true;
+                    String tmp = "";
+                    boolean first = true;
+                    boolean insideQuotes = false;
                     for(int i = 0;i<stringConstant.length();i++) {
                         int c = stringConstant.charAt(i);
                         if (c<32 || c=='\\') {
@@ -468,15 +472,16 @@ public class Expression {
                                 tmp += "\"";
                                 insideQuotes = false;
                             }
-                            tmp += ", " + c;
+                            tmp += (first ? "":", ") + c;
                         } else {
                             if (insideQuotes) {
                                 tmp += stringConstant.substring(i,i+1);
                             } else {
-                                tmp += ", \"" + stringConstant.substring(i,i+1);
+                                tmp += (first ? "":", ") + "\"" + stringConstant.substring(i,i+1);
                                 insideQuotes = true;
                             }
                         }
+                        first = false;
                     }
                     if (insideQuotes) tmp += "\"";
                     return tmp;
@@ -748,6 +753,10 @@ public class Expression {
                 }
                 return str += ")";
             }
+            case EXPRESSION_PLUS_SIGN:
+            {
+                return "+" + args.get(0).toString();
+            }
             default:
                 return "<UNSUPPORTED TYPE " + type + ">";
         }
@@ -800,7 +809,8 @@ public class Expression {
                 || type == EXPRESSION_BITAND
                 || type == EXPRESSION_BITNEGATION
                 || type == EXPRESSION_BITXOR
-                || type == EXPRESSION_LOGICAL_NEGATION) {
+                || type == EXPRESSION_LOGICAL_NEGATION
+                || type == EXPRESSION_PLUS_SIGN) {
             for (Expression arg : args) {
                 if (!arg.evaluatesToNumericConstant()) {
                     return false;
@@ -850,7 +860,8 @@ public class Expression {
                 || type == EXPRESSION_BITAND
                 || type == EXPRESSION_BITNEGATION
                 || type == EXPRESSION_BITXOR
-                || type == EXPRESSION_LOGICAL_NEGATION) {
+                || type == EXPRESSION_LOGICAL_NEGATION
+                || type == EXPRESSION_PLUS_SIGN) {
             for (Expression arg : args) {
                 if (!arg.evaluatesToIntegerConstant()) {
                     return false;

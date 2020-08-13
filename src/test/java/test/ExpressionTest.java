@@ -56,6 +56,7 @@ public class ExpressionTest {
         Assert.assertEquals(Integer.valueOf(0xc0de), evaluate("&C0DE")); 
         Tokenizer.allowAndpersandHex = false;
     }
+    @Test public void test23() { Assert.assertEquals(Integer.valueOf(1), evaluate("+(1)")); }
 
     private Number evaluate(String line)
     {

@@ -38,6 +38,8 @@ public class TniAsmDialect implements Dialect {
         config.lineParser.addKeywordSynonym("rb", config.lineParser.KEYWORD_DS);
         
         config.lineParser.defineSpaceVirtualByDefault = true;
+        config.lineParser.caseSensitiveSymbols = false;
+        config.expressionParser.caseSensitiveSymbols = false;
     }
 
     
@@ -46,6 +48,7 @@ public class TniAsmDialect implements Dialect {
     {
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("rw")) return true;
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("fname")) return true;
+        if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("forg")) return true;
         return false;
     }
     
@@ -66,7 +69,7 @@ public class TniAsmDialect implements Dialect {
     
 
     @Override
-    public String newSymbolName(String name, Expression value, SourceStatement s) {        
+    public String newSymbolName(String name, Expression value, SourceStatement s) {
         // A relative label
         if (name.startsWith(".")) {
             String lastAbsoluteLabel = getLastAbsoluteLabel(s);        
@@ -119,6 +122,12 @@ public class TniAsmDialect implements Dialect {
             tokens.remove(0);
             tokens.remove(0);   // file name
             // just ignore
+            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
+        }        
+        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("forg")) {
+            tokens.remove(0);
+            tokens.remove(0);   // file name
+            // just ignore for now
             if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
         }        
         

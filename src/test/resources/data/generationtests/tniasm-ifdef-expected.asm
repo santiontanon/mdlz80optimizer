@@ -1,5 +1,5 @@
 ; Test case: 
-CONSTANT: equ 0
+constant: equ 0
 label1:
 	nop
 label1.local1:
