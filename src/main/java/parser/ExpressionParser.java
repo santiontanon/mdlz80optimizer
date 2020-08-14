@@ -142,7 +142,7 @@ public class ExpressionParser {
                 exp = Expression.operatorExpression(Expression.EXPRESSION_BITXOR, exp, exp2, config);
                 continue;
             }
-            if (tokens.get(0).equals("=")) {
+            if (StringUtils.equalsAnyIgnoreCase(tokens.get(0), "=", "==")) {
                 tokens.remove(0);
                 Expression exp2 = parseInternal(tokens, s, previous, code);
                 if (exp2 == null) {

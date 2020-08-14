@@ -303,6 +303,9 @@ public class LineParser {
             if (sl.line.startsWith(token) && (tokens.size() == 1 || Tokenizer.isSingleLineComment(tokens.get(1)))) {
                 if (!config.opParser.getOpSpecs(tokens.get(0)).isEmpty()) return true;
                 
+                if (config.dialectParser != null &&
+                    config.dialectParser.recognizeIdiom(tokens)) return true;
+                
                 // it is just a label without colon:
                 if (config.warningLabelWithoutColon) {
                     config.warn("Style suggestion", s.fileNameLineString(),

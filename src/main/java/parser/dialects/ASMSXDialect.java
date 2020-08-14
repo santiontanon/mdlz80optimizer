@@ -14,9 +14,6 @@ import java.io.BufferedReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import java.util.StringTokenizer;
-import java.util.stream.Collectors;
-import org.apache.commons.io.IOUtils;
 import parser.SourceLine;
 import parser.Tokenizer;
 import util.Resources;
@@ -44,6 +41,7 @@ public class ASMSXDialect implements Dialect {
     Random r = new Random();
 
     String biosCallsFileName = "data/msx-bios-calls.asm";    
+    String searchFileName = "data/asmsx-search.asm";    
 
     SourceStatement romHeaderStatement = null;
     SourceStatement basicHeaderStatement = null;
@@ -128,6 +126,8 @@ public class ASMSXDialect implements Dialect {
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("basic")) return true;
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase(".start")) return true;
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("start")) return true;
+        if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase(".search")) return true;
+        if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("search")) return true;
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("=")) return true;
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase(".wav")) return true;
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("wav")) return true;
@@ -193,7 +193,9 @@ public class ASMSXDialect implements Dialect {
             name.equalsIgnoreCase(".basic") ||
             name.equalsIgnoreCase("basic") ||
             name.equalsIgnoreCase(".start") ||
-            name.equalsIgnoreCase("start")) {
+            name.equalsIgnoreCase("start") ||
+            name.equalsIgnoreCase(".search") ||
+            name.equalsIgnoreCase("search")) {
             return null;
         }
         
@@ -230,41 +232,20 @@ public class ASMSXDialect implements Dialect {
     }
     
     
-    String []parseBiosCallLine(String line)
+    List<List<String>> tokenizeFileLines(String fileName)
     {
-        String tokens[] = new String[2]; // name + address
-        StringTokenizer st = new StringTokenizer(line, ": \t");
-        if (!st.hasMoreTokens()) {
-            return null;
-        }
-        tokens[0] = st.nextToken();
-        if (!st.hasMoreTokens()) {
-            return null;
-        }
-        String equ = st.nextToken();
-        if (!equ.equalsIgnoreCase("equ")) {
-            return null;
-        }
-        if (!st.hasMoreTokens()) {
-            return null;
-        }
-        tokens[1] = st.nextToken();
-        return tokens;
-    }
-    
-    
-    List<String []>loadBiosCalls()
-    {
-        try (BufferedReader br = Resources.asReader(biosCallsFileName)) {
-            return IOUtils.readLines(br)
-                    .stream()
-                    .filter(line -> !line.trim().isEmpty())
-                    .filter(line -> !Tokenizer.isSingleLineComment(line))
-                    .map(line -> parseBiosCallLine(line))
-                    .collect(Collectors.toList());
+        try {
+            BufferedReader br = Resources.asReader(fileName);
+            List<List<String>> tokenizedLines = new ArrayList<>();
+            while(true) {
+                String line = br.readLine();
+                if (line == null) break;
+                tokenizedLines.add(Tokenizer.tokenize(line));
+            }
+            return tokenizedLines;
         } catch (Exception e) {
-            config.error("Cannot read bios calls file "+biosCallsFileName);
-            return null;
+            config.error("Cannot read file " + fileName);
+            return null;            
         }
     }
     
@@ -279,20 +260,23 @@ public class ASMSXDialect implements Dialect {
         if (tokens.size()>=1 && (tokens.get(0).equalsIgnoreCase(".bios") || tokens.get(0).equalsIgnoreCase("bios"))) {
             tokens.remove(0);
             // Define all the bios calls:
-            List<String []> biosCalls = loadBiosCalls();
-            if (biosCalls == null) {
-                config.error("Cannot read bios calls file in " + sl.fileNameLineString() + ": " + sl.line);
-                return null;                
-            }
-            for(String []biosCall:biosCalls) {
-                SourceStatement biosCallStatement = new SourceStatement(SourceStatement.STATEMENT_CONSTANT, sl, source, config);
-                int address = Tokenizer.parseHex(biosCall[1]);
-                biosCallStatement.label = new SourceConstant(biosCall[0], biosCall[0], address, Expression.constantExpression(address, config), biosCallStatement);
-                code.addSymbol(biosCall[0], biosCallStatement.label);
-                l.add(biosCallStatement);
+            List<List<String>> tokenizedLines = tokenizeFileLines(biosCallsFileName);
+            for(List<String> tokens2: tokenizedLines) {
+                List<SourceStatement> l2 = config.lineParser.parse(tokens2, sl, source, -1, code, config);
+                l.addAll(l2);
             }
             if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
         }
+        if (tokens.size()>=1 && (tokens.get(0).equalsIgnoreCase(".search") || tokens.get(0).equalsIgnoreCase("bios"))) {
+            tokens.remove(0);
+            // Define all the bios calls:
+            List<List<String>> tokenizedLines = tokenizeFileLines(searchFileName);
+            for(List<String> tokens2: tokenizedLines) {
+                List<SourceStatement> l2 = config.lineParser.parse(tokens2, sl, source, -1, code, config);
+                l.addAll(l2);
+            }
+            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
+        }        
         if (tokens.size()>=2 && (tokens.get(0).equalsIgnoreCase(".filename") || tokens.get(0).equalsIgnoreCase("filename"))) {
             tokens.remove(0);
             Expression filename_exp = config.expressionParser.parse(tokens, s, previous, code);
