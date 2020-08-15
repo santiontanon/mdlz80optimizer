@@ -275,9 +275,9 @@ public class LineParser {
                 s.type = SourceStatement.STATEMENT_NONE;
                 s.label = c;
                 if (defineInCodeBase) {
-                    if (!code.addSymbol(c.name, c)) {
-                        return false;
-                    }
+                    int res = code.addSymbol(c.name, c);
+                    if (res == -1) return false;
+                    if (res == 0) s.redefinedLabel = true;
                 }
             } else {
                 tokens.remove(0);
@@ -293,9 +293,9 @@ public class LineParser {
                 s.type = SourceStatement.STATEMENT_NONE;
                 s.label = c;
                 if (defineInCodeBase) {
-                    if (!code.addSymbol(c.name, c)) {
-                        return false;
-                    }
+                    // in this case, symbol redefinition is always an error, as this is just a label!
+                    int res = code.addSymbol(c.name, c);
+                    if (res != 1) return false;
                 }
                 return parseRestofTheLine(tokens, sl, s, source);
             }
@@ -324,9 +324,9 @@ public class LineParser {
                 s.type = SourceStatement.STATEMENT_NONE;
                 s.label = c;
                 if (defineInCodeBase) {
-                    if (!code.addSymbol(c.name, c)) {
-                        return false;
-                    }
+                    // in this case, symbol redefinition is always an error, as this is just a label!
+                    int res = code.addSymbol(c.name, c);
+                    if (res != 1) return false;
                 }
                 return parseRestofTheLine(tokens, sl, s, source);
             } else if (tokens.size() >= 2) {
@@ -361,9 +361,9 @@ public class LineParser {
                     s.type = SourceStatement.STATEMENT_NONE;
                     s.label = c;
                     if (defineInCodeBase) {
-                        if (!code.addSymbol(c.name, c)) {
-                            return false;
-                        }
+                        int res = code.addSymbol(c.name, c);
+                        if (res == -1) return false;
+                        if (res == 0) s.redefinedLabel = true;
                     }
                     // If it did not have a previous value, we assign one:
                     if (c.exp == null) {
@@ -568,6 +568,24 @@ public class LineParser {
         }
         
         s.type = SourceStatement.STATEMENT_CONSTANT;
+        
+        if (s.redefinedLabel) {
+            Number n1 = s.label.exp.evaluate(s.label.definingStatement, code, true);
+            Number n2 = exp.evaluate(s, code, true);
+            if (n1 != null && n2 != null) {
+                if (!n1.equals(n2)) {
+                    config.error("Redefining label " + s.label.name + " with a different value than previously: " + n1 + " vs " + n2);
+                    return false;
+                }
+            }
+            // comment out the line, as this line is useless:
+            String comment = "; Commented out by MDL, as this is a redefinition: " + sl.line;
+            s.label = null;
+            s.comment = comment;
+            s.type = SourceStatement.STATEMENT_NONE;
+            return parseRestofTheLine(tokens, sl, s, source);
+        }
+        
         s.label.exp = exp;
         return parseRestofTheLine(tokens, sl, s, source);
     }

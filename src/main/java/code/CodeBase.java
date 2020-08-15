@@ -94,7 +94,11 @@ public class CodeBase {
     }
     
 
-    public boolean addSymbol(String name, SourceConstant sc)
+    // Returns:
+    // 1: ok
+    // 0: redefinition
+    // -1: error
+    public int addSymbol(String name, SourceConstant sc)
     {
         if (symbols.containsKey(name)) {
             SourceConstant previous = symbols.get(name);
@@ -104,7 +108,7 @@ public class CodeBase {
                     Integer value = sc.exp.evaluateToInteger(sc.definingStatement, this, false);
                     if (value == null) {
                         config.error("Cannot resolve eager variable in " + sc.definingStatement.sl);
-                        return false;
+                        return -1;
                     }
                     sc.exp = Expression.constantExpression(value, config);
                 } else {
@@ -112,15 +116,16 @@ public class CodeBase {
                 }
             } else {
                 if (symbols.get(name).exp != null) {
-                    config.error("Redefining symbol " + name);
-                    config.error("First defined in " + symbols.get(name).definingStatement.sl.source.fileName + ", " + symbols.get(name).definingStatement.sl.lineNumber + " as " + symbols.get(name).exp + ": " +  symbols.get(name).definingStatement);
-                    config.error("Redefined in " + sc.definingStatement.sl.source.fileName + ", "+ sc.definingStatement.sl.lineNumber + " as " + symbols.get(name).exp + ": " + sc.definingStatement);
-                    return false;
+                    config.warn("Redefining symbol " + name);
+                    config.warn("First defined in " + symbols.get(name).definingStatement.sl.source.fileName + ", " + symbols.get(name).definingStatement.sl.lineNumber + " as " + symbols.get(name).exp + ": " +  symbols.get(name).definingStatement);
+                    config.warn("Redefined in " + sc.definingStatement.sl);
+                    sc.exp = previous.exp;
+                    return 0;
                 }
             }
         }
         symbols.put(name, sc);
-        return true;
+        return 1;
     }
 
     

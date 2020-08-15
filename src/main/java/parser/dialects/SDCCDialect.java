@@ -182,7 +182,7 @@ public class SDCCDialect implements Dialect {
                 SourceConstant c = new SourceConstant(symbolName, "s_" + areaName, null, exp, s);
                 s.type = SourceStatement.STATEMENT_NONE;
                 s.label = c;
-                if (!code.addSymbol(c.name, c)) {
+                if (code.addSymbol(c.name, c) != 1) {
                     return null;
                 }
             }            

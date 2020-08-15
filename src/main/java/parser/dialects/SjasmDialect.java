@@ -534,7 +534,7 @@ public class SjasmDialect implements Dialect {
             s.type = SourceStatement.STATEMENT_CONSTANT;
             SourceConstant c = new SourceConstant(struct.name, struct.name, null, null, s);
             s.label = c;
-            if (!code.addSymbol(c.name, c)) return null;
+            if (code.addSymbol(c.name, c) != 1) return null;
             if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
             return null;
         }

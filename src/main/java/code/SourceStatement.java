@@ -68,6 +68,7 @@ public class SourceStatement {
     public List<Expression> macroDefinitionDefaults;
     
     // These two are optional attributes that all statements can have:
+    public boolean redefinedLabel = false;
     public SourceConstant label = null; 
     public String comment = null;
     
