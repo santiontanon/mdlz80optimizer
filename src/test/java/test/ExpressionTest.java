@@ -11,7 +11,9 @@ import org.junit.Test;
 import cl.MDLConfig;
 import code.CodeBase;
 import code.Expression;
+import parser.CodeBaseParser;
 import parser.ExpressionParser;
+import parser.LineParser;
 import parser.Tokenizer;
 
 /**
@@ -24,9 +26,11 @@ public class ExpressionTest {
     private final ExpressionParser expressionParser;
 
     public ExpressionTest() {
-        MDLConfig mdlConfig = new MDLConfig();
-        code = new CodeBase(mdlConfig);
-        expressionParser = new ExpressionParser(mdlConfig);
+        MDLConfig config = new MDLConfig();
+        code = new CodeBase(config);
+        config.codeBaseParser = new CodeBaseParser(config);
+        config.lineParser = new LineParser(config, config.codeBaseParser);      
+        expressionParser = new ExpressionParser(config);
         expressionParser.allowFloatingPointNumbers = true;
     }
 

@@ -32,6 +32,9 @@ public class LineParser {
     public String KEYWORD_COLON = ":";
     HashMap<String, String> keywordSynonyms = new HashMap<>();
     public List<String> keywordsHintingALabel = new ArrayList<>();
+    
+    // If a label is defined with any of these names, it will be renamed to "__mdlrenamed__"+symbol:
+    public List<String> forbiddenSymbols = new ArrayList<>();
 
     // If this is set to true then "ds 1" is the same as "ds virtual 1"
     public boolean defineSpaceVirtualByDefault = false;
@@ -61,6 +64,8 @@ public class LineParser {
         keywordsHintingALabel.add(KEYWORD_DB);
         keywordsHintingALabel.add(KEYWORD_DW);
         keywordsHintingALabel.add(KEYWORD_DD);
+        
+        forbiddenSymbols.add("end");
     }
 
     public void addKeywordSynonym(String synonym, String kw) {
@@ -112,9 +117,34 @@ public class LineParser {
     public String getLabelPrefix() {
         return labelPrefix;
     }
+    
+    public String newSymbolNameNotLabel(String rawName, SourceStatement previous) {
+        String name = rawName;
+        
+        for(String forbiddenSymbol: forbiddenSymbols) {
+            if (forbiddenSymbol.equalsIgnoreCase(name)) {
+                name = "__mdlrenamed__" + name;
+                break;
+            }
+        }
+        
+        if (config.dialectParser != null) {
+            name = config.dialectParser.symbolName(name, previous);
+        }
+
+        return name;
+    }    
 
     public String newSymbolName(String rawName, Expression value, SourceStatement previous) {
         String name = rawName;
+        
+        for(String forbiddenSymbol: forbiddenSymbols) {
+            if (forbiddenSymbol.equalsIgnoreCase(name)) {
+                name = "__mdlrenamed__" + name;
+                break;
+            }
+        }
+        
         if (config.dialectParser != null) {
             name = config.dialectParser.newSymbolName(name, value, previous);
         }

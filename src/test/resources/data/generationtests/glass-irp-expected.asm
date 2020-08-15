@@ -5,7 +5,7 @@
 	or 4
 	or 8
 	ld (value), a
-end:
-	jp end
+__mdlrenamed__end:
+	jp __mdlrenamed__end
 value:
 	db 0

@@ -63,6 +63,7 @@ public class SourceLineTrackingTest {
 
             printStream.flush();
             lines = optimizerOutput.toString().split("\n");
+            System.out.println(optimizerOutput.toString());
         }
 
         // Looks for expected output

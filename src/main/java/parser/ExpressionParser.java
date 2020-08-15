@@ -423,7 +423,8 @@ public class ExpressionParser {
             } else if (Tokenizer.isSymbol(tokens.get(0))) {
                 String token = tokens.remove(0);
                 if (!caseSensitiveSymbols) token = token.toLowerCase();
-                if (config.dialectParser != null) token = config.dialectParser.symbolName(token, previous);
+
+                token = config.lineParser.newSymbolNameNotLabel(token, previous);
                 return Expression.symbolExpression(token, s, code, config);
             }
         }
