@@ -686,11 +686,11 @@ public class Pattern {
                     if (sc == null) {
                         return null;
                     }
-                    Number tmp = sc.getValue(code, false);
-                    if (tmp == null) {
+                    Object tmp = sc.getValue(code, false);
+                    if (tmp == null && tmp instanceof Integer) {
                         return null;
                     }
-                    Integer endAddress = tmp.intValue();
+                    Integer endAddress = (Integer)tmp;
                     int diff = endAddress - startAddress;
                     if (diff < -126 || diff > 130) return null;
                     break;

@@ -19,7 +19,6 @@ import parser.PreProcessor;
 import parser.SourceLine;
 import parser.SourceMacro;
 import parser.Tokenizer;
-import static parser.Tokenizer.stringEscapeSequences;
 
 /**
  *
@@ -476,11 +475,11 @@ public class GlassDialect implements Dialect {
             for(SourceStatement s:f.getStatements()) {
                 if (s.label != null &&
                     !s.label.name.startsWith(config.preProcessor.unnamedMacroPrefix)) {
-                    Number value = s.label.getValue(code, true);
-                    if (value != null) {
+                    Object value = s.label.getValue(code, true);
+                    if (value != null && value instanceof Integer) {
                         SourceStatement label_s = new SourceStatement(SourceStatement.STATEMENT_CONSTANT, macro.definingStatement.sl, macro.definingStatement.source, config);
                         label_s.label = s.label;
-                        label_s.label.exp = Expression.constantExpression(value.intValue(), config);
+                        label_s.label.exp = Expression.constantExpression((Integer)value, config);
                         SourceFile label_f = macro.definingStatement.source;
                         label_f.addStatement(0, label_s);
                     }

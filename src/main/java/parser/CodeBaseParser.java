@@ -63,17 +63,23 @@ public class CodeBaseParser {
         }
         for(Pair<Expression, SourceStatement> pair:expressionsToReplaceByValueAtTheEnd) {
             Expression exp = pair.getLeft();
-            Number value = exp.evaluate(pair.getRight(), code, false);
+            Object value = exp.evaluate(pair.getRight(), code, false);
             if (value == null) {
                 config.error("Cannot resolve expression " + exp + " after loading all the source code!");
                 return false;
             }
             if (value instanceof Integer) {
                 exp.type = Expression.EXPRESSION_INTEGER_CONSTANT;
-                exp.integerConstant = value.intValue();
-            } else {
+                exp.integerConstant = (Integer)value;
+            } else if (value instanceof Double) {
                 exp.type = Expression.EXPRESSION_DOUBLE_CONSTANT;
-                exp.doubleConstant = value.doubleValue();
+                exp.doubleConstant = (Double)value;
+            } else if (value instanceof String) {
+                exp.type = Expression.EXPRESSION_STRING_CONSTANT;
+                exp.stringConstant = (String)value;
+            } else {
+                config.error("Cannot resolve expression " + exp + " to a number of a string!");
+                return false;
             }
         }
 

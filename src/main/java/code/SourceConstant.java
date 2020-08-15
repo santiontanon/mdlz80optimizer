@@ -7,7 +7,7 @@ public class SourceConstant {
     public String name;
     public String originalName; // name before scoping
     public Expression exp;
-    Number valueCache;  // null if not yet evaluated
+    Object valueCache;  // null if not yet evaluated
     
     public boolean resolveEagerly = false; // Variables where this is true, will be evaluated right away
                                            // This is needed for := variables in sjasm and asMSX
@@ -24,7 +24,7 @@ public class SourceConstant {
     }
     
     
-    public Number getValue(CodeBase code, boolean silent)
+    public Object getValue(CodeBase code, boolean silent)
     {
         if (valueCache != null) {
             return valueCache;

@@ -627,8 +627,8 @@ public class LineParser {
         s.type = SourceStatement.STATEMENT_CONSTANT;
         
         if (s.redefinedLabel) {
-            Number n1 = s.label.exp.evaluate(s.label.definingStatement, code, true);
-            Number n2 = exp.evaluate(s, code, true);
+            Object n1 = s.label.exp.evaluate(s.label.definingStatement, code, true);
+            Object n2 = exp.evaluate(s, code, true);
             if (n1 != null && n2 != null) {
                 if (!n1.equals(n2)) {
                     config.error("Redefining label " + s.label.name + " with a different value than previously: " + n1 + " vs " + n2);

@@ -434,10 +434,12 @@ public class SjasmDialect implements Dialect {
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("align")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("module")) return true;
         if (tokens.size() >= 1 && tokens.get(0).equalsIgnoreCase("endmodule")) return true;
-
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("jr.")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("jp.")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("djnz.")) return true;
+        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("define")) return true;
+        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("xdefine")) return true;
+        if (tokens.size() >= 3 && tokens.get(0).equalsIgnoreCase("assign")) return true;
 
         for(SjasmStruct s:structs) {
             if (tokens.get(0).equals(s.name)) return true;
@@ -977,6 +979,63 @@ public class SjasmDialect implements Dialect {
             if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
             return null;
         }
+        if (tokens.size() >= 2 && 
+                (tokens.get(0).equalsIgnoreCase("define") ||
+                 tokens.get(0).equalsIgnoreCase("xdefine") ||
+                 tokens.get(0).equalsIgnoreCase("assign"))) {
+            String keyword = tokens.remove(0);
+
+            // read variable name:
+            String token = tokens.remove(0);
+            if (!config.lineParser.caseSensitiveSymbols) token = token.toLowerCase();
+            String symbolName = config.lineParser.newSymbolName(token, null, previous);
+            if (symbolName == null) {
+                config.error("Problem defining symbol " + config.lineParser.getLabelPrefix() + token + " in " + sl);
+                return null;
+            }
+            
+            // optionally read the expression:
+            Expression exp = null;
+            if (!tokens.isEmpty() && !Tokenizer.isSingleLineComment(tokens.get(0))) {                    
+                exp = config.expressionParser.parse(tokens, s, previous, code);
+                if (exp == null) {
+                    config.error("parseEqu: Cannot parse line " + sl);
+                    return null;
+                }
+                // remove unnecessary parenthesis:
+                while(exp.type == Expression.EXPRESSION_PARENTHESIS) {
+                    exp = exp.args.get(0);
+                }
+                
+                if (keyword.equalsIgnoreCase("xdefine")) {
+                    // resolve symbols internally:
+                    exp = exp.resolveEagerSymbols(code);
+                    
+                } else if (keyword.equalsIgnoreCase("assign")) {
+                    Integer v = exp.evaluateToInteger(s, code, false);
+                    if (v == null) {
+                        config.error("Could not evaulate " + exp + " in " + sl);
+                        return null;
+                    }
+                    exp = Expression.constantExpression(v, config);
+                }
+            }
+
+            // parse as a :=:            
+            SourceConstant c = new SourceConstant(symbolName, token, null, exp, s);
+            s.label = c;
+            int res = code.addSymbol(c.name, c);
+            if (res == -1) return null;
+            if (res == 0) s.redefinedLabel = true;
+            s.label.resolveEagerly = true;
+            
+            // these variables should not be part of the source code:
+            l.clear();
+            
+            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
+            return null;
+        }        
+
         
         // struct definitions:
         for(SjasmStruct st:structs) {
@@ -1184,7 +1243,7 @@ public class SjasmDialect implements Dialect {
         
         if (macro.name.equals("repeat")) {
             if (args.isEmpty()) return null;
-            Number iterations_tmp = args.get(0).evaluate(macroCall, code, false);
+            Integer iterations_tmp = args.get(0).evaluateToInteger(macroCall, code, false);
             if (iterations_tmp == null) {
                 config.error("Could not evaluate nmber of iterations when expanding macro in " + macroCall.sl);
                 return null;
@@ -1232,7 +1291,7 @@ public class SjasmDialect implements Dialect {
         if (reusableLabelCounts.size() > 0) {
             config.warn("Use of sjasm reusable labels, which are conductive to human error.");
         }
-        
+                
         // if there are no blocks defined, we are done:
         if (!codeBlocks.isEmpty()) {
                 
@@ -1260,11 +1319,14 @@ public class SjasmDialect implements Dialect {
                 }
               }
 
-            // List the blocks found:
             if (initialBlock.size(code) > 0) {
                 config.error("sjasm initial block has non empty size!");
                 return false;
             }
+            
+            
+            // Resolve enhanced jr/jp, only within-block:
+            resolveEnhancedJumps(code);
 
             // Assign blocks to pages, first those that have a defined address, then the rest:
             // Start with those that have a defined address:
@@ -1358,46 +1420,50 @@ public class SjasmDialect implements Dialect {
             }
 
             code.resetAddresses();
+        } else {
+            resolveEnhancedJumps(code);
         }
+        return true;
+    }
+        
+    
+    public CodeBlock findCodeBlock(SourceStatement s)
+    {
+        for(CodeBlock cb:codeBlocks) {
+            if (cb.statements.contains(s)) return cb;
+        }
+        
+        return null;
+    }
+    
 
+    public void resolveEnhancedJumps(CodeBase code)
+    {
         // resolve enhanced jumps:
         for(SourceStatement s:enhancedJrList) {
+            CodeBlock b1 = findCodeBlock(s);
+            CodeBlock b2 = null;
             if (s.op != null && !s.op.args.isEmpty()) {
                 Expression label = s.op.args.get(s.op.args.size()-1);
-                Integer address = s.getAddress(code);
-                Integer targetAddress = label.evaluateToInteger(s, code, true);
-                if (address != null && targetAddress != null) {
-                    int diff = targetAddress - address;
-                    if (diff >= -126 && diff <= 130) {
-                        // change to jr!:
-                        List<CPUOp> l = config.opParser.parseOp("jr", s.op.args, s, 
-                                s.source.getPreviousStatementTo(s, code), code);
-                        if (l != null && l.size() == 1) {
-                            s.op = l.get(0);
-                            code.resetAddresses();
-                        }
+                if (label.type == Expression.EXPRESSION_SYMBOL) {
+                    SourceConstant c = code.getSymbol(label.symbolName);
+                    if (c != null) {
+                        b2 = findCodeBlock(c.definingStatement);
+                    } else {
                     }
+                } else {
                 }
-            }
-        }
-        for(SourceStatement s:enhancedDjnzList) {
-            if (s.op != null && !s.op.args.isEmpty()) {
-                SourceStatement previous = s.source.getPreviousStatementTo(s, code);
-                if (previous.source == s.source && 
-                        previous.op != null && 
-                        previous.op.spec.getName().equalsIgnoreCase("dec")) {
-                    Expression label = s.op.args.get(s.op.args.size()-1);
+                // only consider jumps within the same block:
+                if (b1 == b2) {
                     Integer address = s.getAddress(code);
-                    Integer targetAddress = label.evaluateToInteger(s, code, true);
+                    Integer targetAddress = label.evaluateToInteger(null, code, true);
                     if (address != null && targetAddress != null) {
                         int diff = targetAddress - address;
                         if (diff >= -126 && diff <= 130) {
-                            // change to djnz!:
-                            List<Expression> args = new ArrayList<>();
-                            args.add(label);
-                            List<CPUOp> l = config.opParser.parseOp("djnz", args, s, previous, code);
+                            // change to jr!:
+                            List<CPUOp> l = config.opParser.parseOp("jr", s.op.args, s, 
+                                    s.source.getPreviousStatementTo(s, code), code);
                             if (l != null && l.size() == 1) {
-                                previous.source.getStatements().remove(previous);
                                 s.op = l.get(0);
                                 code.resetAddresses();
                             }
@@ -1406,8 +1472,45 @@ public class SjasmDialect implements Dialect {
                 }
             }
         }
+        for(SourceStatement s:enhancedDjnzList) {
+            CodeBlock b1 = findCodeBlock(s);
+            CodeBlock b2 = null;
+            if (s.op != null && !s.op.args.isEmpty()) {
+                SourceStatement previous = s.source.getPreviousStatementTo(s, code);
+                if (previous.source == s.source && 
+                        previous.op != null && 
+                        previous.op.spec.getName().equalsIgnoreCase("dec")) {
+                    Expression label = s.op.args.get(s.op.args.size()-1);
+                    if (label.type == Expression.EXPRESSION_SYMBOL) {
+                        SourceConstant c = code.getSymbol(label.symbolName);
+                        if (c != null) {
+                            b2 = findCodeBlock(c.definingStatement);
+                        }
+                    }
+                    // only consider jumps within the same block:
+                    if (b1 == b2) {                    
+                        Integer address = s.getAddress(code);
+                        Integer targetAddress = label.evaluateToInteger(null, code, true);
+                        if (address != null && targetAddress != null) {
+                            int diff = targetAddress - address;
+                            if (diff >= -126 && diff <= 130) {
+                                // change to djnz!:
+                                List<Expression> args = new ArrayList<>();
+                                args.add(label);
+                                List<CPUOp> l = config.opParser.parseOp("djnz", args, s, previous, code);
+                                if (l != null && l.size() == 1) {
+                                    previous.source.getStatements().remove(previous);
+                                    s.op = l.get(0);
+                                    code.resetAddresses();
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
         
-        return true;
+        code.resetAddresses();
     }
     
     

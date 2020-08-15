@@ -62,7 +62,7 @@ public class ExpressionTest {
     }
     @Test public void test23() { Assert.assertEquals(Integer.valueOf(1), evaluate("+(1)")); }
 
-    private Number evaluate(String line)
+    private Object evaluate(String line)
     {
         List<String> tokens = Tokenizer.tokenize(line);
         Expression exp = expressionParser.parse(tokens, null, null, code);

@@ -79,7 +79,7 @@ public class CodeBase {
     }
 
 
-    public Number getSymbolValue(String name, boolean silent)
+    public Object getSymbolValue(String name, boolean silent)
     {
         if (symbols.containsKey(name)) {
             return symbols.get(name).getValue(this, silent);
@@ -105,12 +105,22 @@ public class CodeBase {
             if (previous.resolveEagerly) {
                 if (sc.exp != null) {
                     // resolve it right away, before replacing:
-                    Integer value = sc.exp.evaluateToInteger(sc.definingStatement, this, false);
+                    Object value = sc.exp.evaluate(sc.definingStatement, this, false);
                     if (value == null) {
+                        config.error("Cannot resolve eager variable in " + sc.definingStatement.sl);
+                        sc.exp.evaluate(sc.definingStatement, this, false);
+                        return -1;
+                    }
+                    if (value instanceof Integer) {
+                        sc.exp = Expression.constantExpression((Integer)value, config);
+                    } else if (value instanceof Double) {
+                        sc.exp = Expression.constantExpression((Double)value, config);
+                    } else if (value instanceof String) {
+                        sc.exp = Expression.constantExpression((String)value, config);
+                    } else {
                         config.error("Cannot resolve eager variable in " + sc.definingStatement.sl);
                         return -1;
                     }
-                    sc.exp = Expression.constantExpression(value, config);
                 } else {
                     sc.exp = previous.exp;
                 }

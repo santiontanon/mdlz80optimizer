@@ -494,21 +494,39 @@ public class ASMSXDialect implements Dialect {
         }
         if ((functionName.equalsIgnoreCase(".sin") || 
              functionName.equalsIgnoreCase("sin")) && args.size() == 1) {
-            Number range = args.get(0).evaluate(s, code, silent);
+            Object range = args.get(0).evaluate(s, code, silent);
             if (range == null) return null;
-            return Math.sin(range.doubleValue());
+            if (range instanceof Integer) {
+                return Math.sin((Integer)range);
+            } else if (range instanceof Double) {
+                return Math.sin((Double)range); 
+            } else {
+                return null;
+            }
         }
         if ((functionName.equalsIgnoreCase(".cos") || 
              functionName.equalsIgnoreCase("cos")) && args.size() == 1) {
-            Number range = args.get(0).evaluate(s, code, silent);
+            Object range = args.get(0).evaluate(s, code, silent);
             if (range == null) return null;
-            return Math.cos(range.doubleValue());
+            if (range instanceof Integer) {
+                return Math.cos((Integer)range);
+            } else if (range instanceof Double) {
+                return Math.cos((Double)range); 
+            } else {
+                return null;
+            }
         }
         if ((functionName.equalsIgnoreCase(".fix") || 
              functionName.equalsIgnoreCase("fix")) && args.size() == 1) {
-            Number input = args.get(0).evaluate(s, code, silent);
+            Object input = args.get(0).evaluate(s, code, silent);
             if (input == null) return null;
-            return (int)(input.doubleValue()*256);
+            if (input instanceof Integer) {
+                return (int)(((Integer)input)*256);
+            } else if (input instanceof Double) {
+                return (int)(((Double)input)*256);
+            } else {
+                return null;
+            }
         }
         return null;
     }
