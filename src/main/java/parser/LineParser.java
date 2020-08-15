@@ -46,6 +46,7 @@ public class LineParser {
     public boolean macroNameIsFirstArgumentOfMacro = false;
     public boolean allowNumberLabels = false;   // also for sjasm (for "reusable" labels)
     public boolean caseSensitiveSymbols = true;
+    public boolean applyEscapeSequencesToIncludeArguments = true;
 
     public boolean sdccStyleOffsets = false;
     
@@ -417,7 +418,7 @@ public class LineParser {
             return true;
         }
 
-        config.error("parseRestofTheLine: Cannot parse line " + sl);
+        config.error("parseRestofTheLine: Cannot parse line " + sl + "  left over tokens: " + tokens);
         return false;
     }
 
@@ -459,6 +460,19 @@ public class LineParser {
             if (Tokenizer.isString(token)) {
                 tokens.remove(0);
                 rawFileName = Tokenizer.stringValue(token);
+                
+                if (!applyEscapeSequencesToIncludeArguments) {
+                    HashMap<String,String> tmp = Tokenizer.stringEscapeSequences;
+                    Tokenizer.stringEscapeSequences = new HashMap<>();
+                    List<String> tokens2 = Tokenizer.tokenize(sl.line);
+                    Tokenizer.stringEscapeSequences = tmp;
+                    for(String token2:tokens2) {
+                        if (Tokenizer.isString(token2)) {
+                            rawFileName = Tokenizer.stringValue(token2);
+                            break;
+                        }
+                    }
+                }
             } else {
                 if (allowIncludesWithoutQuotes) {
                     rawFileName = "";
@@ -501,6 +515,19 @@ public class LineParser {
         if (Tokenizer.isString(token)) {
             tokens.remove(0);
             rawFileName = Tokenizer.stringValue(token);
+            
+            if (!applyEscapeSequencesToIncludeArguments) {
+                HashMap<String,String> tmp = Tokenizer.stringEscapeSequences;
+                Tokenizer.stringEscapeSequences = new HashMap<>();
+                List<String> tokens2 = Tokenizer.tokenize(sl.line);
+                Tokenizer.stringEscapeSequences = tmp;
+                for(String token2:tokens2) {
+                    if (Tokenizer.isString(token2)) {
+                        rawFileName = Tokenizer.stringValue(token2);
+                        break;
+                    }
+                }
+            }
         } else {
             if (allowIncludesWithoutQuotes) {
                 rawFileName = "";

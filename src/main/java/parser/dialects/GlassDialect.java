@@ -66,16 +66,17 @@ public class GlassDialect implements Dialect {
         
         config.preProcessor.dialectMacros.put("irp", "endm");
         
-        Tokenizer.stringEscapeSequences.put("\u0000","\\0");
-        Tokenizer.stringEscapeSequences.put("\u0007","\\a");
-        Tokenizer.stringEscapeSequences.put("\t","\\t");
-        Tokenizer.stringEscapeSequences.put("\n","\\n");
-        Tokenizer.stringEscapeSequences.put("\f","\\f");
-        Tokenizer.stringEscapeSequences.put("\r","\\r");
-        Tokenizer.stringEscapeSequences.put("\u0027","\\e");
-        Tokenizer.stringEscapeSequences.put("\"","\\\"");
-        Tokenizer.stringEscapeSequences.put("'","\\'");
-        Tokenizer.stringEscapeSequences.put("\\","\\\\");
+        // recognized escape sequences by Glass:
+        Tokenizer.stringEscapeSequences.put("0", "\u0000");
+        Tokenizer.stringEscapeSequences.put("a", "\u0007");
+        Tokenizer.stringEscapeSequences.put("t", "\t");
+        Tokenizer.stringEscapeSequences.put("n", "\n");
+        Tokenizer.stringEscapeSequences.put("f", "\f");
+        Tokenizer.stringEscapeSequences.put("r", "\r");
+        Tokenizer.stringEscapeSequences.put("e", "\u0027");
+        Tokenizer.stringEscapeSequences.put("\"", "\"");
+        Tokenizer.stringEscapeSequences.put("'", "'");
+        Tokenizer.stringEscapeSequences.put("\\", "\\");
     }
 
 

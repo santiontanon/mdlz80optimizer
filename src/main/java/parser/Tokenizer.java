@@ -62,9 +62,9 @@ public class Tokenizer {
     public static List<String> tokenize(String line, List<String> tokens, boolean includeBlanks) {
         StringTokenizer st;
         if (sdccStyleDollarInLabels) {
-            st = new StringTokenizer(line, " \r\n\t()[]#,;:+-*/%|&'\"!?<>=~^{}", true);
+            st = new StringTokenizer(line, " \r\n\t()[]#,;:+-*/%|&'\"!?<>=~^{}\\", true);
         } else {
-            st = new StringTokenizer(line, " \r\n\t()[]#$,;:+-*/%|&'\"!?<>=~^{}", true);
+            st = new StringTokenizer(line, " \r\n\t()[]#$,;:+-*/%|&'\"!?<>=~^{}\\", true);
         }
         String previous = null;
         while(st.hasMoreTokens()) {
@@ -126,15 +126,25 @@ public class Tokenizer {
                 String token = next;
                 while(st.hasMoreTokens()) {
                     next = st.nextToken();
-                    token += next;
+                    if (next.equals("\\")) {
+                        String nextNext = st.nextToken();
+                        // TODO: support escape sequences longer than 1 character:
+                        if (stringEscapeSequences.containsKey(nextNext.substring(0, 1))) {
+                            token += stringEscapeSequences.get(nextNext.substring(0, 1)) + nextNext.substring(1);
+                        } else {
+                            token += next += nextNext;
+                        }
+                    } else {
+                        token += next;
+                    }
                     if (next.equals("\"")) {
                         break;
                     }
                 }
                 if (token.length()<2 || !token.endsWith("\"")) return null;
-                for(String symbol:stringEscapeSequences.keySet()) {
-                    token = token.replace(stringEscapeSequences.get(symbol), symbol);
-                }
+//                for(String symbol:stringEscapeSequences.keySet()) {
+//                    token = token.replace(stringEscapeSequences.get(symbol), symbol);
+//                }
                 tokens.add(token);
             } else if (next.equals("'")) {
                 String token = next;

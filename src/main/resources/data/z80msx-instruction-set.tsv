@@ -395,6 +395,8 @@ ADC (IX+o)	21	DD 8E o	3	A,IX	C		IX+o	A	S,Z,H,P/V,N,C			false
 ADC (IY+o)	21	FD 8E o	3	A,IY	C		IY+o	A	S,Z,H,P/V,N,C			false
 ADD r	5	80+r	1	A,r				A	S,Z,H,P/V,N,C			false
 ADD (HL)	8	86	1	A,HL			HL	A	S,Z,H,P/V,N,C			false
+ADD IXp	10	DD 80+p	2	A,IXp				A	S,Z,H,P/V,N,C			false
+ADD IYq	10	FD 80+q	2	A,IYq				A	S,Z,H,P/V,N,C			false
 ADD n	8	C6 n	2	A				A	S,Z,H,P/V,N,C			false
 ADD (IX+o)	21	DD 86 o	3	A,IX			IX+o	A	S,Z,H,P/V,N,C			false
 ADD (IY+o)	21	FD 86 o	3	A,IY			IY+o	A	S,Z,H,P/V,N,C			false
@@ -408,6 +410,7 @@ SBC D	5	98+2	1	A,D	C			A	S,Z,H,P/V,N,C			false
 SBC E	5	98+3	1	A,E	C			A	S,Z,H,P/V,N,C			false
 SBC H	5	98+4	1	A,H	C			A	S,Z,H,P/V,N,C			false
 SBC L	5	98+5	1	A,L	C			A	S,Z,H,P/V,N,C			false
+SBC n	8	DE n	2	A	C			A	S,Z,H,P/V,N,C			false
 SUB A, (HL)	8	96	1	A,HL			HL	A	S,Z,H,P/V,N,C			false
 SUB A, A	5	90+7	1					A	S,Z,H,P/V,N,C			false
 SUB A, B	5	90+0	1	A,B				A	S,Z,H,P/V,N,C			false
