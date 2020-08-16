@@ -8,7 +8,7 @@
     ld hl, #FCC1
     add a, l
     ld l, a
-    ld a, (hl)
+    ld a, [hl]
     and #80
     or c
     ld c, a
@@ -16,7 +16,7 @@
     inc l
     inc l
     inc l
-    ld a, (hl)
+    ld a, [hl]
     
     ; Define slot ID
     and #0c

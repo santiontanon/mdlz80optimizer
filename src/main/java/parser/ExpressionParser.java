@@ -489,7 +489,6 @@ public class ExpressionParser {
             Expression exp = parseInternal(tokens, s, previous, code);
             if (exp != null) {
                 if (exp.type == Expression.EXPRESSION_INTEGER_CONSTANT) {
-                    exp.integerConstant = -exp.integerConstant;
                     return exp;
                 } else {
                     return Expression.operatorExpression(Expression.EXPRESSION_PLUS_SIGN, exp, config);

@@ -61,6 +61,7 @@ public class ExpressionTest {
         Tokenizer.allowAndpersandHex = false;
     }
     @Test public void test23() { Assert.assertEquals(Integer.valueOf(1), evaluate("+(1)")); }
+    @Test public void test24() { Assert.assertEquals(Integer.valueOf(1), evaluate("+1")); }
 
     private Object evaluate(String line)
     {
