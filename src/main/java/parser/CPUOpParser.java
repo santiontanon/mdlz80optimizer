@@ -132,7 +132,11 @@ public class CPUOpParser {
         
         
         for(int i = 0; i<spec.args.size(); i++) {
-            if (indirectionsOnlyWithSquareBrackets) {
+            // for some reason, asMSX (the assembler that uses square brackets for indirections),
+            // does not impose this constraint for in/out ops.... ¯\_(ツ)_/¯
+            if (indirectionsOnlyWithSquareBrackets && 
+                !a_op.equalsIgnoreCase("out") &&
+                !a_op.equalsIgnoreCase("in")) {
                 while(a_args.get(i).type == Expression.EXPRESSION_PARENTHESIS &&
                       a_args.get(i).parenthesis.equals("(") &&
                       a_args.get(i).args != null &&
@@ -285,7 +289,7 @@ public class CPUOpParser {
                     officialArgs.add(Expression.symbolExpression(officialArgSpec.reg.toLowerCase(), null, code, config));
                 } else {
                     // case not supported:
-                    config.error("Cannot turn unofficial assembler op to official!");
+                    config.error("Cannot turn unofficial assembler op to official: " + officialSpec.opName + " with args: " + a_args);
                     return null;
                 }
             }
