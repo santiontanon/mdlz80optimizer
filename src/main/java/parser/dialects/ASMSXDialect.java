@@ -95,6 +95,7 @@ public class ASMSXDialect implements Dialect {
         config.expressionParser.dialectFunctions.add("cos");
         
         config.expressionParser.allowFloatingPointNumbers = true;
+        config.opParser.indirectionsOnlyWithSquareBrackets = true;
     }
 
 
@@ -305,7 +306,7 @@ public class ASMSXDialect implements Dialect {
             }
             s.type = SourceStatement.STATEMENT_ORG;
             s.org = Expression.operatorExpression(Expression.EXPRESSION_MUL,
-                    Expression.parenthesisExpression(page_exp, config),
+                    Expression.parenthesisExpression(page_exp, "(", config),
                     Expression.constantExpression(16*1024, false, true, config), config);
             // Since we are not producing compiled output, we ignore this directive
             if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
@@ -549,7 +550,7 @@ public class ASMSXDialect implements Dialect {
     
     @Override    
     public void performAnyInitialActions(CodeBase code) {
-        SourceConstant sc = new SourceConstant("pi", "pi", null, Expression.constantExpression(Math.PI, config), null);
+        SourceConstant sc = new SourceConstant("pi", "pi", Expression.constantExpression(Math.PI, config), null, config);
         code.addSymbol("pi", sc);
     }
     
@@ -564,10 +565,10 @@ public class ASMSXDialect implements Dialect {
                 if (s.type == SourceStatement.STATEMENT_ORG) {
                     // set the load address:
                     basicHeaderStatement.data.set(1, Expression.operatorExpression(Expression.EXPRESSION_MOD, 
-                            Expression.parenthesisExpression(s.org, config), 
+                            Expression.parenthesisExpression(s.org, "(", config), 
                             Expression.constantExpression(256, config), config)); 
                     basicHeaderStatement.data.set(2, Expression.operatorExpression(Expression.EXPRESSION_DIV, 
-                            Expression.parenthesisExpression(s.org, config), 
+                            Expression.parenthesisExpression(s.org, "(", config), 
                             Expression.constantExpression(256, config), config));
                     
                     // found it! We should insert the basic header right before this!
@@ -720,6 +721,9 @@ public class ASMSXDialect implements Dialect {
                 }
             }
         }
+        
+        // set this back to normal setting, so the optimizer patterns are properly parsed:
+        config.opParser.indirectionsOnlyWithSquareBrackets = false;
         
         return true;
     }

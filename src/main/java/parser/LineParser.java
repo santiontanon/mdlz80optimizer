@@ -302,7 +302,7 @@ public class LineParser {
                     config.error("Problem defining symbol " + labelPrefix + token + " in " + sl);
                     return false;
                 }
-                SourceConstant c = new SourceConstant(symbolName, token, null, exp, s);
+                SourceConstant c = new SourceConstant(symbolName, token, exp, s, config);
                 s.type = SourceStatement.STATEMENT_NONE;
                 s.label = c;
                 if (defineInCodeBase) {
@@ -320,7 +320,7 @@ public class LineParser {
                     config.error("Problem defining symbol " + labelPrefix + token + " in " + sl);
                     return false;
                 }
-                SourceConstant c = new SourceConstant(symbolName, token, null, exp, s);
+                SourceConstant c = new SourceConstant(symbolName, token, exp, s, config);
                 s.type = SourceStatement.STATEMENT_NONE;
                 s.label = c;
                 if (defineInCodeBase) {
@@ -351,7 +351,7 @@ public class LineParser {
                     config.error("Problem defining symbol " + labelPrefix + token + " in " + sl);
                     return false;
                 }
-                SourceConstant c = new SourceConstant(symbolName, token, null, exp, s);
+                SourceConstant c = new SourceConstant(symbolName, token, exp, s, config);
                 s.type = SourceStatement.STATEMENT_NONE;
                 s.label = c;
                 if (defineInCodeBase) {
@@ -388,7 +388,7 @@ public class LineParser {
                         config.error("Problem defining symbol " + labelPrefix + token + " in " + sl);
                         return false;
                     }
-                    SourceConstant c = new SourceConstant(symbolName, token, null, null, s);
+                    SourceConstant c = new SourceConstant(symbolName, token, null, s, config);
                     s.type = SourceStatement.STATEMENT_NONE;
                     s.label = c;
                     if (defineInCodeBase) {
@@ -830,7 +830,7 @@ public class LineParser {
                 return false;
             }
             String macroNameStr = tokens.remove(0);
-            SourceConstant c = new SourceConstant(macroNameStr, macroNameStr, null, null, s);
+            SourceConstant c = new SourceConstant(macroNameStr, macroNameStr, null, s, config);
             s.label = c;
         } else {
             if (s.label == null) {

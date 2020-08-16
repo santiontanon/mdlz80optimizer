@@ -3,7 +3,12 @@
  */
 package code;
 
+import cl.MDLConfig;
+import java.util.List;
+
 public class SourceConstant {
+    MDLConfig config;
+            
     public String name;
     public String originalName; // name before scoping
     public Expression exp;
@@ -14,11 +19,11 @@ public class SourceConstant {
     
     public SourceStatement definingStatement;  // the statement where it was defined
     
-    public SourceConstant(String a_name, String a_originalName, Number a_value, Expression a_exp, SourceStatement a_s)
+    public SourceConstant(String a_name, String a_originalName, Expression a_exp, SourceStatement a_s, MDLConfig config)
     {
         name = a_name;
         originalName = a_originalName;
-        valueCache = a_value;
+        valueCache = null;
         exp = a_exp;
         definingStatement = a_s;
     }
@@ -30,6 +35,22 @@ public class SourceConstant {
             return valueCache;
         } else {
             valueCache = exp.evaluate(definingStatement, code, silent);
+            return valueCache;
+        }
+    }
+
+
+    public Object getValueInternal(CodeBase code, boolean silent, List<String> variableStack)
+    {
+        if (valueCache != null) {
+            return valueCache;
+        } else {
+            if (variableStack.contains(name)) {
+                config.warn("Circular dependency on " +this+ " when evaluating expression");
+                return null;
+            }
+            variableStack.add(name);
+            valueCache = exp.evaluateInternal(definingStatement, code, silent, variableStack);
             return valueCache;
         }
     }

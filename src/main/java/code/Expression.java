@@ -65,6 +65,7 @@ public class Expression {
     public String stringConstant;
     public String symbolName;
     public String registerOrFlagName;
+    public String parenthesis;  // whether the parenthesis is "(" or "["
     public String dialectFunction;
     public List<Expression> args = null;
 
@@ -75,11 +76,21 @@ public class Expression {
 
     
     public Integer evaluateToInteger(SourceStatement s, CodeBase code, boolean silent) {
-        return (Integer)evaluate(s, code, silent);
+        return (Integer)evaluateInternal(s, code, silent, new ArrayList<>());
+    }
+
+
+    public Integer evaluateToIntegerInternal(SourceStatement s, CodeBase code, boolean silent, List<String> variableStack) {
+        return (Integer)evaluateInternal(s, code, silent, variableStack);
+    }
+    
+
+    public Object evaluate(SourceStatement s, CodeBase code, boolean silent) {
+        return evaluateInternal(s, code, silent, new ArrayList<>());
     }
     
     
-    public Object evaluate(SourceStatement s, CodeBase code, boolean silent) {
+    public Object evaluateInternal(SourceStatement s, CodeBase code, boolean silent, List<String> variableStack) {
         switch (type) {
             case EXPRESSION_INTEGER_CONSTANT:
                 return integerConstant;
@@ -97,16 +108,15 @@ public class Expression {
             case EXPRESSION_SYMBOL: {
                 if (symbolName.equals(CodeBase.CURRENT_ADDRESS)) {
                     if (s != null) {
-                        return s.getAddress(code);
+                        return s.getAddressInternal(code, true, variableStack);
                     } else {
                         return null;
                     }
                 }
-                Object value = code.getSymbolValue(symbolName, silent);
+                Object value = code.getSymbolValueInternal(symbolName, silent, variableStack);
                 if (value == null) {
                     if (!silent) {
                         config.error("Undefined symbol " + symbolName);
-                        code.getSymbolValue(symbolName, silent);
                     }
                     return null;
                 }
@@ -114,7 +124,7 @@ public class Expression {
             }
 
             case EXPRESSION_SIGN_CHANGE: {
-                Object v = args.get(0).evaluate(s, code, silent);
+                Object v = args.get(0).evaluateInternal(s, code, silent, variableStack);
                 if (v == null) {
                     return null;
                 } else if (v instanceof Integer) {
@@ -127,7 +137,7 @@ public class Expression {
             }
 
             case EXPRESSION_PARENTHESIS: {
-                Object v = args.get(0).evaluate(s, code, silent);
+                Object v = args.get(0).evaluateInternal(s, code, silent, variableStack);
                 if (v == null) {
                     return null;
                 }
@@ -138,7 +148,7 @@ public class Expression {
                 Number accum = 0;
                 boolean turnToDouble = false;
                 for (Expression arg : args) {
-                    Object v = arg.evaluate(s, code, silent);
+                    Object v = arg.evaluateInternal(s, code, silent, variableStack);
                     if (v == null) {
                         return null;
                     } else if (v instanceof Double) {
@@ -161,8 +171,43 @@ public class Expression {
                 if (args.size() != 2) {
                     return null;
                 }
-                Object v1 = args.get(0).evaluate(s, code, silent);
-                Object v2 = args.get(1).evaluate(s, code, silent);
+                // - special case for when these are labels, like: label1-label2,
+                // and it is not possible to assign an absolute value to the labels,
+                // but it is possible to know their difference:
+                if (args.get(0).type == Expression.EXPRESSION_SYMBOL &&
+                    args.get(1).type == Expression.EXPRESSION_SYMBOL) {
+                    SourceConstant c1 = code.getSymbol(args.get(0).symbolName);
+                    SourceConstant c2 = code.getSymbol(args.get(1).symbolName);
+                    if (c1 != null && c2 != null && c1.exp != null && c2.exp != null &&
+                        c1.exp.type == Expression.EXPRESSION_SYMBOL &&
+                        c2.exp.type == Expression.EXPRESSION_SYMBOL &&
+                        c1.exp.symbolName.equals(CodeBase.CURRENT_ADDRESS) &&
+                        c2.exp.symbolName.equals(CodeBase.CURRENT_ADDRESS)) {
+                        SourceStatement d1 = c1.definingStatement;
+                        SourceStatement d2 = c2.definingStatement;
+                        if (d1 != null && d2 != null && d1.source == d2.source) {
+                            int idx1 = d1.source.getStatements().indexOf(d1);
+                            int idx2 = d1.source.getStatements().indexOf(d2);
+                            if (idx1 >= 0 && idx2 >= 0 && idx1 >= idx2) {
+                                Integer diff = 0;
+                                for(int i = idx2; i<idx1;i++) {
+                                    Integer size = d1.source.getStatements().get(i).sizeInBytesInternal(code, true, true, true, variableStack);
+                                    if (size == null) {
+                                        diff = null;
+                                        break;
+                                    }
+                                    diff += size;
+                                }
+                                if (diff != null) {
+                                    return diff;
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                Object v1 = args.get(0).evaluateInternal(s, code, silent, variableStack);
+                Object v2 = args.get(1).evaluateInternal(s, code, silent, variableStack);
                 if (v1 == null || v2 == null) {
                     return null;
                 }
@@ -186,7 +231,7 @@ public class Expression {
                 Number accum = 1;
                 boolean turnToDouble = false;
                 for (Expression arg : args) {
-                    Object v = arg.evaluate(s, code, silent);
+                    Object v = arg.evaluateInternal(s, code, silent, variableStack);
                     if (v == null) {
                         return null;
                     } else if (v instanceof Double) {
@@ -209,8 +254,8 @@ public class Expression {
                 if (args.size() != 2) {
                     return null;
                 }
-                Object v1 = args.get(0).evaluate(s, code, silent);
-                Object v2 = args.get(1).evaluate(s, code, silent);
+                Object v1 = args.get(0).evaluateInternal(s, code, silent, variableStack);
+                Object v2 = args.get(1).evaluateInternal(s, code, silent, variableStack);
                 if (v1 == null || v2 == null) {
                     return null;
                 }
@@ -233,8 +278,8 @@ public class Expression {
                 if (args.size() != 2) {
                     return null;
                 }
-                Object v1 = args.get(0).evaluate(s, code, silent);
-                Object v2 = args.get(1).evaluate(s, code, silent);
+                Object v1 = args.get(0).evaluateInternal(s, code, silent, variableStack);
+                Object v2 = args.get(1).evaluateInternal(s, code, silent, variableStack);
                 if (v1 == null || v2 == null) {
                     return null;
                 }
@@ -285,8 +330,8 @@ public class Expression {
                 if (args.size() != 2) {
                     return null;
                 }
-                Object v1 = args.get(0).evaluate(s, code, silent);
-                Object v2 = args.get(1).evaluate(s, code, silent);
+                Object v1 = args.get(0).evaluateInternal(s, code, silent, variableStack);
+                Object v2 = args.get(1).evaluateInternal(s, code, silent, variableStack);
                 if (v1 == null || v2 == null) {
                     return null;
                 }
@@ -300,8 +345,8 @@ public class Expression {
                 if (args.size() != 2) {
                     return null;
                 }
-                Object v1 = args.get(0).evaluate(s, code, silent);
-                Object v2 = args.get(1).evaluate(s, code, silent);
+                Object v1 = args.get(0).evaluateInternal(s, code, silent, variableStack);
+                Object v2 = args.get(1).evaluateInternal(s, code, silent, variableStack);
                 if (v1 == null || v2 == null) {
                     return null;
                 }
@@ -324,8 +369,8 @@ public class Expression {
                 if (args.size() != 2) {
                     return null;
                 }
-                Object v1 = args.get(0).evaluate(s, code, silent);
-                Object v2 = args.get(1).evaluate(s, code, silent);
+                Object v1 = args.get(0).evaluateInternal(s, code, silent, variableStack);
+                Object v2 = args.get(1).evaluateInternal(s, code, silent, variableStack);
                 if (v1 == null || v2 == null) {
                     return null;
                 }
@@ -347,8 +392,8 @@ public class Expression {
                 if (args.size() != 2) {
                     return null;
                 }
-                Object v1 = args.get(0).evaluate(s, code, silent);
-                Object v2 = args.get(1).evaluate(s, code, silent);
+                Object v1 = args.get(0).evaluateInternal(s, code, silent, variableStack);
+                Object v2 = args.get(1).evaluateInternal(s, code, silent, variableStack);
                 if (v1 == null || v2 == null) {
                     return null;
                 }
@@ -371,8 +416,8 @@ public class Expression {
                 if (args.size() != 2) {
                     return null;
                 }
-                Object v1 = args.get(0).evaluate(s, code, silent);
-                Object v2 = args.get(1).evaluate(s, code, silent);
+                Object v1 = args.get(0).evaluateInternal(s, code, silent, variableStack);
+                Object v2 = args.get(1).evaluateInternal(s, code, silent, variableStack);
                 if (v1 == null || v2 == null) {
                     return null;
                 }
@@ -395,8 +440,8 @@ public class Expression {
                 if (args.size() != 2) {
                     return null;
                 }
-                Object v1 = args.get(0).evaluate(s, code, silent);
-                Object v2 = args.get(1).evaluate(s, code, silent);
+                Object v1 = args.get(0).evaluateInternal(s, code, silent, variableStack);
+                Object v2 = args.get(1).evaluateInternal(s, code, silent, variableStack);
                 if (v1 == null || v2 == null) {
                     return null;
                 }
@@ -494,7 +539,7 @@ public class Expression {
                 return config.dialectParser.evaluateExpression(dialectFunction, args, s, code, silent);
             }
             case EXPRESSION_PLUS_SIGN:
-                return args.get(0).evaluate(s, code, silent);
+                return args.get(0).evaluateInternal(s, code, silent, variableStack);
 
         }
 
@@ -536,7 +581,7 @@ public class Expression {
                     boolean insideQuotes = false;
                     for(int i = 0;i<stringConstant.length();i++) {
                         int c = stringConstant.charAt(i);
-                        if (c<32 || c=='\\') {
+                        if (c<32 || c=='\\' || c=='\"') {
                             if (insideQuotes) {
                                 tmp += "\"";
                                 insideQuotes = false;
@@ -1092,10 +1137,11 @@ public class Expression {
         return exp;
     }
 
-    public static Expression parenthesisExpression(Expression arg, MDLConfig config) {
+    public static Expression parenthesisExpression(Expression arg, String parenthesis, MDLConfig config) {
         Expression exp = new Expression(EXPRESSION_PARENTHESIS, config);
         exp.args = new ArrayList<>();
         exp.args.add(arg);
+        exp.parenthesis = parenthesis;
         return exp;
     }
 

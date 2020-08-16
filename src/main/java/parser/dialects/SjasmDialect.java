@@ -171,6 +171,7 @@ public class SjasmDialect implements Dialect {
         config.lineParser.addKeywordSynonym("dword", config.lineParser.KEYWORD_DD);
         config.lineParser.addKeywordSynonym("=", config.lineParser.KEYWORD_EQU);
         config.lineParser.addKeywordSynonym(".equ", config.lineParser.KEYWORD_EQU);
+        config.lineParser.addKeywordSynonym("defs", config.lineParser.KEYWORD_DS);
         
         config.preProcessor.macroSynonyms.put("endmacro", config.preProcessor.MACRO_ENDM);
         
@@ -558,7 +559,7 @@ public class SjasmDialect implements Dialect {
             struct.file = source;
             struct.start = s;
             s.type = SourceStatement.STATEMENT_CONSTANT;
-            SourceConstant c = new SourceConstant(struct.name, struct.name, null, null, s);
+            SourceConstant c = new SourceConstant(struct.name, struct.name, null, s, config);
             s.label = c;
             if (code.addSymbol(c.name, c) != 1) return null;
             if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
@@ -877,9 +878,9 @@ public class SjasmDialect implements Dialect {
                                 Expression.parenthesisExpression(
                                   Expression.operatorExpression(Expression.EXPRESSION_SUB, 
                                       Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, s, code, config), 
-                                      Expression.constantExpression(1, config), config), config),
+                                      Expression.constantExpression(1, config), config), "(", config),
                                   exp, config), 
-                              Expression.constantExpression(1, config), config), config), 
+                              Expression.constantExpression(1, config), config), "(", config), 
                           exp, config),
                         Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, s, code, config), config);
             s.space_value = Expression.constantExpression(0, config);
@@ -1022,7 +1023,7 @@ public class SjasmDialect implements Dialect {
             }
 
             // parse as a :=:            
-            SourceConstant c = new SourceConstant(symbolName, token, null, exp, s);
+            SourceConstant c = new SourceConstant(symbolName, token, exp, s, config);
             s.label = c;
             int res = code.addSymbol(c.name, c);
             if (res == -1) return null;
@@ -1222,7 +1223,7 @@ public class SjasmDialect implements Dialect {
                         Expression.operatorExpression(Expression.EXPRESSION_BITAND, 
                             args.get(0),
                             Expression.constantExpression(0xff00, false, true, config), config), 
-                        config),
+                        "(", config),
                     Expression.constantExpression(8, config), config);
         }
         if (functionName.equalsIgnoreCase("low") && args.size() == 1) {

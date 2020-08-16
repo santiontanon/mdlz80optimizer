@@ -332,8 +332,8 @@ public class GlassDialect implements Dialect {
                     Expression.parenthesisExpression(
                             Expression.operatorExpression(Expression.EXPRESSION_SUM,
                                     Expression.symbolExpression(sr.dsStatement.label.name, s, code, config), 
-                                    Expression.parenthesisExpression(sr.dsStatement.space, config), config),
-                            config), 
+                                    Expression.parenthesisExpression(sr.dsStatement.space, "(", config), config),
+                            "(", config), 
                     Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, s, code, config), 
                     config);
             sr.dsStatement.label = null;

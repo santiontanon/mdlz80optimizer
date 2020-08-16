@@ -106,11 +106,11 @@ public class SourceStatement {
     
     public Integer getAddress(CodeBase code)
     {
-        return getAddressInternal(code, true);
+        return getAddressInternal(code, true, new ArrayList<>());
     }
 
 
-    public Integer getAddressInternal(CodeBase code, boolean recurse)
+    public Integer getAddressInternal(CodeBase code, boolean recurse, List<String> variableStack)
     {
 
         if (recurse) {
@@ -123,7 +123,7 @@ public class SourceStatement {
             int prevIdx = prevSource == null ? -1 : prevSource.getStatements().indexOf(prev);
             Integer prevAddressAfter = null;
             while(prev != null) {
-                prevAddressAfter = prev.getAddressAfterInternal(code, false);
+                prevAddressAfter = prev.getAddressAfterInternal(code, false, variableStack);
                 if (prevAddressAfter != null) {
                     break;
                 } else {
@@ -150,9 +150,9 @@ public class SourceStatement {
             for(SourceStatement s:trail) {
                 s.address = prevAddressAfter;
                 if (s.type == STATEMENT_INCLUDE) {
-                    prevAddressAfter = s.getAddressAfterInternal(code, true);
+                    prevAddressAfter = s.getAddressAfterInternal(code, true, variableStack);
                 } else {
-                    prevAddressAfter = s.getAddressAfterInternal(code, false);
+                    prevAddressAfter = s.getAddressAfterInternal(code, false, variableStack);
                 }
                 if (prevAddressAfter == null) return null;
             }
@@ -165,29 +165,34 @@ public class SourceStatement {
     }
     
 
-    Integer getAddressAfterInternal(CodeBase code, boolean recurse)
+    Integer getAddressAfterInternal(CodeBase code, boolean recurse, List<String> variableStack)
     {
         switch (type) {
             case STATEMENT_ORG:
-                return org.evaluateToInteger(this, code, true);
+                return org.evaluateToIntegerInternal(this, code, true, variableStack);
             case STATEMENT_INCLUDE:
-                return include.getStatements().get(include.getStatements().size()-1).getAddressAfterInternal(code, recurse);
+                return include.getStatements().get(include.getStatements().size()-1).getAddressAfterInternal(code, recurse, variableStack);
             default:
-                if (recurse && address == null) getAddress(code);
+                if (recurse && address == null) getAddressInternal(code, true, variableStack);
                 if (address == null) return null;
-                Integer size = sizeInBytes(code, true, true, true);
+                Integer size = sizeInBytesInternal(code, true, true, true, variableStack);
                 if (size == null) return null;
                 return address + size;
         }
     }
     
-    
+
     public Integer sizeInBytes(CodeBase code, boolean withIncludes, boolean withIncBin, boolean withVirtual)
+    {
+        return sizeInBytesInternal(code, withIncludes, withIncBin, withVirtual, new ArrayList<>());
+    }
+    
+    public Integer sizeInBytesInternal(CodeBase code, boolean withIncludes, boolean withIncBin, boolean withVirtual, List<String> variableStack)
     {
         switch(type) {
             case STATEMENT_INCBIN:
                 if (withIncBin) {
-                    return incbinSize.evaluateToInteger(this, code, true);
+                    return incbinSize.evaluateToIntegerInternal(this, code, true, variableStack);
                 }
                 return 0;
             
@@ -220,7 +225,7 @@ public class SourceStatement {
 
             case STATEMENT_DEFINE_SPACE:
                 if (withVirtual || space_value != null) {
-                    return space.evaluateToInteger(this, code, true);
+                    return space.evaluateToIntegerInternal(this, code, true, variableStack);
                 } else {
                     return 0;
                 }
@@ -230,7 +235,7 @@ public class SourceStatement {
                 
             case STATEMENT_INCLUDE:
                 if (withIncludes) {
-                    return include.sizeInBytes(code, withIncludes, withIncBin, withVirtual);
+                    return include.sizeInBytesInternal(code, withIncludes, withIncBin, withVirtual, variableStack);
                 }
                 return 0;
                                 

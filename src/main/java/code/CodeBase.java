@@ -7,6 +7,7 @@ import cl.MDLConfig;
 
 import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Set;
 
 public class CodeBase {
@@ -83,6 +84,15 @@ public class CodeBase {
     {
         if (symbols.containsKey(name)) {
             return symbols.get(name).getValue(this, silent);
+        }
+        return null;
+    }
+    
+
+    public Object getSymbolValueInternal(String name, boolean silent, List<String> variableStack)
+    {
+        if (symbols.containsKey(name)) {
+            return symbols.get(name).getValueInternal(this, silent, variableStack);
         }
         return null;
     }

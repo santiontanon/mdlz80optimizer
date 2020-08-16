@@ -522,12 +522,12 @@ public class ExpressionParser {
         if (tokens.size() >= 3 &&
             (tokens.get(0).equals("(") || tokens.get(0).equals("["))) {
             // a parenthesis expression:
-            tokens.remove(0);
+            String parenthesis = tokens.remove(0);
             Expression exp = parse(tokens, s, previous, code);
             if (exp != null && tokens.size() >= 1 &&
                 (tokens.get(0).equals(")") || tokens.get(0).equals("]"))) {
                 tokens.remove(0);
-                return Expression.parenthesisExpression(exp, config);
+                return Expression.parenthesisExpression(exp, parenthesis, config);
             }
         }
 

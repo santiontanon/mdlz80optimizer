@@ -94,9 +94,14 @@ public class SourceFile {
 
 
     public Integer sizeInBytes(CodeBase code, boolean withIncludes, boolean withIncbin, boolean withVirtual) {
+        return sizeInBytesInternal(code, withIncludes, withIncbin, withVirtual, new ArrayList<>());
+    }
+    
+        
+    public Integer sizeInBytesInternal(CodeBase code, boolean withIncludes, boolean withIncbin, boolean withVirtual, List<String> variableStack) {
         int size = 0;
         for (SourceStatement s : statements) {
-            Integer s_size = s.sizeInBytes(code, withIncludes, withIncbin, withVirtual);
+            Integer s_size = s.sizeInBytesInternal(code, withIncludes, withIncbin, withVirtual, variableStack);
             if (s_size == null) return null;
             size += s_size;
         }

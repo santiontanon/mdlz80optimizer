@@ -79,6 +79,7 @@ public class CPUOpPattern {
         List<CPUOp> op_l =  config.opParser.parseOp(instantiatedOpName, instantiatedArgs, s, null, code);
         if (op_l == null) {
             config.error("Cannot parse: " + opName + " " + instantiatedArgs);
+            return null;
         }
         if (op_l.size() != 1) {
             config.error("Cannot parse (it's a fake instruction!): " + opName + " " + instantiatedArgs);

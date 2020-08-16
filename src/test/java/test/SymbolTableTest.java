@@ -15,37 +15,36 @@ import java.util.StringTokenizer;
 import org.junit.Assert;
 import org.junit.Test;
 import util.Resources;
-import workers.SourceCodeGenerator;
+import workers.SymbolTableGenerator;
 
 /**
  *
  * @author santi
  */
-public class ASMSXTest {
+public class SymbolTableTest {
 
     private final MDLConfig mdlConfig;
     private final CodeBase code;
 
-    public ASMSXTest() {
+    public SymbolTableTest() {
         mdlConfig = new MDLConfig();
         code = new CodeBase(mdlConfig);
     }
 
-    @Test public void test1() throws IOException { Assert.assertTrue(test("data/generationtests/asmsx-builtin.asm",
-                                                                          "data/generationtests/asmsx-builtin-expected.asm")); }
-    @Test public void test2() throws IOException { Assert.assertTrue(test("data/generationtests/asmsx-parenthesis.asm",
-                                                                          "data/generationtests/asmsx-parenthesis-expected.asm")); }
+    @Test public void test1() throws IOException { Assert.assertTrue(test("data/generationtests/mdl-circular.asm",
+                                                                          "data/generationtests/mdl-circular-expected-st.asm")); }
 
     private boolean test(String inputFile, String expectedOutputFile) throws IOException
     {
-        Assert.assertTrue(mdlConfig.parseArgs(inputFile,"-dialect","asmsx"));
+        Assert.assertTrue(mdlConfig.parseArgs(inputFile));
         Assert.assertTrue(
                 "Could not parse file " + inputFile,
                 mdlConfig.codeBaseParser.parseMainSourceFile(mdlConfig.inputFile, code));
 
-        SourceCodeGenerator scg = new SourceCodeGenerator(mdlConfig);
+        SymbolTableGenerator stg = new SymbolTableGenerator(mdlConfig);
+        stg.includeConstants = true;
 
-        String result = scg.sourceFileString(code.getMain(), code);
+        String result = stg.symbolTableString(code);
         List<String> lines = new ArrayList<>();
         StringTokenizer st = new StringTokenizer(result, "\n");
         while(st.hasMoreTokens()) {

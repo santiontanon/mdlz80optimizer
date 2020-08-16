@@ -23,7 +23,7 @@ public class SymbolTableGenerator implements MDLWorker {
     MDLConfig config = null;
 
     String outputFileName = null;
-    boolean includeConstants = false;
+    public boolean includeConstants = false;
 
     public SymbolTableGenerator(MDLConfig a_config)
     {

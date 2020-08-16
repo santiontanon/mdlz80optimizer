@@ -179,7 +179,7 @@ public class SDCCDialect implements Dialect {
                     config.error("Problem defining symbol " + symbolName + " in " + sl);
                     return null;
                 }
-                SourceConstant c = new SourceConstant(symbolName, "s_" + areaName, null, exp, s);
+                SourceConstant c = new SourceConstant(symbolName, "s_" + areaName, exp, s, config);
                 s.type = SourceStatement.STATEMENT_NONE;
                 s.label = c;
                 if (code.addSymbol(c.name, c) != 1) {
@@ -212,7 +212,7 @@ public class SDCCDialect implements Dialect {
                         Expression.operatorExpression(Expression.EXPRESSION_BITAND, 
                             args.get(0),
                             Expression.constantExpression(0xff00, false, true, config), config), 
-                        config),
+                        "(", config),
                     Expression.constantExpression(8, config), config);
         }
         

@@ -24,6 +24,8 @@ public class CPUOpParser {
 
     List<CPUOpSpec> opSpecs;
     HashMap<String, List<CPUOpSpec>> opSpecHash = new HashMap<>();
+    
+    public boolean indirectionsOnlyWithSquareBrackets = false;
 
 
     public CPUOpParser(List<CPUOpSpec> a_opSpecs, MDLConfig a_config) {
@@ -130,6 +132,14 @@ public class CPUOpParser {
         
         
         for(int i = 0; i<spec.args.size(); i++) {
+            if (indirectionsOnlyWithSquareBrackets) {
+                while(a_args.get(i).type == Expression.EXPRESSION_PARENTHESIS &&
+                      a_args.get(i).parenthesis.equals("(") &&
+                      a_args.get(i).args != null &&
+                      a_args.get(i).args.size() == 1) {
+                    a_args.set(i, a_args.get(i).args.get(0));
+                }
+            }
             if (!spec.args.get(i).match(a_args.get(i), spec, s, code)) {
                 return null;
             }
