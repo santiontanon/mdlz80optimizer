@@ -149,7 +149,7 @@ public class CPUOpParser {
             }
         }
 
-        if (spec.isJpRegWithParenthesis && config.warningJpHlWithParenthesis) {
+        if (spec.isJpRegWithParenthesis && config.warning_jpHlWithParenthesis) {
             config.warn("Style suggestion", s.fileNameLineString(),
                     "Prefer using 'jp reg' rather than the confusing z80 'jp (reg)' syntax.");
         }
@@ -242,14 +242,14 @@ public class CPUOpParser {
             if (config.convertToOfficial) {
                 CPUOp unofficial = new CPUOp(spec, a_args, config);
                 CPUOp official = officialFromUnofficial(spec.officialEquivalent, spec, a_args, code);
-                if (config.warningUnofficialOps) {
+                if (config.warning_unofficialOps) {
                     config.warn("Style suggestion", s.fileNameLineString(), "Unofficial op syntax: " + unofficial + " converted to " + official);
                 }                
                 List<CPUOp> l = new ArrayList<>();
                 l.add(official);
                 return l;
             } else {
-                if (config.warningUnofficialOps) {
+                if (config.warning_unofficialOps) {
                     config.warn("Style suggestion", s.fileNameLineString(), "Unofficial op syntax: " + new CPUOp(spec, a_args, config));
                 }    
             }

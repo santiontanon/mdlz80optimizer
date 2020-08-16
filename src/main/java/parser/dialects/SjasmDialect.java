@@ -162,7 +162,7 @@ public class SjasmDialect implements Dialect {
     public SjasmDialect(MDLConfig a_config) {
         config = a_config;
 
-        config.warningJpHlWithParenthesis = false;  // I don't think sjasm supports "jp hl"
+        config.warning_jpHlWithParenthesis = false;  // I don't think sjasm supports "jp hl"
         
         config.lineParser.addKeywordSynonym("byte", config.lineParser.KEYWORD_DB);
         config.lineParser.addKeywordSynonym("defb", config.lineParser.KEYWORD_DB);
@@ -175,7 +175,7 @@ public class SjasmDialect implements Dialect {
         
         config.preProcessor.macroSynonyms.put("endmacro", config.preProcessor.MACRO_ENDM);
         
-        config.warningJpHlWithParenthesis = false;
+        config.warning_jpHlWithParenthesis = false;
         config.lineParser.allowEmptyDB_DW_DD_definitions = true;
         config.lineParser.keywordsHintingALabel.add("#");
         config.lineParser.keywordsHintingALabel.add("field");
@@ -648,7 +648,9 @@ public class SjasmDialect implements Dialect {
             tokens.get(0).startsWith("#")) {
             if (tokens.get(0).startsWith("#") && tokens.get(0).length() > 1) {
                 // this is a "#" plus a number attached together inside of a "map" group...
-                config.warn(tokens.get(0) + " is ambiguous syntax, please add a space between the # token and the field size in "+tokens.get(0)+" to differentiate it from a hex constant.");
+                if (config.warning_ambiguous) {
+                    config.warn(tokens.get(0) + " is ambiguous syntax, please add a space between the # token and the field size to differentiate it from a hex constant in: " + sl);
+                }
                 tokens.set(0, tokens.get(0).substring(1));
             } else {
                 tokens.remove(0);
@@ -1158,7 +1160,7 @@ public class SjasmDialect implements Dialect {
                 auxiliaryS.op = op_l.get(0);
                 l.add(0, auxiliaryS);
                 tokens.remove(i);
-                if (config.warningUnofficialOps) {
+                if (config.warning_unofficialOps) {
                     config.warn("Unofficial op (fake instruction) used in " + sl);
                 }
                 break;
@@ -1175,7 +1177,7 @@ public class SjasmDialect implements Dialect {
                 auxiliaryS.op = op_l.get(0);
                 l.add(auxiliaryS);
                 tokens.remove(i);
-                if (config.warningUnofficialOps) {
+                if (config.warning_unofficialOps) {
                     config.warn("Unofficial op (fake instruction) used in " + sl);
                 }
                 break;
@@ -1289,7 +1291,7 @@ public class SjasmDialect implements Dialect {
     @Override
     public boolean performAnyFinalActions(CodeBase code)
     {
-        if (reusableLabelCounts.size() > 0) {
+        if (reusableLabelCounts.size() > 0 && config.warning_ambiguous) {
             config.warn("Use of sjasm reusable labels, which are conductive to human error.");
         }
                 

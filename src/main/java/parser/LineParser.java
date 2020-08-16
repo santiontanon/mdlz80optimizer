@@ -338,7 +338,7 @@ public class LineParser {
                     config.dialectParser.recognizeIdiom(tokens)) return true;
                 
                 // it is just a label without colon:
-                if (config.warningLabelWithoutColon) {
+                if (config.warning_labelWithoutColon) {
                     config.warn("Style suggestion", s.fileNameLineString(),
                             "Label " + token + " defined without a colon.");
                 }
@@ -376,7 +376,7 @@ public class LineParser {
                     }
                 }
                 if (isLabel) {
-                    if (config.warningLabelWithoutColon
+                    if (config.warning_labelWithoutColon
                             && !tokens.get(1).equals(":=") && !tokens.get(1).equals("=")) {
                         config.warn("Style suggestion", s.fileNameLineString(),
                                 "Label " + token + " defined without a colon.");

@@ -31,7 +31,7 @@ public class TniAsmDialect implements Dialect {
 
         config = a_config;
         
-        config.warningJpHlWithParenthesis = false;  // I don't think tniasm supports "jp hl"
+        config.warning_jpHlWithParenthesis = false;  // I don't think tniasm supports "jp hl"
 
         config.preProcessor.macroSynonyms.put("ifexist", config.preProcessor.MACRO_IFDEF);
 

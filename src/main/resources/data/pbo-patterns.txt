@@ -184,8 +184,8 @@ replacement:
 0: ld (hl),?const1
 1: *
 constraints:
-regsNotUsedAfter(2,A)
 regsNotUsed(1,A)
+regsNotUsedAfter(2,A)
 
 pattern: Replace dec b; jr nz,label with djnz label
 0: dec b
@@ -435,10 +435,10 @@ replacement:
 3: ld ?reg2,(hl)
 constraints:
 in(?regixiy,IX,IY)
-regsNotUsedAfter(2,?regixiy,HL)
 notIn(?reg1,H,L)
 notIn(?reg2,H,L)
 equal(?const2+1,?const3)
+regsNotUsedAfter(2,?regixiy,HL)
 
 pattern: Replace ld ?regixiy,?const1; ld ?reg1,(?regixiy); ld ?reg2,(?regixiy+1) with ld hl,?const1; ld ?reg1,(hl); inc hl; ld ?reg2,(hl)
 0: ld ?regixiy,?const1
@@ -451,9 +451,9 @@ replacement:
 3: ld ?reg2,(hl)
 constraints:
 in(?regixiy,IX,IY)
-regsNotUsedAfter(2,?regixiy,HL)
 notIn(?reg1,H,L)
 notIn(?reg2,H,L)
+regsNotUsedAfter(2,?regixiy,HL)
 
 pattern: Remove ld ?reg,?reg
 0: ld ?reg,?reg
@@ -648,10 +648,10 @@ constraints:
 in(?reg1,B,C)
 in(?reg2,C,B)
 notEqual(?reg1,?reg2)
-flagsNotUsedAfter(5,S,Z,H,P/V,N,C)
-regsNotUsedAfter(5,A)
 regsNotUsed(1,HL)
 regsNotModified(1,HL)
+flagsNotUsedAfter(5,S,Z,H,P/V,N,C)
+regsNotUsedAfter(5,A)
 
 ; Thanks to Artrag for this variation:
 pattern: Replace dec hl; dec bc; ld a,?reg1; or ?reg2; jr nz,?const with cpd; jp pe,?const
@@ -672,10 +672,10 @@ in(?reg1,B,C)
 in(?reg2,C,B)
 notEqual(?reg1,?reg2)
 notEqual(?regpair1,?regpair2)
-flagsNotUsedAfter(5,S,Z,H,P/V,N,C)
-regsNotUsedAfter(5,A)
 regsNotUsed(1,HL)
 regsNotModified(1,HL)
+flagsNotUsedAfter(5,S,Z,H,P/V,N,C)
+regsNotUsedAfter(5,A)
 
 ; Note that we include the "atLeastOneCPUOp" constraint, to prevent eliminating the usual push af; pop af combination used for timing
 pattern: Remove push ?reg / pop ?reg as register is not modified in between
@@ -697,9 +697,9 @@ pattern: Remove push ?reg / pop ?reg as register is not used afterwards
 replacement:
 1: *
 constraints:
-regsNotUsedAfter(2,?reg)
 evenPushPops(1)
 atLeastOneCPUOp(1)
+regsNotUsedAfter(2,?reg)
 
 ; Thanks to theNestruo for suggesting the idea for this pattern:
 pattern: Remove unnecessary xor a (a must be zero here)
@@ -977,8 +977,8 @@ replacement:
 2: ld ?reg,a
 constraints:
 in(?reg,B,C,D,E,H,L,IXL,IYL)
-regsNotUsedAfter(0,A)
 equal(?const >= 4, -1) 
+regsNotUsedAfter(0,A)
 
 pattern: Replace inc ?regixiy; ... inc ?regixiy with ld bc,?const; add ?regixiy,bc
 0: [?const] inc ?regixiy
@@ -987,8 +987,8 @@ replacement:
 1: add ?regixiy,bc
 constraints:
 in(?regixiy,IX,IY)
-regsNotUsedAfter(0,BC)
 equal(?const >= 3, -1) 
+regsNotUsedAfter(0,BC)
 
 pattern: Replace dec ?regixiy; ... dec ?regixiy with ld bc,-?const; add ?regixiy,bc
 0: [?const] dec ?regixiy
@@ -997,8 +997,8 @@ replacement:
 1: add ?regixiy,bc
 constraints:
 in(?regixiy,IX,IY)
-regsNotUsedAfter(0,BC)
 equal(?const >= 3, -1) 
+regsNotUsedAfter(0,BC)
 
 pattern: Replace inc ?regixiy; ... inc ?regixiy with ld de,?const; add ?regixiy,de
 0: [?const] inc ?regixiy
@@ -1007,8 +1007,8 @@ replacement:
 1: add ?regixiy,de
 constraints:
 in(?regixiy,IX,IY)
-regsNotUsedAfter(0,DE)
 equal(?const >= 3, -1) 
+regsNotUsedAfter(0,DE)
 
 pattern: Replace dec ?regixiy; ... dec ?regixiy with ld de,-?const; add ?regixiy,de
 0: [?const] dec ?regixiy
@@ -1017,8 +1017,8 @@ replacement:
 1: add ?regixiy,de
 constraints:
 in(?regixiy,IX,IY)
-regsNotUsedAfter(0,DE)
 equal(?const >= 3, -1) 
+regsNotUsedAfter(0,DE)
 
 pattern: Replace inc ?regixiy; ... inc ?regixiy with push bc; ld bc,?const; add ?regixiy,bc; pop bc
 0: [?const] inc ?regixiy
@@ -1028,8 +1028,8 @@ replacement:
 2: add ?regixiy,bc
 3: pop bc
 constraints:
-in(?regixiy,IX,IY)
 equal(?const >= 5, -1) 
+in(?regixiy,IX,IY)
 
 pattern: Replace dec ?regixiy; ... dec ?regixiy with push bc; ld bc,-?const; add ?regixiy,bc; pop bc
 0: [?const] dec ?regixiy
@@ -1111,8 +1111,8 @@ replacement:
 constraints:
 in(?opjrjp,jr,jp)
 in(?opandor,and,or)
-flagsNotModified(1,C)
 in(?reg,BC,DE,HL,SP)
+flagsNotModified(1,C)
 
 pattern: Remove unnecessary and a / or a
 0: ret c
@@ -1125,8 +1125,8 @@ replacement:
 3: sbc hl,?reg
 constraints:
 in(?opandor,and,or)
-flagsNotModified(1,C)
 in(?reg,BC,DE,HL,SP)
+flagsNotModified(1,C)
 
 pattern: Remove unnecessary and a / or a
 0: ?opresCarry ?any
@@ -1140,8 +1140,8 @@ replacement:
 constraints:
 in(?opresCarry,and,or,xor)
 in(?opandor,and,or)
-flagsNotModified(1,C)
 in(?reg,BC,DE,HL,SP)
+flagsNotModified(1,C)
 
 pattern: Remove unnecessary conditional jumps (mainly this is a warning) 
 0: ?opresCarry ?any
@@ -1153,8 +1153,8 @@ replacement:
 2: ?opjrjp ?const
 constraints:
 in(?opresCarry,and,or,xor)
-flagsNotModified(1,C)
 in(?opjrjp,jr,jp,call)
+flagsNotModified(1,C)
 
 pattern: Remove unnecessary conditional ret (mainly this is a warning)
 0: ?opresCarry ?any
@@ -1177,8 +1177,8 @@ replacement:
 1: *
 2: ?opjrjp ?const2
 constraints:
-flagsNotModified(1,C)
 in(?opjrjp,jr,jp,call)
+flagsNotModified(1,C)
 
 pattern: Remove unnecessary conditional jumps (mainly this is a warning)
 0: ?opjrjp nc,?const1
@@ -1189,8 +1189,8 @@ replacement:
 1: *
 2: ?opjrjp ?const2
 constraints:
-flagsNotModified(1,C)
 in(?opjrjp,jr,jp,call)
+flagsNotModified(1,C)
 
 
 pattern: Remove unnecessary conditional jumps (mainly this is a warning) 
@@ -1202,8 +1202,8 @@ replacement:
 1: *
 2: ?opjrjp ?const2
 constraints:
-flagsNotModified(1,Z)
 in(?opjrjp,jr,jp,call)
+flagsNotModified(1,Z)
 
 pattern: Remove unnecessary conditional jumps (mainly this is a warning)
 0: ?opjrjp nz,?const1
@@ -1214,8 +1214,8 @@ replacement:
 1: *
 2: ?opjrjp ?const2
 constraints:
-flagsNotModified(1,Z)
 in(?opjrjp,jr,jp,call)
+flagsNotModified(1,Z)
 
 pattern: Replace ld ?regpair,?const2 with inc ?regpair
 2: ld ?regpair,?const1
@@ -1227,8 +1227,8 @@ replacement:
 0: inc ?regpair
 constraints:
 in(?regpair,BC,DE,HL,IC,IY)
-regsNotModified(1,?regpair)
 equal(?const2,?const1+1)
+regsNotModified(1,?regpair)
 
 pattern: Replace ld ?regpair,?const2 with dec ?regpair
 2: ld ?regpair,?const1
@@ -1240,6 +1240,6 @@ replacement:
 0: dec ?regpair
 constraints:
 in(?regpair,BC,DE,HL,IC,IY)
-regsNotModified(1,?regpair)
 equal(?const2,?const1-1)
+regsNotModified(1,?regpair)
 

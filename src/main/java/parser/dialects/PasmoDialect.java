@@ -36,7 +36,7 @@ public class PasmoDialect implements Dialect {
 
         config = a_config;
                 
-        config.warningJpHlWithParenthesis = false;  // I don't think WinAPE supports "jp hl"
+        config.warning_jpHlWithParenthesis = false;  // I don't think WinAPE supports "jp hl"
     }
 
     

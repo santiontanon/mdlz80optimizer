@@ -82,7 +82,7 @@ public class ASMSXDialect implements Dialect {
         
         config.lineParser.defineSpaceVirtualByDefault = true;
 
-        config.warningJpHlWithParenthesis = false;
+        config.warning_jpHlWithParenthesis = false;
         config.lineParser.keywordsHintingALabel.add("=");
         
         config.expressionParser.dialectFunctions.add(".random");

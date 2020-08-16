@@ -46,9 +46,11 @@ public class MDLConfig {
     public boolean eagerMacroEvaluation = true;
     public boolean includeBinariesInAnalysis = false;
 
-    public boolean warningLabelWithoutColon = true;
-    public boolean warningJpHlWithParenthesis = true;
-    public boolean warningUnofficialOps = true;
+    // warning messages:
+    public boolean warning_labelWithoutColon = false;
+    public boolean warning_jpHlWithParenthesis = false;
+    public boolean warning_unofficialOps = false;
+    public boolean warning_ambiguous = false;
 
     public boolean convertToOfficial = true;
     public boolean evaluateAllExpressions = false;
@@ -91,9 +93,11 @@ public class MDLConfig {
             + "  -quiet: turns off info messages; only outputs warnings and errors.\n"
             + "  -debug: turns on debug messages.\n"
             + "  -trace: turns on trace messages.\n"
-            + "  -warn-off-labelnocolon: turns off warnings for not placing colons after labels.\n"
-            + "  -warn-off-jp(rr): turns off warnings for using confusing 'jp (hl)' instead of 'jp hl' (this is turned off by default in dialects that do not support this).\n"
-            + "  -warn-off-unofficial: turns off warnings for using unofficial op syntax (e.g., 'add 1' instead of 'add a,1'.\n"
+            + "  -warn: turns on all warnings.\n"
+            + "  -warn-labelnocolon: turns on warnings for not placing colons after labels.\n"
+            + "  -warn-jp(rr): turns on warnings for using confusing 'jp (hl)' instead of 'jp hl' (this is turned off by default in dialects that do not support this).\n"
+            + "  -warn-unofficial: turns on warnings for using unofficial op syntax (e.g., 'add 1' instead of 'add a,1'.\n"
+            + "  -warn-ambiguous: turns on warnings for using ambiguous or error-inducing syntax in some dialects.\n"
             + "  -do-not-convert-to-official: turns off automatic conversion of unofficial op syntax to official ones in assembler output.\n"
             + "  -hex#: hex numbers render like #ffff (default).\n"
             + "  -HEX#: hex numbers render like #FFFF.\n"
@@ -226,21 +230,33 @@ public class MDLConfig {
                         args.remove(0);
                         break;
 
-                    case "-warn-off-labelnocolon":
-                        warningLabelWithoutColon = false;
+                    case "-warn":
+                        warning_labelWithoutColon = true;
+                        warning_jpHlWithParenthesis = true;
+                        warning_unofficialOps = true;
                         args.remove(0);
                         break;
 
-                    case "-warn-off-jp(rr)":
-                        warningJpHlWithParenthesis = false;
+                    case "-warn-labelnocolon":
+                        warning_labelWithoutColon = true;
                         args.remove(0);
                         break;
 
-                    case "-warn-off-unofficial":
-                        warningUnofficialOps = false;
+                    case "-warn-jp(rr)":
+                        warning_jpHlWithParenthesis = true;
                         args.remove(0);
                         break;
 
+                    case "-warn-unofficial":
+                        warning_unofficialOps = true;
+                        args.remove(0);
+                        break;
+
+                    case "-warn-ambiguous":
+                        warning_ambiguous = true;
+                        args.remove(0);
+                        break;
+                        
                     case "-do-not-convert-to-official":
                         convertToOfficial = false;
                         args.remove(0);
