@@ -13,5 +13,9 @@ EXPTBL:	equ $fcc1
 	push	af
 	inc	sp
 
+	inc l
+	ld (hl), a
+
+	ld hl, 0
 	ld a,1
 	ret

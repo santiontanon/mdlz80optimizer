@@ -46,7 +46,8 @@ public class PatternBasedOptimizer implements MDLWorker {
     }
 
     public boolean logPotentialOptimizations = false;    
-
+    public boolean onlyOnePotentialOptimizationPerLine = true;
+    
     MDLConfig config;
     boolean activate = false;
     boolean silent = false;
@@ -58,6 +59,7 @@ public class PatternBasedOptimizer implements MDLWorker {
     // These lists accumulate conditions that previous optimizations assume, to make sure subsequent 
     // optimizations are still safe:
     List<EqualityConstraint> equalitiesToMaintain = new ArrayList<>();
+    public boolean alreadyShownAPotentialOptimization = false;
 
 
     public PatternBasedOptimizer(MDLConfig a_config)
@@ -70,7 +72,8 @@ public class PatternBasedOptimizer implements MDLWorker {
     public String docString() {
         return "  -po: Runs the pattern-based optimizer. You can pass an optimal parameter, like '-po size' or '-po speed', which are shortcuts for '-po -popatterns data/pbo-patterns-size.txt' and '-po -popatterns data/pbo-patterns-speed.txt'\n" +
                "  -posilent: Supresses the pattern-based-optimizer output\n" +
-               "  -popotential: Reports lines where a potential optimization was not applied for safety, but could maybe be done manually.\n" +
+               "  -popotential: Reports lines where a potential optimization was not applied for safety, but could maybe be done manually (at most one potential optimization per line is shown).\n" +
+               "  -popotential-all: Same as above, but without the one-per-line constraint.\n" +
                "  -popatterns <file>: specifies the file to load optimization patterns from (default 'data/pbo-patterns.txt', " +
                                      "which contains patterns that optimize both size and speed). For targetting size optimizations, use " +
                                      "'data/pbo-patterns-size.txt'.\n";
@@ -100,6 +103,12 @@ public class PatternBasedOptimizer implements MDLWorker {
         if (flags.get(0).equals("-popotential")) {
             flags.remove(0);
             logPotentialOptimizations = true;
+            return true;
+        }
+        if (flags.get(0).equals("-popotential-all")) {
+            flags.remove(0);
+            logPotentialOptimizations = true;
+            onlyOnePotentialOptimizationPerLine = false;
             return true;
         }
         if (flags.get(0).equals("-popatterns") && flags.size()>=2) {
@@ -180,9 +189,10 @@ public class PatternBasedOptimizer implements MDLWorker {
         
         for (SourceFile f : code.getSourceFiles()) {
             for (int i = 0; i < f.getStatements().size(); i++) {
+                alreadyShownAPotentialOptimization = false;
                 matches.clear();
                 for(Pattern patt: patterns) {
-                    PatternMatch match = patt.match(i, f, code, config, logPotentialOptimizations);
+                    PatternMatch match = patt.match(i, f, code, config, this);
                     if (match != null) matches.add(Pair.of(patt,match));
                 }
 

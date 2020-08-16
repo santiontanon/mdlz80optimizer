@@ -338,17 +338,19 @@ public class Pattern {
     }
     
     
-    public void maybeLogOptimization(PatternMatch match, boolean logPotentialOptimizations, SourceLine sl)
+    public void maybeLogOptimization(PatternMatch match, PatternBasedOptimizer pbo, SourceLine sl)
     {
-        if (logPotentialOptimizations) {
+        if (pbo.logPotentialOptimizations) {
+            if (pbo.onlyOnePotentialOptimizationPerLine && pbo.alreadyShownAPotentialOptimization) return;
             String name2 = getInstantiatedName(match);
             config.info("Potential optimization ("+name2+") in " + sl);
+            pbo.alreadyShownAPotentialOptimization = true;
         }
     }
     
 
     public PatternMatch match(int a_index, SourceFile f, CodeBase code, MDLConfig config,
-                              boolean logPotentialOptimizations)
+                              PatternBasedOptimizer pbo)
     {
         int index = a_index;
         int index_to_display_message_on = -1;
@@ -467,7 +469,7 @@ public class Pattern {
                         String reg = constraint[i];
                         Boolean result = regNotUsedAfter(match.map.get(idx).get(match.map.get(idx).size()-1), reg, f, code);
                         if (result == null) {
-                            maybeLogOptimization(match, logPotentialOptimizations, f.getStatements().get(index_to_display_message_on).sl);
+                            maybeLogOptimization(match, pbo, f.getStatements().get(index_to_display_message_on).sl);
                             return null;
                         } else {
                             if (!result) return null;
@@ -484,7 +486,7 @@ public class Pattern {
 
                         Boolean result = flagNotUsedAfter(match.map.get(idx).get(match.map.get(idx).size()-1), flag, f, code);
                         if (result == null) {
-                            maybeLogOptimization(match, logPotentialOptimizations, f.getStatements().get(index_to_display_message_on).sl);
+                            maybeLogOptimization(match, pbo, f.getStatements().get(index_to_display_message_on).sl);
                             return null;
                         } else {
                             if (!result) return null;
@@ -808,13 +810,13 @@ public class Pattern {
                                 Expression arg = s.op.args.get(0);
                                 if (arg.type == Expression.EXPRESSION_REGISTER_OR_FLAG && 
                                     arg.registerOrFlagName.equalsIgnoreCase("sp")) {
-                                    maybeLogOptimization(match, logPotentialOptimizations, f.getStatements().get(index_to_display_message_on).sl);
+                                    maybeLogOptimization(match, pbo, f.getStatements().get(index_to_display_message_on).sl);
                                     return null;
                                 }
                                 if (arg.type == Expression.EXPRESSION_PARENTHESIS && 
                                     arg.args.get(0).type == Expression.EXPRESSION_REGISTER_OR_FLAG &&
                                     arg.args.get(0).registerOrFlagName.equalsIgnoreCase("sp")) {
-                                    maybeLogOptimization(match, logPotentialOptimizations, f.getStatements().get(index_to_display_message_on).sl);
+                                    maybeLogOptimization(match, pbo, f.getStatements().get(index_to_display_message_on).sl);
                                     return null;
                                 }
                             }

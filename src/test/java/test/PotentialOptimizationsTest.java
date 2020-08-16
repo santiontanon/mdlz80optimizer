@@ -9,13 +9,9 @@ import cl.MDLConfig;
 import cl.MDLLogger;
 import code.CodeBase;
 import code.SourceConstant;
-import code.SourceFile;
-import code.SourceStatement;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.List;
 import org.junit.Assert;
 import org.junit.Test;
 import workers.AnnotatedSourceCodeGenerator;
@@ -38,7 +34,7 @@ public class PotentialOptimizationsTest {
         code = new CodeBase(config);
     }
 
-    @Test public void test43() throws IOException { Assert.assertEquals(1, test("data/tests/test43.asm")); }
+    @Test public void test43() throws IOException { Assert.assertEquals(2, test("data/tests/test43.asm")); }
 
 
     private int test(String inputFile) throws IOException
