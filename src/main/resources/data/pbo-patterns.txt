@@ -1243,3 +1243,42 @@ in(?regpair,BC,DE,HL,IC,IY)
 equal(?const2,?const1-1)
 regsNotModified(1,?regpair)
 
+pattern: Replace ld de,?any; ex de,hl with ld hl,?any
+0: ld de, ?any
+1: ex de, hl
+replacement:
+0: ld hl, ?any
+constraints:
+regsNotUsedAfter(1,DE)
+
+pattern: Replace add hl, ?any; ex de,hl; ld (?const1), de with add hl,?any; ld (?const1), hl
+0: add hl, ?any
+1: ex de, hl
+2: ld (?const1), de
+replacement:
+0: add hl, ?any
+2: ld (?const1), hl
+constraints:
+regsNotUsedAfter(2,DE,HL)
+
+pattern: Replace ld (?regixiy + ?const), a; inc (?regixiy + ?const); ... inc (?regixiy + ?const) with add a, ?const2; ld (?regixiy + ?const), a
+0: ld (?regixiy + ?const), a
+1: [?const2] inc (?regixiy + ?const)
+replacement:
+0: add a, ?const2
+1: ld (?regixiy + ?const), a
+constraints:
+in(?regixiy,IX,IY)
+equal(?const2 > 1, -1)
+regsNotUsedAfter(1,A)
+
+pattern: Replace ld (?regixiy + ?const), a; inc (?regixiy + ?const) with inc a; ld (?regixiy + ?const), a
+0: ld (?regixiy + ?const), a
+1: [?const2] inc (?regixiy + ?const)
+replacement:
+0: inc a
+1: ld (?regixiy + ?const), a
+constraints:
+in(?regixiy,IX,IY)
+equal(?const2 , 1)
+regsNotUsedAfter(1,A)
