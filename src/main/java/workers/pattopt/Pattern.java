@@ -356,7 +356,7 @@ public class Pattern {
         int index_to_display_message_on = -1;
         List<SourceStatement> l = f.getStatements();
         if (l.get(index).type != SourceStatement.STATEMENT_CPUOP) return null;
-        PatternMatch match = new PatternMatch();
+        PatternMatch match = new PatternMatch(this, f);
         
         // Match the CPU ops:
         for(int i = 0;i<pattern.size();i++) {
@@ -855,16 +855,18 @@ public class Pattern {
     }
 
 
-    public boolean apply(List<SourceStatement> l, PatternMatch match, 
+    public boolean apply(SourceFile f, PatternMatch match, 
                          CodeBase code,
                          List<EqualityConstraint> equalitiesToMaintain)
     {
         // undo record:
         List<Pair<Integer, SourceStatement>> undo = new ArrayList<>();
         
+        List<SourceStatement> l = f.getStatements();
         List<Integer> replacementIndexes = new ArrayList<>();
         int insertionPoint = -1;
         SourceStatement lastRemoved = null;
+                
         for(CPUOpPattern p:replacement) {
             replacementIndexes.add(p.ID);
         }
@@ -896,6 +898,7 @@ public class Pattern {
                 for(SourceStatement s:match.map.get(key)) {
                     insertionPoint = l.indexOf(s);
                     lastRemoved = l.remove(insertionPoint);
+                    match.removed.add(lastRemoved);
                     if (lastRemoved.label != null) {
                         if (removedLabel != null) {
                             config.error("There were more than one label in the matched instructions of a pattern, which should not have happened!");
@@ -927,6 +930,7 @@ public class Pattern {
                             return false;
                         }
                         l.add(insertionPoint, s);
+                        match.added.add(s);
                         insertionPoint++;
                         replaced = true;
                         undo.add(Pair.of(null, s));
@@ -938,6 +942,7 @@ public class Pattern {
                     SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_NONE, removedLabel.sl, removedLabel.source, config);
                     s.label = removedLabel.label;
                     l.add(insertionPoint, s);
+                    match.added.add(s);
                     insertionPoint++;
                     undo.add(Pair.of(null, s));
                 }                
@@ -960,6 +965,7 @@ public class Pattern {
                 return false;
             }
             l.add(insertionPoint, s);
+            match.added.add(s);
             insertionPoint++;
             undo.add(Pair.of(null, s));
         }

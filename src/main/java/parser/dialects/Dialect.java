@@ -107,4 +107,9 @@ public interface Dialect {
         return true;
     }
     
+    // Translates a statement to string using the syntax of the specific dialect:
+    default String statementToString(SourceStatement s) {
+        return s.toString();
+    }
+    
 }

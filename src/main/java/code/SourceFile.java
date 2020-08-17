@@ -16,8 +16,8 @@ public class SourceFile {
 
     public String fileName = null;
     List<SourceStatement> statements = new ArrayList<>();
-    SourceFile parent = null;
-    SourceStatement parentInclude = null;
+    public SourceFile parent = null;
+    public SourceStatement parentInclude = null;
     public CodeBase code = null;
 
     public SourceFile(String a_fileName, SourceFile a_parent, SourceStatement a_parentInclude, CodeBase a_code, MDLConfig a_config) {

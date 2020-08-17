@@ -494,6 +494,7 @@ public class LineParser {
                     return false;
                 } else {
                     s.type = SourceStatement.STATEMENT_INCLUDE;
+                    s.rawInclude = rawFileName;
                     s.include = includedSource;
                     return parseRestofTheLine(tokens, sl, s, source);
                 }

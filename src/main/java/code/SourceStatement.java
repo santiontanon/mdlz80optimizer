@@ -47,6 +47,7 @@ public class SourceStatement {
     Integer address = null;    // this is just an internal cache of the address
     
     public Expression org;
+    public String rawInclude = null;    // name exactly as it appeared in the original statement
     public SourceFile include = null;
     
     public File incbin = null;
@@ -304,7 +305,7 @@ public class SourceStatement {
                 break;
             case STATEMENT_INCLUDE:
             {
-                String path = include.fileName;
+                String path = rawInclude;
                 // Make sure we don't have a windows/Unix path separator problem:
                 if (path.contains("\\")) {
                     path = path.replace("\\", File.separator);
