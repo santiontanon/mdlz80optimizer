@@ -30,12 +30,16 @@ The latest version can always be downloaded from the "releases" section: https:/
   
   ```-trace```: turns on trace messages.
   
-  ```-warn-off-labelnocolon```: turns off warnings for not placing colons after labels.
-
-  ```-warn-off-jp(rr)```: turns off warnings for using confusing 'jp (hl)' instead of 'jp hl' (this is turned off by default in dialects that do not support this).
-
-  ```-warn-off-unofficial```: turns off warnings for using unofficial op syntax (e.g., 'add 1' instead of 'add a,1'.
+  ```-warn```: turns on all warnings.
   
+  ```-warn-labelnocolon```: turns on warnings for not placing colons after labels.
+  
+  ```-warn-jp(rr)```: turns on warnings for using confusing 'jp (hl)' instead of 'jp hl' (this is turned off by default in dialects that do not support this).
+  
+  ```-warn-unofficial```: turns on warnings for using unofficial op syntax (e.g., 'add 1' instead of 'add a,1'.
+  
+  ```-warn-ambiguous```: turns on warnings for using ambiguous or error-inducing syntax in some dialects.  
+    
   ```-do-not-convert-to-official```: turns off automatic conversion of unofficial op syntax to official ones in assembler output.
   
   ```-hex#```: hex numbers render like #ffff (default).
@@ -68,11 +72,15 @@ The latest version can always be downloaded from the "releases" section: https:/
   
   ```-evaluate-all-expressions```: this flag makes MDL resolve all expressions down to their ultimate numeric or string value when generating assembler code.
   
-  ```-po```: Runs the pattern-based optimizer. You can pass an optimal parameter, like '-po size' or '-po speed', which are shortcuts for '-po -popatterns data/pbo-patterns-size.txt' and '-po -popatterns data/pbo-patterns-speed.txt'
-
+  ```-po```: Runs the pattern-based optimizer (notice that using any of the -po* flags also has the same effect of turning on the pattern-based optimized). You can pass an optimal parameter, like '-po size' or '-po speed', which are shortcuts for '-po -popatterns data/pbo-patterns-size.txt' and '-po -popatterns data/pbo-patterns-speed.txt'
+  
   ```-posilent```: Supresses the pattern-based-optimizer output
-
-  ```-popotential```: Reports lines where a potential optimization was not applied for safety, but could maybe be done manually.
+  
+  ```-poapply```: For each assembler <file> parsed by MDL, a corresponding <file>.mdl.asm is generated with the optimizations applied to it.
+  
+  ```-popotential```: Reports lines where a potential optimization was not applied for safety, but could maybe be done manually (at most one potential optimization per line is shown).
+  
+  ```-popotential-all```: Same as above, but without the one-per-line constraint.  
 
   ```-popatterns <file>```: specifies the file to load optimization patterns from (default 'data/pbo-patterns.txt')
 
