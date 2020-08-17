@@ -1177,7 +1177,7 @@ replacement:
 1: *
 2: ?opjrjp ?const2
 constraints:
-in(?opjrjp,jr,jp,call)
+in(?opjrjp,jr,jp)
 flagsNotModified(1,C)
 
 pattern: Remove unnecessary conditional jumps (mainly this is a warning)
@@ -1189,7 +1189,7 @@ replacement:
 1: *
 2: ?opjrjp ?const2
 constraints:
-in(?opjrjp,jr,jp,call)
+in(?opjrjp,jr,jp)
 flagsNotModified(1,C)
 
 
@@ -1202,7 +1202,7 @@ replacement:
 1: *
 2: ?opjrjp ?const2
 constraints:
-in(?opjrjp,jr,jp,call)
+in(?opjrjp,jr,jp)
 flagsNotModified(1,Z)
 
 pattern: Remove unnecessary conditional jumps (mainly this is a warning)
@@ -1214,7 +1214,7 @@ replacement:
 1: *
 2: ?opjrjp ?const2
 constraints:
-in(?opjrjp,jr,jp,call)
+in(?opjrjp,jr,jp)
 flagsNotModified(1,Z)
 
 pattern: Replace ld ?regpair,?const2 with inc ?regpair
