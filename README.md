@@ -132,6 +132,7 @@ java -jar mdl.jar main.asm -po
 
 This will just output to the terminal all the suggested optimizations, and you can choose which ones to do manually.
 
+For documentation on how to define your own optimization patterns, see: https://github.com/santiontanon/mdlz80optimizer/blob/master/doc/pattern-definition.md
 
 ### Other MDL Functionalities
 
