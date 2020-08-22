@@ -18,6 +18,7 @@
 	ld a,(var1)
 	neg
 	add a,10
+	ld (var),a
 
 loop:
 	jp loop

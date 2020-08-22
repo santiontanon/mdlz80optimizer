@@ -921,6 +921,7 @@ public class Pattern {
                         // if the original statement had a label, we need to keep it!
                         if (removedLabel != null) {
                             s.label = removedLabel.label;
+                            s.label.definingStatement = s;
                             removedLabel = null;
                         }
                         s.op = new CPUOp(replacement.get(j).instantiate(match, this, config));
@@ -941,6 +942,7 @@ public class Pattern {
                     // We were losing a label. Insert a dummy statement with the label we lost:
                     SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_NONE, removedLabel.sl, removedLabel.source, config);
                     s.label = removedLabel.label;
+                    s.label.definingStatement = s;
                     l.add(insertionPoint, s);
                     match.added.add(s);
                     insertionPoint++;

@@ -114,6 +114,10 @@ public class SourceFile {
                                                          List<SourceStatement> callStack, CodeBase code)
     {
         int index = statements.indexOf(s);
+        if (index == -1) {
+            config.error("Cannot find statement " + s + " in " + this.fileName + " with " + statements.size() + " statements.");
+            return null;
+        }
         return nextExecutionStatements(index, goInsideInclude, callStack, code);
     }
 

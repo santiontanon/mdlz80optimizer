@@ -1290,3 +1290,35 @@ constraints:
 in(?op,inc,dec)
 in(?regpair,BC,DE,HL,IX,IY)
 regsNotUsedAfter(0,?regpair)
+
+pattern: Remove unused ?op ?reg
+0: ?op ?reg
+replacement:
+constraints:
+in(?op,inc,dec)
+in(?reg,A,B,C,D,E,H,L,IXL,IXH,IYL,IYH)
+regsNotUsedAfter(0,?reg)
+flagsNotUsedAfter(0,S,Z,H,P/V,N)
+
+pattern: Remove unused ?op ?any
+0: ?op ?any
+replacement:
+constraints:
+in(?op,or,and,xor)
+regsNotUsedAfter(0,A)
+flagsNotUsedAfter(0,S,Z,H,P/V,N,C)
+
+pattern: Remove unused ?op a,?any
+0: ?op a,?any
+replacement:
+constraints:
+in(?op,add,adc,sbc)
+regsNotUsedAfter(0,A)
+flagsNotUsedAfter(0,S,Z,H,P/V,N,C)
+
+pattern: Remove unused sub ?any
+0: sub ?any
+replacement:
+constraints:
+regsNotUsedAfter(0,A)
+flagsNotUsedAfter(0,S,Z,H,P/V,N,C)
