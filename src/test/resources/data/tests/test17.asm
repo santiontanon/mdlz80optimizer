@@ -15,6 +15,8 @@
     ld c,5
     add hl,bc
 
+    ld (hl),a
+
 end:
     jp end
 

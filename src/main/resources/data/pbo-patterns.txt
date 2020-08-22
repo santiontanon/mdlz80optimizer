@@ -1322,3 +1322,20 @@ replacement:
 constraints:
 regsNotUsedAfter(0,A)
 flagsNotUsedAfter(0,S,Z,H,P/V,N,C)
+
+pattern: Remove unused add ?reg,?any
+0: add ?reg,?any
+replacement:
+constraints:
+in(?reg,HL,IX,IY)
+regsNotUsedAfter(0,?reg)
+flagsNotUsedAfter(0,H,N,C)
+
+pattern: Remove unused ?op ?reg,?any
+0: ?op ?reg,?any
+replacement:
+constraints:
+in(?op,adc,sbc)
+in(?reg,HL,IX,IY)
+regsNotUsedAfter(0,?reg)
+flagsNotUsedAfter(0,S,Z,H,P/V,N,C)

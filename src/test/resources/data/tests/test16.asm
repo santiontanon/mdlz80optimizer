@@ -15,10 +15,10 @@
 	or a
 	sbc hl,de	; should be replaced by add -10
 
-	ld a,(var1)
+	ld a,(hl)
 	neg
 	add a,10
-	ld (var),a
+	ld (var2),a
 
 loop:
 	jp loop

@@ -5,15 +5,16 @@
 ; - Zilog Z80 User manual (for the registers, addresses, i/o ports and flags that affect and are affected by an instruction)
 ; - The Undocumented Z80 Documented (for corrections on the above)
 ; - R800 instruction details obtained from here: https://www.msx.org/wiki/R800_Programming
+; - To clarify whether 16 bit adds modify the C flag or not (not clear in the manual, as it's different for HL than for IX/IY), I checked the source code of the OpenMSX emulator to see how flags are updated there
 ; Instruction	Timing MSX	Opcode	Size	Input Registers	Input Flags	Input Ports	Input Memory	Output Registers	Output Flags	Output Ports	Output Memory	Official
 ADC A,(HL)	8	8E	1	A,HL	C		HL	A	S,Z,H,P/V,N,C			true
 ADC A,r	5	88+r	1	A,r	C			A	S,Z,H,P/V,N,C			true
 ADD A,(HL)	8	86	1	A,HL			HL	A	S,Z,H,P/V,N,C			true
 ADD A,r	5	80+r	1	A,r				A	S,Z,H,P/V,N,C			true
-ADD HL,BC	12	9	1	HL,BC				HL	H,N			true
-ADD HL,DE	12	19	1	HL,DE				HL	H,N			true
-ADD HL,HL	12	29	1	HL				HL	H,N			true
-ADD HL,SP	12	39	1	HL,SP				HL	H,N			true
+ADD HL,BC	12	9	1	HL,BC				HL	H,N,C			true
+ADD HL,DE	12	19	1	HL,DE				HL	H,N,C			true
+ADD HL,HL	12	29	1	HL				HL	H,N,C			true
+ADD HL,SP	12	39	1	HL,SP				HL	H,N,C			true
 AND (HL)	8	A6	1	A,HL			HL	A	S,Z,H,P/V,N,C			true
 AND r	5	A0+r	1	A,r				A	S,Z,H,P/V,N,C			true
 CCF	5	3F	1		C				C,N,H			true
