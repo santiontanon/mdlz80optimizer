@@ -234,6 +234,7 @@ public class MDLConfig {
                         warning_labelWithoutColon = true;
                         warning_jpHlWithParenthesis = true;
                         warning_unofficialOps = true;
+                        warning_ambiguous = true;
                         args.remove(0);
                         break;
 
