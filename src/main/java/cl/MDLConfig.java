@@ -81,7 +81,7 @@ public class MDLConfig {
 
     List<MDLWorker> workers = new ArrayList<>();
 
-    public String docString = "MDL (A Z80 assembler optimizer) by Santiago Ontañón (Brain Games, 2020)\n"
+    public String docString = "MDL "+Main.VERSION_STRING+" (A Z80 assembler optimizer) by Santiago Ontañón (Brain Games, 2020)\n"
             + "https://github.com/santiontanon/mdlz80optimizer\n" + "\n"
             + "arguments: <input assembler file> [options]\n"
             + "  -cpu <type>: to select a different CPU (z80/z80msx/z80cpc) (default: z80msx).\n"
