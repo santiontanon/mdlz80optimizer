@@ -22,8 +22,8 @@ label2:
 	inc (hl)
 label3:
 	dec (hl)
-	ld a,(var1)
-	ld e,a
+	ld a,(var1)	; should be optimized (as a consequence of optimizing the one below)
+	ld e,a	; should be optimized
 label4:
 	jp label4
 

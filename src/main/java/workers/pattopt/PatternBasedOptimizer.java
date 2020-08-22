@@ -281,7 +281,7 @@ public class PatternBasedOptimizer implements MDLWorker {
                         r.bytesSaved += bestPatt.getSpaceSaving(bestMatch, code);
                         r.timeSaved[0] += bestPatt.getTimeSaving(bestMatch, code)[0];
                         r.timeSaved[1] += bestPatt.getTimeSaving(bestMatch, code)[1];
-                        i--;    // re-check this statement, as more optimizations might chain
+                        i = Math.max(0, i-2);   // go back a couple of statements, as more optimizations might chain
                         
                         appliedOptimizations.add(bestMatch);
                     }

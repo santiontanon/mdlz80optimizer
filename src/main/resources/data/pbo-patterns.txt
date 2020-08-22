@@ -1282,3 +1282,11 @@ constraints:
 in(?regixiy,IX,IY)
 equal(?const2 , 1)
 regsNotUsedAfter(1,A)
+
+pattern: Remove unused ?op ?regpair
+0: ?op ?regpair
+replacement:
+constraints:
+in(?op,inc,dec)
+in(?regpair,BC,DE,HL,IX,IY)
+regsNotUsedAfter(0,?regpair)
