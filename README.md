@@ -104,8 +104,8 @@ The latest version can always be downloaded from the "releases" section: https:/
 
 The most commonly expected use of MDL is to integrate it into your text editor (Subline Text, VSCode, etc.). We currently provide two examples of how to integrate it into Sublime and VSCode, but if you want to integrate it into another editor/IDE and do not know how, please do let me know!:
 
-- https://github.com/santiontanon/mdlz80optimizer/blob/master/integration-sublime.md
-- https://github.com/santiontanon/mdlz80optimizer/blob/master/integration-vscode.md
+- https://github.com/santiontanon/mdlz80optimizer/blob/master/doc/integration-sublime.md
+- https://github.com/santiontanon/mdlz80optimizer/blob/master/doc/integration-vscode.md
 
 Here is an example of how does it look when integrated into Sublime Text:
 
