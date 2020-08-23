@@ -59,6 +59,8 @@ public class SjasmTest {
                                                                            "data/generationtests/sjasm-enhancedjr-expected.asm")); }
     @Test public void test14() throws IOException { Assert.assertTrue(test("data/generationtests/sjasm-define.asm",
                                                                            "data/generationtests/sjasm-define-expected.asm")); }
+    @Test public void test15() throws IOException { Assert.assertTrue(test("data/generationtests/sjasm-macro4.asm",
+                                                                           "data/generationtests/sjasm-macro4-expected.asm")); }
 
     private boolean test(String inputFile, String expectedOutputFile) throws IOException
     {

@@ -37,7 +37,7 @@ public class SourceMacro {
 
 
     public SourceMacro(String a_name, List<String> a_args, List<Expression> a_defaultValues, SourceStatement a_ds)
-    {
+    {        
         name = a_name;
         argNames = a_args;
         defaultValues = a_defaultValues;
@@ -49,7 +49,7 @@ public class SourceMacro {
             int nargs = Integer.parseInt(argNames.get(0));
             argNames.clear();
             for(int i = 0;i<nargs;i++) {
-                argNames.add("@" + i);
+                argNames.add("@" + (i+1));
             }
         } else if (argNames.size() == 2 && argNames.get(0).endsWith("..") && argNames.get(1).equals("*")) {
             // macro with a variable number of arguments:

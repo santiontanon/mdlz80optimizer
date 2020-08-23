@@ -271,6 +271,9 @@ public class LineParser {
         if (isKeyword(token)) {
             return false;
         }
+        if (config.preProcessor.isMacroName(token, config.preProcessor.MACRO_MACRO)) {
+            return false;
+        }
         if (Tokenizer.isSymbol(token)) {
             return true;
         }
@@ -823,8 +826,12 @@ public class LineParser {
     public boolean parseMacroDefinition(List<String> tokens,
             SourceLine sl,
             SourceStatement s, SourceStatement previous, SourceFile source, CodeBase code) {
-        // Marks that all the lines that come after this, and until ENDM,
-        // are part of a macro, and should not yet be parsed:
+
+        // in case someone wrote "macro:" with a colon, ignore the colon:
+        if (!tokens.isEmpty() && tokens.get(0).equals(":")) {
+            tokens.remove(0);
+        }
+        
         if (macroNameIsFirstArgumentOfMacro) {
             if (s.label != null || tokens.isEmpty()) {
                 config.error("parseMacroDefinition: Cannot parse line " + sl);
