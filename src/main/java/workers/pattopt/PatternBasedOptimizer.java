@@ -328,9 +328,27 @@ public class PatternBasedOptimizer implements MDLWorker {
                         if (updatedLines.size() == 1) {
                             updatedLines.add("; " + updatedLines.remove(0) + "  ; -mdl");
                         } else {
-                            // We need to look for which one in particular to remove:
-                            config.error("More than one optimization applied to the same line, not yet supported in applyOptimizationsToOriginalFiles");
-                            return false;
+                            boolean onlyLastNotCommentedOut = true;
+                            for(int i = 0;i<updatedLines.size();i++) {
+                                if (i == updatedLines.size()-1) {
+                                    if (updatedLines.get(i).startsWith(";")) {
+                                        onlyLastNotCommentedOut = false;
+                                        break;
+                                    }
+                                } else {
+                                    if (!updatedLines.get(i).startsWith(";")) {
+                                        onlyLastNotCommentedOut = false;
+                                        break;
+                                    }
+                                }
+                            }
+                            if (onlyLastNotCommentedOut) {
+                                updatedLines.add("; " + updatedLines.remove(updatedLines.size()-1) + "  ; -mdl");                                
+                            } else {
+                                // We need to look for which one in particular to remove:
+                                config.error("More than one optimization applied to the same line, not yet supported at: " + s.sl);
+                                return false;
+                            }
                         }
                     }
                     for(SourceStatement s: match.added) {

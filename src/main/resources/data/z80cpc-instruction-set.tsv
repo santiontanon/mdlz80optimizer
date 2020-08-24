@@ -398,8 +398,15 @@ ADD IYq	2	FD 80+q	2	A,IYq				A	S,Z,H,P/V,N,C			false
 ADD n	2	C6 n	2	A				A	S,Z,H,P/V,N,C			false
 ADD (IX+o)	5	DD 86 o	3	A,IX			IX+o	A	S,Z,H,P/V,N,C			false
 ADD (IY+o)	5	FD 86 o	3	A,IY			IY+o	A	S,Z,H,P/V,N,C			false
+AND A, n	2	E6 n	2	A				A	S,Z,H,P/V,N,C			false
+AND A, (IX+o)	5	DD A6 o	3	A,IX			IX+o	A	S,Z,H,P/V,N,C			false
+AND A, (IY+o)	5	FD A6 o	3	A,IY			IY+o	A	S,Z,H,P/V,N,C			false
 EX HL,DE	1	EB	1	DE,HL				DE,HL				false
 OUT n,A	4	D3 n	2	A					S,Z,N	n		false
+OR A, (IX+o)	5	DD B6 o	3	A,IX			IX+o	A	S,Z,H,P/V,N,C			false
+OR A, (IY+o)	5	FD B6 o	3	A,IY			IY+o	A	S,Z,H,P/V,N,C			false
+OR A, r	1	B0+r	1	A,r				A	S,Z,H,P/V,N,C			false
+OR A, n	2	F6 n	2	A				A	S,Z,H,P/V,N,C			false
 SBC (HL)	2	9E	1	A,HL	C		HL	A	S,Z,H,P/V,N,C			false
 SBC A	1	98+7	1		C			A	S,Z,H,P/V,N,C			false
 SBC B	1	98+0	1	A,B	C			A	S,Z,H,P/V,N,C			false
@@ -423,10 +430,6 @@ SUB A, n	2	D6 n	2	A				A	S,Z,H,P/V,N,C			false
 EX AF,AF	1	8	1	AF				AF				false
 SBC (IX+o)	5	DD 9E o	3	A,IX	C		IX+o	A	S,Z,H,P/V,N,C			false
 SBC (IY+o)	5	FD 9E o	3	A,IY	C		IY+o	A	S,Z,H,P/V,N,C			false
-AND A, n	2	E6 n	2	A				A	S,Z,H,P/V,N,C			false
-OR A, (IX+o)	5	DD B6 o	3	A,IX			IX+o	A	S,Z,H,P/V,N,C			false
-OR A, (IY+o)	5	FD B6 o	3	A,IY			IY+o	A	S,Z,H,P/V,N,C			false
-OR A, r	1	B0+r	1	A,r				A	S,Z,H,P/V,N,C			false
 CP A, (HL)	2	BE	1	A,HL			HL		S,Z,H,P/V,N,C			false
 CP A, r	1	B8+r	1	A,r					S,Z,H,P/V,N,C			false
 XOR A, (HL)	2	AE	1	A,HL			HL	A	S,Z,H,P/V,N,C			false
@@ -437,3 +440,4 @@ XOR A, D	1	A8+2	1	A,D				A	S,Z,H,P/V,N,C			false
 XOR A, E	1	A8+3	1	A,E				A	S,Z,H,P/V,N,C			false
 XOR A, H	1	A8+4	1	A,H				A	S,Z,H,P/V,N,C			false
 XOR A, L	1	A8+5	1	A,L				A	S,Z,H,P/V,N,C			false
+XOR A, n	2	EE n	2	A				A	S,Z,H,P/V,N,C			false
