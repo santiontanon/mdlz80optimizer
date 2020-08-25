@@ -11,6 +11,7 @@ import code.Expression;
 import code.SourceConstant;
 import code.SourceFile;
 import code.SourceStatement;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import parser.SourceLine;
@@ -67,6 +68,7 @@ public class SDCCDialect implements Dialect {
         // Note, these have to be deactivated as soon as we are done parsing (otherwise, the optimizer patterns will not be parsed right)
         Tokenizer.sdccStyleDollarInLabels = true;
         Tokenizer.sdccStyleHashMarksForConstants = true;
+        config.hexStyle = MDLConfig.HEX_STYLE_0X;
     }    
     
     
@@ -229,4 +231,74 @@ public class SDCCDialect implements Dialect {
         return true;
     }
     
+    
+    @Override
+    public String statementToString(SourceStatement s, Path rootPath) {
+        switch(s.type) {
+            case SourceStatement.STATEMENT_CPUOP:
+            {
+                String str = s.toStringLabel() + "    ";
+                str += s.op.spec.opName;
+                if (config.output_opsInLowerCase) str = str.toLowerCase();
+
+                for(int i = 0;i<s.op.args.size();i++) {
+                    if (i==0) {
+                        str += " ";
+                    } else {
+                        str += ", ";
+                    }
+                    if (s.op.args.get(i).evaluatesToIntegerConstant() &&
+                        (!s.op.isJump() && !s.op.isCall())) {
+                        if (i == 0 && s.op.args.size()>1) {
+                            // no mark on left-hand side indirections:
+                            str += s.op.args.get(i).toString();
+                        } else {
+                            // mark the value as a constant:
+                            if (s.op.args.get(i).type == Expression.EXPRESSION_PARENTHESIS) {
+                                str += "(#" + s.op.args.get(i).args.get(0) + ")";
+                            } else {
+                                if (s.op.args.get(i).args != null && s.op.args.get(i).args.size()>1) {
+                                    str += "#(" + s.op.args.get(i).toString() + ")";
+                                } else {
+                                    str += "#" + s.op.args.get(i).toString();
+                                }
+                            }
+                        }
+                    } else {
+                        str += s.op.args.get(i).toString();
+                    }
+                }
+                
+                return str;
+            }
+            case SourceStatement.STATEMENT_DATA_BYTES:
+                {
+                    String str = s.toStringLabel() + "    ";
+                    str += "    .byte ";
+                    for(int i = 0;i<s.data.size();i++) {
+                        str += s.data.get(i).toStringInternal(true);
+                        if (i != s.data.size()-1) {
+                            str += ", ";
+                        }
+                    }
+                    return str;
+                }
+            case SourceStatement.STATEMENT_DATA_WORDS:
+                {
+                    String str = s.toStringLabel() + "    ";
+                    str += "    .word ";
+                    for(int i = 0;i<s.data.size();i++) {
+                        str += s.data.get(i).toString();
+                        if (i != s.data.size()-1) {
+                            str += ", ";
+                        }
+                    }
+                    return str;
+                }
+            
+            default:
+                return s.toStringUsingRootPath(rootPath);
+        }
+    }
+        
 }

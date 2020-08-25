@@ -139,7 +139,11 @@ public class SourceCodeGenerator implements MDLWorker {
                     config.error("Cannot expand incbin: " + ss.incbin);
                 }
             } else {
-                sb.append(ss.toStringUsingRootPath(Paths.get(code.getMain().getPath())));
+                if (config.dialectParser != null) {
+                    sb.append(config.dialectParser.statementToString(ss, Paths.get(code.getMain().getPath())));
+                } else {
+                    sb.append(ss.toStringUsingRootPath(Paths.get(code.getMain().getPath())));
+                }
                 sb.append("\n");
             }
         }

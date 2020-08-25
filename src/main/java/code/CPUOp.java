@@ -185,6 +185,12 @@ public class CPUOp {
     }
 
     
+    public boolean isJump()
+    {
+        return spec.isJump();
+    }
+    
+    
     public boolean isPush()
     {
         return spec.isPush();

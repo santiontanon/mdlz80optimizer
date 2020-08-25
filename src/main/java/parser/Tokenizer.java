@@ -331,6 +331,10 @@ public class Tokenizer {
                 }
                 return (hex + "h").toUpperCase();
             }
+            case MDLConfig.HEX_STYLE_0X:
+                return "0x" + toHexWord(value);
+            case MDLConfig.HEX_STYLE_0X_CAPS:
+                return "0x" + toHexWord(value).toUpperCase();
             default:
                 return null;
         }
@@ -360,6 +364,11 @@ public class Tokenizer {
                 }
                 return (hex + "h").toUpperCase();
             }
+            case MDLConfig.HEX_STYLE_0X:
+                return "0x" + toHexByte(value);
+            case MDLConfig.HEX_STYLE_0X_CAPS:
+                return "0x" + toHexByte(value).toUpperCase();
+            
             default:
                 return null;
         }

@@ -27,6 +27,8 @@ public class MDLConfig {
     public static final int HEX_STYLE_HASH_CAPS = 1;
     public static final int HEX_STYLE_H = 2;
     public static final int HEX_STYLE_H_CAPS = 3;
+    public static final int HEX_STYLE_0X = 4;
+    public static final int HEX_STYLE_0X_CAPS = 5;
 
     // arguments:
     public String inputFile = null;
@@ -103,6 +105,8 @@ public class MDLConfig {
             + "  -HEX#: hex numbers render like #FFFF.\n"
             + "  -hexh: hex numbers render like 0ffffh.\n"
             + "  -HEXH: hex numbers render like 0FFFFh.\n"
+            + "  -hex0x: hex numbers render like 0xffff.\n"
+            + "  -HEX0X: hex numbers render like 0XFFFF.\n"
             + "  -+bin: includes binary files (incbin) in the output analyses.\n"
             + "  -no-opt-pragma <value>: changes the pragma to be inserted in a comment on a line to prevent optimizing it (default: "
             + PRAGMA_NO_OPTIMIZATION + ")\n"
@@ -288,6 +292,16 @@ public class MDLConfig {
                         args.remove(0);
                         break;
 
+                    case "-hex0x":
+                        hexStyle = HEX_STYLE_0X;
+                        args.remove(0);
+                        break;
+
+                    case "-HEX0X":
+                        hexStyle = HEX_STYLE_0X_CAPS;
+                        args.remove(0);
+                        break;
+                        
                     case "-no-opt-pragma":
                         if (args.size()>=2) {
                             args.remove(0);

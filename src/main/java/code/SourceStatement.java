@@ -264,8 +264,8 @@ public class SourceStatement {
         return toStringUsingRootPath(null);
     }
 
-
-    public String toStringUsingRootPath(Path rootPath)
+    
+    public String toStringLabel()
     {
         String str = "";
         if (label != null) {
@@ -296,6 +296,13 @@ public class SourceStatement {
                 }
             }
         }
+        return str;        
+    }
+    
+
+    public String toStringUsingRootPath(Path rootPath)
+    {
+        String str = toStringLabel();
         
         switch(type) {
             case STATEMENT_NONE:

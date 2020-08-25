@@ -263,8 +263,10 @@ public class ExpressionParser {
 
     public Expression parseInternal(List<String> tokens, SourceStatement s, SourceStatement previous, CodeBase code)
     {
+        boolean hashWasRemoved = false;
         if (sdccStyleHashMarksForConstants && tokens.size() >= 1 && tokens.get(0).equals("#")) {
             tokens.remove(0);
+            hashWasRemoved = true;
         } 
         
         if (tokens.size() >= 1 &&
@@ -526,7 +528,13 @@ public class ExpressionParser {
             if (exp != null && tokens.size() >= 1 &&
                 (tokens.get(0).equals(")") || tokens.get(0).equals("]"))) {
                 tokens.remove(0);
-                return Expression.parenthesisExpression(exp, parenthesis, config);
+                if (hashWasRemoved) {
+                    // In SDCC syntax, when there is a # in front of a parenthesis,
+                    // it marks a constant, and not an indirection, so, we remove the parenthesis:
+                    return exp;
+                } else {
+                    return Expression.parenthesisExpression(exp, parenthesis, config);
+                }
             }
         }
 

@@ -255,6 +255,16 @@ public class CPUOpSpec {
         return false;
     }
 
+    
+    public boolean isJump()
+    {
+        // TODO(santi@): move this info to the CPU definition file
+        if (opName.equalsIgnoreCase("jp")) return true;
+        if (opName.equalsIgnoreCase("jr")) return true;
+        if (opName.equalsIgnoreCase("djnz")) return true;
+        return false;
+    }
+    
 
     public boolean isPush()
     {

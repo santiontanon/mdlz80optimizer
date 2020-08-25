@@ -9,6 +9,7 @@ import code.CodeBase;
 import code.Expression;
 import code.SourceFile;
 import code.SourceStatement;
+import java.nio.file.Path;
 import parser.MacroExpansion;
 import parser.SourceLine;
 import parser.SourceMacro;
@@ -108,8 +109,8 @@ public interface Dialect {
     }
     
     // Translates a statement to string using the syntax of the specific dialect:
-    default String statementToString(SourceStatement s) {
-        return s.toString();
+    default String statementToString(SourceStatement s, Path rootPath) {
+        return s.toStringUsingRootPath(rootPath);
     }
     
 }
