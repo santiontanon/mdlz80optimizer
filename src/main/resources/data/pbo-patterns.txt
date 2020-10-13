@@ -27,6 +27,8 @@
 ; - reachableByJr(#, label)
 ; - evenPushPops(#)
 ; - atLeastOneCPUOp(#)
+; You can add ":ID" after any constraint, which the effect that the constraint will be checked right after the pattern line
+; with number == ID is matched.
 
 ; thanks to pgimeno for noticing the needed constraint
 pattern: Replace cp ?const1; ?op1 c,?const2; ?op1 z,?const2 with cp ?const1+1; ?op1 c,?const2
@@ -154,26 +156,26 @@ regsNotUsedAfter(2,HL)
 ; regsNotUsedAfter(2,HL)
 
 
-pattern: Replace ld ?regpair1h,?const1; ld ?regpair1l,?const2 with ld ?regpair1,((?const2) & #ff) + ((?const1) << 8)
+pattern: Replace ld ?regpair1h,?const1; ld ?regpair1l,?const2 with ld ?regpair1,((?const2) & #00ff) + ((?const1) << 8)
 0: ld ?regpair1h,?const1
 1: *
 2: ld ?regpair1l,?const2
 replacement:
-0: ld ?regpair1,((?const2) & #ff) + ((?const1) << 8)
+0: ld ?regpair1,((?const2) & #00ff) + ((?const1) << 8)
 1: *
 constraints:
-regpair(?regpair1,?regpair1h,?regpair1l)
+regpair(?regpair1,?regpair1h,?regpair1l) : 0
 regsNotUsed(1,?regpair1h)
 
-pattern: Replace ld ?regpair1l,?const2; ld ?regpair1h,?const1 with ld ?regpair1,((?const2) & #ff) + ((?const1) << 8)
+pattern: Replace ld ?regpair1l,?const2; ld ?regpair1h,?const1 with ld ?regpair1,((?const2) & #00ff) + ((?const1) << 8)
 0: ld ?regpair1l,?const2
 1: *
 2: ld ?regpair1h,?const1
 replacement:
-0: ld ?regpair1,((?const2) & #ff) + ((?const1) << 8)
+0: ld ?regpair1,((?const2) & #00ff) + ((?const1) << 8)
 1: *
 constraints:
-regpair(?regpair1,?regpair1h,?regpair1l)
+regpair(?regpair1,?regpair1h,?regpair1l) : 0
 regsNotUsed(1,?regpair1l)
 
 pattern: Replace ld a,?const1; ld (hl),a with ld (hl),?const1
@@ -480,10 +482,10 @@ in(?regixiy,IX,IY)
 regsNotUsedAfter(1,A)
 
 ; theNestruo
-pattern: Replace ld ?regpair,?const1 with ld ?regpairl,(?const1 % 256)
+pattern: Replace ld ?regpair,?const1 with ld ?regpairl,(?const1 & #00ff)
 0: ld ?regpair,?const1
 replacement:
-0: ld ?regpairl,(?const1 % 256)
+0: ld ?regpairl,(?const1 & #00ff)
 constraints:
 regpair(?regpair,?regpairh,?regpairl)
 regsNotUsedAfter(0,?regpairh)
@@ -629,7 +631,7 @@ replacement:
 constraints:
 regpair(?regpair,?regpairh,?regpairl)
 in(?reg2,A,B,C,D,E,H,L)
-equal((?const2) & #ff, (?const1 & #ffff) >> 8)
+equal((?const2) & #00ff, (?const1 & #ffff) >> 8)
 regsNotModified(1,?regpairh)
 
 ; Thanks to Jitursan for suggesting this pattern:
@@ -1339,3 +1341,14 @@ in(?op,adc,sbc)
 in(?reg,HL,IX,IY)
 regsNotUsedAfter(0,?reg)
 flagsNotUsedAfter(0,S,Z,H,P/V,N,C)
+
+pattern: ld hl,?any; ld ?regpairl,(hl); inc hl; ld ?regpairh,(hl) -> ld ?regpair,?any
+0: ld hl,?any
+1: ld ?regpairl,(hl)
+2: inc hl
+3: ld ?regpairh,(hl)
+replacement:
+0: ld ?regpair,?any
+constraints:
+regpair(?regpair,?regpairh,?regpairl)
+regsNotUsedAfter(3,hl)

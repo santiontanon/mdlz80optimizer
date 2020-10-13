@@ -214,7 +214,7 @@ public class PatternBasedOptimizer implements MDLWorker {
                 alreadyShownAPotentialOptimization = false;
                 matches.clear();
                 for(Pattern patt: patterns) {
-                    PatternMatch match = patt.match(i, f, code, config, this);
+                    PatternMatch match = patt.match(i, f, code, this);
                     if (match != null) matches.add(Pair.of(patt,match));
                 }
 

@@ -51,7 +51,7 @@ public class PatternBasedOptimizerTest {
     @Test public void test14() throws IOException { Assert.assertEquals(2, test("data/tests/test14.asm")); }
     @Test public void test15() throws IOException { Assert.assertEquals(3, test("data/tests/test15.asm")); }
     @Test public void test16() throws IOException { Assert.assertEquals(6, test("data/tests/test16.asm")); }
-    @Test public void test17() throws IOException { Assert.assertEquals(6, test("data/tests/test17.asm")); }
+    @Test public void test17() throws IOException { Assert.assertEquals(7, test("data/tests/test17.asm")); }
     @Test public void test18() throws IOException { Assert.assertEquals(6, test("data/tests/test18.asm")); }
     @Test public void test19() throws IOException { Assert.assertEquals(3, test("data/tests/test19.asm")); }
     @Test public void test20() throws IOException { Assert.assertEquals(9, test("data/tests/test20.asm")); }
@@ -78,6 +78,7 @@ public class PatternBasedOptimizerTest {
     @Test public void test41() throws IOException { Assert.assertEquals(0, test("data/tests/test41.asm")); }
     @Test public void test42() throws IOException { Assert.assertEquals(2, test("data/tests/test42.asm")); }
     @Test public void test44() throws IOException { Assert.assertEquals(5, test("data/tests/test44.asm")); }
+    @Test public void test45() throws IOException { Assert.assertEquals(6, test("data/tests/test45.asm")); }
 
     private int test(String inputFile) throws IOException
     {

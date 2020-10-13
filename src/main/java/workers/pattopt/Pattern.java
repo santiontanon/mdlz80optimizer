@@ -25,12 +25,27 @@ import parser.Tokenizer;
  * @author santi
  */
 public class Pattern {
+    public static class Constraint {
+        public String name;
+        public String args[];
+        
+        // If this is != -1, this constraint will be checked as soon as a
+        // CPUOpPattern with ID == triggerAfterID is matched
+        public int triggerAfterID = -1;
+        
+        public Constraint(String a_name, String a_args[], int a_triggerAfterID) {
+            name = a_name;
+            args = a_args;
+            triggerAfterID = a_triggerAfterID;
+        }
+    }
+    
     MDLConfig config;
 
     String name;
     List<CPUOpPattern> pattern = new ArrayList<>();
     List<CPUOpPattern> replacement = new ArrayList<>();
-    List<String []> constraints = new ArrayList<>();
+    List<Constraint> constraints = new ArrayList<>();
     
     
     static class DepCheckNode {
@@ -98,11 +113,11 @@ public class Pattern {
                         CPUOpPattern patt = CPUOpPattern.parse(line, patternCB, config);
                         if (patt != null) {
                             replacement.add(patt);
+                            if (patt.repetitionVariable != null) {
+                                config.error("repetition variables will be ignored in replacement pattern lines!");
+                            }
                         } else {
                             config.error("Cannot parse replacement line: " + line);
-                        }
-                        if (patt.repetitionVariable != null) {
-                            config.error("repetition variables will be ignored in replacement pattern lines!");
                         }
                         break;
                     }
@@ -110,6 +125,7 @@ public class Pattern {
                     {
                         List<String> tokens = Tokenizer.tokenize(line);
                         String name = tokens.remove(0);
+                        int triggerAfterID = -1;
                         List<Expression> expressions = new ArrayList<>();
                         if (!tokens.get(0).equals("(")) throw new RuntimeException("cannot parse constraint: " + line);
                         tokens.remove(0);
@@ -119,13 +135,25 @@ public class Pattern {
                             expressions.add(exp);
                             if (tokens.get(0).equals(",")) tokens.remove(0);
                         }
+                        tokens.remove(0);
                         
-                        String split[] = new String[expressions.size()+1];
-                        split[0] = name;
-                        for(int i = 1;i<split.length;i++) {
-                            split[i] = expressions.get(i-1).toString();
+                        if (!tokens.isEmpty()) {
+                            if (tokens.get(0).equals(":")) {
+                                tokens.remove(0);
+                                if (tokens.isEmpty()) {
+                                    throw new RuntimeException("cannot parse constraint: " + line);
+                                }
+                                triggerAfterID = Integer.parseInt(tokens.remove(0));
+                            } else {
+                                throw new RuntimeException("cannot parse constraint: " + line);
+                            }
+                        } 
+                        
+                        String split[] = new String[expressions.size()];
+                        for(int i = 0;i<split.length;i++) {
+                            split[i] = expressions.get(i).toString();
                         }
-                        constraints.add(split);
+                        constraints.add(new Constraint(name, split, triggerAfterID));
                         break;
                     }
                     default:
@@ -349,7 +377,7 @@ public class Pattern {
     }
     
 
-    public PatternMatch match(int a_index, SourceFile f, CodeBase code, MDLConfig config,
+    public PatternMatch match(int a_index, SourceFile f, CodeBase code,
                               PatternBasedOptimizer pbo)
     {
         int index = a_index;
@@ -445,415 +473,434 @@ public class Pattern {
                 match.map.put(patt.ID, tmp);
                 index++;
             }
+            
+            // check if we need to check any constraints at this point:
+            for(Constraint constraint:constraints) {
+                if (constraint.triggerAfterID == patt.ID) {
+                    if (!checkConstraint(constraint, match, f, code, pbo,
+                                         index_to_display_message_on)) return null;
+                }
+            }
+            
         }
         
         if (index_to_display_message_on == -1) index_to_display_message_on = a_index;
 
         // potential match! check constraints:
-        for(String[] raw_constraint:constraints) {
-            String []constraint = new String[raw_constraint.length];
-            for(int i = 0;i<raw_constraint.length;i++) {
-                if (match.variables.containsKey(raw_constraint[i])) {
-                    constraint[i] = match.variables.get(raw_constraint[i]).toString();
-                } else {
-                    constraint[i] = raw_constraint[i];
-                }
-            }
-
-            switch(constraint[0]) {
-                case "regsNotUsedAfter":
-                {
-                    int idx = Integer.parseInt(constraint[1]);
-                    if (!match.map.containsKey(idx)) return null;
-                    for(int i = 2;i<constraint.length;i++) {
-                        String reg = constraint[i];
-                        Boolean result = regNotUsedAfter(match.map.get(idx).get(match.map.get(idx).size()-1), reg, f, code);
-                        if (result == null) {
-                            maybeLogOptimization(match, pbo, f.getStatements().get(index_to_display_message_on).sl);
-                            return null;
-                        } else {
-                            if (!result) return null;
-                        }
-                    }
-                    break;
-                }
-                case "flagsNotUsedAfter":
-                {
-                    int idx = Integer.parseInt(constraint[1]);
-                    if (!match.map.containsKey(idx)) return null;
-                    for(int i = 2;i<constraint.length;i++) {
-                        String flag = constraint[i].replace(" ", "");   // this is because the P/V flag, otherwise, it's generated as "P / V" and there is no match
-
-                        Boolean result = flagNotUsedAfter(match.map.get(idx).get(match.map.get(idx).size()-1), flag, f, code);
-                        if (result == null) {
-                            maybeLogOptimization(match, pbo, f.getStatements().get(index_to_display_message_on).sl);
-                            return null;
-                        } else {
-                            if (!result) return null;
-                        }
-                    }
-                    break;
-                }
-                case "equal":
-                {                    
-                    String v1_str = constraint[1];
-                    String v2_str = constraint[2];
-                    List<String> v1_tokens = applyBindingsToTokens(Tokenizer.tokenize(v1_str), match);
-                    List<String> v2_tokens = applyBindingsToTokens(Tokenizer.tokenize(v2_str), match);
-                    
-                    Expression exp1 = config.expressionParser.parse(v1_tokens, null, null, code);
-                    Expression exp2 = config.expressionParser.parse(v2_tokens, null, null, code);
-                    
-                    if (exp1.evaluatesToIntegerConstant() != exp2.evaluatesToIntegerConstant()) {
-                        return null;
-                    }
-                    if (exp1.evaluatesToIntegerConstant()) {
-                        // If the expressions are numeric, we evaluateToInteger them:
-                        Integer v1 = exp1.evaluateToInteger(null, code, true);
-                        Integer v2 = exp2.evaluateToInteger(null, code, true);
-                        if (v1 == null || v2 == null) {
-                            return null;
-                        }
-                        if ((int)v1 != (int)v2) {
-                            return null;
-                        }
-                        
-                        match.newEqualities.add(new EqualityConstraint(exp1, null, exp2, null, false));
-                    } else {
-                        // If they are not, then there is no need to evaluateToInteger, as they should just string match:
-                        if (!v1_str.equalsIgnoreCase(v2_str)) {
-                            return null;
-                        }
-                    }
-                    break;
-                }
-                case "notEqual":
-                {
-                    String v1_str = constraint[1];
-                    String v2_str = constraint[2];
-                    List<String> v1_tokens = applyBindingsToTokens(Tokenizer.tokenize(v1_str), match);
-                    List<String> v2_tokens = applyBindingsToTokens(Tokenizer.tokenize(v2_str), match);
-
-                    Expression exp1 = config.expressionParser.parse(v1_tokens, null, null, code);
-                    Expression exp2 = config.expressionParser.parse(v2_tokens, null, null, code);
-
-                    if (exp1.evaluatesToIntegerConstant() != exp2.evaluatesToIntegerConstant()) break;
-                    if (exp1.evaluatesToIntegerConstant()) {
-                        // If the expressions are numeric, we evaluateToInteger them:
-                        Integer v1 = exp1.evaluateToInteger(null, code, true);
-                        Integer v2 = exp2.evaluateToInteger(null, code, true);
-                        if (v1 == null || v2 == null) {
-                            return null;
-                        }
-                        if (exp1.evaluateToInteger(null, code, true).equals(exp2.evaluateToInteger(null, code, true))) {
-                            return null;
-                        }
-                        
-                        match.newEqualities.add(new EqualityConstraint(exp1, null, exp2, null, true));
-                    } else {
-                        // If they are not, then there is no need to evaluateToInteger, as they should just string match:
-                        if (v1_str.equalsIgnoreCase(v2_str)) {
-                            return null;
-                        }
-                    }
-                    break;
-                }                
-                case "in":
-                {
-                    boolean found = false;
-                    for(int i = 2;i<constraint.length;i++) {
-                        if (constraint[1].equalsIgnoreCase(constraint[i])) {
-                            found = true;
-                            break;
-                        }
-                    }
-                    if (!found) {
-                        return null;
-                    }
-                    break;
-                }
-                case "notIn":
-                {
-                    boolean found = false;
-                    for(int i = 2;i<constraint.length;i++) {
-                        if (constraint[1].equalsIgnoreCase(constraint[i])) {
-                            found = true;
-                            break;
-                        }
-                    }
-                    if (found) {
-                        return null;
-                    }
-                    break;
-                }
-                case "regpair":
-                {
-                    String expected1 = null;
-                    String expected2 = null;
-                    String expected3 = null;
-                    if (!constraint[1].startsWith("?")) {
-                        // we need to construct the value from the second part:
-                        if (constraint[1].equalsIgnoreCase("bc")) {
-                            expected1 = "bc"; expected2 = "b"; expected3 = "c";
-                        }
-                        if (constraint[1].equalsIgnoreCase("de")) {
-                            expected1 = "de"; expected2 = "d"; expected3 = "e";
-                        }
-                        if (constraint[1].equalsIgnoreCase("hl")) {
-                            expected1 = "hl"; expected2 = "h"; expected3 = "l";
-                        }
-                        if (constraint[1].equalsIgnoreCase("ix")) {
-                            expected1 = "ix"; expected2 = "ixh"; expected3 = "ixl";
-                        }
-                        if (constraint[1].equalsIgnoreCase("iy")) {
-                            expected1 = "iy"; expected2 = "iyh"; expected3 = "iyl";
-                        }
-                    }
-                    if (!constraint[2].startsWith("?")) {
-                        // we need to construct the value from the second part:
-                        if (constraint[2].equalsIgnoreCase("b")) {
-                            expected1 = "bc"; expected2 = "b"; expected3 = "c";
-                        }
-                        if (constraint[2].equalsIgnoreCase("d")) {
-                            expected1 = "de"; expected2 = "d"; expected3 = "e";
-                        }
-                        if (constraint[2].equalsIgnoreCase("h")) {
-                            expected1 = "hl"; expected2 = "h"; expected3 = "l";
-                        }
-                        if (constraint[2].equalsIgnoreCase("ixh")) {
-                            expected1 = "ix"; expected2 = "ixh"; expected3 = "ixl";
-                        }
-                        if (constraint[2].equalsIgnoreCase("iyh")) {
-                            expected1 = "iy"; expected2 = "iyh"; expected3 = "iyl";
-                        }
-                    }
-                    if (!constraint[3].startsWith("?")) {
-                        // we need to construct the value from the second part:
-                        if (constraint[3].equalsIgnoreCase("c")) {
-                            expected1 = "bc"; expected2 = "b"; expected3 = "c";
-                        }
-                        if (constraint[3].equalsIgnoreCase("e")) {
-                            expected1 = "de"; expected2 = "d"; expected3 = "e";
-                        }
-                        if (constraint[3].equalsIgnoreCase("l")) {
-                            expected1 = "hl"; expected2 = "h"; expected3 = "l";
-                        }
-                        if (constraint[3].equalsIgnoreCase("ixl")) {
-                            expected1 = "ix"; expected2 = "ixh"; expected3 = "ixl";
-                        }
-                        if (constraint[3].equalsIgnoreCase("iyl")) {
-                            expected1 = "iy"; expected2 = "iyh"; expected3 = "iyl";
-                        }
-                    }
-                    if (expected1 == null || expected2 == null || expected3 == null) {
-                        return null;
-                    }
-                    if (constraint[1].startsWith("?")) {
-                        if (!match.addVariableMatch(constraint[1], Expression.symbolExpression(expected1, null, code, config))) {
-                            return null;
-                        }
-                    } else {
-                        if (!constraint[1].equalsIgnoreCase(expected1)) {
-                            return null;
-                        }
-                    }
-                    if (constraint[2].startsWith("?")) {
-                        if (!match.addVariableMatch(constraint[2], Expression.symbolExpression(expected2, null, code, config))) {
-                            return null;
-                        }
-                    } else {
-                        if (!constraint[2].equalsIgnoreCase(expected2)) {
-                            return null;
-                        }
-                    }
-                    if (constraint[3].startsWith("?")) {
-                        if (!match.addVariableMatch(constraint[3], Expression.symbolExpression(expected3, null, code, config))) {
-                            return null;
-                        }
-                    } else {
-                        if (!constraint[3].equalsIgnoreCase(expected3)) {
-                            return null;
-                        }
-                    }
-                    break;
-                }
-                case "reachableByJr":
-                {
-                    SourceStatement start = match.map.get(Integer.parseInt(constraint[1])).get(0);
-                    Integer startAddress = start.getAddress(code);
-                    if (startAddress == null) {
-                        return null;
-                    }
-                    SourceConstant sc = code.getSymbol(constraint[2]);
-                    if (sc == null) {
-                        return null;
-                    }
-                    Object tmp = sc.getValue(code, false);
-                    if (tmp == null && tmp instanceof Integer) {
-                        return null;
-                    }
-                    Integer endAddress = (Integer)tmp;
-                    int diff = endAddress - startAddress;
-                    if (diff < -126 || diff > 130) return null;
-                    break;
-                }
-                case "regsNotModified":
-                {
-                    int idx = Integer.parseInt(constraint[1]);
-                    List<SourceStatement> statements = new ArrayList<>();
-                    if (match.map.containsKey(idx)) {
-                        statements.addAll(match.map.get(idx));
-                    } else {
-                        return null;
-                    }
-                    for(int i = 2;i<constraint.length;i++) {
-                        String reg = constraint[i];
-                        for(SourceStatement s:statements) {
-                            if (!regNotModified(s, reg, f, code)) {
-                                return null;
-                            }
-                        }
-                        // config.debug("regsNotModified " + reg + " satisfied in: " + statements);
-                        // config.debug("    mapping was: " + match.variables);
-                    }
-                    break;
-                }
-                case "flagsNotModified":
-                {
-                    int idx = Integer.parseInt(constraint[1]);
-                    List<SourceStatement> statements = new ArrayList<>();
-                    if (match.map.containsKey(idx)) {
-                        statements.addAll(match.map.get(idx));
-                    } else {
-                        return null;
-                    }
-                    for(int i = 2;i<constraint.length;i++) {
-                        String flag = constraint[i];
-                        for(SourceStatement s:statements) {
-                            if (!flagNotModified(s, flag, f, code)) {
-                                return null;
-                            }
-                        }
-                        // config.debug("flagsNotModified " + flag + " satisfied in: " + statements);
-                        // config.debug("    mapping was: " + match.variables);
-                    }
-                    break;
-                }
-                case "regsNotUsed":
-                {
-                    int idx = Integer.parseInt(constraint[1]);
-                    List<SourceStatement> statements = new ArrayList<>();
-                    if (match.map.containsKey(idx)) {
-                        statements.addAll(match.map.get(idx));
-                    } else {
-                        return null;
-                    }
-                    for(int i = 2;i<constraint.length;i++) {
-                        String reg = constraint[i];
-                        for(SourceStatement s:statements) {
-                            if (!regNotUsed(s, reg, f, code)) {
-                                return null;
-                            }
-                        }
-                        // config.debug("regsNotModified " + reg + " satisfied in: " + statements);
-                        // config.debug("    mapping was: " + match.variables);
-                    }
-                    break;
-                }
-                case "flagsNotUsed":
-                {
-                    int idx = Integer.parseInt(constraint[1]);
-                    List<SourceStatement> statements = new ArrayList<>();
-                    if (match.map.containsKey(idx)) {
-                        statements.addAll(match.map.get(idx));
-                    } else {
-                        return null;
-                    }
-                    for(int i = 2;i<constraint.length;i++) {
-                        String flag = constraint[i];
-                        for(SourceStatement s:statements) {
-                            if (!flagNotUsed(s, flag, f, code)) {
-                                return null;
-                            }
-                        }
-                        // config.debug("flagsNotUsed " + flag + " satisfied in: " + statements);
-                        // config.debug("    mapping was: " + match.variables);
-                    }
-                    break;
-                }
-                case "evenPushPops":
-                {
-                    int idx = Integer.parseInt(constraint[1]);
-                    List<SourceStatement> statements = new ArrayList<>();
-                    if (match.map.containsKey(idx)) {
-                        statements.addAll(match.map.get(idx));
-                    } else {
-                        return null;
-                    }
-                    int stackMovements = 0;
-                    for(SourceStatement s:statements) {
-                        if (s.type == SourceStatement.STATEMENT_CPUOP) {
-                            if (s.op.spec.opName.equalsIgnoreCase("push")) {
-                                stackMovements -= 2;
-                            } else if (s.op.spec.opName.equalsIgnoreCase("pop")) {
-                                stackMovements += 2;
-                            } else if (s.op.spec.opName.equalsIgnoreCase("inc") &&
-                                       s.op.args.get(0).type == Expression.EXPRESSION_REGISTER_OR_FLAG &&
-                                       s.op.args.get(0).registerOrFlagName.equalsIgnoreCase("sp")) {
-                                stackMovements ++;
-                            } else if (s.op.spec.opName.equalsIgnoreCase("dec") &&
-                                       s.op.args.get(0).type == Expression.EXPRESSION_REGISTER_OR_FLAG &&
-                                       s.op.args.get(0).registerOrFlagName.equalsIgnoreCase("sp")) {
-                                stackMovements --;
-                            } else if (!s.op.args.isEmpty()) {
-                                // check if the 1st operand is SP in any form:
-                                Expression arg = s.op.args.get(0);
-                                if (arg.type == Expression.EXPRESSION_REGISTER_OR_FLAG && 
-                                    arg.registerOrFlagName.equalsIgnoreCase("sp")) {
-                                    maybeLogOptimization(match, pbo, f.getStatements().get(index_to_display_message_on).sl);
-                                    return null;
-                                }
-                                if (arg.type == Expression.EXPRESSION_PARENTHESIS && 
-                                    arg.args.get(0).type == Expression.EXPRESSION_REGISTER_OR_FLAG &&
-                                    arg.args.get(0).registerOrFlagName.equalsIgnoreCase("sp")) {
-                                    maybeLogOptimization(match, pbo, f.getStatements().get(index_to_display_message_on).sl);
-                                    return null;
-                                }
-                            }
-                        }
-                    }
-                    if (stackMovements != 0) return null;
-                    break;
-                }
-                
-                case "atLeastOneCPUOp":
-                {
-                    int idx = Integer.parseInt(constraint[1]);
-                    List<SourceStatement> statements = new ArrayList<>();
-                    if (match.map.containsKey(idx)) {
-                        statements.addAll(match.map.get(idx));
-                    } else {
-                        return null;
-                    }
-                    boolean found = false;
-                    for(SourceStatement s:statements) {
-                        if (s.type == SourceStatement.STATEMENT_CPUOP) {
-                            found = true;
-                            break;
-                        }
-                    }                    
-                    if (!found) return null;
-                    break;
-                }
-                
-                default:
-                    throw new UnsupportedOperationException("Unknown pattern constraint " + constraint[0]);
-            }
+        for(Constraint constraint:constraints) {
+            if (!checkConstraint(constraint, match, f, code, pbo,
+                                 index_to_display_message_on)) return null;
         }
 
         return match;
     }
 
+    
+    public boolean checkConstraint(Constraint raw_constraint, PatternMatch match,
+                                   SourceFile f, CodeBase code, PatternBasedOptimizer pbo,
+                                   int index_to_display_message_on) {
+        Constraint constraint = new Constraint(raw_constraint.name, 
+                new String[raw_constraint.args.length], raw_constraint.triggerAfterID);
+        for(int i = 0;i<raw_constraint.args.length;i++) {
+            if (match.variables.containsKey(raw_constraint.args[i])) {
+                constraint.args[i] = match.variables.get(raw_constraint.args[i]).toString();
+            } else {
+                constraint.args[i] = raw_constraint.args[i];
+            }
+        }
+
+        switch(constraint.name) {
+            case "regsNotUsedAfter":
+            {
+                int idx = Integer.parseInt(constraint.args[0]);
+                if (!match.map.containsKey(idx)) return false;
+                for(int i = 1;i<constraint.args.length;i++) {
+                    String reg = constraint.args[i];
+                    Boolean result = regNotUsedAfter(match.map.get(idx).get(match.map.get(idx).size()-1), reg, f, code);
+                    if (result == null) {
+                        maybeLogOptimization(match, pbo, f.getStatements().get(index_to_display_message_on).sl);
+                        return false;
+                    } else {
+                        if (!result) return false;
+                    }
+                }
+                break;
+            }
+            case "flagsNotUsedAfter":
+            {
+                int idx = Integer.parseInt(constraint.args[0]);
+                if (!match.map.containsKey(idx)) return false;
+                for(int i = 1;i<constraint.args.length;i++) {
+                    String flag = constraint.args[i].replace(" ", "");   // this is because the P/V flag, otherwise, it's generated as "P / V" and there is no match
+
+                    Boolean result = flagNotUsedAfter(match.map.get(idx).get(match.map.get(idx).size()-1), flag, f, code);
+                    if (result == null) {
+                        maybeLogOptimization(match, pbo, f.getStatements().get(index_to_display_message_on).sl);
+                        return false;
+                    } else {
+                        if (!result) return false;
+                    }
+                }
+                break;
+            }
+            case "equal":
+            {                    
+                String v1_str = constraint.args[0];
+                String v2_str = constraint.args[1];
+                List<String> v1_tokens = applyBindingsToTokens(Tokenizer.tokenize(v1_str), match);
+                List<String> v2_tokens = applyBindingsToTokens(Tokenizer.tokenize(v2_str), match);
+
+                Expression exp1 = config.expressionParser.parse(v1_tokens, null, null, code);
+                Expression exp2 = config.expressionParser.parse(v2_tokens, null, null, code);
+
+                if (exp1.evaluatesToIntegerConstant() != exp2.evaluatesToIntegerConstant()) {
+                    return false;
+                }
+                if (exp1.evaluatesToIntegerConstant()) {
+                    // If the expressions are numeric, we evaluateToInteger them:
+                    Integer v1 = exp1.evaluateToInteger(null, code, true);
+                    Integer v2 = exp2.evaluateToInteger(null, code, true);
+                    if (v1 == null || v2 == null) {
+                        return false;
+                    }
+                    if ((int)v1 != (int)v2) {
+                        return false;
+                    }
+
+                    match.newEqualities.add(new EqualityConstraint(exp1, null, exp2, null, false));
+                } else {
+                    // If they are not, then there is no need to evaluateToInteger, as they should just string match:
+                    if (!v1_str.equalsIgnoreCase(v2_str)) {
+                        return false;
+                    }
+                }
+                break;
+            }
+            case "notEqual":
+            {
+                String v1_str = constraint.args[0];
+                String v2_str = constraint.args[1];
+                List<String> v1_tokens = applyBindingsToTokens(Tokenizer.tokenize(v1_str), match);
+                List<String> v2_tokens = applyBindingsToTokens(Tokenizer.tokenize(v2_str), match);
+
+                Expression exp1 = config.expressionParser.parse(v1_tokens, null, null, code);
+                Expression exp2 = config.expressionParser.parse(v2_tokens, null, null, code);
+
+                if (exp1.evaluatesToIntegerConstant() != exp2.evaluatesToIntegerConstant()) break;
+                if (exp1.evaluatesToIntegerConstant()) {
+                    // If the expressions are numeric, we evaluateToInteger them:
+                    Integer v1 = exp1.evaluateToInteger(null, code, true);
+                    Integer v2 = exp2.evaluateToInteger(null, code, true);
+                    if (v1 == null || v2 == null) {
+                        return false;
+                    }
+                    if (exp1.evaluateToInteger(null, code, true).equals(exp2.evaluateToInteger(null, code, true))) {
+                        return false;
+                    }
+
+                    match.newEqualities.add(new EqualityConstraint(exp1, null, exp2, null, true));
+                } else {
+                    // If they are not, then there is no need to evaluateToInteger, as they should just string match:
+                    if (v1_str.equalsIgnoreCase(v2_str)) {
+                        return false;
+                    }
+                }
+                break;
+            }                
+            case "in":
+            {
+                boolean found = false;
+                for(int i = 1;i<constraint.args.length;i++) {
+                    if (constraint.args[0].equalsIgnoreCase(constraint.args[i])) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    return false;
+                }
+                break;
+            }
+            case "notIn":
+            {
+                boolean found = false;
+                for(int i = 1;i<constraint.args.length;i++) {
+                    if (constraint.args[0].equalsIgnoreCase(constraint.args[i])) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (found) {
+                    return false;
+                }
+                break;
+            }
+            case "regpair":
+            {
+                String expected1 = null;
+                String expected2 = null;
+                String expected3 = null;
+                if (!constraint.args[0].startsWith("?")) {
+                    // we need to construct the value from the second part:
+                    if (constraint.args[0].equalsIgnoreCase("bc")) {
+                        expected1 = "bc"; expected2 = "b"; expected3 = "c";
+                    }
+                    if (constraint.args[0].equalsIgnoreCase("de")) {
+                        expected1 = "de"; expected2 = "d"; expected3 = "e";
+                    }
+                    if (constraint.args[0].equalsIgnoreCase("hl")) {
+                        expected1 = "hl"; expected2 = "h"; expected3 = "l";
+                    }
+                    if (constraint.args[0].equalsIgnoreCase("ix")) {
+                        expected1 = "ix"; expected2 = "ixh"; expected3 = "ixl";
+                    }
+                    if (constraint.args[0].equalsIgnoreCase("iy")) {
+                        expected1 = "iy"; expected2 = "iyh"; expected3 = "iyl";
+                    }
+                }
+                if (!constraint.args[1].startsWith("?")) {
+                    // we need to construct the value from the second part:
+                    if (constraint.args[1].equalsIgnoreCase("b")) {
+                        expected1 = "bc"; expected2 = "b"; expected3 = "c";
+                    }
+                    if (constraint.args[1].equalsIgnoreCase("d")) {
+                        expected1 = "de"; expected2 = "d"; expected3 = "e";
+                    }
+                    if (constraint.args[1].equalsIgnoreCase("h")) {
+                        expected1 = "hl"; expected2 = "h"; expected3 = "l";
+                    }
+                    if (constraint.args[1].equalsIgnoreCase("ixh")) {
+                        expected1 = "ix"; expected2 = "ixh"; expected3 = "ixl";
+                    }
+                    if (constraint.args[1].equalsIgnoreCase("iyh")) {
+                        expected1 = "iy"; expected2 = "iyh"; expected3 = "iyl";
+                    }
+                }
+                if (!constraint.args[2].startsWith("?")) {
+                    // we need to construct the value from the second part:
+                    if (constraint.args[2].equalsIgnoreCase("c")) {
+                        expected1 = "bc"; expected2 = "b"; expected3 = "c";
+                    }
+                    if (constraint.args[2].equalsIgnoreCase("e")) {
+                        expected1 = "de"; expected2 = "d"; expected3 = "e";
+                    }
+                    if (constraint.args[2].equalsIgnoreCase("l")) {
+                        expected1 = "hl"; expected2 = "h"; expected3 = "l";
+                    }
+                    if (constraint.args[2].equalsIgnoreCase("ixl")) {
+                        expected1 = "ix"; expected2 = "ixh"; expected3 = "ixl";
+                    }
+                    if (constraint.args[2].equalsIgnoreCase("iyl")) {
+                        expected1 = "iy"; expected2 = "iyh"; expected3 = "iyl";
+                    }
+                }
+                if (expected1 == null || expected2 == null || expected3 == null) {
+                    return false;
+                }
+                if (constraint.args[0].startsWith("?")) {
+                    if (!match.addVariableMatch(constraint.args[0], Expression.symbolExpression(expected1, null, code, config))) {
+                        return false;
+                    }
+                } else {
+                    if (!constraint.args[0].equalsIgnoreCase(expected1)) {
+                        return false;
+                    }
+                }
+                if (constraint.args[1].startsWith("?")) {
+                    if (!match.addVariableMatch(constraint.args[1], Expression.symbolExpression(expected2, null, code, config))) {
+                        return false;
+                    }
+                } else {
+                    if (!constraint.args[1].equalsIgnoreCase(expected2)) {
+                        return false;
+                    }
+                }
+                if (constraint.args[2].startsWith("?")) {
+                    if (!match.addVariableMatch(constraint.args[2], Expression.symbolExpression(expected3, null, code, config))) {
+                        return false;
+                    }
+                } else {
+                    if (!constraint.args[2].equalsIgnoreCase(expected3)) {
+                        return false;
+                    }
+                }
+                break;
+            }
+            case "reachableByJr":
+            {
+                SourceStatement start = match.map.get(Integer.parseInt(constraint.args[0])).get(0);
+                Integer startAddress = start.getAddress(code);
+                if (startAddress == null) {
+                    return false;
+                }
+                SourceConstant sc = code.getSymbol(constraint.args[1]);
+                if (sc == null) {
+                    return false;
+                }
+                Object tmp = sc.getValue(code, false);
+                if (tmp == null && tmp instanceof Integer) {
+                    return false;
+                }
+                Integer endAddress = (Integer)tmp;
+                int diff = endAddress - startAddress;
+                if (diff < -126 || diff > 130) return false;
+                break;
+            }
+            case "regsNotModified":
+            {
+                int idx = Integer.parseInt(constraint.args[0]);
+                List<SourceStatement> statements = new ArrayList<>();
+                if (match.map.containsKey(idx)) {
+                    statements.addAll(match.map.get(idx));
+                } else {
+                    return false;
+                }
+                for(int i = 1;i<constraint.args.length;i++) {
+                    String reg = constraint.args[i];
+                    for(SourceStatement s:statements) {
+                        if (!regNotModified(s, reg, f, code)) {
+                            return false;
+                        }
+                    }
+                    // config.debug("regsNotModified " + reg + " satisfied in: " + statements);
+                    // config.debug("    mapping was: " + match.variables);
+                }
+                break;
+            }
+            case "flagsNotModified":
+            {
+                int idx = Integer.parseInt(constraint.args[0]);
+                List<SourceStatement> statements = new ArrayList<>();
+                if (match.map.containsKey(idx)) {
+                    statements.addAll(match.map.get(idx));
+                } else {
+                    return false;
+                }
+                for(int i = 1;i<constraint.args.length;i++) {
+                    String flag = constraint.args[i];
+                    for(SourceStatement s:statements) {
+                        if (!flagNotModified(s, flag, f, code)) {
+                            return false;
+                        }
+                    }
+                    // config.debug("flagsNotModified " + flag + " satisfied in: " + statements);
+                    // config.debug("    mapping was: " + match.variables);
+                }
+                break;
+            }
+            case "regsNotUsed":
+            {
+                int idx = Integer.parseInt(constraint.args[0]);
+                List<SourceStatement> statements = new ArrayList<>();
+                if (match.map.containsKey(idx)) {
+                    statements.addAll(match.map.get(idx));
+                } else {
+                    return false;
+                }
+                for(int i = 1;i<constraint.args.length;i++) {
+                    String reg = constraint.args[i];
+                    for(SourceStatement s:statements) {
+                        if (!regNotUsed(s, reg, f, code)) {
+                            return false;
+                        }
+                    }
+                    // config.debug("regsNotModified " + reg + " satisfied in: " + statements);
+                    // config.debug("    mapping was: " + match.variables);
+                }
+                break;
+            }
+            case "flagsNotUsed":
+            {
+                int idx = Integer.parseInt(constraint.args[0]);
+                List<SourceStatement> statements = new ArrayList<>();
+                if (match.map.containsKey(idx)) {
+                    statements.addAll(match.map.get(idx));
+                } else {
+                    return false;
+                }
+                for(int i = 1;i<constraint.args.length;i++) {
+                    String flag = constraint.args[i];
+                    for(SourceStatement s:statements) {
+                        if (!flagNotUsed(s, flag, f, code)) {
+                            return false;
+                        }
+                    }
+                    // config.debug("flagsNotUsed " + flag + " satisfied in: " + statements);
+                    // config.debug("    mapping was: " + match.variables);
+                }
+                break;
+            }
+            case "evenPushPops":
+            {
+                int idx = Integer.parseInt(constraint.args[0]);
+                List<SourceStatement> statements = new ArrayList<>();
+                if (match.map.containsKey(idx)) {
+                    statements.addAll(match.map.get(idx));
+                } else {
+                    return false;
+                }
+                int stackMovements = 0;
+                for(SourceStatement s:statements) {
+                    if (s.type == SourceStatement.STATEMENT_CPUOP) {
+                        if (s.op.spec.opName.equalsIgnoreCase("push")) {
+                            stackMovements -= 2;
+                        } else if (s.op.spec.opName.equalsIgnoreCase("pop")) {
+                            stackMovements += 2;
+                        } else if (s.op.spec.opName.equalsIgnoreCase("inc") &&
+                                   s.op.args.get(0).type == Expression.EXPRESSION_REGISTER_OR_FLAG &&
+                                   s.op.args.get(0).registerOrFlagName.equalsIgnoreCase("sp")) {
+                            stackMovements ++;
+                        } else if (s.op.spec.opName.equalsIgnoreCase("dec") &&
+                                   s.op.args.get(0).type == Expression.EXPRESSION_REGISTER_OR_FLAG &&
+                                   s.op.args.get(0).registerOrFlagName.equalsIgnoreCase("sp")) {
+                            stackMovements --;
+                        } else if (!s.op.args.isEmpty()) {
+                            // check if the 1st operand is SP in any form:
+                            Expression arg = s.op.args.get(0);
+                            if (arg.type == Expression.EXPRESSION_REGISTER_OR_FLAG && 
+                                arg.registerOrFlagName.equalsIgnoreCase("sp")) {
+                                maybeLogOptimization(match, pbo, f.getStatements().get(index_to_display_message_on).sl);
+                                return false;
+                            }
+                            if (arg.type == Expression.EXPRESSION_PARENTHESIS && 
+                                arg.args.get(0).type == Expression.EXPRESSION_REGISTER_OR_FLAG &&
+                                arg.args.get(0).registerOrFlagName.equalsIgnoreCase("sp")) {
+                                maybeLogOptimization(match, pbo, f.getStatements().get(index_to_display_message_on).sl);
+                                return false;
+                            }
+                        }
+                    }
+                }
+                if (stackMovements != 0) return false;
+                break;
+            }
+
+            case "atLeastOneCPUOp":
+            {
+                int idx = Integer.parseInt(constraint.args[0]);
+                List<SourceStatement> statements = new ArrayList<>();
+                if (match.map.containsKey(idx)) {
+                    statements.addAll(match.map.get(idx));
+                } else {
+                    return false;
+                }
+                boolean found = false;
+                for(SourceStatement s:statements) {
+                    if (s.type == SourceStatement.STATEMENT_CPUOP) {
+                        found = true;
+                        break;
+                    }
+                }                    
+                if (!found) return false;
+                break;
+            }
+
+            default:
+                throw new UnsupportedOperationException("Unknown pattern constraint " + constraint.name);
+        }        
+        return true;
+    }
+    
 
     public boolean apply(SourceFile f, PatternMatch match, 
                          CodeBase code,
