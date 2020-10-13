@@ -1342,13 +1342,13 @@ in(?reg,HL,IX,IY)
 regsNotUsedAfter(0,?reg)
 flagsNotUsedAfter(0,S,Z,H,P/V,N,C)
 
-pattern: ld hl,?any; ld ?regpairl,(hl); inc hl; ld ?regpairh,(hl) -> ld ?regpair,?any
+pattern: ld hl,?any; ld ?regpairl,(hl); inc hl; ld ?regpairh,(hl) -> ld ?regpair,(?any)
 0: ld hl,?any
 1: ld ?regpairl,(hl)
 2: inc hl
 3: ld ?regpairh,(hl)
 replacement:
-0: ld ?regpair,?any
+0: ld ?regpair,(?any)
 constraints:
 regpair(?regpair,?regpairh,?regpairl)
-regsNotUsedAfter(3,hl)
+regsNotUsedAfter(3,HL)
