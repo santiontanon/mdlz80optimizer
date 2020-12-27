@@ -1352,3 +1352,13 @@ replacement:
 constraints:
 regpair(?regpair,?regpairh,?regpairl)
 regsNotUsedAfter(3,HL)
+
+pattern: bit 6,a; ?op nz,?const -> add a,a; ?op n,?const
+0: bit 6,a
+1: ?op nz,?const
+replacement:
+0: add a,a
+1: ?op nz,?const
+constraints:
+in(?op,jp,jr)
+regsNotUsedAfter(1,A)
