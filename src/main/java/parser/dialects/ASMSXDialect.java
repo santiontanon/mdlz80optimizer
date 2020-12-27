@@ -5,6 +5,7 @@ package parser.dialects;
 
 
 import cl.MDLConfig;
+import code.CPUOp;
 import code.CodeBase;
 import code.Expression;
 import code.SourceConstant;
@@ -23,6 +24,12 @@ import util.Resources;
  * @author santi
  */
 public class ASMSXDialect implements Dialect {
+    public static final int ROM_STANDARD = -1;
+    public static final int MEGAROM_KONAMI = 0;
+    public static final int MEGAROM_KONAMI_SCC = 1;
+    public static final int MEGAROM_ASCII8 = 2;
+    public static final int MEGAROM_ASCII16 = 3;
+    
     public static class PrintRecord {
         String keyword;
         SourceStatement previousStatement;  // not the current, as it was probably not added to the file
@@ -46,6 +53,10 @@ public class ASMSXDialect implements Dialect {
     SourceStatement romHeaderStatement = null;
     SourceStatement basicHeaderStatement = null;
     Expression startAddressLabel = null;
+    
+    // ROM characteristics:
+    int romType = ROM_STANDARD;
+    int pageSize = 8*1024;
     int targetSizeInKB = 0;
     
     // Addresses are not resolved until the very end, so, when printing values, we just queue them up here, and
@@ -134,6 +145,10 @@ public class ASMSXDialect implements Dialect {
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("wav")) return true;
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase(".cas")) return true;
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("cas")) return true;
+        if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase(".megarom")) return true;
+        if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("megarom")) return true;
+        if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase(".select")) return true;
+        if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("select")) return true;
         
         // weird syntax that for some reason asMSX swallows (undocumented):
         // if a line is all dashes, it's ignored:
@@ -191,12 +206,16 @@ public class ASMSXDialect implements Dialect {
             name.equalsIgnoreCase("word") ||
             name.equalsIgnoreCase(".rom") ||
             name.equalsIgnoreCase("rom") ||
+            name.equalsIgnoreCase(".megarom") ||
+            name.equalsIgnoreCase("megarom") ||
             name.equalsIgnoreCase(".basic") ||
             name.equalsIgnoreCase("basic") ||
             name.equalsIgnoreCase(".start") ||
             name.equalsIgnoreCase("start") ||
             name.equalsIgnoreCase(".search") ||
-            name.equalsIgnoreCase("search")) {
+            name.equalsIgnoreCase("search") ||
+            name.equalsIgnoreCase(".select") ||
+            name.equalsIgnoreCase("select")) {
             return null;
         }
         
@@ -268,7 +287,7 @@ public class ASMSXDialect implements Dialect {
             }
             if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
         }
-        if (tokens.size()>=1 && (tokens.get(0).equalsIgnoreCase(".search") || tokens.get(0).equalsIgnoreCase("bios"))) {
+        if (tokens.size()>=1 && (tokens.get(0).equalsIgnoreCase(".search") || tokens.get(0).equalsIgnoreCase("search"))) {
             tokens.remove(0);
             // Define all the bios calls:
             List<List<String>> tokenizedLines = tokenizeFileLines(searchFileName);
@@ -352,8 +371,35 @@ public class ASMSXDialect implements Dialect {
             s.space_value = null;
             if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
         }
-        if (tokens.size()>=1 && (tokens.get(0).equalsIgnoreCase(".rom") || tokens.get(0).equalsIgnoreCase("rom"))) {
-            tokens.remove(0);
+        if (tokens.size()>=1 && 
+            (tokens.get(0).equalsIgnoreCase(".rom") || tokens.get(0).equalsIgnoreCase("rom") ||
+             tokens.get(0).equalsIgnoreCase(".megarom") || tokens.get(0).equalsIgnoreCase("megarom"))) {
+            String romToken = tokens.remove(0);
+            romType = ROM_STANDARD;
+            if (romToken.equalsIgnoreCase(".megarom") || romToken.equalsIgnoreCase("megarom")) {
+                romType = 0;    // "konami" ROM
+                pageSize = 8*1024;
+                if (tokens.size()>=1) {
+                    switch (tokens.remove(0)) {
+                        case "konami":
+                            break;
+                        case "konamiscc":
+                            romType = MEGAROM_KONAMI_SCC;
+                            break;
+                        case "ascii8":
+                            romType = MEGAROM_ASCII8;
+                            break;
+                        case "ascii16":
+                            romType = MEGAROM_ASCII16;
+                            pageSize = 16*1024;
+                            break;
+                        default:
+                            config.error("Unknown megaROM type in "+sl.fileNameLineString()+": " + tokens.get(0));
+                            return null;
+                    }
+                }
+            }
+            
             // Generates a ROM header (and stores a pointer to the start address, to later modify with the .start directive):
             List<Expression> data = new ArrayList<>();
             romHeaderStatement = s;
@@ -458,7 +504,76 @@ public class ASMSXDialect implements Dialect {
             tokens.remove(0);
             // just ignore
             if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
+        }
+        if (tokens.size()>=1 && (tokens.get(0).equalsIgnoreCase(".select") || tokens.get(0).equalsIgnoreCase("select"))) {
+            tokens.remove(0);
+            Expression page = config.expressionParser.parse(tokens, s, previous, code);
+            if (page == null) {
+                config.error("Cannot parse expression in "+sl.fileNameLineString()+": " + sl.line);
+                return null;
+            }
+            if (tokens.isEmpty() || !tokens.remove(0).equals("at")) {
+                config.error("Missing token 'at' in "+sl.fileNameLineString()+": " + sl.line);
+                return null;
+            }
+            Expression address = config.expressionParser.parse(tokens, s, previous, code);
+            if (address == null) {
+                config.error("Cannot parse expression in "+sl.fileNameLineString()+": " + sl.line);
+                return null;
+            }
+            
+            if (romType != ROM_STANDARD) {
+                // generate "select" code:
+                if (page.isRegister(code) && page.registerOrFlagName.equals("a")) {
+                    // ld (address), a:
+                    s.type = SourceStatement.STATEMENT_CPUOP;
+                    List<Expression> sArguments = new ArrayList<>();
+                    sArguments.add(Expression.parenthesisExpression(address, "[", config));
+                    sArguments.add(Expression.symbolExpression("a", s, code, config));
+                    List<CPUOp> op_l = config.opParser.parseOp("ld", sArguments, s, previous, code);
+                    if (op_l == null || op_l.size() != 1) return null;
+                    s.op = op_l.get(0);
+
+                } else {
+                    // push af; ld a, page; ld (address), a; pop af:
+                    SourceStatement s1 = new SourceStatement(SourceStatement.STATEMENT_CPUOP, sl, source, config);
+                    List<Expression> s1Arguments = new ArrayList<>();
+                    s1Arguments.add(Expression.symbolExpression("af", s1, code, config));
+                    List<CPUOp> op_l = config.opParser.parseOp("push", s1Arguments, s1, previous, code);
+                    if (op_l == null || op_l.size() != 1) return null;
+                    s1.op = op_l.get(0);
+                    l.add(0, s1);
+
+                    SourceStatement s2 = new SourceStatement(SourceStatement.STATEMENT_CPUOP, sl, source, config);
+                    List<Expression> s2Arguments = new ArrayList<>();
+                    s2Arguments.add(Expression.symbolExpression("a", s2, code, config));
+                    s2Arguments.add(page);
+                    op_l = config.opParser.parseOp("ld", s2Arguments, s2, previous, code);
+                    if (op_l == null || op_l.size() != 1) return null;
+                    s2.op = op_l.get(0);
+                    l.add(1, s2);
+
+                    s.type = SourceStatement.STATEMENT_CPUOP;
+                    List<Expression> sArguments = new ArrayList<>();
+                    sArguments.add(Expression.parenthesisExpression(address, "[", config));
+                    sArguments.add(Expression.symbolExpression("a", s, code, config));
+                    op_l = config.opParser.parseOp("ld", sArguments, s, previous, code);
+                    if (op_l == null || op_l.size() != 1) return null;
+                    s.op = op_l.get(0);
+
+                    SourceStatement s4 = new SourceStatement(SourceStatement.STATEMENT_CPUOP, sl, source, config);
+                    List<Expression> s4Arguments = new ArrayList<>();
+                    s4Arguments.add(Expression.symbolExpression("af", s4, code, config));
+                    op_l = config.opParser.parseOp("pop", s4Arguments, s4, previous, code);
+                    if (op_l == null || op_l.size() != 1) return null;
+                    s4.op = op_l.get(0);
+                    l.add(s4);
+                }
+            }
+            
+            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
         }        
+        
 
         // weird syntax that for some reason asMSX swallows (undocumented):
         // if a line is all dashes, it's ignored:

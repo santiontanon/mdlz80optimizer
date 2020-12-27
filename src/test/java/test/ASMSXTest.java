@@ -33,7 +33,9 @@ public class ASMSXTest {
 
     @Test public void test1() throws IOException { Assert.assertTrue(test("data/generationtests/asmsx-builtin.asm",
                                                                           "data/generationtests/asmsx-builtin-expected.asm")); }
-    @Test public void test2() throws IOException { Assert.assertTrue(test("data/generationtests/asmsx-parenthesis.asm",
+    @Test public void test2() throws IOException { Assert.assertTrue(test("data/generationtests/asmsx-builtin2.asm",
+                                                                          "data/generationtests/asmsx-builtin2-expected.asm")); }
+    @Test public void test3() throws IOException { Assert.assertTrue(test("data/generationtests/asmsx-parenthesis.asm",
                                                                           "data/generationtests/asmsx-parenthesis-expected.asm")); }
 
     private boolean test(String inputFile, String expectedOutputFile) throws IOException

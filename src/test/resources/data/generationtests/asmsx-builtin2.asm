@@ -1,6 +1,6 @@
 ; Test case: 
 	org #4000
-	.rom
+	.megarom konami
     .start loop
 
 loop:
@@ -14,4 +14,4 @@ loop:
     ld b,5
     .select b at 08000h
 
-.printtext "hello!"
+.printtext      "hello!"

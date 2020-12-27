@@ -132,7 +132,7 @@ public class CPUOpParser {
         
         
         for(int i = 0; i<spec.args.size(); i++) {
-            // for some reason, asMSX (the assembler that uses square brackets for indirections),
+            // for some reason, asMSX (which uses square brackets for indirections),
             // does not impose this constraint for in/out ops.... ¯\_(ツ)_/¯
             if (indirectionsOnlyWithSquareBrackets && 
                 !a_op.equalsIgnoreCase("out") &&
