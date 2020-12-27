@@ -1022,6 +1022,8 @@ public class SjasmDialect implements Dialect {
                     }
                     exp = Expression.constantExpression(v, config);
                 }
+            } else {
+                exp = Expression.constantExpression(0, config);
             }
 
             // parse as a :=:            
