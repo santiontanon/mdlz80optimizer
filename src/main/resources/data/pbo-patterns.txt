@@ -1353,12 +1353,22 @@ constraints:
 regpair(?regpair,?regpairh,?regpairl)
 regsNotUsedAfter(3,HL)
 
-pattern: bit 6,a; ?op nz,?const -> add a,a; ?op n,?const
+pattern: bit 6,a; ?op nz,?const -> add a,a; ?op m,?const
 0: bit 6,a
 1: ?op nz,?const
 replacement:
 0: add a,a
-1: ?op nz,?const
+1: ?op m,?const
 constraints:
-in(?op,jp,jr)
+in(?op,jp)
+regsNotUsedAfter(1,A)
+
+pattern: bit 6,a; ?op z,?const -> add a,a; ?op p,?const
+0: bit 6,a
+1: ?op z,?const
+replacement:
+0: add a,a
+1: ?op p,?const
+constraints:
+in(?op,jp)
 regsNotUsedAfter(1,A)
