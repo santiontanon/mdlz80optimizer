@@ -380,7 +380,8 @@ public class ASMSXDialect implements Dialect {
                 romType = 0;    // "konami" ROM
                 pageSize = 8*1024;
                 if (tokens.size()>=1) {
-                    switch (tokens.remove(0)) {
+                    String romTypeToken = tokens.remove(0).toLowerCase();
+                    switch (romTypeToken) {
                         case "konami":
                             break;
                         case "konamiscc":
@@ -394,7 +395,7 @@ public class ASMSXDialect implements Dialect {
                             pageSize = 16*1024;
                             break;
                         default:
-                            config.error("Unknown megaROM type in "+sl.fileNameLineString()+": " + tokens.get(0));
+                            config.error("Unknown megaROM type in "+sl.fileNameLineString()+": " + romTypeToken);
                             return null;
                     }
                 }
