@@ -19,7 +19,7 @@ The latest version can always be downloaded from the "releases" section: https:/
 
   ```-cpu <type>```: to select a different CPU (z80/z80msx/z80cpc) (default: z80msx).
 
-  ```-dialect <type>```: to allow parsing different assembler dialects (mdl/asmsx/glass/sjasm/tniasm/winape/pasmo/sdcc) (default: mdl, which supports some basic code idioms common to various assemblers).
+  ```-dialect <type>```: to allow parsing different assembler dialects (mdl/asmsx/asmsx-zilog/glass/sjasm/tniasm/winape/pasmo/sdcc) (default: mdl, which supports some basic code idioms common to various assemblers).
                    Note that even when selecting a dialect, not all syntax of a given assembler might be supported.
 
   ```-I <folder>```: adds a folder to the include search path.
