@@ -524,7 +524,7 @@ public class ASMSXDialect implements Dialect {
                 config.error("Cannot parse expression in "+sl.fileNameLineString()+": " + sl.line);
                 return null;
             }
-            if (tokens.isEmpty() || !tokens.remove(0).equals("at")) {
+            if (tokens.isEmpty() || !tokens.remove(0).equalsIgnoreCase("at")) {
                 config.error("Missing token 'at' in "+sl.fileNameLineString()+": " + sl.line);
                 return null;
             }
