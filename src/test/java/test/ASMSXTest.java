@@ -31,16 +31,23 @@ public class ASMSXTest {
         code = new CodeBase(mdlConfig);
     }
 
-    @Test public void test1() throws IOException { Assert.assertTrue(test("data/generationtests/asmsx-builtin.asm",
+    @Test public void test1() throws IOException { Assert.assertTrue(test("data/generationtests/asmsx-builtin.asm", false, 
                                                                           "data/generationtests/asmsx-builtin-expected.asm")); }
-    @Test public void test2() throws IOException { Assert.assertTrue(test("data/generationtests/asmsx-builtin2.asm",
+    @Test public void test2() throws IOException { Assert.assertTrue(test("data/generationtests/asmsx-builtin2.asm", false, 
                                                                           "data/generationtests/asmsx-builtin2-expected.asm")); }
-    @Test public void test3() throws IOException { Assert.assertTrue(test("data/generationtests/asmsx-parenthesis.asm",
+    @Test public void test3() throws IOException { Assert.assertTrue(test("data/generationtests/asmsx-parenthesis.asm", false,
                                                                           "data/generationtests/asmsx-parenthesis-expected.asm")); }
+    @Test public void test4() throws IOException { Assert.assertTrue(test("data/generationtests/asmsx-parenthesis-zilog.asm", true,
+                                                                          "data/generationtests/asmsx-parenthesis-zilog-expected.asm")); }
+    
 
-    private boolean test(String inputFile, String expectedOutputFile) throws IOException
+    private boolean test(String inputFile, boolean zilogMode, String expectedOutputFile) throws IOException
     {
-        Assert.assertTrue(mdlConfig.parseArgs(inputFile,"-dialect","asmsx"));
+        if (zilogMode) {
+            Assert.assertTrue(mdlConfig.parseArgs(inputFile,"-dialect","asmsx-zilog"));
+        } else {
+            Assert.assertTrue(mdlConfig.parseArgs(inputFile,"-dialect","asmsx"));        
+        }
         Assert.assertTrue(
                 "Could not parse file " + inputFile,
                 mdlConfig.codeBaseParser.parseMainSourceFile(mdlConfig.inputFile, code));

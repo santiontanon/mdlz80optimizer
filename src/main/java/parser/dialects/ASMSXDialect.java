@@ -64,7 +64,7 @@ public class ASMSXDialect implements Dialect {
     List<PrintRecord> toPrint = new ArrayList<>();
     
 
-    public ASMSXDialect(MDLConfig a_config)
+    public ASMSXDialect(MDLConfig a_config, boolean zilogMode)
     {
         config = a_config;
 
@@ -106,7 +106,14 @@ public class ASMSXDialect implements Dialect {
         config.expressionParser.dialectFunctions.add("cos");
         
         config.expressionParser.allowFloatingPointNumbers = true;
-        config.opParser.indirectionsOnlyWithSquareBrackets = true;
+        
+        if (zilogMode) {
+            config.opParser.indirectionsOnlyWithSquareBrackets = false;
+            config.opParser.indirectionsOnlyWithParenthesis = true;
+        } else {
+            config.opParser.indirectionsOnlyWithSquareBrackets = true;
+            config.opParser.indirectionsOnlyWithParenthesis = false;
+        }
     }
 
 
@@ -149,6 +156,8 @@ public class ASMSXDialect implements Dialect {
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("megarom")) return true;
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase(".select")) return true;
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("select")) return true;
+        if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase(".zilog")) return true;
+        if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("zilog")) return true;
         
         // weird syntax that for some reason asMSX swallows (undocumented):
         // if a line is all dashes, it's ignored:
@@ -215,7 +224,9 @@ public class ASMSXDialect implements Dialect {
             name.equalsIgnoreCase(".search") ||
             name.equalsIgnoreCase("search") ||
             name.equalsIgnoreCase(".select") ||
-            name.equalsIgnoreCase("select")) {
+            name.equalsIgnoreCase("select") ||
+            name.equalsIgnoreCase(".zilog") ||
+            name.equalsIgnoreCase("zilog")) {
             return null;
         }
         
@@ -570,11 +581,15 @@ public class ASMSXDialect implements Dialect {
                     s4.op = op_l.get(0);
                     l.add(s4);
                 }
-            }
-            
+            }            
             if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
-        }        
-        
+        }    
+        if (tokens.size() >= 1 && (tokens.get(0).equalsIgnoreCase(".zilog") || tokens.get(0).equalsIgnoreCase("zilog"))) {
+            tokens.remove(0);
+            config.opParser.indirectionsOnlyWithSquareBrackets = false;
+            config.opParser.indirectionsOnlyWithParenthesis = true;
+            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
+        }
 
         // weird syntax that for some reason asMSX swallows (undocumented):
         // if a line is all dashes, it's ignored:
