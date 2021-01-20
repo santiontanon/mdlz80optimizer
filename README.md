@@ -147,11 +147,6 @@ Of course you could also add a ```-po``` there, if you want to optimize the code
 MDL can also generate tables with how much space each of your assembler files uses (if you include many files from a main assembler file, MDL will analyze all of them), and can even generate a little visual reprsentation of your code (saved as a standard .dot file that can then be turned into a pdf or png image to view it using the [dot](https://graphviz.org) tool).
 
 
-### Optimizing Assembler
-
-Integration with IDEs/text editors. Please check separate read me files for how to integrate mdl into VSCode and Sublime Text.
-
-
 ## Requirements
 
 - MDL is a command line tool, so you need access to a terminal
