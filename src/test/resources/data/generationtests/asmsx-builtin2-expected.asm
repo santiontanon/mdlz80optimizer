@@ -1,6 +1,10 @@
 ; Test case: 
 	org #4000
     db "AB", loop % 256, loop / 256, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    ds 8176, 0
+    org (#6000 / 8192) * 8192
+    ds 8192, 0
+    org (#6000 / 8192) * 8192
 loop:
 	jr loop
 	push af
@@ -14,4 +18,4 @@ loop:
 	ld a, b
 	ld (#8000), a
 	pop af	
-	ds 8154, 0
+	ds 8170, 0

@@ -3,6 +3,9 @@
 	.megarom konami
     .start loop
 
+    .subpage 1 at #6000
+    .subpage 2 at #6000
+
 loop:
 	jr loop
 

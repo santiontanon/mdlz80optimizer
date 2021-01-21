@@ -53,11 +53,13 @@ public class ASMSXDialect implements Dialect {
     SourceStatement romHeaderStatement = null;
     SourceStatement basicHeaderStatement = null;
     Expression startAddressLabel = null;
+    List<SourceStatement> pageDefinitions = new ArrayList<>();
     
     // ROM characteristics:
     int romType = ROM_STANDARD;
     int pageSize = 8*1024;
     int targetSizeInKB = 0;
+    int currentPageEnd = 0;
     
     // Addresses are not resolved until the very end, so, when printing values, we just queue them up here, and
     // print them all at the very end:
@@ -158,6 +160,8 @@ public class ASMSXDialect implements Dialect {
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("select")) return true;
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase(".zilog")) return true;
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("zilog")) return true;
+        if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase(".subpage")) return true;
+        if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("subpage")) return true;
         
         // weird syntax that for some reason asMSX swallows (undocumented):
         // if a line is all dashes, it's ignored:
@@ -225,6 +229,8 @@ public class ASMSXDialect implements Dialect {
             name.equalsIgnoreCase("search") ||
             name.equalsIgnoreCase(".select") ||
             name.equalsIgnoreCase("select") ||
+            name.equalsIgnoreCase(".subpage") ||
+            name.equalsIgnoreCase("subpage") ||
             name.equalsIgnoreCase(".zilog") ||
             name.equalsIgnoreCase("zilog")) {
             return null;
@@ -410,6 +416,8 @@ public class ASMSXDialect implements Dialect {
                             return null;
                     }
                 }
+                // assume we are in the first page:
+                currentPageEnd = pageSize;
             }
             
             // Generates a ROM header (and stores a pointer to the start address, to later modify with the .start directive):
@@ -584,6 +592,40 @@ public class ASMSXDialect implements Dialect {
             }            
             if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
         }    
+        if (tokens.size()>=1 && (tokens.get(0).equalsIgnoreCase(".subpage") || tokens.get(0).equalsIgnoreCase("subpage"))) {
+            tokens.remove(0);
+            Expression page = config.expressionParser.parse(tokens, s, previous, code);
+            if (page == null) {
+                config.error("Cannot parse expression in "+sl.fileNameLineString()+": " + sl.line);
+                return null;
+            }
+            if (tokens.isEmpty() || !tokens.remove(0).equalsIgnoreCase("at")) {
+                config.error("Missing token 'at' in "+sl.fileNameLineString()+": " + sl.line);
+                return null;
+            }
+            Expression address = config.expressionParser.parse(tokens, s, previous, code);
+            if (address == null) {
+                config.error("Cannot parse expression in "+sl.fileNameLineString()+": " + sl.line);
+                return null;
+            }
+            // just set an org, and record it as a page definition org:
+            // - org (address / pageSize) * pageSize
+            s.type = SourceStatement.STATEMENT_ORG;
+            s.org = Expression.operatorExpression(Expression.EXPRESSION_MUL, 
+                        Expression.parenthesisExpression(
+                            Expression.operatorExpression(Expression.EXPRESSION_DIV, 
+                                address,
+                                Expression.constantExpression(pageSize, config), config), 
+                            "(", config),
+                        Expression.constantExpression(pageSize, config), config);
+            int raw_page = page.evaluateToInteger(s, code, false);
+            while(pageDefinitions.size() < raw_page+1) pageDefinitions.add(null);
+            pageDefinitions.set(raw_page, s);
+            
+            // update "currentPageEnd":
+            currentPageEnd += pageSize;
+            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
+        }        
         if (tokens.size() >= 1 && (tokens.get(0).equalsIgnoreCase(".zilog") || tokens.get(0).equalsIgnoreCase("zilog"))) {
             tokens.remove(0);
             config.opParser.indirectionsOnlyWithSquareBrackets = false;
@@ -751,9 +793,7 @@ public class ASMSXDialect implements Dialect {
 
             // "org/page" in asMSX work different than in some other assemblers, and we need to fill with zeros 
             // the space until reaching the address of the org/page! (also, if you have two orgs with the same
-            // address, the latter code will overwrite the first, which is very unfortunate, as there are many
-            // use cases where this is problematic (e.g., copying code to RAM to execute from there), since 
-            // you cannot have code assembled in the same address...):
+            // address, the latter code will overwrite the first:
             if (firstGeneratingBytes != null && lastGeneratingBytes != null) {
                 SourceStatement previous = null;
                 s = firstGeneratingBytes;
@@ -766,9 +806,22 @@ public class ASMSXDialect implements Dialect {
                         if (basicHeaderStatement != previous) {
                             int previousAddress = previous.getAddress(code) + previous.sizeInBytes(code, false, true, false);
                             int orgAddress = s.org.evaluateToInteger(s, code, false);
-                            if (orgAddress > previousAddress) {
+                            int pad = 0;
+                            if (orgAddress > previousAddress) pad = orgAddress - previousAddress;
+                            
+                            // Check to see if this is an "org" statement defining a page:
+                            for(int page = 0;page<pageDefinitions.size(); page++) {
+                                if (pageDefinitions.get(page) == s) {
+                                    // it is! Pad to fill the page:
+                                    if (page > 0 && pageDefinitions.get(page - 1) != null) {
+                                        int previousPageStart = pageDefinitions.get(page - 1).org.evaluateToInteger(s, code, false);
+                                        pad = pageSize - (previousAddress - previousPageStart);
+                                    }
+                                }
+                            }
+                            
+                            if (pad > 0) {
                                 // we need to insert filler space:
-                                int pad = orgAddress - previousAddress;
                                 config.debug("asMSX: pad: " + pad + " to reach " + orgAddress);
                                 SourceStatement padStatement = new SourceStatement(SourceStatement.STATEMENT_DEFINE_SPACE, null, lastGeneratingBytes.source, config);
                                 padStatement.space = Expression.constantExpression(pad, config);
