@@ -31,14 +31,14 @@ public class ASMSXTest {
         code = new CodeBase(mdlConfig);
     }
 
-//    @Test public void test1() throws IOException { Assert.assertTrue(test("data/generationtests/asmsx-builtin.asm", false, 
-//                                                                          "data/generationtests/asmsx-builtin-expected.asm")); }
-//    @Test public void test2() throws IOException { Assert.assertTrue(test("data/generationtests/asmsx-builtin2.asm", false, 
-//                                                                          "data/generationtests/asmsx-builtin2-expected.asm")); }
-//    @Test public void test3() throws IOException { Assert.assertTrue(test("data/generationtests/asmsx-parenthesis.asm", false,
-//                                                                          "data/generationtests/asmsx-parenthesis-expected.asm")); }
-//    @Test public void test4() throws IOException { Assert.assertTrue(test("data/generationtests/asmsx-parenthesis-zilog.asm", true,
-//                                                                          "data/generationtests/asmsx-parenthesis-zilog-expected.asm")); }
+    @Test public void test1() throws IOException { Assert.assertTrue(test("data/generationtests/asmsx-builtin.asm", false, 
+                                                                          "data/generationtests/asmsx-builtin-expected.asm")); }
+    @Test public void test2() throws IOException { Assert.assertTrue(test("data/generationtests/asmsx-builtin2.asm", false, 
+                                                                          "data/generationtests/asmsx-builtin2-expected.asm")); }
+    @Test public void test3() throws IOException { Assert.assertTrue(test("data/generationtests/asmsx-parenthesis.asm", false,
+                                                                          "data/generationtests/asmsx-parenthesis-expected.asm")); }
+    @Test public void test4() throws IOException { Assert.assertTrue(test("data/generationtests/asmsx-parenthesis-zilog.asm", true,
+                                                                          "data/generationtests/asmsx-parenthesis-zilog-expected.asm")); }
     @Test public void test5() throws IOException { Assert.assertTrue(test("data/generationtests/asmsx-crash.asm", true,
                                                                           "data/generationtests/asmsx-crash-expected.asm")); }
     

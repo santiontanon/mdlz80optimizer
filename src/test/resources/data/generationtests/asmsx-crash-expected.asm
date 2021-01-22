@@ -1,4 +1,4 @@
-; This test case used to make mdl crash when using the asmsx dialect
+; This test case used to make mdl crash when using the asmsx-zilog dialect
 	db "AB", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 	push af
 	ld a, 1
