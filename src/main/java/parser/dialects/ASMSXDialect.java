@@ -548,10 +548,17 @@ public class ASMSXDialect implements Dialect {
                     // ld (address), a:
                     s.type = SourceStatement.STATEMENT_CPUOP;
                     List<Expression> sArguments = new ArrayList<>();
-                    sArguments.add(Expression.parenthesisExpression(address, "[", config));
+                    if (config.opParser.indirectionsOnlyWithSquareBrackets) {
+                        sArguments.add(Expression.parenthesisExpression(address, "[", config));
+                    } else {
+                        sArguments.add(Expression.parenthesisExpression(address, "(", config));
+                    }
                     sArguments.add(Expression.symbolExpression("a", s, code, config));
                     List<CPUOp> op_l = config.opParser.parseOp("ld", sArguments, s, previous, code);
-                    if (op_l == null || op_l.size() != 1) return null;
+                    if (op_l == null || op_l.size() != 1) {
+                        config.error("Error creating 'ld (<address>),a' instruction in "+sl.fileNameLineString()+": " + sl.line);
+                        return null;
+                    }
                     s.op = op_l.get(0);
 
                 } else {
@@ -560,7 +567,10 @@ public class ASMSXDialect implements Dialect {
                     List<Expression> s1Arguments = new ArrayList<>();
                     s1Arguments.add(Expression.symbolExpression("af", s1, code, config));
                     List<CPUOp> op_l = config.opParser.parseOp("push", s1Arguments, s1, previous, code);
-                    if (op_l == null || op_l.size() != 1) return null;
+                    if (op_l == null || op_l.size() != 1) {
+                        config.error("Error creating 'push af' instruction in "+sl.fileNameLineString()+": " + sl.line);
+                        return null;
+                    }
                     s1.op = op_l.get(0);
                     l.add(0, s1);
 
@@ -569,23 +579,36 @@ public class ASMSXDialect implements Dialect {
                     s2Arguments.add(Expression.symbolExpression("a", s2, code, config));
                     s2Arguments.add(page);
                     op_l = config.opParser.parseOp("ld", s2Arguments, s2, previous, code);
-                    if (op_l == null || op_l.size() != 1) return null;
+                    if (op_l == null || op_l.size() != 1) {
+                        config.error("Error creating 'ld a,<page>' instruction in "+sl.fileNameLineString()+": " + sl.line);
+                        return null;
+                    }
                     s2.op = op_l.get(0);
                     l.add(1, s2);
 
                     s.type = SourceStatement.STATEMENT_CPUOP;
                     List<Expression> sArguments = new ArrayList<>();
-                    sArguments.add(Expression.parenthesisExpression(address, "[", config));
+                    if (config.opParser.indirectionsOnlyWithSquareBrackets) {
+                        sArguments.add(Expression.parenthesisExpression(address, "[", config));
+                    } else {
+                        sArguments.add(Expression.parenthesisExpression(address, "(", config));
+                    }
                     sArguments.add(Expression.symbolExpression("a", s, code, config));
                     op_l = config.opParser.parseOp("ld", sArguments, s, previous, code);
-                    if (op_l == null || op_l.size() != 1) return null;
+                    if (op_l == null || op_l.size() != 1) {
+                        config.error("Error creating 'ld (<address>),a' instruction in "+sl.fileNameLineString()+": " + sl.line);
+                        return null;
+                    }
                     s.op = op_l.get(0);
 
                     SourceStatement s4 = new SourceStatement(SourceStatement.STATEMENT_CPUOP, sl, source, config);
                     List<Expression> s4Arguments = new ArrayList<>();
                     s4Arguments.add(Expression.symbolExpression("af", s4, code, config));
                     op_l = config.opParser.parseOp("pop", s4Arguments, s4, previous, code);
-                    if (op_l == null || op_l.size() != 1) return null;
+                    if (op_l == null || op_l.size() != 1) {
+                        config.error("Error creating 'pop af' instruction in "+sl.fileNameLineString()+": " + sl.line);
+                        return null;
+                    }
                     s4.op = op_l.get(0);
                     l.add(s4);
                 }
