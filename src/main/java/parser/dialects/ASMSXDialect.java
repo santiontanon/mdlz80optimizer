@@ -49,6 +49,7 @@ public class ASMSXDialect implements Dialect {
 
     String biosCallsFileName = "data/msx-bios-calls.asm";    
     String searchFileName = "data/asmsx-search.asm";    
+    String searchFileNameZilog = "data/asmsx-search-zilog.asm";    
 
     SourceStatement romHeaderStatement = null;
     SourceStatement basicHeaderStatement = null;
@@ -306,8 +307,13 @@ public class ASMSXDialect implements Dialect {
         }
         if (tokens.size()>=1 && (tokens.get(0).equalsIgnoreCase(".search") || tokens.get(0).equalsIgnoreCase("search"))) {
             tokens.remove(0);
-            // Define all the bios calls:
-            List<List<String>> tokenizedLines = tokenizeFileLines(searchFileName);
+            List<List<String>> tokenizedLines;
+            if (config.opParser.indirectionsOnlyWithSquareBrackets) {
+                tokenizedLines = tokenizeFileLines(searchFileName);
+            } else {
+                tokenizedLines = tokenizeFileLines(searchFileNameZilog);
+            }
+            
             for(List<String> tokens2: tokenizedLines) {
                 List<SourceStatement> l2 = config.lineParser.parse(tokens2, sl, source, -1, code, config);
                 l.addAll(l2);
