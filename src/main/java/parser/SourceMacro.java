@@ -105,7 +105,7 @@ public class SourceMacro {
                 for(SourceLine sl:lines) {
                     // we create new instances, as we will modify them:
                     if (counterName != null) {
-                        SourceLine sl2 = replaceMacroArg(sl, reptArgNames, reptArgs, macroCall);
+                        SourceLine sl2 = replaceMacroArg(sl, reptArgNames, reptArgs, macroCall, config);
                         linesTmp.add(sl2);
                     } else {
                         linesTmp.add(new SourceLine(sl.line, sl.source, sl.lineNumber));
@@ -175,7 +175,7 @@ public class SourceMacro {
                 }
 
                 for(SourceLine sl:lines) {
-                    SourceLine sl2 = replaceMacroArg(sl, argNames, args, macroCall);
+                    SourceLine sl2 = replaceMacroArg(sl, argNames, args, macroCall, config);
                     lines2.add(sl2);
                 }                
             } else {
@@ -208,7 +208,7 @@ public class SourceMacro {
     }
 
     
-    public SourceLine replaceMacroArg(SourceLine sl, List<String> names, List<Expression> args, SourceStatement macroCall)
+    public SourceLine replaceMacroArg(SourceLine sl, List<String> names, List<Expression> args, SourceStatement macroCall, MDLConfig config)
     {
         String line2 = sl.line;
         List<String> tokens = Tokenizer.tokenizeIncludingBlanks(line2);
@@ -216,8 +216,8 @@ public class SourceMacro {
 
         String previous = null;
         for(String token:tokens) {
-            if (previous != null && previous.equals("?") && Tokenizer.isSymbol(token)) {
-                // variable name starting with "?":
+            if (previous != null && config.lineParser.macroArguentPrefixes.contains(previous) && Tokenizer.isSymbol(token)) {
+                // variable name starting with "?" (or equivalent parameter prefix for the dialect):
                 line2 = line2.substring(0, line2.length()-1);
                 token = previous + token;
             }

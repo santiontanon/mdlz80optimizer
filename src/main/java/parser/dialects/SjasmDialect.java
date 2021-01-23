@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.StringTokenizer;
+import parser.LineParser;
 import parser.MacroExpansion;
 import parser.SourceLine;
 import parser.SourceMacro;
@@ -181,7 +182,7 @@ public class SjasmDialect implements Dialect {
         config.lineParser.keywordsHintingALabel.add("field");
         config.lineParser.keywordsHintingALabel.add(":=");
         config.lineParser.allowIncludesWithoutQuotes = true;
-        config.lineParser.macroNameIsFirstArgumentOfMacro = true;
+        config.lineParser.macroDefinitionStyle = LineParser.MACRO_MACRO_NAME_ARGS;
         config.lineParser.allowNumberLabels = true;
         config.lineParser.allowExtendedSjasmInstructions = true;
         

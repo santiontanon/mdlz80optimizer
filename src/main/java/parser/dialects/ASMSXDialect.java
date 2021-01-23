@@ -15,6 +15,7 @@ import java.io.BufferedReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import parser.LineParser;
 import parser.SourceLine;
 import parser.Tokenizer;
 import util.Resources;
@@ -117,6 +118,12 @@ public class ASMSXDialect implements Dialect {
             config.opParser.indirectionsOnlyWithSquareBrackets = true;
             config.opParser.indirectionsOnlyWithParenthesis = false;
         }
+        
+        config.lineParser.macroArguentPrefixes.clear();
+        config.lineParser.macroArguentPrefixes.add("#");
+        config.lineParser.macroArguentPrefixes.add("@");
+        config.lineParser.macroDefinitionStyle = LineParser.MACRO_BOTH;
+        config.preProcessor.macroSynonyms.put("endmacro", config.preProcessor.MACRO_ENDM);
     }
 
 

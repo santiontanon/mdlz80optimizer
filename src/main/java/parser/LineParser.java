@@ -20,6 +20,10 @@ import code.SourceStatement;
 import util.Resources;
 
 public class LineParser {
+    public static final int MACRO_LABEL_MACRO_ARGS = 1;
+    public static final int MACRO_MACRO_NAME_ARGS = 2;
+    public static final int MACRO_BOTH = 3;
+    
 
     public String KEYWORD_ORG = "org";
     public String KEYWORD_INCLUDE = "include";
@@ -32,6 +36,7 @@ public class LineParser {
     public String KEYWORD_COLON = ":";
     HashMap<String, String> keywordSynonyms = new HashMap<>();
     public List<String> keywordsHintingALabel = new ArrayList<>();
+    public List<String> macroArguentPrefixes = new ArrayList<>();
     
     // If a label is defined with any of these names, it will be renamed to "__mdlrenamed__"+symbol:
     public List<String> forbiddenSymbols = new ArrayList<>();
@@ -43,7 +48,7 @@ public class LineParser {
     public boolean allowExtendedSjasmInstructions = false;
 
     // sjasm defines macros like: "macro macroname arg1,...,agn" instead of "macroname: macro arg1,...,argn":
-    public boolean macroNameIsFirstArgumentOfMacro = false;
+    public int macroDefinitionStyle = MACRO_LABEL_MACRO_ARGS;
     public boolean allowNumberLabels = false;   // also for sjasm (for "reusable" labels)
     public boolean caseSensitiveSymbols = true;
     public boolean applyEscapeSequencesToIncludeArguments = true;
@@ -67,6 +72,8 @@ public class LineParser {
         keywordsHintingALabel.add(KEYWORD_DD);
         
         forbiddenSymbols.add("end");
+        
+        macroArguentPrefixes.add("?");
     }
 
     public void addKeywordSynonym(String synonym, String kw) {
@@ -832,21 +839,43 @@ public class LineParser {
             tokens.remove(0);
         }
         
-        if (macroNameIsFirstArgumentOfMacro) {
-            if (s.label != null || tokens.isEmpty()) {
-                config.error("parseMacroDefinition: Cannot parse line " + sl);
-                return false;
-            }
-            String macroNameStr = tokens.remove(0);
-            SourceConstant c = new SourceConstant(macroNameStr, macroNameStr, null, s, config);
-            s.label = c;
-        } else {
-            if (s.label == null) {
-                config.error("parseMacroDefinition: Cannot parse line " + sl);
-                return false;
-            }
-        }
-
+        switch(macroDefinitionStyle) {
+            case MACRO_LABEL_MACRO_ARGS:
+                if (s.label == null) {
+                    config.error("parseMacroDefinition: Cannot parse line " + sl);
+                    return false;
+                }
+                break;
+            case MACRO_MACRO_NAME_ARGS:
+                {
+                    if (s.label != null || tokens.isEmpty()) {
+                        config.error("parseMacroDefinition: Cannot parse line " + sl);
+                        return false;
+                    }
+                    String macroNameStr = tokens.remove(0);
+                    SourceConstant c = new SourceConstant(macroNameStr, macroNameStr, null, s, config);
+                    s.label = c;
+                }
+                break;
+            case MACRO_BOTH:
+                if (s.label != null) {
+                    // we have "label: macro args", nothing to do
+                } else {
+                    // we have "macro name args"
+                    if (tokens.isEmpty()) {
+                        config.error("parseMacroDefinition: Cannot parse line " + sl);
+                        return false;
+                    }
+                    String macroNameStr = tokens.remove(0);
+                    SourceConstant c = new SourceConstant(macroNameStr, macroNameStr, null, s, config);
+                    s.label = c;
+                }
+                break;
+            default:
+                config.error("parseMacroDefinition: invalid macro style defined for dialect!");
+                return false;                
+        }        
+        
         // parseArgs arguments:
         List<String> args = new ArrayList<>();
         List<Expression> defaultValues = new ArrayList<>();
@@ -855,7 +884,7 @@ public class LineParser {
                 && !Tokenizer.isMultiLineCommentStart(tokens.get(0))) {
             String token = tokens.get(0);
             tokens.remove(0);
-            if (token.equals("?")) {
+            if (macroArguentPrefixes.contains(token)) {
                 args.add(token + tokens.remove(0));
             } else {
                 args.add(token);
