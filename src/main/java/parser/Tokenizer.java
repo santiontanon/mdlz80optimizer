@@ -72,32 +72,32 @@ public class Tokenizer {
             if (previous != null) {
                 if (doubleTokens.contains(previous+next)) {
                     tokens.remove(tokens.size()-1);
-                    tokens.add(previous+next);
-                    previous = previous+next;
+                    tokens.add(previous.concat(next));
+                    previous = previous.concat(next);
                     continue;
                 }
                 if (!sdccStyleHashMarksForConstants) {
                     if (previous.equals("#") && isHexCharacter(next.charAt(0))) {
                         // merge, as this is just a single symbol
                         tokens.remove(tokens.size()-1);
-                        tokens.add(previous+next);
-                        previous = previous+next;
+                        tokens.add(previous.concat(next));
+                        previous = previous.concat(next);
                         continue;
                     }
                 }
                 if (previous.equals("$") && isHexCharacter(next.charAt(0))) {
                     // merge, as this is just a single symbol
                     tokens.remove(tokens.size()-1);
-                    tokens.add(previous+next);
-                    previous = previous+next;
+                    tokens.add(previous.concat(next));
+                    previous = previous.concat(next);
                     continue;
                 }
                 if (allowAndpersandHex) {
                     if (previous.equals("&") && isHexCharacter(next.charAt(0))) {
                         // merge, as this is just a single symbol
                         tokens.remove(tokens.size()-1);
-                        tokens.add(previous+next);
-                        previous = previous+next;
+                        tokens.add(previous.concat(next));
+                        previous = previous.concat(next);
                         continue;
                     }
                 }
@@ -111,8 +111,8 @@ public class Tokenizer {
                     }
                     if (allPercents) {
                         tokens.remove(tokens.size()-1);
-                        tokens.add(previous+next);
-                        previous = previous+next;
+                        tokens.add(previous.concat(next));
+                        previous = previous.concat(next);
                         continue;
                     }
                 }
@@ -123,38 +123,37 @@ public class Tokenizer {
                 tokens.remove(tokens.size()-1);
                 tokens.add(token);
             } else if (next.equals("\"")) {
-                String token = next;
+                StringBuilder tokenBuilder = new StringBuilder(next);
                 while(st.hasMoreTokens()) {
                     next = st.nextToken();
                     if (next.equals("\\")) {
                         String nextNext = st.nextToken();
                         // TODO: support escape sequences longer than 1 character:
                         if (stringEscapeSequences.containsKey(nextNext.substring(0, 1))) {
-                            token += stringEscapeSequences.get(nextNext.substring(0, 1)) + nextNext.substring(1);
+                            tokenBuilder.append(stringEscapeSequences.get(nextNext.substring(0, 1))).append(nextNext.substring(1));
                         } else {
-                            token += next += nextNext;
+                            tokenBuilder.append(next).append(nextNext);
                         }
                     } else {
-                        token += next;
+                        tokenBuilder.append(next);
                     }
                     if (next.equals("\"")) {
                         break;
                     }
                 }
+                String token = tokenBuilder.toString();
                 if (token.length()<2 || !token.endsWith("\"")) return null;
-//                for(String symbol:stringEscapeSequences.keySet()) {
-//                    token = token.replace(stringEscapeSequences.get(symbol), symbol);
-//                }
                 tokens.add(token);
             } else if (next.equals("'")) {
-                String token = next;
+                StringBuilder tokenBuilder = new StringBuilder(next);
                 while(st.hasMoreTokens()) {
                     next = st.nextToken();
-                    token += next;
+                    tokenBuilder.append(next);
                     if (next.equals("'")) {
                         break;
                     }
                 }
+                String token = tokenBuilder.toString();
                 if (token.length()<2 || !token.endsWith("'")) return null;
                 token = "\"" + token.substring(1, token.length()-1) + "\"";
                 tokens.add(token);

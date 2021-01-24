@@ -110,8 +110,9 @@ public class SourceFile {
 
 
     // returns <statement, callstack>
-    public List<Pair<SourceStatement, List<SourceStatement>>> nextExecutionStatements(SourceStatement s, boolean goInsideInclude,
-                                                         List<SourceStatement> callStack, CodeBase code)
+    public List<Pair<SourceStatement, List<SourceStatement>>> 
+        nextExecutionStatements(SourceStatement s, boolean goInsideInclude,
+                                List<SourceStatement> callStack, CodeBase code)
     {
         int index = statements.indexOf(s);
         if (index == -1) {
@@ -126,8 +127,9 @@ public class SourceFile {
     This function returns "null" when there are some potential next statements that cannot be determined.
     For example, when encountering a "ret", a "jp hl", a "call CONSTANT", where CONSTANT is not a label (could be a system call)
     */
-    public List<Pair<SourceStatement, List<SourceStatement>>> nextExecutionStatements(int index, boolean goInsideInclude,
-                                                         List<SourceStatement> callStack, CodeBase code)
+    public List<Pair<SourceStatement, List<SourceStatement>>> 
+        nextExecutionStatements(int index, boolean goInsideInclude,
+                                List<SourceStatement> callStack, CodeBase code)
     {
         SourceStatement s = statements.get(index);
         switch(s.type) {
