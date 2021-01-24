@@ -83,6 +83,10 @@ public class Expression {
     public Integer evaluateToIntegerInternal(SourceStatement s, CodeBase code, boolean silent, List<String> variableStack) {
         return (Integer)evaluateInternal(s, code, silent, variableStack);
     }
+
+    public String evaluateToString(SourceStatement s, CodeBase code, boolean silent) {
+        return (String)evaluateInternal(s, code, silent, new ArrayList<>());
+    }
     
 
     public Object evaluate(SourceStatement s, CodeBase code, boolean silent) {
@@ -990,6 +994,52 @@ public class Expression {
             return config.dialectParser.expressionEvaluatesToIntegerConstant(dialectFunction);
         }
         return false;
+    }
+    
+    public boolean evaluatesToStringConstant() {
+        if (type == EXPRESSION_INTEGER_CONSTANT) {
+            return false;
+        }
+        if (type == EXPRESSION_SYMBOL) {
+            return false;
+        }
+        if (type == EXPRESSION_STRING_CONSTANT) {
+            return true;
+        }
+        if (type == EXPRESSION_PARENTHESIS) {
+            return args.get(0).evaluatesToStringConstant();
+        }
+        if (type == EXPRESSION_SIGN_CHANGE
+                || type == EXPRESSION_SUM
+                || type == EXPRESSION_SUB
+                || type == EXPRESSION_MUL
+                || type == EXPRESSION_DIV
+                || type == EXPRESSION_MOD
+                || type == EXPRESSION_OR
+                || type == EXPRESSION_AND
+                || type == EXPRESSION_EQUAL
+                || type == EXPRESSION_LOWERTHAN
+                || type == EXPRESSION_GREATERTHAN
+                || type == EXPRESSION_LEQTHAN
+                || type == EXPRESSION_GEQTHAN
+                || type == EXPRESSION_DIFF
+                || type == EXPRESSION_LSHIFT
+                || type == EXPRESSION_RSHIFT
+                || type == EXPRESSION_BITOR
+                || type == EXPRESSION_BITAND
+                || type == EXPRESSION_BITNEGATION
+                || type == EXPRESSION_BITXOR
+                || type == EXPRESSION_LOGICAL_NEGATION
+                || type == EXPRESSION_PLUS_SIGN) {
+            return false;
+        }
+        if (type == EXPRESSION_TERNARY_IF) {
+            return args.get(1).evaluatesToStringConstant() && args.get(2).evaluatesToStringConstant();
+        }
+        if (type == EXPRESSION_DIALECT_FUNCTION) {
+            return config.dialectParser.expressionEvaluatesToStringConstant(dialectFunction);
+        }
+        return false;        
     }
 
     public int sizeInBytes(int granularity) {

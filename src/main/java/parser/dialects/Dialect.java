@@ -83,6 +83,12 @@ public interface Dialect {
         // (no-op by default)
         return true;
     }
+
+    // Returns true if a function returns a string
+    default boolean expressionEvaluatesToStringConstant(String functionName) {
+        // (no-op by default)
+        return false;
+    }
     
     // Called to expand any dialect-specific macros:
     default MacroExpansion instantiateMacro(SourceMacro macro, List<Expression> args, SourceStatement macroCall, CodeBase code) {

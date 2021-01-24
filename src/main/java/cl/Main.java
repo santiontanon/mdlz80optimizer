@@ -6,6 +6,7 @@ package cl;
 import workers.DotGenerator;
 import code.CodeBase;
 import workers.AnnotatedSourceCodeGenerator;
+import workers.BinaryGenerator;
 import workers.pattopt.PatternBasedOptimizer;
 import workers.SourceCodeGenerator;
 import workers.SourceCodeTableGenerator;
@@ -26,6 +27,7 @@ public class Main {
         config.registerWorker(new SourceCodeTableGenerator(config));
         config.registerWorker(new SourceCodeGenerator(config));
         config.registerWorker(new AnnotatedSourceCodeGenerator(config));
+        config.registerWorker(new BinaryGenerator(config));
 
         // Parse command line arguments:
         if (!config.parseArgs(args)) System.exit(1);
