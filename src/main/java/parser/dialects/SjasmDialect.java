@@ -398,7 +398,7 @@ public class SjasmDialect implements Dialect {
     
     private boolean addFakeInstruction(String in, String out)
     {
-        String data[] = {in,"0","0","2","ff","0", "","","","", "","","","", "false"};
+        String data[] = {in,"1","ff ff","2", "","","","", "","","","", "false"};
         CPUOpSpec fakeSpec = config.opSpecParser.parseOpSpecLine(data, config);
         if (fakeSpec == null) {
             config.error("cannot parse fake instruction " + in);

@@ -3,6 +3,4 @@
     db "AB", loop % 256, loop / 256, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 loop:
 	jr loop
-        ld a, 3
-        ld b, 5
-	ds 8170, 0
+	ds 8174, 0

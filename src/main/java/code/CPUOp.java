@@ -6,6 +6,8 @@ package code;
 import cl.MDLConfig;
 import java.util.ArrayList;
 import java.util.List;
+import parser.Tokenizer;
+import sun.reflect.generics.tree.ByteSignature;
 
 public class CPUOp {
     MDLConfig config;
@@ -254,4 +256,34 @@ public class CPUOp {
         }
         return true;
     }    
+    
+    
+    public List<Integer> assembleToBytes(SourceStatement s, CodeBase code, MDLConfig config)
+    {
+        List<Integer> data = new ArrayList<>();
+        
+        for(String v[]:spec.bytesRepresentation) {
+            int baseByte = Tokenizer.parseHex(v[0]);
+            if (v[1].equals("")) {
+                data.add(baseByte);
+            } else if (v[1].equals("o")) {
+                // jr/djnz offset:
+                if (spec.isJump()) {
+                    int base = s.getAddress(code) + spec.sizeInBytes;
+                    int target = args.get(0).evaluateToInteger(s, code, true);
+                    int offset = (target - base)&0xff;
+                    data.add(offset);
+                } else {
+                    // ld IX/IY offet:
+                    // ...
+                    config.error("Unable to convert " + this + " to bytes! Unsupported byte modifier o for something different than a jump");
+                    return null;
+                }
+            } else {
+                config.error("Unable to convert " + this + " to bytes! Unsupported byte modifier " + v[1]);
+                return null;
+            }
+        }
+        return data;
+    }
 }

@@ -23,12 +23,12 @@ import workers.SourceCodeGenerator;
  */
 public class ASMSXTest {
 
-    private final MDLConfig mdlConfig;
+    private final MDLConfig config;
     private final CodeBase code;
 
     public ASMSXTest() {
-        mdlConfig = new MDLConfig();
-        code = new CodeBase(mdlConfig);
+        config = new MDLConfig();
+        code = new CodeBase(config);
     }
 
     @Test public void test1() throws IOException { Assert.assertTrue(test("data/generationtests/asmsx-builtin.asm", false, 
@@ -48,15 +48,15 @@ public class ASMSXTest {
     private boolean test(String inputFile, boolean zilogMode, String expectedOutputFile) throws IOException
     {
         if (zilogMode) {
-            Assert.assertTrue(mdlConfig.parseArgs(inputFile,"-dialect","asmsx-zilog"));
+            Assert.assertTrue(config.parseArgs(inputFile,"-dialect","asmsx-zilog"));
         } else {
-            Assert.assertTrue(mdlConfig.parseArgs(inputFile,"-dialect","asmsx"));        
+            Assert.assertTrue(config.parseArgs(inputFile,"-dialect","asmsx"));        
         }
         Assert.assertTrue(
                 "Could not parse file " + inputFile,
-                mdlConfig.codeBaseParser.parseMainSourceFile(mdlConfig.inputFile, code));
+                config.codeBaseParser.parseMainSourceFile(config.inputFile, code));
 
-        SourceCodeGenerator scg = new SourceCodeGenerator(mdlConfig);
+        SourceCodeGenerator scg = new SourceCodeGenerator(config);
 
         String result = scg.sourceFileString(code.getMain(), code);
         List<String> lines = new ArrayList<>();

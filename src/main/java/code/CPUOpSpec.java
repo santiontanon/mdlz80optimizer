@@ -7,6 +7,7 @@ import cl.MDLConfig;
 
 import java.util.ArrayList;
 import java.util.List;
+import parser.Tokenizer;
 
 public class CPUOpSpec {
     MDLConfig config;
@@ -14,8 +15,8 @@ public class CPUOpSpec {
     public List<CPUOpSpecArg> args = new ArrayList<>();
     int sizeInBytes;
     int times[];
-    String byteRepresentation = null;   // even if MDL does not compile,
-                                        // this is useful to check if two instructions are the same
+    String byteRepresentationRaw = null;    // this is useful to check if two instructions are the same
+    List<String[]> bytesRepresentation; // each element is a byte, and the array has 2 elements: the byte, and the modifier
     
     public boolean official;
     public CPUOpSpec officialEquivalent = null;
@@ -35,9 +36,20 @@ public class CPUOpSpec {
         opName = a_opName;
         sizeInBytes = a_size;
         times = a_times;
-        byteRepresentation = a_byteRepresentation;
+        byteRepresentationRaw = a_byteRepresentation;
         official = a_official;
         config = a_config;
+        
+        bytesRepresentation = new ArrayList<>();
+        for(String byteString:byteRepresentationRaw.split(" ")) {
+            List<String> tokens = Tokenizer.tokenize(byteString);
+            if (tokens.get(0).equals("o")) {
+                bytesRepresentation.add(new String[]{"0", byteString});
+            } else {
+                bytesRepresentation.add(new String[]{tokens.get(0), byteString.substring(tokens.get(0).length())});
+            }
+        }
+        assert(sizeInBytes == bytesRepresentation.size());
     }
     
     
@@ -46,7 +58,7 @@ public class CPUOpSpec {
         if (official) return true;
         for(CPUOpSpec spec:specs) {
             if (spec == this) continue;
-            if (spec.byteRepresentation.equals(byteRepresentation)) {
+            if (spec.byteRepresentationRaw.equals(byteRepresentationRaw)) {
                 officialEquivalent = spec;
                 return true;
             }
