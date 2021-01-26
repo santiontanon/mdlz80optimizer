@@ -33,7 +33,7 @@ public class BinaryGenerator implements MDLWorker {
     
     @Override
     public String docString() {
-        return "  -bin <output file>: generates an assembled binary.\n";
+        return "  -bin <output file>: [task] generates an assembled binary.\n";
     }
 
     
@@ -170,4 +170,21 @@ public class BinaryGenerator implements MDLWorker {
         }
     }
     
+    
+    @Override
+    public boolean triggered() {
+        return outputFileName != null;
+    }
+
+    
+    @Override
+    public MDLWorker cloneForExecutionQueue() {
+        BinaryGenerator w = new BinaryGenerator(config);
+        w.outputFileName = outputFileName;
+        
+        // reset state:
+        outputFileName = null;
+        
+        return w;
+    }    
 }

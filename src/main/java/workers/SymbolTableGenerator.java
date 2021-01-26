@@ -32,7 +32,7 @@ public class SymbolTableGenerator implements MDLWorker {
 
     @Override
     public String docString() {
-        return "  -st <output file>: to output the symbol table.\n" +
+        return "  -st <output file>: [task] to output the symbol table.\n" +
                "  -st-constants: includes constants, in addition to labels, in the output symbol table.\n";
     }
 
@@ -102,5 +102,23 @@ public class SymbolTableGenerator implements MDLWorker {
         }
 
         return sb.toString();
+    }
+
+    @Override
+    public boolean triggered() {
+        return outputFileName != null;
+    }
+
+    
+    @Override
+    public MDLWorker cloneForExecutionQueue() {
+        SymbolTableGenerator w = new SymbolTableGenerator(config);
+        w.outputFileName = outputFileName;
+        w.includeConstants = includeConstants;
+        
+        // reset state:
+        outputFileName = null;
+        
+        return w;
     }
 }

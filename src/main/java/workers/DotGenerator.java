@@ -27,7 +27,7 @@ public class DotGenerator implements MDLWorker {
     @Override
     public String docString()
     {
-        return "  -dot <output file>: generates a dot file with a graph representing the whole source code.\n" +
+        return "  -dot <output file>: [task] generates a dot file with a graph representing the whole source code.\n" +
                "                      convert it to a png using 'dot' like this: dot -Tpng <output file>.dot -o <output file>.png\n";
     }
 
@@ -129,4 +129,22 @@ public class DotGenerator implements MDLWorker {
 
         return str;
     }
+    
+    
+    @Override
+    public boolean triggered() {
+        return outputFileName != null;
+    }
+
+    
+    @Override
+    public MDLWorker cloneForExecutionQueue() {
+        DotGenerator w = new DotGenerator(config);
+        w.outputFileName = outputFileName;
+        
+        // reset state:
+        outputFileName = null;
+        
+        return w;
+    }     
 }

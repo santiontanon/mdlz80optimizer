@@ -31,7 +31,7 @@ public class AnnotatedSourceCodeGenerator implements MDLWorker {
 
     @Override
     public String docString() {
-        return "  -asm+ <output file>: generates a single text file containing the original assembler code " +
+        return "  -asm+ <output file>: [task] generates a single text file containing the original assembler code " +
                "(with macros expanded), that includes size and time annotations at the beginning of each file " +
                "to help with manual optimizations beyond what MDL already provides.\n";
     }
@@ -116,4 +116,22 @@ public class AnnotatedSourceCodeGenerator implements MDLWorker {
             sb.append("\n");
         }
     }
+    
+    
+    @Override
+    public boolean triggered() {
+        return outputFileName != null;
+    }
+
+    
+    @Override
+    public MDLWorker cloneForExecutionQueue() {
+        AnnotatedSourceCodeGenerator w = new AnnotatedSourceCodeGenerator(config);
+        w.outputFileName = outputFileName;
+        
+        // reset state:
+        outputFileName = null;
+        
+        return w;
+    }     
 }

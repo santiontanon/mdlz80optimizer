@@ -76,12 +76,12 @@ public class PatternBasedOptimizer implements MDLWorker {
 
     @Override
     public String docString() {
-        return "  -po: Runs the pattern-based optimizer (notice that using any of the -po* flags also has the same effect of turning on the pattern-based optimized). You can pass an optional parameter, like '-po size' or '-po speed', which are shortcuts for '-po -popatterns data/pbo-patterns-size.txt' and '-po -popatterns data/pbo-patterns-speed.txt'\n" +
-               "  -posilent: Supresses the pattern-based-optimizer output\n" +
-               "  -poapply: For each assembler <file> parsed by MDL, a corresponding <file>.mdl.asm is generated with the optimizations applied to it.\n" + 
-               "  -popotential: Reports lines where a potential optimization was not applied for safety, but could maybe be done manually (at most one potential optimization per line is shown).\n" +
-               "  -popotential-all: Same as above, but without the one-per-line constraint.\n" +
-               "  -popatterns <file>: specifies the file to load optimization patterns from (default 'data/pbo-patterns.txt', " +
+        return "  -po: [task] Runs the pattern-based optimizer (notice that using any of the -po* flags also has the same effect of turning on the pattern-based optimized). You can pass an optional parameter, like '-po size' or '-po speed', which are shortcuts for '-po -popatterns data/pbo-patterns-size.txt' and '-po -popatterns data/pbo-patterns-speed.txt'\n" +
+               "  -posilent: [task] Supresses the pattern-based-optimizer output\n" +
+               "  -poapply: [task] For each assembler <file> parsed by MDL, a corresponding <file>.mdl.asm is generated with the optimizations applied to it.\n" + 
+               "  -popotential: [task] Reports lines where a potential optimization was not applied for safety, but could maybe be done manually (at most one potential optimization per line is shown).\n" +
+               "  -popotential-all: [task] Same as above, but without the one-per-line constraint.\n" +
+               "  -popatterns <file>: [task] specifies the file to load optimization patterns from (default 'data/pbo-patterns.txt', " +
                                      "which contains patterns that optimize both size and speed). For targetting size optimizations, use " +
                                      "'data/pbo-patterns-size.txt'.\n";
     }
@@ -399,4 +399,28 @@ public class PatternBasedOptimizer implements MDLWorker {
         }
         return true;
     }
+    
+    
+    @Override
+    public boolean triggered() {
+        return activate;
+    }
+
+    
+    @Override
+    public MDLWorker cloneForExecutionQueue() {
+        PatternBasedOptimizer w = new PatternBasedOptimizer(config);
+
+        w.logPotentialOptimizations = logPotentialOptimizations;
+        w.generateFilesWithAppliedOptimizations = generateFilesWithAppliedOptimizations;
+        w.onlyOnePotentialOptimizationPerLine = onlyOnePotentialOptimizationPerLine;
+        w.activate = activate;
+        w.silent = silent;
+        w.inputPatternsFileName = inputPatternsFileName;
+        
+        // reset state:
+        activate = false;
+        
+        return w;
+    }      
 }

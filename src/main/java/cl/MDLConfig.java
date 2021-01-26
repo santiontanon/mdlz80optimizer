@@ -36,7 +36,6 @@ public class MDLConfig {
     public String symbolTableAllOutputFile = null;
     public String sourceFileOutputFile = null;
     public String dotOutputFile = null;
-    public boolean somethingToDo = true;
 
     public String cpuInstructionSet = "data/z80msx-instruction-set.tsv";
     public String timeUnit = "t-state";
@@ -82,10 +81,13 @@ public class MDLConfig {
     public CPUOpParser opParser;
 
     List<MDLWorker> workers = new ArrayList<>();
+    
+    List<MDLWorker> executionQueue = new ArrayList<>();
 
-    public String docString = "MDL "+Main.VERSION_STRING+" (A Z80 assembler optimizer) by Santiago Ontañón (Brain Games, 2020)\n"
+    public String docString = "MDL "+Main.VERSION_STRING+" (A Z80 assembler optimizer) by Santiago Ontañón (Brain Games, 2020-2021)\n"
             + "https://github.com/santiontanon/mdlz80optimizer\n" + "\n"
-            + "arguments: <input assembler file> [options]\n"
+            + "arguments: <input assembler file> [options/tasks]\n"
+            + "Tasks will be executed in the order in which they are specified in the commandline, and using all the flag specified previously. Tasks can be repeated many times in the same command line.\n"
             + "  -cpu <type>: to select a different CPU (z80/z80msx/z80cpc) (default: z80msx).\n"
             + "  -dialect <type>: to allow parsing different assembler dialects "
                     + "(" + StringUtils.join(Dialects.knownDialects(), '/') + ") "
@@ -132,7 +134,7 @@ public class MDLConfig {
     }
 
     public boolean executeWorkers(CodeBase code) {
-        for (MDLWorker w : workers) {
+        for (MDLWorker w : executionQueue) {
             if (!w.work(code)) {
                 error("Problem executing worker " + w.getClass().getSimpleName());
                 return false;
@@ -143,7 +145,7 @@ public class MDLConfig {
 
 
     public boolean somethingToDo() {
-        return somethingToDo;
+        return !executionQueue.isEmpty();
     }
 
     /*
@@ -152,7 +154,6 @@ public class MDLConfig {
     public boolean parseArgs(String... argsArray) throws IOException {
         if (argsArray.length == 0) {
             info(docString);
-            somethingToDo = false;
             return true;
         }
 
@@ -381,14 +382,19 @@ public class MDLConfig {
 
                     default:
                     {
-                        boolean recognized = false;
+                        MDLWorker recognizedBy = null;
                         for(MDLWorker w:workers) {
                             if (w.parseFlag(args)) {
-                                recognized = true;
+                                recognizedBy = w;
                                 break;
                             }
                         }
-                        if (!recognized) {
+                        if (recognizedBy != null) {
+                            if (recognizedBy.triggered()) {
+                                // add to the execution queue:
+                                executionQueue.add(recognizedBy.cloneForExecutionQueue());
+                            }
+                        } else {
                             error("Unrecognized argument " + arg);
                             return false;
                         }
