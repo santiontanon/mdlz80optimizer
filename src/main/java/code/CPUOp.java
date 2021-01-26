@@ -276,9 +276,33 @@ public class CPUOp {
                     data.add(offset);
                 } else {
                     // ld IX/IY offet:
-                    // ...
-                    config.error("Unable to convert " + this + " to bytes! Unsupported byte modifier o for something different than a jump");
-                    return null;
+                    int arg_idx = -1;
+                    for(int i = 0;i<args.size();i++) {
+                        if (spec.args.get(i).regOffsetIndirection != null) {
+                            arg_idx = i;
+                        }
+                    }
+                    if (arg_idx == -1) {
+                        config.error("Unable to convert " + this + " to bytes! Could not find argument with an indirection with offset");
+                        return null;
+                    }
+                    Integer o = null;
+                    if (args.get(arg_idx).type == Expression.EXPRESSION_PARENTHESIS) {
+                        Expression arg = args.get(arg_idx).args.get(0);
+                        if (arg.type == Expression.EXPRESSION_SUM) {
+                            o = arg.args.get(1).evaluateToInteger(s, code, true);
+                        } else if (arg.type == Expression.EXPRESSION_SUB) {
+                            o = arg.args.get(1).evaluateToInteger(s, code, true);
+                            if (o != null) o = -o;
+                        } else if (arg.type == Expression.EXPRESSION_REGISTER_OR_FLAG) {
+                            o = 0;
+                        }
+                    }
+                    if (o == null) {
+                        config.error("Unable to convert " + this + " to bytes! Could not find the offset");
+                        return null;
+                    }
+                    data.add(o);
                 }
                 
             } else if (v[1].equals("n")) {
@@ -339,7 +363,9 @@ public class CPUOp {
             } else if (v[1].equals("+7")) {
                 data.add(baseByte+7);
 
-            } else if (v[1].equals("+r")) {
+            } else if (v[1].equals("+r") ||
+                       v[1].equals("+p") ||
+                       v[1].equals("+q")) {
                 // register (which is the last argument of the op):
                 Integer r = registerValueForByte(args.get(args.size()-1).registerOrFlagName);
                 if (r == null) {
@@ -347,6 +373,23 @@ public class CPUOp {
                     return null;
                 }
                 data.add(baseByte+r);
+
+            } else if (v[1].equals("+8*p") ||
+                       v[1].equals("+8*q")) {
+                // register (which is the last argument of the op):
+                Integer r = registerValueForByte(args.get(args.size()-1).registerOrFlagName);
+                if (r == null) {
+                    config.error("Unable to convert register name to value " + this);
+                    return null;
+                }
+                data.add(baseByte+8*r);
+                
+            } else if (v[1].equals("+8*b")) {
+                Integer b = args.get(0).evaluateToInteger(s, code, true);
+                if (b == null) {
+                    config.error("Unable to convert bit to value " + this);
+                }
+                data.add(baseByte+8*(b&0x07));
                 
             } else if (v[1].equals("+8*b+r")) {
                 Integer b = args.get(0).evaluateToInteger(s, code, true);
@@ -355,6 +398,7 @@ public class CPUOp {
                     config.error("Unable to convert bit or register name to value " + this);
                 }
                 data.add(baseByte+8*(b&0x07)+r);
+                
             } else {
                 config.error("Unable to convert " + this + " to bytes! Unsupported byte modifier " + v[1]);
                 return null;
@@ -377,8 +421,12 @@ public class CPUOp {
             case "e":
                 return 3;
             case "h":
+            case "ixh":
+            case "iyh":
                 return 4;
             case "l":
+            case "ixl":
+            case "iyl":
                 return 5;
             default:
                 return null;
