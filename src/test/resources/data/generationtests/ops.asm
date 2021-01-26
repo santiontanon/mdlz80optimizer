@@ -1,0 +1,363 @@
+; one of each of the CPU ops:
+	ADC A,(HL)
+	ADC A,(IX+1)
+	ADC A,(IY+1)
+	ADC A,1
+	ADC A,A
+	ADC A,IXL
+	ADC A,IYH
+	ADC HL,BC
+	ADC HL,DE
+	ADC HL,HL
+	ADC HL,SP
+	ADD A,(HL)
+	ADD A,(IX+1)
+	ADD A,(IY+1)
+	ADD A,1
+	ADD A,A
+	ADD A,IXL
+	ADD A,IYH
+	ADD HL,BC
+	ADD HL,DE
+	ADD HL,HL
+	ADD HL,SP
+	ADD IX,BC
+	ADD IX,DE
+	ADD IX,IX
+	ADD IX,SP
+	ADD IY,BC
+	ADD IY,DE
+	ADD IY,IY
+	ADD IY,SP
+	AND (HL)
+	AND (IX+1)
+	AND (IY+1)
+	AND 1
+	AND A
+	AND IXL
+	AND IYH
+	BIT 1,(HL)
+	BIT 1,(IX+1)
+	BIT 1,(IY+1)
+	BIT 1,A
+	CALL #1020
+	CALL C,#1020
+	CALL M,#1020
+	CALL NC,#1020
+	CALL NZ,#1020
+	CALL P,#1020
+	CALL PE,#1020
+	CALL PO,#1020
+	CALL Z,#1020
+	CCF
+	CP (HL)
+	CP (IX+1)
+	CP (IY+1)
+	CP 1
+	CP A
+	CP IXL
+	CP IYH
+	CPD
+	CPDR
+	CPI
+	CPIR
+	CPL
+	DAA
+	DEC (HL)
+	DEC (IX+1)
+	DEC (IY+1)
+	DEC A
+	DEC B
+	DEC BC
+	DEC C
+	DEC D
+	DEC DE
+	DEC E
+	DEC H
+	DEC HL
+	DEC IX
+	DEC IY
+	DEC IXL
+	DEC IYH
+	DEC L
+	DEC SP
+	DI
+label:
+	DJNZ label
+	EI
+	EX (SP),HL
+	EX (SP),IX
+	EX (SP),IY
+	EX AF,AF'
+	EX DE,HL
+	EXX
+	HALT
+	IM 0
+	IM 1
+	IM 2
+	IN A,(C)
+	IN A,(1)
+	IN B,(C)
+	IN C,(C)
+	IN D,(C)
+	IN E,(C)
+	IN H,(C)
+	IN L,(C)
+; 	IN F,(C)
+	INC (HL)
+	INC (IX+1)
+	INC (IY+1)
+	INC A
+	INC B
+	INC BC
+	INC C
+	INC D
+	INC DE
+	INC E
+	INC H
+	INC HL
+	INC IX
+	INC IY
+	INC IXL
+	INC IYH
+	INC L
+	INC SP
+	IND
+	INDR
+	INI
+	INIR
+	JP #1020
+	JP (HL)
+	JP (IX)
+	JP (IY)
+	JP C,#1020
+	JP M,#1020
+	JP NC,#1020
+	JP NZ,#1020
+	JP P,#1020
+	JP PE,#1020
+	JP PO,#1020
+	JP Z,#1020
+	JR label2
+label2:
+	JR C,label2
+	JR NC,label2
+	JR NZ,label2
+	JR Z,label2
+	LD (BC),A
+	LD (DE),A
+	LD (HL),1
+	LD (HL),A
+	LD (IX+1),2
+	LD (IX+1),A
+	LD (IY+1),2
+	LD (IY+1),A
+	LD (#1020),A
+	LD (#1020),BC
+	LD (#1020),DE
+	LD (#1020),HL
+	LD (#1020),IX
+	LD (#1020),IY
+	LD (#1020),SP
+	LD A,(BC)
+	LD A,(DE)
+	LD A,(HL)
+	LD A,(IX+1)
+	LD A,(IY+1)
+	LD A,(#1020)
+	LD A,1
+	LD A,B
+	LD A,IXL
+	LD A,IYH
+	LD A,I
+	LD A,A
+	LD B,(HL)
+	LD B,(IX+1)
+	LD B,(IY+1)
+	LD B,1
+	LD B,A
+	LD B,IXL
+	LD B,IYH
+	LD BC,(#1020)
+	LD BC,#1020
+	LD C,(HL)
+	LD C,(IX+1)
+	LD C,(IY+1)
+	LD C,1
+	LD C,A
+	LD C,IXL
+	LD C,IYH
+	LD D,(HL)
+	LD D,(IX+1)
+	LD D,(IY+1)
+	LD D,1
+	LD D,A
+	LD D,IXL
+	LD D,IYH
+	LD DE,(#1020)
+	LD DE,#1020
+	LD E,(HL)
+	LD E,(IX+1)
+	LD E,(IY+1)
+	LD E,1
+	LD E,A
+	LD E,IXL
+	LD E,IYH
+	LD H,(HL)
+	LD H,(IX+1)
+	LD H,(IY+1)
+	LD H,1
+	LD H,A
+	LD HL,(#1020)
+	LD HL,#1020
+	LD I,A
+	LD IX,(#1020)
+	LD IX,#1020
+	LD IXH,1
+	LD IXH,IXL
+	LD IXL,1
+	LD IXL,IXH
+	LD IY,(#1020)
+	LD IY,#1020
+	LD IYH,1
+	LD IYH,IYL
+	LD IYL,1
+	LD IYL,IYH
+	LD L,(HL)
+	LD L,(IX+1)
+	LD L,(IY+1)
+	LD L,1
+	LD L,A
+	LD R,A
+	LD SP,(#1020)
+	LD SP,HL
+	LD SP,IX
+	LD SP,IY
+	LD SP,#1020
+	LDD
+	LDDR
+	LDI
+	LDIR
+; 	MULUB A,B 
+	MULUW HL,BC
+	MULUW HL,SP
+	NEG
+	NOP
+	OR (HL)
+	OR (IX+1)
+	OR (IY+1)
+	OR 1
+	OR A
+	OR IXL
+	OR IYH
+	OTDR
+	OTIR
+	OUT (C),A
+	OUT (C),B
+	OUT (C),C
+	OUT (C),D
+	OUT (C),E
+	OUT (C),H
+	OUT (C),L
+	OUT (1),A
+	OUTD
+	OUTI
+	POP AF
+	POP BC
+	POP DE
+	POP HL
+	POP IX
+	POP IY
+	PUSH AF
+	PUSH BC
+	PUSH DE
+	PUSH HL
+	PUSH IX
+	PUSH IY
+	RES 1,(HL)
+	RES 1,(IX+1)
+	RES 1,(IY+1)
+	RES 1,A
+	RET
+	RET C
+	RET M
+	RET NC
+	RET NZ
+	RET P
+	RET PE
+	RET PO
+	RET Z
+	RETI
+	RETN
+	RL (HL)
+	RL (IX+1)
+	RL (IY+1)
+	RL A
+	RLA
+	RLC (HL)
+	RLC (IX+1)
+	RLC (IY+1)
+	RLC A
+	RLCA
+	RLD
+	RR (HL)
+	RR (IX+1)
+	RR (IY+1)
+	RR A
+	RRA
+	RRC (HL)
+	RRC (IX+1)
+	RRC (IY+1)
+	RRC A
+	RRCA
+	RRD
+	RST 0
+	RST 8H
+	RST 10H
+	RST 18H
+	RST 20H
+	RST 28H
+	RST 30H
+	RST 38H
+	SBC A,(HL)
+	SBC A,(IX+1)
+	SBC A,(IY+1)
+	SBC A,1
+	SBC A,A
+	SBC A,IXL
+	SBC A,IYH
+	SBC HL,BC
+	SBC HL,DE
+	SBC HL,HL
+	SBC HL,SP
+	SCF
+	SET 1,(HL)
+	SET 1,(IX+1)
+	SET 1,(IY+1)
+	SET 1,A
+	SLA (HL)
+	SLA (IX+1)
+	SLA (IY+1)
+	SLA A
+	SRA (HL)
+	SRA (IX+1)
+	SRA (IY+1)
+	SRA A
+	SRL (HL)
+	SRL (IX+1)
+	SRL (IY+1)
+	SRL A
+	SUB (HL)
+	SUB (IX+1)
+	SUB (IY+1)
+	SUB 1
+	SUB A
+	SUB IXL
+	SUB IYH
+	XOR (HL)
+	XOR (IX+1)
+	XOR (IY+1)
+	XOR 1
+	XOR A
+	XOR IXL
+	XOR IYH

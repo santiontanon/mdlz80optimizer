@@ -261,6 +261,7 @@ public class CPUOp {
     public List<Integer> assembleToBytes(SourceStatement s, CodeBase code, MDLConfig config)
     {
         List<Integer> data = new ArrayList<>();
+        int nn_state = 0;
         
         for(String v[]:spec.bytesRepresentation) {
             int baseByte = Tokenizer.parseHex(v[0]);
@@ -270,7 +271,7 @@ public class CPUOp {
                 // jr/djnz offset:
                 if (spec.isJump()) {
                     int base = s.getAddress(code) + spec.sizeInBytes;
-                    int target = args.get(0).evaluateToInteger(s, code, true);
+                    int target = args.get(args.size()-1).evaluateToInteger(s, code, true);
                     int offset = (target - base)&0xff;
                     data.add(offset);
                 } else {
@@ -279,11 +280,108 @@ public class CPUOp {
                     config.error("Unable to convert " + this + " to bytes! Unsupported byte modifier o for something different than a jump");
                     return null;
                 }
+                
+            } else if (v[1].equals("n")) {
+                // 8 bit argument
+                Integer n = null;
+                for(Expression arg:args) {
+                    if (arg.evaluatesToIntegerConstant()) {
+                        if (n != null) {
+                            config.error("Unable to convert " + this + " to bytes! two numeric constants in one op!");
+                            return null;
+                        }
+                        n = arg.evaluateToInteger(s, code, true);
+                    }
+                }
+                if (n == null) {
+                    config.error("Unable to convert " + this + " to bytes! no numeric constants in the op!");
+                    return null;
+                }
+                data.add(n & 0xff);
+                
+            } else if (v[1].equals("nn")) {
+                // 16 bit argument
+                Integer nn = null;
+                for(Expression arg:args) {
+                    if (arg.evaluatesToIntegerConstant()) {
+                        if (nn != null) {
+                            config.error("Unable to convert " + this + " to bytes! two numeric constants in one op!");
+                            return null;
+                        }
+                        nn = arg.evaluateToInteger(s, code, true);
+                    }
+                }
+                if (nn == null) {
+                    config.error("Unable to convert " + this + " to bytes! no numeric constants in the op!");
+                    return null;
+                }
+                if (nn_state == 0) {
+                    data.add(nn & 0xff);
+                    nn_state = 1;
+                } else {
+                    data.add((nn >> 8) & 0xff);
+                }
+                
+            } else if (v[1].equals("+0")) {
+                data.add(baseByte+0);
+            } else if (v[1].equals("+1")) {
+                data.add(baseByte+1);
+            } else if (v[1].equals("+2")) {
+                data.add(baseByte+2);
+            } else if (v[1].equals("+3")) {
+                data.add(baseByte+3);
+            } else if (v[1].equals("+4")) {
+                data.add(baseByte+4);
+            } else if (v[1].equals("+5")) {
+                data.add(baseByte+5);
+            } else if (v[1].equals("+6")) {
+                data.add(baseByte+6);
+            } else if (v[1].equals("+7")) {
+                data.add(baseByte+7);
+
+            } else if (v[1].equals("+r")) {
+                // register (which is the last argument of the op):
+                Integer r = registerValueForByte(args.get(args.size()-1).registerOrFlagName);
+                if (r == null) {
+                    config.error("Unable to convert register name to value " + this);
+                    return null;
+                }
+                data.add(baseByte+r);
+                
+            } else if (v[1].equals("+8*b+r")) {
+                Integer b = args.get(0).evaluateToInteger(s, code, true);
+                Integer r = registerValueForByte(args.get(1).registerOrFlagName);
+                if (b == null || r == null) {
+                    config.error("Unable to convert bit or register name to value " + this);
+                }
+                data.add(baseByte+8*(b&0x07)+r);
             } else {
                 config.error("Unable to convert " + this + " to bytes! Unsupported byte modifier " + v[1]);
                 return null;
             }
         }
         return data;
+    }
+    
+    private Integer registerValueForByte(String register)
+    {
+        switch(register.toLowerCase()) {
+            case "a":
+                return 7;
+            case "b":
+                return 0;
+            case "c":
+                return 1;
+            case "d":
+                return 2;
+            case "e":
+                return 3;
+            case "h":
+                return 4;
+            case "l":
+                return 5;
+            default:
+                return null;
+        }    
     }
 }
