@@ -440,3 +440,6 @@ XOR A, E	4	A8+3	1	A,E				A	S,Z,H,P/V,N,C			false
 XOR A, H	4	A8+4	1	A,H				A	S,Z,H,P/V,N,C			false
 XOR A, L	4	A8+5	1	A,L				A	S,Z,H,P/V,N,C			false
 XOR A, n	7	EE n	2	A				A	S,Z,H,P/V,N,C			false
+XOR A, (IX+o)	19	DD AE o	3	A,IX			IX+o	A	S,Z,H,P/V,N,C			false
+XOR A, (IY+o)	19	FD AE o	3	A,IY			IY+o	A	S,Z,H,P/V,N,C			false
+CP A, n	7	FE n	2	A					S,Z,H,P/V,N,C			false

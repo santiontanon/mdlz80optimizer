@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import parser.SourceLine;
 import parser.Tokenizer;
+import workers.pattopt.PatternBasedOptimizer;
 
 /**
  *
@@ -69,6 +70,10 @@ public class SDCCDialect implements Dialect {
         Tokenizer.sdccStyleDollarInLabels = true;
         Tokenizer.sdccStyleHashMarksForConstants = true;
         config.hexStyle = MDLConfig.HEX_STYLE_0X;
+        
+        PatternBasedOptimizer.defaultInputPatternsFileName = "data/pbo-patterns-sdcc-speed.txt";;
+        PatternBasedOptimizer.defaultInputPatternsSizeFileName = "data/pbo-patterns-sdcc-size.txt";
+        PatternBasedOptimizer.defaultInputPatternsSpeedFileName = "data/pbo-patterns-sdcc-speed.txt";
     }    
     
     
@@ -233,14 +238,40 @@ public class SDCCDialect implements Dialect {
     
     
     @Override
-    public String statementToString(SourceStatement s, Path rootPath) {
+    public String statementToString(SourceStatement s, CodeBase code, Path rootPath) {
         switch(s.type) {
             case SourceStatement.STATEMENT_CPUOP:
             {
                 String str = s.toStringLabel() + "    ";
+
+                boolean official = true;
+                for(Expression arg:s.op.args) {
+                    if (arg.type == Expression.EXPRESSION_REGISTER_OR_FLAG &&
+                        (arg.registerOrFlagName.equals("ixl") ||
+                         arg.registerOrFlagName.equals("ixh") ||
+                         arg.registerOrFlagName.equals("iyl") ||
+                         arg.registerOrFlagName.equals("iyh"))) {
+                        official = false;
+                        break;
+                    }
+                }
+                if (!official) {
+                    // the assembler SDCC uses does not support unofficial instructions, 
+                    // so we need to encode them as bytes:
+                    List<Integer> bytes = s.op.assembleToBytes(s, code, config);
+                    str += ".byte ";
+                    for(int i = 0;i<bytes.size();i++) {
+                        str += bytes.get(i);
+                        if (i != bytes.size()-1) {
+                            str += ", ";
+                        }
+                    }                    
+                    return str + "  ; mdl direct byte sequence equivalent of unofficial: " + s.op.toString();
+                }
+                
                 str += s.op.spec.opName;
                 if (config.output_opsInLowerCase) str = str.toLowerCase();
-
+                
                 for(int i = 0;i<s.op.args.size();i++) {
                     if (i==0) {
                         str += " ";
@@ -264,6 +295,31 @@ public class SDCCDialect implements Dialect {
                                 }
                             }
                         }
+                    } else if (s.op.spec.args.get(i).regOffsetIndirection != null) {
+                        // write "inc -3 (ix)" instead of "ld (ix + -3), a"
+                        if (s.op.args.get(i).type == Expression.EXPRESSION_PARENTHESIS) {
+                            Expression exp = s.op.args.get(i).args.get(0);
+                            if (exp.type == Expression.EXPRESSION_SUM) {
+                                if (exp.args.get(0).type == Expression.EXPRESSION_REGISTER_OR_FLAG) {
+                                    str += exp.args.get(1).toString() + " " + "(" + exp.args.get(0).toString() + ")";
+                                } else {
+                                    str += exp.args.get(0).toString() + " " + "(" + exp.args.get(1).toString() + ")";
+                                }
+                            } else if (exp.type == Expression.EXPRESSION_SUB) {
+                                if (exp.args.get(0).type == Expression.EXPRESSION_REGISTER_OR_FLAG) {
+                                    Expression aux = Expression.operatorExpression(Expression.EXPRESSION_SIGN_CHANGE, exp.args.get(1), config);
+                                    str += aux.toString() + " " + "(" + exp.args.get(0).toString() + ")";
+                                } else {
+                                    
+                                }
+                            } else if (exp.type == Expression.EXPRESSION_REGISTER_OR_FLAG) {
+                                str += "0 " + "(" + exp.args.get(0).toString() + ")";
+                            } else {
+                                str += s.op.args.get(i).toString();
+                            }
+                        } else {
+                            str += s.op.args.get(i).toString();
+                        }
                     } else {
                         str += s.op.args.get(i).toString();
                     }
@@ -274,7 +330,7 @@ public class SDCCDialect implements Dialect {
             case SourceStatement.STATEMENT_DATA_BYTES:
                 {
                     String str = s.toStringLabel() + "    ";
-                    str += "    .byte ";
+                    str += ".byte ";
                     for(int i = 0;i<s.data.size();i++) {
                         str += s.data.get(i).toStringInternal(true);
                         if (i != s.data.size()-1) {
@@ -286,7 +342,7 @@ public class SDCCDialect implements Dialect {
             case SourceStatement.STATEMENT_DATA_WORDS:
                 {
                     String str = s.toStringLabel() + "    ";
-                    str += "    .word ";
+                    str += ".word ";
                     for(int i = 0;i<s.data.size();i++) {
                         str += s.data.get(i).toString();
                         if (i != s.data.size()-1) {
@@ -299,6 +355,5 @@ public class SDCCDialect implements Dialect {
             default:
                 return s.toStringUsingRootPath(rootPath);
         }
-    }
-        
+    }    
 }

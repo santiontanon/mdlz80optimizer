@@ -25,6 +25,10 @@ import workers.MDLWorker;
  */
 public class PatternBasedOptimizer implements MDLWorker {
 
+    public static String defaultInputPatternsFileName = "data/pbo-patterns.txt";
+    public static String defaultInputPatternsSizeFileName = "data/pbo-patterns-size.txt";
+    public static String defaultInputPatternsSpeedFileName = "data/pbo-patterns-speed.txt";
+    
     public static class OptimizationResult {
         public int bytesSaved = 0;
         public int timeSaved[] = {0,0}; // some instructions have two times (e.g., if a condition is met or not)
@@ -55,7 +59,7 @@ public class PatternBasedOptimizer implements MDLWorker {
     MDLConfig config;
     boolean activate = false;
     boolean silent = false;
-    String inputPatternsFileName = "data/pbo-patterns.txt";
+    String inputPatternsFileName = null;
     List<Pattern> patterns = new ArrayList<>();
     
     // Some optimizations depend on certain labels to have specific values. After applying them,
@@ -76,14 +80,15 @@ public class PatternBasedOptimizer implements MDLWorker {
 
     @Override
     public String docString() {
-        return "  -po: [task] Runs the pattern-based optimizer (notice that using any of the -po* flags also has the same effect of turning on the pattern-based optimized). You can pass an optional parameter, like '-po size' or '-po speed', which are shortcuts for '-po -popatterns data/pbo-patterns-size.txt' and '-po -popatterns data/pbo-patterns-speed.txt'\n" +
+        return "  -po: [task] Runs the pattern-based optimizer (notice that using any of the -po* flags also has the same effect of turning on the pattern-based optimized). You can pass an optional parameter, like '-po size' or '-po speed', which are shortcuts for '-po -popatterns data/pbo-patterns-size.txt' and '-po -popatterns data/pbo-patterns-speed.txt' (some dialects might change the defaults of these two)\n" +
                "  -posilent: [task] Supresses the pattern-based-optimizer output\n" +
                "  -poapply: [task] For each assembler <file> parsed by MDL, a corresponding <file>.mdl.asm is generated with the optimizations applied to it.\n" + 
                "  -popotential: [task] Reports lines where a potential optimization was not applied for safety, but could maybe be done manually (at most one potential optimization per line is shown).\n" +
                "  -popotential-all: [task] Same as above, but without the one-per-line constraint.\n" +
                "  -popatterns <file>: [task] specifies the file to load optimization patterns from (default 'data/pbo-patterns.txt', " +
                                      "which contains patterns that optimize both size and speed). For targetting size optimizations, use " +
-                                     "'data/pbo-patterns-size.txt'.\n";
+                                     "'data/pbo-patterns-size.txt'. Notice that some dialects might change the default, for example, the " +
+                                     "sdcc dialect sets the default to 'data/pbo-patterns-sdcc-speed.txt'\n";
     }
 
     @Override
@@ -92,10 +97,10 @@ public class PatternBasedOptimizer implements MDLWorker {
             flags.remove(0);
             if (!flags.isEmpty()) {
                 if (flags.get(0).equals("size")) {
-                    inputPatternsFileName = "data/pbo-patterns-size.txt";
+                    inputPatternsFileName = defaultInputPatternsSizeFileName;
                     flags.remove(0);
                 } else if (flags.get(0).equals("speed")) {
-                    inputPatternsFileName = "data/pbo-patterns-speed.txt";
+                    inputPatternsFileName = defaultInputPatternsSpeedFileName;
                     flags.remove(0);
                 }
             }
@@ -139,6 +144,9 @@ public class PatternBasedOptimizer implements MDLWorker {
 
     void initPatterns()
     {
+        if (inputPatternsFileName == null) {
+            inputPatternsFileName = defaultInputPatternsFileName;
+        }
         loadPatterns(inputPatternsFileName);
     }
     
@@ -215,7 +223,25 @@ public class PatternBasedOptimizer implements MDLWorker {
                 matches.clear();
                 for(Pattern patt: patterns) {
                     PatternMatch match = patt.match(i, f, code, this);
-                    if (match != null) matches.add(Pair.of(patt,match));
+                    if (match != null) {
+                        if (generateFilesWithAppliedOptimizations) {
+                            // prevent matches to lines on which there is already an optimization:
+                            boolean overlapsWithPreviousOptimization = false;
+                            for(PatternMatch previous:appliedOptimizations) {
+                                if (machesLinesGeneratedByPreviousPattern(match, previous)) {
+                                    overlapsWithPreviousOptimization = true;
+                                    break;
+                                }
+                            }
+                            if (!overlapsWithPreviousOptimization) {
+                                matches.add(Pair.of(patt,match));
+                            } else {
+                                config.debug("Prevented an optimization!");
+                            }
+                        } else {
+                            matches.add(Pair.of(patt,match));
+                        }
+                    }
                 }
 
                 if (!matches.isEmpty()) {
@@ -296,6 +322,36 @@ public class PatternBasedOptimizer implements MDLWorker {
     }
     
     
+    public boolean machesLinesGeneratedByPreviousPattern(PatternMatch match, PatternMatch previous)
+    {
+        if (previous.f == match.f) {
+            for(int j = 0;j<match.pattern.pattern.size();j++) {
+                if (!match.pattern.pattern.get(j).isWildcard()) {
+                    CPUOpPattern pattern = match.pattern.pattern.get(j);
+                    int ID = pattern.ID;
+                    CPUOpPattern replacement = null;
+                    for(CPUOpPattern replacement2:match.pattern.replacement) {
+                        if (replacement2.ID == ID) {
+                            replacement = replacement2;
+                            break;
+                        }
+                    }
+                    if (replacement == null ||
+                        !replacement.toString().equals(pattern.toString())) {
+                        List<SourceStatement> toRemoveL = match.map.get(ID);
+                        for(SourceStatement toRemove:toRemoveL) {
+                            for(SourceStatement added:previous.added) {
+                                if (toRemove == added) return true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return false;
+    }
+    
+    
     public boolean applyOptimizationsToOriginalFiles(CodeBase code)
     {
         for(SourceFile f:code.getSourceFiles()) {
@@ -347,6 +403,10 @@ public class PatternBasedOptimizer implements MDLWorker {
                             } else {
                                 // We need to look for which one in particular to remove:
                                 config.error("More than one optimization applied to the same line, not yet supported at: " + s.sl);
+                                config.error("Lines that had to be removed were:");
+                                for(String line:updatedLines) {
+                                    config.error(line);
+                                }
                                 return false;
                             }
                         }
@@ -354,7 +414,7 @@ public class PatternBasedOptimizer implements MDLWorker {
                     for(SourceStatement s: match.added) {
                         List<String> updatedLines = lines.get(s.sl.lineNumber-1);
                         if (config.dialectParser != null) {
-                            updatedLines.add(config.dialectParser.statementToString(s, null) + "  ; +mdl");
+                            updatedLines.add(config.dialectParser.statementToString(s, code, null) + "  ; +mdl");
                         } else {
                             updatedLines.add(s + "  ; +mdl");
                         }
@@ -371,7 +431,7 @@ public class PatternBasedOptimizer implements MDLWorker {
                     if (updatedLines.size() == 1) {
                         updatedLines.add("; " + updatedLines.remove(0) + "  ; -mdl");
                         if (config.dialectParser != null) {
-                            updatedLines.add(config.dialectParser.statementToString(s2, null) + "  ; +mdl");
+                            updatedLines.add(config.dialectParser.statementToString(s2, code, null) + "  ; +mdl");
                         } else {
                             updatedLines.add(s2 + "  ; +mdl");
                         }

@@ -4,7 +4,6 @@
 ; - If you do a pull request with more patterns, please credit yourself in a comment before the pattern.
 
 include "pbo-patterns-core.txt"
-include "pbo-patterns-core-sdcc-unsafe.txt"
 
 pattern: Replace jp ?const1 with jr ?const1
 0: jp ?const1
