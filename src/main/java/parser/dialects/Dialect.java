@@ -115,8 +115,8 @@ public interface Dialect {
     }
     
     // Translates a statement to string using the syntax of the specific dialect:
-    default String statementToString(SourceStatement s, CodeBase code, Path rootPath) {
-        return s.toStringUsingRootPath(rootPath);
+    default String statementToString(SourceStatement s, CodeBase code, boolean useOriginalNames, Path rootPath) {
+        return s.toStringUsingRootPath(rootPath, useOriginalNames);
     }
     
 }

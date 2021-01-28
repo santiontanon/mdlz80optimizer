@@ -494,7 +494,8 @@ in(?reg2,A,B,C,D,E,H,L)
 equal(?const2, (?const1) & #00ff)
 regsNotModified(1,?regpairl)
 
-; Thanks to theNestruo for suggesting the idea for this pattern:
+; Thanks to theNestruo for suggesting the idea for this pattern: (part1)
+; Notice this pattern is split in two, to prevent generating things like ld h,ixh, which do not exist in the z80
 pattern: Replace ld ?reg2,?const2 with ld ?reg2,?regpairh (as ?regpairh == ?const2 here)
 2: ld ?regpair,?const1
 1: *
@@ -505,7 +506,23 @@ replacement:
 0: ld ?reg2,?regpairh
 constraints:
 regpair(?regpair,?regpairh,?regpairl)
-in(?reg2,A,B,C,D,E,H,L)
+in(?reg2,A,B,C,D,E)
+equal((?const2) & #00ff, (?const1 & #ffff) >> 8)
+regsNotModified(1,?regpairh)
+
+; Thanks to theNestruo for suggesting the idea for this pattern: (part2)
+pattern: Replace ld ?reg2,?const2 with ld ?reg2,?regpairh (as ?regpairh == ?const2 here)
+2: ld ?regpair,?const1
+1: *
+0: ld ?reg2,?const2
+replacement:
+2: ld ?regpair,?const1
+1: *
+0: ld ?reg2,?regpairh
+constraints:
+regpair(?regpair,?regpairh,?regpairl)
+in(?reg2,H,L)
+in(?regpair,BC,DE)
 equal((?const2) & #00ff, (?const1 & #ffff) >> 8)
 regsNotModified(1,?regpairh)
 

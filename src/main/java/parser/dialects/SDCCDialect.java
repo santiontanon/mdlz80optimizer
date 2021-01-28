@@ -53,6 +53,7 @@ public class SDCCDialect implements Dialect {
         config.lineParser.KEYWORD_DB = ".db";
         config.lineParser.addKeywordSynonym(".byte", config.lineParser.KEYWORD_DB);
         config.lineParser.addKeywordSynonym(".fcb", config.lineParser.KEYWORD_DB);
+        config.lineParser.addKeywordSynonym(".ascii", config.lineParser.KEYWORD_DB);
 
         config.lineParser.KEYWORD_DW = ".dw";
         config.lineParser.addKeywordSynonym(".word", config.lineParser.KEYWORD_DW);
@@ -238,11 +239,11 @@ public class SDCCDialect implements Dialect {
     
     
     @Override
-    public String statementToString(SourceStatement s, CodeBase code, Path rootPath) {
+    public String statementToString(SourceStatement s, CodeBase code, boolean useOriginalNames, Path rootPath) {
         switch(s.type) {
             case SourceStatement.STATEMENT_CPUOP:
             {
-                String str = s.toStringLabel() + "    ";
+                String str = s.toStringLabel(useOriginalNames) + "    ";
 
                 boolean official = true;
                 for(Expression arg:s.op.args) {
@@ -282,16 +283,16 @@ public class SDCCDialect implements Dialect {
                         (!s.op.isJump() && !s.op.isCall())) {
                         if (i == 0 && s.op.args.size()>1) {
                             // no mark on left-hand side indirections:
-                            str += s.op.args.get(i).toString();
+                            str += s.op.args.get(i).toStringInternal(true, useOriginalNames, code);
                         } else {
                             // mark the value as a constant:
                             if (s.op.args.get(i).type == Expression.EXPRESSION_PARENTHESIS) {
                                 str += "(#" + s.op.args.get(i).args.get(0) + ")";
                             } else {
                                 if (s.op.args.get(i).args != null && s.op.args.get(i).args.size()>1) {
-                                    str += "#(" + s.op.args.get(i).toString() + ")";
+                                    str += "#(" + s.op.args.get(i).toStringInternal(true, useOriginalNames, code) + ")";
                                 } else {
-                                    str += "#" + s.op.args.get(i).toString();
+                                    str += "#" + s.op.args.get(i).toStringInternal(true, useOriginalNames, code);
                                 }
                             }
                         }
@@ -299,29 +300,32 @@ public class SDCCDialect implements Dialect {
                         // write "inc -3 (ix)" instead of "ld (ix + -3), a"
                         if (s.op.args.get(i).type == Expression.EXPRESSION_PARENTHESIS) {
                             Expression exp = s.op.args.get(i).args.get(0);
-                            if (exp.type == Expression.EXPRESSION_SUM) {
-                                if (exp.args.get(0).type == Expression.EXPRESSION_REGISTER_OR_FLAG) {
-                                    str += exp.args.get(1).toString() + " " + "(" + exp.args.get(0).toString() + ")";
-                                } else {
-                                    str += exp.args.get(0).toString() + " " + "(" + exp.args.get(1).toString() + ")";
-                                }
-                            } else if (exp.type == Expression.EXPRESSION_SUB) {
-                                if (exp.args.get(0).type == Expression.EXPRESSION_REGISTER_OR_FLAG) {
-                                    Expression aux = Expression.operatorExpression(Expression.EXPRESSION_SIGN_CHANGE, exp.args.get(1), config);
-                                    str += aux.toString() + " " + "(" + exp.args.get(0).toString() + ")";
-                                } else {
-                                    
-                                }
-                            } else if (exp.type == Expression.EXPRESSION_REGISTER_OR_FLAG) {
-                                str += "0 " + "(" + exp.args.get(0).toString() + ")";
-                            } else {
-                                str += s.op.args.get(i).toString();
+                            switch (exp.type) {
+                                case Expression.EXPRESSION_SUM:
+                                    if (exp.args.get(0).type == Expression.EXPRESSION_REGISTER_OR_FLAG) {
+                                        str += exp.args.get(1).toString() + " " + "(" + exp.args.get(0).toStringInternal(true, useOriginalNames, code) + ")";
+                                    } else {
+                                        str += exp.args.get(0).toString() + " " + "(" + exp.args.get(1).toStringInternal(true, useOriginalNames, code) + ")";
+                                    }   break;
+                                case Expression.EXPRESSION_SUB:
+                                    if (exp.args.get(0).type == Expression.EXPRESSION_REGISTER_OR_FLAG) {
+                                        Expression aux = Expression.operatorExpression(Expression.EXPRESSION_SIGN_CHANGE, exp.args.get(1), config);
+                                        str += aux.toString() + " " + "(" + exp.args.get(0).toStringInternal(true, useOriginalNames, code) + ")";
+                                    } else {
+                                        
+                                    }   break;
+                                case Expression.EXPRESSION_REGISTER_OR_FLAG:
+                                    str += "0 " + "(" + exp.args.get(0).toStringInternal(true, useOriginalNames, code) + ")";
+                                    break;
+                                default:
+                                    str += s.op.args.get(i).toStringInternal(true, useOriginalNames, code);
+                                    break;
                             }
                         } else {
-                            str += s.op.args.get(i).toString();
+                            str += s.op.args.get(i).toStringInternal(true, useOriginalNames, code);
                         }
                     } else {
-                        str += s.op.args.get(i).toString();
+                        str += s.op.args.get(i).toStringInternal(true, useOriginalNames, code);
                     }
                 }
                 
@@ -329,10 +333,10 @@ public class SDCCDialect implements Dialect {
             }
             case SourceStatement.STATEMENT_DATA_BYTES:
                 {
-                    String str = s.toStringLabel() + "    ";
+                    String str = s.toStringLabel(useOriginalNames) + "    ";
                     str += ".byte ";
                     for(int i = 0;i<s.data.size();i++) {
-                        str += s.data.get(i).toStringInternal(true);
+                        str += s.data.get(i).toStringInternal(true, useOriginalNames, code);
                         if (i != s.data.size()-1) {
                             str += ", ";
                         }
@@ -341,10 +345,10 @@ public class SDCCDialect implements Dialect {
                 }
             case SourceStatement.STATEMENT_DATA_WORDS:
                 {
-                    String str = s.toStringLabel() + "    ";
+                    String str = s.toStringLabel(useOriginalNames) + "    ";
                     str += ".word ";
                     for(int i = 0;i<s.data.size();i++) {
-                        str += s.data.get(i).toString();
+                        str += s.data.get(i).toStringInternal(true, useOriginalNames, code);
                         if (i != s.data.size()-1) {
                             str += ", ";
                         }
@@ -353,7 +357,7 @@ public class SDCCDialect implements Dialect {
                 }
             
             default:
-                return s.toStringUsingRootPath(rootPath);
+                return s.toStringUsingRootPath(rootPath, useOriginalNames);
         }
     }    
 }

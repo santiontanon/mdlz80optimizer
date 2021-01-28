@@ -553,11 +553,11 @@ public class Expression {
     
     @Override
     public String toString() {
-        return toStringInternal(false);
+        return toStringInternal(false, false, null);
     }    
     
 
-    public String toStringInternal(boolean splitSpecialCharactersInStrings) {
+    public String toStringInternal(boolean splitSpecialCharactersInStrings, boolean useOriginalNames, CodeBase code) {
         switch (type) {
             case EXPRESSION_REGISTER_OR_FLAG:
                 if (config.output_opsInLowerCase) {
@@ -613,6 +613,10 @@ public class Expression {
                 }
             }
             case EXPRESSION_SYMBOL:
+                if (useOriginalNames && code != null) {
+                    SourceConstant c = code.getSymbol(symbolName);
+                    if (c != null) return c.originalName;
+                }
                 if (config.output_replaceLabelDotsByUnderscores) {
                     return symbolName.replace(".", "_");
                 } else {

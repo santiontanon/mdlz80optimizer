@@ -160,7 +160,6 @@ public class BinaryGenerator implements MDLWorker {
                     if (data == null) {
                         throw new Exception("Cannot convert op " + ss.op + " to bytes!");
                     }
-//                    System.out.println(ss.op + "  -->  " + data);
                     for(Integer value: data) {
                         os.write(value);
                     }

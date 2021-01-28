@@ -261,18 +261,22 @@ public class SourceStatement {
     @Override
     public String toString()
     {
-        return toStringUsingRootPath(null);
+        return toStringUsingRootPath(null, false);
     }
 
     
-    public String toStringLabel()
+    public String toStringLabel(boolean useOriginalName)
     {
         String str = "";
         if (label != null) {
-            if (config.output_replaceLabelDotsByUnderscores) {
-                str = label.name.replace(".", "_");
+            if (useOriginalName) {
+                str = label.originalName;
             } else {
-                str = label.name;
+                if (config.output_replaceLabelDotsByUnderscores) {
+                    str = label.name.replace(".", "_");
+                } else {
+                    str = label.name;
+                }
             }
             if (type != STATEMENT_CONSTANT || !config.output_equsWithoutColon) {
                 str += ":";
@@ -300,9 +304,9 @@ public class SourceStatement {
     }
     
 
-    public String toStringUsingRootPath(Path rootPath)
+    public String toStringUsingRootPath(Path rootPath, boolean useOriginalNames)
     {
-        String str = toStringLabel();
+        String str = toStringLabel(useOriginalNames);
         
         switch(type) {
             case STATEMENT_NONE:
@@ -348,7 +352,7 @@ public class SourceStatement {
                 str += "    db ";
                 {
                     for(int i = 0;i<data.size();i++) {
-                        str += data.get(i).toStringInternal(true);
+                        str += data.get(i).toStringInternal(true, false, null);
                         if (i != data.size()-1) {
                             str += ", ";
                         }

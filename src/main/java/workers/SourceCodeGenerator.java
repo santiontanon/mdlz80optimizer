@@ -140,9 +140,9 @@ public class SourceCodeGenerator implements MDLWorker {
                 }
             } else {
                 if (config.dialectParser != null) {
-                    sb.append(config.dialectParser.statementToString(ss, code, Paths.get(code.getMain().getPath())));
+                    sb.append(config.dialectParser.statementToString(ss, code, false, Paths.get(code.getMain().getPath())));
                 } else {
-                    sb.append(ss.toStringUsingRootPath(Paths.get(code.getMain().getPath())));
+                    sb.append(ss.toStringUsingRootPath(Paths.get(code.getMain().getPath()), false));
                 }
                 sb.append("\n");
             }

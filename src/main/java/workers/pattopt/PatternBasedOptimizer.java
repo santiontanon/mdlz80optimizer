@@ -414,7 +414,7 @@ public class PatternBasedOptimizer implements MDLWorker {
                     for(SourceStatement s: match.added) {
                         List<String> updatedLines = lines.get(s.sl.lineNumber-1);
                         if (config.dialectParser != null) {
-                            updatedLines.add(config.dialectParser.statementToString(s, code, null) + "  ; +mdl");
+                            updatedLines.add(config.dialectParser.statementToString(s, code, true, null) + "  ; +mdl");
                         } else {
                             updatedLines.add(s + "  ; +mdl");
                         }
@@ -431,7 +431,7 @@ public class PatternBasedOptimizer implements MDLWorker {
                     if (updatedLines.size() == 1) {
                         updatedLines.add("; " + updatedLines.remove(0) + "  ; -mdl");
                         if (config.dialectParser != null) {
-                            updatedLines.add(config.dialectParser.statementToString(s2, code, null) + "  ; +mdl");
+                            updatedLines.add(config.dialectParser.statementToString(s2, code, true, null) + "  ; +mdl");
                         } else {
                             updatedLines.add(s2 + "  ; +mdl");
                         }
