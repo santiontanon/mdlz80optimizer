@@ -80,12 +80,12 @@ public class PatternBasedOptimizer implements MDLWorker {
 
     @Override
     public String docString() {
-        return "  -po: [task] Runs the pattern-based optimizer (notice that using any of the -po* flags also has the same effect of turning on the pattern-based optimized). You can pass an optional parameter, like '-po size' or '-po speed', which are shortcuts for '-po -popatterns data/pbo-patterns-size.txt' and '-po -popatterns data/pbo-patterns-speed.txt' (some dialects might change the defaults of these two)\n" +
-               "  -posilent: [task] Supresses the pattern-based-optimizer output\n" +
-               "  -poapply: [task] For each assembler <file> parsed by MDL, a corresponding <file>.mdl.asm is generated with the optimizations applied to it.\n" + 
-               "  -popotential: [task] Reports lines where a potential optimization was not applied for safety, but could maybe be done manually (at most one potential optimization per line is shown).\n" +
-               "  -popotential-all: [task] Same as above, but without the one-per-line constraint.\n" +
-               "  -popatterns <file>: [task] specifies the file to load optimization patterns from (default 'data/pbo-patterns.txt', " +
+        return "  -po: [task] Runs the pattern-based optimizer using the latest settings. Notice that the -posilent, -poapply, etc. flags need to be passed *before* the call to -po that they which to affect and which is the one that triggers the optimizer. You can pass an optional parameter, like '-po size' or '-po speed', which are shortcuts for '-po -popatterns data/pbo-patterns-size.txt' and '-po -popatterns data/pbo-patterns-speed.txt' (some dialects might change the defaults of these two)\n" +
+               "  -posilent: Supresses the pattern-based-optimizer output\n" +
+               "  -poapply: For each assembler <file> parsed by MDL, a corresponding <file>.mdl.asm is generated with the optimizations applied to it.\n" + 
+               "  -popotential: Reports lines where a potential optimization was not applied for safety, but could maybe be done manually (at most one potential optimization per line is shown).\n" +
+               "  -popotential-all: Same as above, but without the one-per-line constraint.\n" +
+               "  -popatterns <file>: specifies the file to load optimization patterns from (default 'data/pbo-patterns.txt', " +
                                      "which contains patterns that optimize both size and speed). For targetting size optimizations, use " +
                                      "'data/pbo-patterns-size.txt'. Notice that some dialects might change the default, for example, the " +
                                      "sdcc dialect sets the default to 'data/pbo-patterns-sdcc-speed.txt'\n";
@@ -109,32 +109,27 @@ public class PatternBasedOptimizer implements MDLWorker {
         }
         if (flags.get(0).equals("-posilent")) {
             flags.remove(0);
-            activate = true;
             silent = true;
             return true;
         }
         if (flags.get(0).equals("-poapply")) {
             flags.remove(0);
-            activate = true;
             generateFilesWithAppliedOptimizations = true;
             return true;
         }
         if (flags.get(0).equals("-popotential")) {
             flags.remove(0);
-            activate = true;
             logPotentialOptimizations = true;
             return true;
         }
         if (flags.get(0).equals("-popotential-all")) {
             flags.remove(0);
-            activate = true;
             logPotentialOptimizations = true;
             onlyOnePotentialOptimizationPerLine = false;
             return true;
         }
         if (flags.get(0).equals("-popatterns") && flags.size()>=2) {
             flags.remove(0);
-            activate = true;
             inputPatternsFileName = flags.remove(0);
             return true;
         }

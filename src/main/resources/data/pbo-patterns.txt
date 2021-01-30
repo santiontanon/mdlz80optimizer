@@ -3,5 +3,32 @@
 ; - Patterns suggested by others are credited to them below.
 ; - If you do a pull request with more patterns, please credit yourself in a comment before the pattern.
 
+; Notes:
+; - variables must start with the following prefixes:
+; - ?const: for example ?const1, ?constant, etc. These match with constant expressions, like "(VAR+2)/$", or "1".
+; - ?reg: for example ?reg1, ?regpair, etc. These match with register names.
+; - ?op: for example ?op, ?op1, etc. These match with opcodes (e.g., ld, add, push, pop, etc.)
+; - ?any: for example ?any, ?any1. These match with anything.
+; Notice the numbers in front of each line in the pattern and the replacement. The order does not matter as long as numbers are unique.
+; These are used to match lines from pattern to replacement. Any number appearing in pattern, and not in replacement will be deleted.
+; The optimization will be reported to the line in pattern with number 0 (at least one line must have number 0)
+; supported constraints:
+; - regsNotUsedAfter(#, reg1, ..., reg)
+; - regsNotModified(#, reg1, ..., reg)
+; - regsNotUsed(#, reg1, ..., reg)
+; - flagsNotUsedAfter(#, flag1, ..., flagn)
+; - flagsNotModified(#, flag1, ..., flagn)
+; - flagsNotUsed(#, flag1, ..., flagn)
+; - equal(exp1, exp2)
+; - notEqual(exp1, exp2)
+; - in(variable, value1, ..., valuen)
+; - notIn(variable, value1, ..., valuen)
+; - regpair(regpair,regpair_high,regpair_low)
+; - reachableByJr(#, label)
+; - evenPushPops(#)
+; - atLeastOneCPUOp(#)
+; You can add ":ID" after any constraint, which the effect that the constraint will be checked right after the pattern line
+; with number == ID is matched.
+
 include "pbo-patterns-core.txt"
 include "pbo-patterns-core-sdcc-unsafe.txt"

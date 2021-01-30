@@ -71,6 +71,7 @@ public class SDCCDialect implements Dialect {
         Tokenizer.sdccStyleDollarInLabels = true;
         Tokenizer.sdccStyleHashMarksForConstants = true;
         config.hexStyle = MDLConfig.HEX_STYLE_0X;
+        config.labelsHaveSafeValues = false;
         
         PatternBasedOptimizer.defaultInputPatternsFileName = "data/pbo-patterns-sdcc-speed.txt";;
         PatternBasedOptimizer.defaultInputPatternsSizeFileName = "data/pbo-patterns-sdcc-size.txt";

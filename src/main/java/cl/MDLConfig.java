@@ -46,6 +46,10 @@ public class MDLConfig {
 
     public boolean eagerMacroEvaluation = true;
     public boolean includeBinariesInAnalysis = false;
+    public boolean labelsHaveSafeValues = true;  // If this is false, the optimizers will not trust
+                                                 // the value MDL calculates for labels. This is useful, for example,
+                                                 // for the SDCC dialect, where we don't know the base address ahead
+                                                 // of time.
 
     // warning messages:
     public boolean warning_labelWithoutColon = false;

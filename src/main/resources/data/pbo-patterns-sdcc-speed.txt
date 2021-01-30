@@ -16,4 +16,3 @@ in(?regpair2,IX,IY)
 in(?regpair1,BC,DE)
 regpair(?regpair1,?reg1h,?reg1l)
 regpair(?regpair2,?reg2h,?reg2l)
-

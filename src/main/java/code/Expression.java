@@ -1110,6 +1110,20 @@ public class Expression {
         }
     }
     
+    
+    public boolean containsLabel(CodeBase code)
+    {
+        if (type == EXPRESSION_SYMBOL) {
+            SourceConstant sc = code.getSymbol(symbolName);
+            if (sc != null) return sc.isLabel();
+        } else if (args != null) {
+            for(Expression arg:args) {
+                if (arg.containsLabel(code)) return true;
+            }                
+        }
+        return false;
+    }
+    
 
     public static Expression constantExpression(int v, MDLConfig config) {
         Expression exp = new Expression(EXPRESSION_INTEGER_CONSTANT, config);

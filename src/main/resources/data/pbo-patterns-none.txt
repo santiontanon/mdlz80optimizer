@@ -1,0 +1,6 @@
+; Author: Santiago Ontañón
+; - Patterns are separated by a blank line
+; - Patterns suggested by others are credited to them below.
+; - If you do a pull request with more patterns, please credit yourself in a comment before the pattern.
+
+; This is just an empty pattern set, which is handy for debugging, when we want to trigger the pattern-based optimized, but perform no optimizations

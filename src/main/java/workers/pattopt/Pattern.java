@@ -556,6 +556,10 @@ public class Pattern {
                 if (exp1.evaluatesToIntegerConstant() != exp2.evaluatesToIntegerConstant()) {
                     return false;
                 }
+                if (!config.labelsHaveSafeValues &&
+                    (exp1.containsLabel(code) || exp2.containsLabel(code))) {
+                    return false;
+                }
                 if (exp1.evaluatesToIntegerConstant()) {
                     // If the expressions are numeric, we evaluateToInteger them:
                     Integer v1 = exp1.evaluateToInteger(null, code, true);
@@ -587,6 +591,12 @@ public class Pattern {
                 Expression exp2 = config.expressionParser.parse(v2_tokens, null, null, code);
 
                 if (exp1.evaluatesToIntegerConstant() != exp2.evaluatesToIntegerConstant()) break;
+                
+                if (!config.labelsHaveSafeValues &&
+                    (exp1.containsLabel(code) || exp2.containsLabel(code))) {
+                    return false;
+                }
+                
                 if (exp1.evaluatesToIntegerConstant()) {
                     // If the expressions are numeric, we evaluateToInteger them:
                     Integer v1 = exp1.evaluateToInteger(null, code, true);
@@ -894,7 +904,7 @@ public class Pattern {
                 if (!found) return false;
                 break;
             }
-
+            
             default:
                 throw new UnsupportedOperationException("Unknown pattern constraint " + constraint.name);
         }        

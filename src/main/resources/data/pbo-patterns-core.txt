@@ -479,7 +479,8 @@ in(?reg,A,B,C,D,E,H,L)
 in(?reg2,A,B,C,D,E,H,L)
 regsNotModified(1,?reg)
 
-; Thanks to theNestruo for suggesting the idea for this pattern:
+; Thanks to theNestruo for suggesting the idea for this pattern: (part1)
+; Notice this pattern is split in two, to prevent generating things like ld h,ixl, which do not exist in the z80
 pattern: Replace ld ?reg2,?const2 with ld ?reg2,?regpairl (as ?regpairl == ?const2 here)
 2: ld ?regpair,?const1
 1: *
@@ -490,7 +491,23 @@ replacement:
 0: ld ?reg2,?regpairl
 constraints:
 regpair(?regpair,?regpairh,?regpairl)
-in(?reg2,A,B,C,D,E,H,L)
+in(?reg2,A,B,C,D,E)
+equal(?const2, (?const1) & #00ff)
+regsNotModified(1,?regpairl)
+
+; Thanks to theNestruo for suggesting the idea for this pattern: (part2)
+pattern: Replace ld ?reg2,?const2 with ld ?reg2,?regpairl (as ?regpairl == ?const2 here)
+2: ld ?regpair,?const1
+1: *
+0: ld ?reg2,?const2
+replacement:
+2: ld ?regpair,?const1
+1: *
+0: ld ?reg2,?regpairl
+constraints:
+regpair(?regpair,?regpairh,?regpairl)
+in(?reg2,H,L)
+in(?regpair,BC,DE)
 equal(?const2, (?const1) & #00ff)
 regsNotModified(1,?regpairl)
 
@@ -652,6 +669,7 @@ replacement:
 0: inc a
 constraints:
 equal(?const,1)
+flagsNotUsedAfter(1,C)
 
 pattern: Replace add a,?const with dec a
 0: add a,?const
@@ -659,6 +677,7 @@ replacement:
 0: dec a
 constraints:
 equal(?const,-1)
+flagsNotUsedAfter(1,C)
 
 pattern: Replace ?op a,?const with ?op a,?reg (as ?reg == ?const here)
 2: ld ?reg,?const
@@ -699,7 +718,7 @@ in(?op,add,adc,sbc)
 regpair(?regpair,?regh,?regl)
 in(?regpair,HL,BC,DE)
 regsNotModified(1,?regl)
-equal(?const1&#ff,const2)
+equal(?const1&#ff,?const2)
 
 pattern: Replace ?op a,?const with ?op a,?regl (as ?regl == ?const2 here)
 2: ld ?regpair,?const1
@@ -714,7 +733,7 @@ in(?op,sub,and,or,xor)
 regpair(?regpair,?regh,?regl)
 in(?regpair,HL,BC,DE)
 regsNotModified(1,?regl)
-equal(?const1&#ff,const2)
+equal(?const1&#ff,?const2)
 
 pattern: Replace ?op a,?const2 with ?op a,?regh (as ?regh == ?const2 here)
 2: ld ?regpair,?const1
@@ -729,7 +748,7 @@ in(?op,add,adc,sbc)
 regpair(?regpair,?regh,?regl)
 in(?regpair,HL,BC,DE)
 regsNotModified(1,?regh)
-equal((?const1&#ff00)>>8,const2)
+equal((?const1&#ff00)>>8,?const2)
 
 pattern: Replace ?op a,?const2 with ?op a,?regh (as ?regh == ?const2 here)
 2: ld ?regpair,?const1
@@ -744,7 +763,7 @@ in(?op,sub,and,or,xor)
 regpair(?regpair,?regh,?regl)
 in(?regpair,HL,BC,DE)
 regsNotModified(1,?regh)
-equal((?const1&#ff00)>>8,const2)
+equal((?const1&#ff00)>>8,?const2)
 
 pattern: Replace ld ?regpair,?const2 with ld ?regpairh,?reg; ld ?regpairl,?reg (as ?Reg == ?const1 here)
 2: ld ?reg,?const1
