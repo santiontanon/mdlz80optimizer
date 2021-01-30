@@ -119,7 +119,7 @@ public class MDLConfig {
             + "  -out-opcase <case>: whether to convert the assembler operators to upper or lower case. Possible values are: none/lower/upper (none does no conversion). Default is 'lower'.\n"
             + "  -out-allow-ds-virtual: allows 'ds virtual' in the generated assembler (not all assemblers support this, but simplifies output)\n"
             + "  -out-colonless-equs: equs will look like 'label equ value' instead of 'label: equ value'\n"
-            + "  -out-remove-safety-equdollar: labels preceding an equ statement are rendered as 'label: equ $' by default for safety (some assemblers interpret them differently otherwise). USe this flag to deactivate this behavior.\n"
+            + "  -out-remove-safety-equdollar: labels preceding an equ statement are rendered as 'label: equ $' by default for safety (some assemblers interpret them differently otherwise). Use this flag to deactivate this behavior.\n"
             + "  -out-labels-no-dots: local labels get resolved to `context.label', some assemblers do not like '.' in labels however. This flag replaces them by underscores.\n"
             + "  -out-squarebracket-ind: use [] for indirections in the output, rather than ().\n"
             + "  -out-data-instead-of-ds: will replace statements like 'ds 4, 0' by 'db 0, 0, 0, 0.\n"
