@@ -17,94 +17,95 @@ The latest version can always be downloaded from the "releases" section: https:/
 
 ```java -jar mdl.jar <input assembler file> [options/tasks]```
 
-  ```-cpu <type>```: to select a different CPU (z80/z80msx/z80cpc) (default: z80msx).
+- ```-cpu <type>```: to select a different CPU (z80/z80msx/z80cpc) (default: z80msx).
   
-  ```-dialect <type>```: to allow parsing different assembler dialects (mdl/asmsx/asmsx-zilog/glass/sjasm/tniasm/winape/pasmo/sdcc) (default: mdl, which supports some basic code idioms common to various assemblers).
+- ```-dialect <type>```: to allow parsing different assembler dialects (mdl/asmsx/asmsx-zilog/glass/sjasm/tniasm/winape/pasmo/sdcc) (default: mdl, which supports some basic code idioms common to various assemblers).
                    Note that even when selecting a dialect, not all syntax of a given assembler might be supported.
                    
-  ```-I <folder>```: adds a folder to the include search path.
+- ```-I <folder>```: adds a folder to the include search path.
   
-  ```-quiet```: turns off info messages; only outputs warnings and errors.
+- ```-quiet```: turns off info messages; only outputs warnings and errors.
   
-  ```-debug```: turns on debug messages.
+- ```-debug```: turns on debug messages.
   
-  ```-trace```: turns on trace messages.
+- ```-trace```: turns on trace messages.
   
-  ```-warn```: turns on all warnings.
+- ```-warn```: turns on all warnings.
   
-  ```-warn-labelnocolon```: turns on warnings for not placing colons after labels.
+- ```-warn-labelnocolon```: turns on warnings for not placing colons after labels.
   
-  ```-warn-jp(rr)```: turns on warnings for using confusing 'jp (hl)' instead of 'jp hl' (this is turned off by default in dialects that do not support this).
+- ```-warn-jp(rr)```: turns on warnings for using confusing 'jp (hl)' instead of 'jp hl' (this is turned off by default in dialects that do not support this).
   
-  ```-warn-unofficial```: turns on warnings for using unofficial op syntax (e.g., 'add 1' instead of 'add a,1'.
+- ```-warn-unofficial```: turns on warnings for using unofficial op syntax (e.g., 'add 1' instead of 'add a,1'.
   
-  ```-warn-ambiguous```: turns on warnings for using ambiguous or error-inducing syntax in some dialects.
+- ```-warn-ambiguous```: turns on warnings for using ambiguous or error-inducing syntax in some dialects.
   
-  ```-do-not-convert-to-official```: turns off automatic conversion of unofficial op syntax to official ones in assembler output.
+- ```-do-not-convert-to-official```: turns off automatic conversion of unofficial op syntax to official ones in assembler output.
   
-  ```-hex#```: hex numbers render like #ffff (default).
+- ```-hex#```: hex numbers render like #ffff (default).
   
-  ```-HEX#```: hex numbers render like #FFFF.
+- ```-HEX#```: hex numbers render like #FFFF.
   
-  ```-hexh```: hex numbers render like 0ffffh.
+- ```-hexh```: hex numbers render like 0ffffh.
   
-  ```-HEXH```: hex numbers render like 0FFFFh.
+- ```-HEXH```: hex numbers render like 0FFFFh.
   
-  ```-hex0x```: hex numbers render like 0xffff.
+- ```-hex0x```: hex numbers render like 0xffff.
   
-  ```-HEX0X```: hex numbers render like 0XFFFF.
+- ```-HEX0X```: hex numbers render like 0XFFFF.
   
-  ```-+bin```: includes binary files (incbin) in the output analyses.
+- ```-+bin```: includes binary files (incbin) in the output analyses.
   
-  ```-no-opt-pragma <value>```: changes the pragma to be inserted in a comment on a line to prevent optimizing it (default: mdl:no-opt)
+- ```-no-opt-pragma <value>```: changes the pragma to be inserted in a comment on a line to prevent optimizing it (default: mdl:no-opt)
   
-  ```-out-opcase <case>```: whether to convert the assembler operators to upper or lower case. Possible values are: none/lower/upper (none does no conversion). Default is 'lower'.
+- ```-out-opcase <case>```: whether to convert the assembler operators to upper or lower case. Possible values are: none/lower/upper (none does no conversion). Default is 'lower'.
   
-  ```-out-allow-ds-virtual```: allows 'ds virtual' in the generated assembler (not all assemblers support this, but simplifies output)
+- ```-out-allow-ds-virtual```: allows 'ds virtual' in the generated assembler (not all assemblers support this, but simplifies output)
   
-  ```-out-colonless-equs```: equs will look like 'label equ value' instead of 'label: equ value'
+- ```-out-colonless-equs```: equs will look like 'label equ value' instead of 'label: equ value'
   
-  ```-out-remove-safety-equdollar```: labels preceding an equ statement are rendered as 'label: equ $' by default for safety (some assemblers interpret them differently otherwise). Use this flag to deactivate this behavior.
+- ```-out-remove-safety-equdollar```: labels preceding an equ statement are rendered as 'label: equ $' by default for safety (some assemblers interpret them differently otherwise). Use this flag to deactivate this behavior.
   
-  ```-out-labels-no-dots```: local labels get resolved to 'context.label', some assemblers do not like '.' in labels however. This flag replaces them by underscores.
+- ```-out-labels-no-dots```: local labels get resolved to 'context.label', some assemblers do not like '.' in labels however. This flag replaces them by underscores.
   
-  ```-out-squarebracket-ind```: use [] for indirections in the output, rather than ().
+- ```-out-squarebracket-ind```: use [] for indirections in the output, rather than ().
   
-  ```-out-data-instead-of-ds```: will replace statements like 'ds 4, 0' by 'db 0, 0, 0, 0.
+- ```-out-data-instead-of-ds```: will replace statements like 'ds 4, 0' by 'db 0, 0, 0, 0.
   
-  ```-out-do-not-evaluate-dialect-functions```: some assembler dialects define functions like random/sin/cos that can be used to form expressions. By default, MDL replaces them by the result of their execution before generating assembler output (as those might not be defined in other assemblers, and thus this keeps the assembler output as compatible as possible). Use this flag if you don't want this to happen.
+- ```-out-do-not-evaluate-dialect-functions```: some assembler dialects define functions like random/sin/cos that can be used to form expressions. By default, MDL replaces them by the result of their execution before generating assembler output (as those might not be defined in other assemblers, and thus this keeps the assembler output as compatible as possible). Use this flag if you don't want this to happen.
   
-  ```-out-evaluate-all-expressions```: this flag makes MDL resolve all expressions down to their ultimate numeric or string value when generating assembler code.
+- ```-out-evaluate-all-expressions```: this flag makes MDL resolve all expressions down to their ultimate numeric or string value when generating assembler code.
   
-Tasks and task/specific flags. Tasks will be executed in the order in which they are specified in the commandline, and using all the flag specified previously. Tasks can be repeated many times in the same command line:
-  ```-po```: [task] Runs the pattern-based optimizer using the latest settings. Notice that the -posilent, -poapply, etc. flags need to be passed *before* the call to -po that they which to affect and which is the one that triggers the optimizer. You can pass an optional parameter, like '-po size' or '-po speed', which are shortcuts for '-po -popatterns data/pbo-patterns-size.txt' and '-po -popatterns data/pbo-patterns-speed.txt' (some dialects might change the defaults of these two)
+Tasks and task/specific flags: Tasks will be executed in the order in which they are specified in the commandline, and using all the flag specified previously. Tasks can be repeated many times in the same command line:
+
+- ```-po```: (task) Runs the pattern-based optimizer using the latest settings. Notice that the -posilent, -poapply, etc. flags need to be passed *before* the call to -po that they which to affect and which is the one that triggers the optimizer. You can pass an optional parameter, like '-po size' or '-po speed', which are shortcuts for '-po -popatterns data/pbo-patterns-size.txt' and '-po -popatterns data/pbo-patterns-speed.txt' (some dialects might change the defaults of these two)
   
-  ```-posilent```: Supresses the pattern-based-optimizer output
+- ```-posilent```: Supresses the pattern-based-optimizer output
   
-  ```-poapply```: For each assembler \<file\> parsed by MDL, a corresponding \<file\>.mdl.asm is generated with the optimizations applied to it.
+- ```-poapply```: For each assembler \<file\> parsed by MDL, a corresponding \<file\>.mdl.asm is generated with the optimizations applied to it.
   
-  ```-popotential```: Reports lines where a potential optimization was not applied for safety, but could maybe be done manually (at most one potential optimization per line is shown).
+- ```-popotential```: Reports lines where a potential optimization was not applied for safety, but could maybe be done manually (at most one potential optimization per line is shown).
   
-  ```-popotential-all```: Same as above, but without the one-per-line constraint.
+- ```-popotential-all```: Same as above, but without the one-per-line constraint.
   
-  ```-popatterns <file>```: specifies the file to load optimization patterns from (default 'data/pbo-patterns.txt', which contains patterns that optimize both size and speed). For targetting size optimizations, use 'data/pbo-patterns-size.txt'. Notice that some dialects might change the default, for example, the sdcc dialect sets the default to 'data/pbo-patterns-sdcc-speed.txt'
+- ```-popatterns <file>```: specifies the file to load optimization patterns from (default 'data/pbo-patterns.txt', which contains patterns that optimize both size and speed). For targetting size optimizations, use 'data/pbo-patterns-size.txt'. Notice that some dialects might change the default, for example, the sdcc dialect sets the default to 'data/pbo-patterns-sdcc-speed.txt'
   
-  ```-dot <output file>```: [task] generates a dot file with a graph representing the whole source code.
+- ```-dot <output file>```: (task) generates a dot file with a graph representing the whole source code.
                       convert it to a png using 'dot' like this: ```dot -Tpng <output file>.dot -o <output file>.png```
   
-  ```-st <output file>```: [task] to output the symbol table.
+- ```-st <output file>```: (task) to output the symbol table.
   
-  ```-st-constants```: includes constants, in addition to labels, in the output symbol table.
+- ```-st-constants```: includes constants, in addition to labels, in the output symbol table.
   
-  ```-sft <output file>```: [task] generates a tsv file with some statistics about the source files.
+- ```-sft <output file>```: (task) generates a tsv file with some statistics about the source files.
   
-  ```-asm <output file>```: [task] saves the resulting assembler code in a single asm file (if no optimizations are performed, then this will just output the same code read as input (but with all macros and include statements expanded).
+- ```-asm <output file>```: (task) saves the resulting assembler code in a single asm file (if no optimizations are performed, then this will just output the same code read as input (but with all macros and include statements expanded).
   
-  ```-asm-expand-inbcin```: replaces all incbin commands with their actual data in the output assembler file, effectively, making the output assembler file self-contained.
+- ```-asm-expand-inbcin```: replaces all incbin commands with their actual data in the output assembler file, effectively, making the output assembler file self-contained.
   
-  ```-asm+ <output file>```: [task] generates a single text file containing the original assembler code (with macros expanded), that includes size and time annotations at the beginning of each file to help with manual optimizations beyond what MDL already provides.
+- ```-asm+ <output file>```: (task) generates a single text file containing the original assembler code (with macros expanded), that includes size and time annotations at the beginning of each file to help with manual optimizations beyond what MDL already provides.
   
-  ```-bin <output file>```: [task] generates an assembled binary.
+- ```-bin <output file>```: (task) generates an assembled binary.
 
 
 ## How to use MDL
