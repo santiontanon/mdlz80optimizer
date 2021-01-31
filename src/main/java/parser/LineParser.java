@@ -66,15 +66,23 @@ public class LineParser {
         config = a_config;
         codeBaseParser = a_codeBaseParser;
 
-        keywordsHintingALabel.add(KEYWORD_EQU);
-        keywordsHintingALabel.add(KEYWORD_DB);
-        keywordsHintingALabel.add(KEYWORD_DW);
-        keywordsHintingALabel.add(KEYWORD_DD);
-        
+        resetKeywordsHintingALabel();
+                
         forbiddenSymbols.add("end");
         
         macroArguentPrefixes.add("?");
     }
+    
+    
+    public void resetKeywordsHintingALabel()
+    {
+        keywordsHintingALabel.clear();
+        keywordsHintingALabel.add(KEYWORD_EQU);
+        keywordsHintingALabel.add(KEYWORD_DB);
+        keywordsHintingALabel.add(KEYWORD_DW);
+        keywordsHintingALabel.add(KEYWORD_DD);        
+    }
+    
 
     public void addKeywordSynonym(String synonym, String kw) {
         keywordSynonyms.put(synonym, kw);

@@ -312,7 +312,7 @@ public class SourceStatement {
             case STATEMENT_NONE:
                 break;
             case STATEMENT_ORG:
-                str += "    org " + org.toString();
+                str += "    "+config.lineParser.KEYWORD_ORG+" " + org.toString();
                 break;
             case STATEMENT_INCLUDE:
             {
@@ -321,7 +321,7 @@ public class SourceStatement {
                 if (path.contains("\\")) {
                     path = path.replace("\\", File.separator);
                 }                
-                str += "    include \"" + path + "\"";
+                str += "    "+config.lineParser.KEYWORD_INCLUDE+" \"" + path + "\"";
                 break;
             }
             case STATEMENT_INCBIN:
@@ -336,20 +336,20 @@ public class SourceStatement {
                 }                
                 if (incbinSkip != null) {
                     if (incbinSizeSpecified) {
-                        str += "    incbin \"" + path + "\", " + incbinSkip + ", " + incbinSize;
+                        str += "    "+config.lineParser.KEYWORD_INCBIN+" \"" + path + "\", " + incbinSkip + ", " + incbinSize;
                     } else {
-                        str += "    incbin \"" + path + "\", " + incbinSkip;
+                        str += "    "+config.lineParser.KEYWORD_INCBIN+" \"" + path + "\", " + incbinSkip;
                     }
                 } else {
-                    str += "    incbin \"" + path + "\"";
+                    str += "    "+config.lineParser.KEYWORD_INCBIN+" \"" + path + "\"";
                 }
                 break;
             }
             case STATEMENT_CONSTANT:
-                str += " equ " + label.exp.toString();
+                str += " "+config.lineParser.KEYWORD_EQU+" " + label.exp.toString();
                 break;
             case STATEMENT_DATA_BYTES:
-                str += "    db ";
+                str += "    "+config.lineParser.KEYWORD_DB+" ";
                 {
                     for(int i = 0;i<data.size();i++) {
                         str += data.get(i).toStringInternal(true, false, null);
@@ -360,7 +360,7 @@ public class SourceStatement {
                 }
                 break;
             case STATEMENT_DATA_WORDS:
-                str += "    dw ";
+                str += "    "+config.lineParser.KEYWORD_DW+" ";
                 {
                     for(int i = 0;i<data.size();i++) {
                         str += data.get(i).toString();
@@ -371,7 +371,7 @@ public class SourceStatement {
                 }
                 break;
             case STATEMENT_DATA_DOUBLE_WORDS:
-                str += "    dd ";
+                str += "    "+config.lineParser.KEYWORD_DD+" ";
                 {
                     for(int i = 0;i<data.size();i++) {
                         str += data.get(i).toString();
@@ -384,22 +384,22 @@ public class SourceStatement {
             case STATEMENT_DEFINE_SPACE:
                 if (space_value == null) {
                     if (config.output_allowDSVirtual) {
-                        str += "    ds virtual " + space;
+                        str += "    "+config.lineParser.KEYWORD_DS+" virtual " + space;
                     } else {
-                        str += "\n    org $ + " + space;
+                        str += "\n    "+config.lineParser.KEYWORD_ORG+" $ + " + space;
                     }
                 } else {
                     if (config.output_replaceDsByData) {
                         int break_each = 16;
                         int space_as_int = space.evaluateToInteger(this, this.source.code, true);
                         String space_str = space_value.toString();
-                        str += "    db ";
+                        str += "    "+config.lineParser.KEYWORD_DB+" ";
                         {
                             for(int i = 0;i<space_as_int;i++) {
                                 str += space_str;
                                 if (i != space_as_int-1) {
                                     if (((i+1)%break_each) == 0) {
-                                        str += "\n    db ";
+                                        str += "\n    "+config.lineParser.KEYWORD_DB+" ";
                                     } else {
                                         str += ", ";
                                     }
@@ -407,7 +407,7 @@ public class SourceStatement {
                             }
                         }
                     } else {
-                        str += "    ds " + space + ", " + space_value;
+                        str += "    "+config.lineParser.KEYWORD_DS+" " + space + ", " + space_value;
                     }
                 }
                 break;

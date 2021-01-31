@@ -20,15 +20,15 @@ import java.util.HashMap;
  * @author santi
  */
 public class PreProcessor {
-    public final String MACRO_MACRO = "macro";
-    public final String MACRO_ENDM = "endm";
-    public final String MACRO_REPT = "rept";
-    public final String MACRO_ENDR = "endr";
-    public final String MACRO_IF = "if";
-    public final String MACRO_IFDEF = "ifdef";
-    public final String MACRO_IFNDEF = "ifndef";
-    public final String MACRO_ELSE = "else";
-    public final String MACRO_ENDIF = "endif";
+    public String MACRO_MACRO = "macro";
+    public String MACRO_ENDM = "endm";
+    public String MACRO_REPT = "rept";
+    public String MACRO_ENDR = "endr";
+    public String MACRO_IF = "if";
+    public String MACRO_IFDEF = "ifdef";
+    public String MACRO_IFNDEF = "ifndef";
+    public String MACRO_ELSE = "else";
+    public String MACRO_ENDIF = "endif";
     
     public String unnamedMacroPrefix = "___expanded_macro___";
     

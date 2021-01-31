@@ -1,7 +1,8 @@
 ; Test case: 
 	ld de, #array1
 	ld hl, #array2
-	ld bc, #0x04
+	ld c, #0x04
+	ld b, #CONOUT
 	ldir
 	ld a, b
 	ld hl, #-9
@@ -14,3 +15,4 @@ array1:
 	.byte 0, 0, 0, 0
 array2:
 	.byte 0, 0, 0, 0
+CONOUT: .equ 0x00

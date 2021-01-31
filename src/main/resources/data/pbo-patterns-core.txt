@@ -1283,3 +1283,11 @@ replacement:
 constraints:
 in(?op,jp)
 regsNotUsedAfter(1,A)
+
+pattern: Remove redundant ?op ?any
+0: ?op ?any
+1: ?op ?any
+replacement:
+0: ?op ?any
+constraints:
+in(?op,and,or)

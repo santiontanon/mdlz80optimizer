@@ -14,6 +14,7 @@ import code.SourceStatement;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import parser.LineParser;
 import parser.SourceLine;
 import parser.Tokenizer;
 import workers.pattopt.PatternBasedOptimizer;
@@ -21,6 +22,9 @@ import workers.pattopt.PatternBasedOptimizer;
 /**
  *
  * @author santi
+ * 
+ * Dialect for the asz80 assembler, used by SDCC: https://shop-pdp.net/ashtml/asmlnk.htm
+ * 
  */
 public class SDCCDialect implements Dialect {
 
@@ -61,6 +65,11 @@ public class SDCCDialect implements Dialect {
         
         config.lineParser.KEYWORD_ORG = ".org";
         
+        config.preProcessor.MACRO_MACRO = ".macro";
+        config.preProcessor.MACRO_ENDM = ".endm";
+        
+        config.lineParser.macroDefinitionStyle = LineParser.MACRO_MACRO_NAME_ARGS;
+        
         config.expressionParser.dialectFunctions.add("<");        
         config.expressionParser.dialectFunctions.add(">");
 
@@ -76,6 +85,8 @@ public class SDCCDialect implements Dialect {
         PatternBasedOptimizer.defaultInputPatternsFileName = "data/pbo-patterns-sdcc-speed.txt";;
         PatternBasedOptimizer.defaultInputPatternsSizeFileName = "data/pbo-patterns-sdcc-size.txt";
         PatternBasedOptimizer.defaultInputPatternsSpeedFileName = "data/pbo-patterns-sdcc-speed.txt";
+        
+        config.lineParser.resetKeywordsHintingALabel();
     }    
     
     

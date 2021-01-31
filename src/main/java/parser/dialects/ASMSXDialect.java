@@ -97,6 +97,8 @@ public class ASMSXDialect implements Dialect {
         
         config.lineParser.defineSpaceVirtualByDefault = true;
 
+        config.lineParser.resetKeywordsHintingALabel();
+        
         config.warning_jpHlWithParenthesis = false;
         config.lineParser.keywordsHintingALabel.add("=");
         

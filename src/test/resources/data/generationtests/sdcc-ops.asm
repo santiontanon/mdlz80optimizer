@@ -1,7 +1,12 @@
 ; Test case: 
+.macro mymacro arg1,arg2
+	ld c,arg1
+	ld b,arg2
+.endm
+
 	ld de, #array1
 	ld hl, #array2
-	ld bc, #0x0004
+	mymacro #0x04,#CONOUT
 	ldir
 	ld a,b
 	ld	hl, #-9
@@ -15,3 +20,4 @@ array1:
 	.byte 0,0,0,0
 array2:
 	.byte 0,0,0,0
+	CONOUT .equ 0x00
