@@ -23,7 +23,6 @@ public class Resources {
     }
 
     public static BufferedReader asReader(String path) throws IOException {
-
         // From classpath
         if (existsInClasspath(path)) {
             ClassLoader classLoader = Thread.currentThread().getContextClassLoader();

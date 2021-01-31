@@ -119,4 +119,8 @@ public interface Dialect {
         return s.toStringUsingRootPath(rootPath, useOriginalNames);
     }
     
+    default String getNextTemporaryLabel()
+    {
+        return null;
+    }
 }

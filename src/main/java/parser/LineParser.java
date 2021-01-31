@@ -863,6 +863,11 @@ public class LineParser {
                     String macroNameStr = tokens.remove(0);
                     SourceConstant c = new SourceConstant(macroNameStr, macroNameStr, null, s, config);
                     s.label = c;
+                    
+                    // remove an optional comma separating macro name and arguments:
+                    if (tokens.size()>0 && tokens.get(0).equals(",")) {
+                        tokens.remove(0);
+                    }
                 }
                 break;
             case MACRO_BOTH:
@@ -892,11 +897,13 @@ public class LineParser {
                 && !Tokenizer.isMultiLineCommentStart(tokens.get(0))) {
             String token = tokens.get(0);
             tokens.remove(0);
+            String argName = token;
             if (macroArguentPrefixes.contains(token)) {
-                args.add(token + tokens.remove(0));
-            } else {
-                args.add(token);
+                argName = token + tokens.remove(0);
             }
+            
+            args.add(argName);
+            
             if (!tokens.isEmpty() && tokens.get(0).equals("=")) {
                 // default value:
                 tokens.remove(0);
@@ -1005,7 +1012,9 @@ public class LineParser {
     }
 
     public String pathConcat(String path, String fileName) {
-        if (path.endsWith(File.separator) || path.isEmpty()) {
+        if (path.endsWith(File.separator) || 
+            path.endsWith("/") ||   // we hardcode this one, as otherwise, when running MDL on Windows, File.separator does not match with the "/" characters
+            path.isEmpty()) {
             return path + fileName;
         } else {
             return path + File.separator + fileName;

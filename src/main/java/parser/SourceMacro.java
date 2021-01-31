@@ -11,6 +11,7 @@ import code.CodeBase;
 import code.Expression;
 import code.SourceConstant;
 import code.SourceStatement;
+import java.util.HashMap;
 import parser.dialects.SjasmDialect;
 
 
@@ -28,6 +29,9 @@ public class SourceMacro {
     public List<Expression> preDefinedMacroArgs = null;
     public boolean insideElse = false;
 
+    // in ASDZ80, if you define an argument preceded by a "?", it is not an argument, but a mark to
+    // define a temporary local label:
+    public List<String> temporaryLabelArgNames = new ArrayList<>();    
 
     public SourceMacro(String a_name, SourceStatement a_ds)
     {
@@ -36,10 +40,19 @@ public class SourceMacro {
     }
 
 
-    public SourceMacro(String a_name, List<String> a_args, List<Expression> a_defaultValues, SourceStatement a_ds)
+    public SourceMacro(String a_name, List<String> a_args, List<Expression> a_defaultValues, SourceStatement a_ds, MDLConfig config)
     {        
         name = a_name;
-        argNames = a_args;
+
+        for(String argName:a_args) {
+            if (config.preProcessor.temporaryLabelArgPrefix != null &&
+                argName.startsWith(config.preProcessor.temporaryLabelArgPrefix)) {
+                argName = argName.substring(config.preProcessor.temporaryLabelArgPrefix.length());
+                temporaryLabelArgNames.add(argName);
+            } else {
+                argNames.add(argName);
+            }
+        }
         defaultValues = a_defaultValues;
         definingStatement = a_ds;
         
@@ -105,14 +118,14 @@ public class SourceMacro {
                 for(SourceLine sl:lines) {
                     // we create new instances, as we will modify them:
                     if (counterName != null) {
-                        SourceLine sl2 = replaceMacroArg(sl, reptArgNames, reptArgs, macroCall, config);
+                        SourceLine sl2 = replaceMacroArgs(sl, reptArgNames, reptArgs, null, macroCall, config);
                         linesTmp.add(sl2);
                     } else {
                         linesTmp.add(new SourceLine(sl.line, sl.source, sl.lineNumber));
                     }
                 }
                 lines2.add(new SourceLine(scope + "." + i + ":", macroCall.sl.source, macroCall.sl.lineNumber));                
-                scopeMacroExpansionLines(scope+"."+i, linesTmp, code, config);
+                scopeMacroExpansionLines(scope+"." + i, linesTmp, code, config);
                 lines2.addAll(linesTmp);
             }
         } else if (config.preProcessor.isMacroName(name, config.preProcessor.MACRO_IF)) {
@@ -173,9 +186,19 @@ public class SourceMacro {
                         args.add(defaultValue);
                     }
                 }
+                
+                HashMap<String, String> temporaryLabelsMap = new HashMap<>();
+                for(String label:temporaryLabelArgNames) {
+                    if (config.dialectParser != null) {
+                        String newLabel = config.dialectParser.getNextTemporaryLabel();
+                        if (newLabel != null) {
+                            temporaryLabelsMap.put(label, newLabel);
+                        }
+                    }
+                }
 
                 for(SourceLine sl:lines) {
-                    SourceLine sl2 = replaceMacroArg(sl, argNames, args, macroCall, config);
+                    SourceLine sl2 = replaceMacroArgs(sl, argNames, args, temporaryLabelsMap, macroCall, config);
                     lines2.add(sl2);
                 }                
             } else {
@@ -208,7 +231,9 @@ public class SourceMacro {
     }
 
     
-    public SourceLine replaceMacroArg(SourceLine sl, List<String> names, List<Expression> args, SourceStatement macroCall, MDLConfig config)
+    public SourceLine replaceMacroArgs(SourceLine sl, List<String> names, List<Expression> args, 
+                                       HashMap<String, String> temporaryLabelsMap, 
+                                       SourceStatement macroCall, MDLConfig config)
     {
         String line2 = sl.line;
         List<String> tokens = Tokenizer.tokenizeIncludingBlanks(line2);
@@ -222,15 +247,19 @@ public class SourceMacro {
                 token = previous + token;
             }
             String newToken = token;
-            for(int i = 0;i<names.size();i++) {
-                if (token.equals(names.get(i))) {
-                    // we wrap it spaces, to prevent funny interaction of tokens, e.g., two "-" in a row forming a "--":
-                    newToken = " " + args.get(i).toString() + " ";
-                } else {
-                    // special case for Glass when we have something like "?parametername.field":
-                    if (names.get(i).startsWith("?") && token.startsWith(names.get(i)) &&
-                        token.charAt(names.get(i).length()) == '.') {
-                        newToken = " " + args.get(i).toString() + token.substring(names.get(i).length());
+            if (temporaryLabelsMap != null && temporaryLabelsMap.containsKey(token)) {
+                newToken = temporaryLabelsMap.get(token);
+            } else {
+                for(int i = 0;i<names.size();i++) {
+                    if (token.equals(names.get(i))) {
+                        // we wrap it spaces, to prevent funny interaction of tokens, e.g., two "-" in a row forming a "--":
+                        newToken = " " + args.get(i).toString() + " ";
+                    } else {
+                        // special case for Glass when we have something like "?parametername.field":
+                        if (names.get(i).startsWith("?") && token.startsWith(names.get(i)) &&
+                            token.charAt(names.get(i).length()) == '.') {
+                            newToken = " " + args.get(i).toString() + token.substring(names.get(i).length());
+                        }
                     }
                 }
             }

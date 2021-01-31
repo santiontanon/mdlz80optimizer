@@ -33,6 +33,8 @@ public class SDCCTest {
 
     @Test public void test1() throws IOException { Assert.assertTrue(test("data/generationtests/sdcc-ops.asm",
                                                                           "data/generationtests/sdcc-ops-expected.asm")); }
+    @Test public void test2() throws IOException { Assert.assertTrue(test("data/generationtests/sdcc-macros.asm",
+                                                                          "data/generationtests/sdcc-macros-expected.asm")); }
 
     private boolean test(String inputFile, String expectedOutputFile) throws IOException
     {

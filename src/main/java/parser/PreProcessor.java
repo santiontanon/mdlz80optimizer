@@ -30,6 +30,8 @@ public class PreProcessor {
     public String MACRO_ELSE = "else";
     public String MACRO_ENDIF = "endif";
     
+    public String temporaryLabelArgPrefix = null;
+    
     public String unnamedMacroPrefix = "___expanded_macro___";
     
     public static class PreProcessorFileState {
@@ -392,7 +394,7 @@ public class PreProcessor {
                     config.error("Something weird just happend (expanding two macros at once, contact the developer) in " + sl);
                     return null;
                 }
-                currentState.currentMacro = new SourceMacro(s.label.name, s.macroDefinitionArgs, s.macroDefinitionDefaults, s);
+                currentState.currentMacro = new SourceMacro(s.label.name, s.macroDefinitionArgs, s.macroDefinitionDefaults, s, config);
                 return l;
             }
             return null;
@@ -435,6 +437,7 @@ public class PreProcessor {
     public String nextMacroExpansionContextName(String labelPrefix)
     {
         macroExpansionCounter++;
+        if (labelPrefix == null) return unnamedMacroPrefix + macroExpansionCounter;
         return labelPrefix + unnamedMacroPrefix + macroExpansionCounter;
     }
 }

@@ -374,6 +374,28 @@ public class PatternBasedOptimizer implements MDLWorker {
             // 2) Apply optimizations:
             for(PatternMatch match: appliedOptimizations) {
                 if (match.f == f) {
+                    // check that the optimization is not on a macro (do not apply optimizations to macros!):
+                    boolean fromMacro = false;
+                    for(SourceStatement s: match.removed) {
+                        if (s.sl.expandedFrom != null) {
+                            // this was expanded from a macro:
+                            fromMacro = true;
+                            break;
+                        }
+                    }
+                    for(SourceStatement s: match.added) {
+                        if (s.sl.expandedFrom != null) {
+                            // this was expanded from a macro:
+                            fromMacro = true;
+                            break;
+                        }
+                    }
+
+                    if (fromMacro) {
+                        config.warn("Optimization '" + match.pattern.getInstantiatedName(match) + "' cannot be applied to the source code (for safety reasons) as it is associated with a macro (MDL cannot guarantee that the resulting optimized file is sound after this point).");
+                        continue;
+                    }
+                    
                     for(SourceStatement s: match.removed) {
                         List<String> updatedLines = lines.get(s.sl.lineNumber-1);
                         if (updatedLines.size() == 1) {

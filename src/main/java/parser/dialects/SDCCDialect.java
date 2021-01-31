@@ -34,6 +34,8 @@ public class SDCCDialect implements Dialect {
     List<String> definedAreas = new ArrayList<>();
     String currentArea;
     
+    int nextTemporaryLabel = 10000;
+    
     
     public SDCCDialect(MDLConfig a_config)
     {
@@ -67,6 +69,8 @@ public class SDCCDialect implements Dialect {
         
         config.preProcessor.MACRO_MACRO = ".macro";
         config.preProcessor.MACRO_ENDM = ".endm";
+        config.preProcessor.MACRO_REPT = ".rept";
+        config.preProcessor.temporaryLabelArgPrefix = "?";
         
         config.lineParser.macroDefinitionStyle = LineParser.MACRO_MACRO_NAME_ARGS;
         
@@ -293,8 +297,10 @@ public class SDCCDialect implements Dialect {
                     }
                     if (s.op.args.get(i).evaluatesToIntegerConstant() &&
                         (!s.op.isJump() && !s.op.isCall())) {
-                        if (i == 0 && s.op.args.size()>1) {
-                            // no mark on left-hand side indirections:
+                        if (i == 0 && s.op.args.size()>1 && 
+                            !s.op.spec.opName.equalsIgnoreCase("in") &&
+                            !s.op.spec.opName.equalsIgnoreCase("out")) {
+                            // no mark on left-hand side indirections (except in/out):
                             str += s.op.args.get(i).toStringInternal(true, useOriginalNames, code);
                         } else {
                             // mark the value as a constant:
@@ -372,4 +378,12 @@ public class SDCCDialect implements Dialect {
                 return s.toStringUsingRootPath(rootPath, useOriginalNames);
         }
     }    
+    
+    
+    @Override
+    public String getNextTemporaryLabel()
+    {
+        nextTemporaryLabel++;
+        return (nextTemporaryLabel-1) + "$";
+    }
 }
