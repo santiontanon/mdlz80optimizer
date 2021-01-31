@@ -223,7 +223,7 @@ public class SDCCDialect implements Dialect {
         if (functionName.equalsIgnoreCase("<") && args.size() == 1) {
             return Expression.operatorExpression(Expression.EXPRESSION_BITAND, 
                     args.get(0),
-                    Expression.constantExpression(0x00ff, false, true, config), config);
+                    Expression.constantExpression(0x00ff, Expression.RENDER_AS_16BITHEX, config), config);
         }
         // higher byte:
         if (functionName.equalsIgnoreCase(">") && args.size() == 1) {
@@ -231,7 +231,7 @@ public class SDCCDialect implements Dialect {
                     Expression.parenthesisExpression(
                         Expression.operatorExpression(Expression.EXPRESSION_BITAND, 
                             args.get(0),
-                            Expression.constantExpression(0xff00, false, true, config), config), 
+                            Expression.constantExpression(0xff00, Expression.RENDER_AS_16BITHEX, config), config), 
                         "(", config),
                     Expression.constantExpression(8, config), config);
         }

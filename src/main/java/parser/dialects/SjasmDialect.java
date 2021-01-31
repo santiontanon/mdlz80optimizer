@@ -668,7 +668,7 @@ public class SjasmDialect implements Dialect {
             if (struct != null) {
                 s.label.exp = exp;
             } else {
-                s.label.exp = Expression.constantExpression(mapCounter, false, true, config);
+                s.label.exp = Expression.constantExpression(mapCounter, Expression.RENDER_AS_16BITHEX, config);
             }
             s.type = SourceStatement.STATEMENT_CONSTANT;
             mapCounter += exp.evaluateToInteger(s, code, false);
@@ -1227,14 +1227,14 @@ public class SjasmDialect implements Dialect {
                     Expression.parenthesisExpression(
                         Expression.operatorExpression(Expression.EXPRESSION_BITAND, 
                             args.get(0),
-                            Expression.constantExpression(0xff00, false, true, config), config), 
+                            Expression.constantExpression(0xff00, Expression.RENDER_AS_16BITHEX, config), config), 
                         "(", config),
                     Expression.constantExpression(8, config), config);
         }
         if (functionName.equalsIgnoreCase("low") && args.size() == 1) {
             return Expression.operatorExpression(Expression.EXPRESSION_BITAND, 
                     args.get(0),
-                    Expression.constantExpression(0x00ff, false, true, config), config);
+                    Expression.constantExpression(0x00ff, Expression.RENDER_AS_16BITHEX, config), config);
         }
 
         return null;

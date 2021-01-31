@@ -107,7 +107,7 @@ public class MDLConfig {
             + "  -warn-unofficial: turns on warnings for using unofficial op syntax (e.g., 'add 1' instead of 'add a,1'.\n"
             + "  -warn-ambiguous: turns on warnings for using ambiguous or error-inducing syntax in some dialects.\n"
             + "  -do-not-convert-to-official: turns off automatic conversion of unofficial op syntax to official ones in assembler output.\n"
-            + "  -hex#: hex numbers render like #ffff (default).\n"
+            + "  -hex#: hex numbers render like #ffff (default). These flags also have analogous effect on binary and octal constant rendering.\n"
             + "  -HEX#: hex numbers render like #FFFF.\n"
             + "  -hexh: hex numbers render like 0ffffh.\n"
             + "  -HEXH: hex numbers render like 0FFFFh.\n"

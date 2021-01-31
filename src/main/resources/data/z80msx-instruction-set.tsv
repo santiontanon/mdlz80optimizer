@@ -411,6 +411,7 @@ OUT n,A	12	D3 n	2	A					S,Z,N	n		false
 OR A, n	8	F6 n	2	A				A	S,Z,H,P/V,N,C			false
 OR A, (IX+o)	21	DD B6 o	3	A,IX			IX+o	A	S,Z,H,P/V,N,C			false
 OR A, (IY+o)	21	FD B6 o	3	A,IY			IY+o	A	S,Z,H,P/V,N,C			false
+OR A, (HL)	8	B6	1	A,HL			HL	A	S,Z,H,P/V,N,C			false
 OR A, r	5	B0+r	1	A,r				A	S,Z,H,P/V,N,C			false
 SBC (HL)	8	9E	1	A,HL	C		HL	A	S,Z,H,P/V,N,C			false
 SBC A	5	98+7	1		C			A	S,Z,H,P/V,N,C			false

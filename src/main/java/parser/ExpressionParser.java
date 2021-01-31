@@ -296,10 +296,10 @@ public class ExpressionParser {
                 tokens.remove(0);
                 if (token.length()<=3) {
                     // 8 bit:
-                    return Expression.constantExpression(Tokenizer.parseHex(token), true, false, config);
+                    return Expression.constantExpression(Tokenizer.parseHex(token), Expression.RENDER_AS_8BITHEX, config);
                 } else {
                     // 16 bit:
-                    return Expression.constantExpression(Tokenizer.parseHex(token), false, true, config);
+                    return Expression.constantExpression(Tokenizer.parseHex(token), Expression.RENDER_AS_16BITHEX, config);
                 }
             }
         }
@@ -310,17 +310,34 @@ public class ExpressionParser {
             String token = tokens.get(0);
             if (Tokenizer.isBinary(token)) {
                 tokens.remove(0);
-                return Expression.constantExpression(Tokenizer.parseBinary(token), config);
+                if (token.length()<=9) {
+                    return Expression.constantExpression(Tokenizer.parseBinary(token), Expression.RENDER_AS_8BITBIN, config);
+                } else {
+                    return Expression.constantExpression(Tokenizer.parseBinary(token), Expression.RENDER_AS_16BITBIN, config);
+                }
+            }
+        }
+        if (tokens.size() >= 1 &&
+            (tokens.get(0).startsWith("0b") || tokens.get(0).startsWith("0B"))) {
+            // should be a binary constant:
+            String token = tokens.get(0).substring(2);
+            if (Tokenizer.isBinary(token)) {
+                tokens.remove(0);
+                if (token.length()<=8) {
+                    return Expression.constantExpression(Tokenizer.parseBinary(token), Expression.RENDER_AS_8BITBIN, config);
+                } else {
+                    return Expression.constantExpression(Tokenizer.parseBinary(token), Expression.RENDER_AS_16BITBIN, config);
+                }
             }
         }
         if (tokens.size() >= 1 &&
             (tokens.get(0).charAt(0) >= '0' && tokens.get(0).charAt(0) <= '7') &&
             (tokens.get(0).endsWith("o") || tokens.get(0).endsWith("O"))) {
-            // should be a binary constant:
+            // should be a octal constant:
             String token = tokens.get(0);
             if (Tokenizer.isOctal(token)) {
                 tokens.remove(0);
-                return Expression.constantExpression(Tokenizer.parseOctal(token), config);
+                return Expression.constantExpression(Tokenizer.parseOctal(token), Expression.RENDER_AS_OCT, config);
             }
         }
         if (tokens.size() >= 1 && tokens.get(0).length() > 1 &&
@@ -331,10 +348,10 @@ public class ExpressionParser {
                 tokens.remove(0);
                 if (token.length()<=3) {
                     // 8 bit:
-                    return Expression.constantExpression(Tokenizer.parseHex(token), true, false, config);
+                    return Expression.constantExpression(Tokenizer.parseHex(token), Expression.RENDER_AS_8BITHEX, config);
                 } else {
                     // 16 bit:
-                    return Expression.constantExpression(Tokenizer.parseHex(token), false, true, config);
+                    return Expression.constantExpression(Tokenizer.parseHex(token), Expression.RENDER_AS_16BITHEX, config);
                 }
             }
         }
@@ -346,10 +363,10 @@ public class ExpressionParser {
                 tokens.remove(0);
                 if (token.length()<=4) {
                     // 8 bit:
-                    return Expression.constantExpression(Tokenizer.parseHex(token), true, false, config);
+                    return Expression.constantExpression(Tokenizer.parseHex(token), Expression.RENDER_AS_8BITHEX, config);
                 } else {
                     // 16 bit:
-                    return Expression.constantExpression(Tokenizer.parseHex(token), false, true, config);
+                    return Expression.constantExpression(Tokenizer.parseHex(token), Expression.RENDER_AS_16BITHEX, config);
                 }
             }
         }

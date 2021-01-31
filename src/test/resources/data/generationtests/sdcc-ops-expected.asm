@@ -9,6 +9,7 @@
 	ld bc, (#array1 + 1)
 	ld hl, #(array2 + 0x03)	
 	ld ((array2 + 0x08)), de
+        ld e, #0b10011000
 00105$:
 	jr 00105$
 array1:

@@ -45,6 +45,12 @@ public class Expression {
     public static final int EXPRESSION_DIALECT_FUNCTION = 27;
     public static final int EXPRESSION_PLUS_SIGN = 29;  // just something like: +1, or +(3-5)
     
+    public static final int RENDER_DEFAULT = 0;
+    public static final int RENDER_AS_8BITHEX = 1;
+    public static final int RENDER_AS_16BITHEX = 2;
+    public static final int RENDER_AS_OCT = 3;
+    public static final int RENDER_AS_8BITBIN = 4;
+    public static final int RENDER_AS_16BITBIN = 5;
 
     // indexed by the numbers above:
     // Precedences obtained from the ones used by c++: https://en.cppreference.com/w/cpp/language/operator_precedence
@@ -59,8 +65,7 @@ public class Expression {
     MDLConfig config;
     public int type;
     public int integerConstant;
-    public boolean renderAs8bitHex = false; // only applicable to intergerConstant
-    public boolean renderAs16bitHex = false; // only applicable to intergerConstant
+    public int renderMode = RENDER_DEFAULT; // render as decimal, hex, binary, etc.
     public double doubleConstant;
     public String stringConstant;
     public String symbolName;
@@ -568,13 +573,31 @@ public class Expression {
                     return registerOrFlagName;
                 }
             case EXPRESSION_INTEGER_CONSTANT:
-                if (renderAs16bitHex && integerConstant >= 0 && integerConstant <= 0xffff) {
-                    return Tokenizer.toHexWord(integerConstant, config.hexStyle);
-                } else if (renderAs8bitHex && integerConstant >= 0 && integerConstant <= 0xff) {
-                    return Tokenizer.toHexByte(integerConstant, config.hexStyle);
-                } else {
-                    return "" + integerConstant;
+                switch(renderMode) {
+                    case RENDER_AS_8BITHEX:
+                        if (integerConstant >= 0 && integerConstant <= 0xff) {
+                            return Tokenizer.toHexByte(integerConstant, config.hexStyle);
+                        }
+                        break;
+                    case RENDER_AS_16BITHEX:
+                        if (integerConstant >= 0 && integerConstant <= 0xffff) {
+                            return Tokenizer.toHexWord(integerConstant, config.hexStyle);
+                        }
+                        break;
+                    case RENDER_AS_OCT:
+                        return Tokenizer.toOct(integerConstant, config.hexStyle);
+                    case RENDER_AS_8BITBIN:
+                        if (integerConstant >= 0 && integerConstant <= 0xff) {
+                            return Tokenizer.toBin(integerConstant, 8, config.hexStyle);
+                        }
+                        break;
+                    case RENDER_AS_16BITBIN:
+                        if (integerConstant >= 0 && integerConstant <= 0xffff) {
+                            return Tokenizer.toBin(integerConstant, 16, config.hexStyle);
+                        }
+                        break;
                 }
+                return "" + integerConstant;
             case EXPRESSION_DOUBLE_CONSTANT:
                 return "" + doubleConstant;
             case EXPRESSION_STRING_CONSTANT:
@@ -1131,11 +1154,10 @@ public class Expression {
         return exp;
     }
 
-    public static Expression constantExpression(int v, boolean renderAs8bitHex, boolean renderAs16bitHex, MDLConfig config) {
+    public static Expression constantExpression(int v, int renderMode, MDLConfig config) {
         Expression exp = new Expression(EXPRESSION_INTEGER_CONSTANT, config);
         exp.integerConstant = v;
-        exp.renderAs8bitHex = renderAs8bitHex;
-        exp.renderAs16bitHex = renderAs16bitHex;
+        exp.renderMode = renderMode;
         return exp;
     }
     

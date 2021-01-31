@@ -358,7 +358,7 @@ public class ASMSXDialect implements Dialect {
             s.type = SourceStatement.STATEMENT_ORG;
             s.org = Expression.operatorExpression(Expression.EXPRESSION_MUL,
                     Expression.parenthesisExpression(page_exp, "(", config),
-                    Expression.constantExpression(16*1024, false, true, config), config);
+                    Expression.constantExpression(16*1024, Expression.RENDER_AS_16BITHEX, config), config);
             // Since we are not producing compiled output, we ignore this directive
             if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
         }
@@ -462,7 +462,7 @@ public class ASMSXDialect implements Dialect {
             basicHeaderStatement = s;
             s.type = SourceStatement.STATEMENT_DATA_BYTES;
             s.data = data;
-            data.add(Expression.constantExpression(0xfe, true, false, config));
+            data.add(Expression.constantExpression(0xfe, Expression.RENDER_AS_8BITHEX, config));
             data.add(Expression.constantExpression(0, config)); 
             data.add(Expression.constantExpression(0, config));             
             for(int i = 0;i<2;i++) data.add(Expression.constantExpression(0, config));
@@ -803,10 +803,10 @@ public class ASMSXDialect implements Dialect {
                 if (s.type == SourceStatement.STATEMENT_CPUOP) {
                     // found it!
                     basicHeaderStatement.data.set(5,Expression.operatorExpression(Expression.EXPRESSION_MOD, 
-                            Expression.constantExpression(s.getAddress(code), false, true, config), 
+                            Expression.constantExpression(s.getAddress(code), Expression.RENDER_AS_16BITHEX, config), 
                             Expression.constantExpression(256, config), config)); 
                     basicHeaderStatement.data.set(6,Expression.operatorExpression(Expression.EXPRESSION_DIV, 
-                            Expression.constantExpression(s.getAddress(code), false, true, config), 
+                            Expression.constantExpression(s.getAddress(code), Expression.RENDER_AS_16BITHEX, config), 
                             Expression.constantExpression(256, config), config)); 
                     break;
                 }
@@ -898,10 +898,10 @@ public class ASMSXDialect implements Dialect {
                 if (lastGeneratingBytes != null) {
                     int end_address = lastGeneratingBytes.getAddress(code) + lastGeneratingBytes.sizeInBytes(code, false, true, false);
                     basicHeaderStatement.data.set(3,Expression.operatorExpression(Expression.EXPRESSION_MOD, 
-                            Expression.constantExpression(end_address-1, false, true, config), 
+                            Expression.constantExpression(end_address-1, Expression.RENDER_AS_16BITHEX, config), 
                             Expression.constantExpression(256, config), config)); 
                     basicHeaderStatement.data.set(4,Expression.operatorExpression(Expression.EXPRESSION_DIV, 
-                            Expression.constantExpression(end_address-1, false, true, config), 
+                            Expression.constantExpression(end_address-1, Expression.RENDER_AS_16BITHEX, config), 
                             Expression.constantExpression(256, config), config)); 
                 }
             } 
@@ -937,7 +937,7 @@ public class ASMSXDialect implements Dialect {
                     if (value == null) {
                         config.error("Cannot evaluate expression " + pr.exp);
                     } else {
-                        config.info("" + Tokenizer.toHexWord(value));
+                        config.info("" + Tokenizer.toHex(value, 4));
                     }
                     break;
                 }

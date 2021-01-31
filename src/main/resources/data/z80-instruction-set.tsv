@@ -406,6 +406,7 @@ EX HL,DE	4	EB	1	DE,HL				DE,HL				false
 OUT n,A	11	D3 n	2	A					S,Z,N	n		false
 OR A, (IX+o)	19	DD B6 o	3	A,IX			IX+o	A	S,Z,H,P/V,N,C			false
 OR A, (IY+o)	19	FD B6 o	3	A,IY			IY+o	A	S,Z,H,P/V,N,C			false
+OR A, (HL)	7	B6	1	A,HL			HL	A	S,Z,H,P/V,N,C			false
 OR A, r	4	B0+r	1	A,r				A	S,Z,H,P/V,N,C			false
 OR A, n	7	F6 n	2	A				A	S,Z,H,P/V,N,C			false
 SBC (HL)	7	9E	1	A,HL	C		HL	A	S,Z,H,P/V,N,C			false

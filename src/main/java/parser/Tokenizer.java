@@ -271,7 +271,7 @@ public class Tokenizer {
     }
     
     
-    public static String toHexWord(int value)
+    public static String toHex(int value, int length)
     {
         String allowed = "0123456789abcdef";
         String hex = "";
@@ -281,7 +281,7 @@ public class Tokenizer {
             value = value/16;
             hex = allowed.charAt(digit) + hex;
         }
-        while(hex.length() < 4) {
+        while(hex.length() < length) {
             hex = "0" + hex;
         }
         
@@ -289,34 +289,16 @@ public class Tokenizer {
     }
     
     
-    public static String toHexByte(int value)
-    {
-        String allowed = "0123456789abcdef";
-        String hex = "";
-        value = value & 0xff;
-        while(value != 0) {
-            int digit = value%16;
-            value = value/16;
-            hex = allowed.charAt(digit) + hex;
-        }
-        while(hex.length() < 2) {
-            hex = "0" + hex;
-        }
-        
-        return hex;
-    }    
-
-    
     public static String toHexWord(int value, int hex_style)
     {
         switch (hex_style) {
             case MDLConfig.HEX_STYLE_HASH:
-                return "#" + toHexWord(value);
+                return "#" + toHex(value, 4);
             case MDLConfig.HEX_STYLE_HASH_CAPS:
-                return "#" + toHexWord(value).toUpperCase();
+                return "#" + toHex(value, 4).toUpperCase();
             case MDLConfig.HEX_STYLE_H:
             {
-                String hex = Tokenizer.toHexWord(value);
+                String hex = Tokenizer.toHex(value, 4);
                 if (hex.charAt(0) >= 'a' && hex.charAt(0) <= 'f') {
                     hex = "0" + hex;
                 }
@@ -324,16 +306,16 @@ public class Tokenizer {
             }
             case MDLConfig.HEX_STYLE_H_CAPS:
             {
-                String hex = Tokenizer.toHexWord(value);
+                String hex = Tokenizer.toHex(value, 4);
                 if (hex.charAt(0) >= 'a' && hex.charAt(0) <= 'f') {
                     hex = "0" + hex;
                 }
                 return (hex + "h").toUpperCase();
             }
             case MDLConfig.HEX_STYLE_0X:
-                return "0x" + toHexWord(value);
+                return "0x" + toHex(value, 4);
             case MDLConfig.HEX_STYLE_0X_CAPS:
-                return "0x" + toHexWord(value).toUpperCase();
+                return "0x" + toHex(value, 4).toUpperCase();
             default:
                 return null;
         }
@@ -344,12 +326,12 @@ public class Tokenizer {
     {
         switch (hex_style) {
             case MDLConfig.HEX_STYLE_HASH:
-                return "#" + toHexByte(value);
+                return "#" + toHex(value, 2);
             case MDLConfig.HEX_STYLE_HASH_CAPS:
-                return "#" + toHexByte(value).toUpperCase();
+                return "#" + toHex(value, 2).toUpperCase();
             case MDLConfig.HEX_STYLE_H:
             {
-                String hex = Tokenizer.toHexByte(value);
+                String hex = Tokenizer.toHexByte(value, 2);
                 if (hex.charAt(0) >= 'a' && hex.charAt(0) <= 'f') {
                     hex = "0" + hex;
                 }
@@ -357,16 +339,16 @@ public class Tokenizer {
             }
             case MDLConfig.HEX_STYLE_H_CAPS:
             {
-                String hex = Tokenizer.toHexByte(value);
+                String hex = Tokenizer.toHex(value, 2);
                 if (hex.charAt(0) >= 'a' && hex.charAt(0) <= 'f') {
                     hex = "0" + hex;
                 }
                 return (hex + "h").toUpperCase();
             }
             case MDLConfig.HEX_STYLE_0X:
-                return "0x" + toHexByte(value);
+                return "0x" + toHex(value, 2);
             case MDLConfig.HEX_STYLE_0X_CAPS:
-                return "0x" + toHexByte(value).toUpperCase();
+                return "0x" + toHex(value, 2).toUpperCase();
             
             default:
                 return null;
@@ -397,6 +379,55 @@ public class Tokenizer {
         }
         return value;
     }    
+    
+    
+    public static String toBin(int value, int length)
+    {
+        String allowed = "01";
+        String bin = "";
+        value = value & 0xff;
+        while(value != 0) {
+            int digit = value%2;
+            value = value/2;
+            bin = allowed.charAt(digit) + bin;
+        }
+        while(bin.length() < length) {
+            bin = "0" + bin;
+        }
+        
+        return bin;
+    }  
+
+    
+    public static String toBin(int value, int length, int hex_style)
+    {
+        switch (hex_style) {
+            case MDLConfig.HEX_STYLE_HASH:
+            case MDLConfig.HEX_STYLE_H:
+            {
+                String hex = Tokenizer.toBin(value, length);
+                if (hex.charAt(0) >= 'a' && hex.charAt(0) <= 'f') {
+                    hex = "0" + hex;
+                }
+                return hex + "b";
+            }
+            case MDLConfig.HEX_STYLE_HASH_CAPS:
+            case MDLConfig.HEX_STYLE_H_CAPS:
+            {
+                String hex = Tokenizer.toBin(value, length);
+                if (hex.charAt(0) >= 'a' && hex.charAt(0) <= 'f') {
+                    hex = "0" + hex;
+                }
+                return (hex + "B").toUpperCase();
+            }
+            case MDLConfig.HEX_STYLE_0X:
+                return "0b" + toBin(value, length);
+            case MDLConfig.HEX_STYLE_0X_CAPS:
+                return "0B" + toHex(value, length).toUpperCase();
+            default:
+                return null;
+        }
+    }    
 
 
     public static boolean isOctal(String token)
@@ -421,6 +452,52 @@ public class Tokenizer {
             value = value * 2 + idx;
         }
         return value;
+    }    
+    
+    
+    public static String toOct(int value)
+    {
+        String allowed = "01234567";
+        String oct = "";
+        value = value & 0xff;
+        while(value != 0) {
+            int digit = value%8;
+            value = value/8;
+            oct = allowed.charAt(digit) + oct;
+        }
+        
+        return oct;
+    }  
+    
+    
+    public static String toOct(int value, int hex_style)
+    {
+        switch (hex_style) {
+            case MDLConfig.HEX_STYLE_HASH:
+            case MDLConfig.HEX_STYLE_H:
+            {
+                String hex = Tokenizer.toOct(value);
+                if (hex.charAt(0) >= 'a' && hex.charAt(0) <= 'f') {
+                    hex = "0" + hex;
+                }
+                return hex + "o";
+            }
+            case MDLConfig.HEX_STYLE_HASH_CAPS:
+            case MDLConfig.HEX_STYLE_H_CAPS:
+            {
+                String hex = Tokenizer.toOct(value);
+                if (hex.charAt(0) >= 'a' && hex.charAt(0) <= 'f') {
+                    hex = "0" + hex;
+                }
+                return (hex + "O").toUpperCase();
+            }
+            case MDLConfig.HEX_STYLE_0X:
+                return "0o" + toOct(value);
+            case MDLConfig.HEX_STYLE_0X_CAPS:
+                return "0O" + toOct(value).toUpperCase();
+            default:
+                return null;
+        }
     }    
     
     
