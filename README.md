@@ -42,7 +42,7 @@ The latest version can always be downloaded from the "releases" section: https:/
   
 - ```-do-not-convert-to-official```: turns off automatic conversion of unofficial op syntax to official ones in assembler output.
   
-- ```-hex#```: hex numbers render like #ffff (default).
+- ```-hex#```: hex numbers render like #ffff (default). These flags also have analogous effect on binary and octal constant rendering.
   
 - ```-HEX#```: hex numbers render like #FFFF.
   
