@@ -3,11 +3,13 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package workers;
+package workers.reorgopt;
 
 import cl.MDLConfig;
 import code.CodeBase;
+import java.util.ArrayList;
 import java.util.List;
+import workers.MDLWorker;
 
 /**
  *
@@ -45,7 +47,12 @@ public class CodeReorganizer implements MDLWorker {
 
     @Override
     public boolean work(CodeBase code) {
-        // TODO: ...        
+        List<CodeBlock> topBlocks = new ArrayList<>();
+        if (config.dialectParser != null) {
+            config.dialectParser.getTopLevelCodeBlocks(topBlocks);
+        } else {
+            topBlocks.add(new CodeBlock("top", null, null));
+        }
         return true;
     }
 

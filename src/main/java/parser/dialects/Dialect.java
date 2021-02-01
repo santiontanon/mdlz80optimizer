@@ -13,6 +13,7 @@ import java.nio.file.Path;
 import parser.MacroExpansion;
 import parser.SourceLine;
 import parser.SourceMacro;
+import workers.reorgopt.CodeBlock;
 
 /**
  *
@@ -122,5 +123,12 @@ public interface Dialect {
     default String getNextTemporaryLabel()
     {
         return null;
+    }
+    
+    // Get the top level code blocks (those blocks of code that are contiguous, and
+    // where MDL should be free to move things around within a block without causing problems):
+    default void getTopLevelCodeBlocks(List<CodeBlock> blocks)
+    {
+        blocks.add(new CodeBlock("top", null, null));
     }
 }

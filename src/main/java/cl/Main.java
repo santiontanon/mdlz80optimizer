@@ -7,7 +7,7 @@ import workers.DotGenerator;
 import code.CodeBase;
 import workers.AnnotatedSourceCodeGenerator;
 import workers.BinaryGenerator;
-import workers.CodeReorganizer;
+import workers.reorgopt.CodeReorganizer;
 import workers.pattopt.PatternBasedOptimizer;
 import workers.SourceCodeGenerator;
 import workers.SourceCodeTableGenerator;
