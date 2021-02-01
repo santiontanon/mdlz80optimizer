@@ -31,7 +31,7 @@ public class SourceCodeTableGenerator implements MDLWorker {
 
     @Override
     public String docString() {
-        return "  -sft <output file>: [task] generates a tsv file with some statistics about the source files.\n";
+        return "  -sft <output file>: (task) generates a tsv file with some statistics about the source files.\n";
     }
 
     @Override

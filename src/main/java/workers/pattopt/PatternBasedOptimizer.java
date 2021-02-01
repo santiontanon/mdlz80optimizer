@@ -57,7 +57,7 @@ public class PatternBasedOptimizer implements MDLWorker {
     public boolean onlyOnePotentialOptimizationPerLine = true;
     
     MDLConfig config;
-    boolean activate = false;
+    boolean trigger = false;
     boolean silent = false;
     String inputPatternsFileName = null;
     List<Pattern> patterns = new ArrayList<>();
@@ -80,7 +80,7 @@ public class PatternBasedOptimizer implements MDLWorker {
 
     @Override
     public String docString() {
-        return "  -po: [task] Runs the pattern-based optimizer using the latest settings. Notice that the -posilent, -poapply, etc. flags need to be passed *before* the call to -po that they which to affect and which is the one that triggers the optimizer. You can pass an optional parameter, like '-po size' or '-po speed', which are shortcuts for '-po -popatterns data/pbo-patterns-size.txt' and '-po -popatterns data/pbo-patterns-speed.txt' (some dialects might change the defaults of these two)\n" +
+        return "  -po: (task) Runs the pattern-based optimizer using the latest settings. Notice that the -posilent, -poapply, etc. flags need to be passed *before* the call to -po that they which to affect and which is the one that triggers the optimizer. You can pass an optional parameter, like '-po size' or '-po speed', which are shortcuts for '-po -popatterns data/pbo-patterns-size.txt' and '-po -popatterns data/pbo-patterns-speed.txt' (some dialects might change the defaults of these two)\n" +
                "  -posilent: Supresses the pattern-based-optimizer output\n" +
                "  -poapply: For each assembler <file> parsed by MDL, a corresponding <file>.mdl.asm is generated with the optimizations applied to it.\n" + 
                "  -popotential: Reports lines where a potential optimization was not applied for safety, but could maybe be done manually (at most one potential optimization per line is shown).\n" +
@@ -104,7 +104,7 @@ public class PatternBasedOptimizer implements MDLWorker {
                     flags.remove(0);
                 }
             }
-            activate = true;
+            trigger = true;
             return true;
         }
         if (flags.get(0).equals("-posilent")) {
@@ -197,7 +197,7 @@ public class PatternBasedOptimizer implements MDLWorker {
 
     @Override
     public boolean work(CodeBase code) {
-        if (activate) {
+        if (trigger) {
             optimize(code);
             if (generateFilesWithAppliedOptimizations) {
                 applyOptimizationsToOriginalFiles(code);
@@ -480,7 +480,7 @@ public class PatternBasedOptimizer implements MDLWorker {
     
     @Override
     public boolean triggered() {
-        return activate;
+        return trigger;
     }
 
     
@@ -491,12 +491,12 @@ public class PatternBasedOptimizer implements MDLWorker {
         w.logPotentialOptimizations = logPotentialOptimizations;
         w.generateFilesWithAppliedOptimizations = generateFilesWithAppliedOptimizations;
         w.onlyOnePotentialOptimizationPerLine = onlyOnePotentialOptimizationPerLine;
-        w.activate = activate;
+        w.trigger = trigger;
         w.silent = silent;
         w.inputPatternsFileName = inputPatternsFileName;
         
         // reset state:
-        activate = false;
+        trigger = false;
         
         return w;
     }      

@@ -7,6 +7,7 @@ import workers.DotGenerator;
 import code.CodeBase;
 import workers.AnnotatedSourceCodeGenerator;
 import workers.BinaryGenerator;
+import workers.CodeReorganizer;
 import workers.pattopt.PatternBasedOptimizer;
 import workers.SourceCodeGenerator;
 import workers.SourceCodeTableGenerator;
@@ -14,14 +15,16 @@ import workers.SymbolTableGenerator;
 
 public class Main {
     
-    public static String VERSION_STRING = "v1.3";
+    public static String VERSION_STRING = "v1.4";
 
     public static void main(String args[]) throws Exception {
         // Set up the MDL configuration:
         MDLConfig config = new MDLConfig();
 
-        // Add the workers in the order in which they should be executed:
+        // Add the available workers:
         config.registerWorker(new PatternBasedOptimizer(config));
+        config.registerWorker(new CodeReorganizer(config));
+        
         config.registerWorker(new DotGenerator(config));
         config.registerWorker(new SymbolTableGenerator(config));
         config.registerWorker(new SourceCodeTableGenerator(config));

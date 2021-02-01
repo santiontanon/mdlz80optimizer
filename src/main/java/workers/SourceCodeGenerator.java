@@ -36,7 +36,7 @@ public class SourceCodeGenerator implements MDLWorker {
 
     @Override
     public String docString() {
-        return "  -asm <output file>: [task] saves the resulting assembler code in a single asm file (if no " +
+        return "  -asm <output file>: (task) saves the resulting assembler code in a single asm file (if no " +
                "optimizations are performed, then this will just output the same code read as input " +
                "(but with all macros and include statements expanded).\n" +
                "  -asm-expand-inbcin: replaces all incbin commands with their actual data in the output " +
