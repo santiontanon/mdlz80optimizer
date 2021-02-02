@@ -6,6 +6,8 @@
 package workers.reorgopt;
 
 import code.SourceStatement;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  *
@@ -13,12 +15,12 @@ import code.SourceStatement;
  */
 public class CodeBlock {
     public String ID = null;
-    public SourceStatement first, last;
-    
-    public CodeBlock(String a_ID, SourceStatement a_first, SourceStatement a_last)
+    public SourceStatement startStatement;
+    public List<SourceStatement> statements = new ArrayList<>();
+        
+    public CodeBlock(String a_ID, SourceStatement a_start)
     {
         ID = a_ID;
-        first = a_first;
-        last = a_last;
+        startStatement = a_start;
     }
 }

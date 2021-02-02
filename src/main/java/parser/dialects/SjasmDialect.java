@@ -26,6 +26,7 @@ import parser.MacroExpansion;
 import parser.SourceLine;
 import parser.SourceMacro;
 import parser.Tokenizer;
+import workers.reorgopt.CodeBlock;
 
 /**
  *
@@ -33,24 +34,14 @@ import parser.Tokenizer;
  */
 public class SjasmDialect implements Dialect {
     
-    public static class SjasmStruct {
-        String name;
-        SourceFile file;
-        SourceStatement start;
-        List<String> attributeNames = new ArrayList<>();
-        List<Integer> attributeSizes = new ArrayList<>();
-    }
-    
-    
-    public static class CodeBlock {
-        SourceStatement startStatement;
+    public class SJasmCodeBlock extends CodeBlock {
         int page = -1;
         Expression address;
         int actualAddress = -1;
-        List<SourceStatement> statements = new ArrayList<>();
         
-        public CodeBlock(SourceStatement a_s, int a_page, Expression a_address)
+        public SJasmCodeBlock(SourceStatement a_s, int a_page, Expression a_address)
         {
+            super(null, a_s);
             startStatement = a_s;
             page = a_page;
             address = a_address;
@@ -67,11 +58,20 @@ public class SjasmDialect implements Dialect {
     }
     
     
+    public static class SjasmStruct {
+        String name;
+        SourceFile file;
+        SourceStatement start;
+        List<String> attributeNames = new ArrayList<>();
+        List<Integer> attributeSizes = new ArrayList<>();
+    }
+        
+    
     public static class CodePage {
         public SourceStatement s;
         public Expression start;
         public Expression size;
-        public List<CodeBlock> blocks = new ArrayList<>();
+        public List<SJasmCodeBlock> blocks = new ArrayList<>();
         
         public CodePage(SourceStatement a_s, Expression a_start, Expression a_size)
         {
@@ -81,13 +81,13 @@ public class SjasmDialect implements Dialect {
         }
         
         
-        public boolean addBlock(CodeBlock block, CodeBase code)
+        public boolean addBlock(SJasmCodeBlock block, CodeBase code)
         {
             int spot = -1;
             if (block.address != null) {
                 // check if it fits:
                 int blockAddress = block.address.evaluateToInteger(block.startStatement, code, true);
-                for(CodeBlock b2:blocks) {
+                for(SJasmCodeBlock b2:blocks) {
                     if (b2.actualAddress < blockAddress + block.size(code) &&
                         blockAddress < b2.actualAddress + b2.size(code)) {
                         // overlap!
@@ -111,7 +111,7 @@ public class SjasmDialect implements Dialect {
                 int blockAddress = pageStart;
                 int blockSize = block.size(code);
 
-                for(CodeBlock b2:blocks) {
+                for(SJasmCodeBlock b2:blocks) {
                     if (b2.actualAddress-blockAddress >= blockSize) {
                         // found a spot!
                         spot = blocks.indexOf(b2);
@@ -152,7 +152,7 @@ public class SjasmDialect implements Dialect {
     
     HashMap<String, Integer> reusableLabelCounts = new HashMap<>();
 
-    List<CodeBlock> codeBlocks = new ArrayList<>();
+    List<SJasmCodeBlock> codeBlocks = new ArrayList<>();
     
     List<String> modules = new ArrayList<>();
     
@@ -776,7 +776,7 @@ public class SjasmDialect implements Dialect {
                 int page = pageExp.evaluateToInteger(s, code, false);
                 currentPage = page;
             }            
-            codeBlocks.add(new CodeBlock(s, currentPage, addressExp));
+            codeBlocks.add(new SJasmCodeBlock(s, currentPage, addressExp));
             
             // ignore (but still add the statement, so we know where the codeblock starts)
             s.type = SourceStatement.STATEMENT_NONE;
@@ -795,7 +795,7 @@ public class SjasmDialect implements Dialect {
             currentPage = page;
             Expression addressExp = null;
             
-            codeBlocks.add(new CodeBlock(s, currentPage, addressExp));            
+            codeBlocks.add(new SJasmCodeBlock(s, currentPage, addressExp));            
             
             // parse it as an "org"
             s.type = SourceStatement.STATEMENT_NONE;
@@ -1302,8 +1302,8 @@ public class SjasmDialect implements Dialect {
         if (!codeBlocks.isEmpty()) {
                 
             // Reorganize all the "code" blocks into the different pages:
-            CodeBlock initialBlock = new CodeBlock(null, -1, null);
-            CodeBlock currentBlock = initialBlock;
+            SJasmCodeBlock initialBlock = new SJasmCodeBlock(null, -1, null);
+            SJasmCodeBlock currentBlock = initialBlock;
 
             {
                 // get the very first statement, and iterate over all the rest:
@@ -1313,7 +1313,7 @@ public class SjasmDialect implements Dialect {
                         s = s.include.getStatements().get(0);
                     } else {
                         // See if a new block starts:
-                        CodeBlock block = blockStartingAt(s);
+                        SJasmCodeBlock block = blockStartingAt(s);
                         if (block == null) {
                             currentBlock.statements.add(s);
                         } else {
@@ -1336,8 +1336,8 @@ public class SjasmDialect implements Dialect {
 
             // Assign blocks to pages, first those that have a defined address, then the rest:
             // Start with those that have a defined address:
-            List<CodeBlock> blocksToAssign = new ArrayList<>();
-            for(CodeBlock b:codeBlocks) {
+            List<SJasmCodeBlock> blocksToAssign = new ArrayList<>();
+            for(SJasmCodeBlock b:codeBlocks) {
                 Integer address = null;
                 if (b.address != null) address = b.address.evaluateToInteger(b.startStatement, code, true);
                 if (address == null) {
@@ -1352,14 +1352,14 @@ public class SjasmDialect implements Dialect {
             }
 
             // Sort the rest of codeblocks by size, and assign them to pages where they fit:
-            Collections.sort(blocksToAssign, new Comparator<CodeBlock>() {
+            Collections.sort(blocksToAssign, new Comparator<SJasmCodeBlock>() {
                 @Override
-                public int compare(CodeBlock b1, CodeBlock b2) {
+                public int compare(SJasmCodeBlock b1, SJasmCodeBlock b2) {
                     return -Integer.compare(b1.size(code), b2.size(code));
                 }
             });
 
-            for(CodeBlock b:blocksToAssign) {
+            for(SJasmCodeBlock b:blocksToAssign) {
                 CodePage page = pages.get(b.page);
                 if (!page.addBlock(b, code)) {
                     config.error("Could not add block of size " + b.size(code) + " to page " + page + "!");
@@ -1392,7 +1392,7 @@ public class SjasmDialect implements Dialect {
                 int pageStart = page.start.evaluateToInteger(page.s, code, true);
                 int pageSize = page.size.evaluateToInteger(page.s, code, true);
                 int currentAddress = pageStart;
-                for(CodeBlock block:page.blocks) {
+                for(SJasmCodeBlock block:page.blocks) {
                     if (block.actualAddress > currentAddress) {
                         // insert space:
                         SourceStatement space = new SourceStatement(SourceStatement.STATEMENT_DEFINE_SPACE, new SourceLine("", reconstructedFile, reconstructedFile.getStatements().size()+1), reconstructedFile, config);
@@ -1433,9 +1433,9 @@ public class SjasmDialect implements Dialect {
     }
         
     
-    public CodeBlock findCodeBlock(SourceStatement s)
+    public SJasmCodeBlock findCodeBlock(SourceStatement s)
     {
-        for(CodeBlock cb:codeBlocks) {
+        for(SJasmCodeBlock cb:codeBlocks) {
             if (cb.statements.contains(s)) return cb;
         }
         
@@ -1447,8 +1447,8 @@ public class SjasmDialect implements Dialect {
     {
         // resolve enhanced jumps:
         for(SourceStatement s:enhancedJrList) {
-            CodeBlock b1 = findCodeBlock(s);
-            CodeBlock b2 = null;
+            SJasmCodeBlock b1 = findCodeBlock(s);
+            SJasmCodeBlock b2 = null;
             if (s.op != null && !s.op.args.isEmpty()) {
                 Expression label = s.op.args.get(s.op.args.size()-1);
                 if (label.type == Expression.EXPRESSION_SYMBOL) {
@@ -1479,8 +1479,8 @@ public class SjasmDialect implements Dialect {
             }
         }
         for(SourceStatement s:enhancedDjnzList) {
-            CodeBlock b1 = findCodeBlock(s);
-            CodeBlock b2 = null;
+            SJasmCodeBlock b1 = findCodeBlock(s);
+            SJasmCodeBlock b2 = null;
             if (s.op != null && !s.op.args.isEmpty()) {
                 SourceStatement previous = s.source.getPreviousStatementTo(s, code);
                 if (previous.source == s.source && 
@@ -1520,9 +1520,9 @@ public class SjasmDialect implements Dialect {
     }
     
     
-    CodeBlock blockStartingAt(SourceStatement s)
+    SJasmCodeBlock blockStartingAt(SourceStatement s)
     {
-        for(CodeBlock b:codeBlocks) {
+        for(SJasmCodeBlock b:codeBlocks) {
             if (b.startStatement == s) return b;
         }
         return null;

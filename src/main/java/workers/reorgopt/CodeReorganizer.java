@@ -47,15 +47,36 @@ public class CodeReorganizer implements MDLWorker {
 
     @Override
     public boolean work(CodeBase code) {
+        // First, find the "top blocks" that we can work with, e.g. "pages in a MegaROM".
+        // These are areas of code such that we can move things around inside, but not across.
         List<CodeBlock> topBlocks = new ArrayList<>();
         if (config.dialectParser != null) {
-            config.dialectParser.getTopLevelCodeBlocks(topBlocks);
+            config.dialectParser.getTopLevelCodeBlocks(code, topBlocks);
         } else {
-            topBlocks.add(new CodeBlock("top", null, null));
+            if (code.getMain() != null && !code.getMain().getStatements().isEmpty()) {
+                CodeBlock top = new CodeBlock("top", code.getMain().getStatements().get(0));
+                topBlocks.add(top);
+            }
         }
+        
+        // Within each "top block", identify blocks of code (there might be code mixed with data in each
+        // top block), so, we tease appart each of the contiguous areas of code:
+        // Note: each time tehre is a directive like "org", we need to start a new block, since
+        // we cannot safely assume we can move code that is under one "org" to an area of the code that
+        // is under a different "org". We call these the "top code blocks"
+        for(CodeBlock topBlock: topBlocks) {
+            List<CodeBlock> topCodeBlocks = findTopCodeBlocks(topBlock, code);
+            
+            for(CodeBlock block: topCodeBlocks) {
+                // Within each "top code block", we can now re-organize code at will:
+                reorganizeBlock(block, code);
+            }
+        }
+                
         return true;
     }
 
+    
     @Override
     public MDLWorker cloneForExecutionQueue() {
         CodeReorganizer w = new CodeReorganizer(config);
@@ -64,6 +85,20 @@ public class CodeReorganizer implements MDLWorker {
         trigger = false;
         
         return w;
+    }
+    
+
+    private List<CodeBlock> findTopCodeBlocks(CodeBlock block, CodeBase code) {
+        List<CodeBlock> blocks = new ArrayList<>();
+        
+        // ...
+        
+        return blocks;
+    }
+    
+
+    private void reorganizeBlock(CodeBlock block, CodeBase code) {
+        // ...
     }
     
 }

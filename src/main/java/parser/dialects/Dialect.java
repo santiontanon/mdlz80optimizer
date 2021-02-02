@@ -127,8 +127,11 @@ public interface Dialect {
     
     // Get the top level code blocks (those blocks of code that are contiguous, and
     // where MDL should be free to move things around within a block without causing problems):
-    default void getTopLevelCodeBlocks(List<CodeBlock> blocks)
+    default void getTopLevelCodeBlocks(CodeBase code, List<CodeBlock> blocks)
     {
-        blocks.add(new CodeBlock("top", null, null));
+        if (code.getMain() != null && !code.getMain().getStatements().isEmpty()) {
+            CodeBlock top = new CodeBlock("top", code.getMain().getStatements().get(0));
+            blocks.add(top);
+        }
     }
 }
