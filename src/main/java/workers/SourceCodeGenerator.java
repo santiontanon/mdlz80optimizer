@@ -88,10 +88,16 @@ public class SourceCodeGenerator implements MDLWorker {
         return sb.toString();
     }
 
-
+    
     public void sourceFileString(SourceFile sf, CodeBase code, StringBuilder sb)
     {
-        for (SourceStatement ss:sf.getStatements()) {
+        sourceFileString(sf.getStatements(), code, sb);
+    }   
+    
+
+    public void sourceFileString(List<SourceStatement> statements, CodeBase code, StringBuilder sb)
+    {
+        for (SourceStatement ss:statements) {
             if (ss.type == SourceStatement.STATEMENT_INCLUDE) {
                 if (ss.label != null) {
                     // make sure we don't lose the label:

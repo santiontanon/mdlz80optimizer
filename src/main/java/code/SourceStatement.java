@@ -292,7 +292,7 @@ public class SourceStatement {
                     } else if (next.type == STATEMENT_INCLUDE && next.label == null) {
                         next = next.include.getNextStatementTo(null, source.code);
                     } else if (next.type == STATEMENT_CONSTANT) {
-                        str += " equ " + CodeBase.CURRENT_ADDRESS;
+                        str += " "+config.lineParser.KEYWORD_EQU+" " + CodeBase.CURRENT_ADDRESS;
                         break;
                     } else {
                         break;
