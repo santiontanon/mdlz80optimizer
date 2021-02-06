@@ -1,7 +1,5 @@
 ; Test case: Thanks to Bengalack for this test case to test asdz80 macros
-___expanded_macro___1.0:
     halt
-___expanded_macro___1.1:
     halt
     ld a, #0x01
     out (#0x99), a
@@ -11,10 +9,10 @@ ___expanded_macro___1.1:
     out (#0x99), a
     ld a, #(128 + 15)
     out (#0x99), a
-___expanded_macro___3.___expanded_macro___1.110000:
+___expanded_macro___2.10000$:
     in a, (#0x99)
     and #1
-    jp nz, ___expanded_macro___3.___expanded_macro___1.110000
+    jp nz, ___expanded_macro___2.10000$
     xor a
     out (#0x99), a
     ld a, #(128 + 15)
@@ -23,10 +21,10 @@ ___expanded_macro___3.___expanded_macro___1.110000:
     out (#0x99), a
     ld a, #(128 + 15)
     out (#0x99), a
-___expanded_macro___4.___expanded_macro___1.110001:
+___expanded_macro___3.10001$:
     in a, (#0x99)
     and #1
-    jp nz, ___expanded_macro___4.___expanded_macro___1.110001
+    jp nz, ___expanded_macro___3.10001$
     xor a
     out (#0x99), a
     ld a, #(128 + 15)

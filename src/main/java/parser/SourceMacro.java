@@ -99,7 +99,7 @@ public class SourceMacro {
                 reptArgNames.add(counterName);
             }
                         
-            String scope;
+            String scope = null;
             if (macroCall.label != null) {
                 scope = macroCall.label.name;
             } else {
@@ -108,7 +108,7 @@ public class SourceMacro {
                 if (previous.source == macroCall.source && previous.label != null && previous.type == SourceStatement.STATEMENT_NONE) {
                     scope = previous.label.name;
                 } else {
-                    scope = config.preProcessor.nextMacroExpansionContextName(macroCall.labelPrefix);
+//                    scope = config.preProcessor.nextMacroExpansionContextName(macroCall.labelPrefix);
                 }
             }
             for(int i = 0;i<reptNRepetitions_value;i++) {
@@ -124,7 +124,9 @@ public class SourceMacro {
                         linesTmp.add(new SourceLine(sl.line, sl.source, sl.lineNumber));
                     }
                 }
-                lines2.add(new SourceLine(scope + "." + i + ":", macroCall.sl.source, macroCall.sl.lineNumber));                
+                if (scope != null) {
+                    lines2.add(new SourceLine(scope + "." + i + ":", macroCall.sl.source, macroCall.sl.lineNumber));
+                }
                 scopeMacroExpansionLines(scope+"." + i, linesTmp, code, config);
                 lines2.addAll(linesTmp);
             }

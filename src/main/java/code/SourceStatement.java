@@ -172,7 +172,12 @@ public class SourceStatement {
             case STATEMENT_ORG:
                 return org.evaluateToIntegerInternal(this, code, true, variableStack);
             case STATEMENT_INCLUDE:
-                return include.getStatements().get(include.getStatements().size()-1).getAddressAfterInternal(code, recurse, variableStack);
+                if (include.getStatements().isEmpty()) {
+                    if (recurse && address == null) getAddressInternal(code, true, variableStack);
+                    return address;
+                } else {
+                    return include.getStatements().get(include.getStatements().size()-1).getAddressAfterInternal(code, recurse, variableStack);
+                }
             default:
                 if (recurse && address == null) getAddressInternal(code, true, variableStack);
                 if (address == null) return null;

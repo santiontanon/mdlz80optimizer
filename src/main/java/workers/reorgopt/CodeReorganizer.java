@@ -333,13 +333,14 @@ public class CodeReorganizer implements MDLWorker {
             if (target != null && target != block) {                
                 for(BlockFlowEdge edge:block.incoming) {
                     if (edge.type == BlockFlowEdge.TYPE_NONE) {
-                        safeToMoveBlock = false;
+                        safeToMoveBlock = false;  // the block before "block" expects block to be there, so we cannot move it
                         break;
                     }
                 }
                 for(BlockFlowEdge edge:target.incoming) {
                     if (edge.type == BlockFlowEdge.TYPE_NONE) {
-                        safeToMoveTarget = false;
+                        safeToMoveTarget = false;   // the block before "target" expects block to be there, so we cannot move it
+                        safeToMoveBlock = false;  // the block before "target" expects nothing to be in between, so, we cannot move block there either
                         break;
                     }
                 }
@@ -415,6 +416,9 @@ public class CodeReorganizer implements MDLWorker {
 
         // if they are not, undo the optimization:
         if (!relativeJumpsInRange) {
+            for(SourceStatement s: toMove.statements) {
+                insertionFile.getStatements().remove(s);
+            }
             for(Pair<SourceStatement, Pair<SourceFile, Integer>> undo: undoTrail) {
                 SourceStatement s = undo.getLeft();
                 SourceFile undoFile = undo.getRight().getLeft();
@@ -423,6 +427,7 @@ public class CodeReorganizer implements MDLWorker {
                 undoFile.getStatements().add(undoPoint, s);
                 s.source = undoFile;
             }
+            code.resetAddresses();            
             return false;
         }
 

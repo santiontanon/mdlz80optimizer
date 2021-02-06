@@ -7,14 +7,12 @@ package test;
 
 import cl.MDLConfig;
 import code.CodeBase;
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.Assert;
 import org.junit.Test;
+import util.ListOutputStream;
 import util.Resources;
 import workers.BinaryGenerator;
 
@@ -23,19 +21,7 @@ import workers.BinaryGenerator;
  * @author santi
  */
 public class BinaryGeneratorTest {
-    class ListOutputStream extends OutputStream {
-        List<Integer> data = new ArrayList<>();
         
-        public void write(int arg0) throws IOException {
-            data.add(arg0);
-        }
- 
-        public List<Integer> getData() {
-            return data;
-        }
-    }
-    
-    
     private final MDLConfig config;
     private final CodeBase code;
 
