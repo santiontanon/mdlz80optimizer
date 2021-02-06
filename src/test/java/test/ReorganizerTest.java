@@ -15,24 +15,25 @@ import java.util.StringTokenizer;
 import org.junit.Assert;
 import org.junit.Test;
 import util.Resources;
-import workers.SymbolTableGenerator;
+import workers.SourceCodeGenerator;
+import workers.reorgopt.CodeReorganizer;
 
 /**
  *
  * @author santi
  */
-public class SymbolTableTest {
+public class ReorganizerTest {
 
     private final MDLConfig config;
     private final CodeBase code;
 
-    public SymbolTableTest() {
+    public ReorganizerTest() {
         config = new MDLConfig();
         code = new CodeBase(config);
     }
 
-    @Test public void test1() throws IOException { Assert.assertTrue(test("data/generationtests/mdl-circular.asm",
-                                                                          "data/generationtests/mdl-circular-expected-st.asm")); }
+    @Test public void test1() throws IOException { Assert.assertTrue(test("data/reorganizertests/test1.asm",
+                                                                          "data/reorganizertests/test1-expected.asm")); }
 
     private boolean test(String inputFile, String expectedOutputFile) throws IOException
     {
@@ -40,11 +41,14 @@ public class SymbolTableTest {
         Assert.assertTrue(
                 "Could not parse file " + inputFile,
                 config.codeBaseParser.parseMainSourceFile(config.inputFile, code));
+        
+        // optimize:
+        CodeReorganizer ro = new CodeReorganizer(config);
+        ro.work(code);
+        
+        SourceCodeGenerator scg = new SourceCodeGenerator(config);
 
-        SymbolTableGenerator stg = new SymbolTableGenerator(config);
-        stg.includeConstants = true;
-
-        String result = stg.symbolTableString(code);
+        String result = scg.sourceFileString(code.getMain(), code);
         List<String> lines = new ArrayList<>();
         StringTokenizer st = new StringTokenizer(result, "\n");
         while(st.hasMoreTokens()) {
@@ -73,4 +77,5 @@ public class SymbolTableTest {
         
         return true;
     }    
+    
 }

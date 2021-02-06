@@ -321,7 +321,8 @@ public class CodeReorganizer implements MDLWorker {
         // If any of these are found, B can be moved to before A, saving a jump
         for(CodeBlock block:subarea.subBlocks) {
             CodeBlock target = null;
-            boolean safe = true;
+            boolean safeToMoveBlock = true;
+            boolean safeToMoveTarget = true;
             if (block.outgoing.size() == 1) {
                 BlockFlowEdge edge = block.outgoing.get(0);
                 if (edge.type == BlockFlowEdge.TYPE_UNCONDITIONAL_JP ||
@@ -329,26 +330,28 @@ public class CodeReorganizer implements MDLWorker {
                     target = edge.target;
                 }
             }
-            if (target != null && target != block) {
+            if (target != null && target != block) {                
                 for(BlockFlowEdge edge:block.incoming) {
                     if (edge.type == BlockFlowEdge.TYPE_NONE) {
-                        safe = false;
+                        safeToMoveBlock = false;
                         break;
                     }
                 }
                 for(BlockFlowEdge edge:target.incoming) {
                     if (edge.type == BlockFlowEdge.TYPE_NONE) {
-                        safe = false;
+                        safeToMoveTarget = false;
                         break;
                     }
                 }
-                if (safe) {
-                    config.debug("Potential optimization: move " + block.ID + " to just before " + target.ID + " or " + target.ID + " right after " + block.ID);
-
-                    // Try the optimization:
-                    if (!attemptBlockMove(block, target, true, subarea, code, savings)) {
-                        attemptBlockMove(target, block, false, subarea, code, savings);
+                if (safeToMoveBlock && block != subarea.subBlocks.get(0)) {
+                    config.debug("Potential optimization: move " + block.ID + " to just before " + target.ID);
+                    if (attemptBlockMove(block, target, true, subarea, code, savings)) {
+                        continue;
                     }
+                }
+                if (safeToMoveTarget && target != subarea.subBlocks.get(0)) {
+                    config.debug("Potential optimization: move " + target.ID + " to just after " + block.ID);
+                    attemptBlockMove(target, block, false, subarea, code, savings);
                 }
             }
         }
@@ -424,14 +427,19 @@ public class CodeReorganizer implements MDLWorker {
         }
 
         // Remove the jump:
-        SourceStatement jump = toMove.getLastCpuOpStatement();
+        SourceStatement jump;
+        if (moveBefore) {
+            jump = toMove.getLastCpuOpStatement();
+        } else {
+            jump = destination.getLastCpuOpStatement();
+        }
         int bytesSaved = jump.op.sizeInBytes();
         int timeSaved[] = jump.op.timing();
         String timeSavedString = (timeSaved.length == 1 || timeSaved[0] == timeSaved[1] ?
                                     "" + timeSaved[0] :
                                     "" + timeSaved[0] + "/" + timeSaved[1]);
         jump.type = SourceStatement.STATEMENT_NONE;
-        jump.comment = jump.op + "  ; -mdl";
+        jump.comment = "; " + jump.op + "  ; -mdl";
         jump.op = null;
         code.resetAddresses();
         
@@ -448,7 +456,7 @@ public class CodeReorganizer implements MDLWorker {
                     toMove.statements.get(0).sl.fileNameLineString(), 
                     "move lines " + toMove.statements.get(0).sl.lineNumber + " - " + 
                                     toMove.statements.get(toMove.statements.size()-1).sl.lineNumber + 
-                    "to right before " + destination.statements.get(0).sl.fileNameLineString() + 
+                    " to right before " + destination.statements.get(0).sl.fileNameLineString() + 
                     " ("+bytesSaved+" bytes, " + timeSavedString + " " + config.timeUnit+"s saved)");
         } else {
             for(BlockFlowEdge e:destination.outgoing) {
@@ -460,7 +468,7 @@ public class CodeReorganizer implements MDLWorker {
                     toMove.statements.get(0).sl.fileNameLineString(), 
                     "move lines " + toMove.statements.get(0).sl.lineNumber + " - " + 
                                     toMove.statements.get(toMove.statements.size()-1).sl.lineNumber + 
-                    "to right after " + destination.statements.get(destination.statements.size()-1).sl.fileNameLineString() + 
+                    " to right after " + destination.statements.get(destination.statements.size()-1).sl.fileNameLineString() + 
                     " ("+bytesSaved+" bytes, " + timeSavedString + " " + config.timeUnit+"s saved)");
         }
 

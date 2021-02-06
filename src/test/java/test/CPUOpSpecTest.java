@@ -21,12 +21,12 @@ import parser.Tokenizer;
  * @author santi
  */
 public class CPUOpSpecTest {    
-    private final MDLConfig mdlConfig;
+    private final MDLConfig config;
     private final CodeBase code;
 
     public CPUOpSpecTest() {
-        mdlConfig = new MDLConfig();
-        code = new CodeBase(mdlConfig);   
+        config = new MDLConfig();
+        code = new CodeBase(config);   
     }
 
     @Test public void test1() throws IOException { Assert.assertEquals("ld a, 1", test("ld a,1", null)); }
@@ -53,13 +53,13 @@ public class CPUOpSpecTest {
     private String test(String opString, String dialect) throws IOException
     {
         if (dialect == null) {
-            Assert.assertTrue(mdlConfig.parseArgs("dummy.asm"));
+            Assert.assertTrue(config.parseArgs("dummy.asm"));
         } else {
-            Assert.assertTrue(mdlConfig.parseArgs("dummy.asm","-dialect",dialect));
+            Assert.assertTrue(config.parseArgs("dummy.asm","-dialect",dialect));
         }
-        SourceFile dummy = new SourceFile("dummy.asm", null, null, code, mdlConfig);
+        SourceFile dummy = new SourceFile("dummy.asm", null, null, code, config);
         
-        List<SourceStatement> l = mdlConfig.lineParser.parse(Tokenizer.tokenize(opString), new SourceLine("", dummy, 0), dummy, 0, code, mdlConfig);
+        List<SourceStatement> l = config.lineParser.parse(Tokenizer.tokenize(opString), new SourceLine("", dummy, 0), dummy, 0, code, config);
         if (l == null || l.isEmpty()) return null;
         String output = null;
         for(SourceStatement s:l) {

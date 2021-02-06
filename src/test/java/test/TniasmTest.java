@@ -23,12 +23,12 @@ import workers.SourceCodeGenerator;
  */
 public class TniasmTest {
 
-    private final MDLConfig mdlConfig;
+    private final MDLConfig config;
     private final CodeBase code;
 
     public TniasmTest() {
-        mdlConfig = new MDLConfig();
-        code = new CodeBase(mdlConfig);
+        config = new MDLConfig();
+        code = new CodeBase(config);
     }
 
     @Test public void test1() throws IOException { Assert.assertTrue(test("data/generationtests/tniasm-ifdef.asm",
@@ -36,12 +36,12 @@ public class TniasmTest {
 
     private boolean test(String inputFile, String expectedOutputFile) throws IOException
     {
-        Assert.assertTrue(mdlConfig.parseArgs(inputFile,"-dialect","tniasm"));
+        Assert.assertTrue(config.parseArgs(inputFile,"-dialect","tniasm"));
         Assert.assertTrue(
                 "Could not parse file " + inputFile,
-                mdlConfig.codeBaseParser.parseMainSourceFile(mdlConfig.inputFile, code));
+                config.codeBaseParser.parseMainSourceFile(config.inputFile, code));
 
-        SourceCodeGenerator scg = new SourceCodeGenerator(mdlConfig);
+        SourceCodeGenerator scg = new SourceCodeGenerator(config);
 
         String result = scg.sourceFileString(code.getMain(), code);
         List<String> lines = new ArrayList<>();
