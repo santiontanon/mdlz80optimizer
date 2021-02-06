@@ -319,43 +319,57 @@ public class CodeReorganizer implements MDLWorker {
         // - end in a jump to a block B
         // - all the incoming edges to A and B are jumps
         // If any of these are found, B can be moved to before A, saving a jump
-        for(CodeBlock block:subarea.subBlocks) {
-            CodeBlock target = null;
-            boolean safeToMoveBlock = true;
-            boolean safeToMoveTarget = true;
-            if (block.outgoing.size() == 1) {
-                BlockFlowEdge edge = block.outgoing.get(0);
-                if (edge.type == BlockFlowEdge.TYPE_UNCONDITIONAL_JP ||
-                    edge.type == BlockFlowEdge.TYPE_UNCONDITIONAL_JR) {
-                    target = edge.target;
+        boolean anyMove;
+        do{
+            anyMove = false;    // if we need to do another iteration, set anyMove to true
+            for(int i = 0;i<subarea.subBlocks.size();i++) {
+                CodeBlock block = subarea.subBlocks.get(i);
+                CodeBlock target = null;
+                boolean safeToMoveBlock = true;
+                boolean safeToMoveTarget = true;
+                if (block.outgoing.size() == 1) {
+                    BlockFlowEdge edge = block.outgoing.get(0);
+                    if (edge.type == BlockFlowEdge.TYPE_UNCONDITIONAL_JP ||
+                        edge.type == BlockFlowEdge.TYPE_UNCONDITIONAL_JR) {
+                        target = edge.target;
+                    }
                 }
+                if (target != null && target != block) {                
+                    for(BlockFlowEdge edge:block.incoming) {
+                        if (edge.type == BlockFlowEdge.TYPE_NONE) {
+                            safeToMoveBlock = false;  // the block before "block" expects block to be there, so we cannot move it
+                            break;
+                        }
+                    }
+                    for(BlockFlowEdge edge:target.incoming) {
+                        if (edge.type == BlockFlowEdge.TYPE_NONE) {
+                            safeToMoveTarget = false;   // the block before "target" expects block to be there, so we cannot move it
+                            safeToMoveBlock = false;  // the block before "target" expects nothing to be in between, so, we cannot move block there either
+                            break;
+                        }
+                    }
+                    for(BlockFlowEdge edge:target.outgoing) {
+                        if (edge.type == BlockFlowEdge.TYPE_NONE) {
+                            safeToMoveTarget = false;   // the block after "target" expects target to be there, so we cannot move it
+                            break;
+                        }
+                    }
+                    if (safeToMoveBlock && block != subarea.subBlocks.get(0)) {
+                        config.debug("Potential optimization: move " + block.ID + " to just before " + target.ID);
+                        if (attemptBlockMove(block, target, true, subarea, code, savings)) {
+                            anyMove = true;
+                        }
+                    }
+                    if (!anyMove && safeToMoveTarget && target != subarea.subBlocks.get(0)) {
+                        config.debug("Potential optimization: move " + target.ID + " to just after " + block.ID);
+                        if (attemptBlockMove(target, block, false, subarea, code, savings)) {
+                            anyMove = true;
+                        }
+                    }
+                }
+                if (anyMove) break;
             }
-            if (target != null && target != block) {                
-                for(BlockFlowEdge edge:block.incoming) {
-                    if (edge.type == BlockFlowEdge.TYPE_NONE) {
-                        safeToMoveBlock = false;  // the block before "block" expects block to be there, so we cannot move it
-                        break;
-                    }
-                }
-                for(BlockFlowEdge edge:target.incoming) {
-                    if (edge.type == BlockFlowEdge.TYPE_NONE) {
-                        safeToMoveTarget = false;   // the block before "target" expects block to be there, so we cannot move it
-                        safeToMoveBlock = false;  // the block before "target" expects nothing to be in between, so, we cannot move block there either
-                        break;
-                    }
-                }
-                if (safeToMoveBlock && block != subarea.subBlocks.get(0)) {
-                    config.debug("Potential optimization: move " + block.ID + " to just before " + target.ID);
-                    if (attemptBlockMove(block, target, true, subarea, code, savings)) {
-                        continue;
-                    }
-                }
-                if (safeToMoveTarget && target != subarea.subBlocks.get(0)) {
-                    config.debug("Potential optimization: move " + target.ID + " to just after " + block.ID);
-                    attemptBlockMove(target, block, false, subarea, code, savings);
-                }
-            }
-        }
+        }while(anyMove);
     }
     
     
@@ -372,7 +386,7 @@ public class CodeReorganizer implements MDLWorker {
             undoTrail.add(0, Pair.of(s, Pair.of(undoFile, undoPoint)));
             s.source.getStatements().remove(s);
             if (undoPoint == -1) {
-                config.error("CodeReorganizer: attemptBlockMove could not construct undo trail!");
+                config.error("CodeReorganizer: attemptBlockMove could not construct undo trail! statement '" + s + "' (originally in "+s.sl.fileNameLineString()+") is not present in its source file " + s.source.fileName );
                 return false;                
             }
         }
@@ -384,6 +398,10 @@ public class CodeReorganizer implements MDLWorker {
                 config.error("CodeReorganizer: attemptBlockMove(moveBefore) cannot find insertionPoint");
                 return false;
             }
+            if (toMove.outgoing.size() != 1) {
+                config.error("CodeReorganizer: attemptBlockMove(moveBefore) moving a block with more than 1 outgoing edge not yet supported");
+                return false;
+            }            
         } else {
             insertionFile = destination.statements.get(destination.statements.size()-1).source;
             insertionPoint = insertionFile.getStatements().indexOf(destination.statements.get(destination.statements.size()-1))+1;
@@ -391,6 +409,10 @@ public class CodeReorganizer implements MDLWorker {
                 config.error("CodeReorganizer: attemptBlockMove(moveAfter) cannot find insertionPoint");
                 return false;
             }
+            if (destination.outgoing.size() != 1) {
+                config.error("CodeReorganizer: attemptBlockMove(moveAfter) moving a block after a destination with more than 1 outgoing edge not yet supported");
+                return false;
+            }            
         }
                     
         for(SourceStatement s: toMove.statements) {
@@ -451,32 +473,59 @@ public class CodeReorganizer implements MDLWorker {
         savings.addMoveSavings(bytesSaved, timeSaved);
         
         // Update the edges, and announce the optimization (with line ranges):        
-        if (moveBefore) {
-            for(BlockFlowEdge e:toMove.outgoing) {
-                if (e.target == destination) {
-                    e.type = BlockFlowEdge.TYPE_NONE;
-                }
-            }
+        if (moveBefore) {            
             config.info("Reorganization optimization",
                     toMove.statements.get(0).sl.fileNameLineString(), 
                     "move lines " + toMove.statements.get(0).sl.lineNumber + " - " + 
                                     toMove.statements.get(toMove.statements.size()-1).sl.lineNumber + 
                     " to right before " + destination.statements.get(0).sl.fileNameLineString() + 
                     " ("+bytesSaved+" bytes, " + timeSavedString + " " + config.timeUnit+"s saved)");
-        } else {
-            for(BlockFlowEdge e:destination.outgoing) {
-                if (e.target == toMove) {
-                    e.type = BlockFlowEdge.TYPE_NONE;
+            
+            // merge blocks:
+            destination.ID = toMove.ID + "+" + destination.ID;
+            destination.incoming = toMove.incoming;
+            destination.label = toMove.label;
+            destination.startStatement = toMove.startStatement;
+            destination.statements.addAll(0, toMove.statements);
+            subarea.subBlocks.remove(toMove);
+            
+            // clear any edges to the old "destination" block:
+            for(CodeBlock block:subarea.subBlocks) {
+                List<BlockFlowEdge> toDelete = new ArrayList<>();
+                for(BlockFlowEdge e:block.outgoing) {
+                    if (e.target == destination) toDelete.add(e);
+                }
+                for(BlockFlowEdge e:toDelete) {
+                    block.outgoing.remove(e);
                 }
             }
+        } else {
             config.info("Reorganization optimization",
                     toMove.statements.get(0).sl.fileNameLineString(), 
                     "move lines " + toMove.statements.get(0).sl.lineNumber + " - " + 
                                     toMove.statements.get(toMove.statements.size()-1).sl.lineNumber + 
                     " to right after " + destination.statements.get(destination.statements.size()-1).sl.fileNameLineString() + 
                     " ("+bytesSaved+" bytes, " + timeSavedString + " " + config.timeUnit+"s saved)");
+            
+            // merge blocks:
+            destination.ID = destination.ID + "+" + toMove.ID;
+            destination.statements.addAll(toMove.statements);
+            destination.outgoing = toMove.outgoing;
+            subarea.subBlocks.remove(toMove);
+            
+            // clear any edges to the old "toMove" block:
+            for(CodeBlock block:subarea.subBlocks) {
+                List<BlockFlowEdge> toDelete = new ArrayList<>();
+                for(BlockFlowEdge e:block.outgoing) {
+                    if (e.target == toMove) toDelete.add(e);
+                }
+                for(BlockFlowEdge e:toDelete) {
+                    block.outgoing.remove(e);
+                }
+            }
+            
         }
-
+        
         return true;
     }
     
