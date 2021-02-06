@@ -309,6 +309,47 @@ public class CodeReorganizer implements MDLWorker {
             blocks.add(block);
         }
         
+        // Clean up the blocks a bit (for example, the comments at the top of a file might have been 
+        // lumped together with the end of the previous file):
+        for(int i = 0;i<blocks.size()-1;i++) {
+            CodeBlock block1 = blocks.get(i);
+            CodeBlock block2 = blocks.get(i+1);
+            // find the last non empty/comment statement of block1:
+            int block1_lastNonEmpty = -1;
+            for(int j = block1.statements.size()-1;j>=0;j--) {
+                if (block1.statements.get(j).type != SourceStatement.STATEMENT_NONE) {
+                    block1_lastNonEmpty = j;
+                    break;
+                }
+            }
+            int block2_firstNonEmpty = -1;
+            for(int j = 0;j<block2.statements.size();j++) {
+                if (block2.statements.get(j).type != SourceStatement.STATEMENT_NONE) {
+                    block2_firstNonEmpty = j;
+                    break;
+                }
+            }
+            if (block1_lastNonEmpty >= 0 && block2_firstNonEmpty >= 0) {
+                SourceFile b1_source = block1.statements.get(block1_lastNonEmpty).source;
+                SourceFile b2_source = block2.statements.get(block2_firstNonEmpty).source;
+                if (b1_source != b2_source) {
+                    if (block1.statements.get(block1.statements.size()-1).source != b1_source) {
+                        List<SourceStatement> toMove = new ArrayList<>();
+                        for(int j = block1.statements.size()-1; j > block1_lastNonEmpty; j--) {
+                            SourceStatement s = block1.statements.get(j);
+                            if (s.source == b2_source) {
+                                toMove.add(s);
+                            }
+                        }
+                        for(SourceStatement s:toMove) {
+                            block1.statements.remove(s);
+                            block2.statements.add(0, s);
+                        }
+                    }
+                }
+            } 
+        }
+        
         return blocks;
     }
     
