@@ -41,7 +41,7 @@ public class SourceStatement {
     public int type;
     
     public SourceLine sl;
-    public SourceFile source;   // this should be equivalent to the source obtained
+    public SourceFile source;   // Before any optimizations, this should be equivalent to the source obtained
                                 // from navigating up the sl.expandedFrom all the way to the parent
     
     Integer address = null;    // this is just an internal cache of the address

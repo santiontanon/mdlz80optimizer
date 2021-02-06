@@ -431,4 +431,22 @@ public class CPUOp {
                 return null;
         }    
     }
+    
+    
+    public boolean labelInRange(SourceStatement s, CodeBase code)
+    {
+        if (!isJump()) return true;
+        
+        int idx = spec.jumpLabelArgument();
+        if (spec.args.get(idx).relativeLabelAllowed) {
+            Expression target = args.get(idx);
+            Integer endAddress = target.evaluateToInteger(s, code, true);
+            if (endAddress == null) return false;
+            Integer startAddress = s.getAddress(code);
+            if (startAddress == null) return false;
+            int diff = endAddress - startAddress;
+            if (diff < -126 || diff > 130) return false;                
+        }
+        return true;
+    }
 }

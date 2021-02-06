@@ -1147,6 +1147,20 @@ public class Expression {
         return false;
     }
     
+    
+    public boolean containsCurrentAddress()
+    {
+        if (type == EXPRESSION_SYMBOL &&
+            symbolName.equals(CodeBase.CURRENT_ADDRESS)) {
+            return true;
+        } else if (args != null) {
+            for(Expression arg:args) {
+                if (arg.containsCurrentAddress()) return true;
+            }                
+        }
+        return false;
+    }    
+    
 
     public static Expression constantExpression(int v, MDLConfig config) {
         Expression exp = new Expression(EXPRESSION_INTEGER_CONSTANT, config);

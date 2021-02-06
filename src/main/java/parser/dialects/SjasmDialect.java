@@ -41,7 +41,7 @@ public class SjasmDialect implements Dialect {
         
         public SJasmCodeBlock(SourceStatement a_s, int a_page, Expression a_address)
         {
-            super(null, a_s);
+            super(null, CodeBlock.TYPE_UNKNOWN, a_s);
             startStatement = a_s;
             page = a_page;
             address = a_address;
