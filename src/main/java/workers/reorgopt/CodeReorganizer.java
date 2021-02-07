@@ -463,22 +463,34 @@ public class CodeReorganizer implements MDLWorker {
         }
         
         // Check all relative jumps are still within reach:
-        boolean relativeJumpsInRange = true;
+        boolean canncelOptimization = false;
         code.resetAddresses();
         for(SourceStatement s: subarea.statements) {
             if (s.type == SourceStatement.STATEMENT_CPUOP) {
                 if (s.op.isJump()) {
                     if (!s.op.labelInRange(s, code)) {
-                        relativeJumpsInRange = false;
+                        canncelOptimization = true;
                         break;
                     }
                 }
             }
         }
         
+        // Get the jump we should remove:
+        SourceStatement jump;
+        if (moveBefore) {
+            jump = toMove.getLastCpuOpStatement();
+        } else {
+            jump = destination.getLastCpuOpStatement();
+        }
+        
+        if (jump.comment != null && jump.comment.contains(config.PRAGMA_NO_OPTIMIZATION)) {
+            config.debug("CodeReorganizer: canceling optimization due to a " + config.PRAGMA_NO_OPTIMIZATION + " directive");
+            canncelOptimization = true;
+        }
 
         // if they are not, undo the optimization:
-        if (!relativeJumpsInRange) {
+        if (canncelOptimization) {
             for(SourceStatement s: toMove.statements) {
                 insertionFile.getStatements().remove(s);
             }
@@ -494,20 +506,13 @@ public class CodeReorganizer implements MDLWorker {
             return false;
         }
 
-        // Remove the jump:
-        SourceStatement jump;
-        if (moveBefore) {
-            jump = toMove.getLastCpuOpStatement();
-        } else {
-            jump = destination.getLastCpuOpStatement();
-        }
         int bytesSaved = jump.op.sizeInBytes();
         int timeSaved[] = jump.op.timing();
         String timeSavedString = (timeSaved.length == 1 || timeSaved[0] == timeSaved[1] ?
                                     "" + timeSaved[0] :
                                     "" + timeSaved[0] + "/" + timeSaved[1]);
         jump.type = SourceStatement.STATEMENT_NONE;
-        jump.comment = "; " + jump.op + "  ; -mdl";
+        jump.comment = "; " + jump.sl.line + "  ; -mdl";
         jump.op = null;
         code.resetAddresses();
         

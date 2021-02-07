@@ -3,12 +3,12 @@ loop:
 	jr loop
 label1:
 	ld b, (hl)
-; jp label2  ; -mdl
+; 	jp label2  ; -mdl
 label2:
 	ld b, (hl)
-; jp label3  ; -mdl
+; 	jp label3  ; -mdl
 label3:
 	ld a, 1
-; jp loop2  ; -mdl
+; 	jp loop2  ; -mdl
 loop2:
 	jr loop2

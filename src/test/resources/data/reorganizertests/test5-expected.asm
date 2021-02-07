@@ -3,7 +3,7 @@ loop:
 	jr loop
 func2:
 	ld a, 1
-; jp func1  ; -mdl
+; 	jp func1  ; -mdl
 func1:
 	ld (hl), a
 	ret

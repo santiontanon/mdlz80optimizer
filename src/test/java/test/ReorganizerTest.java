@@ -54,6 +54,9 @@ public class ReorganizerTest {
     @Test public void test6() throws Exception { Assert.assertTrue(test("data/reorganizertests/test6.asm",
                                                                         "data/reorganizertests/test6-expected.asm",
                                                                         "data/reorganizertests/test6-expected.bin")); }
+    @Test public void test7() throws Exception { Assert.assertTrue(test("data/reorganizertests/test7.asm",
+                                                                        "data/reorganizertests/test7-expected.asm",
+                                                                        "data/reorganizertests/test7-expected.bin")); }
 
     private boolean test(String inputFile, 
                          String expectedOutputFile,

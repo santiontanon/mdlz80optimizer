@@ -132,7 +132,7 @@
 label1:
 	add a, b
 	jr nc, label3
-; jp label2  ; -mdl
+; 	jp label2  ; -mdl
 label2:
 	jr label2
 label3:
