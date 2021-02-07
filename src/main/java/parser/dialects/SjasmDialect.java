@@ -10,7 +10,6 @@ import java.util.List;
 
 import cl.MDLConfig;
 import code.CPUOp;
-import code.CPUOpSpec;
 import code.CodeBase;
 import code.Expression;
 import code.SourceConstant;
@@ -32,8 +31,8 @@ import workers.reorgopt.CodeBlock;
  *
  * @author santi
  */
-public class SjasmDialect implements Dialect {
-    
+public class SjasmDialect extends SjasmDerivativeDialect implements Dialect 
+{    
     public class SJasmCodeBlock extends CodeBlock {
         int page = -1;
         Expression address;
@@ -56,17 +55,8 @@ public class SjasmDialect implements Dialect {
             return size;
         }
     }
-    
-    
-    public static class SjasmStruct {
-        String name;
-        SourceFile file;
-        SourceStatement start;
-        List<String> attributeNames = new ArrayList<>();
-        List<Integer> attributeSizes = new ArrayList<>();
-    }
-        
-    
+
+
     public static class CodePage {
         public SourceStatement s;
         public Expression start;
@@ -137,24 +127,13 @@ public class SjasmDialect implements Dialect {
         }
     }
     
-
-    MDLConfig config;
-
-    SjasmStruct struct = null;
-    List<SjasmStruct> structs = new ArrayList<>();
-
+    
     int mapCounter = 0;
     List<Integer> mapCounterStack = new ArrayList<>();
-    
-    Integer currentPage = null;
-    HashMap<Integer,CodePage> pages = new HashMap<>();
-    HashMap<String,Integer> symbolPage = new HashMap<>();
-    
-    HashMap<String, Integer> reusableLabelCounts = new HashMap<>();
-
+        
     List<SJasmCodeBlock> codeBlocks = new ArrayList<>();
     
-    List<String> modules = new ArrayList<>();
+    HashMap<Integer,CodePage> pages = new HashMap<>();
     
     List<SourceStatement> enhancedJrList = new ArrayList<>();
     List<SourceStatement> enhancedDjnzList = new ArrayList<>();
@@ -163,8 +142,6 @@ public class SjasmDialect implements Dialect {
     public SjasmDialect(MDLConfig a_config) {
         config = a_config;
 
-        config.warning_jpHlWithParenthesis = false;  // I don't think sjasm supports "jp hl"
-        
         config.lineParser.addKeywordSynonym("byte", config.lineParser.KEYWORD_DB);
         config.lineParser.addKeywordSynonym("defb", config.lineParser.KEYWORD_DB);
         config.lineParser.addKeywordSynonym("word", config.lineParser.KEYWORD_DW);
@@ -176,7 +153,7 @@ public class SjasmDialect implements Dialect {
         
         config.preProcessor.macroSynonyms.put("endmacro", config.preProcessor.MACRO_ENDM);
         
-        config.warning_jpHlWithParenthesis = false;
+        config.warning_jpHlWithParenthesis = false;    // I don't think sjasm supports "jp hl"
         config.lineParser.allowEmptyDB_DW_DD_definitions = true;
         config.lineParser.keywordsHintingALabel.add("#");
         config.lineParser.keywordsHintingALabel.add("field");
@@ -184,7 +161,6 @@ public class SjasmDialect implements Dialect {
         config.lineParser.allowIncludesWithoutQuotes = true;
         config.lineParser.macroDefinitionStyle = LineParser.MACRO_MACRO_NAME_ARGS;
         config.lineParser.allowNumberLabels = true;
-        config.lineParser.allowExtendedSjasmInstructions = true;
         
         config.expressionParser.dialectFunctionsSingleArgumentNoParenthesis.add("high");
         config.expressionParser.dialectFunctionsSingleArgumentNoParenthesis.add("low");
@@ -393,28 +369,28 @@ public class SjasmDialect implements Dialect {
         Tokenizer.stringEscapeSequences.put("t", "\t");
         Tokenizer.stringEscapeSequences.put("v", "\u0011");
         config.lineParser.applyEscapeSequencesToIncludeArguments = false;
-    }
-    
-    
-    private boolean addFakeInstruction(String in, String out)
-    {
-        String data[] = {in,"1","ff ff","2", "","","","", "","","","", "false"};
-        CPUOpSpec fakeSpec = config.opSpecParser.parseOpSpecLine(data, config);
-        if (fakeSpec == null) {
-            config.error("cannot parse fake instruction " + in);
-            return false;
-        } 
-
-        fakeSpec.fakeInstructionEquivalent = new ArrayList<>();
-        for(String line:out.split("\n")) {
-            fakeSpec.fakeInstructionEquivalent.add(Tokenizer.tokenize(line));
-        }
         
-        config.opParser.addOpSpec(fakeSpec);        
-        return true;
+        forbiddenLabelNames.add("struct");
+        forbiddenLabelNames.add("ends");
+        forbiddenLabelNames.add("byte");
+        forbiddenLabelNames.add("defb");
+        forbiddenLabelNames.add("word");
+        forbiddenLabelNames.add("defw");
+        forbiddenLabelNames.add("dword");
+        forbiddenLabelNames.add("map");
+        forbiddenLabelNames.add("endmap");
+        forbiddenLabelNames.add("field");
+        forbiddenLabelNames.add("assert");
+        forbiddenLabelNames.add("incdir");
+        forbiddenLabelNames.add("output");
+        forbiddenLabelNames.add("defpage");
+        forbiddenLabelNames.add("code");
+        forbiddenLabelNames.add("align");
+        forbiddenLabelNames.add("module");
+        forbiddenLabelNames.add("endmodule");
     }
+        
     
-
     @Override
     public boolean recognizeIdiom(List<String> tokens) {
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("struct")) return true;
@@ -449,96 +425,6 @@ public class SjasmDialect implements Dialect {
         return false;
     }
     
-    
-    private String getLastAbsoluteLabel(SourceStatement s) 
-    {
-        while(s != null) {
-            // sjasm considers any label as an absolute label, even if it's associated with an equ,
-            // so, no need to check if s.label.isLabel() (as in asMSX):
-            if (s.label != null &&
-                !s.label.originalName.startsWith(".") &&
-                !Tokenizer.isInteger(s.label.originalName)) {
-                return s.label.originalName;
-            } else {
-                s = s.source.getPreviousStatementTo(s, s.source.code);
-            }
-        }
-        return null;        
-    }
-    
-
-    @Override
-    public String newSymbolName(String name, Expression value, SourceStatement previous) {
-        if (name.equalsIgnoreCase("struct")
-                || name.equalsIgnoreCase("ends")
-                || name.equalsIgnoreCase("byte")
-                || name.equalsIgnoreCase("defb")
-                || name.equalsIgnoreCase("word")
-                || name.equalsIgnoreCase("defw")
-                || name.equalsIgnoreCase("dword")
-                || name.equalsIgnoreCase("map")
-                || name.equalsIgnoreCase("endmap")
-                || name.equalsIgnoreCase("field")
-                || name.equalsIgnoreCase("assert")
-                || name.equalsIgnoreCase("incdir")
-                || name.equalsIgnoreCase("output")
-                || name.equalsIgnoreCase("defpage")
-                || name.equalsIgnoreCase("code")
-                || name.equalsIgnoreCase("align")
-                || name.equalsIgnoreCase("module")
-                || name.equalsIgnoreCase("endmodule")) {
-            return null;
-        }
-        if (name.startsWith(".")) {
-            String lastAbsoluteLabel = getLastAbsoluteLabel(previous);
-            if (lastAbsoluteLabel != null) {
-                return lastAbsoluteLabel + name;
-            } else {
-                return name;
-            }
-        } else if (Tokenizer.isInteger(name)) {
-            // it'startStatement a reusable label:
-            int count = 1;
-            if (reusableLabelCounts.containsKey(name)) {
-                count = reusableLabelCounts.get(name);
-            }
-            reusableLabelCounts.put(name, count+1);
-            name =  "_sjasm_reusable_" + name + "_" + count;
-        }
-        
-        symbolPage.put(name, currentPage);
-
-        return name;
-    }
-
-    
-    @Override
-    public String symbolName(String name, SourceStatement previous) {
-        if (name.startsWith(".")) {
-            String lastAbsoluteLabel = getLastAbsoluteLabel(previous);
-            if (lastAbsoluteLabel != null) {
-                return lastAbsoluteLabel + name;
-            } else {
-                return name;
-            }
-        } else if ((name.endsWith("f") || name.endsWith("F")) && Tokenizer.isInteger(name.substring(0, name.length()-1))) {
-            // it'startStatement a reusable label:
-            name = name.substring(0, name.length()-1);
-            int count = 1;
-            if (reusableLabelCounts.containsKey(name)) {
-                count = reusableLabelCounts.get(name);
-            }
-            return "_sjasm_reusable_" + name + "_" + count;
-        } else if ((name.endsWith("b") || name.endsWith("B")) && Tokenizer.isInteger(name.substring(0, name.length()-1))) {
-            // it'startStatement a reusable label:
-            name = name.substring(0, name.length()-1);
-            int count = reusableLabelCounts.get(name);
-            return "_sjasm_reusable_" + name + "_" + (count-1);
-        } else {            
-            return name;
-        }
-    }
-
     
     @Override
     public List<SourceStatement> parseLine(List<String> tokens, SourceLine sl,
@@ -1042,61 +928,7 @@ public class SjasmDialect implements Dialect {
             return null;
         }        
 
-        
-        // struct definitions:
-        for(SjasmStruct st:structs) {
-            if (tokens.get(0).equals(st.name)) {
-                tokens.remove(0);
-                // it is a struct definition:
-                boolean done = false;
-                List<Expression> data = new ArrayList<>();
-                while (!done) {
-                    Expression exp = config.expressionParser.parse(tokens, s, previous, code);
-                    if (exp == null) {
-                        config.error("Cannot parse line " + sl);
-                        return null;
-                    } else {
-                        data.add(exp);
-                    }
-                    if (!tokens.isEmpty() && tokens.get(0).equals(",")) {
-                        tokens.remove(0);
-                    } else {
-                        done = true;
-                    }
-                }
-                if (data.size() != st.attributeSizes.size()) {
-                    config.error("Struct instantiation has the wrong number of fields ("+data.size()+" vs the expected "+st.attributeSizes.size()+") in " + sl);
-                    return null;                    
-                }
-                l.clear();
-                
-                for(int i = 0;i<data.size();i++) {
-                    SourceStatement s2;
-                    switch(st.attributeSizes.get(i)) {
-                        case 1:
-                            s2 = new SourceStatement(SourceStatement.STATEMENT_DATA_BYTES, sl, source, config);
-                            break;
-                        case 2:
-                            s2 = new SourceStatement(SourceStatement.STATEMENT_DATA_WORDS, sl, source, config);
-                            break;
-                        case 4:
-                            s2 = new SourceStatement(SourceStatement.STATEMENT_DATA_DOUBLE_WORDS, sl, source, config);
-                            break;
-                        default:
-                            config.error("Field " + st.attributeNames.get(i) + " of struct " + st.name + " has an unsupported size in: " + sl);
-                            return null;
-                    }
-                    if (i == 0) s2.label = s.label;
-                    s2.data = new ArrayList<>();
-                    s2.data.add(data.get(i));
-                    l.add(s2);
-                }
-                if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
-                break;
-            }
-        }
-        
-        return null;
+        return parseLineStruct(tokens, l, sl, s, previous, source, code);
     }
 
 
@@ -1254,13 +1086,7 @@ public class SjasmDialect implements Dialect {
                 config.error("Could not evaluate nmber of iterations when expanding macro in " + macroCall.sl);
                 return null;
             }
-            int iterations = iterations_tmp.intValue();
-//            String scope;
-//            if (macroCall.label != null) {
-//                scope = macroCall.label.name;
-//            } else {
-//                scope = config.preProcessor.nextMacroExpansionContextName();
-//            }
+            int iterations = iterations_tmp;
             for(int i = 0;i<iterations;i++) {
                 String variable = "@#";
                 List<SourceLine> linesTmp = new ArrayList<>();

@@ -45,7 +45,6 @@ public class LineParser {
     public boolean defineSpaceVirtualByDefault = false;
     public boolean allowEmptyDB_DW_DD_definitions = false;
     public boolean allowIncludesWithoutQuotes = false;
-    public boolean allowExtendedSjasmInstructions = false;
 
     // sjasm defines macros like: "macro macroname arg1,...,agn" instead of "macroname: macro arg1,...,argn":
     public int macroDefinitionStyle = MACRO_LABEL_MACRO_ARGS;
@@ -54,6 +53,8 @@ public class LineParser {
     public boolean applyEscapeSequencesToIncludeArguments = true;
 
     public boolean sdccStyleOffsets = false;
+    
+    public boolean allowColonSeparatedOps = false;
     
     MDLConfig config;
     CodeBaseParser codeBaseParser;
@@ -753,9 +754,46 @@ public class LineParser {
 
     public boolean parseCPUOp(List<String> tokens, String opName, SourceLine sl,
             List<SourceStatement> l, SourceStatement previous, SourceFile source, CodeBase code) {
-        SourceStatement s = l.get(0);
-        
         tokens.add(0, opName);
+        
+        if (allowColonSeparatedOps) {
+            List<List<String>> splitTokens = new ArrayList<>();
+            List<String> tokens2 = new ArrayList<>();
+            for(String token:tokens) {
+                if (token.equals(":")) {
+                    splitTokens.add(tokens2);
+                    tokens2 = new ArrayList<>();
+                } else {
+                    tokens2.add(token);
+                }
+            }
+            if (!tokens2.isEmpty()) splitTokens.add(tokens2);
+            
+            if (splitTokens.size() > 1) {
+                boolean first = true;
+                List<SourceStatement> l2;
+                for(List<String> tokens3: splitTokens) {
+                    String opName3 = tokens3.remove(0);
+                    if (first) {
+                        l2 = l;
+                        first = false;
+                    } else {
+                        l2 = new ArrayList<>();
+                        l2.add(new SourceStatement(SourceStatement.STATEMENT_NONE, sl, source, config));
+                    }
+                    if (parseCPUOp(tokens3, opName3, sl, l2, previous, source, code)) {
+                        if (l2 != l) {
+                            l.addAll(l2);
+                        }
+                    } else {
+                        return false;
+                    }
+                }
+                return true;
+            }
+        }
+        
+        SourceStatement s = l.get(0);        
         if (config.dialectParser != null) {
             // put the opName back into the tokens (in case the tokens are modified by the fake CPU op parsing:
             if (!config.dialectParser.parseFakeCPUOps(tokens, sl, l, previous, source, code)) return false;

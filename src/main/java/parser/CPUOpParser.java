@@ -27,6 +27,8 @@ public class CPUOpParser {
     
     public boolean indirectionsOnlyWithSquareBrackets = false;
     public boolean indirectionsOnlyWithParenthesis = false;
+    
+    public boolean allowExtendedSjasmplusLDInstructions = false;
 
 
     public CPUOpParser(List<CPUOpSpec> a_opSpecs, MDLConfig a_config) {
@@ -79,6 +81,29 @@ public class CPUOpParser {
             }
         }
         if (candidates != null && !candidates.isEmpty()) {
+            // see if it's an extended "ld" instruction:
+            if (allowExtendedSjasmplusLDInstructions &&
+                a_op.equalsIgnoreCase("ld") && a_args.size() >= 2 && a_args.size()%2 == 0) {
+                List<CPUOp> l = new ArrayList<>();
+                for(int i = 0;i<a_args.size();i+=2) {
+                    List<Expression> argsAux = new ArrayList<>();
+                    argsAux.add(a_args.get(i));
+                    argsAux.add(a_args.get(i+1));
+                    boolean found = false;
+                    for(CPUOpSpec opSpec:candidates) {
+                        List<CPUOp> l2 = parseOp(a_op, opSpec, argsAux, s, previous, code);
+                        if (l2 != null) {
+                            l.addAll(l2);
+                            found = true;
+                        }
+                    }
+                    if (!found) {
+                        l = null;
+                        break;
+                    }
+                }
+                if (l != null) return l;
+            }
             // try to see if any of the arguments was a constant with parenthesis that had been interpreted
             // as an indirection:
             boolean anyChange = false;

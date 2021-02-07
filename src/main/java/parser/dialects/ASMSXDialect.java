@@ -12,6 +12,7 @@ import code.SourceConstant;
 import code.SourceFile;
 import code.SourceStatement;
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -290,7 +291,7 @@ public class ASMSXDialect implements Dialect {
                 tokenizedLines.add(Tokenizer.tokenize(line));
             }
             return tokenizedLines;
-        } catch (Exception e) {
+        } catch (IOException e) {
             config.error("Cannot read file " + fileName);
             return null;            
         }

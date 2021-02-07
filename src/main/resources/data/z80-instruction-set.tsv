@@ -274,6 +274,8 @@ SET b,(HL)	15	CB C6+8*b	2	HL			HL				HL	true
 SET b,r	8	CB C0+8*b+r	2	r				r				true
 SLA (HL)	15	CB 26	2	HL			HL		S,Z,H,P/V,N,C		HL	true
 SLA r	8	CB 20+r	2	r				r	S,Z,H,P/V,N,C			true
+SLI (HL)	15	CB 36	2	HL			HL		S,Z,H,P/V,N,C		HL	true
+SLI r	8	CB 30+r	2	r				r	S,Z,H,P/V,N,C			true
 SRA (HL)	15	CB 2E	2	HL			HL		S,Z,H,P/V,N,C		HL	true
 SRA r	8	CB 28+r	2	r				r	S,Z,H,P/V,N,C			true
 SRL (HL)	15	CB 3E	2	HL			HL		S,Z,H,P/V,N,C		HL	true
@@ -380,6 +382,8 @@ SET b,(IX+o)	23	DD CB o C6+8*b	4	IX			IX+o				IX+o	true
 SET b,(IY+o)	23	FD CB o C6+8*b	4	IY			IY+o				IY+o	true
 SLA (IX+o)	23	DD CB o 26	4	IX			IX+o		S,Z,H,P/V,N,C		IX+o	true
 SLA (IY+o)	23	FD CB o 26	4	IY			IY+o		S,Z,H,P/V,N,C		IY+o	true
+SLI (IX+o)	23	DD CB o 36	4	IX			IX+o		S,Z,H,P/V,N,C		IX+o	true
+SLI (IY+o)	23	FD CB o 36	4	IY			IY+o		S,Z,H,P/V,N,C		IY+o	true
 SRA (IX+o)	23	DD CB o 2E	4	IX			IX+o		S,Z,H,P/V,N,C		IX+o	true
 SRA (IY+o)	23	FD CB o 2E	4	IY			IY+o		S,Z,H,P/V,N,C		IY+o	true
 SRL (IX+o)	23	DD CB o 3E	4	IX			IX+o		S,Z,H,P/V,N,C		IX+o	true
