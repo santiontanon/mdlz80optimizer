@@ -87,6 +87,9 @@ public class MDLConfig {
     List<MDLWorker> workers = new ArrayList<>();
     
     List<MDLWorker> executionQueue = new ArrayList<>();
+    
+    // Accumulated stats to be reported at the end of execution:
+    public OptimizationResult optimizerStats = new OptimizationResult();
 
     public String docString = "MDL "+Main.VERSION_STRING+" (A Z80 assembler optimizer) by Santiago Ontañón (Brain Games, 2020-2021)\n"
             + "https://github.com/santiontanon/mdlz80optimizer\n" + "\n"

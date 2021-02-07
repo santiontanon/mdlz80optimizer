@@ -6,6 +6,7 @@
 package workers.reorgopt;
 
 import cl.MDLConfig;
+import cl.OptimizationResult;
 import code.CodeBase;
 import code.Expression;
 import code.SourceFile;
@@ -39,33 +40,6 @@ import workers.SourceCodeGenerator;
  */
 public class CodeReorganizer implements MDLWorker {
     
-    public static class ReorganizerStats {
-        int moves = 0;
-        int bytesSaved = 0;
-        int timeSavings[] = {0, 0};
-        
-        void addMoveSavings(int a_bytesSaved, int[] a_timeSavings) {
-            moves++;
-            bytesSaved += a_bytesSaved;
-            timeSavings[0] += a_timeSavings[0];
-            if (a_timeSavings.length == 2) {
-                timeSavings[1] += a_timeSavings[1];
-            } else {
-                timeSavings[1] += a_timeSavings[0];
-            }
-        }
-        
-        String timeSavingsString()
-        {
-            if (timeSavings[0] == timeSavings[1]) {
-                return "" + timeSavings[0];
-            } else {
-                return "" + timeSavings[0] + "/" + timeSavings[1];
-            }
-        }
-    }
-    
-    
     MDLConfig config;
     
     String htmlOutputFileName = null;
@@ -78,8 +52,8 @@ public class CodeReorganizer implements MDLWorker {
     
     @Override
     public String docString() {
-        return "  -ro: (task) runs the reoganizer optimizer.\n" + 
-               "  -rohtml <file>: generates a visualization of the division of the code before optimization as an html file.\n";
+        return "  -ro: (task) runs the code reoganizer optimizer.\n" + 
+               "  -rohtml <file>: generates a visualization of the division of the code before code reoganizer optimization as an html file.\n";
     }
 
     @Override
@@ -103,7 +77,7 @@ public class CodeReorganizer implements MDLWorker {
 
     @Override
     public boolean work(CodeBase code) {
-        ReorganizerStats savings = new ReorganizerStats();
+        OptimizationResult savings = new OptimizationResult();
 
         // First, find the "areas" that we can work with, e.g. "pages in a MegaROM".
         // These are areas of code such that we can move things around inside, but not across.
@@ -148,11 +122,12 @@ public class CodeReorganizer implements MDLWorker {
             }
         }
                 
-        config.info("CodeReorganizer: "+savings.moves+" moves applied, " +
+        config.info("CodeReorganizer: "+savings.optimizerSpecificStats.get("CodeReorganizer:moves")+" moves applied, " +
             savings.bytesSaved + " bytes, " + 
             savings.timeSavingsString() + " " +config.timeUnit+"s saved.");
 
-                
+        config.optimizerStats.addSavings(savings);
+        
         return true;
     }
 
@@ -355,7 +330,7 @@ public class CodeReorganizer implements MDLWorker {
     
 
     // Assumption: all the statements within this subarea contain assembler code, and not data
-    private void reorganizeBlock(CodeBlock subarea, CodeBase code, ReorganizerStats savings) {
+    private void reorganizeBlock(CodeBlock subarea, CodeBase code, OptimizationResult savings) {
         // Look for blocks (A) that:
         // - end in a jump to a block B
         // - all the incoming edges to A and B are jumps
@@ -414,7 +389,7 @@ public class CodeReorganizer implements MDLWorker {
     }
     
     
-    private boolean attemptBlockMove(CodeBlock toMove, CodeBlock destination, boolean moveBefore, CodeBlock subarea, CodeBase code, ReorganizerStats savings)
+    private boolean attemptBlockMove(CodeBlock toMove, CodeBlock destination, boolean moveBefore, CodeBlock subarea, CodeBase code, OptimizationResult savings)
     {
         // Move the statements:
         SourceFile insertionFile;
@@ -516,7 +491,8 @@ public class CodeReorganizer implements MDLWorker {
         jump.op = null;
         code.resetAddresses();
         
-        savings.addMoveSavings(bytesSaved, timeSaved);
+        savings.addSavings(bytesSaved, timeSaved);
+        savings.addOptimizerSpecific("CodeReorganizer moves", 1);
         
         // Update the edges, and announce the optimization (with line ranges):        
         if (moveBefore) {            
@@ -657,13 +633,18 @@ public class CodeReorganizer implements MDLWorker {
                     // end of function, do not add any edge                    
                 } else {
                     // no jump, no ret, this is just a fall through, so, it goes to the next block:
-                    if (i < codeBlocks.size()) {
+                    if (i < codeBlocks.size() - 1) {
                         BlockFlowEdge edge = new BlockFlowEdge(block, codeBlocks.get(i+1), BlockFlowEdge.TYPE_NONE, null);
                         block.outgoing.add(edge);
                         edge.target.incoming.add(edge);
                     } else {
                         config.warn("Code safety", last.fileNameLineString(),
-                                    "Assembler code finishes dangerously, and might continue executing into unexpected memory space.");                        
+                                    "Assembler code finishes dangerously, and might continue executing into unexpected memory space.");
+                        // create an edge anyway, to make sure we don't move this bock, in case
+                        // the data following the code is actually assembler instructions encoded
+                        // as data:
+                        BlockFlowEdge edge = new BlockFlowEdge(block, null, BlockFlowEdge.TYPE_NONE, null);
+                        block.outgoing.add(edge);
                     }
                 }
             }

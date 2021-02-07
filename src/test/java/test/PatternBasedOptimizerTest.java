@@ -9,6 +9,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import cl.MDLConfig;
+import cl.OptimizationResult;
 import code.CodeBase;
 import code.SourceConstant;
 import code.SourceFile;
@@ -100,7 +101,7 @@ public class PatternBasedOptimizerTest {
             }
         }
         
-        PatternBasedOptimizer.OptimizationResult r = pbo.optimize(code);
+        OptimizationResult r = pbo.optimize(code);
 
         for(SourceFile f:code.getSourceFiles()) {
             for(SourceStatement s:f.getStatements()) {

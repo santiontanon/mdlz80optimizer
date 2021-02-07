@@ -44,5 +44,7 @@ public class Main {
         
         // Execute all the requested workers according to the command-line arguments:
         if (!config.executeWorkers(code)) System.exit(3);
+        
+        if (config.optimizerStats.anyOptimization()) config.info("mdl optimization summary: " + config.optimizerStats.summaryString(config));
     }
 }

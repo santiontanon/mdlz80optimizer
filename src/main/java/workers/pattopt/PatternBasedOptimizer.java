@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import cl.MDLConfig;
+import cl.OptimizationResult;
 import code.CodeBase;
 import code.SourceFile;
 import code.SourceStatement;
@@ -29,6 +30,7 @@ public class PatternBasedOptimizer implements MDLWorker {
     public static String defaultInputPatternsSizeFileName = "data/pbo-patterns-size.txt";
     public static String defaultInputPatternsSpeedFileName = "data/pbo-patterns-speed.txt";
     
+    /*
     public static class OptimizationResult {
         public int bytesSaved = 0;
         public int timeSaved[] = {0,0}; // some instructions have two times (e.g., if a condition is met or not)
@@ -50,6 +52,7 @@ public class PatternBasedOptimizer implements MDLWorker {
             }        
         }
     }
+    */
     
 
     public boolean logPotentialOptimizations = false;    
@@ -198,7 +201,8 @@ public class PatternBasedOptimizer implements MDLWorker {
     @Override
     public boolean work(CodeBase code) {
         if (trigger) {
-            optimize(code);
+            OptimizationResult r = optimize(code);
+            config.optimizerStats.addSavings(r);
             if (generateFilesWithAppliedOptimizations) {
                 applyOptimizationsToOriginalFiles(code);
             }
@@ -298,10 +302,8 @@ public class PatternBasedOptimizer implements MDLWorker {
 //                                config.debug(previousCode + "\nReplaced by:" + newCode);
 //                            }
                         }
-                        r.patternApplications++;
-                        r.bytesSaved += bestPatt.getSpaceSaving(bestMatch, code);
-                        r.timeSaved[0] += bestPatt.getTimeSaving(bestMatch, code)[0];
-                        r.timeSaved[1] += bestPatt.getTimeSaving(bestMatch, code)[1];
+                        r.addOptimizerSpecific("Pattern-based optimizer pattern applications", 1);
+                        r.addSavings(bestPatt.getSpaceSaving(bestMatch, code), bestPatt.getTimeSaving(bestMatch, code));
                         i = Math.max(0, i-2);   // go back a couple of statements, as more optimizations might chain
                         
                         appliedOptimizations.add(bestMatch);
@@ -310,9 +312,9 @@ public class PatternBasedOptimizer implements MDLWorker {
             }
         }        
 
-        config.info("PatternBasedOptimizer: "+r.patternApplications+" patterns applied, " +
+        config.info("PatternBasedOptimizer: "+r.optimizerSpecificStats.get("Pattern-based optimizer pattern applications")+" patterns applied, " +
                     r.bytesSaved+" bytes, " + 
-                    r.timeString() + " " +config.timeUnit+"s saved.");
+                    r.timeSavingsString() + " " +config.timeUnit+"s saved.");
         return r;
     }
     
