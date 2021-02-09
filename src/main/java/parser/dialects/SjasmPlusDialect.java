@@ -27,6 +27,10 @@ import parser.Tokenizer;
  */
 public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
 {
+    List<Integer> slotSizes = new ArrayList<>();
+    List<Integer> pageSizes = new ArrayList<>();
+    Integer currentSlot = null;
+    
 
     SjasmPlusDialect(MDLConfig a_config) {
         config = a_config;
@@ -38,10 +42,11 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
         config.lineParser.addKeywordSynonym("word", config.lineParser.KEYWORD_DW);
         config.lineParser.addKeywordSynonym("defw", config.lineParser.KEYWORD_DW);
         config.lineParser.addKeywordSynonym("dword", config.lineParser.KEYWORD_DD);
-        config.lineParser.addKeywordSynonym("=", config.lineParser.KEYWORD_EQU);
         config.lineParser.addKeywordSynonym("defs", config.lineParser.KEYWORD_DS);
         config.lineParser.addKeywordSynonym("block", config.lineParser.KEYWORD_DS);
                 
+        config.lineParser.keywordsHintingALabel.add("=");
+        
         config.warning_jpHlWithParenthesis = true;
         config.lineParser.allowEmptyDB_DW_DD_definitions = true;
         config.lineParser.allowIncludesWithoutQuotes = true;
@@ -54,6 +59,9 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
         config.expressionParser.dialectFunctionsSingleArgumentNoParenthesis.add("high");
         config.expressionParser.dialectFunctionsSingleArgumentNoParenthesis.add("low");
                         
+        config.preProcessor.macroSynonyms.put("dup", config.preProcessor.MACRO_REPT);
+        config.preProcessor.macroSynonyms.put("edup", config.preProcessor.MACRO_ENDR);
+        
         // It is important that registers on the left-hand-side are capitalized (the right hand side does not matter):
         addFakeInstruction("RL BC", "rl c\nrl b");
         addFakeInstruction("RL DE", "rl e\nrl d");
@@ -273,6 +281,8 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
         forbiddenLabelNames.add("align");
         forbiddenLabelNames.add("module");
         forbiddenLabelNames.add("endmodule");
+        forbiddenLabelNames.add("device");
+        forbiddenLabelNames.add("savebin");
     }
     
     
@@ -288,6 +298,9 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("align")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("module")) return true;
         if (tokens.size() >= 1 && tokens.get(0).equalsIgnoreCase("endmodule")) return true;
+        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("device")) return true;
+        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("=")) return true;
+        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("savebin")) return true;
 
         for(SjasmStruct s:structs) {
             if (tokens.get(0).equals(s.name)) return true;
@@ -493,6 +506,179 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
             if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
             return null;
         }    
+        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("device")) {
+            tokens.remove(0);
+            String deviceName = tokens.remove(0).toLowerCase();
+            
+            switch(deviceName) {
+                case "none":
+                    slotSizes.clear();
+                    pageSizes.clear();
+                    break;
+                case "zxspectrum48":
+                    slotSizes.clear();
+                    pageSizes.clear();
+                    for(int i = 0;i<4;i++) {
+                        slotSizes.add(16*1024);
+                        pageSizes.add(16*1024);
+                    }
+                    currentSlot = 3;
+                    currentPage = 0;
+                    break;
+                case "zxspectrum128":
+                    slotSizes.clear();
+                    pageSizes.clear();
+                    for(int i = 0;i<4;i++) {
+                        slotSizes.add(16*1024);
+                    }
+                    for(int i = 0;i<8;i++) {
+                        pageSizes.add(16*1024);
+                    }
+                    currentSlot = 3;
+                    currentPage = 0;
+                    break;
+                case "zxspectrum256":
+                    slotSizes.clear();
+                    pageSizes.clear();
+                    for(int i = 0;i<4;i++) {
+                        slotSizes.add(16*1024);
+                    }
+                    for(int i = 0;i<16;i++) {
+                        pageSizes.add(16*1024);
+                    }
+                    currentSlot = 3;
+                    currentPage = 0;
+                    break;
+                case "zxspectrum512":
+                    slotSizes.clear();
+                    pageSizes.clear();
+                    for(int i = 0;i<4;i++) {
+                        slotSizes.add(16*1024);
+                    }
+                    for(int i = 0;i<32;i++) {
+                        pageSizes.add(16*1024);
+                    }
+                    currentSlot = 3;
+                    currentPage = 0;
+                    break;
+                case "zxspectrum1024":
+                    slotSizes.clear();
+                    pageSizes.clear();
+                    for(int i = 0;i<4;i++) {
+                        slotSizes.add(16*1024);
+                    }
+                    for(int i = 0;i<64;i++) {
+                        pageSizes.add(16*1024);
+                    }
+                    currentSlot = 3;
+                    currentPage = 0;
+                    break;
+                case "zxspectrum2048":
+                    slotSizes.clear();
+                    pageSizes.clear();
+                    for(int i = 0;i<4;i++) {
+                        slotSizes.add(16*1024);
+                    }
+                    for(int i = 0;i<128;i++) {
+                        pageSizes.add(16*1024);
+                    }
+                    currentSlot = 3;
+                    currentPage = 0;
+                    break;
+                case "zxspectrum4096":
+                    slotSizes.clear();
+                    pageSizes.clear();
+                    for(int i = 0;i<4;i++) {
+                        slotSizes.add(16*1024);
+                    }
+                    for(int i = 0;i<256;i++) {
+                        pageSizes.add(16*1024);
+                    }
+                    currentSlot = 3;
+                    currentPage = 0;
+                    break;
+                case "zxspectrum8192":
+                    slotSizes.clear();
+                    pageSizes.clear();
+                    for(int i = 0;i<4;i++) {
+                        slotSizes.add(16*1024);
+                    }
+                    for(int i = 0;i<512;i++) {
+                        pageSizes.add(16*1024);
+                    }
+                    currentSlot = 3;
+                    currentPage = 0;
+                    break;
+                case "zxspectrumnext":
+                    slotSizes.clear();
+                    pageSizes.clear();
+                    for(int i = 0;i<8;i++) {
+                        slotSizes.add(8*1024);
+                    }
+                    for(int i = 0;i<224;i++) {
+                        pageSizes.add(8*1024);
+                    }
+                    currentSlot = 7;
+                    currentPage = 0;
+                    break;
+                case "noslot64k":
+                    slotSizes.clear();
+                    pageSizes.clear();
+                    slotSizes.add(64*1024);
+                    for(int i = 0;i<32;i++) {
+                        pageSizes.add(64*1024);
+                    }
+                    currentSlot = 0;
+                    currentPage = 0;
+                    break;
+                    
+                default:
+                    break;
+            }
+            
+            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
+            return null;
+        }
+        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("=")) {
+            // This is like an equ, but with a variable that changes value throughout parsing.
+            // This only makes sense in eager execution, so, we check for that:
+            if (!config.eagerMacroEvaluation) {
+                config.error("Non final variable defined in lazy evaluation mode at " + sl);
+                return null;
+            }
+            
+            tokens.remove(0);
+            if (!config.lineParser.parseEqu(tokens, sl, s, previous, source, code)) return null;
+            Integer value = s.label.exp.evaluateToInteger(s, code, false);
+            if (value == null) {
+                config.error("Cannot resolve eager variable in " + sl);
+                s.label.exp.evaluateToInteger(s, code, false);
+                return null;
+            }
+            Expression exp = Expression.constantExpression(value, config);
+            SourceConstant c = s.label;
+            c.clearCache();
+            c.exp = exp;            
+            s.label.name = s.label.originalName;
+            s.label.resolveEagerly = true;
+            
+            // these variables should not be part of the source code:
+            l.clear();
+            return l;
+        }       
+        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("savebin")) {
+            // Just ignore ...
+            while(!tokens.isEmpty()) {
+                if (Tokenizer.isSingleLineComment(tokens.get(0)) || 
+                    Tokenizer.isMultiLineCommentStart(tokens.get(0))) break;
+                tokens.remove(0);
+            }
+            
+            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
+            return null;
+        }
+        
+        
 
         return parseLineStruct(tokens, l, sl, s, previous, source, code);
     }
