@@ -39,6 +39,8 @@ import workers.SourceCodeGenerator;
  * 
  */
 public class CodeReorganizer implements MDLWorker {
+    public static final String SAVINGS_REORGANIZATIONS_CODE = "CodeReorganizer moves";
+    
     
     MDLConfig config;
     
@@ -78,6 +80,7 @@ public class CodeReorganizer implements MDLWorker {
     @Override
     public boolean work(CodeBase code) {
         OptimizationResult savings = new OptimizationResult();
+        savings.addOptimizerSpecific(SAVINGS_REORGANIZATIONS_CODE, 0);
 
         // First, find the "areas" that we can work with, e.g. "pages in a MegaROM".
         // These are areas of code such that we can move things around inside, but not across.
@@ -122,7 +125,7 @@ public class CodeReorganizer implements MDLWorker {
             }
         }
                 
-        config.info("CodeReorganizer: "+savings.optimizerSpecificStats.get("CodeReorganizer:moves")+" moves applied, " +
+        config.info(SAVINGS_REORGANIZATIONS_CODE + ": "+savings.optimizerSpecificStats.get(SAVINGS_REORGANIZATIONS_CODE)+", " +
             savings.bytesSaved + " bytes, " + 
             savings.timeSavingsString() + " " +config.timeUnit+"s saved.");
 
@@ -492,7 +495,7 @@ public class CodeReorganizer implements MDLWorker {
         code.resetAddresses();
         
         savings.addSavings(bytesSaved, timeSaved);
-        savings.addOptimizerSpecific("CodeReorganizer moves", 1);
+        savings.addOptimizerSpecific(SAVINGS_REORGANIZATIONS_CODE, 1);
         
         // Update the edges, and announce the optimization (with line ranges):        
         if (moveBefore) {            

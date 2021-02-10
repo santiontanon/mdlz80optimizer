@@ -40,6 +40,7 @@ public class Tokenizer {
     public static boolean allowAndpersandHex = false;
     public static boolean sdccStyleHashMarksForConstants = false;
     public static boolean sdccStyleDollarInLabels = false;
+    public static boolean curlyBracesAreComments = true;
     
     
     static Matcher doubleMatcher = Pattern.compile("[\\x00-\\x20]*[+-]?(((((\\p{Digit}+)(\\.)?((\\p{Digit}+)?)([eE][+-]?(\\p{Digit}+))?)|(\\.((\\p{Digit}+))([eE][+-]?(\\p{Digit}+))?)|(((0[xX](\\p{XDigit}+)(\\.)?)|(0[xX](\\p{XDigit}+)?(\\.)(\\p{XDigit}+)))[pP][+-]?(\\p{Digit}+)))[fFdD]?))[\\x00-\\x20]*")
@@ -510,14 +511,14 @@ public class Tokenizer {
 
     public static boolean isMultiLineCommentStart(String token) {
         if (token.equals("/*")) return true;
-        if (token.equals("{")) return true;
+        if (curlyBracesAreComments && token.equals("{")) return true;
         return false;
     }
     
 
     public static boolean isMultiLineCommentEnd(String token) {
         if (token.equals("*/")) return true;
-        if (token.equals("}")) return true;
+        if (curlyBracesAreComments && token.equals("}")) return true;
         return false;
     }
 }

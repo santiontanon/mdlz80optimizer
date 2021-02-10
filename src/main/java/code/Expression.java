@@ -70,7 +70,7 @@ public class Expression {
     public String stringConstant;
     public String symbolName;
     public String registerOrFlagName;
-    public String parenthesis;  // whether the parenthesis is "(" or "["
+    public String parenthesis;  // whether the parenthesis is "(", "[", or "{"
     public String dialectFunction;
     public List<Expression> args = null;
 

@@ -27,9 +27,27 @@ import parser.Tokenizer;
  */
 public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
 {
+    public static class PrintRecord {
+        String keyword;
+        SourceStatement previousStatement;  // not the current, as it was probably not added to the file
+        List<Expression> exp_l;
+        
+        public PrintRecord(String a_kw, SourceStatement a_prev, List<Expression> a_exp_l)
+        {
+            keyword = a_kw;
+            previousStatement = a_prev;
+            exp_l = a_exp_l;
+        }
+    }
+
+    
     List<Integer> slotSizes = new ArrayList<>();
     List<Integer> pageSizes = new ArrayList<>();
     Integer currentSlot = null;
+    
+    // Addresses are not resolved until the very end, so, when printing values, we just queue them up here, and
+    // print them all at the very end:
+    List<PrintRecord> toPrint = new ArrayList<>();
     
 
     SjasmPlusDialect(MDLConfig a_config) {
@@ -57,7 +75,8 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
         config.opParser.allowExtendedSjasmplusLDInstructions = true;
         
         config.expressionParser.dialectFunctionsSingleArgumentNoParenthesis.add("high");
-        config.expressionParser.dialectFunctionsSingleArgumentNoParenthesis.add("low");
+        config.expressionParser.dialectFunctionsSingleArgumentNoParenthesis.add("low");        
+        config.expressionParser.sjasmPlusCurlyBracketExpressions = true;
                         
         config.preProcessor.macroSynonyms.put("dup", config.preProcessor.MACRO_REPT);
         config.preProcessor.macroSynonyms.put("edup", config.preProcessor.MACRO_ENDR);
@@ -267,6 +286,7 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
         Tokenizer.stringEscapeSequences.put("r", "\r");
         Tokenizer.stringEscapeSequences.put("t", "\t");
         Tokenizer.stringEscapeSequences.put("v", "\u0011");
+        Tokenizer.curlyBracesAreComments = false;
         config.lineParser.applyEscapeSequencesToIncludeArguments = false;
         
         forbiddenLabelNames.add("struct");
@@ -301,6 +321,7 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("device")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("=")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("savebin")) return true;
+        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("display")) return true;
 
         for(SjasmStruct s:structs) {
             if (tokens.get(0).equals(s.name)) return true;
@@ -682,6 +703,22 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
             if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
             return null;
         }
+        if (tokens.size()>=2 && (tokens.get(0).equalsIgnoreCase("display"))) {
+            tokens.remove(0);
+            List<Expression> exp_l = new ArrayList<>();
+            Expression exp = config.expressionParser.parse(tokens, s, previous, code);
+            exp_l.add(exp);
+            if (!tokens.isEmpty() && tokens.get(0).equals(",")) {
+                tokens.remove(0);
+                exp = config.expressionParser.parse(tokens, s, previous, code);
+                exp_l.add(exp);
+            }
+                        
+            toPrint.add(new PrintRecord("printtext", 
+                    source.getStatements().get(source.getStatements().size()-1), exp_l));
+            
+            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
+        }
         
         
 
@@ -805,6 +842,14 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
             }
             return page;
         }
+        if (functionName.equalsIgnoreCase("{")) {
+            // TODO:
+            return 0;
+        }
+        if (functionName.equalsIgnoreCase("{b")) {
+            // TODO:
+            return 0;
+        }
         return null;
     }
 
@@ -871,5 +916,20 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
         } else {
             return null;
         }
+    }
+    
+    
+    @Override
+    public boolean performAnyFinalActions(CodeBase code)
+    {
+        for(PrintRecord pr:toPrint) {
+            String accum = "";
+            for(Expression exp:pr.exp_l) {
+                accum += exp.evaluate(pr.previousStatement, code, true);
+            }
+            config.info(accum);
+        }
+        
+        return true;     
     }
 }

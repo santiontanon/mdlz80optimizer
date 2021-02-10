@@ -913,7 +913,6 @@ public class ASMSXDialect implements Dialect {
             } 
         }
         
-        
         for(PrintRecord pr:toPrint) {
             switch(pr.keyword) {
                 case "printtext":

@@ -23,8 +23,9 @@ public class ExpressionParser {
 
     // dialect-specific variables:
     public List<Integer> sjasmConterVariables = new ArrayList<>();
-    
     public boolean sdccStyleHashMarksForConstants = false;
+    public boolean sjasmPlusCurlyBracketExpressions = false;
+    
     public boolean allowFloatingPointNumbers = false;
     public boolean caseSensitiveSymbols = true;
     
@@ -553,6 +554,22 @@ public class ExpressionParser {
                     return Expression.parenthesisExpression(exp, parenthesis, config);
                 }
             }
+        }
+        if (tokens.size() >= 3 &&
+            sjasmPlusCurlyBracketExpressions && tokens.get(0).equals("{")) {
+            tokens.remove(0);
+            List<Expression> args = new ArrayList<>();
+            boolean readByte = false;
+            if (tokens.get(0).equalsIgnoreCase("b")) {
+                tokens.remove(0);
+                readByte = true;
+            }
+            Expression exp = parse(tokens, s, previous, code);
+            if (exp != null && tokens.size() >= 1 && tokens.get(0).equals("}")) {
+                tokens.remove(0);
+                args.add(exp);
+                return Expression.dialectFunctionExpression((readByte ? "{b":"{"), args, config);
+            }            
         }
 
         config.error("expression failed to parse with token list: " + tokens);
