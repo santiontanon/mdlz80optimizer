@@ -92,7 +92,7 @@ public class CodeBase {
     public Object getSymbolValueInternal(String name, boolean silent, List<String> variableStack)
     {
         if (symbols.containsKey(name)) {
-            return symbols.get(name).getValueInternal(this, silent, variableStack);
+            return symbols.get(name).getValueInternal(this, silent, null, variableStack);
         }
         return null;
     }

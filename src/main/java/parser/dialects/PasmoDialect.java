@@ -66,7 +66,7 @@ public class PasmoDialect implements Dialect {
         if (localLabels.contains(name)) {
             return currentScope + name;
         } else {
-            return name;
+            return config.lineParser.getLabelPrefix() + name;
         }
     }
 

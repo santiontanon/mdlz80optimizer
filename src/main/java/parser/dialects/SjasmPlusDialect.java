@@ -647,9 +647,11 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
                 return null;
             }
             
+            config.trace("SjasmPlusDialect: parsing = for variable " + s.label.name + " (defined as " + s.label.originalName + ")");
+            
             tokens.remove(0);
             if (!config.lineParser.parseEqu(tokens, sl, s, previous, source, code)) return null;
-            Integer value = s.label.exp.evaluateToInteger(s, code, false);
+            Integer value = s.label.exp.evaluateToInteger(s, code, false, previous);
             if (value == null) {
                 config.error("Cannot resolve eager variable in " + sl);
                 s.label.exp.evaluateToInteger(s, code, false);
@@ -658,8 +660,11 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
             Expression exp = Expression.constantExpression(value, config);
             SourceConstant c = s.label;
             c.clearCache();
-            c.exp = exp;            
+            c.exp = exp;        
+            // make sure eager variables are not scoped:
+            code.removeSymbol(s.label.name);
             s.label.name = s.label.originalName;
+            code.addSymbol(s.label.name, s.label);
             s.label.resolveEagerly = true;
             
             // these variables should not be part of the source code:

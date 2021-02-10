@@ -9,6 +9,7 @@ import cl.MDLConfig;
 import code.CPUOpSpec;
 import code.CodeBase;
 import code.Expression;
+import code.SourceConstant;
 import code.SourceFile;
 import code.SourceStatement;
 import java.util.ArrayList;
@@ -48,7 +49,7 @@ public abstract class SjasmDerivativeDialect implements Dialect {
     HashMap<String,Integer> symbolPage = new HashMap<>();
     
     
-    private String getLastAbsoluteLabel(SourceStatement s) 
+    private SourceConstant getLastAbsoluteLabel(SourceStatement s) 
     {
         while(s != null) {
             // sjasm considers any label as an absolute label, even if it's associated with an equ,
@@ -56,7 +57,7 @@ public abstract class SjasmDerivativeDialect implements Dialect {
             if (s.label != null &&
                 !s.label.originalName.startsWith(".") &&
                 !Tokenizer.isInteger(s.label.originalName)) {
-                return s.label.originalName;
+                return s.label;
             } else {
                 s = s.source.getPreviousStatementTo(s, s.source.code);
             }
@@ -149,11 +150,11 @@ public abstract class SjasmDerivativeDialect implements Dialect {
         if (forbiddenLabelNames.contains(name.toLowerCase())) return null;
 
         if (name.startsWith(".")) {
-            String lastAbsoluteLabel = getLastAbsoluteLabel(previous);
+            SourceConstant lastAbsoluteLabel = getLastAbsoluteLabel(previous);
             if (lastAbsoluteLabel != null) {
-                return lastAbsoluteLabel + name;
+                return lastAbsoluteLabel.name + name;
             } else {
-                return name;
+                return config.lineParser.getLabelPrefix() + name;
             }
         } else if (Tokenizer.isInteger(name)) {
             // it'startStatement a reusable label:
@@ -162,7 +163,9 @@ public abstract class SjasmDerivativeDialect implements Dialect {
                 count = reusableLabelCounts.get(name);
             }
             reusableLabelCounts.put(name, count+1);
-            name =  "_sjasm_reusable_" + name + "_" + count;
+            name = config.lineParser.getLabelPrefix() + "_sjasm_reusable_" + name + "_" + count;
+        } else {
+            name = config.lineParser.getLabelPrefix() + name;
         }
         
         symbolPage.put(name, currentPage);
@@ -174,9 +177,9 @@ public abstract class SjasmDerivativeDialect implements Dialect {
     @Override
     public String symbolName(String name, SourceStatement previous) {
         if (name.startsWith(".")) {
-            String lastAbsoluteLabel = getLastAbsoluteLabel(previous);
+            SourceConstant lastAbsoluteLabel = getLastAbsoluteLabel(previous);
             if (lastAbsoluteLabel != null) {
-                return lastAbsoluteLabel + name;
+                return lastAbsoluteLabel.name + name;
             } else {
                 return name;
             }

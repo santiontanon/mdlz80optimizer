@@ -81,25 +81,42 @@ public class Expression {
 
     
     public Integer evaluateToInteger(SourceStatement s, CodeBase code, boolean silent) {
-        return (Integer)evaluateInternal(s, code, silent, new ArrayList<>());
+        return (Integer)evaluateInternal(s, code, silent, null, new ArrayList<>());
+    }
+   
+    
+    /*
+    - previous only needs to be specified if this is called on a SourceStatement not yet added to a source file
+      (for example, when parsing a macro being expanded), so that we know which will be the previous statement once it is added
+    */
+    public Integer evaluateToInteger(SourceStatement s, CodeBase code, boolean silent, SourceStatement previous) {
+        return (Integer)evaluateInternal(s, code, silent, previous, new ArrayList<>());
     }
 
 
-    public Integer evaluateToIntegerInternal(SourceStatement s, CodeBase code, boolean silent, List<String> variableStack) {
-        return (Integer)evaluateInternal(s, code, silent, variableStack);
+    /*
+    - previous only needs to be specified if this is called on a SourceStatement not yet added to a source file
+      (for example, when parsing a macro being expanded), so that we know which will be the previous statement once it is added
+    */
+    public Integer evaluateToIntegerInternal(SourceStatement s, CodeBase code, boolean silent, SourceStatement previous, List<String> variableStack) {
+        return (Integer)evaluateInternal(s, code, silent, previous, variableStack);
     }
 
     public String evaluateToString(SourceStatement s, CodeBase code, boolean silent) {
-        return (String)evaluateInternal(s, code, silent, new ArrayList<>());
+        return (String)evaluateInternal(s, code, silent, null, new ArrayList<>());
     }
     
 
     public Object evaluate(SourceStatement s, CodeBase code, boolean silent) {
-        return evaluateInternal(s, code, silent, new ArrayList<>());
+        return evaluateInternal(s, code, silent, null, new ArrayList<>());
     }
     
     
-    public Object evaluateInternal(SourceStatement s, CodeBase code, boolean silent, List<String> variableStack) {
+    /*
+    - previous only needs to be specified if this is called on a SourceStatement not yet added to a source file
+      (for example, when parsing a macro being expanded), so that we know which will be the previous statement once it is added
+    */
+    public Object evaluateInternal(SourceStatement s, CodeBase code, boolean silent, SourceStatement previous, List<String> variableStack) {
         switch (type) {
             case EXPRESSION_INTEGER_CONSTANT:
                 return integerConstant;
@@ -117,7 +134,7 @@ public class Expression {
             case EXPRESSION_SYMBOL: {
                 if (symbolName.equals(CodeBase.CURRENT_ADDRESS)) {
                     if (s != null) {
-                        return s.getAddressInternal(code, true, variableStack);
+                        return s.getAddressInternal(code, true, previous, variableStack);
                     } else {
                         return null;
                     }
@@ -133,7 +150,7 @@ public class Expression {
             }
 
             case EXPRESSION_SIGN_CHANGE: {
-                Object v = args.get(0).evaluateInternal(s, code, silent, variableStack);
+                Object v = args.get(0).evaluateInternal(s, code, silent, previous, variableStack);
                 if (v == null) {
                     return null;
                 } else if (v instanceof Integer) {
@@ -146,7 +163,7 @@ public class Expression {
             }
 
             case EXPRESSION_PARENTHESIS: {
-                Object v = args.get(0).evaluateInternal(s, code, silent, variableStack);
+                Object v = args.get(0).evaluateInternal(s, code, silent, previous, variableStack);
                 if (v == null) {
                     return null;
                 }
@@ -157,7 +174,7 @@ public class Expression {
                 Number accum = 0;
                 boolean turnToDouble = false;
                 for (Expression arg : args) {
-                    Object v = arg.evaluateInternal(s, code, silent, variableStack);
+                    Object v = arg.evaluateInternal(s, code, silent, previous, variableStack);
                     if (v == null) {
                         return null;
                     } else if (v instanceof Double) {
@@ -215,8 +232,8 @@ public class Expression {
                     }
                 }
                 
-                Object v1 = args.get(0).evaluateInternal(s, code, silent, variableStack);
-                Object v2 = args.get(1).evaluateInternal(s, code, silent, variableStack);
+                Object v1 = args.get(0).evaluateInternal(s, code, silent, previous, variableStack);
+                Object v2 = args.get(1).evaluateInternal(s, code, silent, previous, variableStack);
                 if (v1 == null || v2 == null) {
                     return null;
                 }
@@ -240,7 +257,7 @@ public class Expression {
                 Number accum = 1;
                 boolean turnToDouble = false;
                 for (Expression arg : args) {
-                    Object v = arg.evaluateInternal(s, code, silent, variableStack);
+                    Object v = arg.evaluateInternal(s, code, silent, previous, variableStack);
                     if (v == null) {
                         return null;
                     } else if (v instanceof Double) {
@@ -263,8 +280,8 @@ public class Expression {
                 if (args.size() != 2) {
                     return null;
                 }
-                Object v1 = args.get(0).evaluateInternal(s, code, silent, variableStack);
-                Object v2 = args.get(1).evaluateInternal(s, code, silent, variableStack);
+                Object v1 = args.get(0).evaluateInternal(s, code, silent, previous, variableStack);
+                Object v2 = args.get(1).evaluateInternal(s, code, silent, previous, variableStack);
                 if (v1 == null || v2 == null) {
                     return null;
                 }
@@ -287,8 +304,8 @@ public class Expression {
                 if (args.size() != 2) {
                     return null;
                 }
-                Object v1 = args.get(0).evaluateInternal(s, code, silent, variableStack);
-                Object v2 = args.get(1).evaluateInternal(s, code, silent, variableStack);
+                Object v1 = args.get(0).evaluateInternal(s, code, silent, previous, variableStack);
+                Object v2 = args.get(1).evaluateInternal(s, code, silent, previous, variableStack);
                 if (v1 == null || v2 == null) {
                     return null;
                 }
@@ -311,8 +328,8 @@ public class Expression {
                 if (args.size() != 2) {
                     return null;
                 }
-                Integer v1 = args.get(0).evaluateToInteger(s, code, silent);
-                Integer v2 = args.get(1).evaluateToInteger(s, code, silent);
+                Integer v1 = args.get(0).evaluateToInteger(s, code, silent, previous);
+                Integer v2 = args.get(1).evaluateToInteger(s, code, silent, previous);
                 if (v1 == null || v2 == null) {
                     return null;
                 }
@@ -325,8 +342,8 @@ public class Expression {
                 if (args.size() != 2) {
                     return null;
                 }
-                Integer v1 = args.get(0).evaluateToInteger(s, code, silent);
-                Integer v2 = args.get(1).evaluateToInteger(s, code, silent);
+                Integer v1 = args.get(0).evaluateToInteger(s, code, silent, previous);
+                Integer v2 = args.get(1).evaluateToInteger(s, code, silent, previous);
                 if (v1 == null || v2 == null) {
                     return null;
                 }
@@ -339,8 +356,8 @@ public class Expression {
                 if (args.size() != 2) {
                     return null;
                 }
-                Object v1 = args.get(0).evaluateInternal(s, code, silent, variableStack);
-                Object v2 = args.get(1).evaluateInternal(s, code, silent, variableStack);
+                Object v1 = args.get(0).evaluateInternal(s, code, silent, previous, variableStack);
+                Object v2 = args.get(1).evaluateInternal(s, code, silent, previous, variableStack);
                 if (v1 == null || v2 == null) {
                     return null;
                 }
@@ -354,8 +371,8 @@ public class Expression {
                 if (args.size() != 2) {
                     return null;
                 }
-                Object v1 = args.get(0).evaluateInternal(s, code, silent, variableStack);
-                Object v2 = args.get(1).evaluateInternal(s, code, silent, variableStack);
+                Object v1 = args.get(0).evaluateInternal(s, code, silent, previous, variableStack);
+                Object v2 = args.get(1).evaluateInternal(s, code, silent, previous, variableStack);
                 if (v1 == null || v2 == null) {
                     return null;
                 }
@@ -378,8 +395,8 @@ public class Expression {
                 if (args.size() != 2) {
                     return null;
                 }
-                Object v1 = args.get(0).evaluateInternal(s, code, silent, variableStack);
-                Object v2 = args.get(1).evaluateInternal(s, code, silent, variableStack);
+                Object v1 = args.get(0).evaluateInternal(s, code, silent, previous, variableStack);
+                Object v2 = args.get(1).evaluateInternal(s, code, silent, previous, variableStack);
                 if (v1 == null || v2 == null) {
                     return null;
                 }
@@ -401,8 +418,8 @@ public class Expression {
                 if (args.size() != 2) {
                     return null;
                 }
-                Object v1 = args.get(0).evaluateInternal(s, code, silent, variableStack);
-                Object v2 = args.get(1).evaluateInternal(s, code, silent, variableStack);
+                Object v1 = args.get(0).evaluateInternal(s, code, silent, previous, variableStack);
+                Object v2 = args.get(1).evaluateInternal(s, code, silent, previous, variableStack);
                 if (v1 == null || v2 == null) {
                     return null;
                 }
@@ -425,8 +442,8 @@ public class Expression {
                 if (args.size() != 2) {
                     return null;
                 }
-                Object v1 = args.get(0).evaluateInternal(s, code, silent, variableStack);
-                Object v2 = args.get(1).evaluateInternal(s, code, silent, variableStack);
+                Object v1 = args.get(0).evaluateInternal(s, code, silent, previous, variableStack);
+                Object v2 = args.get(1).evaluateInternal(s, code, silent, previous, variableStack);
                 if (v1 == null || v2 == null) {
                     return null;
                 }
@@ -449,8 +466,8 @@ public class Expression {
                 if (args.size() != 2) {
                     return null;
                 }
-                Object v1 = args.get(0).evaluateInternal(s, code, silent, variableStack);
-                Object v2 = args.get(1).evaluateInternal(s, code, silent, variableStack);
+                Object v1 = args.get(0).evaluateInternal(s, code, silent, previous, variableStack);
+                Object v2 = args.get(1).evaluateInternal(s, code, silent, previous, variableStack);
                 if (v1 == null || v2 == null) {
                     return null;
                 }
@@ -461,14 +478,14 @@ public class Expression {
             }
 
             case EXPRESSION_TERNARY_IF: {
-                Integer cond = args.get(0).evaluateToInteger(s, code, silent);
+                Integer cond = args.get(0).evaluateToInteger(s, code, silent, previous);
                 if (cond == null) {
                     return null;
                 }
                 if (cond != FALSE) {
-                    return args.get(1).evaluateToInteger(s, code, silent);
+                    return args.get(1).evaluateToInteger(s, code, silent, previous);
                 } else {
-                    return args.get(2).evaluateToInteger(s, code, silent);
+                    return args.get(2).evaluateToInteger(s, code, silent, previous);
                 }
             }
 
@@ -476,8 +493,8 @@ public class Expression {
                 if (args.size() != 2) {
                     return null;
                 }
-                Integer v1 = args.get(0).evaluateToInteger(s, code, silent);
-                Integer v2 = args.get(1).evaluateToInteger(s, code, silent);
+                Integer v1 = args.get(0).evaluateToInteger(s, code, silent, previous);
+                Integer v2 = args.get(1).evaluateToInteger(s, code, silent, previous);
                 if (v1 == null || v2 == null) {
                     return null;
                 }
@@ -488,8 +505,8 @@ public class Expression {
                 if (args.size() != 2) {
                     return null;
                 }
-                Integer v1 = args.get(0).evaluateToInteger(s, code, silent);
-                Integer v2 = args.get(1).evaluateToInteger(s, code, silent);
+                Integer v1 = args.get(0).evaluateToInteger(s, code, silent, previous);
+                Integer v2 = args.get(1).evaluateToInteger(s, code, silent, previous);
                 if (v1 == null || v2 == null) {
                     return null;
                 }
@@ -500,8 +517,8 @@ public class Expression {
                 if (args.size() != 2) {
                     return null;
                 }
-                Integer v1 = args.get(0).evaluateToInteger(s, code, silent);
-                Integer v2 = args.get(1).evaluateToInteger(s, code, silent);
+                Integer v1 = args.get(0).evaluateToInteger(s, code, silent, previous);
+                Integer v2 = args.get(1).evaluateToInteger(s, code, silent, previous);
                 if (v1 == null || v2 == null) {
                     return null;
                 }
@@ -512,15 +529,15 @@ public class Expression {
                 if (args.size() != 2) {
                     return null;
                 }
-                Integer v1 = args.get(0).evaluateToInteger(s, code, silent);
-                Integer v2 = args.get(1).evaluateToInteger(s, code, silent);
+                Integer v1 = args.get(0).evaluateToInteger(s, code, silent, previous);
+                Integer v2 = args.get(1).evaluateToInteger(s, code, silent, previous);
                 if (v1 == null || v2 == null) {
                     return null;
                 }
                 return v1 & v2;
             }
             case EXPRESSION_BITNEGATION: {
-                Integer v = args.get(0).evaluateToInteger(s, code, silent);
+                Integer v = args.get(0).evaluateToInteger(s, code, silent, previous);
                 if (v == null) {
                     return null;
                 }
@@ -530,15 +547,15 @@ public class Expression {
                 if (args.size() != 2) {
                     return null;
                 }
-                Integer v1 = args.get(0).evaluateToInteger(s, code, silent);
-                Integer v2 = args.get(1).evaluateToInteger(s, code, silent);
+                Integer v1 = args.get(0).evaluateToInteger(s, code, silent, previous);
+                Integer v2 = args.get(1).evaluateToInteger(s, code, silent, previous);
                 if (v1 == null || v2 == null) {
                     return null;
                 }
                 return v1 ^ v2;
             }
             case EXPRESSION_LOGICAL_NEGATION: {
-                Integer v = args.get(0).evaluateToInteger(s, code, silent);
+                Integer v = args.get(0).evaluateToInteger(s, code, silent, previous);
                 if (v == null) {
                     return null;
                 }
@@ -548,7 +565,7 @@ public class Expression {
                 return config.dialectParser.evaluateExpression(dialectFunction, args, s, code, silent);
             }
             case EXPRESSION_PLUS_SIGN:
-                return args.get(0).evaluateInternal(s, code, silent, variableStack);
+                return args.get(0).evaluateInternal(s, code, silent, previous, variableStack);
 
         }
 

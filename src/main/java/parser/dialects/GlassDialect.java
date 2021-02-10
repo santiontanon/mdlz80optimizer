@@ -108,7 +108,7 @@ public class GlassDialect implements Dialect {
             name.equalsIgnoreCase("endif")) {
             return null;
         }
-        return name;
+        return config.lineParser.getLabelPrefix() + name;
     }
 
 

@@ -164,12 +164,12 @@ public class LineParser {
         
         if (config.dialectParser != null) {
             name = config.dialectParser.newSymbolName(name, value, previous);
-        }
-
-        if (allowNumberLabels && Tokenizer.isInteger(name)) {
-            return name;
-        } else {
-            name = labelPrefix + name;
+        } else {            
+            if (allowNumberLabels && Tokenizer.isInteger(name)) {
+                return name;
+            } else {
+                name = labelPrefix + name;
+            }
         }
         
         return name;
@@ -857,7 +857,7 @@ public class LineParser {
 
         List<CPUOp> op_l = config.opParser.parseOp(opName, arguments, s, previous, code);
         if (op_l == null) {
-            config.error("No op spec matches with operator in line " + sl);
+            config.error("No op spec matches with operator in line " + sl + ", arguments: " + arguments);
             return false;
         }
 

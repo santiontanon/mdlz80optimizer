@@ -107,11 +107,15 @@ public class SourceStatement {
     
     public Integer getAddress(CodeBase code)
     {
-        return getAddressInternal(code, true, new ArrayList<>());
+        return getAddressInternal(code, true, null, new ArrayList<>());
     }
 
 
-    public Integer getAddressInternal(CodeBase code, boolean recurse, List<String> variableStack)
+    /*
+    - previous only needs to be specified if this is called on a SourceStatement not yet added to a source file
+      (for example, when parsing a macro being expanded), so that we know which will be the previous statement once it is added
+    */
+    public Integer getAddressInternal(CodeBase code, boolean recurse, SourceStatement previous, List<String> variableStack)
     {
 
         if (recurse) {
@@ -119,7 +123,7 @@ public class SourceStatement {
             
             // go back iteratively to prevent a stack overflow:
             List<SourceStatement> trail = new ArrayList<>();
-            SourceStatement prev = source.getPreviousStatementTo(this, code);
+            SourceStatement prev = (previous != null ? previous : source.getPreviousStatementTo(this, code));
             SourceFile prevSource = prev == null ? null : prev.source;
             int prevIdx = prevSource == null ? -1 : prevSource.getStatements().indexOf(prev);
             Integer prevAddressAfter = null;
@@ -170,16 +174,16 @@ public class SourceStatement {
     {
         switch (type) {
             case STATEMENT_ORG:
-                return org.evaluateToIntegerInternal(this, code, true, variableStack);
+                return org.evaluateToIntegerInternal(this, code, true, null, variableStack);
             case STATEMENT_INCLUDE:
                 if (include.getStatements().isEmpty()) {
-                    if (recurse && address == null) getAddressInternal(code, true, variableStack);
+                    if (recurse && address == null) getAddressInternal(code, true, null, variableStack);
                     return address;
                 } else {
                     return include.getStatements().get(include.getStatements().size()-1).getAddressAfterInternal(code, recurse, variableStack);
                 }
             default:
-                if (recurse && address == null) getAddressInternal(code, true, variableStack);
+                if (recurse && address == null) getAddressInternal(code, true, null, variableStack);
                 if (address == null) return null;
                 Integer size = sizeInBytesInternal(code, true, true, true, variableStack);
                 if (size == null) return null;
@@ -193,12 +197,13 @@ public class SourceStatement {
         return sizeInBytesInternal(code, withIncludes, withIncBin, withVirtual, new ArrayList<>());
     }
     
+    
     public Integer sizeInBytesInternal(CodeBase code, boolean withIncludes, boolean withIncBin, boolean withVirtual, List<String> variableStack)
     {
         switch(type) {
             case STATEMENT_INCBIN:
                 if (withIncBin) {
-                    return incbinSize.evaluateToIntegerInternal(this, code, true, variableStack);
+                    return incbinSize.evaluateToIntegerInternal(this, code, true, null, variableStack);
                 }
                 return 0;
             
@@ -231,7 +236,7 @@ public class SourceStatement {
 
             case STATEMENT_DEFINE_SPACE:
                 if (withVirtual || space_value != null) {
-                    return space.evaluateToIntegerInternal(this, code, true, variableStack);
+                    return space.evaluateToIntegerInternal(this, code, true, null, variableStack);
                 } else {
                     return 0;
                 }

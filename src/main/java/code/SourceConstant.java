@@ -40,7 +40,7 @@ public class SourceConstant {
     }
 
 
-    public Object getValueInternal(CodeBase code, boolean silent, List<String> variableStack)
+    public Object getValueInternal(CodeBase code, boolean silent, SourceStatement previous, List<String> variableStack)
     {
         if (valueCache != null) {
             return valueCache;
@@ -50,7 +50,7 @@ public class SourceConstant {
                 return null;
             }
             variableStack.add(name);
-            valueCache = exp.evaluateInternal(definingStatement, code, silent, variableStack);
+            valueCache = exp.evaluateInternal(definingStatement, code, silent, previous, variableStack);
             return valueCache;
         }
     }

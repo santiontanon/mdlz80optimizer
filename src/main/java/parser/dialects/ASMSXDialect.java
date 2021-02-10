@@ -259,7 +259,7 @@ public class ASMSXDialect implements Dialect {
                 return lastAbsoluteLabel + name;
             }
         }
-        return name;
+        return config.lineParser.getLabelPrefix() + name;
     }
 
 
@@ -516,7 +516,7 @@ public class ASMSXDialect implements Dialect {
             
             tokens.remove(0);
             if (!config.lineParser.parseEqu(tokens, sl, s, previous, source, code)) return null;
-            Integer value = s.label.exp.evaluateToInteger(s, code, false);
+            Integer value = s.label.exp.evaluateToInteger(s, code, false, previous);
             if (value == null) {
                 config.error("Cannot resolve eager variable in " + sl);
                 return null;
@@ -526,6 +526,11 @@ public class ASMSXDialect implements Dialect {
             c.clearCache();
             c.exp = exp;            
             s.label.resolveEagerly = true;
+            // make sure eager variables are not scoped:
+            code.removeSymbol(s.label.name);
+            s.label.name = s.label.originalName;
+            code.addSymbol(s.label.name, s.label);
+            s.label.resolveEagerly = true;            
             
             // these variables should not be part of the source code:
             l.clear();

@@ -54,7 +54,7 @@ public class WinAPEDialect implements Dialect {
             name.equalsIgnoreCase("close")) {
             return null;
         }
-        return name;
+        return config.lineParser.getLabelPrefix() + name;
     }
 
 

@@ -139,7 +139,7 @@ public class SDCCDialect implements Dialect {
         }
 
         // An absolute label
-        return name;
+        return config.lineParser.getLabelPrefix() + name;
     }
 
 
