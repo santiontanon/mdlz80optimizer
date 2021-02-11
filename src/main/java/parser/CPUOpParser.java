@@ -60,6 +60,16 @@ public class CPUOpParser {
         return opSpecHash.containsKey(name.toLowerCase());
     }
 
+    
+    public boolean isOpName(String name, int nArgs)
+    {
+        if (!opSpecHash.containsKey(name.toLowerCase())) return false;
+        for(CPUOpSpec spec:opSpecHash.get(name.toLowerCase())) {
+            if (spec.args.size() == nArgs) return true;
+        }
+        return false;
+    }
+    
 
     public List<CPUOpSpec> getOpSpecs(String name)
     {

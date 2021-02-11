@@ -295,9 +295,9 @@ public class LineParser {
 
     public boolean canBeLabel(String token) {
         if (isKeyword(token)) return false;
-        if (config.opParser.isOpName(token)) return false;
+        if (config.opParser.isOpName(token, 0)) return false;
         if (config.preProcessor.isMacroName(token, config.preProcessor.MACRO_MACRO)) return false;
-        if (config.preProcessor.isMacro(token)) return false;
+        if (macroDefinitionStyle == MACRO_MACRO_NAME_ARGS && config.preProcessor.isMacro(token)) return false;
         if (Tokenizer.isSymbol(token)) return true;
         if (allowNumberLabels && Tokenizer.isInteger(token)) return true;
         return false;
