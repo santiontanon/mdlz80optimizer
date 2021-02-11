@@ -9,7 +9,6 @@ import code.CodeBase;
 import code.Expression;
 import code.SourceFile;
 import code.SourceStatement;
-import java.util.ArrayList;
 import java.util.List;
 import parser.SourceLine;
 
@@ -99,38 +98,35 @@ public class TniAsmDialect implements Dialect {
     
     
     @Override
-    public List<SourceStatement> parseLine(List<String> tokens,
+    public boolean parseLine(List<String> tokens, List<SourceStatement> l,
             SourceLine sl,
             SourceStatement s, SourceStatement previous, SourceFile source, CodeBase code)
     {
-        List<SourceStatement> l = new ArrayList<>();
-        l.add(s);
-        
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("rw")) {
             tokens.remove(0);
             
             // Parse it as a "ds", but multiply the number by 2:
-            if (!config.lineParser.parseDefineSpace(tokens, sl, s, previous, source, code)) return null;
+            if (!config.lineParser.parseDefineSpace(tokens, l, sl, s, previous, source, code)) return false;
             if (s.space != null) {
                 s.space = Expression.operatorExpression(Expression.EXPRESSION_MUL, 
                         s.space, 
                         Expression.constantExpression(2, config), config);
             }
-            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }   
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("fname")) {
             tokens.remove(0);
             tokens.remove(0);   // file name
             // just ignore
-            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }        
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("forg")) {
             tokens.remove(0);
             tokens.remove(0);   // file name
             // just ignore for now
-            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }        
         
-        return null;
+        return false;
     }
 }

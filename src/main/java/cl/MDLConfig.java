@@ -45,6 +45,7 @@ public class MDLConfig {
     public List<File> includeDirectories = new ArrayList<>();
 
     public boolean eagerMacroEvaluation = true;
+    public boolean eagerIFDEFMacroEvaluation = false;
     public boolean includeBinariesInAnalysis = false;
     public boolean labelsHaveSafeValues = true;  // If this is false, the optimizers will not trust
                                                  // the value MDL calculates for labels. This is useful, for example,

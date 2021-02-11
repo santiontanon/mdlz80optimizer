@@ -54,6 +54,7 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
         config = a_config;
 
         config.warning_jpHlWithParenthesis = true;
+        config.eagerIFDEFMacroEvaluation = true;
         
         config.lineParser.addKeywordSynonym("byte", config.lineParser.KEYWORD_DB);
         config.lineParser.addKeywordSynonym("defb", config.lineParser.KEYWORD_DB);
@@ -70,7 +71,7 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
         config.lineParser.allowIncludesWithoutQuotes = true;
         config.lineParser.macroDefinitionStyle = LineParser.MACRO_MACRO_NAME_ARGS;
         config.lineParser.allowNumberLabels = true;
-        config.lineParser.allowColonSeparatedOps = true;
+        config.lineParser.allowColonSeparatedInstructions = true;
         
         config.opParser.allowExtendedSjasmplusLDInstructions = true;
         
@@ -271,6 +272,9 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
         addFakeInstruction("ldd (HL),nn", "ld (HL),nn\ndec HL");
         addFakeInstruction("ldd (IX+o),nn", "ld (IX+o),nn\ndec IX");
         addFakeInstruction("ldd (IY+o),nn", "ld (IY+o),nn\ndec IY");
+        addFakeInstruction("ex AF,AF", "ex AF,AF'");
+        addFakeInstruction("ex AF", "ex AF,AF'");
+        addFakeInstruction("exa", "ex AF,AF'");
 
         // recognized escape sequences by sjasm:
         Tokenizer.stringEscapeSequences.put("\\", "\\");
@@ -322,6 +326,7 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("=")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("savebin")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("display")) return true;
+        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("define")) return true;
 
         for(SjasmStruct s:structs) {
             if (tokens.get(0).equals(s.name)) return true;
@@ -331,11 +336,9 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
     
     
     @Override
-    public List<SourceStatement> parseLine(List<String> tokens, SourceLine sl,
-            SourceStatement s, SourceStatement previous, SourceFile source, CodeBase code) {
-        List<SourceStatement> l = new ArrayList<>();
-        l.add(s);
-        
+    public boolean parseLine(List<String> tokens, List<SourceStatement> l, SourceLine sl,
+            SourceStatement s, SourceStatement previous, SourceFile source, CodeBase code) 
+    {
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("struct")) {
             tokens.remove(0);
             struct = new SjasmStruct();
@@ -352,19 +355,18 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
             s.type = SourceStatement.STATEMENT_CONSTANT;
             SourceConstant c = new SourceConstant(struct.name, struct.name, null, s, config);
             s.label = c;
-            if (code.addSymbol(c.name, c) != 1) return null;
-            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
-            return null;
+            if (code.addSymbol(c.name, c) != 1) return false;
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
         if (tokens.size() >= 1 && tokens.get(0).equalsIgnoreCase("ends")) {
             tokens.remove(0);
             if (struct.file == null) {
                 config.error("ends outside of a struct at " + sl);
-                return null;
+                return false;
             }
             if (struct.file != source) {
                 config.error("struct split among multiple files is not supported at " + sl);
-                return null;
+                return false;
             }
             
             // Transform the struct into equ definitions with local labels:
@@ -392,7 +394,7 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
                     }
                     default:
                         config.error("Unsupported statement (type="+s2.type+") inside a struct definition at " + sl);
-                        return null;
+                        return false;
                 }
                 if (s2.label != null) {
                     s2.type = SourceStatement.STATEMENT_CONSTANT;
@@ -408,14 +410,12 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
             config.lineParser.keywordsHintingALabel.add(struct.name);
             config.lineParser.popLabelPrefix();
             struct = null;
-            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
-            return null;
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
         if (tokens.size() >= 1 && tokens.get(0).equalsIgnoreCase("end")) {
             tokens.remove(0);
             // just ignore
-            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
-            return null;
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
 
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("assert")) {
@@ -423,15 +423,14 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
             Expression exp = config.expressionParser.parse(tokens, s, previous, code);
             if (exp == null) {
                 config.error("Cannot parse expression at " + sl);
-                return null;
+                return false;
             }
             Integer value = exp.evaluateToInteger(s, code, false);
             if (value == null || value == Expression.FALSE) {
                 config.error("Assertion failed at " + sl);
-                return null;
+                return false;
             }
-            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
-            return null;
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
 
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("output")) {
@@ -441,14 +440,13 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
                     Tokenizer.isMultiLineCommentStart(tokens.get(0))) break;
                 tokens.remove(0);
             }
-            
-            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
-            return null;
+
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
 
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("dz")) {
             tokens.remove(0);
-            if (!config.lineParser.parseData(tokens, "db", sl, s, previous, source, code)) return null;
+            if (!config.lineParser.parseData(tokens, "db", l, sl, s, previous, source, code)) return false;
             // insert a "0" at the end of each string:
             List<Expression> newData = new ArrayList<>();
             for(Expression exp:s.data) {
@@ -456,15 +454,14 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
                 newData.add(Expression.constantExpression(0, config));
             }
             s.data = newData;
-            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
-            return null;
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }        
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("align")) {
             tokens.remove(0);
             Expression exp = config.expressionParser.parse(tokens, s, previous, code);
             if (exp == null) {
                 config.error("Cannot parse expression in " + sl);
-                return null;
+                return false;
             }
             s.type = SourceStatement.STATEMENT_DEFINE_SPACE;
             // ds (((($-1)/exp)+1)*exp-$)
@@ -482,8 +479,7 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
                           exp, config),
                         Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, s, code, config), config);
             s.space_value = Expression.constantExpression(0, config);
-            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
-            return null;
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }   
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("module")) {
             tokens.remove(0);
@@ -491,9 +487,8 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
             
             modules.add(0, moduleName);
             config.lineParser.pushLabelPrefix(moduleName + ".");
-            
-            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
-            return null;
+
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
         if (tokens.size() >= 1 && tokens.get(0).equalsIgnoreCase("endmodule")) {
             tokens.remove(0);
@@ -520,12 +515,11 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
                 }
                 if (!found) {
                     config.error("Cannot close unexistent module at " + sl);
-                    return null;
+                    return false;
                 }
             }
             
-            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
-            return null;
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }    
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("device")) {
             tokens.remove(0);
@@ -657,26 +651,25 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
                     break;
             }
             
-            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
-            return null;
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("=")) {
             // This is like an equ, but with a variable that changes value throughout parsing.
             // This only makes sense in eager execution, so, we check for that:
             if (!config.eagerMacroEvaluation) {
                 config.error("Non final variable defined in lazy evaluation mode at " + sl);
-                return null;
+                return false;
             }
             
             config.trace("SjasmPlusDialect: parsing = for variable " + s.label.name + " (defined as " + s.label.originalName + ")");
             
             tokens.remove(0);
-            if (!config.lineParser.parseEqu(tokens, sl, s, previous, source, code)) return null;
+            if (!config.lineParser.parseEqu(tokens, l, sl, s, previous, source, code)) return false;
             Integer value = s.label.exp.evaluateToInteger(s, code, false, previous);
             if (value == null) {
                 config.error("Cannot resolve eager variable in " + sl);
                 s.label.exp.evaluateToInteger(s, code, false);
-                return null;
+                return false;
             }
             Expression exp = Expression.constantExpression(value, config);
             SourceConstant c = s.label;
@@ -690,7 +683,7 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
             
             // these variables should not be part of the source code:
             l.clear();
-            return l;
+            return true;
         }       
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("savebin")) {
             // Just ignore ...
@@ -700,8 +693,7 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
                 tokens.remove(0);
             }
             
-            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
-            return null;
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
         if (tokens.size()>=2 && (tokens.get(0).equalsIgnoreCase("display"))) {
             tokens.remove(0);
@@ -717,11 +709,50 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
             toPrint.add(new PrintRecord("printtext", 
                     source.getStatements().get(source.getStatements().size()-1), exp_l));
             
-            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
-        
-        
+        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("define")) {
+            String keyword = tokens.remove(0);
 
+            // read variable name:
+            String token = tokens.remove(0);
+            if (!config.lineParser.caseSensitiveSymbols) token = token.toLowerCase();
+            String symbolName = config.lineParser.newSymbolName(token, null, previous);
+            if (symbolName == null) {
+                config.error("Problem defining symbol " + config.lineParser.getLabelPrefix() + token + " in " + sl);
+                return false;
+            }
+            
+            // optionally read the expression:
+            Expression exp = null;
+            if (!tokens.isEmpty() && !Tokenizer.isSingleLineComment(tokens.get(0))) {                    
+                exp = config.expressionParser.parse(tokens, s, previous, code);
+                if (exp == null) {
+                    config.error("parseEqu: Cannot parse line " + sl);
+                    return false;
+                }
+                // remove unnecessary parenthesis:
+                while(exp.type == Expression.EXPRESSION_PARENTHESIS) {
+                    exp = exp.args.get(0);
+                }                
+            } else {
+                exp = Expression.constantExpression(0, config);
+            }
+
+            // parse as a :=:            
+            SourceConstant c = new SourceConstant(symbolName, token, exp, s, config);
+            s.label = c;
+            int res = code.addSymbol(c.name, c);
+            if (res == -1) return false;
+            if (res == 0) s.redefinedLabel = true;
+            s.label.resolveEagerly = true;
+            
+            // these variables should not be part of the source code:
+            l.clear();
+            
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
+        }                
+        
         return parseLineStruct(tokens, l, sl, s, previous, source, code);
     }
 

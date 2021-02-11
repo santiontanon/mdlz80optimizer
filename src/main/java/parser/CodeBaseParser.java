@@ -190,8 +190,11 @@ public class CodeBaseParser {
                         return false;
                     } else {
                         for(SourceStatement s:newStatements) {
-                            if (config.eagerMacroEvaluation) {
-                                List<SourceStatement> l2 = config.preProcessor.handleStatement(sl, s, f, code, false);
+                            if (config.eagerMacroEvaluation ||
+                                (config.eagerIFDEFMacroEvaluation && (
+                                 s.macroCallName.equals(config.preProcessor.MACRO_IFDEF) ||
+                                 s.macroCallName.equals(config.preProcessor.MACRO_IFNDEF)))) {
+                                List<SourceStatement> l2 = config.preProcessor.handleStatement(sl, s, f, code, true);
                                 if (l2 == null) {
                                     f.addStatement(s);
                                 } else {

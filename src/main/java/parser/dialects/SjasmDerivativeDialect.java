@@ -51,6 +51,7 @@ public abstract class SjasmDerivativeDialect implements Dialect {
     
     private SourceConstant getLastAbsoluteLabel(SourceStatement s) 
     {
+        
         while(s != null) {
             // sjasm considers any label as an absolute label, even if it's associated with an equ,
             // so, no need to check if s.label.isLabel() (as in asMSX):
@@ -85,7 +86,7 @@ public abstract class SjasmDerivativeDialect implements Dialect {
     }
         
     
-    public List<SourceStatement> parseLineStruct(List<String> tokens, List<SourceStatement> l, SourceLine sl,
+    public boolean parseLineStruct(List<String> tokens, List<SourceStatement> l, SourceLine sl,
             SourceStatement s, SourceStatement previous, SourceFile source, CodeBase code) {
     
         // struct definitions:
@@ -99,7 +100,7 @@ public abstract class SjasmDerivativeDialect implements Dialect {
                     Expression exp = config.expressionParser.parse(tokens, s, previous, code);
                     if (exp == null) {
                         config.error("Cannot parse line " + sl);
-                        return null;
+                        return false;
                     } else {
                         data.add(exp);
                     }
@@ -111,7 +112,7 @@ public abstract class SjasmDerivativeDialect implements Dialect {
                 }
                 if (data.size() != st.attributeSizes.size()) {
                     config.error("Struct instantiation has the wrong number of fields ("+data.size()+" vs the expected "+st.attributeSizes.size()+") in " + sl);
-                    return null;                    
+                    return false;                    
                 }
                 l.clear();
                 
@@ -129,32 +130,29 @@ public abstract class SjasmDerivativeDialect implements Dialect {
                             break;
                         default:
                             config.error("Field " + st.attributeNames.get(i) + " of struct " + st.name + " has an unsupported size in: " + sl);
-                            return null;
+                            return false;
                     }
                     if (i == 0) s2.label = s.label;
                     s2.data = new ArrayList<>();
                     s2.data.add(data.get(i));
                     l.add(s2);
                 }
-                if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
-                break;
+                return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
             }
         }
         
-        return null;
+        return false;
     }
     
     
     @Override
     public String newSymbolName(String name, Expression value, SourceStatement previous) {
-        if (forbiddenLabelNames.contains(name.toLowerCase())) return null;
-
         if (name.startsWith(".")) {
             SourceConstant lastAbsoluteLabel = getLastAbsoluteLabel(previous);
             if (lastAbsoluteLabel != null) {
-                return lastAbsoluteLabel.name + name;
+                name = lastAbsoluteLabel.name + name;
             } else {
-                return config.lineParser.getLabelPrefix() + name;
+                name = config.lineParser.getLabelPrefix() + name;
             }
         } else if (Tokenizer.isInteger(name)) {
             // it'startStatement a reusable label:
@@ -167,6 +165,8 @@ public abstract class SjasmDerivativeDialect implements Dialect {
         } else {
             name = config.lineParser.getLabelPrefix() + name;
         }
+        
+        if (forbiddenLabelNames.contains(name.toLowerCase())) return null;
         
         symbolPage.put(name, currentPage);
         

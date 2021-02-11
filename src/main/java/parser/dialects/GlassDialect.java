@@ -133,13 +133,10 @@ public class GlassDialect implements Dialect {
     
 
     @Override
-    public List<SourceStatement> parseLine(List<String> tokens,
+    public boolean parseLine(List<String> tokens, List<SourceStatement> l,
             SourceLine sl,
             SourceStatement s, SourceStatement previous, SourceFile source, CodeBase code)
     {
-        List<SourceStatement> l = new ArrayList<>();
-        l.add(s);
-        
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("section")) {
             usedSectionKeyword = true;
             
@@ -148,11 +145,11 @@ public class GlassDialect implements Dialect {
             Expression exp = config.expressionParser.parse(tokens, s, previous, code);
             if (exp == null) {
                 config.error("Cannot parse line " + sl);
-                return null;
+                return false;
             }
             if (exp.type != Expression.EXPRESSION_SYMBOL) {
                 config.error("Invalid section name at " + sl);
-                return null;
+                return false;
             }
             String sectionName = getSectionName(exp.symbolName, code);
             
@@ -167,7 +164,7 @@ public class GlassDialect implements Dialect {
             }
             sr.portions.add(spr);
             
-            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("ends")) {
             if (!sectionStack.isEmpty()) {
@@ -176,39 +173,39 @@ public class GlassDialect implements Dialect {
                 SectionPortionRecord spr = sectionStack.remove(0);
                 spr.end = s;
                 
-                if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
+                return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
             } else {
                 config.error("No section to terminate at " + sl);
-                return null;
+                return false;
             }
         }
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("proc")) {
             if (s.label == null) {
                 config.error("Proc with no name at " + sl);
-                return null;
+                return false;
             }
             tokens.remove(0);
             config.lineParser.pushLabelPrefix(s.label.name + ".");
-            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("endp")) {
             tokens.remove(0);
             config.lineParser.popLabelPrefix();
-            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("error")) {
             config.error(tokens.get(1));
             tokens.remove(0);
             tokens.remove(0);
-            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("warning")) {
             config.warn(tokens.get(1));
             tokens.remove(0);
             tokens.remove(0);
-            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
-        return null;
+        return false;
     }
     
     

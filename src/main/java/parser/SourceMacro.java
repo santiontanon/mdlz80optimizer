@@ -108,7 +108,7 @@ public class SourceMacro {
                 if (previous.source == macroCall.source && previous.label != null && previous.type == SourceStatement.STATEMENT_NONE) {
                     scope = previous.label.name;
                 } else {
-//                    scope = config.preProcessor.nextMacroExpansionContextName(macroCall.labelPrefix);
+                    scope = config.preProcessor.nextMacroExpansionContextName(macroCall.labelPrefix);
                 }
             }
             for(int i = 0;i<reptNRepetitions_value;i++) {
@@ -194,6 +194,7 @@ public class SourceMacro {
                     if (config.dialectParser != null) {
                         String newLabel = config.dialectParser.getNextTemporaryLabel();
                         if (newLabel != null) {
+                            System.out.println("newLabel: " + newLabel + " with labelPrefix: " + macroCall.labelPrefix);
                             temporaryLabelsMap.put(label, newLabel);
                         }
                     }

@@ -236,8 +236,9 @@ public class PreProcessor {
                     s.macroCallArguments = m.preDefinedMacroArgs;
                     s.label = macroCallLabel(m.definingStatement, code);
                     m.definingStatement = s;
-                    newStatements.add(s);
                     currentState.currentMacro = null;
+                    
+                    newStatements.add(s);                    
                 } else {
                     m.addLine(sl);
                 }
@@ -424,6 +425,7 @@ public class PreProcessor {
 
     public boolean addMacro(SourceMacro m, CodeBase code)
     {
+        config.debug("adding macro: " + m.name);
         List<SourceMacro> l = macros.get(m.name);
         if (l == null) {
             l = new ArrayList<>();

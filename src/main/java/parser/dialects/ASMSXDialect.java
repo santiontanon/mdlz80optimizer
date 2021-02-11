@@ -299,12 +299,9 @@ public class ASMSXDialect implements Dialect {
     
 
     @Override
-    public List<SourceStatement> parseLine(List<String> tokens, SourceLine sl, 
+    public boolean parseLine(List<String> tokens, List<SourceStatement> l, SourceLine sl, 
             SourceStatement s, SourceStatement previous, SourceFile source, CodeBase code) 
-    {
-        List<SourceStatement> l = new ArrayList<>();
-        l.add(s);
-        
+    {        
         if (tokens.size()>=1 && (tokens.get(0).equalsIgnoreCase(".bios") || tokens.get(0).equalsIgnoreCase("bios"))) {
             tokens.remove(0);
             // Define all the bios calls:
@@ -313,7 +310,7 @@ public class ASMSXDialect implements Dialect {
                 List<SourceStatement> l2 = config.lineParser.parse(tokens2, sl, source, -1, code, config);
                 l.addAll(l2);
             }
-            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
         if (tokens.size()>=1 && (tokens.get(0).equalsIgnoreCase(".search") || tokens.get(0).equalsIgnoreCase("search"))) {
             tokens.remove(0);
@@ -328,40 +325,40 @@ public class ASMSXDialect implements Dialect {
                 List<SourceStatement> l2 = config.lineParser.parse(tokens2, sl, source, -1, code, config);
                 l.addAll(l2);
             }
-            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }        
         if (tokens.size()>=2 && (tokens.get(0).equalsIgnoreCase(".filename") || tokens.get(0).equalsIgnoreCase("filename"))) {
             tokens.remove(0);
             Expression filename_exp = config.expressionParser.parse(tokens, s, previous, code);
             if (filename_exp == null) {
                 config.error("Cannot parse expression in "+sl.fileNameLineString()+": " + sl.line);
-                return null;
+                return false;
             }
-            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
         if (tokens.size()>=1 && (tokens.get(0).equalsIgnoreCase(".size") || tokens.get(0).equalsIgnoreCase("size"))) {
             tokens.remove(0);
             Expression size_exp = config.expressionParser.parse(tokens, s, previous, code);
             if (size_exp == null) {
                 config.error("Cannot parse .size parameter in "+sl.fileNameLineString()+": " + sl.line);
-                return null;
+                return false;
             }
             targetSizeInKB = size_exp.evaluateToInteger(s, code, true);
-            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
         if (tokens.size()>=1 && (tokens.get(0).equalsIgnoreCase(".page") || tokens.get(0).equalsIgnoreCase("page"))) {
             tokens.remove(0);
             Expression page_exp = config.expressionParser.parse(tokens, s, previous, code);
             if (page_exp == null) {
                 config.error("Cannot parse .page parameter in "+sl.fileNameLineString()+": " + sl.line);
-                return null;
+                return false;
             }
             s.type = SourceStatement.STATEMENT_ORG;
             s.org = Expression.operatorExpression(Expression.EXPRESSION_MUL,
                     Expression.parenthesisExpression(page_exp, "(", config),
                     Expression.constantExpression(16*1024, Expression.RENDER_AS_16BITHEX, config), config);
             // Since we are not producing compiled output, we ignore this directive
-            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
         if (tokens.size()>=2 && (tokens.get(0).equalsIgnoreCase(".printtext") || tokens.get(0).equalsIgnoreCase("printtext"))) {
             toPrint.add(new PrintRecord("printtext", 
@@ -369,7 +366,7 @@ public class ASMSXDialect implements Dialect {
                     Expression.constantExpression(tokens.get(1), config)));
             tokens.remove(0);
             tokens.remove(0);
-            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
         if (tokens.size()>=2 && (tokens.get(0).equalsIgnoreCase(".printdec") || tokens.get(0).equalsIgnoreCase(".print") ||
                                  tokens.get(0).equalsIgnoreCase("printdec") || tokens.get(0).equalsIgnoreCase("print"))) {
@@ -379,7 +376,7 @@ public class ASMSXDialect implements Dialect {
                     source.getStatements().get(source.getStatements().size()-1), 
                     exp));
             
-            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
         if (tokens.size()>=2 && (tokens.get(0).equalsIgnoreCase(".printhex") || tokens.get(0).equalsIgnoreCase("printhex"))) {
             tokens.remove(0);
@@ -388,21 +385,21 @@ public class ASMSXDialect implements Dialect {
                     source.getStatements().get(source.getStatements().size()-1), 
                     exp));
             
-            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
         if (tokens.size()>=1 && (tokens.get(0).equalsIgnoreCase(".byte") || tokens.get(0).equalsIgnoreCase("byte"))) {
             tokens.remove(0);
             s.type = SourceStatement.STATEMENT_DEFINE_SPACE;
             s.space = Expression.constantExpression(1, config);
             s.space_value = null;
-            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
         if (tokens.size()>=1 && (tokens.get(0).equalsIgnoreCase(".word") || tokens.get(0).equalsIgnoreCase("word"))) {
             tokens.remove(0);
             s.type = SourceStatement.STATEMENT_DEFINE_SPACE;
             s.space = Expression.constantExpression(2, config);
             s.space_value = null;
-            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
         if (tokens.size()>=1 && 
             (tokens.get(0).equalsIgnoreCase(".rom") || tokens.get(0).equalsIgnoreCase("rom") ||
@@ -429,7 +426,7 @@ public class ASMSXDialect implements Dialect {
                             break;
                         default:
                             config.error("Unknown megaROM type in "+sl.fileNameLineString()+": " + romTypeToken);
-                            return null;
+                            return false;
                     }
                 }
                 // assume we are in the first page:
@@ -454,7 +451,7 @@ public class ASMSXDialect implements Dialect {
                         Expression.constantExpression(256, config), config)); 
             }
             for(int i = 0;i<12;i++) data.add(Expression.constantExpression(0, config));
-            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
         if (tokens.size()>=1 && (tokens.get(0).equalsIgnoreCase(".basic") || tokens.get(0).equalsIgnoreCase("basic"))) {
             tokens.remove(0);
@@ -478,14 +475,14 @@ public class ASMSXDialect implements Dialect {
                         startAddressLabel, 
                         Expression.constantExpression(256, config), config)); 
             }
-            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }        
         if (tokens.size()>=2 && (tokens.get(0).equalsIgnoreCase(".start") || tokens.get(0).equalsIgnoreCase("start"))) {
             tokens.remove(0);
             Expression exp = config.expressionParser.parse(tokens, s, previous, code);
             if (exp == null) {
                 config.error("Cannot parse expression in "+sl.fileNameLineString()+": " + sl.line);
-                return null;
+                return false;
             }
             startAddressLabel = exp;
             if (romHeaderStatement != null) {
@@ -504,22 +501,22 @@ public class ASMSXDialect implements Dialect {
                         startAddressLabel, 
                         Expression.constantExpression(256, config), config)); 
             }
-            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("=")) {
             // This is like an equ, but with a variable that changes value throughout parsing.
             // This only makes sense in eager execution, so, we check for that:
             if (!config.eagerMacroEvaluation) {
                 config.error("Non final variable defined in lazy evaluation mode at " + sl);
-                return null;
+                return false;
             }
             
             tokens.remove(0);
-            if (!config.lineParser.parseEqu(tokens, sl, s, previous, source, code)) return null;
+            if (!config.lineParser.parseEqu(tokens, l, sl, s, previous, source, code)) return false;
             Integer value = s.label.exp.evaluateToInteger(s, code, false, previous);
             if (value == null) {
                 config.error("Cannot resolve eager variable in " + sl);
-                return null;
+                return false;
             }
             Expression exp = Expression.constantExpression(value, config);
             SourceConstant c = code.getSymbol(s.label.originalName);
@@ -534,33 +531,33 @@ public class ASMSXDialect implements Dialect {
             
             // these variables should not be part of the source code:
             l.clear();
-            return l;
+            return true;
         }        
         if (tokens.size() >= 2 && (tokens.get(0).equalsIgnoreCase(".wav") || tokens.get(0).equalsIgnoreCase("wav"))) {
             tokens.remove(0);
             // just ignore
-            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }        
         if (tokens.size() >= 2 && (tokens.get(0).equalsIgnoreCase(".cas") || tokens.get(0).equalsIgnoreCase("cas"))) {
             tokens.remove(0);
             // just ignore
-            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
         if (tokens.size()>=1 && (tokens.get(0).equalsIgnoreCase(".select") || tokens.get(0).equalsIgnoreCase("select"))) {
             tokens.remove(0);
             Expression page = config.expressionParser.parse(tokens, s, previous, code);
             if (page == null) {
                 config.error("Cannot parse expression in "+sl.fileNameLineString()+": " + sl.line);
-                return null;
+                return false;
             }
             if (tokens.isEmpty() || !tokens.remove(0).equalsIgnoreCase("at")) {
                 config.error("Missing token 'at' in "+sl.fileNameLineString()+": " + sl.line);
-                return null;
+                return false;
             }
             Expression address = config.expressionParser.parse(tokens, s, previous, code);
             if (address == null) {
                 config.error("Cannot parse expression in "+sl.fileNameLineString()+": " + sl.line);
-                return null;
+                return false;
             }
             
             if (romType != ROM_STANDARD) {
@@ -578,7 +575,7 @@ public class ASMSXDialect implements Dialect {
                     List<CPUOp> op_l = config.opParser.parseOp("ld", sArguments, s, previous, code);
                     if (op_l == null || op_l.size() != 1) {
                         config.error("Error creating 'ld (<address>),a' instruction in "+sl.fileNameLineString()+": " + sl.line);
-                        return null;
+                        return false;
                     }
                     s.op = op_l.get(0);
 
@@ -590,7 +587,7 @@ public class ASMSXDialect implements Dialect {
                     List<CPUOp> op_l = config.opParser.parseOp("push", s1Arguments, s1, previous, code);
                     if (op_l == null || op_l.size() != 1) {
                         config.error("Error creating 'push af' instruction in "+sl.fileNameLineString()+": " + sl.line);
-                        return null;
+                        return false;
                     }
                     s1.op = op_l.get(0);
                     l.add(0, s1);
@@ -602,7 +599,7 @@ public class ASMSXDialect implements Dialect {
                     op_l = config.opParser.parseOp("ld", s2Arguments, s2, previous, code);
                     if (op_l == null || op_l.size() != 1) {
                         config.error("Error creating 'ld a,<page>' instruction in "+sl.fileNameLineString()+": " + sl.line);
-                        return null;
+                        return false;
                     }
                     s2.op = op_l.get(0);
                     l.add(1, s2);
@@ -618,7 +615,7 @@ public class ASMSXDialect implements Dialect {
                     op_l = config.opParser.parseOp("ld", sArguments, s, previous, code);
                     if (op_l == null || op_l.size() != 1) {
                         config.error("Error creating 'ld (<address>),a' instruction in "+sl.fileNameLineString()+": " + sl.line);
-                        return null;
+                        return false;
                     }
                     s.op = op_l.get(0);
 
@@ -628,29 +625,29 @@ public class ASMSXDialect implements Dialect {
                     op_l = config.opParser.parseOp("pop", s4Arguments, s4, previous, code);
                     if (op_l == null || op_l.size() != 1) {
                         config.error("Error creating 'pop af' instruction in "+sl.fileNameLineString()+": " + sl.line);
-                        return null;
+                        return false;
                     }
                     s4.op = op_l.get(0);
                     l.add(s4);
                 }
             }            
-            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }    
         if (tokens.size()>=1 && (tokens.get(0).equalsIgnoreCase(".subpage") || tokens.get(0).equalsIgnoreCase("subpage"))) {
             tokens.remove(0);
             Expression page = config.expressionParser.parse(tokens, s, previous, code);
             if (page == null) {
                 config.error("Cannot parse expression in "+sl.fileNameLineString()+": " + sl.line);
-                return null;
+                return false;
             }
             if (tokens.isEmpty() || !tokens.remove(0).equalsIgnoreCase("at")) {
                 config.error("Missing token 'at' in "+sl.fileNameLineString()+": " + sl.line);
-                return null;
+                return false;
             }
             Expression address = config.expressionParser.parse(tokens, s, previous, code);
             if (address == null) {
                 config.error("Cannot parse expression in "+sl.fileNameLineString()+": " + sl.line);
-                return null;
+                return false;
             }
             // just set an org, and record it as a page definition org:
             // - org (address / pageSize) * pageSize
@@ -668,13 +665,13 @@ public class ASMSXDialect implements Dialect {
             
             // update "currentPageEnd":
             currentPageEnd += pageSize;
-            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }        
         if (tokens.size() >= 1 && (tokens.get(0).equalsIgnoreCase(".zilog") || tokens.get(0).equalsIgnoreCase("zilog"))) {
             tokens.remove(0);
             config.opParser.indirectionsOnlyWithSquareBrackets = false;
             config.opParser.indirectionsOnlyWithParenthesis = true;
-            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
 
         // weird syntax that for some reason asMSX swallows (undocumented):
@@ -692,12 +689,12 @@ public class ASMSXDialect implements Dialect {
                 for(String token:tokens) newToken += token;
                 tokens.clear();
                 tokens.add(newToken);
-                if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
+                return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
             }
         }
         
         config.error("ASMSXDialect cannot parse line in "+sl.fileNameLineString()+": " + sl.line);
-        return null;
+        return false;
     }
 
 

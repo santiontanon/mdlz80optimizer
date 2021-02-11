@@ -10,7 +10,6 @@ import code.CodeBase;
 import code.Expression;
 import code.SourceFile;
 import code.SourceStatement;
-import java.util.ArrayList;
 import java.util.List;
 import parser.SourceLine;
 import parser.Tokenizer;
@@ -66,12 +65,9 @@ public class WinAPEDialect implements Dialect {
     
     
     @Override
-    public List<SourceStatement> parseLine(List<String> tokens, SourceLine sl,
+    public boolean parseLine(List<String> tokens, List<SourceStatement> l, SourceLine sl,
             SourceStatement s, SourceStatement previous, SourceFile source, CodeBase code)
     {
-        List<SourceStatement> l = new ArrayList<>();
-        l.add(s);
-
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("write")) {
             tokens.remove(0);
             
@@ -81,15 +77,13 @@ public class WinAPEDialect implements Dialect {
             
             writingTo = tokens.remove(0);
             
-            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
-            return null;
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
         if (tokens.size() >= 1 && tokens.get(0).equalsIgnoreCase("close")) {
             tokens.remove(0);
-            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
-            return null;
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
         
-        return null;
+        return false;
     }    
 }

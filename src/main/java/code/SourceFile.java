@@ -62,10 +62,14 @@ public class SourceFile {
     {
         int index = statements.indexOf(s);
         if (index == -1) {
-            // assume the statement has not yet been added, so, return the first:
-            SourceStatement s2 = statements.get(0);
-            if (s2.include != null) {
-                return s2.include.getNextStatementTo(null, code);
+            if (!statements.isEmpty()) {
+                // assume the statement has not yet been added, so, return the first:
+                SourceStatement s2 = statements.get(0);
+                if (s2.include != null) {
+                    return s2.include.getNextStatementTo(null, code);
+                }
+            } else {
+                return null;
             }
         }
         if (index == statements.size()-1) {

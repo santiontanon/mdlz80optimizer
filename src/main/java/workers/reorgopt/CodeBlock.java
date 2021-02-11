@@ -53,7 +53,12 @@ public class CodeBlock {
     
     public boolean addStatementsFromTo(SourceStatement start, SourceStatement end, CodeBase code)
     {
+        int idx = start.source.getStatements().indexOf(start);
         SourceStatement s = start;
+//        System.out.println("addStatementsFromTo: " + start.source.fileName);
+//        System.out.println("    start: " + start);
+//        System.out.println("    end: " + end);
+        
         while(s != end) {
             if (s == null) return false;
             if (s.include != null) {
@@ -61,9 +66,14 @@ public class CodeBlock {
             } else {
                 statements.add(s);
             }
-            s = s.source.getNextStatementTo(s, code);
+            idx++;
+            if (idx<start.source.getStatements().size()) {
+                s = start.source.getStatements().get(idx);
+            } else {
+                return false;
+            }
         }
-        return true;
+        return end == null;
     }
     
     

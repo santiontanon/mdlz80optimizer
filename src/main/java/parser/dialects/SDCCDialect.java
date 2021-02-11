@@ -159,29 +159,24 @@ public class SDCCDialect implements Dialect {
     
     
     @Override
-    public List<SourceStatement> parseLine(List<String> tokens, SourceLine sl,
-            SourceStatement s, SourceStatement previous, SourceFile source, CodeBase code) {
-        List<SourceStatement> l = new ArrayList<>();
-        l.add(s);
-        
+    public boolean parseLine(List<String> tokens, List<SourceStatement> l, SourceLine sl,
+            SourceStatement s, SourceStatement previous, SourceFile source, CodeBase code) 
+    {
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase(".module")) {
             tokens.remove(0);
             tokens.remove(0);   // module name
-            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
-            return null;
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
 
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase(".optsdcc")) {
             tokens.remove(0);
             while(!tokens.isEmpty() && !Tokenizer.isSingleLineComment(tokens.get(0))) tokens.remove(0);
-            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
-            return null;
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase(".globl")) {
             tokens.remove(0);
             tokens.remove(0);   // label name
-            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
-            return null;
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase(".area")) {
             tokens.remove(0);
@@ -201,20 +196,19 @@ public class SDCCDialect implements Dialect {
                 String symbolName = newSymbolName("s_" + areaName, exp, s);
                 if (symbolName == null) {
                     config.error("Problem defining symbol " + symbolName + " in " + sl);
-                    return null;
+                    return false;
                 }
                 SourceConstant c = new SourceConstant(symbolName, "s_" + areaName, exp, s, config);
                 s.type = SourceStatement.STATEMENT_NONE;
                 s.label = c;
                 if (code.addSymbol(c.name, c) != 1) {
-                    return null;
+                    return false;
                 }
             }            
-            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
-            return null;
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
 
-        return null;
+        return false;
     }        
 
     

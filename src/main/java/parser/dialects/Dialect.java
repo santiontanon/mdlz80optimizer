@@ -49,10 +49,10 @@ public interface Dialect {
     // successfully parse the line
     // @return {@code null} if an error occurred;
     // a list of statements to add as a result of parsing the line otherwise
-    default List<SourceStatement> parseLine(List<String> tokens,
+    default boolean parseLine(List<String> tokens, List<SourceStatement> l, 
             SourceLine sl, SourceStatement s, SourceStatement previous, SourceFile source, CodeBase code) {
         // (no-op by default)
-        return null;
+        return false;
     }
 
     // Some dialects allow "fake" instructions (like "ld de,hl", which do not really, exist, but expand to sequence of ops)

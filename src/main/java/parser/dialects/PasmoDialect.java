@@ -83,12 +83,9 @@ public class PasmoDialect implements Dialect {
     
     
     @Override
-    public List<SourceStatement> parseLine(List<String> tokens, SourceLine sl,
+    public boolean parseLine(List<String> tokens, List<SourceStatement> l, SourceLine sl,
             SourceStatement s, SourceStatement previous, SourceFile source, CodeBase code)
     {
-        List<SourceStatement> l = new ArrayList<>();
-        l.add(s);
-
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("proc")) {
             tokens.remove(0);
             String label = procPrefix + procCounter;
@@ -96,18 +93,18 @@ public class PasmoDialect implements Dialect {
             currentScopeStack.add(0, currentScope);
             currentScope = label + ".";
             localLabelsTrail.add(localLabels.size());
-            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("endp")) {
             tokens.remove(0);
             currentScope = currentScopeStack.remove(0);
             int len = localLabelsTrail.remove(localLabelsTrail.size()-1);
             while(localLabels.size()>len) localLabels.remove(localLabels.size()-1);
-            if (config.lineParser.parseRestofTheLine(tokens, sl, s, source)) return l;
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("public")) {
             // ignore
-            return l;
+            return true;
         }
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("local")) {
             tokens.remove(0);
@@ -120,13 +117,13 @@ public class PasmoDialect implements Dialect {
                 }
             }
             
-            return l;
+            return true;
         }
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("end")) {
             // ignore
-            return l;
+            return true;
         }
         
-        return null;
+        return false;
     }    
 }

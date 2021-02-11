@@ -444,6 +444,7 @@ public class ExpressionParser {
                 String token = tokens.remove(0);
                 if (!caseSensitiveSymbols) token = token.toLowerCase();
 
+                if (previous == null && s != null && s.source != null) previous = s.source.getPreviousStatementTo(s, code);
                 token = config.lineParser.newSymbolNameNotLabel(token, previous);
                 return Expression.symbolExpression(token, s, code, config);
             }
