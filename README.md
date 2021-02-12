@@ -19,7 +19,7 @@ The latest version can always be downloaded from the "releases" section: https:/
 
 - ```-cpu <type>```: to select a different CPU (z80/z80msx/z80cpc) (default: z80msx).
   
-- ```-dialect <type>```: to allow parsing different assembler dialects (mdl/asmsx/asmsx-zilog/glass/sjasm/tniasm/winape/pasmo/sdcc) (default: mdl, which supports some basic code idioms common to various assemblers).
+- ```-dialect <type>```: to allow parsing different assembler dialects (mdl/asmsx/asmsx-zilog/glass/sjasm/sjasmplus/tniasm/winape/pasmo/sdcc) (default: mdl, which supports some basic code idioms common to various assemblers).
                    Note that even when selecting a dialect, not all syntax of a given assembler might be supported.
                    
 - ```-I <folder>```: adds a folder to the include search path.
@@ -89,6 +89,10 @@ Tasks and task/specific flags: Tasks will be executed in the order in which they
 - ```-popotential-all```: Same as above, but without the one-per-line constraint.
   
 - ```-popatterns <file>```: specifies the file to load optimization patterns from (default 'data/pbo-patterns.txt', which contains patterns that optimize both size and speed). For targetting size optimizations, use 'data/pbo-patterns-size.txt'. Notice that some dialects might change the default, for example, the sdcc dialect sets the default to 'data/pbo-patterns-sdcc-speed.txt'
+  
+- ```-ro``: (task) runs the code reoganizer optimizer.
+
+- ```-rohtml <file>```: generates a visualization of the division of the code before code reoganizer optimization as an html file.
   
 - ```-dot <output file>```: (task) generates a dot file with a graph representing the whole source code.
                       convert it to a png using 'dot' like this: ```dot -Tpng <output file>.dot -o <output file>.png```
