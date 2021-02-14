@@ -21,12 +21,12 @@ import workers.BinaryGenerator;
  *
  * @author santi
  */
-public class MessagesTet {
+public class MessagesTest {
         
     private final MDLConfig config;
     private final CodeBase code;
 
-    public MessagesTet() {
+    public MessagesTest() {
         config = new MDLConfig();
         code = new CodeBase(config);
     }
