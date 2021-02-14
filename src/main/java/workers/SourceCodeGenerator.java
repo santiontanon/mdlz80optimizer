@@ -26,6 +26,8 @@ public class SourceCodeGenerator implements MDLWorker {
     String outputFileName = null;
     boolean expandIncbin = false;
     int incbinBytesPerLine = 16;
+    
+    public boolean mimicTargetDialect = false;
 
 
     public SourceCodeGenerator(MDLConfig a_config)
@@ -39,6 +41,7 @@ public class SourceCodeGenerator implements MDLWorker {
         return "  -asm <output file>: (task) saves the resulting assembler code in a single asm file (if no " +
                "optimizations are performed, then this will just output the same code read as input " +
                "(but with all macros and include statements expanded).\n" +
+               "  -asm-dialect <output file>: (task) same as '-asm', but tries to mimic the syntax of the defined dialect in the output (experimental feature, not fully implemented!).\n" +
                "  -asm-expand-inbcin: replaces all incbin commands with their actual data in the output " +
                "assembler file, effectively, making the output assembler file self-contained.\n";
     }
@@ -49,6 +52,13 @@ public class SourceCodeGenerator implements MDLWorker {
         if (flags.get(0).equals("-asm") && flags.size()>=2) {
             flags.remove(0);
             outputFileName = flags.remove(0);
+            mimicTargetDialect = false;
+            return true;
+        }
+        if (flags.get(0).equals("-asm-dialect") && flags.size()>=2) {
+            flags.remove(0);
+            outputFileName = flags.remove(0);
+            mimicTargetDialect = true;
             return true;
         }
         if (flags.get(0).equals("-asm-expand-inbcin")) {
@@ -145,8 +155,8 @@ public class SourceCodeGenerator implements MDLWorker {
                     config.error("Cannot expand incbin: " + ss.incbin);
                 }
             } else {
-                if (config.dialectParser != null) {
-                    sb.append(config.dialectParser.statementToString(ss, code, false, Paths.get(code.getMain().getPath())));
+                if (mimicTargetDialect && config.dialectParser != null) {
+                    sb.append(config.dialectParser.statementToString(ss, code, true, Paths.get(code.getMain().getPath())));
                 } else {
                     sb.append(ss.toStringUsingRootPath(Paths.get(code.getMain().getPath()), false));
                 }
@@ -168,6 +178,7 @@ public class SourceCodeGenerator implements MDLWorker {
         w.outputFileName = outputFileName;
         w.expandIncbin = expandIncbin;
         w.incbinBytesPerLine = incbinBytesPerLine;
+        w.mimicTargetDialect = mimicTargetDialect;
         
         // reset state:
         outputFileName = null;

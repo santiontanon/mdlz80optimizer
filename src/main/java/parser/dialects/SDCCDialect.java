@@ -13,6 +13,7 @@ import code.SourceFile;
 import code.SourceStatement;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import parser.LineParser;
 import parser.SourceLine;
@@ -30,8 +31,12 @@ public class SDCCDialect implements Dialect {
 
     MDLConfig config;
     
-    
-    List<String> definedAreas = new ArrayList<>();
+    // Some lines do not make sense in standard zilog assembler, and MDL removes them,
+    // but if we want to generate assembler targetting SDCC/SDASZ80, we need those lines.
+    // Examples are the ".area" or ".globl" statements
+    List<SourceLine> linesToKeepIfGeneratingDialectAsm = new ArrayList<>(); 
+            
+    HashMap<String, SourceLine> definedAreas = new HashMap<>();
     String currentArea;
     
     int nextTemporaryLabel = 10000;
@@ -163,22 +168,26 @@ public class SDCCDialect implements Dialect {
             SourceStatement s, SourceStatement previous, SourceFile source, CodeBase code) 
     {
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase(".module")) {
+            linesToKeepIfGeneratingDialectAsm.add(sl);
             tokens.remove(0);
             tokens.remove(0);   // module name
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
 
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase(".optsdcc")) {
+            linesToKeepIfGeneratingDialectAsm.add(sl);
             tokens.remove(0);
             while(!tokens.isEmpty() && !Tokenizer.isSingleLineComment(tokens.get(0))) tokens.remove(0);
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase(".globl")) {
+            linesToKeepIfGeneratingDialectAsm.add(sl);
             tokens.remove(0);
             tokens.remove(0);   // label name
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase(".area")) {
+            linesToKeepIfGeneratingDialectAsm.add(sl);
             tokens.remove(0);
             String areaName = tokens.remove(0);   // label name
             if (tokens.size()>=3) {
@@ -190,8 +199,8 @@ public class SDCCDialect implements Dialect {
                 }
             }
             currentArea = areaName;
-            if (!definedAreas.contains(areaName)) {
-                definedAreas.add(areaName);
+            if (!definedAreas.containsKey(areaName)) {
+                definedAreas.put(areaName, sl);
                 Expression exp = Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, s, code, config);
                 String symbolName = newSymbolName("s_" + areaName, exp, s);
                 if (symbolName == null) {
@@ -248,6 +257,23 @@ public class SDCCDialect implements Dialect {
     }
     
     
+    String renderExpressionWithConstantMark(Expression exp, boolean useOriginalNames, CodeBase code)
+    {
+        // mark the value as a constant:
+        if (exp.evaluatesToStringConstant()) {
+            return exp.toStringInternal(true, useOriginalNames, code);
+        } else if (exp.type == Expression.EXPRESSION_PARENTHESIS) {
+            return "(#" + exp.args.get(0) + ")";
+        } else {
+            if (exp.args != null && exp.args.size()>1) {
+                return "#(" + exp.toStringInternal(true, useOriginalNames, code) + ")";
+            } else {
+                return "#" + exp.toStringInternal(true, useOriginalNames, code);
+            }
+        }
+    }
+    
+    
     @Override
     public String statementToString(SourceStatement s, CodeBase code, boolean useOriginalNames, Path rootPath) {
         switch(s.type) {
@@ -298,15 +324,7 @@ public class SDCCDialect implements Dialect {
                             str += s.op.args.get(i).toStringInternal(true, useOriginalNames, code);
                         } else {
                             // mark the value as a constant:
-                            if (s.op.args.get(i).type == Expression.EXPRESSION_PARENTHESIS) {
-                                str += "(#" + s.op.args.get(i).args.get(0) + ")";
-                            } else {
-                                if (s.op.args.get(i).args != null && s.op.args.get(i).args.size()>1) {
-                                    str += "#(" + s.op.args.get(i).toStringInternal(true, useOriginalNames, code) + ")";
-                                } else {
-                                    str += "#" + s.op.args.get(i).toStringInternal(true, useOriginalNames, code);
-                                }
-                            }
+                            str += renderExpressionWithConstantMark(s.op.args.get(i), useOriginalNames, code);
                         }
                     } else if (s.op.spec.args.get(i).regOffsetIndirection != null) {
                         // write "inc -3 (ix)" instead of "ld (ix + -3), a"
@@ -341,18 +359,25 @@ public class SDCCDialect implements Dialect {
                     }
                 }
                 
+                if (s.comment != null) str += "  " + s.comment; 
+                
                 return str;
             }
             case SourceStatement.STATEMENT_DATA_BYTES:
                 {
                     String str = s.toStringLabel(useOriginalNames) + "    ";
-                    str += ".byte ";
+                    if (s.data.size() == 1 && s.data.get(0).evaluatesToStringConstant()) {
+                        str += ".ascii ";                        
+                    } else {
+                        str += ".byte ";
+                    }
                     for(int i = 0;i<s.data.size();i++) {
-                        str += s.data.get(i).toStringInternal(true, useOriginalNames, code);
+                        str += renderExpressionWithConstantMark(s.data.get(i), useOriginalNames, code);
                         if (i != s.data.size()-1) {
                             str += ", ";
                         }
                     }
+                    if (s.comment != null) str += "  " + s.comment; 
                     return str;
                 }
             case SourceStatement.STATEMENT_DATA_WORDS:
@@ -360,14 +385,28 @@ public class SDCCDialect implements Dialect {
                     String str = s.toStringLabel(useOriginalNames) + "    ";
                     str += ".word ";
                     for(int i = 0;i<s.data.size();i++) {
-                        str += s.data.get(i).toStringInternal(true, useOriginalNames, code);
+                        str += renderExpressionWithConstantMark(s.data.get(i), useOriginalNames, code);
                         if (i != s.data.size()-1) {
                             str += ", ";
                         }
                     }
+                    if (s.comment != null) str += "  " + s.comment;                     
                     return str;
                 }
-            
+                
+            case SourceStatement.STATEMENT_NONE:
+                if (linesToKeepIfGeneratingDialectAsm.contains(s.sl)) {
+                    return s.sl.line;
+                } else {
+                    return s.toStringUsingRootPath(rootPath, useOriginalNames);
+                }
+
+
+            case SourceStatement.STATEMENT_DEFINE_SPACE:
+                {
+                    // SDCC does not allow a "value":
+                    return "    "+config.lineParser.KEYWORD_DS+" " + s.space;
+                }
             default:
                 return s.toStringUsingRootPath(rootPath, useOriginalNames);
         }

@@ -31,12 +31,14 @@ public class SDCCTest {
         code = new CodeBase(config);
     }
 
-    @Test public void test1() throws IOException { Assert.assertTrue(test("data/generationtests/sdcc-ops.asm",
+    @Test public void test1() throws IOException { Assert.assertTrue(test("data/generationtests/sdcc-base.asm", true,
+                                                                          "data/generationtests/sdcc-base-expected.asm")); }
+    @Test public void test2() throws IOException { Assert.assertTrue(test("data/generationtests/sdcc-ops.asm", true,
                                                                           "data/generationtests/sdcc-ops-expected.asm")); }
-    @Test public void test2() throws IOException { Assert.assertTrue(test("data/generationtests/sdcc-macros.asm",
+    @Test public void test3() throws IOException { Assert.assertTrue(test("data/generationtests/sdcc-macros.asm", true,
                                                                           "data/generationtests/sdcc-macros-expected.asm")); }
 
-    private boolean test(String inputFile, String expectedOutputFile) throws IOException
+    private boolean test(String inputFile, boolean mimicTargetDialect, String expectedOutputFile) throws IOException
     {
         Assert.assertTrue(config.parseArgs(inputFile,"-dialect","sdcc"));
         Assert.assertTrue(
@@ -44,6 +46,7 @@ public class SDCCTest {
                 config.codeBaseParser.parseMainSourceFile(config.inputFile, code));
 
         SourceCodeGenerator scg = new SourceCodeGenerator(config);
+        scg.mimicTargetDialect = mimicTargetDialect;
 
         String result = scg.sourceFileString(code.getMain(), code);
         List<String> lines = new ArrayList<>();

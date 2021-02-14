@@ -20,7 +20,7 @@ public class Dialects {
      * @return the known dialect identifier strings
      */
     public static String[] knownDialects() {
-        return new String[]{"mdl", "asmsx", "asmsx-zilog", "glass", "sjasm", "sjasmplus", "tniasm", "winape", "pasmo", "sdcc"};
+        return new String[]{"mdl", "asmsx", "asmsx-zilog", "glass", "sjasm", "sjasmplus", "tniasm", "winape", "pasmo", "sdcc", "sdasz80"};
     }
 
     /**
@@ -66,6 +66,7 @@ public class Dialects {
             case "pasmo":
                 return new PasmoDialect(config);
             case "sdcc":
+            case "sdasz80":
                 return new SDCCDialect(config);
             default:
                 return null;

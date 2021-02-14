@@ -362,7 +362,7 @@ public class ExpressionParser {
             String token = tokens.get(0).substring(2);
             if (Tokenizer.isHex(token)) {
                 tokens.remove(0);
-                if (token.length()<=4) {
+                if (token.length()<=2) {
                     // 8 bit:
                     return Expression.constantExpression(Tokenizer.parseHex(token), Expression.RENDER_AS_8BITHEX, config);
                 } else {
