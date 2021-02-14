@@ -54,7 +54,7 @@ public class BinaryGenerator implements MDLWorker {
             config.debug("Executing "+this.getClass().getSimpleName()+" worker...");
             
             try (FileOutputStream os = new FileOutputStream(outputFileName)) {
-                writeBytes(code.getMain(), code, os);
+                if (!writeBytes(code.getMain(), code, os)) return false;
                 os.flush();
             } catch (Exception e) {
                 config.error("Cannot write to file " + outputFileName + ": " + e);
@@ -66,7 +66,7 @@ public class BinaryGenerator implements MDLWorker {
     }
     
     
-    public void writeBytes(SourceFile sf, CodeBase code, OutputStream os) throws Exception
+    public boolean writeBytes(SourceFile sf, CodeBase code, OutputStream os) throws Exception
     {
         for (SourceStatement ss:sf.getStatements()) {
             switch(ss.type) {
@@ -78,7 +78,7 @@ public class BinaryGenerator implements MDLWorker {
                     break;
 
                 case SourceStatement.STATEMENT_INCLUDE:
-                    writeBytes(ss.include, code, os);
+                    if (!writeBytes(ss.include, code, os)) return false;
                     break;
 
                 case SourceStatement.STATEMENT_INCBIN:
@@ -100,6 +100,7 @@ public class BinaryGenerator implements MDLWorker {
                         }
                     } catch(Exception e) {
                         config.error("Cannot expand incbin: " + ss.incbin);
+                        return false;
                     }
                     break;
                 }
@@ -115,7 +116,8 @@ public class BinaryGenerator implements MDLWorker {
                                 os.write(v.charAt(i));
                             }
                         } else {
-                            throw new Exception("Cannot evaluate expression " + exp + "when generating a binary.");
+                            config.error("Cannot evaluate expression " + exp + "when generating a binary.");
+                            return false;
                         }
                     }
                     break;
@@ -127,7 +129,8 @@ public class BinaryGenerator implements MDLWorker {
                             os.write(v&0x00ff);
                             os.write((v>>8)&0x00ff);
                         } else {
-                            throw new Exception("Cannot evaluate expression " + exp + "when generating a binary.");
+                            config.error("Cannot evaluate expression " + exp + "when generating a binary.");
+                            return false;
                         }
                     }
                     break;
@@ -141,7 +144,8 @@ public class BinaryGenerator implements MDLWorker {
                             os.write((v>>16)&0x00ff);
                             os.write((v>>24)&0x00ff);
                         } else {
-                            throw new Exception("Cannot evaluate expression " + exp + "when generating a binary.");
+                            config.error("Cannot evaluate expression " + exp + "when generating a binary.");
+                            return false;
                         }
                     }
                     break;
@@ -158,7 +162,8 @@ public class BinaryGenerator implements MDLWorker {
                 {
                     List<Integer> data = ss.op.assembleToBytes(ss, code, config);
                     if (data == null) {
-                        throw new Exception("Cannot convert op " + ss.op + " to bytes!");
+                        config.error("Cannot convert op " + ss.op + " to bytes!");
+                        return false;
                     }
                     for(Integer value: data) {
                         os.write(value);
@@ -167,6 +172,8 @@ public class BinaryGenerator implements MDLWorker {
                 }
             }
         }
+        
+        return true;
     }
     
     

@@ -524,7 +524,8 @@ public class LineParser {
             }
             if (rawFileName != null) {
                 // recursive include file:
-                String path = resolveIncludePath(rawFileName, source);
+                String path = resolveIncludePath(rawFileName, source, sl);
+                if (path == null) return false;
                 SourceFile includedSource = codeBaseParser.parseSourceFile(path, code, source, s);
                 if (includedSource == null) {
                     config.error("Problem including file at " + sl);
@@ -583,11 +584,8 @@ public class LineParser {
             config.error("parseIncbin: Cannot parse line " + sl);
             return false;
         }
-        String path = resolveIncludePath(rawFileName, source);
-        if (path == null) {
-            config.error("Incbin file " + rawFileName + " does not exist in " + sl);
-            return false;
-        }
+        String path = resolveIncludePath(rawFileName, source, sl);
+        if (path == null) return false;
         s.type = SourceStatement.STATEMENT_INCBIN;
         s.incbin = new File(path);
         s.incbinOriginalStr = rawFileName;
@@ -991,7 +989,7 @@ public class LineParser {
         return parseRestofTheLine(tokens, l, sl, s, previous, source, code);
     }
 
-    public String resolveIncludePath(String rawFileName, SourceFile source) {
+    public String resolveIncludePath(String rawFileName, SourceFile source, SourceLine sl) {
 
         // Make sure we don't have a windows/Unix path separator problem:
         if (rawFileName.contains("\\")) {
@@ -1028,7 +1026,7 @@ public class LineParser {
             }
         }
 
-        config.error("Cannot find include file " + rawFileName);
+        config.error("Cannot find include file \"" + rawFileName + "\" at " + sl.fileNameLineString());
         return null;
     }
 

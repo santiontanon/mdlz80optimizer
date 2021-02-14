@@ -1178,6 +1178,21 @@ public class Expression {
         return false;
     }    
     
+    
+    public String findUndefinedSymbol(CodeBase code)
+    {
+        if (type == EXPRESSION_SYMBOL) {
+            SourceConstant tmp = code.getSymbol(symbolName);
+            if (tmp == null) return symbolName;
+        } else if (args != null) {
+            for(Expression arg:args) {
+                String tmp = arg.findUndefinedSymbol(code);
+                if (tmp != null) return tmp;
+            }
+        }
+        return null;
+    }
+    
 
     public static Expression constantExpression(int v, MDLConfig config) {
         Expression exp = new Expression(EXPRESSION_INTEGER_CONSTANT, config);

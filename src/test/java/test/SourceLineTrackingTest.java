@@ -52,7 +52,7 @@ public class SourceLineTrackingTest {
                 "Could not parse file " + inputFile,
                 config.codeBaseParser.parseMainSourceFile(config.inputFile, code));
 
-        // Optimizes
+        // Optimize:
         String lines[];
         try (ByteArrayOutputStream optimizerOutput = new ByteArrayOutputStream();
              PrintStream printStream = new PrintStream(optimizerOutput)) {
@@ -66,7 +66,7 @@ public class SourceLineTrackingTest {
             System.out.println(optimizerOutput.toString());
         }
 
-        // Looks for expected output
+        // Look for expected output:
         for (String expectedOutputLine: expectedOutputLines) {
             Assert.assertTrue(
                     "Expected line '"+expectedOutputLine+"' not found in actual optimizer output!",

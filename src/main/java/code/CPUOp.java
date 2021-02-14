@@ -288,13 +288,17 @@ public class CPUOp {
                     Integer o = null;
                     if (args.get(arg_idx).type == Expression.EXPRESSION_PARENTHESIS) {
                         Expression arg = args.get(arg_idx).args.get(0);
-                        if (arg.type == Expression.EXPRESSION_SUM) {
-                            o = arg.args.get(1).evaluateToInteger(s, code, true);
-                        } else if (arg.type == Expression.EXPRESSION_SUB) {
-                            o = arg.args.get(1).evaluateToInteger(s, code, true);
-                            if (o != null) o = -o;
-                        } else if (arg.type == Expression.EXPRESSION_REGISTER_OR_FLAG) {
-                            o = 0;
+                        switch (arg.type) {
+                            case Expression.EXPRESSION_SUM:
+                                o = arg.args.get(1).evaluateToInteger(s, code, true);
+                                break;
+                            case Expression.EXPRESSION_SUB:
+                                o = arg.args.get(1).evaluateToInteger(s, code, true);
+                                if (o != null) o = -o;
+                                break;
+                            case Expression.EXPRESSION_REGISTER_OR_FLAG:
+                                o = 0;
+                                break;
                         }
                     }
                     if (o == null) {
@@ -308,6 +312,11 @@ public class CPUOp {
                 // 8 bit argument
                 Integer n = null;
                 for(Expression arg:args) {
+                    String undefined = arg.findUndefinedSymbol(code);
+                    if (undefined != null) {
+                        config.error("Undefined symbol \"" + undefined + "\" at " + s.sl.fileNameLineString());
+                        return null;
+                    }
                     if (arg.evaluatesToIntegerConstant()) {
                         if (n != null) {
                             config.error("Unable to convert " + this + " to bytes! two numeric constants in one op!");
@@ -326,6 +335,11 @@ public class CPUOp {
                 // 16 bit argument
                 Integer nn = null;
                 for(Expression arg:args) {
+                    String undefined = arg.findUndefinedSymbol(code);
+                    if (undefined != null) {
+                        config.error("Undefined symbol \"" + undefined + "\" at " + s.sl.fileNameLineString());
+                        return null;
+                    }
                     if (arg.evaluatesToIntegerConstant()) {
                         if (nn != null) {
                             config.error("Unable to convert " + this + " to bytes! two numeric constants in one op!");
