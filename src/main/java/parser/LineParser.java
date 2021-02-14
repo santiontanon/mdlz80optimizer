@@ -24,7 +24,18 @@ public class LineParser {
     public static final int MACRO_MACRO_NAME_ARGS = 2;
     public static final int MACRO_BOTH = 3;
     
+    // Standard versions, to be used for generating standard assembler:
+    public String KEYWORD_STD_ORG = "org";
+    public String KEYWORD_STD_INCLUDE = "include";
+    public String KEYWORD_STD_INCBIN = "incbin";
+    public String KEYWORD_STD_EQU = "equ";
+    public String KEYWORD_STD_DB = "db";
+    public String KEYWORD_STD_DW = "dw";
+    public String KEYWORD_STD_DD = "dd";
+    public String KEYWORD_STD_DS = "ds";
+    public String KEYWORD_STD_COLON = ":";
 
+    // Dialect specific versions that will be used for parsing, or for generatinc dialect assembler:
     public String KEYWORD_ORG = "org";
     public String KEYWORD_INCLUDE = "include";
     public String KEYWORD_INCBIN = "incbin";
@@ -317,7 +328,8 @@ public class LineParser {
 
             if (tokens.size() >= 3) {
                 tokens.remove(0);
-                tokens.remove(0);
+                String colonToken = tokens.remove(0);   // we remember the type of "colon" used,
+                                                        // since in some dialects, it does matter
 
                 if (!caseSensitiveSymbols) token = token.toLowerCase();
                 String symbolName = newSymbolName(token, exp, previous);
@@ -326,6 +338,7 @@ public class LineParser {
                     return false;
                 }
                 SourceConstant c = new SourceConstant(symbolName, token, exp, s, config);
+                c.colonTokenUsedInDefinition = colonToken;
                 s.type = SourceStatement.STATEMENT_NONE;
                 s.label = c;
                 if (defineInCodeBase) {
@@ -335,7 +348,8 @@ public class LineParser {
                 }
             } else {
                 tokens.remove(0);
-                tokens.remove(0);
+                String colonToken = tokens.remove(0);   // we remember the type of "colon" used,
+                                                        // since in some dialects, it does matter
 
                 if (!caseSensitiveSymbols) token = token.toLowerCase();
                 String symbolName = newSymbolName(token, exp, previous);
@@ -344,6 +358,7 @@ public class LineParser {
                     return false;
                 }
                 SourceConstant c = new SourceConstant(symbolName, token, exp, s, config);
+                c.colonTokenUsedInDefinition = colonToken;
                 s.type = SourceStatement.STATEMENT_NONE;
                 s.label = c;
                 if (defineInCodeBase) {

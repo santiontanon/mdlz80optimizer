@@ -26,8 +26,7 @@ public class SourceStatement {
     public static final int STATEMENT_ORG = 0;
     public static final int STATEMENT_INCLUDE = 1;
     public static final int STATEMENT_INCBIN = 2;
-    public static final int STATEMENT_CONSTANT = 3; // source labels are considered
-                                                    // constants, with value == "$"
+    public static final int STATEMENT_CONSTANT = 3; // "equ"
     public static final int STATEMENT_DATA_BYTES = 4;
     public static final int STATEMENT_DATA_WORDS = 5;
     public static final int STATEMENT_DATA_DOUBLE_WORDS = 6;
@@ -275,7 +274,7 @@ public class SourceStatement {
     }
 
     
-    public String toStringLabel(boolean useOriginalName)
+    public String toStringLabel(boolean useOriginalName, boolean useOriginalColonToken)
     {
         String str = "";
         if (label != null) {
@@ -289,7 +288,11 @@ public class SourceStatement {
                 }
             }
             if (type != STATEMENT_CONSTANT || !config.output_equsWithoutColon) {
-                str += ":";
+                if (useOriginalColonToken && label.colonTokenUsedInDefinition != null) {
+                    str += label.colonTokenUsedInDefinition;
+                } else {
+                    str += config.lineParser.KEYWORD_STD_COLON;
+                }
             }
             if (type == STATEMENT_NONE && config.output_safetyEquDollar) {
                 // check if the next statement is an equ, and generate an additinoal "equ $", since 
@@ -302,7 +305,7 @@ public class SourceStatement {
                     } else if (next.type == STATEMENT_INCLUDE && next.label == null) {
                         next = next.include.getNextStatementTo(null, source.code);
                     } else if (next.type == STATEMENT_CONSTANT) {
-                        str += " "+config.lineParser.KEYWORD_EQU+" " + CodeBase.CURRENT_ADDRESS;
+                        str += " "+config.lineParser.KEYWORD_STD_EQU+" " + CodeBase.CURRENT_ADDRESS;
                         break;
                     } else {
                         break;
@@ -316,13 +319,13 @@ public class SourceStatement {
 
     public String toStringUsingRootPath(Path rootPath, boolean useOriginalNames)
     {
-        String str = toStringLabel(useOriginalNames);
+        String str = toStringLabel(useOriginalNames, false);
         
         switch(type) {
             case STATEMENT_NONE:
                 break;
             case STATEMENT_ORG:
-                str += "    "+config.lineParser.KEYWORD_ORG+" " + org.toString();
+                str += "    "+config.lineParser.KEYWORD_STD_ORG+" " + org.toString();
                 break;
             case STATEMENT_INCLUDE:
             {
@@ -331,7 +334,7 @@ public class SourceStatement {
                 if (path.contains("\\")) {
                     path = path.replace("\\", File.separator);
                 }                
-                str += "    "+config.lineParser.KEYWORD_INCLUDE+" \"" + path + "\"";
+                str += "    "+config.lineParser.KEYWORD_STD_INCLUDE+" \"" + path + "\"";
                 break;
             }
             case STATEMENT_INCBIN:
@@ -346,20 +349,20 @@ public class SourceStatement {
                 }                
                 if (incbinSkip != null) {
                     if (incbinSizeSpecified) {
-                        str += "    "+config.lineParser.KEYWORD_INCBIN+" \"" + path + "\", " + incbinSkip + ", " + incbinSize;
+                        str += "    "+config.lineParser.KEYWORD_STD_INCBIN+" \"" + path + "\", " + incbinSkip + ", " + incbinSize;
                     } else {
-                        str += "    "+config.lineParser.KEYWORD_INCBIN+" \"" + path + "\", " + incbinSkip;
+                        str += "    "+config.lineParser.KEYWORD_STD_INCBIN+" \"" + path + "\", " + incbinSkip;
                     }
                 } else {
-                    str += "    "+config.lineParser.KEYWORD_INCBIN+" \"" + path + "\"";
+                    str += "    "+config.lineParser.KEYWORD_STD_INCBIN+" \"" + path + "\"";
                 }
                 break;
             }
             case STATEMENT_CONSTANT:
-                str += " "+config.lineParser.KEYWORD_EQU+" " + label.exp.toString();
+                str += " "+config.lineParser.KEYWORD_STD_EQU+" " + label.exp.toString();
                 break;
             case STATEMENT_DATA_BYTES:
-                str += "    "+config.lineParser.KEYWORD_DB+" ";
+                str += "    "+config.lineParser.KEYWORD_STD_DB+" ";
                 {
                     for(int i = 0;i<data.size();i++) {
                         str += data.get(i).toStringInternal(true, false, null);
@@ -370,7 +373,7 @@ public class SourceStatement {
                 }
                 break;
             case STATEMENT_DATA_WORDS:
-                str += "    "+config.lineParser.KEYWORD_DW+" ";
+                str += "    "+config.lineParser.KEYWORD_STD_DW+" ";
                 {
                     for(int i = 0;i<data.size();i++) {
                         str += data.get(i).toString();
@@ -381,7 +384,7 @@ public class SourceStatement {
                 }
                 break;
             case STATEMENT_DATA_DOUBLE_WORDS:
-                str += "    "+config.lineParser.KEYWORD_DD+" ";
+                str += "    "+config.lineParser.KEYWORD_STD_DD+" ";
                 {
                     for(int i = 0;i<data.size();i++) {
                         str += data.get(i).toString();
@@ -394,22 +397,22 @@ public class SourceStatement {
             case STATEMENT_DEFINE_SPACE:
                 if (space_value == null) {
                     if (config.output_allowDSVirtual) {
-                        str += "    "+config.lineParser.KEYWORD_DS+" virtual " + space;
+                        str += "    "+config.lineParser.KEYWORD_STD_DS+" virtual " + space;
                     } else {
-                        str += "\n    "+config.lineParser.KEYWORD_ORG+" $ + " + space;
+                        str += "\n    "+config.lineParser.KEYWORD_STD_ORG+" $ + " + space;
                     }
                 } else {
                     if (config.output_replaceDsByData) {
                         int break_each = 16;
                         int space_as_int = space.evaluateToInteger(this, this.source.code, true);
                         String space_str = space_value.toString();
-                        str += "    "+config.lineParser.KEYWORD_DB+" ";
+                        str += "    "+config.lineParser.KEYWORD_STD_DB+" ";
                         {
                             for(int i = 0;i<space_as_int;i++) {
                                 str += space_str;
                                 if (i != space_as_int-1) {
                                     if (((i+1)%break_each) == 0) {
-                                        str += "\n    "+config.lineParser.KEYWORD_DB+" ";
+                                        str += "\n    "+config.lineParser.KEYWORD_STD_DB+" ";
                                     } else {
                                         str += ", ";
                                     }
@@ -417,7 +420,7 @@ public class SourceStatement {
                             }
                         }
                     } else {
-                        str += "    "+config.lineParser.KEYWORD_DS+" " + space + ", " + space_value;
+                        str += "    "+config.lineParser.KEYWORD_STD_DS+" " + space + ", " + space_value;
                     }
                 }
                 break;

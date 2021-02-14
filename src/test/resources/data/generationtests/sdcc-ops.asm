@@ -4,6 +4,7 @@
 	ld b,arg2
 .endm
 
+label:
 	ld de, #array1
 	ld hl, #array2
 	mymacro #0x04,#CONOUT
@@ -13,7 +14,7 @@
 	ld	bc, (#array1 + 1)
 	ld	hl, #(array2 + 0x0003)
 	ld ((array2 + 0x0008)), de
-        ld e, #0b10011000
+    ld e, #0b10011000
 00105$:
 	jr 00105$
 

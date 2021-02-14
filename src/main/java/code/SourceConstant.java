@@ -12,6 +12,8 @@ public class SourceConstant {
     public String name;
     public String originalName; // name before scoping
     public Expression exp;
+    public String colonTokenUsedInDefinition = null;  // In some dialects (e.g. sdasz80), differrent types
+                                                      // of "colons" (":" vs "::") have different semantics
     Object valueCache;  // null if not yet evaluated
     
     public boolean resolveEagerly = false; // Variables where this is true, will be evaluated right away

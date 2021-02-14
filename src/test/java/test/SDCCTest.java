@@ -31,12 +31,20 @@ public class SDCCTest {
         code = new CodeBase(config);
     }
 
-    @Test public void test1() throws IOException { Assert.assertTrue(test("data/generationtests/sdcc-base.asm", true,
+    @Test public void test1() throws IOException { Assert.assertTrue(test("data/generationtests/sdcc-base.asm", false,
                                                                           "data/generationtests/sdcc-base-expected.asm")); }
-    @Test public void test2() throws IOException { Assert.assertTrue(test("data/generationtests/sdcc-ops.asm", true,
+    @Test public void test1dialect() throws IOException { Assert.assertTrue(test("data/generationtests/sdcc-base.asm", true,
+                                                                          "data/generationtests/sdcc-base-dialect-expected.asm")); }
+    
+    @Test public void test2() throws IOException { Assert.assertTrue(test("data/generationtests/sdcc-ops.asm", false,
                                                                           "data/generationtests/sdcc-ops-expected.asm")); }
-    @Test public void test3() throws IOException { Assert.assertTrue(test("data/generationtests/sdcc-macros.asm", true,
+    @Test public void test2dialect() throws IOException { Assert.assertTrue(test("data/generationtests/sdcc-ops.asm", true,
+                                                                          "data/generationtests/sdcc-ops-dialect-expected.asm")); }
+    
+    @Test public void test3() throws IOException { Assert.assertTrue(test("data/generationtests/sdcc-macros.asm", false,
                                                                           "data/generationtests/sdcc-macros-expected.asm")); }
+    @Test public void test3dialect() throws IOException { Assert.assertTrue(test("data/generationtests/sdcc-macros.asm", true,
+                                                                          "data/generationtests/sdcc-macros-dialect-expected.asm")); }
 
     private boolean test(String inputFile, boolean mimicTargetDialect, String expectedOutputFile) throws IOException
     {
