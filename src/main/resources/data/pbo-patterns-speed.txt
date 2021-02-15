@@ -17,3 +17,10 @@ in(?regpair2,IX,IY)
 in(?regpair1,BC,DE)
 regpair(?regpair1,?reg1h,?reg1l)
 regpair(?regpair2,?reg2h,?reg2l)
+
+
+; thanks to bengalack for suggesting this pattern
+pattern: Replace jr ?const with jp ?const
+0: jr ?const
+replacement:
+0: jp ?const
