@@ -54,7 +54,8 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
         config = a_config;
 
         config.warning_jpHlWithParenthesis = true;
-        config.eagerIFDEFMacroEvaluation = true;
+        config.macrosToEvaluateEagerly.add(config.preProcessor.MACRO_IFDEF);
+        config.macrosToEvaluateEagerly.add(config.preProcessor.MACRO_IFNDEF);
         
         config.lineParser.addKeywordSynonym("byte", config.lineParser.KEYWORD_DB);
         config.lineParser.addKeywordSynonym("defb", config.lineParser.KEYWORD_DB);

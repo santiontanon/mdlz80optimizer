@@ -1,5 +1,5 @@
 ; Test case encountered when parsing aplib
-@Decompress:    ld a, 128
+Decompress:    ld a, 128
 CASE0:    ldi
 MainLoop:    
    add a, a

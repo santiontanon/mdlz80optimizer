@@ -36,11 +36,15 @@ public class CodeBaseParser {
     public boolean parseMainSourceFile(String fileName, CodeBase code) throws IOException {
         if (config.dialectParser != null) config.dialectParser.performAnyInitialActions(code);
         
-        if (parseSourceFile(fileName, code, null, null) == null) return false;
+        if (parseSourceFile(fileName, code, null, null) == null) {
+            return false;
+        }
 
         // Dialect actions before expanding all macros:
         if (config.dialectParser != null) {
-            if (!config.dialectParser.performAnyPostParsingActions(code)) return false;
+            if (!config.dialectParser.performAnyPostParsingActions(code)) {
+                return false;
+            }
         }
         
         // Resolve local labels:
@@ -102,6 +106,8 @@ public class CodeBaseParser {
             if (parseSourceFileInternal(f, code, config)) {
                 config.preProcessor.popState();
                 return f;
+            } else {
+                config.error("Problem parsing file " + fileName);            
             }
         } catch (Exception e) {
             config.error("Problem parsing file " + fileName + ": " + e);
@@ -187,13 +193,12 @@ public class CodeBaseParser {
                 if (config.preProcessor.withinMacroDefinition()) {
                     List<SourceStatement> newStatements =  config.preProcessor.parseMacroLine(tokens, sl, f, code, config);
                     if (newStatements == null) {
+                        config.error("Error parsing source file " + f.fileName + " while within a macro expansion");
                         return false;
                     } else {
                         for(SourceStatement s:newStatements) {
                             if (config.eagerMacroEvaluation ||
-                                (config.eagerIFDEFMacroEvaluation && (
-                                 s.macroCallName.equals(config.preProcessor.MACRO_IFDEF) ||
-                                 s.macroCallName.equals(config.preProcessor.MACRO_IFNDEF)))) {
+                                (config.macrosToEvaluateEagerly.contains(s.macroCallName))) {
                                 List<SourceStatement> l2 = config.preProcessor.handleStatement(sl, s, f, code, true);
                                 if (l2 == null) {
                                     f.addStatement(s);
@@ -209,7 +214,10 @@ public class CodeBaseParser {
                     }
                 } else {
                     List<SourceStatement> l = config.lineParser.parse(tokens, sl, f, f.getStatements().size(), code, config);
-                    if (l == null) return false;
+                    if (l == null) {
+                        config.error("Error parsing source file " + f.fileName + " at: " + sl);
+                        return false;
+                    }
                     for(SourceStatement s:l) {
                         List<SourceStatement> l2 = config.preProcessor.handleStatement(sl, s, f, code, false);
                         if (l2 == null) {

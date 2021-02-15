@@ -126,12 +126,22 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                     // add at the end:
                     // Make sure the address is properly aligned:
                     alignedAddress = blockAddress + (alignment - (blockAddress%alignment))%alignment;
-                    int spaceLeft = (pageStart + size.evaluateToInteger(s, code, false)) - alignedAddress;
-                    if (spaceLeft >= blockSize) {
-                        block.actualAddress = alignedAddress;
-                        blocks.add(block);
+                    if (size != null) {
+                        Integer evaluatedSize = size.evaluateToInteger(s, code, false);
+                        if (evaluatedSize == null) {
+                            config.error("Cannot evaluate expression " + evaluatedSize + " while finding a spot for a block");
+                            return false;
+                        }
+                        int spaceLeft = (pageStart + evaluatedSize) - alignedAddress;
+                        if (spaceLeft >= blockSize) {
+                            block.actualAddress = alignedAddress;
+                            blocks.add(block);
+                        } else {
+                            return false;
+                        }
                     } else {
-                        return false;
+                        block.actualAddress = alignedAddress;
+                        blocks.add(block);                        
                     }
                 } else {
                     block.actualAddress = alignedAddress;
@@ -153,6 +163,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
     List<SourceStatement> enhancedJrList = new ArrayList<>();
     List<SourceStatement> enhancedDjnzList = new ArrayList<>();
     
+    List<String> outputFileNames = new ArrayList<>();
     
     public SjasmDialect(MDLConfig a_config) {
         config = a_config;
@@ -184,6 +195,15 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
         // We define it as a dialectMacro instead of as a synonym of "REPT", as it has some special syntax for
         // indicating the current iteration
         config.preProcessor.dialectMacros.put("repeat", "endrepeat");
+        config.preProcessor.dialectMacros.put("ifexists", "endif");
+        config.preProcessor.dialectMacros.put("ifnexists", "endif");
+        config.preProcessor.dialectMacros.put("ifnexists", "endif");
+        config.preProcessor.dialectMacros.put("ifdif", "endif");
+        config.preProcessor.dialectMacros.put("ifdifi", "endif");
+        config.macrosToEvaluateEagerly.add("ifexists");
+        config.macrosToEvaluateEagerly.add("ifnexists");
+        config.macrosToEvaluateEagerly.add("ifdif");
+        config.macrosToEvaluateEagerly.add("ifdifi");
         
         // It is important that registers on the left-hand-side are capitalized (the right hand side does not matter):
         addFakeInstruction("RL BC", "rl c\nrl b");
@@ -435,6 +455,8 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("define")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("xdefine")) return true;
         if (tokens.size() >= 3 && tokens.get(0).equalsIgnoreCase("assign")) return true;
+        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("phase")) return true;
+        if (tokens.size() >= 1 && tokens.get(0).equalsIgnoreCase("dephase")) return true;
 
         for(SjasmStruct s:structs) {
             if (tokens.get(0).equals(s.name)) return true;
@@ -602,13 +624,20 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("output")) {
+            tokens.remove(0);
+            String fileName = "";
             // Just ignore ...
             while(!tokens.isEmpty()) {
                 if (Tokenizer.isSingleLineComment(tokens.get(0)) || 
                     Tokenizer.isMultiLineCommentStart(tokens.get(0))) break;
-                tokens.remove(0);
+                fileName += tokens.remove(0);
             }
 
+            outputFileNames.add(fileName);
+            if (outputFileNames.size() > 1) {
+                config.error("More than one 'output' statement in the same assembler file is not supported. Output of MDL might not be correct.");
+            }
+            
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);            
         }
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("defpage")) {
@@ -986,8 +1015,31 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             l.clear();
             
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
-        }        
-
+        }      
+        
+        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("phase")) {
+            tokens.remove(0);
+            
+            // parse as an "org":
+            Expression exp = config.expressionParser.parse(tokens, s, previous, code);
+            if (exp == null) {
+                config.error("Cannot parse phase address at: " + sl);
+                return false;
+            }            
+            s.type = SourceStatement.STATEMENT_ORG;
+            s.org = exp;
+            
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
+        }
+        
+        if (tokens.size() >= 1 && tokens.get(0).equalsIgnoreCase("dephase")) {
+            tokens.remove(0);
+            
+            // ignore for now...
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
+        }
+        
+        
         return parseLineStruct(tokens, l, sl, s, previous, source, code);
     }
 
@@ -1171,6 +1223,85 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                 }
             }
             return me;
+            
+        } else if (macro.name.equals("ifexists")) {
+            String fileName;
+            if (args.size() == 1 && args.get(0).evaluatesToStringConstant()) {
+                fileName = args.get(0).evaluateToString(macro.definingStatement, code, true);
+            } else if (args.size() == 1) {
+                // this macro allows for a file name without quotes, so, reconstruct the name:
+                String tmp = args.get(0).toString();
+                List<String> tokens = Tokenizer.tokenize(tmp);
+                fileName = "";
+                for(String token:tokens) fileName += token;
+            } else {
+                config.error("Could not extract the argument of ifexists macro with arguments: " + args);
+                return null;
+            }
+            String path = config.lineParser.resolveIncludePath(fileName, macroCall.source, macroCall.sl);
+            if (path == null) {
+                // do not expand the if:
+                return me;
+            } else {
+                // expand the if:
+                lines2.addAll(macro.lines);
+                return me;
+            }
+
+        } else if (macro.name.equals("ifnexists")) {
+            String fileName;
+            if (args.size() == 1 && args.get(0).evaluatesToStringConstant()) {
+                fileName = args.get(0).evaluateToString(macro.definingStatement, code, true);
+            } else if (args.size() == 1) {
+                // this macro allows for a file name without quotes, so, reconstruct the name:
+                String tmp = args.get(0).toString();
+                List<String> tokens = Tokenizer.tokenize(tmp);
+                fileName = "";
+                for(String token:tokens) fileName += token;
+            } else {
+                config.error("Could not extract the argument of ifexists macro with arguments: " + args);
+                return null;
+            }
+            String path = config.lineParser.resolveIncludePath(fileName, macroCall.source, macroCall.sl);
+            if (path != null) {
+                // do not expand the if:
+                return me;
+            } else {
+                // expand the if:
+                lines2.addAll(macro.lines);
+                return me;
+            }
+            
+        } else if (macro.name.equals("ifdif")) {
+            if (args.size() == 2) {
+                String arg1 = args.get(0).evaluate(macroCall, code, true) + "";
+                String arg2 = args.get(0).evaluate(macroCall, code, true) + "";
+                if (arg1.equals(arg2)) {
+                    return me;
+                } else {
+                    lines2.addAll(macro.lines);
+                    return me;                    
+                }
+            } else {
+                config.error("ifdif should have two arguments, instead of: " + args);
+                return null;
+            }
+
+        } else if (macro.name.equals("ifdifi")) {
+            if (args.size() == 2) {
+                String arg1 = args.get(0).evaluate(macroCall, code, true) + "";
+                String arg2 = args.get(0).evaluate(macroCall, code, true) + "";
+                if (arg1.equalsIgnoreCase(arg2)) {
+                    return me;
+                } else {
+                    lines2.addAll(macro.lines);
+                    return me;                    
+                }
+            } else {
+                config.error("ifdif should have two arguments, instead of: " + args);
+                return null;
+            }
+            
         } else {
             return null;
         }
@@ -1276,7 +1407,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                 org.org = page.start;
                 reconstructedFile.addStatement(org);
                 int pageStart = page.start.evaluateToInteger(page.s, code, true);
-                int pageSize = page.size.evaluateToInteger(page.s, code, true);
+                Integer pageSize = (page.size == null ? null:page.size.evaluateToInteger(page.s, code, true));
                 int currentAddress = pageStart;
                 for(SJasmCodeBlock block:page.blocks) {
                     if (block.actualAddress > currentAddress) {
@@ -1297,7 +1428,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                     code.resetAddresses();
                     currentAddress = block.actualAddress + block.size(code);
                 }
-                if (currentAddress < pageStart + pageSize) {
+                if (pageSize != null && currentAddress < pageStart + pageSize) {
                     // insert space:
                     SourceStatement space = new SourceStatement(SourceStatement.STATEMENT_DEFINE_SPACE, new SourceLine("", reconstructedFile, reconstructedFile.getStatements().size()+1), reconstructedFile, config);
                     space.space = Expression.operatorExpression(Expression.EXPRESSION_SUB,
@@ -1307,6 +1438,8 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                     space.space_value = Expression.constantExpression(0, config);
                     reconstructedFile.addStatement(space);
                     config.debug("inserting space (end of page) of " + ((pageStart + pageSize) - currentAddress) + " from " + currentAddress + " to " + (pageStart + pageSize));
+                } else {
+                    pageSize = currentAddress - pageStart;
                 }
                 config.debug("page " + idx + " from " + pageStart + " to " + (pageStart+pageSize));
             }

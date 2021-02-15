@@ -46,7 +46,9 @@ public class MDLConfig {
     public List<File> includeDirectories = new ArrayList<>();
 
     public boolean eagerMacroEvaluation = true;
-    public boolean eagerIFDEFMacroEvaluation = false;
+    // in some dialects, instead of ALL macros being evaluated eagerly, only a 
+    // few are (like conditionals):
+    public List<String> macrosToEvaluateEagerly = new ArrayList<>();   
     public boolean includeBinariesInAnalysis = false;
     public boolean labelsHaveSafeValues = true;  // If this is false, the optimizers will not trust
                                                  // the value MDL calculates for labels. This is useful, for example,

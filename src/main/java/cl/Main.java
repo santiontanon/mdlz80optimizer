@@ -33,7 +33,10 @@ public class Main {
         config.registerWorker(new BinaryGenerator(config));
 
         // Parse command line arguments:
-        if (!config.parseArgs(args)) System.exit(1);
+        if (!config.parseArgs(args)) {
+            config.error("Could not fully parse the arguments (error code 1).");
+            System.exit(1);
+        }
         
         // If there is nothing to do, just terminate:
         if (!config.somethingToDo()) {
@@ -43,10 +46,16 @@ public class Main {
 
         // Parse the code base:
         CodeBase code = new CodeBase(config);
-        if (!config.codeBaseParser.parseMainSourceFile(config.inputFile, code)) System.exit(2);
+        if (!config.codeBaseParser.parseMainSourceFile(config.inputFile, code)) {
+            config.error("Could not fully parse the code (error code 2).");
+            System.exit(2);
+        }
         
         // Execute all the requested workers according to the command-line arguments:
-        if (!config.executeWorkers(code)) System.exit(3);
+        if (!config.executeWorkers(code)) {
+            config.error("Could not fully execute some workers (error code 3).");
+            System.exit(3);
+        }
         
         if (config.optimizerStats.anyOptimization()) config.info("mdl optimization summary: " + config.optimizerStats.summaryString(config));
     }
