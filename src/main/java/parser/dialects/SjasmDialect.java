@@ -491,11 +491,11 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
         if (tokens.size() >= 1 && tokens.get(0).equalsIgnoreCase("ends")) {
             tokens.remove(0);
             if (struct.file == null) {
-                config.error("ends outside of a struct at " + sl);
+                config.error("ends outside of a struct in " + sl);
                 return false;
             }
             if (struct.file != source) {
-                config.error("struct split among multiple files is not supported at " + sl);
+                config.error("struct split among multiple files is not supported in " + sl);
                 return false;
             }
             
@@ -523,7 +523,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                         break;
                     }
                     default:
-                        config.error("Unsupported statement (type="+s2.type+") inside a struct definition at " + sl);
+                        config.error("Unsupported statement (type="+s2.type+") inside a struct definition in " + sl);
                         return false;
                 }
                 if (s2.label != null) {
@@ -551,7 +551,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             tokens.remove(0);
             Expression exp = config.expressionParser.parse(tokens, s, previous, code);
             if (exp == null) {
-                config.error("Cannot parse expression at " + sl);
+                config.error("Cannot parse expression in " + sl);
                 return false;
             }
             mapCounterStack.add(0, mapCounter);
@@ -568,7 +568,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             if (tokens.get(0).startsWith("#") && tokens.get(0).length() > 1) {
                 // this is a "#" plus a number attached together inside of a "map" group...
                 if (config.warning_ambiguous) {
-                    config.warn(tokens.get(0) + " is ambiguous syntax, please add a space between the # token and the field size to differentiate it from a hex constant in: " + sl);
+                    config.warn(tokens.get(0) + " is ambiguous syntax, please add a space between the # token and the field size to differentiate it from a hex constant in " + sl);
                 }
                 tokens.set(0, tokens.get(0).substring(1));
             } else {
@@ -576,11 +576,11 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             }
             Expression exp = config.expressionParser.parse(tokens, s, previous, code);
             if (exp == null) {
-                config.error("Cannot parse expression at " + sl);
+                config.error("Cannot parse expression in " + sl);
                 return false;
             }
             if (s.label == null) {
-                config.error("Field expression does not have a label at " + sl);
+                config.error("Field expression does not have a label in " + sl);
                 return false;
             }
             if (struct != null) {
@@ -596,12 +596,12 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             tokens.remove(0);
             Expression exp = config.expressionParser.parse(tokens, s, previous, code);
             if (exp == null) {
-                config.error("Cannot parse expression at " + sl);
+                config.error("Cannot parse expression in " + sl);
                 return false;
             }
             Integer value = exp.evaluateToInteger(s, code, false);
             if (value == null || value == Expression.FALSE) {
-                config.error("Assertion failed at " + sl);
+                config.error("Assertion failed in " + sl);
                 return false;
             }
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
@@ -646,14 +646,14 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             Expression pageStartExp = null;
             Expression pageSizeExp = null;
             if (pageExp == null) {
-                config.error("Cannot parse expression at " + sl);
+                config.error("Cannot parse expression in " + sl);
                 return false;
             }
             if (!tokens.isEmpty() && tokens.get(0).equals(",")) {
                 tokens.remove(0);
                 pageStartExp = config.expressionParser.parse(tokens, s, previous, code);
                 if (pageStartExp == null) {
-                    config.error("Cannot parse expression at " + sl);
+                    config.error("Cannot parse expression in " + sl);
                     return false;
                 }
             }
@@ -661,7 +661,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                 tokens.remove(0);
                 pageSizeExp = config.expressionParser.parse(tokens, s, previous, code);
                 if (pageSizeExp == null) {
-                    config.error("Cannot parse expression at " + sl);
+                    config.error("Cannot parse expression in " + sl);
                     return false;
                 }
             }
@@ -675,14 +675,14 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             Expression addressExp = null;
             Expression alignmentExp = null;
             if (!tokens.isEmpty() && tokens.get(0).equals("?")) {
-                config.error("Unsupported form of code keyword at " + sl);
+                config.error("Unsupported form of code keyword in " + sl);
                 return false;
             }                    
             if (!tokens.isEmpty() && tokens.get(0).equals("@")) {
                 tokens.remove(0);
                 addressExp = config.expressionParser.parse(tokens, s, previous, code);
                 if (addressExp == null) {
-                    config.error("Cannot parse expression at " + sl);
+                    config.error("Cannot parse expression in " + sl);
                     return false;
                 }
                 if (!tokens.isEmpty() && tokens.get(0).equals(",")) tokens.remove(0);
@@ -697,7 +697,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                 
                 alignmentExp = config.expressionParser.parse(tokens, s, previous, code);
                 if (alignmentExp == null) {
-                    config.error("Could not determine alignment processing code keyword at " + sl);
+                    config.error("Could not determine alignment processing code keyword in " + sl);
                     return false;                    
                 }                
                 if (!tokens.isEmpty() && tokens.get(0).equals(",")) tokens.remove(0);
@@ -716,27 +716,27 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                         int page1 = Integer.parseInt(token1);
                         int page2 = Integer.parseInt(token2);
                         if (page1 != page2) {
-                            config.error("Placing code in more than one possible page not yet supported at " + sl);
+                            config.error("Placing code in more than one possible page not yet supported in " + sl);
                             return false;
                         }
                         currentPage = page1;
                     } else {                
                         Expression pageExp = config.expressionParser.parse(tokens, s, previous, code);
                         if (pageExp == null) {
-                            config.error("Could not determine current page processing code keyword at " + sl);
+                            config.error("Could not determine current page processing code keyword in " + sl);
                             return false;                    
                         }
                         int page = pageExp.evaluateToInteger(s, code, false);
                         currentPage = page;
                     }
                 } else {
-                    config.error("Could not determine current page processing code keyword at " + sl);
+                    config.error("Could not determine current page processing code keyword in " + sl);
                     return false;                    
                 }
             }            
             
             if (currentPage == null) {
-                config.error("Could not determine current page processing code keyword at " + sl);
+                config.error("Could not determine current page processing code keyword in " + sl);
                 return false;
             }
             
@@ -758,7 +758,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                     int page1 = Integer.parseInt(token1);
                     int page2 = Integer.parseInt(token2);
                     if (page1 != page2) {
-                        config.error("Specifying more than one possible page not yet supported at " + sl);
+                        config.error("Specifying more than one possible page not yet supported in " + sl);
                         return false;
                     }
                     currentPage = page1;
@@ -766,7 +766,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                     Expression pageExp = null;
                     pageExp = config.expressionParser.parse(tokens, s, previous, code);
                     if (pageExp == null) {
-                        config.error("Cannot parse expression at " + sl);
+                        config.error("Cannot parse expression in " + sl);
                         return false;
                     }
                     int page = pageExp.evaluateToInteger(s, code, false);
@@ -779,7 +779,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                 s.type = SourceStatement.STATEMENT_NONE;
                 return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
             } else {
-                config.error("Missing page number at " + sl);
+                config.error("Missing page number in " + sl);
                 return false;                
             }
         }        
@@ -787,7 +787,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             tokens.remove(0);
             Expression numberExp = config.expressionParser.parse(tokens, s, previous, code);
             if (tokens.isEmpty() || !tokens.get(0).equals("]")) {
-                config.error("Cannot parse line at " + sl);
+                config.error("Cannot parse line in " + sl);
                 return false;
             }
             tokens.remove(0);
@@ -801,7 +801,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                 List<SourceStatement> l2 = config.lineParser.parse(tokensCopy, sl, source, previous, code, config);
                 config.expressionParser.sjasmConterVariables.remove(config.expressionParser.sjasmConterVariables.size()-1);
                 if (l2 == null) {
-                    config.error("Cannot parse line at " + sl);
+                    config.error("Cannot parse line in " + sl);
                     return false;
                 }
 
@@ -813,7 +813,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             // This is like an equ, but with a variable that changes value throughout parsing.
             // This only makes sense in eager execution, so, we check for that:
             if (!config.eagerMacroEvaluation) {
-                config.error("Non final variable defined in lazy evaluation mode at " + sl);
+                config.error("Non final variable defined in lazy evaluation mode in " + sl);
                 return false;
             }
             
@@ -902,7 +902,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                     }
                 }
                 if (!found) {
-                    config.error("Cannot close unexistent module at " + sl);
+                    config.error("Cannot close unexistent module in " + sl);
                     return false;
                 }
             }
@@ -934,7 +934,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             tokens.remove(0);
             Expression exp = config.expressionParser.parse(tokens, s, previous, code);
             if (exp == null) {
-                config.error("Cannot parse argument at " + sl);
+                config.error("Cannot parse argument in " + sl);
                 return false;                
             }
             
@@ -1023,7 +1023,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             // parse as an "org":
             Expression exp = config.expressionParser.parse(tokens, s, previous, code);
             if (exp == null) {
-                config.error("Cannot parse phase address at: " + sl);
+                config.error("Cannot parse phase address in " + sl);
                 return false;
             }            
             s.type = SourceStatement.STATEMENT_ORG;

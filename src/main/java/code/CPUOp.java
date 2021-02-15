@@ -277,7 +277,7 @@ public class CPUOp {
                     }
                     Integer target = args.get(args.size()-1).evaluateToInteger(s, code, true);
                     if (target == null) {
-                        config.error("Unable to resolve '" + args.get(args.size()-1) + "' at " + s.sl);
+                        config.error("Unable to resolve '" + args.get(args.size()-1) + "' in " + s.sl);
                         return null;                        
                     }
                     int offset = (target - base)&0xff;
@@ -323,7 +323,7 @@ public class CPUOp {
                 for(Expression arg:args) {
                     String undefined = arg.findUndefinedSymbol(code);
                     if (undefined != null) {
-                        config.error("Undefined symbol \"" + undefined + "\" at " + s.sl.fileNameLineString());
+                        config.error("Undefined symbol \"" + undefined + "\" in " + s.sl.fileNameLineString());
                         return null;
                     }
                     if (arg.evaluatesToIntegerConstant()) {
@@ -346,7 +346,7 @@ public class CPUOp {
                 for(Expression arg:args) {
                     String undefined = arg.findUndefinedSymbol(code);
                     if (undefined != null) {
-                        config.error("Undefined symbol \"" + undefined + "\" at " + s.sl.fileNameLineString());
+                        config.error("Undefined symbol \"" + undefined + "\" in " + s.sl.fileNameLineString());
                         return null;
                     }
                     if (arg.evaluatesToIntegerConstant()) {

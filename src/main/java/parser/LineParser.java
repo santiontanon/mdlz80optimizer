@@ -277,7 +277,7 @@ public class LineParser {
             }
 
         } else if (isKeyword(token, config.preProcessor.MACRO_ENDM)) {
-            config.error(config.preProcessor.MACRO_ENDM + " keyword found outside of a macro at " + source.fileName + ", "
+            config.error(config.preProcessor.MACRO_ENDM + " keyword found outside of a macro in " + source.fileName + ", "
                     + sl.fileNameLineString());
             return false;
 
@@ -543,7 +543,7 @@ public class LineParser {
                 if (path == null) return false;
                 SourceFile includedSource = codeBaseParser.parseSourceFile(path, code, source, s);
                 if (includedSource == null) {
-                    config.error("Problem including file at " + sl);
+                    config.error("Problem including file in " + sl);
                     return false;
                 } else {
                     s.type = SourceStatement.STATEMENT_INCLUDE;
@@ -1041,7 +1041,7 @@ public class LineParser {
             }
         }
 
-        config.error("Cannot find include file \"" + rawFileName + "\" at " + sl.fileNameLineString());
+        config.error("Cannot find include file \"" + rawFileName + "\" in " + sl.fileNameLineString());
         return null;
     }
 

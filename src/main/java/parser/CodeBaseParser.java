@@ -215,7 +215,7 @@ public class CodeBaseParser {
                 } else {
                     List<SourceStatement> l = config.lineParser.parse(tokens, sl, f, f.getStatements().size(), code, config);
                     if (l == null) {
-                        config.error("Error parsing source file " + f.fileName + " at: " + sl);
+                        config.error("Error parsing source file " + f.fileName + " in " + sl);
                         return false;
                     }
                     for(SourceStatement s:l) {

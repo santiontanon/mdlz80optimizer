@@ -148,7 +148,7 @@ public class GlassDialect implements Dialect {
                 return false;
             }
             if (exp.type != Expression.EXPRESSION_SYMBOL) {
-                config.error("Invalid section name at " + sl);
+                config.error("Invalid section name in " + sl);
                 return false;
             }
             String sectionName = getSectionName(exp.symbolName, code);
@@ -175,13 +175,13 @@ public class GlassDialect implements Dialect {
                 
                 return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
             } else {
-                config.error("No section to terminate at " + sl);
+                config.error("No section to terminate in " + sl);
                 return false;
             }
         }
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("proc")) {
             if (s.label == null) {
-                config.error("Proc with no name at " + sl);
+                config.error("Proc with no name in " + sl);
                 return false;
             }
             tokens.remove(0);

@@ -362,11 +362,11 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
         if (tokens.size() >= 1 && tokens.get(0).equalsIgnoreCase("ends")) {
             tokens.remove(0);
             if (struct.file == null) {
-                config.error("ends outside of a struct at " + sl);
+                config.error("ends outside of a struct in " + sl);
                 return false;
             }
             if (struct.file != source) {
-                config.error("struct split among multiple files is not supported at " + sl);
+                config.error("struct split among multiple files is not supported in " + sl);
                 return false;
             }
             
@@ -394,7 +394,7 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
                         break;
                     }
                     default:
-                        config.error("Unsupported statement (type="+s2.type+") inside a struct definition at " + sl);
+                        config.error("Unsupported statement (type="+s2.type+") inside a struct definition in " + sl);
                         return false;
                 }
                 if (s2.label != null) {
@@ -423,12 +423,12 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
             tokens.remove(0);
             Expression exp = config.expressionParser.parse(tokens, s, previous, code);
             if (exp == null) {
-                config.error("Cannot parse expression at " + sl);
+                config.error("Cannot parse expression in " + sl);
                 return false;
             }
             Integer value = exp.evaluateToInteger(s, code, false);
             if (value == null || value == Expression.FALSE) {
-                config.error("Assertion failed at " + sl);
+                config.error("Assertion failed in " + sl);
                 return false;
             }
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
@@ -515,7 +515,7 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
                     }
                 }
                 if (!found) {
-                    config.error("Cannot close unexistent module at " + sl);
+                    config.error("Cannot close unexistent module in " + sl);
                     return false;
                 }
             }
@@ -658,7 +658,7 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
             // This is like an equ, but with a variable that changes value throughout parsing.
             // This only makes sense in eager execution, so, we check for that:
             if (!config.eagerMacroEvaluation) {
-                config.error("Non final variable defined in lazy evaluation mode at " + sl);
+                config.error("Non final variable defined in lazy evaluation mode in " + sl);
                 return false;
             }
             

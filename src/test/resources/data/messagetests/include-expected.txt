@@ -1,3 +1,3 @@
-ERROR: Cannot find include file "inexistent-include.asm" at data/messagetests/include.asm#3
-ERROR: Error parsing source file data/messagetests/include.asm at: data/messagetests/include.asm#3: 	include "inexistent-include.asm"
+ERROR: Cannot find include file "inexistent-include.asm" in data/messagetests/include.asm#3
+ERROR: Error parsing source file data/messagetests/include.asm in data/messagetests/include.asm#3: 	include "inexistent-include.asm"
 ERROR: Problem parsing file data/messagetests/include.asm

@@ -129,7 +129,7 @@ public abstract class SjasmDerivativeDialect implements Dialect {
                             s2 = new SourceStatement(SourceStatement.STATEMENT_DATA_DOUBLE_WORDS, sl, source, config);
                             break;
                         default:
-                            config.error("Field " + st.attributeNames.get(i) + " of struct " + st.name + " has an unsupported size in: " + sl);
+                            config.error("Field " + st.attributeNames.get(i) + " of struct " + st.name + " has an unsupported size in " + sl);
                             return false;
                     }
                     if (i == 0) s2.label = s.label;

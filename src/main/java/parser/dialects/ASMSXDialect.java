@@ -507,7 +507,7 @@ public class ASMSXDialect implements Dialect {
             // This is like an equ, but with a variable that changes value throughout parsing.
             // This only makes sense in eager execution, so, we check for that:
             if (!config.eagerMacroEvaluation) {
-                config.error("Non final variable defined in lazy evaluation mode at " + sl);
+                config.error("Non final variable defined in lazy evaluation mode in " + sl);
                 return false;
             }
             
