@@ -1136,3 +1136,5 @@ _undoPoint00102:
 s__INITIALIZER:
 s__CABS:
 	db "some random sentence"
+some_label: equ $
+some_constant: equ 1

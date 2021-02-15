@@ -1171,3 +1171,5 @@ _undoPoint::
 	.area _INITIALIZER
 	.area _CABS (ABS)
 	.ascii "some random sentence"
+some_label:
+some_constant .equ 1

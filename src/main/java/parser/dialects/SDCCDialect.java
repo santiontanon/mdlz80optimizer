@@ -298,6 +298,16 @@ public class SDCCDialect implements Dialect {
     }
     
     
+    public String toStringLabelWithoutSafetyEqu(SourceStatement s, boolean useOriginalNames)
+    {
+        boolean tmp = config.output_safetyEquDollar;
+        config.output_safetyEquDollar = false;
+        String str = s.toStringLabel(useOriginalNames, true);
+        config.output_safetyEquDollar = tmp;
+        return str;
+    }
+    
+    
     @Override
     public String statementToString(SourceStatement s, CodeBase code, boolean useOriginalNames, Path rootPath) {
         switch(s.type) {
@@ -305,14 +315,14 @@ public class SDCCDialect implements Dialect {
                 if (linesToKeepIfGeneratingDialectAsm.contains(s.sl)) {
                     return s.sl.line;
                 } else {
-                    String str = s.toStringLabel(useOriginalNames, true);
+                    String str = toStringLabelWithoutSafetyEqu(s, useOriginalNames);
                     if (s.comment != null) str += "  " + s.comment;
                     return str;
                 }
             
             case SourceStatement.STATEMENT_CPUOP:
             {
-                String str = s.toStringLabel(useOriginalNames, true) + "    ";
+                String str = toStringLabelWithoutSafetyEqu(s, useOriginalNames) + "    ";
                 
                 // sdasz80 does not like expressinos of the type: (label & 0xff),
                 // so, we translate them to its own syntax using the "<(...)" and ">(...)" operators:
@@ -403,52 +413,56 @@ public class SDCCDialect implements Dialect {
                 
                 return str;
             }
+            
             case SourceStatement.STATEMENT_CONSTANT:
             {
                 boolean tmp = config.output_equsWithoutColon;
                 // sdasz80 does not like colons in equs:
                 config.output_equsWithoutColon = true;
-                String str = s.toStringLabel(useOriginalNames, true) + " ";
+                String str = toStringLabelWithoutSafetyEqu(s, useOriginalNames) + " ";
                 config.output_equsWithoutColon = tmp;
                 str += config.lineParser.KEYWORD_EQU+" " + s.label.exp.toString();
                 return str;
-            }            
+            }   
+            
             case SourceStatement.STATEMENT_DATA_BYTES:
-                {
-                    String str = s.toStringLabel(useOriginalNames, true) + "    ";
-                    if (s.data.size() == 1 && s.data.get(0).evaluatesToStringConstant()) {
-                        str += ".ascii ";                        
-                    } else {
-                        str += ".byte ";
-                    }
-                    for(int i = 0;i<s.data.size();i++) {
-                        str += renderExpressionWithConstantMark(s.data.get(i), useOriginalNames, code);
-                        if (i != s.data.size()-1) {
-                            str += ", ";
-                        }
-                    }
-                    if (s.comment != null) str += "  " + s.comment; 
-                    return str;
+            {
+                String str = toStringLabelWithoutSafetyEqu(s, useOriginalNames) + "    ";
+                if (s.data.size() == 1 && s.data.get(0).evaluatesToStringConstant()) {
+                    str += ".ascii ";                        
+                } else {
+                    str += ".byte ";
                 }
+                for(int i = 0;i<s.data.size();i++) {
+                    str += renderExpressionWithConstantMark(s.data.get(i), useOriginalNames, code);
+                    if (i != s.data.size()-1) {
+                        str += ", ";
+                    }
+                }
+                if (s.comment != null) str += "  " + s.comment; 
+                return str;
+            }
+
             case SourceStatement.STATEMENT_DATA_WORDS:
-                {
-                    String str = s.toStringLabel(useOriginalNames, true) + "    ";
-                    str += ".word ";
-                    for(int i = 0;i<s.data.size();i++) {
-                        str += renderExpressionWithConstantMark(s.data.get(i), useOriginalNames, code);
-                        if (i != s.data.size()-1) {
-                            str += ", ";
-                        }
+            {
+                String str = toStringLabelWithoutSafetyEqu(s, useOriginalNames) + "    ";
+                str += ".word ";
+                for(int i = 0;i<s.data.size();i++) {
+                    str += renderExpressionWithConstantMark(s.data.get(i), useOriginalNames, code);
+                    if (i != s.data.size()-1) {
+                        str += ", ";
                     }
-                    if (s.comment != null) str += "  " + s.comment;
-                    return str;
                 }
+                if (s.comment != null) str += "  " + s.comment;
+                return str;
+            }
 
             case SourceStatement.STATEMENT_DEFINE_SPACE:
-                {
-                    // SDCC does not allow a "value":
-                    return "    "+config.lineParser.KEYWORD_DS+" " + s.space;
-                }
+            {
+                // SDCC does not allow a "value":
+                return "    "+config.lineParser.KEYWORD_DS+" " + s.space;
+            }
+            
             default:
                 return s.toStringUsingRootPath(rootPath, useOriginalNames);
         }

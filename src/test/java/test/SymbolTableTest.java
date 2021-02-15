@@ -36,7 +36,7 @@ public class SymbolTableTest {
 
     private boolean test(String inputFile, String expectedOutputFile) throws IOException
     {
-        Assert.assertTrue(config.parseArgs(inputFile));
+        Assert.assertTrue(config.parseArgs(inputFile, "-hex#"));
         Assert.assertTrue(
                 "Could not parse file " + inputFile,
                 config.codeBaseParser.parseMainSourceFile(config.inputFile, code));

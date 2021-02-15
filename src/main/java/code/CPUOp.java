@@ -266,11 +266,20 @@ public class CPUOp {
             int baseByte = Tokenizer.parseHex(v[0]);
             if (v[1].equals("")) {
                 data.add(baseByte);
+                
             } else if (v[1].equals("o")) {
                 // jr/djnz offset:
                 if (spec.isJump()) {
                     int base = s.getAddress(code) + spec.sizeInBytes;
-                    int target = args.get(args.size()-1).evaluateToInteger(s, code, true);
+                    if (args == null || args.isEmpty() || args.get(args.size()-1) == null) {
+                        config.error("Unable to convert " + this + " to bytes! Could not find the target label for the jump");
+                        return null;                        
+                    }
+                    Integer target = args.get(args.size()-1).evaluateToInteger(s, code, true);
+                    if (target == null) {
+                        config.error("Unable to resolve '" + args.get(args.size()-1) + "' at " + s.sl);
+                        return null;                        
+                    }
                     int offset = (target - base)&0xff;
                     data.add(offset);
                 } else {

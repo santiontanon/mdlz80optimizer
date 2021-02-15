@@ -39,6 +39,7 @@ public class MDLConfig {
 
     public String cpuInstructionSet = "data/z80msx-instruction-set.tsv";
     public String timeUnit = "t-state";
+    public boolean hexStyleChanged = false; // "true" if the user explicitly requests a hex style
     public int hexStyle = HEX_STYLE_HASH;
     public String dialect = Dialects.defaultDialect();
     public Dialect dialectParser = null;
@@ -283,31 +284,37 @@ public class MDLConfig {
 
                     case "-hex#":
                         hexStyle = HEX_STYLE_HASH;
+                        hexStyleChanged = true;
                         args.remove(0);
                         break;
 
                     case "-HEX#":
                         hexStyle = HEX_STYLE_HASH_CAPS;
+                        hexStyleChanged = true;
                         args.remove(0);
                         break;
 
                     case "-hexh":
                         hexStyle = HEX_STYLE_H;
+                        hexStyleChanged = true;
                         args.remove(0);
                         break;
 
                     case "-HEXH":
                         hexStyle = HEX_STYLE_H_CAPS;
+                        hexStyleChanged = true;
                         args.remove(0);
                         break;
 
                     case "-hex0x":
                         hexStyle = HEX_STYLE_0X;
+                        hexStyleChanged = true;
                         args.remove(0);
                         break;
 
                     case "-HEX0X":
                         hexStyle = HEX_STYLE_0X_CAPS;
+                        hexStyleChanged = true;
                         args.remove(0);
                         break;
                         
