@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import cl.MDLConfig;
+import cl.MDLLogger;
 import cl.OptimizationResult;
 import code.CodeBase;
 import code.SourceFile;
@@ -85,7 +86,7 @@ public class PatternBasedOptimizer implements MDLWorker {
     public String docString() {
         return "  -po: (task) Runs the pattern-based optimizer using the latest settings. Notice that the -posilent, -poapply, etc. flags need to be passed *before* the call to -po that they which to affect and which is the one that triggers the optimizer. You can pass an optional parameter, like '-po size' or '-po speed', which are shortcuts for '-po -popatterns data/pbo-patterns-size.txt' and '-po -popatterns data/pbo-patterns-speed.txt' (some dialects might change the defaults of these two)\n" +
                "  -posilent: Supresses the pattern-based-optimizer output\n" +
-               "  -poapply: For each assembler <file> parsed by MDL, a corresponding <file>.mdl.asm is generated with the optimizations applied to it.\n" + 
+               "  -poapply: "+MDLLogger.ANSI_RED+"(deprecated) "+MDLLogger.ANSI_RESET+"For each assembler <file> parsed by MDL, a corresponding <file>.mdl.asm is generated with the optimizations applied to it.\n" + 
                "  -popotential: Reports lines where a potential optimization was not applied for safety, but could maybe be done manually (at most one potential optimization per line is shown).\n" +
                "  -popotential-all: Same as above, but without the one-per-line constraint.\n" +
                "  -popatterns <file>: specifies the file to load optimization patterns from (default 'data/pbo-patterns.txt', " +

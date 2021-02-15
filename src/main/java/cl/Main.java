@@ -36,7 +36,10 @@ public class Main {
         if (!config.parseArgs(args)) System.exit(1);
         
         // If there is nothing to do, just terminate:
-        if (!config.somethingToDo()) return;
+        if (!config.somethingToDo()) {
+            config.warn("Nothing to do. Please specify some task for MDL to do.");
+            return;
+        }
 
         // Parse the code base:
         CodeBase code = new CodeBase(config);

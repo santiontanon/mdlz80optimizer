@@ -71,6 +71,11 @@ public class MessagesTest {
         for(int i = 0;i<Math.max(expectedOutputLines.length, lines.length);i++) {
             String expected = (i<expectedOutputLines.length ? expectedOutputLines[i]:"");
             String actual = (i<lines.length ? lines[i]:"");
+            
+            // remove the colors:
+            actual = actual.replace(MDLLogger.ANSI_RESET, "");
+            actual = actual.replace(MDLLogger.ANSI_YELLOW, "");
+            actual = actual.replace(MDLLogger.ANSI_RED, "");
             Assert.assertTrue(
                     "\nexpected: '"+expected+"'\nbut found: '"+actual+"'",
                     expected.equals(actual));

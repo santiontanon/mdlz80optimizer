@@ -15,6 +15,11 @@ public class MDLLogger {
     public static final int WARNING = 3;
     public static final int ERROR = 4;
     public static final int SILENT = 5;
+    
+    // colors:
+    public static final String ANSI_RESET = "\u001B[0m";
+    public static final String ANSI_RED = "\u001B[31m";
+    public static final String ANSI_YELLOW = "\u001B[33m";
 
     List<Integer> minLevelToLogStack = new ArrayList<>();
     int minLevelToLog = INFO;
@@ -68,10 +73,10 @@ public class MDLLogger {
                 out.println("INFO: " + msg);
                 break;
             case WARNING:
-                out.println("WARNING: " + msg);
+                out.println(ANSI_YELLOW + "WARNING: " + msg + ANSI_RESET);
                 break;
             case ERROR:
-                err.println("ERROR: " + msg);
+                err.println(ANSI_RED + "ERROR: "+ msg + ANSI_RESET);
                 break;
             default:
                 out.println(msg);
