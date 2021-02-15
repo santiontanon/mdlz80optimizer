@@ -11,23 +11,37 @@ The output of the MDL pattern-based optimizer can be integrated into VSCode usin
 		"command": "java -jar mdl.jar <main source> -po -dialect <dialect>",
 		"group": "build",
 		"problemMatcher": {
-			"applyTo": "allDocuments",
-			"fileLocation": [
-				"autodetect",
-				"${workspaceFolder}"
-			],
-			"pattern": [
-				{
-					"regexp": "^(\\w+): Pattern-based optimization in (.+)#([0-9]+): (.+)$",
-					"file": 2,
-					"line": 3,
-					"severity": 1,
-					"message": 4
-				}
-			]
-		}
+	        "applyTo": "allDocuments",
+	        "fileLocation": [
+	          "autodetect",
+	          "${workspaceFolder}"
+	        ],
+	        "pattern": [
+	          {
+	            "regexp": "^(\\w+): (.+) in (.+)#([0-9]+): (.+)$",
+	            "file": 3,
+	            "line": 4,
+	            "severity": 1,
+	            "message": 5,
+	            "code": 2
+	          }
+	        ]
+	    },
+      	"presentation": {
+        	"echo": false,
+	        "focus": false,
+	        "panel": "shared",
+	        "showReuseMessage": false,
+	        "clear": true,
+	        "revealProblems": "onProblem"
+	    }
 	}]
 }
+
+
+
 ```
 
 You can, of course expand this to include other output from MDL, such as style warnings.
+
+Thanks to theNestruo for the initial version and to nataliapc for improvements over it!
