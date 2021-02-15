@@ -36,14 +36,16 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
     public class SJasmCodeBlock extends CodeBlock {
         int page = -1;
         Expression address;
+        Expression alignment;
         int actualAddress = -1;
         
-        public SJasmCodeBlock(SourceStatement a_s, int a_page, Expression a_address)
+        public SJasmCodeBlock(SourceStatement a_s, int a_page, Expression a_address, Expression a_alignment)
         {
             super(null, CodeBlock.TYPE_UNKNOWN, a_s);
             startStatement = a_s;
             page = a_page;
             address = a_address;
+            alignment = a_alignment;
         }
         
         public int size(CodeBase code)
@@ -71,9 +73,18 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
         }
         
         
-        public boolean addBlock(SJasmCodeBlock block, CodeBase code)
+        public boolean addBlock(SJasmCodeBlock block, CodeBase code, MDLConfig config)
         {
             int spot = -1;
+            int alignment = 1;
+            if (block.alignment != null) {
+                Integer tmp = block.alignment.evaluateToInteger(null, code, true);
+                if (tmp == null) {
+                    config.error("Could not evaluate the alignment expression of a block: " + block.alignment);
+                    return false;
+                }
+                alignment = tmp;
+            }
             if (block.address != null) {
                 // check if it fits:
                 int blockAddress = block.address.evaluateToInteger(block.startStatement, code, true);
@@ -100,26 +111,30 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                 int pageStart = start.evaluateToInteger(s, code, true);
                 int blockAddress = pageStart;
                 int blockSize = block.size(code);
-
-                for(SJasmCodeBlock b2:blocks) {
-                    if (b2.actualAddress-blockAddress >= blockSize) {
+                int alignedAddress = blockAddress + (alignment - (blockAddress%alignment))%alignment;
+                
+                for(SJasmCodeBlock b2:blocks) {                    
+                    if (b2.actualAddress-alignedAddress >= blockSize) {
                         // found a spot!
                         spot = blocks.indexOf(b2);
                         break;
                     }
                     blockAddress = b2.actualAddress+b2.size(code);
+                    alignedAddress = blockAddress + (alignment - (blockAddress%alignment))%alignment;
                 }
                 if (spot == -1) {
                     // add at the end:
-                    int spaceLeft = (pageStart + size.evaluateToInteger(s, code, false)) - blockAddress;
+                    // Make sure the address is properly aligned:
+                    alignedAddress = blockAddress + (alignment - (blockAddress%alignment))%alignment;
+                    int spaceLeft = (pageStart + size.evaluateToInteger(s, code, false)) - alignedAddress;
                     if (spaceLeft >= blockSize) {
-                        block.actualAddress = blockAddress;
+                        block.actualAddress = alignedAddress;
                         blocks.add(block);
                     } else {
                         return false;
                     }
                 } else {
-                    block.actualAddress = blockAddress;
+                    block.actualAddress = alignedAddress;
                     blocks.add(spot, block);
                 }
                 return true;
@@ -370,6 +385,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
         Tokenizer.stringEscapeSequences.put("v", "\u0011");
         config.lineParser.applyEscapeSequencesToIncludeArguments = false;
         
+        /*
         forbiddenLabelNames.add("struct");
         forbiddenLabelNames.add("ends");
         forbiddenLabelNames.add("byte");
@@ -388,6 +404,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
         forbiddenLabelNames.add("align");
         forbiddenLabelNames.add("module");
         forbiddenLabelNames.add("endmodule");
+        */
     }
         
     
@@ -627,6 +644,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
         if (tokens.size() >= 1 && tokens.get(0).equalsIgnoreCase("code")) {
             tokens.remove(0);
             Expression addressExp = null;
+            Expression alignmentExp = null;
             if (!tokens.isEmpty() && tokens.get(0).equals("?")) {
                 config.error("Unsupported form of code keyword at " + sl);
                 return false;
@@ -640,17 +658,60 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                 }
                 if (!tokens.isEmpty() && tokens.get(0).equals(",")) tokens.remove(0);
             }
-            if (!tokens.isEmpty() && tokens.get(0).equals("#")) {
-                config.error("Unsupported form of code keyword at " + sl);
-                return false;
+            if (!tokens.isEmpty() && tokens.get(0).startsWith("#")) {
+                if (tokens.get(0).equals("#")) {
+                    tokens.remove(0);
+                } else {
+                    // remove the '#' character:
+                    tokens.set(0, tokens.get(0).substring(1));
+                }
+                
+                alignmentExp = config.expressionParser.parse(tokens, s, previous, code);
+                if (alignmentExp == null) {
+                    config.error("Could not determine alignment processing code keyword at " + sl);
+                    return false;                    
+                }                
+                if (!tokens.isEmpty() && tokens.get(0).equals(",")) tokens.remove(0);
             }
             if (!tokens.isEmpty() && tokens.get(0).equalsIgnoreCase("page")) {
                 tokens.remove(0);
-                Expression pageExp = config.expressionParser.parse(tokens, s, previous, code);
-                int page = pageExp.evaluateToInteger(s, code, false);
-                currentPage = page;
+                
+                // check if it's something of the form: "1..5":
+                if (!tokens.isEmpty()) {
+                    String pageToken = tokens.get(0);
+                    int idx = pageToken.indexOf("..");
+                    if (idx != -1) {
+                        tokens.remove(0);
+                        String token1 = pageToken.substring(0, idx);
+                        String token2 = pageToken.substring(idx+2);
+                        int page1 = Integer.parseInt(token1);
+                        int page2 = Integer.parseInt(token2);
+                        if (page1 != page2) {
+                            config.error("Placing code in more than one possible page not yet supported at " + sl);
+                            return false;
+                        }
+                        currentPage = page1;
+                    } else {                
+                        Expression pageExp = config.expressionParser.parse(tokens, s, previous, code);
+                        if (pageExp == null) {
+                            config.error("Could not determine current page processing code keyword at " + sl);
+                            return false;                    
+                        }
+                        int page = pageExp.evaluateToInteger(s, code, false);
+                        currentPage = page;
+                    }
+                } else {
+                    config.error("Could not determine current page processing code keyword at " + sl);
+                    return false;                    
+                }
             }            
-            codeBlocks.add(new SJasmCodeBlock(s, currentPage, addressExp));
+            
+            if (currentPage == null) {
+                config.error("Could not determine current page processing code keyword at " + sl);
+                return false;
+            }
+            
+            codeBlocks.add(new SJasmCodeBlock(s, currentPage, addressExp, alignmentExp));
             
             // ignore (but still add the statement, so we know where the codeblock starts)
             s.type = SourceStatement.STATEMENT_NONE;
@@ -658,21 +719,40 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
         }
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("page")) {
             tokens.remove(0);
-            Expression pageExp = null;
-            pageExp = config.expressionParser.parse(tokens, s, previous, code);
-            if (pageExp == null) {
-                config.error("Cannot parse expression at " + sl);
-                return false;
+            if (!tokens.isEmpty()) {
+                String pageToken = tokens.get(0);
+                int idx = pageToken.indexOf("..");
+                if (idx != -1) {
+                    tokens.remove(0);
+                    String token1 = pageToken.substring(0, idx);
+                    String token2 = pageToken.substring(idx+2);
+                    int page1 = Integer.parseInt(token1);
+                    int page2 = Integer.parseInt(token2);
+                    if (page1 != page2) {
+                        config.error("Specifying more than one possible page not yet supported at " + sl);
+                        return false;
+                    }
+                    currentPage = page1;
+                } else {
+                    Expression pageExp = null;
+                    pageExp = config.expressionParser.parse(tokens, s, previous, code);
+                    if (pageExp == null) {
+                        config.error("Cannot parse expression at " + sl);
+                        return false;
+                    }
+                    int page = pageExp.evaluateToInteger(s, code, false);
+                    currentPage = page;
+                }
+                
+                Expression addressExp = null;
+                codeBlocks.add(new SJasmCodeBlock(s, currentPage, addressExp, null));
+                // parse it as an "org"
+                s.type = SourceStatement.STATEMENT_NONE;
+                return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
+            } else {
+                config.error("Missing page number at " + sl);
+                return false;                
             }
-            int page = pageExp.evaluateToInteger(s, code, false);
-            currentPage = page;
-            Expression addressExp = null;
-            
-            codeBlocks.add(new SJasmCodeBlock(s, currentPage, addressExp));            
-            
-            // parse it as an "org"
-            s.type = SourceStatement.STATEMENT_NONE;
-            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }        
         if (tokens.size() >= 3 && tokens.get(0).equalsIgnoreCase("[")) {
             tokens.remove(0);
@@ -1108,7 +1188,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
         if (!codeBlocks.isEmpty()) {
                 
             // Reorganize all the "code" blocks into the different pages:
-            SJasmCodeBlock initialBlock = new SJasmCodeBlock(null, -1, null);
+            SJasmCodeBlock initialBlock = new SJasmCodeBlock(null, -1, null, null);
             SJasmCodeBlock currentBlock = initialBlock;
 
             {
@@ -1150,7 +1230,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                     blocksToAssign.add(b);
                 } else {
                     CodePage page = pages.get(b.page);
-                    if (!page.addBlock(b, code)) {
+                    if (!page.addBlock(b, code, config)) {
                         config.error("Could not add block of size " + b.size(code) + " to page " + page + "!");
                         return false;
                     }
@@ -1167,7 +1247,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
 
             for(SJasmCodeBlock b:blocksToAssign) {
                 CodePage page = pages.get(b.page);
-                if (!page.addBlock(b, code)) {
+                if (!page.addBlock(b, code, config)) {
                     config.error("Could not add block of size " + b.size(code) + " to page " + page + "!");
                     return false;
                 }
