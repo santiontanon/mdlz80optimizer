@@ -504,7 +504,7 @@ public class CodeReorganizer implements MDLWorker {
                     "move lines " + toMove.statements.get(0).sl.lineNumber + " - " + 
                                     toMove.statements.get(toMove.statements.size()-1).sl.lineNumber + 
                     " to right before " + destination.statements.get(0).sl.fileNameLineString() + 
-                    " ("+bytesSaved+" bytes, " + timeSavedString + " " + config.timeUnit+"s saved)");
+                    " to remove a jump statement ("+bytesSaved+" bytes, " + timeSavedString + " " + config.timeUnit+"s saved)");
             
             // merge blocks:
             destination.ID = toMove.ID + "+" + destination.ID;
