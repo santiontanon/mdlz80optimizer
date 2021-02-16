@@ -128,16 +128,17 @@ regsNotUsedAfter(2,HL)
 ; constraints:
 ; regsNotUsedAfter(2,HL)
 
-pattern: Replace ld a,?const1; ld (hl),a with ld (hl),?const1
-0: ld a,?const1
+pattern: Replace ld ?reg,?const1; ld (hl),?reg with ld (hl),?const1
+0: ld ?reg,?const1
 1: *
-2: ld (hl),a
+2: ld (hl),?reg
 replacement:
 0: ld (hl),?const1
 1: *
 constraints:
-regsNotUsed(1,A)
-regsNotUsedAfter(2,A)
+regsNotModified(1, HL)
+regsNotUsed(1,?reg)
+regsNotUsedAfter(2,?reg)
 
 pattern: Replace dec b; jr nz,label with djnz label
 0: dec b
