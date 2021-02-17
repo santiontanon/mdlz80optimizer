@@ -106,19 +106,8 @@ public class BinaryGenerator implements MDLWorker {
                 }
 
                 case SourceStatement.STATEMENT_DATA_BYTES:
-                    for(Expression exp: ss.data) {
-                        if (exp.evaluatesToNumericConstant()) {
-                            int v = exp.evaluateToInteger(ss, code, true);
-                            os.write(v&0x00ff);
-                        } else if (exp.evaluatesToStringConstant()) {
-                            String v = exp.evaluateToString(ss, code, true);
-                            for(int i = 0;i<v.length();i++) {
-                                os.write(v.charAt(i));
-                            }
-                        } else {
-                            config.error("Cannot evaluate expression " + exp + "when generating a binary.");
-                            return false;
-                        }
+                    for(Expression exp: ss.data) {        
+                        if (!expressionToBytes(exp, ss, code, os)) return false;
                     }
                     break;
 
@@ -175,6 +164,42 @@ public class BinaryGenerator implements MDLWorker {
         
         return true;
     }
+    
+    
+    public boolean expressionToBytes(Expression exp, SourceStatement ss, CodeBase code, OutputStream os) throws Exception 
+    {
+        Object val = exp.evaluate(ss, code, true);
+        if (val == null) {
+            config.error("Cannot evaluate expression " + exp + "when generating a binary.");
+            return false;
+        }
+        return valueToBytes(val, ss, code, os);
+    }
+    
+    
+    public boolean valueToBytes(Object val, SourceStatement ss, CodeBase code, OutputStream os) throws Exception 
+    {
+        if (val instanceof Integer) {
+            int v = (Integer)val;
+            os.write(v&0x00ff);
+        } else if (val instanceof String) {
+            String v = (String)val;
+            for(int i = 0;i<v.length();i++) {
+                os.write(v.charAt(i));
+            }
+        } else if (val instanceof List) {
+            for(Object val2:(List)val) {
+                if (!valueToBytes(val2, ss, code, os)) return false;
+            }
+        } else if (val instanceof Expression) {
+            return expressionToBytes((Expression)val, ss, code, os);
+        } else {
+            config.error("Unsupported value " + val + "when generating a binary.");
+            return false;
+        }
+        
+        return true;
+    }    
     
     
     @Override

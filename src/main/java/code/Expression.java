@@ -44,6 +44,7 @@ public class Expression {
     public static final int EXPRESSION_LOGICAL_NEGATION = 26;
     public static final int EXPRESSION_DIALECT_FUNCTION = 27;
     public static final int EXPRESSION_PLUS_SIGN = 29;  // just something like: +1, or +(3-5)
+    public static final int EXPRESSION_LIST = 30;
     
     public static final int RENDER_DEFAULT = 0;
     public static final int RENDER_AS_8BITHEX = 1;
@@ -131,6 +132,17 @@ public class Expression {
                     return stringConstant;
                 }
 
+            case EXPRESSION_LIST:
+            {
+                List<Object> l = new ArrayList<>();
+                for(Expression exp:args) {
+                    Object v = exp.evaluateInternal(s, code, silent, previous, variableStack);
+                    if (v == null) return null;
+                    l.add(v);
+                }
+                return l;
+            }
+                
             case EXPRESSION_SYMBOL: {
                 if (symbolName.equals(CodeBase.CURRENT_ADDRESS)) {
                     if (s != null) {
@@ -919,6 +931,18 @@ public class Expression {
             {
                 return "+" + args.get(0).toString();
             }
+            case EXPRESSION_LIST:
+            {
+                String str = "";
+                for(int i = 0;i<args.size();i++) {
+                    if (i == 0) {
+                        str += args.get(i).toString();
+                    } else {
+                        str += ", " + args.get(i).toString();
+                    }
+                }
+                return str;
+            }
             default:
                 return "<UNSUPPORTED TYPE " + type + ">";
         }
@@ -1087,10 +1111,17 @@ public class Expression {
     }
 
     public int sizeInBytes(int granularity) {
-        if (type == EXPRESSION_STRING_CONSTANT) {
-            return stringConstant.length();
-        } else {
-            return granularity;
+        switch (type) {
+            case EXPRESSION_STRING_CONSTANT:
+                return stringConstant.length();
+            case EXPRESSION_LIST:
+                int size = 0;
+                for(Expression exp:args) {
+                    size += exp.sizeInBytes(granularity);
+                }
+                return size;
+            default:
+                return granularity;
         }
     }
     
@@ -1135,6 +1166,11 @@ public class Expression {
                                 return Expression.constantExpression((Double)value, config);
                             } else if (value instanceof String) {
                                 return Expression.constantExpression((String)value, config);
+                            } else if (value instanceof List) {
+                                return Expression.listExpression((List<Object>)value, config);
+                            } else {
+                                config.error("Unsupported expression evaluation type: " + value);
+                                return null;
                             }
                         }
                     }
@@ -1251,6 +1287,8 @@ public class Expression {
                 } else if (value instanceof String) {
                     exp = new Expression(EXPRESSION_STRING_CONSTANT, config);
                     exp.stringConstant = (String)value;
+                } else if (value instanceof List) {
+                    exp = Expression.listExpression((List<Expression>)value, config);
                 } else {
                     return null;
                 }
@@ -1365,4 +1403,32 @@ public class Expression {
         return exp;
     }
 
+    public static Expression listExpression(List<? extends Object> a_args, MDLConfig config) {
+        Expression exp = new Expression(EXPRESSION_LIST, config);
+        exp.args = genericListToExpressionList(a_args, config);
+        return exp;
+    }
+
+    
+    public static List<Expression> genericListToExpressionList(List<? extends Object> gl, MDLConfig config) {
+        List<Expression> el = new ArrayList<>();
+        
+        for(Object o:gl) {
+            if (o instanceof Expression) {
+                el.add((Expression)o);
+            } else if (o instanceof Integer) {
+                el.add(Expression.constantExpression((Integer)o, config));
+            } else if (o instanceof Double) {
+                el.add(Expression.constantExpression((Double)o, config));
+            } else if (o instanceof String) {
+                el.add(Expression.constantExpression((String)o, config));
+            } else if (o instanceof List) {
+                el.addAll(genericListToExpressionList((List<? extends Object>)o, config));
+            } else {
+                config.error("Unsupported value " + o + " creating a list expression!");
+            }
+        }   
+        
+        return el;
+    }
 }

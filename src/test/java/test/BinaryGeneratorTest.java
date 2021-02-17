@@ -44,6 +44,8 @@ public class BinaryGeneratorTest {
                                                                         "data/generationtests/ops-expected.bin")); }
     @Test public void test7() throws Exception { Assert.assertTrue(test("data/generationtests/asmsx-phase.asm", "asmsx",
                                                                         "data/generationtests/asmsx-phase-expected.bin")); }
+    @Test public void test8() throws Exception { Assert.assertTrue(test("data/generationtests/sjasm-define.asm", "sjasm",
+                                                                        "data/generationtests/sjasm-define-expected.bin")); }
         
 
     private boolean test(String inputFile, String dialect, String expectedOutputFile) throws Exception

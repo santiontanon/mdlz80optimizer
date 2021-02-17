@@ -975,35 +975,49 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             }
             
             // optionally read the expression:
-            Expression exp = null;
-            if (!tokens.isEmpty() && !Tokenizer.isSingleLineComment(tokens.get(0))) {                    
-                exp = config.expressionParser.parse(tokens, s, previous, code);
-                if (exp == null) {
-                    config.error("parseEqu: Cannot parse line " + sl);
-                    return false;
-                }
-                // remove unnecessary parenthesis:
-                while(exp.type == Expression.EXPRESSION_PARENTHESIS) {
-                    exp = exp.args.get(0);
-                }
-                
-                if (keyword.equalsIgnoreCase("xdefine")) {
-                    // resolve symbols internally:
-                    exp = exp.resolveEagerSymbols(code);
-                    
-                } else if (keyword.equalsIgnoreCase("assign")) {
-                    Integer v = exp.evaluateToInteger(s, code, false);
-                    if (v == null) {
-                        config.error("Could not evaulate " + exp + " in " + sl);
+            List<Expression> expressions = new ArrayList<>();
+            if (!tokens.isEmpty() && !Tokenizer.isSingleLineComment(tokens.get(0))) {
+                do {
+                    if (!expressions.isEmpty() && tokens.get(0).equals(",")) {
+                        tokens.remove(0);
+                    }
+                    Expression exp2 = config.expressionParser.parse(tokens, s, previous, code);
+                    if (exp2 == null) {
+                        config.error("parseEqu: Cannot parse line " + sl);
                         return false;
                     }
-                    exp = Expression.constantExpression(v, config);
-                }
+                    // remove unnecessary parenthesis:
+                    while(exp2.type == Expression.EXPRESSION_PARENTHESIS) {
+                        exp2 = exp2.args.get(0);
+                    }
+
+                    if (keyword.equalsIgnoreCase("xdefine")) {
+                        // resolve symbols internally:
+                        exp2 = exp2.resolveEagerSymbols(code);
+
+                    } else if (keyword.equalsIgnoreCase("assign")) {
+                        Integer v = exp2.evaluateToInteger(s, code, false);
+                        if (v == null) {
+                            config.error("Could not evaulate " + exp2 + " in " + sl);
+                            return false;
+                        }
+                        exp2 = Expression.constantExpression(v, config);
+                    }
+                    expressions.add(exp2);
+                } while (!tokens.isEmpty() && tokens.get(0).equals(","));
             } else {
-                exp = Expression.constantExpression(0, config);
+                expressions.add(Expression.constantExpression(0, config));
+            }
+            
+            Expression exp;
+            
+            if (expressions.size() == 1) {
+                exp = expressions.get(0);
+            } else {
+                exp = Expression.listExpression(expressions, config);
             }
 
-            // parse as a :=:            
+            // parse as a :=:
             SourceConstant c = new SourceConstant(symbolName, token, exp, s, config);
             s.label = c;
             int res = code.addSymbol(c.name, c);

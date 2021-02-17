@@ -1,5 +1,5 @@
 ; Test case: 
-
+label1:
 	define kip "hoppa!"
 	byte kip,0,0,kip
 	byte "kip"
@@ -16,3 +16,10 @@
   	define val 1
   	assign val val+1   ; c expands to 2
   	byte val
+
+	define composite1 "abc",100,"ef"
+	define composite2 "    ",#ff
+	byte composite1
+	byte composite2
+label2:
+	byte label2-label1
