@@ -334,6 +334,47 @@ public class CodeReorganizer implements MDLWorker {
 
     // Assumption: all the statements within this subarea contain assembler code, and not data
     private void reorganizeBlock(CodeBlock subarea, CodeBase code, OptimizationResult savings) {
+        // Detect any potential jump tables and protect them from optimizations:
+        // Look for series of "jp" instructions one oafter another, after a label:
+        for(int i = 0;i<subarea.statements.size();i++) {
+            if (subarea.statements.get(i).type == SourceStatement.STATEMENT_NONE && 
+                subarea.statements.get(i).label != null) {
+                // we found a label:
+                if (subarea.statements.size() > i + 2) {
+                    if (subarea.statements.get(i+1).type == SourceStatement.STATEMENT_CPUOP &&
+                        subarea.statements.get(i+1).op.isJump() && 
+                        !subarea.statements.get(i+1).op.isConditional() &&
+                        subarea.statements.get(i+2).type == SourceStatement.STATEMENT_CPUOP &&
+                        subarea.statements.get(i+2).op.isJump() && 
+                        !subarea.statements.get(i+2).op.isConditional()) {
+                        // we found a jump table, protect it:
+                        SourceStatement s = subarea.statements.get(i);
+                        if (s.comment == null) {
+                            s.comment = "; mdl:no-opt (mdl suspects this is a jump table)";
+                        } else {
+                            s.comment += "  ; mdl:no-opt (mdl suspects this is a jump table)";                                    
+                        }
+                        i++;
+                        while(i<subarea.statements.size()) {
+                            s = subarea.statements.get(i);
+                            if (s.type == SourceStatement.STATEMENT_CPUOP &&
+                                s.op.isJump() && 
+                                !s.op.isConditional()) {
+                                if (s.comment == null) {
+                                    s.comment = "; mdl:no-opt (mdl suspects this is a jump table)";
+                                } else {
+                                    s.comment += "  ; mdl:no-opt (mdl suspects this is a jump table)";                                    
+                                }
+                            } else {
+                                break;
+                            }
+                            i++;
+                        }
+                    }
+                }
+            }
+        }
+        
         // Look for blocks (A) that:
         // - end in a jump to a block B
         // - all the incoming edges to A and B are jumps
