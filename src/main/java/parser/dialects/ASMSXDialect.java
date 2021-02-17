@@ -32,6 +32,10 @@ public class ASMSXDialect implements Dialect {
     public static final int MEGAROM_ASCII8 = 2;
     public static final int MEGAROM_ASCII16 = 3;
     
+    public static final String PHASE_PRE_LABEL_PREFIX = "__asmsx_phase_pre_";
+    public static final String PHASE_POST_LABEL_PREFIX = "__asmsx_phase_post_";
+    public static final String DEPHASE_LABEL_PREFIX = "__asmsx_dephase_";
+    
     public static class PrintRecord {
         String keyword;
         SourceStatement previousStatement;  // not the current, as it was probably not added to the file
@@ -57,6 +61,10 @@ public class ASMSXDialect implements Dialect {
     SourceStatement basicHeaderStatement = null;
     Expression startAddressLabel = null;
     List<SourceStatement> pageDefinitions = new ArrayList<>();
+    List<SourceStatement> phaseStatements = new ArrayList<>();
+    List<SourceStatement> dephaseStatements = new ArrayList<>();
+    
+    boolean zilogMode = false;
     
     // ROM characteristics:
     int romType = ROM_STANDARD;
@@ -69,7 +77,7 @@ public class ASMSXDialect implements Dialect {
     List<PrintRecord> toPrint = new ArrayList<>();
     
 
-    public ASMSXDialect(MDLConfig a_config, boolean zilogMode)
+    public ASMSXDialect(MDLConfig a_config, boolean a_zilogMode)
     {
         config = a_config;
 
@@ -114,6 +122,7 @@ public class ASMSXDialect implements Dialect {
         
         config.expressionParser.allowFloatingPointNumbers = true;
         
+        zilogMode = a_zilogMode;
         if (zilogMode) {
             config.opParser.indirectionsOnlyWithSquareBrackets = false;
             config.opParser.indirectionsOnlyWithParenthesis = true;
@@ -173,6 +182,10 @@ public class ASMSXDialect implements Dialect {
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("zilog")) return true;
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase(".subpage")) return true;
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("subpage")) return true;
+        if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase(".phase")) return true;
+        if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("phase")) return true;
+        if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase(".dephase")) return true;
+        if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("dephase")) return true;
         
         // weird syntax that for some reason asMSX swallows (undocumented):
         // if a line is all dashes, it's ignored:
@@ -666,11 +679,82 @@ public class ASMSXDialect implements Dialect {
             // update "currentPageEnd":
             currentPageEnd += pageSize;
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
-        }        
+        }
         if (tokens.size() >= 1 && (tokens.get(0).equalsIgnoreCase(".zilog") || tokens.get(0).equalsIgnoreCase("zilog"))) {
             tokens.remove(0);
             config.opParser.indirectionsOnlyWithSquareBrackets = false;
             config.opParser.indirectionsOnlyWithParenthesis = true;
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
+        }
+        if (tokens.size() >= 1 && (tokens.get(0).equalsIgnoreCase(".phase") || tokens.get(0).equalsIgnoreCase("phase"))) {
+            tokens.remove(0);
+            
+            if (s.label != null) {
+                // if there was a label in the "phase" line, create a new one:
+                s = new SourceStatement(SourceStatement.STATEMENT_ORG, sl, source, config);
+                l.add(s);
+            }
+            
+            // parse as an "org":
+            Expression exp = config.expressionParser.parse(tokens, s, previous, code);
+            if (exp == null) {
+                config.error("Cannot parse phase address in " + sl);
+                return false;
+            } 
+            phaseStatements.add(s);
+            
+            // Add the label before the org:
+            String phase_pre_label_name = PHASE_PRE_LABEL_PREFIX + phaseStatements.size();
+            s.type = SourceStatement.STATEMENT_ORG;
+            s.org = exp;
+            s.label = new SourceConstant(phase_pre_label_name, phase_pre_label_name, 
+                                         Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, s, code, config),
+                                         s, config);
+            code.addSymbol(phase_pre_label_name, s.label);
+            
+            // Add the label after the org:
+            s = new SourceStatement(SourceStatement.STATEMENT_NONE, sl, source, config);
+            l.add(s);
+            String phase_post_label_name = PHASE_POST_LABEL_PREFIX + phaseStatements.size();
+            s.label = new SourceConstant(phase_post_label_name, phase_post_label_name, 
+                                         Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, s, code, config),
+                                         s, config);
+            code.addSymbol(phase_post_label_name, s.label);
+            
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
+        }
+        if (tokens.size() >= 1 && (tokens.get(0).equalsIgnoreCase(".dephase") || tokens.get(0).equalsIgnoreCase("dephase"))) {
+            tokens.remove(0);
+            
+            if (s.label != null) {
+                // if there was a label in the "phase" line, create a new one:
+                s = new SourceStatement(SourceStatement.STATEMENT_ORG, sl, source, config);
+                l.add(s);
+            }            
+
+            // restore normal mode addressing:
+            String phase_pre_label_name = PHASE_PRE_LABEL_PREFIX + phaseStatements.size();
+            String phase_post_label_name = PHASE_POST_LABEL_PREFIX + phaseStatements.size();
+            String dephase_label_name = DEPHASE_LABEL_PREFIX + phaseStatements.size();
+
+            // __asmsx_phase_pre_* + (__asmsx_dephase_* - __asmsx_phase_post_*)
+            Expression exp = Expression.operatorExpression(Expression.EXPRESSION_SUM, 
+                    Expression.symbolExpression(phase_pre_label_name, s, code, config),
+                    Expression.parenthesisExpression(
+                            Expression.operatorExpression(Expression.EXPRESSION_SUB,
+                                    Expression.symbolExpression(dephase_label_name, s, code, config),
+                                    Expression.symbolExpression(phase_post_label_name, s, code, config), config), 
+                            zilogMode ? "[":"(", config), config);
+            
+            s.type = SourceStatement.STATEMENT_ORG;
+            s.org = exp;
+            s.label = new SourceConstant(dephase_label_name, dephase_label_name, 
+                                         Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, s, code, config),
+                                         s, config);
+            code.addSymbol(dephase_label_name, s.label);
+            dephaseStatements.add(s);
+                        
+            
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
 
@@ -843,8 +927,10 @@ public class ASMSXDialect implements Dialect {
                         s = s.include.getStatements().get(0);
                     }
                     if (previous != null && s.type == SourceStatement.STATEMENT_ORG) {
-                        // make sure we don't do it for the first org:
-                        if (basicHeaderStatement != previous) {
+                        // make sure we don't do it for the first org, or for orgs concerning phase/dephase:
+                        if (basicHeaderStatement != previous &&
+                            !phaseStatements.contains(s) &&
+                            !dephaseStatements.contains(s)) {
                             int previousAddress = previous.getAddress(code) + previous.sizeInBytes(code, false, true, false);
                             int orgAddress = s.org.evaluateToInteger(s, code, false);
                             int pad = 0;
