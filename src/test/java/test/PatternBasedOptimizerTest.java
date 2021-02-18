@@ -36,55 +36,57 @@ public class PatternBasedOptimizerTest {
         code = new CodeBase(config);
     }
 
-    @Test public void test1() throws IOException { Assert.assertEquals(4, test("data/tests/test1.asm")); }
-    @Test public void test2() throws IOException { Assert.assertEquals(4, test("data/tests/test2.asm")); }
-    @Test public void test3() throws IOException { Assert.assertEquals(1, test("data/tests/test3.asm")); }
-    @Test public void test4() throws IOException { Assert.assertEquals(1, test("data/tests/test4.asm")); }
-    @Test public void test5() throws IOException { Assert.assertEquals(1, test("data/tests/test5.asm")); }
-    @Test public void test6() throws IOException { Assert.assertEquals(7, test("data/tests/test6.asm")); }
-    @Test public void test7() throws IOException { Assert.assertEquals(2, test("data/tests/test7.asm")); }
-    @Test public void test8() throws IOException { Assert.assertEquals(3, test("data/tests/test8.asm")); }
-    @Test public void test9() throws IOException { Assert.assertEquals(0, test("data/tests/test9.asm")); }
-    @Test public void test10() throws IOException { Assert.assertEquals(2, test("data/tests/test10.asm")); }
-    @Test public void test11() throws IOException { Assert.assertEquals(4, test("data/tests/test11.asm")); }
-    @Test public void test12() throws IOException { Assert.assertEquals(3, test("data/tests/test12.asm")); }
-    @Test public void test13() throws IOException { Assert.assertEquals(1, test("data/tests/test13.asm")); }
-    @Test public void test14() throws IOException { Assert.assertEquals(2, test("data/tests/test14.asm")); }
-    @Test public void test15() throws IOException { Assert.assertEquals(3, test("data/tests/test15.asm")); }
-    @Test public void test16() throws IOException { Assert.assertEquals(6, test("data/tests/test16.asm")); }
-    @Test public void test17() throws IOException { Assert.assertEquals(7, test("data/tests/test17.asm")); }
-    @Test public void test18() throws IOException { Assert.assertEquals(6, test("data/tests/test18.asm")); }
-    @Test public void test19() throws IOException { Assert.assertEquals(3, test("data/tests/test19.asm")); }
-    @Test public void test20() throws IOException { Assert.assertEquals(9, test("data/tests/test20.asm")); }
-    @Test public void test21() throws IOException { Assert.assertEquals(4, test("data/tests/test21.asm")); }
-    @Test public void test22() throws IOException { Assert.assertEquals(3, test("data/tests/test22.asm")); }
-    @Test public void test23() throws IOException { Assert.assertEquals(2, test("data/tests/test23.asm")); }
-    @Test public void test24() throws IOException { Assert.assertEquals(1, test("data/tests/test24.asm")); }
-    @Test public void test25() throws IOException { Assert.assertEquals(1, test("data/tests/test25.asm")); }
-    @Test public void test26() throws IOException { Assert.assertEquals(1, test("data/tests/test26.asm")); }
-    @Test public void test27() throws IOException { Assert.assertEquals(5, test("data/tests/test27.asm")); }
-    @Test public void test28() throws IOException { Assert.assertEquals(7, test("data/tests/test28.asm")); }
-    @Test public void test29() throws IOException { Assert.assertEquals(3, test("data/tests/test29.asm")); }
-    @Test public void test30() throws IOException { Assert.assertEquals(3, test("data/tests/test30.asm")); }
-    @Test public void test31() throws IOException { Assert.assertEquals(8, test("data/tests/test31.asm")); }
-    @Test public void test32() throws IOException { Assert.assertEquals(4, test("data/tests/test32.asm")); }
-    @Test public void test33() throws IOException { Assert.assertEquals(3, test("data/tests/test33.asm")); }
-    @Test public void test34() throws IOException { Assert.assertEquals(1, test("data/tests/test34.asm")); }
-    @Test public void test35() throws IOException { Assert.assertEquals(1, test("data/tests/test35.asm")); }
-    @Test public void test36() throws IOException { Assert.assertEquals(4, test("data/tests/test36.asm")); }
-    @Test public void test37() throws IOException { Assert.assertEquals(3, test("data/tests/test37.asm")); }
-    @Test public void test38() throws IOException { Assert.assertEquals(4, test("data/tests/test38.asm")); }
-    @Test public void test39() throws IOException { Assert.assertEquals(0, test("data/tests/test39.asm")); }
-    @Test public void test40() throws IOException { Assert.assertEquals(9, test("data/tests/test40.asm")); }
-    @Test public void test41() throws IOException { Assert.assertEquals(0, test("data/tests/test41.asm")); }
-    @Test public void test42() throws IOException { Assert.assertEquals(2, test("data/tests/test42.asm")); }
-    @Test public void test44() throws IOException { Assert.assertEquals(5, test("data/tests/test44.asm")); }
-    @Test public void test45() throws IOException { Assert.assertEquals(4, test("data/tests/test45.asm")); }
-    @Test public void test46() throws IOException { Assert.assertEquals(1, test("data/tests/test46.asm")); }
-    @Test public void test47() throws IOException { Assert.assertEquals(2, test("data/tests/test47.asm")); }
-    @Test public void test48() throws IOException { Assert.assertEquals(1, test("data/tests/test48.asm")); }
+    @Test public void test1() throws IOException { test("data/tests/test1.asm", 4, 9, 9); }
+    @Test public void test2() throws IOException { test("data/tests/test2.asm", 4, 9, 9); }
+    @Test public void test3() throws IOException { test("data/tests/test3.asm", 1, -2, -2); }
+    @Test public void test4() throws IOException { test("data/tests/test4.asm", 1, -2, -2); }
+    @Test public void test5() throws IOException { test("data/tests/test5.asm", 1, -2, -2); }
+    @Test public void test6() throws IOException { test("data/tests/test6.asm", 7, 18, 23); }
+    @Test public void test7() throws IOException { test("data/tests/test7.asm", 2, 8, 8); }
+    @Test public void test8() throws IOException { test("data/tests/test8.asm", 3, 6, 6); }
+    @Test public void test9() throws IOException { test("data/tests/test9.asm", 0, 0, 0); }
+    @Test public void test10() throws IOException { test("data/tests/test10.asm", 2, 10, 10); }
+    @Test public void test11() throws IOException { test("data/tests/test11.asm", 4, 8, 8); }
+    @Test public void test12() throws IOException { test("data/tests/test12.asm", 3, 0, 0); }
+    @Test public void test13() throws IOException { test("data/tests/test13.asm", 1, -2, -2); }
+    @Test public void test14() throws IOException { test("data/tests/test14.asm", 2, 3, 3); }
+    @Test public void test15() throws IOException { test("data/tests/test15.asm", 3, 7, 7); }
+    @Test public void test16() throws IOException { test("data/tests/test16.asm", 6, 25, 25); }
+    @Test public void test17() throws IOException { test("data/tests/test17.asm", 7, 22, 22); }
+    @Test public void test18() throws IOException { test("data/tests/test18.asm", 6, 15, 15); }
+    @Test public void test19() throws IOException { test("data/tests/test19.asm", 3, 8, 8); }
+    @Test public void test20() throws IOException { test("data/tests/test20.asm", 9, 4, 19); }
+    @Test public void test21() throws IOException { test("data/tests/test21.asm", 4, 9, 9); }
+    @Test public void test22() throws IOException { test("data/tests/test22.asm", 3, 6, 6); }
+    @Test public void test23() throws IOException { test("data/tests/test23.asm", 2, 3, 3); }
+    @Test public void test24() throws IOException { test("data/tests/test24.asm", 1, -2, -2); }
+    @Test public void test25() throws IOException { test("data/tests/test25.asm", 1, -2, -2); }
+    @Test public void test26() throws IOException { test("data/tests/test26.asm", 1, -2, -2); }
+    @Test public void test27() throws IOException { test("data/tests/test27.asm", 5, 14, 14); }
+    @Test public void test28() throws IOException { test("data/tests/test28.asm", 7, 34, 34); }
+    @Test public void test29() throws IOException { test("data/tests/test29.asm", 3, 4, 4); }
+    @Test public void test30() throws IOException { test("data/tests/test30.asm", 3, 6, 6); }
+    @Test public void test31() throws IOException { test("data/tests/test31.asm", 8, 32, 32); }
+    @Test public void test32() throws IOException { test("data/tests/test32.asm", 4, 7, 7); }
+    @Test public void test33() throws IOException { test("data/tests/test33.asm", 3, -6, -6); }
+    @Test public void test34() throws IOException { test("data/tests/test34.asm", 1, 5, 5); }
+    @Test public void test35() throws IOException { test("data/tests/test35.asm", 1, 8, 3); }
+    @Test public void test36() throws IOException { test("data/tests/test36.asm", 4, 46, 46); }
+    @Test public void test37() throws IOException { test("data/tests/test37.asm", 3, 13, 13); }
+    @Test public void test38() throws IOException { test("data/tests/test38.asm", 4, 24, 24); }
+    @Test public void test39() throws IOException { test("data/tests/test39.asm", 0, 0, 0); }
+    @Test public void test40() throws IOException { test("data/tests/test40.asm", 9, 54, 54); }
+    @Test public void test41() throws IOException { test("data/tests/test41.asm", 0, 0, 0); }
+    @Test public void test42() throws IOException { test("data/tests/test42.asm", 2, 4, 4); }
+    @Test public void test43() throws IOException { test("data/tests/test43.asm", 0, 2, 2); }
+    @Test public void test44() throws IOException { test("data/tests/test44.asm", 5, 26, 26); }
+    @Test public void test45() throws IOException { test("data/tests/test45.asm", 4, 22, 22); }
+    @Test public void test46() throws IOException { test("data/tests/test46.asm", 1, 5, 5); }
+    @Test public void test47() throws IOException { test("data/tests/test47.asm", 2, 8, 8); }
+    @Test public void test48() throws IOException { test("data/tests/test48.asm", 1, 5, 5); }
+    @Test public void test49() throws IOException { test("data/tests/test49.asm", 1, 7, 7); }
 
-    private int test(String inputFile) throws IOException
+    private void test(String inputFile, int expectedSavedBytes, int expectedSavedTime1, int expectedSavedTime2) throws IOException
     {
         Assert.assertTrue(config.parseArgs(inputFile,"-popatterns","data/pbo-patterns-size.txt"));
         Assert.assertTrue(
@@ -112,10 +114,7 @@ public class PatternBasedOptimizerTest {
             }
         }
         
-        if (labelsBefore.size() != labelsAfter.size()) {
-            System.out.println("We lost labels!");
-            return -1;  // some wrong value
-        }
+        Assert.assertEquals(labelsBefore.size(), labelsAfter.size());
         
         AnnotatedSourceCodeGenerator scg = new AnnotatedSourceCodeGenerator(config);
 
@@ -129,6 +128,8 @@ public class PatternBasedOptimizerTest {
         }
         System.out.println("--------------------------------------\n");
 
-        return r.bytesSaved;
+        Assert.assertEquals("r.bytesSaved", expectedSavedBytes, r.bytesSaved);
+        Assert.assertEquals("r.timeSavings[0]", expectedSavedTime1, r.timeSavings[0]);
+        Assert.assertEquals("r.timeSavings[1]", expectedSavedTime2, r.timeSavings[1]);
     }
 }

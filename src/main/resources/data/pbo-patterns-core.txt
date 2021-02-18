@@ -1292,3 +1292,18 @@ replacement:
 0: ?op ?any
 constraints:
 in(?op,and,or)
+
+pattern: Remove redundant ?op a
+0: ?op a
+replacement:
+constraints:
+in(?op,and,or)
+flagsNotUsedAfter(0,S,Z,H,P/V,N,C)
+
+pattern: Replace xor a; inc a by ld a,1
+0: xor a
+1: inc a
+replacement:
+0: ld a,1
+constraints:
+flagsNotUsedAfter(1,S,Z,H,P/V,N,C)
