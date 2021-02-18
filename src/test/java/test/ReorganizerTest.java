@@ -34,39 +34,47 @@ public class ReorganizerTest {
         code = new CodeBase(config);
     }
 
-    @Test public void test1() throws Exception { Assert.assertTrue(test("data/reorganizertests/test1.asm",
-                                                                        "data/reorganizertests/test1-expected.asm",
+    @Test public void test1() throws Exception { Assert.assertTrue(test("data/reorganizertests/test1.asm", null,
+                                                                        "data/reorganizertests/test1-expected.asm", null,
                                                                         "data/reorganizertests/test1-expected.bin")); }
-    @Test public void test2() throws Exception { Assert.assertTrue(test("data/reorganizertests/test2.asm",
-                                                                        "data/reorganizertests/test2-expected.asm",
+    @Test public void test2() throws Exception { Assert.assertTrue(test("data/reorganizertests/test2.asm", null,
+                                                                        "data/reorganizertests/test2-expected.asm", null,
                                                                         "data/reorganizertests/test2-expected.bin")); }
-    @Test public void test3() throws Exception { Assert.assertTrue(test("data/reorganizertests/test3.asm",
-                                                                        "data/reorganizertests/test3-expected.asm",
+    @Test public void test3() throws Exception { Assert.assertTrue(test("data/reorganizertests/test3.asm", null,
+                                                                        "data/reorganizertests/test3-expected.asm", null,
                                                                         "data/reorganizertests/test3-expected.bin")); }
-    @Test public void test4() throws Exception { Assert.assertTrue(test("data/reorganizertests/test4-file1.asm",
-                                                                        "data/reorganizertests/test4-expected.asm",
+    @Test public void test4() throws Exception { Assert.assertTrue(test("data/reorganizertests/test4-file1.asm", null,
+                                                                        "data/reorganizertests/test4-expected.asm", null,
                                                                         "data/reorganizertests/test4-expected.bin")); }
-    @Test public void test5() throws Exception { Assert.assertTrue(test("data/reorganizertests/test5.asm",
-                                                                        "data/reorganizertests/test5-expected.asm",
+    @Test public void test5() throws Exception { Assert.assertTrue(test("data/reorganizertests/test5.asm", null,
+                                                                        "data/reorganizertests/test5-expected.asm", null,
                                                                         "data/reorganizertests/test5-expected.bin")); }
-    @Test public void test6() throws Exception { Assert.assertTrue(test("data/reorganizertests/test6.asm",
-                                                                        "data/reorganizertests/test6-expected.asm",
+    @Test public void test6() throws Exception { Assert.assertTrue(test("data/reorganizertests/test6.asm", null,
+                                                                        "data/reorganizertests/test6-expected.asm", null,
                                                                         "data/reorganizertests/test6-expected.bin")); }
-    @Test public void test7() throws Exception { Assert.assertTrue(test("data/reorganizertests/test7.asm",
-                                                                        "data/reorganizertests/test7-expected.asm",
+    @Test public void test7() throws Exception { Assert.assertTrue(test("data/reorganizertests/test7.asm", null,
+                                                                        "data/reorganizertests/test7-expected.asm", null,
                                                                         "data/reorganizertests/test7-expected.bin")); }
-    @Test public void test8() throws Exception { Assert.assertTrue(test("data/reorganizertests/test8.asm",
-                                                                        "data/reorganizertests/test8-expected.asm",
+    @Test public void test8() throws Exception { Assert.assertTrue(test("data/reorganizertests/test8.asm", null,
+                                                                        "data/reorganizertests/test8-expected.asm", null,
                                                                         "data/reorganizertests/test8-expected.bin")); }
-    @Test public void test9() throws Exception { Assert.assertTrue(test("data/reorganizertests/test-jumptable.asm",
-                                                                        "data/reorganizertests/test-jumptable-expected.asm",
+    @Test public void test9() throws Exception { Assert.assertTrue(test("data/reorganizertests/test-jumptable.asm", null,
+                                                                        "data/reorganizertests/test-jumptable-expected.asm", null,
                                                                         "data/reorganizertests/test-jumptable-expected.bin")); }
+//    @Test public void test10() throws Exception { Assert.assertTrue(test("data/reorganizertests/test-local.asm", "asmsx",
+//                                                                         "data/reorganizertests/test-local-expected.asm",
+//                                                                         "data/reorganizertests/test-local-dialect-expected.asm",
+//                                                                         "data/reorganizertests/test-local-expected.bin")); }
 
-    private boolean test(String inputFile, 
-                         String expectedOutputFile,
+    private boolean test(String inputFile, String dialect,
+                         String expectedOutputFile, String expectedOutputFileDialect,
                          String expectedBinaryOutputFile) throws Exception
     {
-        Assert.assertTrue(config.parseArgs(inputFile));
+        if (dialect == null) {
+            Assert.assertTrue(config.parseArgs(inputFile));
+        } else {
+            Assert.assertTrue(config.parseArgs(inputFile, "-dialect", dialect));
+        }
         Assert.assertTrue(
                 "Could not parse file " + inputFile,
                 config.codeBaseParser.parseMainSourceFile(config.inputFile, code));
@@ -76,34 +84,15 @@ public class ReorganizerTest {
         ro.work(code);
         
         SourceCodeGenerator scg = new SourceCodeGenerator(config);
-
         String result = scg.sourceFileString(code.getMain(), code);
-        List<String> lines = new ArrayList<>();
-        StringTokenizer st = new StringTokenizer(result, "\n");
-        while(st.hasMoreTokens()) {
-            lines.add(st.nextToken().trim());
-        }
+        if (!compareOutput(result, expectedOutputFile)) return false;
         
-        List<String> expectedLines = new ArrayList<>();
-        BufferedReader br = Resources.asReader(expectedOutputFile);
-        while(true) {
-            String line = br.readLine();
-            if (line == null) break;
-            expectedLines.add(line.trim());
+        if (expectedOutputFileDialect != null) {
+            scg.mimicTargetDialect = true;
+            String resultDialect = scg.sourceFileString(code.getMain(), code);
+            if (!compareOutput(resultDialect, expectedOutputFileDialect)) return false;            
         }
-        System.out.println("\n--------------------------------------");
-        System.out.println(result);
-        System.out.println("--------------------------------------\n");
-        
-        for(int i = 0;i<Math.max(lines.size(), expectedLines.size());i++) {
-            String line = lines.size() > i ? lines.get(i):"";
-            String expectedLine = expectedLines.size() > i ? expectedLines.get(i):"";
-            if (!line.equals(expectedLine)) {
-                System.out.println("Line " + i + " was expected to be:\n" + expectedLine + "\nbut was:\n" + line);
-                return false;
-            }
-        }
-        
+                
         // check binary generation (to make sure the reorganizer modified the code correctly):
         BinaryGenerator bg = new BinaryGenerator(config);
         ListOutputStream out = new ListOutputStream();
@@ -131,5 +120,36 @@ public class ReorganizerTest {
         
         return true;
     }    
+    
+    
+    private boolean compareOutput(String result, String expectedOutputFileName) throws Exception
+    {
+        List<String> lines = new ArrayList<>();
+        StringTokenizer st = new StringTokenizer(result, "\n");
+        while(st.hasMoreTokens()) {
+            lines.add(st.nextToken().trim());
+        }
+        
+        List<String> expectedLines = new ArrayList<>();
+        BufferedReader br = Resources.asReader(expectedOutputFileName);
+        while(true) {
+            String line = br.readLine();
+            if (line == null) break;
+            expectedLines.add(line.trim());
+        }
+        System.out.println("\n--------------------------------------");
+        System.out.println(result);
+        System.out.println("--------------------------------------\n"); 
+
+        for(int i = 0;i<Math.max(lines.size(), expectedLines.size());i++) {
+            String line = lines.size() > i ? lines.get(i):"";
+            String expectedLine = expectedLines.size() > i ? expectedLines.get(i):"";
+            if (!line.equals(expectedLine)) {
+                System.out.println("Line " + i + " was expected to be:\n" + expectedLine + "\nbut was:\n" + line);
+                return false;
+            }
+        }
+        return true;
+    }
     
 }
