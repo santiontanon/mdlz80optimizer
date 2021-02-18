@@ -7,9 +7,11 @@ package parser.dialects;
 import cl.MDLConfig;
 import code.CodeBase;
 import code.Expression;
+import code.SourceConstant;
 import code.SourceFile;
 import code.SourceStatement;
 import java.util.List;
+import org.apache.commons.lang3.tuple.Pair;
 import parser.SourceLine;
 
 /**
@@ -52,13 +54,13 @@ public class TniAsmDialect implements Dialect {
     }
     
     
-    private String getLastAbsoluteLabel(SourceStatement s) 
+    private SourceConstant getLastAbsoluteLabel(SourceStatement s) 
     {
         // sjasm considers any label as an absolute label, even if it's associated with an equ,
         // so, no need to check if s.label.isLabel() (as in asMSX):
         while(s != null) {
             if (s.label != null && !s.label.originalName.startsWith(".")) {
-                return s.label.originalName;
+                return s.label;
             } else {
                 s = s.source.getPreviousStatementTo(s, s.source.code);
             }
@@ -68,32 +70,32 @@ public class TniAsmDialect implements Dialect {
     
 
     @Override
-    public String newSymbolName(String name, Expression value, SourceStatement s) {
+    public Pair<String, SourceConstant> newSymbolName(String name, Expression value, SourceStatement s) {
         // A relative label
         if (name.startsWith(".")) {
-            String lastAbsoluteLabel = getLastAbsoluteLabel(s);        
+            SourceConstant lastAbsoluteLabel = getLastAbsoluteLabel(s);        
             if (lastAbsoluteLabel != null) {
-                return lastAbsoluteLabel + name;
+                return Pair.of(lastAbsoluteLabel.originalName + name, lastAbsoluteLabel);
             }
         }
 
         // An absolute label
-        return config.lineParser.getLabelPrefix() + name;
+        return Pair.of(config.lineParser.getLabelPrefix() + name, null);
     }
 
 
     @Override
-    public String symbolName(String name, SourceStatement s) {
+    public Pair<String, SourceConstant> symbolName(String name, SourceStatement s) {
         // A relative label
         if (name.startsWith(".")) {
-            String lastAbsoluteLabel = getLastAbsoluteLabel(s);
+            SourceConstant lastAbsoluteLabel = getLastAbsoluteLabel(s);
             if (lastAbsoluteLabel != null) {
-                return lastAbsoluteLabel + name;
+                return Pair.of(lastAbsoluteLabel.originalName + name, lastAbsoluteLabel);
             }
         }
 
         // An absolute label
-        return name;
+        return Pair.of(name, null);
     }
     
     

@@ -94,7 +94,7 @@ public class GlassDialect implements Dialect {
 
 
     @Override
-    public String newSymbolName(String name, Expression value, SourceStatement previous) {
+    public Pair<String, SourceConstant> newSymbolName(String name, Expression value, SourceStatement previous) {
         if (name.equalsIgnoreCase("org") ||
             name.equalsIgnoreCase("db") ||
             name.equalsIgnoreCase("dw") ||
@@ -108,14 +108,14 @@ public class GlassDialect implements Dialect {
             name.equalsIgnoreCase("endif")) {
             return null;
         }
-        return config.lineParser.getLabelPrefix() + name;
+        return Pair.of(config.lineParser.getLabelPrefix() + name, null);
     }
 
 
     @Override
-    public String symbolName(String name, SourceStatement previous)
+    public Pair<String, SourceConstant> symbolName(String name, SourceStatement previous)
     {
-        return name;
+        return Pair.of(name, null);
     }
 
     

@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import org.apache.commons.lang3.tuple.Pair;
 import parser.LineParser;
 import parser.SourceLine;
 import parser.Tokenizer;
@@ -203,13 +204,13 @@ public class ASMSXDialect implements Dialect {
     }
 
     
-    private String getLastAbsoluteLabel(SourceStatement s) 
+    private SourceConstant getLastAbsoluteLabel(SourceStatement s) 
     {
         while(s != null) {
             if (s.label != null && s.label.isLabel() && 
                 !s.label.originalName.startsWith(".") &&
                 !s.label.originalName.startsWith("@@")) {
-                return s.label.originalName;
+                return s.label;
             } else {
                 s = s.source.getPreviousStatementTo(s, s.source.code);
             }
@@ -219,7 +220,7 @@ public class ASMSXDialect implements Dialect {
     
 
     @Override
-    public String newSymbolName(String name, Expression value, SourceStatement s) {
+    public Pair<String, SourceConstant> newSymbolName(String name, Expression value, SourceStatement s) {
         // TODO(santi@): complete this list (or maybe have a better way than an if-then rule list!
         if (name.equalsIgnoreCase(".bios") ||
             name.equalsIgnoreCase("bios") ||
@@ -262,34 +263,34 @@ public class ASMSXDialect implements Dialect {
         
         // A relative label
         if (name.startsWith("@@")) {
-            String lastAbsoluteLabel = getLastAbsoluteLabel(s);        
+            SourceConstant lastAbsoluteLabel = getLastAbsoluteLabel(s);        
             if (lastAbsoluteLabel != null) {
-                return lastAbsoluteLabel + "." + name.substring(2);
+                return Pair.of(lastAbsoluteLabel.originalName + "." + name.substring(2), lastAbsoluteLabel);
             }
         } else if (name.startsWith(".")) {
-            String lastAbsoluteLabel = getLastAbsoluteLabel(s);        
+            SourceConstant lastAbsoluteLabel = getLastAbsoluteLabel(s);        
             if (lastAbsoluteLabel != null) {
-                return lastAbsoluteLabel + name;
+                return Pair.of(lastAbsoluteLabel.originalName + name, lastAbsoluteLabel);
             }
         }
-        return config.lineParser.getLabelPrefix() + name;
+        return Pair.of(config.lineParser.getLabelPrefix() + name, null);
     }
 
 
     @Override
-    public String symbolName(String name, SourceStatement s) {
+    public Pair<String, SourceConstant> symbolName(String name, SourceStatement s) {
         if (name.startsWith("@@")) {
-            String lastAbsoluteLabel = getLastAbsoluteLabel(s);        
+            SourceConstant lastAbsoluteLabel = getLastAbsoluteLabel(s);        
             if (lastAbsoluteLabel != null) {
-                return lastAbsoluteLabel + "." + name.substring(2);
+                return Pair.of(lastAbsoluteLabel.originalName + "." + name.substring(2), lastAbsoluteLabel);
             }
         } else if (name.startsWith(".")) {
-            String lastAbsoluteLabel = getLastAbsoluteLabel(s);        
+            SourceConstant lastAbsoluteLabel = getLastAbsoluteLabel(s);        
             if (lastAbsoluteLabel != null) {
-                return lastAbsoluteLabel + name;
+                return Pair.of(lastAbsoluteLabel.originalName + name, lastAbsoluteLabel);
             }
         }   
-        return name;
+        return Pair.of(name, null);
     }
     
     

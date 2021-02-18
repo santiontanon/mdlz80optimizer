@@ -11,6 +11,8 @@ public class SourceConstant {
             
     public String name;
     public String originalName; // name before scoping
+    public SourceConstant relativeTo = null;    // if this is a relative label, "relativeTo" stores the
+                                                // absolute label this is relative to.
     public Expression exp;
     public String colonTokenUsedInDefinition = null;  // In some dialects (e.g. sdasz80), differrent types
                                                       // of "colons" (":" vs "::") have different semantics

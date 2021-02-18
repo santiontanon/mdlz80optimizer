@@ -7,9 +7,11 @@ import java.util.List;
 
 import code.CodeBase;
 import code.Expression;
+import code.SourceConstant;
 import code.SourceFile;
 import code.SourceStatement;
 import java.nio.file.Path;
+import org.apache.commons.lang3.tuple.Pair;
 import parser.MacroExpansion;
 import parser.SourceLine;
 import parser.SourceMacro;
@@ -30,25 +32,23 @@ public interface Dialect {
 
     // Called when a new symbol is defined (so that the dialect parser can do whatever special it
     // needs to do with it, e.g. define local labels, etc.)
-    // returns false if we are trying to redefine a pre-defined symbol according to this dialect
+    // returns null if we are trying to redefine a pre-defined symbol according to this dialect.
+    // It returns a pair <a,b>, where a is the name of the new symbol, and b is an absolute label, if this was local label that refers to it.
     // - "s" here is used to determine the label context. So, it should be a statement that is already in a
     //   SourceFile. If parsing a new statement that is not yet in the SourceFile, here, pass the previous statement (after
     //   which "s" will be inserted).
-    String newSymbolName(String name, Expression value, SourceStatement s);
+    Pair<String, SourceConstant> newSymbolName(String name, Expression value, SourceStatement s);
 
-    // Like {@link #newSymbolName the previous function}, but called just when a symbol is used, not when it is defined
+    // Like the previous function, but called just when a symbol is used, not when it is defined
     // Should return the actual symbol name (e.g., just "name" if this is an absolute symbol,
     // or some concatenation with a prefix if it's a relative symbol)
     // - "s" here is used to determine the label context. So, it should be a statement that is already in a
     //   SourceFile. If parsing a new statement that is not yet in the SourceFile, here, pass the previous statement (after
     //   which "s" will be inserted).
-    String symbolName(String name, SourceStatement s);
+    Pair<String, SourceConstant> symbolName(String name, SourceStatement s);
 
-    // If the previous function returns true, instead of trying to parse the line with the
-    // default parser, this function will be invoked instead. Returns true if it could
-    // successfully parse the line
-    // @return {@code null} if an error occurred;
-    // a list of statements to add as a result of parsing the line otherwise
+    // When the default line parser cannot parse a line, this function will be invoked instead. Returns true if it could
+    // successfully parse the line, and false if an error occurred.
     default boolean parseLine(List<String> tokens, List<SourceStatement> l, 
             SourceLine sl, SourceStatement s, SourceStatement previous, SourceFile source, CodeBase code) {
         // (no-op by default)

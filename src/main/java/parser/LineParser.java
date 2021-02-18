@@ -17,6 +17,7 @@ import code.Expression;
 import code.SourceConstant;
 import code.SourceFile;
 import code.SourceStatement;
+import org.apache.commons.lang3.tuple.Pair;
 import util.Resources;
 
 public class LineParser {
@@ -146,6 +147,7 @@ public class LineParser {
         return labelPrefix;
     }
     
+    
     public String newSymbolNameNotLabel(String rawName, SourceStatement previous) {
         String name = rawName;
         
@@ -157,14 +159,18 @@ public class LineParser {
         }
         
         if (config.dialectParser != null) {
-            name = config.dialectParser.symbolName(name, previous);
+            Pair<String, SourceConstant> tmp = config.dialectParser.symbolName(name, previous);
+            if (tmp == null) return null;
+            name = tmp.getLeft();
         }
         
         return name;
     }    
-
-    public String newSymbolName(String rawName, Expression value, SourceStatement previous) {
+    
+    
+    public SourceConstant newSourceConstant(String rawName, Expression value, SourceStatement s, SourceStatement previous) {
         String name = rawName;
+        SourceConstant relativeTo = null;
         
         for(String forbiddenSymbol: forbiddenSymbols) {
             if (forbiddenSymbol.equalsIgnoreCase(name)) {
@@ -174,17 +180,20 @@ public class LineParser {
         }
         
         if (config.dialectParser != null) {
-            name = config.dialectParser.newSymbolName(name, value, previous);
+            Pair<String, SourceConstant> tmp = config.dialectParser.newSymbolName(name, value, previous);
+            if (tmp == null) return null;
+            name = tmp.getLeft();
+            relativeTo = tmp.getRight();
         } else {            
-            if (allowNumberLabels && Tokenizer.isInteger(name)) {
-                return name;
-            } else {
+            if (!allowNumberLabels || !Tokenizer.isInteger(name)) {
                 name = labelPrefix + name;
             }
         }
-        
-        return name;
-    }
+
+        SourceConstant c = new SourceConstant(name, rawName, value, s, config);
+        c.relativeTo = relativeTo;
+        return c;
+    }    
 
     // insertionPoint is used to determine the label scope:
     public List<SourceStatement> parse(List<String> tokens, SourceLine sl,
@@ -332,12 +341,11 @@ public class LineParser {
                                                         // since in some dialects, it does matter
 
                 if (!caseSensitiveSymbols) token = token.toLowerCase();
-                String symbolName = newSymbolName(token, exp, previous);
-                if (symbolName == null) {
+                SourceConstant c = newSourceConstant(token, exp, s, previous);
+                if (c == null) {
                     config.error("Problem defining symbol " + labelPrefix + token + " in " + sl);
                     return false;
                 }
-                SourceConstant c = new SourceConstant(symbolName, token, exp, s, config);
                 c.colonTokenUsedInDefinition = colonToken;
                 s.type = SourceStatement.STATEMENT_NONE;
                 s.label = c;
@@ -352,12 +360,11 @@ public class LineParser {
                                                         // since in some dialects, it does matter
 
                 if (!caseSensitiveSymbols) token = token.toLowerCase();
-                String symbolName = newSymbolName(token, exp, previous);
-                if (symbolName == null) {
+                SourceConstant c = newSourceConstant(token, exp, s, previous);
+                if (c == null) {
                     config.error("Problem defining symbol " + labelPrefix + token + " in " + sl);
                     return false;
                 }
-                SourceConstant c = new SourceConstant(symbolName, token, exp, s, config);
                 c.colonTokenUsedInDefinition = colonToken;
                 s.type = SourceStatement.STATEMENT_NONE;
                 s.label = c;
@@ -384,12 +391,11 @@ public class LineParser {
                 tokens.remove(0);
 
                 if (!caseSensitiveSymbols) token = token.toLowerCase();
-                String symbolName = newSymbolName(token, exp, previous);
-                if (symbolName == null) {
+                SourceConstant c = newSourceConstant(token, exp, s, previous);
+                if (c == null) {
                     config.error("Problem defining symbol " + labelPrefix + token + " in " + sl);
                     return false;
                 }
-                SourceConstant c = new SourceConstant(symbolName, token, exp, s, config);
                 s.type = SourceStatement.STATEMENT_NONE;
                 s.label = c;
                 if (defineInCodeBase) {
@@ -421,12 +427,11 @@ public class LineParser {
                     }
                     tokens.remove(0);
                     if (!caseSensitiveSymbols) token = token.toLowerCase();
-                    String symbolName = newSymbolName(token, null, previous);
-                    if (symbolName == null) {
+                    SourceConstant c = newSourceConstant(token, null, s, previous);
+                    if (c == null) {
                         config.error("Problem defining symbol " + labelPrefix + token + " in " + sl);
                         return false;
                     }
-                    SourceConstant c = new SourceConstant(symbolName, token, null, s, config);
                     s.type = SourceStatement.STATEMENT_NONE;
                     s.label = c;
                     if (defineInCodeBase) {
@@ -812,7 +817,9 @@ public class LineParser {
                     if ((token.endsWith("f") || token.endsWith("F") || token.endsWith("b") || token.endsWith("B"))
                             && Tokenizer.isInteger(token.substring(0, token.length() - 1))) {
                         if (!caseSensitiveSymbols) token = token.toLowerCase();
-                        token = config.dialectParser.symbolName(token, s);
+                        Pair<String, SourceConstant> tmp = config.dialectParser.symbolName(token, s);
+                        if (tmp == null) return false;
+                        token = tmp.getLeft();
                         exp = Expression.symbolExpression(token, s, code, config);
                         tokens.remove(0);
                     }
@@ -980,7 +987,11 @@ public class LineParser {
             if (isIfDef) {
                 String token = tokens.remove(0);
                 if (!caseSensitiveSymbols) token = token.toLowerCase();
-                if (config.dialectParser != null) token = config.dialectParser.symbolName(token, previous);
+                if (config.dialectParser != null) {
+                    Pair<String, SourceConstant> tmp = config.dialectParser.symbolName(token, previous);
+                    if (tmp == null) return false;
+                    token = tmp.getLeft();
+                }
                 exp = Expression.symbolExpressionInternal(token, s, code, false, config);
             } else {
                 exp = config.expressionParser.parse(tokens, s, previous, code);

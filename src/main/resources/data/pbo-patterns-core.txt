@@ -544,7 +544,7 @@ in(?regpair,BC,DE)
 equal((?const2) & #00ff, (?const1 & #ffff) >> 8)
 regsNotModified(1,?regpairh)
 
-; Thanks to Jitursan for suggesting this pattern:
+; Thanks to Jltursan for suggesting this pattern:
 pattern: Replace inc hl; dec bc; ld a,?reg1; or ?reg2; jr nz,?const with cpi; jp pe,?const
 0: inc hl
 1: *
@@ -766,7 +766,7 @@ in(?regpair,HL,BC,DE)
 regsNotModified(1,?regh)
 equal((?const1&#ff00)>>8,?const2)
 
-pattern: Replace ld ?regpair,?const2 with ld ?regpairh,?reg; ld ?regpairl,?reg (as ?Reg == ?const1 here)
+pattern: Replace ld ?regpair,?const2 with ld ?regpairh,?reg; ld ?regpairl,?reg (as ?reg == ?const1 here)
 2: ld ?reg,?const1
 1: *
 0: ld ?regpair,?const2

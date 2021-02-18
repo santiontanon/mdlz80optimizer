@@ -15,6 +15,7 @@ import code.SourceStatement;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import org.apache.commons.lang3.tuple.Pair;
 import parser.SourceLine;
 import parser.Tokenizer;
 
@@ -146,11 +147,12 @@ public abstract class SjasmDerivativeDialect implements Dialect {
     
     
     @Override
-    public String newSymbolName(String name, Expression value, SourceStatement previous) {
+    public Pair<String, SourceConstant> newSymbolName(String name, Expression value, SourceStatement previous) {
+        SourceConstant lastAbsoluteLabel = null;
         if (name.startsWith("@")) {
             name = name.substring(1);
         } else if (name.startsWith(".")) {
-            SourceConstant lastAbsoluteLabel = getLastAbsoluteLabel(previous);
+            lastAbsoluteLabel = getLastAbsoluteLabel(previous);
             if (lastAbsoluteLabel != null) {
                 name = lastAbsoluteLabel.name + name;
             } else {
@@ -172,18 +174,19 @@ public abstract class SjasmDerivativeDialect implements Dialect {
         
         symbolPage.put(name, currentPage);
         
-        return name;
+        return Pair.of(name, lastAbsoluteLabel);
     }
     
     
     @Override
-    public String symbolName(String name, SourceStatement previous) {
+    public Pair<String, SourceConstant> symbolName(String name, SourceStatement previous) {
+        SourceConstant lastAbsoluteLabel = null;
         if (name.startsWith(".")) {
-            SourceConstant lastAbsoluteLabel = getLastAbsoluteLabel(previous);
+            lastAbsoluteLabel = getLastAbsoluteLabel(previous);
             if (lastAbsoluteLabel != null) {
-                return lastAbsoluteLabel.name + name;
+                return Pair.of(lastAbsoluteLabel.name + name, lastAbsoluteLabel);
             } else {
-                return name;
+                return Pair.of(name, null);
             }
         } else if ((name.endsWith("f") || name.endsWith("F")) && Tokenizer.isInteger(name.substring(0, name.length()-1))) {
             // it'startStatement a reusable label:
@@ -192,14 +195,14 @@ public abstract class SjasmDerivativeDialect implements Dialect {
             if (reusableLabelCounts.containsKey(name)) {
                 count = reusableLabelCounts.get(name);
             }
-            return "_sjasm_reusable_" + name + "_" + count;
+            return Pair.of("_sjasm_reusable_" + name + "_" + count, null);
         } else if ((name.endsWith("b") || name.endsWith("B")) && Tokenizer.isInteger(name.substring(0, name.length()-1))) {
             // it'startStatement a reusable label:
             name = name.substring(0, name.length()-1);
             int count = reusableLabelCounts.get(name);
-            return "_sjasm_reusable_" + name + "_" + (count-1);
+            return Pair.of("_sjasm_reusable_" + name + "_" + (count-1), null);
         } else {            
-            return name;
+            return Pair.of(name, null);
         }
     }
     

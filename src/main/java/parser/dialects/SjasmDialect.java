@@ -968,11 +968,6 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             // read variable name:
             String token = tokens.remove(0);
             if (!config.lineParser.caseSensitiveSymbols) token = token.toLowerCase();
-            String symbolName = config.lineParser.newSymbolName(token, null, previous);
-            if (symbolName == null) {
-                config.error("Problem defining symbol " + config.lineParser.getLabelPrefix() + token + " in " + sl);
-                return false;
-            }
             
             // optionally read the expression:
             List<Expression> expressions = new ArrayList<>();
@@ -1018,7 +1013,11 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             }
 
             // parse as a :=:
-            SourceConstant c = new SourceConstant(symbolName, token, exp, s, config);
+            SourceConstant c = config.lineParser.newSourceConstant(token, exp, s, previous);
+            if (c == null) {
+                config.error("Problem defining symbol " + config.lineParser.getLabelPrefix() + token + " in " + sl);
+                return false;
+            }
             s.label = c;
             int res = code.addSymbol(c.name, c);
             if (res == -1) return false;

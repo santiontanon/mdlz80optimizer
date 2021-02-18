@@ -8,10 +8,12 @@ package parser.dialects;
 import cl.MDLConfig;
 import code.CodeBase;
 import code.Expression;
+import code.SourceConstant;
 import code.SourceFile;
 import code.SourceStatement;
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.commons.lang3.tuple.Pair;
 import parser.SourceLine;
 import parser.Tokenizer;
 
@@ -54,7 +56,7 @@ public class PasmoDialect implements Dialect {
     
 
     @Override
-    public String newSymbolName(String name, Expression value, SourceStatement previous) 
+    public Pair<String, SourceConstant> newSymbolName(String name, Expression value, SourceStatement previous) 
     {
         if (name.equalsIgnoreCase("proc") ||
             name.equalsIgnoreCase("endp") ||
@@ -64,20 +66,20 @@ public class PasmoDialect implements Dialect {
             return null;
         }
         if (localLabels.contains(name)) {
-            return currentScope + name;
+            return Pair.of(currentScope + name, null);
         } else {
-            return config.lineParser.getLabelPrefix() + name;
+            return Pair.of(config.lineParser.getLabelPrefix() + name, null);
         }
     }
 
 
     @Override
-    public String symbolName(String name, SourceStatement previous) 
+    public Pair<String, SourceConstant> symbolName(String name, SourceStatement previous) 
     {
         if (localLabels.contains(name)) {
-            return currentScope + name;
+            return Pair.of(currentScope + name, null);
         } else {
-            return name;
+            return Pair.of(name, null);
         }
     }
     

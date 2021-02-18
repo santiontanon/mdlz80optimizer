@@ -15,6 +15,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import org.apache.commons.lang3.tuple.Pair;
 import parser.LineParser;
 import parser.SourceLine;
 import parser.Tokenizer;
@@ -118,13 +119,13 @@ public class SDCCDialect implements Dialect {
     }
     
     
-    private String getLastAbsoluteLabel(SourceStatement s) 
+    private SourceConstant getLastAbsoluteLabel(SourceStatement s) 
     {
         // sjasm considers any label as an absolute label, even if it's associated with an equ,
         // so, no need to check if s.label.isLabel() (as in asMSX):
         while(s != null) {
             if (s.label != null && !isLocalLabelName(s.label.originalName)) {
-                return s.label.originalName;
+                return s.label;
             } else {
                 s = s.source.getPreviousStatementTo(s, s.source.code);
             }
@@ -134,32 +135,32 @@ public class SDCCDialect implements Dialect {
     
     
     @Override
-    public String newSymbolName(String name, Expression value, SourceStatement s) {        
+    public Pair<String, SourceConstant> newSymbolName(String name, Expression value, SourceStatement s) {        
         // A relative label
         if (isLocalLabelName(name)) {
-            String lastAbsoluteLabel = getLastAbsoluteLabel(s);        
+            SourceConstant lastAbsoluteLabel = getLastAbsoluteLabel(s);        
             if (lastAbsoluteLabel != null) {
-                return lastAbsoluteLabel + name.substring(0, name.length()-1);
+                return Pair.of(lastAbsoluteLabel.originalName + name.substring(0, name.length()-1), lastAbsoluteLabel);
             }
         }
 
         // An absolute label
-        return config.lineParser.getLabelPrefix() + name;
+        return Pair.of(config.lineParser.getLabelPrefix() + name, null);
     }
 
 
     @Override
-    public String symbolName(String name, SourceStatement s) {
+    public Pair<String, SourceConstant> symbolName(String name, SourceStatement s) {
         // A relative label
         if (isLocalLabelName(name)) {
-            String lastAbsoluteLabel = getLastAbsoluteLabel(s);
+            SourceConstant lastAbsoluteLabel = getLastAbsoluteLabel(s);
             if (lastAbsoluteLabel != null) {
-                return lastAbsoluteLabel + name.substring(0, name.length()-1);
+                return Pair.of(lastAbsoluteLabel.originalName+ name.substring(0, name.length()-1), lastAbsoluteLabel);
             }
         }
 
         // An absolute label
-        return name;
+        return Pair.of(name, null);
     }
     
     
@@ -202,11 +203,12 @@ public class SDCCDialect implements Dialect {
             if (!definedAreas.containsKey(areaName)) {
                 definedAreas.put(areaName, sl);
                 Expression exp = Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, s, code, config);
-                String symbolName = newSymbolName("s_" + areaName, exp, s);
-                if (symbolName == null) {
-                    config.error("Problem defining symbol " + symbolName + " in " + sl);
+                Pair<String, SourceConstant> tmp = newSymbolName("s_" + areaName, exp, s);
+                if (tmp == null) {
+                    config.error("Problem defining symbol " + "s_" + areaName + " in " + sl);
                     return false;
                 }
+                String symbolName = tmp.getLeft();
                 SourceConstant c = new SourceConstant(symbolName, "s_" + areaName, exp, s, config);
                 s.type = SourceStatement.STATEMENT_NONE;
                 s.label = c;

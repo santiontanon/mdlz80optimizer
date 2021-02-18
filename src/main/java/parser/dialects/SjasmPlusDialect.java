@@ -713,16 +713,11 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("define")) {
-            String keyword = tokens.remove(0);
+            tokens.remove(0);
 
             // read variable name:
             String token = tokens.remove(0);
             if (!config.lineParser.caseSensitiveSymbols) token = token.toLowerCase();
-            String symbolName = config.lineParser.newSymbolName(token, null, previous);
-            if (symbolName == null) {
-                config.error("Problem defining symbol " + config.lineParser.getLabelPrefix() + token + " in " + sl);
-                return false;
-            }
             
             // optionally read the expression:
             Expression exp = null;
@@ -740,8 +735,12 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
                 exp = Expression.constantExpression(0, config);
             }
 
-            // parse as a :=:            
-            SourceConstant c = new SourceConstant(symbolName, token, exp, s, config);
+            // parse as a :=:      
+            SourceConstant c = config.lineParser.newSourceConstant(token, exp, s, previous);
+            if (c == null) {
+                config.error("Problem defining symbol " + config.lineParser.getLabelPrefix() + token + " in " + sl);
+                return false;
+            }
             s.label = c;
             int res = code.addSymbol(c.name, c);
             if (res == -1) return false;
