@@ -11,6 +11,7 @@ import code.Expression;
 import code.SourceConstant;
 import code.SourceFile;
 import code.SourceStatement;
+import static code.SourceStatement.STATEMENT_ORG;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -321,6 +322,13 @@ public class SDCCDialect implements Dialect {
                     if (s.comment != null) str += "  " + s.comment;
                     return str;
                 }
+
+            case STATEMENT_ORG:
+            {
+                String str = toStringLabelWithoutSafetyEqu(s, useOriginalNames);
+                str += "    "+config.lineParser.KEYWORD_ORG+" " + s.org.toString();
+                return str;
+            }
             
             case SourceStatement.STATEMENT_CPUOP:
             {

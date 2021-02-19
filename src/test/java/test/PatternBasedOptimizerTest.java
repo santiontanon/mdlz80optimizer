@@ -85,6 +85,7 @@ public class PatternBasedOptimizerTest {
     @Test public void test47() throws IOException { test("data/tests/test47.asm", 2, 8, 8); }
     @Test public void test48() throws IOException { test("data/tests/test48.asm", 1, 5, 5); }
     @Test public void test49() throws IOException { test("data/tests/test49.asm", 1, 7, 7); }
+    @Test public void test50() throws IOException { test("data/tests/test50.asm", 0, 0, 0); }
 
     private void test(String inputFile, int expectedSavedBytes, int expectedSavedTime1, int expectedSavedTime2) throws IOException
     {

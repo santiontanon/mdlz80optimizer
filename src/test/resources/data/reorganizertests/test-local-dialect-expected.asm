@@ -4,14 +4,19 @@ global1:
 	ld hl, variable
 ; 	jp global2.local  ; -mdl
 global2.local:
-	ld (hl), 1
+	ld [hl], 1
 ; 	jp global1.local  ; -mdl
 global1.local:
 	inc hl
-	ld (hl), 2
+	ld [hl], 2
 loop:
 	jp loop
 global2:
+	ret
+global3:
+	ret
+.local:
+	ld [hl], 2
 	ret
 	org #c000
 variable:

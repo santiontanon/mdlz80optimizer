@@ -6,5 +6,8 @@
 	ld e,c
 	ld (var1),de
 
+loop:
+	jr loop
+
 var1:
 	dw 0

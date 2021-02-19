@@ -13,6 +13,11 @@ loop:
 	jp loop
 global2:
 	ret
+global3:
+	ret
+global3.local:
+	ld (hl), 2
+	ret
 	org #c000
 variable:
 	org $ + 1

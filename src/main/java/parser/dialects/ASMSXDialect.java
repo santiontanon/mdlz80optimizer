@@ -13,6 +13,7 @@ import code.SourceFile;
 import code.SourceStatement;
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -36,7 +37,7 @@ public class ASMSXDialect implements Dialect {
     public static final String PHASE_PRE_LABEL_PREFIX = "__asmsx_phase_pre_";
     public static final String PHASE_POST_LABEL_PREFIX = "__asmsx_phase_post_";
     public static final String DEPHASE_LABEL_PREFIX = "__asmsx_dephase_";
-    
+
     public static class PrintRecord {
         String keyword;
         SourceStatement previousStatement;  // not the current, as it was probably not added to the file
@@ -1038,5 +1039,34 @@ public class ASMSXDialect implements Dialect {
         
         return true;
     }
+
     
+    public String toStringLabelWithoutSafetyEqu(SourceStatement s, boolean useOriginalNames)
+    {
+        boolean tmp = config.output_safetyEquDollar;
+        config.output_safetyEquDollar = false;
+        String str = s.toStringLabel(useOriginalNames, true);
+        config.output_safetyEquDollar = tmp;
+        return str;
+    }
+    
+
+    @Override
+    public String statementToString(SourceStatement s, CodeBase code, boolean useOriginalNames, Path rootPath) {
+        switch(s.type) {
+            case SourceStatement.STATEMENT_CPUOP:
+            {
+                String str = s.toStringLabel(useOriginalNames, false);              
+                boolean tmp = config.output_indirectionsWithSquareBrakets;
+                config.output_indirectionsWithSquareBrakets = !zilogMode;
+                str += "    " + s.op.toString();
+                config.output_indirectionsWithSquareBrakets = tmp;
+                return str;
+            }
+            
+            default:
+                return s.toStringUsingRootPath(rootPath, useOriginalNames);
+        }
+    }    
+        
 }

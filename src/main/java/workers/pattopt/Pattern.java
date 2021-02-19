@@ -1196,6 +1196,12 @@ public class Pattern {
 //                if (dep == null) {
 //                    // config.trace("    dependency broken!");
 //                }
+            } else if (next.type == SourceStatement.STATEMENT_DATA_BYTES ||
+                       next.type == SourceStatement.STATEMENT_DATA_WORDS ||
+                       next.type == SourceStatement.STATEMENT_DATA_DOUBLE_WORDS) {
+                // There is either a bug in the program, or some assembler instructions
+                // are coded directly in data statements, assume dependency for safety:
+                return false;
             }
             
             if (dep != null) {

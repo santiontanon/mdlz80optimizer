@@ -16,5 +16,11 @@ global2:
 	ld [hl],1
 	jp global1.local
 
+global3:
+	ret
+.local:
+	ld [hl],2
+	ret
+
 	org #c000
 variable: ds 1

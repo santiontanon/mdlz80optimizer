@@ -430,6 +430,37 @@ public class CodeReorganizer implements MDLWorker {
                 if (anyMove) break;
             }
         }while(anyMove);
+        
+        // check if any local labels have been moved out of their contexts, and fix them:
+        for(int i = 0;i<subarea.statements.size();i++) {
+            SourceStatement s = subarea.statements.get(i);
+            if (s.label != null && s.label.relativeTo != null) {
+                // relative label!
+                boolean found = false;
+                SourceStatement s2 = s;
+                while(s2 != null) {
+                    if (s2.label != null && s2.label.relativeTo == null) {
+                        // absolute label:
+                        if (s.label.relativeTo == s2.label) {
+                            found = true;
+                        }
+                        break;
+                    }
+                    s2 = s2.source.getPreviousStatementTo(s2, code);
+                }
+                if (!found) {
+                    // we found a local label out of context!
+                    config.debug("CodeReorganizer: local label out of context! " + s.label.originalName + " should be right after " + s.label.relativeTo.originalName + " but isn't!");
+                    
+                    // turn the local label into an absolute label:
+                    s.label.relativeTo = null;
+                    s.label.originalName = s.label.name;
+                    
+                    // reset the loop: (santi: this is an ugly hack, I know...)
+                    i = -1;
+                }
+            }
+        }
     }
     
     

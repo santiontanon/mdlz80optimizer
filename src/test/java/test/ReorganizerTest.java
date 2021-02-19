@@ -61,10 +61,10 @@ public class ReorganizerTest {
     @Test public void test9() throws Exception { Assert.assertTrue(test("data/reorganizertests/test-jumptable.asm", null,
                                                                         "data/reorganizertests/test-jumptable-expected.asm", null,
                                                                         "data/reorganizertests/test-jumptable-expected.bin")); }
-//    @Test public void test10() throws Exception { Assert.assertTrue(test("data/reorganizertests/test-local.asm", "asmsx",
-//                                                                         "data/reorganizertests/test-local-expected.asm",
-//                                                                         "data/reorganizertests/test-local-dialect-expected.asm",
-//                                                                         "data/reorganizertests/test-local-expected.bin")); }
+    @Test public void test10() throws Exception { Assert.assertTrue(test("data/reorganizertests/test-local.asm", "asmsx",
+                                                                         "data/reorganizertests/test-local-expected.asm",
+                                                                         "data/reorganizertests/test-local-dialect-expected.asm",
+                                                                         "data/reorganizertests/test-local-expected.bin")); }
 
     private boolean test(String inputFile, String dialect,
                          String expectedOutputFile, String expectedOutputFileDialect,
