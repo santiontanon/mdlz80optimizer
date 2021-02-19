@@ -61,7 +61,7 @@ public class Expression {
         5, 13, 11, 10, 9,
         9, 9, 9, 10, 16,
         7, 7, 11, 13, 3,
-        12, 3, -1, -1};
+        12, 3, -1, -1, -1};
 
     MDLConfig config;
     public int type;
@@ -1315,29 +1315,20 @@ public class Expression {
                     && OPERATOR_PRECEDENCE[operator] < OPERATOR_PRECEDENCE[arg2.type]) {
                 if (OPERATOR_PRECEDENCE[arg1.type] < OPERATOR_PRECEDENCE[arg2.type]) {
                     // (1 arg1 (2 operator 3)) arg2 4
-                    Expression exp = new Expression(operator, config);
-                    exp.args = new ArrayList<>();
-                    exp.args.add(arg1.args.get(arg1.args.size() - 1));
-                    exp.args.add(arg2.args.get(0));
+                    Expression exp = operatorExpression(operator, arg1.args.get(arg1.args.size() - 1), arg2.args.get(0), config);                    
                     arg1.args.set(arg1.args.size() - 1, exp);
                     arg2.args.set(0, arg1);
                     return arg2;
                 } else {
                     // 1 arg1 ((2 operator 3) arg2 4)
-                    Expression exp = new Expression(operator, config);
-                    exp.args = new ArrayList<>();
-                    exp.args.add(arg1.args.get(arg1.args.size() - 1));
-                    exp.args.add(arg2.args.get(0));
+                    Expression exp = operatorExpression(operator, arg1.args.get(arg1.args.size() - 1), arg2.args.get(0), config);
                     arg2.args.set(0, exp);
                     arg1.args.set(arg1.args.size() - 1, arg2);
                     return arg1;
                 }
             } else {
                 // 1 arg1 (2 operator arg2)
-                Expression exp = new Expression(operator, config);
-                exp.args = new ArrayList<>();
-                exp.args.add(arg1.args.get(arg1.args.size() - 1));
-                exp.args.add(arg2);
+                Expression exp = operatorExpression(operator, arg1.args.get(arg1.args.size() - 1), arg2, config);
                 arg1.args.set(arg1.args.size() - 1, exp);
                 return arg1;
             }
@@ -1345,10 +1336,7 @@ public class Expression {
                 && OPERATOR_PRECEDENCE[operator] < OPERATOR_PRECEDENCE[arg2.type]) {
             // operator has higher precedence than the one in arg2, we need to reorder!
             // (arg1 operator 3) arg2 4
-            Expression exp = new Expression(operator, config);
-            exp.args = new ArrayList<>();
-            exp.args.add(arg1);
-            exp.args.add(arg2.args.get(0));
+            Expression exp = operatorExpression(operator, arg1, arg2.args.get(0), config);
             arg2.args.set(0, exp);
             return arg2;
         }

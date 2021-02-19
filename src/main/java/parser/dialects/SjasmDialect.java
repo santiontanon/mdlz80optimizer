@@ -1235,6 +1235,11 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                     lines2.add(new SourceLine(line2, sl.source, sl.lineNumber));
                 }
             }
+//            config.trace("<------ start: instantiateMacro: repeat ------->");
+//            for(SourceLine tmp:lines2) {
+//                config.trace(tmp.line);
+//            }
+//            config.trace("<------ end: instantiateMacro: repeat ------->");
             return me;
             
         } else if (macro.name.equals("ifexists")) {
