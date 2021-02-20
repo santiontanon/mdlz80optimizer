@@ -46,7 +46,7 @@ public abstract class SjasmDerivativeDialect implements Dialect {
     
     HashMap<String, Integer> reusableLabelCounts = new HashMap<>();
 
-    Integer currentPage = null;
+    List<Integer> currentPages = new ArrayList<>();
     HashMap<String,Integer> symbolPage = new HashMap<>();
     
     
@@ -172,7 +172,14 @@ public abstract class SjasmDerivativeDialect implements Dialect {
         
         if (forbiddenLabelNames.contains(name.toLowerCase())) return null;
         
-        symbolPage.put(name, currentPage);
+        if (currentPages.isEmpty()) {
+            config.warn("Defining a symbol, without any page selected, defaulting to 0");
+            symbolPage.put(name, 0);
+        } else {
+            // set to the first candidate page for not (this will be overwritten later,
+            // when blocks are assigned to pages):
+            symbolPage.put(name, currentPages.get(0));
+        }
         
         return Pair.of(name, lastAbsoluteLabel);
     }

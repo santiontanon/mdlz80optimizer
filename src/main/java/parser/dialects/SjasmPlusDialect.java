@@ -540,7 +540,8 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
                         pageSizes.add(16*1024);
                     }
                     currentSlot = 3;
-                    currentPage = 0;
+                    currentPages.clear();
+                    currentPages.add(0);
                     break;
                 case "zxspectrum128":
                     slotSizes.clear();
@@ -552,7 +553,8 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
                         pageSizes.add(16*1024);
                     }
                     currentSlot = 3;
-                    currentPage = 0;
+                    currentPages.clear();
+                    currentPages.add(0);
                     break;
                 case "zxspectrum256":
                     slotSizes.clear();
@@ -564,7 +566,8 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
                         pageSizes.add(16*1024);
                     }
                     currentSlot = 3;
-                    currentPage = 0;
+                    currentPages.clear();
+                    currentPages.add(0);
                     break;
                 case "zxspectrum512":
                     slotSizes.clear();
@@ -576,7 +579,8 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
                         pageSizes.add(16*1024);
                     }
                     currentSlot = 3;
-                    currentPage = 0;
+                    currentPages.clear();
+                    currentPages.add(0);
                     break;
                 case "zxspectrum1024":
                     slotSizes.clear();
@@ -588,7 +592,8 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
                         pageSizes.add(16*1024);
                     }
                     currentSlot = 3;
-                    currentPage = 0;
+                    currentPages.clear();
+                    currentPages.add(0);
                     break;
                 case "zxspectrum2048":
                     slotSizes.clear();
@@ -600,7 +605,8 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
                         pageSizes.add(16*1024);
                     }
                     currentSlot = 3;
-                    currentPage = 0;
+                    currentPages.clear();
+                    currentPages.add(0);
                     break;
                 case "zxspectrum4096":
                     slotSizes.clear();
@@ -612,7 +618,8 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
                         pageSizes.add(16*1024);
                     }
                     currentSlot = 3;
-                    currentPage = 0;
+                    currentPages.clear();
+                    currentPages.add(0);
                     break;
                 case "zxspectrum8192":
                     slotSizes.clear();
@@ -624,7 +631,8 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
                         pageSizes.add(16*1024);
                     }
                     currentSlot = 3;
-                    currentPage = 0;
+                    currentPages.clear();
+                    currentPages.add(0);
                     break;
                 case "zxspectrumnext":
                     slotSizes.clear();
@@ -636,7 +644,8 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
                         pageSizes.add(8*1024);
                     }
                     currentSlot = 7;
-                    currentPage = 0;
+                    currentPages.clear();
+                    currentPages.add(0);
                     break;
                 case "noslot64k":
                     slotSizes.clear();
@@ -646,7 +655,8 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
                         pageSizes.add(64*1024);
                     }
                     currentSlot = 0;
-                    currentPage = 0;
+                    currentPages.clear();
+                    currentPages.add(0);
                     break;
                     
                 default:

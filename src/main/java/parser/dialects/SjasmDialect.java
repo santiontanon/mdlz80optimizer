@@ -35,16 +35,19 @@ import workers.reorgopt.CodeBlock;
 public class SjasmDialect extends SjasmDerivativeDialect implements Dialect 
 {    
     public class SJasmCodeBlock extends CodeBlock {
-        int page = -1;
+        List<Integer> candidatePages = null;
         Expression address;
         Expression alignment;
         int actualAddress = -1;
         
-        public SJasmCodeBlock(CodeStatement a_s, int a_page, Expression a_address, Expression a_alignment)
+        public SJasmCodeBlock(CodeStatement a_s, List<Integer> a_candidatePages, Expression a_address, Expression a_alignment)
         {
             super(null, CodeBlock.TYPE_UNKNOWN, a_s);
             startStatement = a_s;
-            page = a_page;
+            candidatePages = new ArrayList<>();
+            if (a_candidatePages != null) {
+                candidatePages.addAll(a_candidatePages);
+            }
             address = a_address;
             alignment = a_alignment;
         }
@@ -721,11 +724,14 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                         String token2 = pageToken.substring(idx+2);
                         int page1 = Integer.parseInt(token1);
                         int page2 = Integer.parseInt(token2);
-                        if (page1 != page2) {
+                        if (page1 > page2) {
                             config.error("Placing code in more than one possible page not yet supported in " + sl);
                             return false;
                         }
-                        currentPage = page1;
+                        currentPages.clear();
+                        for(int i = page1; i<=page2; i++) {
+                            currentPages.add(i);
+                        }
                     } else {                
                         Expression pageExp = config.expressionParser.parse(tokens, s, previous, code);
                         if (pageExp == null) {
@@ -733,20 +739,16 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                             return false;                    
                         }
                         int page = pageExp.evaluateToInteger(s, code, false);
-                        currentPage = page;
+                        currentPages.clear();
+                        currentPages.add(page);
                     }
                 } else {
                     config.error("Could not determine current page processing code keyword in " + sl);
                     return false;                    
                 }
             }            
-            
-            if (currentPage == null) {
-                config.error("Could not determine current page processing code keyword in " + sl);
-                return false;
-            }
-            
-            codeBlocks.add(new SJasmCodeBlock(s, currentPage, addressExp, alignmentExp));
+                        
+            codeBlocks.add(new SJasmCodeBlock(s, currentPages, addressExp, alignmentExp));
             
             // ignore (but still add the statement, so we know where the codeblock starts)
             s.type = CodeStatement.STATEMENT_NONE;
@@ -763,11 +765,13 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                     String token2 = pageToken.substring(idx+2);
                     int page1 = Integer.parseInt(token1);
                     int page2 = Integer.parseInt(token2);
-                    if (page1 != page2) {
+                    if (page1 > page2) {
                         config.error("Specifying more than one possible page not yet supported in " + sl);
                         return false;
                     }
-                    currentPage = page1;
+                    for(int i = page1; i<=page2; i++) {
+                        currentPages.add(i);
+                    }
                 } else {
                     Expression pageExp = null;
                     pageExp = config.expressionParser.parse(tokens, s, previous, code);
@@ -776,11 +780,12 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                         return false;
                     }
                     int page = pageExp.evaluateToInteger(s, code, false);
-                    currentPage = page;
+                        currentPages.clear();
+                        currentPages.add(page);
                 }
                 
                 Expression addressExp = null;
-                codeBlocks.add(new SJasmCodeBlock(s, currentPage, addressExp, null));
+                codeBlocks.add(new SJasmCodeBlock(s, currentPages, addressExp, null));
                 // parse it as an "org"
                 s.type = CodeStatement.STATEMENT_NONE;
                 return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
@@ -1341,7 +1346,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
         if (!codeBlocks.isEmpty()) {
                 
             // Reorganize all the "code" blocks into the different pages:
-            SJasmCodeBlock initialBlock = new SJasmCodeBlock(null, -1, null, null);
+            SJasmCodeBlock initialBlock = new SJasmCodeBlock(null, null, null, null);
             SJasmCodeBlock currentBlock = initialBlock;
 
             {
@@ -1382,10 +1387,19 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                 if (address == null) {
                     blocksToAssign.add(b);
                 } else {
-                    CodePage page = pages.get(b.page);
-                    if (!page.addBlock(b, code, config)) {
-                        config.error("Could not add block of size " + b.size(code) + " to page " + page + "!");
-                        return false;
+                    for(Integer pageIdx:b.candidatePages) {
+                        CodePage page = pages.get(pageIdx);
+                        if (page.addBlock(b, code, config)) {
+                            // assign all the symbols in this block to this page:
+                            for(CodeStatement bs:b.statements) {
+                                if (bs.label != null) {
+                                    symbolPage.put(bs.label.name, pageIdx);
+                                }
+                            }
+                        } else {
+                            config.error("Could not add block of size " + b.size(code) + " to page " + page + "!");
+                            return false;
+                        }
                     }
                 }
             }
@@ -1399,10 +1413,19 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             });
 
             for(SJasmCodeBlock b:blocksToAssign) {
-                CodePage page = pages.get(b.page);
-                if (!page.addBlock(b, code, config)) {
-                    config.error("Could not add block of size " + b.size(code) + " to page " + page + "!");
-                    return false;
+                for(Integer pageIdx:b.candidatePages) {
+                    CodePage page = pages.get(pageIdx);
+                    if (page.addBlock(b, code, config)) {
+                        // assign all the symbols in this block to this page:
+                        for(CodeStatement bs:b.statements) {
+                            if (bs.label != null) {
+                                symbolPage.put(bs.label.name, pageIdx);
+                            }
+                        }
+                    } else {
+                        config.error("Could not add block of size " + b.size(code) + " to page " + page + "!");
+                        return false;
+                    }
                 }
             }
 
