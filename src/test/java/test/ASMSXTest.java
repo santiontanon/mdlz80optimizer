@@ -32,22 +32,24 @@ public class ASMSXTest {
     }
 
     @Test public void test1() throws IOException { Assert.assertTrue(test("data/generationtests/asmsx-builtin.asm", false, 
-                                                                          "data/generationtests/asmsx-builtin-expected.asm")); }
+                                                                          "data/generationtests/asmsx-builtin-expected.asm", null)); }
     @Test public void test2() throws IOException { Assert.assertTrue(test("data/generationtests/asmsx-builtin2.asm", false, 
-                                                                          "data/generationtests/asmsx-builtin2-expected.asm")); }
+                                                                          "data/generationtests/asmsx-builtin2-expected.asm",
+                                                                          "data/generationtests/asmsx-builtin2-dialect-expected.asm")); }
     @Test public void test3() throws IOException { Assert.assertTrue(test("data/generationtests/asmsx-parenthesis.asm", false,
-                                                                          "data/generationtests/asmsx-parenthesis-expected.asm")); }
+                                                                          "data/generationtests/asmsx-parenthesis-expected.asm", null)); }
     @Test public void test4() throws IOException { Assert.assertTrue(test("data/generationtests/asmsx-parenthesis-zilog.asm", true,
-                                                                          "data/generationtests/asmsx-parenthesis-zilog-expected.asm")); }
+                                                                          "data/generationtests/asmsx-parenthesis-zilog-expected.asm", null)); }
     @Test public void test5() throws IOException { Assert.assertTrue(test("data/generationtests/asmsx-crash.asm", true,
-                                                                          "data/generationtests/asmsx-crash-expected.asm")); }
+                                                                          "data/generationtests/asmsx-crash-expected.asm", null)); }
     @Test public void test6() throws IOException { Assert.assertTrue(test("data/generationtests/asmsx-macros.asm", false,
-                                                                          "data/generationtests/asmsx-macros-expected.asm")); }
+                                                                          "data/generationtests/asmsx-macros-expected.asm", null)); }
     @Test public void test7() throws IOException { Assert.assertTrue(test("data/generationtests/asmsx-phase.asm", false,
-                                                                          "data/generationtests/asmsx-phase-expected.asm")); }
+                                                                          "data/generationtests/asmsx-phase-expected.asm",
+                                                                          "data/generationtests/asmsx-phase-dialect-expected.asm")); }
     
 
-    private boolean test(String inputFile, boolean zilogMode, String expectedOutputFile) throws IOException
+    private boolean test(String inputFile, boolean zilogMode, String expectedOutputFile, String expectedDialectOutputFile) throws IOException
     {
         if (zilogMode) {
             Assert.assertTrue(config.parseArgs(inputFile,"-dialect","asmsx-zilog"));
@@ -58,9 +60,25 @@ public class ASMSXTest {
                 "Could not parse file " + inputFile,
                 config.codeBaseParser.parseMainSourceFile(config.inputFile, code));
 
+        // Compare standard assembler generation:
         SourceCodeGenerator scg = new SourceCodeGenerator(config);
+        String result = scg.sourceFileString(code.getMain(), code);        
+        if (!compareOutputs(result, expectedOutputFile)) return false;
 
-        String result = scg.sourceFileString(code.getMain(), code);
+        // Compare dialect assembler generation:
+        if (expectedDialectOutputFile != null) {
+            SourceCodeGenerator scg_dialect = new SourceCodeGenerator(config);
+            scg_dialect.mimicTargetDialect = true;
+            String resultDialect = scg_dialect.sourceFileString(code.getMain(), code);        
+            if (!compareOutputs(resultDialect, expectedDialectOutputFile)) return false;
+        }
+        
+        return true;
+    }
+    
+    
+    private boolean compareOutputs(String result, String expectedOutputFile) throws IOException
+    {
         List<String> lines = new ArrayList<>();
         StringTokenizer st = new StringTokenizer(result, "\n");
         while(st.hasMoreTokens()) {
@@ -72,7 +90,10 @@ public class ASMSXTest {
         while(true) {
             String line = br.readLine();
             if (line == null) break;
-            expectedLines.add(line.trim());
+            line = line.trim();
+            if (line.length() > 0) {
+                expectedLines.add(line);
+            }
         }
         System.out.println("\n--------------------------------------");
         System.out.println(result);

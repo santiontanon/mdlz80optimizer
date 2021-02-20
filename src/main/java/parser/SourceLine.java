@@ -21,6 +21,14 @@ public class SourceLine {
     public String labelPrefixToPush = null;
     public String labelPrefixToPop = null;
     
+    public SourceLine(SourceLine sl)
+    {
+        line = sl.line;
+        source = sl.source;
+        lineNumber = sl.lineNumber;
+        expandedFrom = sl.expandedFrom;
+    }
+    
     
     public SourceLine(String a_line, SourceFile a_f, Integer a_ln)
     {

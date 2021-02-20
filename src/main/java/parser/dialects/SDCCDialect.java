@@ -11,7 +11,6 @@ import code.Expression;
 import code.SourceConstant;
 import code.SourceFile;
 import code.CodeStatement;
-import static code.CodeStatement.STATEMENT_ORG;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -20,7 +19,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import parser.LineParser;
 import parser.SourceLine;
 import parser.Tokenizer;
-import workers.pattopt.PatternBasedOptimizer;
 
 /**
  *
@@ -321,7 +319,7 @@ public class SDCCDialect implements Dialect {
                     return str;
                 }
 
-            case STATEMENT_ORG:
+            case CodeStatement.STATEMENT_ORG:
             {
                 String str = toStringLabelWithoutSafetyEqu(s, useOriginalNames);
                 str += "    "+config.lineParser.KEYWORD_ORG+" " + s.org.toString();

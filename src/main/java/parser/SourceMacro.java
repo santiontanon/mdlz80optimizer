@@ -148,6 +148,8 @@ public class SourceMacro {
             if (exp.type == Expression.EXPRESSION_SYMBOL) {
                 SourceConstant sc = code.getSymbol(exp.symbolName);
                 if (sc != null && sc.exp != null) defined = true;
+                if (!defined && config.preProcessor.isMacro(exp.symbolName)) defined = true;
+                if (!defined && config.preProcessor.textMacros.containsKey(exp.symbolName)) defined = true;
             } else {
                 config.error("Incorrect parameter to " + config.preProcessor.MACRO_IFDEF + ": " + args.get(0));
                 return null;
@@ -164,6 +166,8 @@ public class SourceMacro {
             if (exp.type == Expression.EXPRESSION_SYMBOL) {
                 SourceConstant sc = code.getSymbol(exp.symbolName);
                 if (sc != null && sc.exp != null) defined = true;
+                if (!defined && config.preProcessor.isMacro(exp.symbolName)) defined = true;
+                if (!defined && config.preProcessor.textMacros.containsKey(exp.symbolName)) defined = true;
             } else {
                 config.error("Incorrect parameter to " + config.preProcessor.MACRO_IFDEF + ": " + args.get(0));
                 return null;

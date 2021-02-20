@@ -175,6 +175,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
         config.lineParser.tokensPreventingTextMacroExpansion.add("define");
         config.lineParser.tokensPreventingTextMacroExpansion.add("xdefine");
         config.lineParser.tokensPreventingTextMacroExpansion.add("assign");
+        config.lineParser.tokensPreventingTextMacroExpansion.add("ifdef");
 
         config.lineParser.addKeywordSynonym("byte", config.lineParser.KEYWORD_DB);
         config.lineParser.addKeywordSynonym("defb", config.lineParser.KEYWORD_DB);
@@ -986,7 +987,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             List<String> macroTokens = new ArrayList<>();
 
             // check if it's a define with parameters:
-            if (tokens.get(0).equals("(")) {
+            if (!tokens.isEmpty() && tokens.get(0).equals("(")) {
                 // define with arguments:
                 tokens.remove(0);
                 while(true) {
