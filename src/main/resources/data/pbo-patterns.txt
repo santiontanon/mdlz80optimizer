@@ -752,7 +752,7 @@ pattern: Replace ?op a,?const2 with ?op a,?regh (as ?regh == ?const2 here)
 1: *
 0: ?op a,?const2
 replacement:
-2: ld ?regpair,?const
+2: ld ?regpair,?const1
 1: *
 0: ?op a,?regh
 constraints:
@@ -767,7 +767,7 @@ pattern: Replace ?op a,?const2 with ?op a,?regh (as ?regh == ?const2 here)
 1: *
 0: ?op ?const2
 replacement:
-2: ld ?regpair,?const
+2: ld ?regpair,?const1
 1: *
 0: ?op ?regh
 constraints:

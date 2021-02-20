@@ -1189,6 +1189,26 @@ public class Expression {
         }
         return false;
     }    
+
+
+    public List<String> getAllSymbols()
+    {
+        List<String> l = new ArrayList<>();
+        getAllSymbols(l);
+        return l;
+    }
+
+
+    public void getAllSymbols(List<String> l)
+    {
+        if (type == EXPRESSION_SYMBOL) {
+            l.add(symbolName);
+        } else if (args != null) {
+            for(Expression arg:args) {
+                arg.getAllSymbols(l);
+            }
+        }
+    }    
     
     
     public String findUndefinedSymbol(CodeBase code)

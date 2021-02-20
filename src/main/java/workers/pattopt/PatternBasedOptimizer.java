@@ -134,6 +134,16 @@ public class PatternBasedOptimizer implements MDLWorker {
     }
     
     
+    public boolean checkPatternIntegrity()
+    {
+        config.debug("Running checkPatternIntegrity with " + patterns.size() + " patterns...");
+        for(Pattern p: patterns) {
+            if (!p.checkIntegrity(config)) return false;
+        }
+        return true;
+    }
+    
+    
     boolean tagCheck(Pattern p)
     {
         for(String tag:p.tags) {

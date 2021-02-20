@@ -120,9 +120,12 @@ public class PatternBasedOptimizerTest {
                 }
             }
         }
-        
+                
         OptimizationResult r = pbo.optimize(code);
 
+        // check the intergrity of patterns:
+        Assert.assertTrue(pbo.checkPatternIntegrity());
+        
         for(SourceFile f:code.getSourceFiles()) {
             for(CodeStatement s:f.getStatements()) {
                 if (s.label != null && s.label.isLabel()) {

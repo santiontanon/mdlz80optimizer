@@ -1250,4 +1250,40 @@ public class Pattern {
 
         return true;
     }
+    
+    
+    // Checks that there is no unbound variable on the replacement
+    public boolean checkIntegrity(MDLConfig config)
+    {
+        CodeBase code = new CodeBase(config);
+        List<String> definedSymbols = new ArrayList<>();
+        List<String> replacementSymbols = new ArrayList<>();
+        for(CPUOpPattern p:pattern) {
+            for(Expression exp:p.args) {
+                definedSymbols.addAll(exp.getAllSymbols());
+            }
+        }
+        for(Constraint c:constraints) {
+            for(String arg:c.args) {
+                List<String> tokens = Tokenizer.tokenize(arg);
+                Expression exp = config.expressionParser.parse(tokens, null, null, code);
+                definedSymbols.addAll(exp.getAllSymbols());
+            }
+        }
+        for(CPUOpPattern p:replacement) {
+            for(Expression exp:p.args) {
+                replacementSymbols.addAll(exp.getAllSymbols());
+            }
+        }
+        
+        for(String symbol:replacementSymbols) {
+            if (!definedSymbols.contains(symbol)) {
+                config.error("Symbol " + symbol + " is unbound in pattern!");
+                return false;
+            }
+            
+        }
+        
+        return true;
+    }
 }
