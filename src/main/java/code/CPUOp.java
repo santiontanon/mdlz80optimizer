@@ -302,9 +302,11 @@ public class CPUOp {
                                 o = arg.args.get(1).evaluateToInteger(s, code, true);
                                 break;
                             case Expression.EXPRESSION_SUB:
+                            {
                                 o = arg.args.get(1).evaluateToInteger(s, code, true);
                                 if (o != null) o = -o;
                                 break;
+                            }
                             case Expression.EXPRESSION_REGISTER_OR_FLAG:
                                 o = 0;
                                 break;

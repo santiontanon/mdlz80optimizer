@@ -1,4 +1,4 @@
-; one of each of the CPU ops:
+; one of each of the CPU ops (plus a few corner cases):
 	ADC A,(HL)
 	ADC A,(IX+1)
 	ADC A,(IY+1)
@@ -361,3 +361,9 @@ label2:
 	XOR A
 	XOR IXL
 	XOR IYH
+
+; cases where MDL failed in the past:
+const: equ 29
+	;LD (IX-12+ const),A
+	LD (IX-12+ 29),A
+	LD (IX-12+ const),A

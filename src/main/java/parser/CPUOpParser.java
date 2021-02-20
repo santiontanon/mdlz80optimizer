@@ -200,6 +200,8 @@ public class CPUOpParser {
                     "Prefer using 'jp reg' rather than the confusing z80 'jp (reg)' syntax.");
         }
         
+        // "Fake" instructions are things like "ld (hl++), a", which do not really exist in the Z80,
+        // and have to be translated to sequences of insturctions:
         if (spec.fakeInstructionEquivalent != null) {
             // it's a fake instruction!
             List<CPUOp> l = new ArrayList<>();
@@ -284,6 +286,8 @@ public class CPUOpParser {
             return l;
         }
 
+        // Unofficial instructions are ways to write instructions that are not the way Zilog defined them.
+        // For example, "xor a, a" instead of "xor a".
         if (!spec.official) {
             if (config.convertToOfficial) {
                 CPUOp unofficial = new CPUOp(spec, a_args, config);

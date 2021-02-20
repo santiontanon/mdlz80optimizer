@@ -64,16 +64,17 @@ public class ExpressionParser {
                 }
             }
             if (tokens.get(0).equals("-")) {
-                tokens.remove(0);
                 if (exp.isRegister(code)) {
                     // special case for ix+nn (since I want the register to be separated from the expression)
+                    // We do NOT remove the "-" from the token list, and just parse it as a sum
                     Expression exp2 = parse(tokens, s, previous, code);
                     if (exp2 == null) {
                         config.error("Missing argument for operator +");
                         return null;
                     }
-                    return Expression.operatorExpression(Expression.EXPRESSION_SUB, exp, exp2, config);
+                    return Expression.operatorExpression(Expression.EXPRESSION_SUM, exp, exp2, config);
                 } else {
+                    tokens.remove(0);
                     Expression exp2 = parseInternal(tokens, s, previous, code);
                     if (exp2 == null) {
                         config.error("Missing argument for operator -");
