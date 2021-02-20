@@ -375,6 +375,8 @@ public class GlassDialect implements Dialect {
                 ds_source.getStatements().addAll(insertion_idx, l);
             }
         }
+        
+        code.resetAddresses();
             
         return true;
     }    

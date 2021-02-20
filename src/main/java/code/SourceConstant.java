@@ -38,6 +38,7 @@ public class SourceConstant {
         if (valueCache != null) {
             return valueCache;
         } else {
+            if (exp == null) return null;
             valueCache = exp.evaluate(definingStatement, code, silent);
             return valueCache;
         }

@@ -902,6 +902,7 @@ public class LineParser {
                     config.error("parseMacroDefinition: Cannot parse line " + sl);
                     return false;
                 }
+                s.label.exp = null; // make sure it's not defined as a label!
                 break;
             case MACRO_MACRO_NAME_ARGS:
                 {

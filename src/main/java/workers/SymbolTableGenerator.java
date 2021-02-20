@@ -78,11 +78,13 @@ public class SymbolTableGenerator implements MDLWorker {
         StringBuilder sb = new StringBuilder();
         for(String name:sortedSymbols) {
             SourceConstant symbol = code.getSymbol(name);
+            if (symbol.exp == null) continue;
             if (symbol.exp.type == Expression.EXPRESSION_SYMBOL &&
                 symbol.exp.symbolName.equalsIgnoreCase(CodeBase.CURRENT_ADDRESS) ||
                 includeConstants) {
                 sb.append(name);
                 sb.append(": equ ");
+                System.out.println(symbol.name + " expression: " + symbol.exp);
                 if (symbol.exp.isConstant()) {
                     sb.append(symbol.getValue(code, true));
                 } else if (symbol.isLabel()) {

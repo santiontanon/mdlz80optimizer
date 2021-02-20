@@ -317,6 +317,7 @@ public class PreProcessor {
                     CodeStatement auxiliar = new CodeStatement(CodeStatement.STATEMENT_NONE, s.sl, s.source, config);
                     auxiliar.label = s.label;
                     auxiliar.labelPrefix = s.labelPrefix;
+                    auxiliar.label.definingStatement = auxiliar;
                     l.add(auxiliar);
                 }
                 
@@ -385,6 +386,7 @@ public class PreProcessor {
                         CodeStatement auxiliar = new CodeStatement(CodeStatement.STATEMENT_NONE, s.sl, s.source, config);
                         auxiliar.label = s.label;
                         auxiliar.labelPrefix = s.labelPrefix;
+                        auxiliar.label.definingStatement = auxiliar;
                         l.add(auxiliar);
                     }                    
                     currentState.macroExpansions.add(0, expandedMacro);

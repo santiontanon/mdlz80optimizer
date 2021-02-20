@@ -65,6 +65,7 @@ public class ExpressionTest {
     @Test public void test25() { Assert.assertEquals(Integer.valueOf(144), evaluate("32*4+4*4")); }
     @Test public void test26() { Assert.assertEquals(Integer.valueOf(Expression.FALSE), evaluate("144!=32*4+4*4")); }
     @Test public void test27() { Assert.assertEquals(Integer.valueOf(97), evaluate("100 - 5 + 2")); }
+    @Test public void test28() { Assert.assertEquals(Integer.valueOf(1), evaluate("#00 & ~1 | 1")); }
 
     private Object evaluate(String line)
     {

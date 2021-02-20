@@ -31,12 +31,18 @@ public class SymbolTableTest {
         code = new CodeBase(config);
     }
 
-    @Test public void test1() throws IOException { Assert.assertTrue(test("data/generationtests/mdl-circular.asm",
+    @Test public void test1() throws IOException { Assert.assertTrue(test("data/generationtests/mdl-circular.asm", null,
                                                                           "data/generationtests/mdl-circular-expected-st.asm")); }
+    @Test public void test2() throws IOException { Assert.assertTrue(test("data/generationtests/glass-macro.asm", "glass",
+                                                                          "data/generationtests/glass-macro-expected-st.asm")); }
 
-    private boolean test(String inputFile, String expectedOutputFile) throws IOException
+    private boolean test(String inputFile, String dialect, String expectedOutputFile) throws IOException
     {
-        Assert.assertTrue(config.parseArgs(inputFile, "-hex#"));
+        if (dialect == null) {
+            Assert.assertTrue(config.parseArgs(inputFile, "-hex#"));
+        } else {
+            Assert.assertTrue(config.parseArgs(inputFile, "-dialect", dialect, "-hex#"));
+        }
         Assert.assertTrue(
                 "Could not parse file " + inputFile,
                 config.codeBaseParser.parseMainSourceFile(config.inputFile, code));
