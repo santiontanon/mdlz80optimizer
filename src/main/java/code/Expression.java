@@ -154,7 +154,7 @@ public class Expression {
                 Object value = code.getSymbolValueInternal(symbolName, silent, variableStack);
                 if (value == null) {
                     if (!silent) {
-                        config.error("Undefined symbol " + symbolName);
+                        config.error("Undefined symbol " + symbolName + " in " + s.sl);
                     }
                     return null;
                 }
@@ -1193,7 +1193,7 @@ public class Expression {
     
     public String findUndefinedSymbol(CodeBase code)
     {
-        if (type == EXPRESSION_SYMBOL) {
+        if (type == EXPRESSION_SYMBOL && !symbolName.equals(CodeBase.CURRENT_ADDRESS)) {
             SourceConstant tmp = code.getSymbol(symbolName);
             if (tmp == null) return symbolName;
         } else if (args != null) {
