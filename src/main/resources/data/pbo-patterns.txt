@@ -228,7 +228,7 @@ pattern: Replace ld ?regpair,?const1; ?op a; sbc hl,?regpair with ld ?regpair,-(
 1: ?op a
 2: sbc hl,?regpair
 replacement:
-0: ld ?regpair,-(?const1)
+0: ld ?regpair,-(?const1) & #ffff
 1: add hl,?regpair
 constraints:
 in(?op,or,and)
@@ -1329,11 +1329,11 @@ constraints:
 reachableByJr(0,?const1)
 
 ; theNestruo
-pattern: Replace ld ?regpair,?const1 with ld ?regpairl,(?const1 & #00ff)
+pattern: Replace ld ?regpair,?const1 with ld ?regpairl,(?const1) & #00ff
 tags: sdcc-unsafe
 0: ld ?regpair,?const1
 replacement:
-0: ld ?regpairl,(?const1 & #00ff)
+0: ld ?regpairl,(?const1) & #00ff
 constraints:
 regpair(?regpair,?regpairh,?regpairl)
 regsNotUsedAfter(0,?regpairh)

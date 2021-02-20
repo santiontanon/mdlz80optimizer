@@ -90,7 +90,7 @@ public class PatternBasedOptimizerTest {
     @Test public void test51cpc() throws IOException { test("data/tests/test51.asm", null, "z80cpc", "speed",  1, 0, 0); }
     @Test public void test52() throws IOException { test("data/tests/test52.asm", null, null, "size",  1, 3, 3); }
     @Test public void test52sdcc() throws IOException { test("data/tests/test52sdcc.asm", "sdcc", null, "size",  0, 0, 0); }
-
+    
     private void test(String inputFile, String dialect, String cpu, String target, int expectedSavedBytes, int expectedSavedTime1, int expectedSavedTime2) throws IOException
     {
         if (dialect == null) {
