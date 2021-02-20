@@ -206,4 +206,51 @@ public abstract class SjasmDerivativeDialect implements Dialect {
         }
     }
     
+    
+    public boolean parseAbyte(List<String> tokens, List<CodeStatement> l, SourceLine sl,
+            CodeStatement s, CodeStatement previous, SourceFile source, CodeBase code)
+    {
+        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("abyte")) {
+            tokens.remove(0);
+            
+            Expression offset = config.expressionParser.parse(tokens, s, previous, code);
+            if (offset == null) {
+                config.error("Could not parse offset in " + sl);
+                return false;
+            }
+            
+            // parse it as a "db", and then add 1 to each expression (if any is a string or a list, add to each element):
+            if (!config.lineParser.parseData(tokens, config.lineParser.KEYWORD_DB, l, sl, s, previous, source, code)) {
+                return false;
+            }
+            
+            List<Expression> newData = new ArrayList<>();
+            for(Expression exp:s.data) {
+                if (exp.evaluatesToNumericConstant()) {
+                    newData.add(Expression.operatorExpression(Expression.EXPRESSION_SUM, 
+                            Expression.parenthesisExpressionIfNotConstant(exp, "(", config), 
+                            Expression.parenthesisExpressionIfNotConstant(offset, "(", config), config));
+                } else if (exp.evaluatesToStringConstant()) {
+                    String str = exp.evaluateToString(s, code, true);
+                    if (str == null) {
+                        config.error("Unsuported form of abyte (could not evaluate the string) in " + sl);
+                        return false;
+                    }
+                    for(int i = 0;i<str.length();i++) {
+                        newData.add(Expression.operatorExpression(Expression.EXPRESSION_SUM, 
+                                Expression.constantExpression(str.substring(i, i +1), config), 
+                                Expression.parenthesisExpressionIfNotConstant(offset, "(", config), config));
+                    }
+                } else {
+                    config.error("Unsuported form of abyte in " + sl);
+                    return false;
+                }
+            }
+            s.data = newData;
+            
+            return true;
+        }
+        return false;        
+    }
+        
 }

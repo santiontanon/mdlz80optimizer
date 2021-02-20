@@ -957,6 +957,7 @@ public class Expression {
 
     public boolean isConstant() {
         return (type == EXPRESSION_INTEGER_CONSTANT)
+                || (type == EXPRESSION_DOUBLE_CONSTANT)
                 || (type == EXPRESSION_STRING_CONSTANT);
     }
 
@@ -1314,6 +1315,15 @@ public class Expression {
         exp.parenthesis = parenthesis;
         return exp;
     }
+    
+    public static Expression parenthesisExpressionIfNotConstant(Expression arg, String parenthesis, MDLConfig config) {
+        if (arg.isConstant()) return arg;
+        Expression exp = new Expression(EXPRESSION_PARENTHESIS, config);
+        exp.args = new ArrayList<>();
+        exp.args.add(arg);
+        exp.parenthesis = parenthesis;
+        return exp;
+    }    
 
     public static Expression operatorExpression(int operator, Expression arg, MDLConfig config) {
         Expression exp = new Expression(operator, config);

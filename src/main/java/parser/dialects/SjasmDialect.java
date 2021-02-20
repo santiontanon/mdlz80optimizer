@@ -462,6 +462,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
         if (tokens.size() >= 3 && tokens.get(0).equalsIgnoreCase("assign")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("phase")) return true;
         if (tokens.size() >= 1 && tokens.get(0).equalsIgnoreCase("dephase")) return true;
+        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("abyte")) return true;
 
         for(SjasmStruct s:structs) {
             if (tokens.get(0).equals(s.name)) return true;
@@ -1054,7 +1055,8 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
         
-        
+        if (parseAbyte(tokens, l, sl, s, previous, source, code)) return true;
+
         return parseLineStruct(tokens, l, sl, s, previous, source, code);
     }
 
