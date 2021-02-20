@@ -12,7 +12,7 @@ import java.util.List;
 import cl.MDLConfig;
 import code.CodeBase;
 import code.SourceFile;
-import code.SourceStatement;
+import code.CodeStatement;
 
 /**
  *
@@ -72,8 +72,8 @@ public class SourceCodeTableGenerator implements MDLWorker {
             fileInfo.put(f.fileName, data);
 
             if (config.includeBinariesInAnalysis) {
-                for(SourceStatement s : f.getStatements()) {
-                    if (s.type == SourceStatement.STATEMENT_INCBIN) {
+                for(CodeStatement s : f.getStatements()) {
+                    if (s.type == CodeStatement.STATEMENT_INCBIN) {
                         String data2 = s.incbin + "\t" + s.incbinSize +
                                                  "\t" + s.incbinSize;
                         fileInfo.put(s.incbin.getName(), data2);

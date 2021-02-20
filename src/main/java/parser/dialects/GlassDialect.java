@@ -11,7 +11,7 @@ import code.CodeBase;
 import code.Expression;
 import code.SourceConstant;
 import code.SourceFile;
-import code.SourceStatement;
+import code.CodeStatement;
 import java.util.HashMap;
 import org.apache.commons.lang3.tuple.Pair;
 import parser.MacroExpansion;
@@ -27,7 +27,7 @@ import parser.Tokenizer;
 public class GlassDialect implements Dialect {
     public static class SectionRecord {
         String name;
-        SourceStatement dsStatement = null;
+        CodeStatement dsStatement = null;
         List<SectionPortionRecord> portions = new ArrayList<>();
         
         public SectionRecord(String a_name) {
@@ -37,8 +37,8 @@ public class GlassDialect implements Dialect {
     
     public static class SectionPortionRecord {
         String name;
-        SourceStatement start = null;
-        SourceStatement end = null;
+        CodeStatement start = null;
+        CodeStatement end = null;
         
         public SectionPortionRecord(String a_name) {
             name = a_name;
@@ -94,7 +94,7 @@ public class GlassDialect implements Dialect {
 
 
     @Override
-    public Pair<String, SourceConstant> newSymbolName(String name, Expression value, SourceStatement previous) {
+    public Pair<String, SourceConstant> newSymbolName(String name, Expression value, CodeStatement previous) {
         if (name.equalsIgnoreCase("org") ||
             name.equalsIgnoreCase("db") ||
             name.equalsIgnoreCase("dw") ||
@@ -113,7 +113,7 @@ public class GlassDialect implements Dialect {
 
 
     @Override
-    public Pair<String, SourceConstant> symbolName(String name, SourceStatement previous)
+    public Pair<String, SourceConstant> symbolName(String name, CodeStatement previous)
     {
         return Pair.of(name, null);
     }
@@ -133,9 +133,9 @@ public class GlassDialect implements Dialect {
     
 
     @Override
-    public boolean parseLine(List<String> tokens, List<SourceStatement> l,
+    public boolean parseLine(List<String> tokens, List<CodeStatement> l,
             SourceLine sl,
-            SourceStatement s, SourceStatement previous, SourceFile source, CodeBase code)
+            CodeStatement s, CodeStatement previous, SourceFile source, CodeBase code)
     {
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("section")) {
             usedSectionKeyword = true;
@@ -241,7 +241,7 @@ public class GlassDialect implements Dialect {
     
     
     @Override
-    public MacroExpansion instantiateMacro(SourceMacro macro, List<Expression> args, SourceStatement macroCall, CodeBase code)
+    public MacroExpansion instantiateMacro(SourceMacro macro, List<Expression> args, CodeStatement macroCall, CodeBase code)
     {
         List<SourceLine> lines2 = new ArrayList<>();
         MacroExpansion me = new MacroExpansion(macro, macroCall, lines2);
@@ -311,7 +311,7 @@ public class GlassDialect implements Dialect {
                 return false;
             }
             sr.dsStatement = code.statementDefiningLabel(sc.name);
-            if (sr.dsStatement == null || sr.dsStatement.type != SourceStatement.STATEMENT_DEFINE_SPACE) {
+            if (sr.dsStatement == null || sr.dsStatement.type != CodeStatement.STATEMENT_DEFINE_SPACE) {
                 config.error("Cannot find 'ds' statement corresponding to section " + sr.name);
                 return false;
             }
@@ -321,7 +321,7 @@ public class GlassDialect implements Dialect {
             }
             
             // update the ds statement to have the label and the space in two separate statements, to insert all the section portions in between:
-            SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_NONE, sr.dsStatement.sl, sr.dsStatement.source, config);
+            CodeStatement s = new CodeStatement(CodeStatement.STATEMENT_NONE, sr.dsStatement.sl, sr.dsStatement.source, config);
             s.labelPrefix = sr.dsStatement.labelPrefix;
             s.label = sr.dsStatement.label;
             s.label.definingStatement = s;
@@ -341,8 +341,8 @@ public class GlassDialect implements Dialect {
         for(SectionRecord sr: sections.values()) {
             for(SectionPortionRecord spr: sr.portions) {
                 SourceFile ds_source = sr.dsStatement.source;
-                SourceStatement start = spr.start;
-                SourceStatement end = spr.end;
+                CodeStatement start = spr.start;
+                CodeStatement end = spr.end;
 
                 if (start.source != end.source) {
                     config.error("Section "+sr.name+" starts and ends in a different source file. This case is not yet supported!");
@@ -364,9 +364,9 @@ public class GlassDialect implements Dialect {
                     return false;
                 }
 
-                List<SourceStatement> l = new ArrayList<>();
+                List<CodeStatement> l = new ArrayList<>();
                 for(int j = 0;j<=(end_idx - start_idx);j++) {
-                    SourceStatement s = source.getStatements().remove(start_idx);
+                    CodeStatement s = source.getStatements().remove(start_idx);
                     s.source = ds_source;
                     l.add(s);
                 }
@@ -423,30 +423,30 @@ public class GlassDialect implements Dialect {
                 SourceLine sl = tmp.getLeft();
                 
                 if (preProcessor.withinMacroDefinition()) {
-                    List<SourceStatement> newStatements = preProcessor.parseMacroLine(tokens, sl, f, code, config);
+                    List<CodeStatement> newStatements = preProcessor.parseMacroLine(tokens, sl, f, code, config);
                     if (newStatements == null) {
                         // we fail to evaluateToInteger the macro, but it's ok, some times it can happen
                         succeeded = false;
                         break;
                     } else {
-                        for(SourceStatement s:newStatements) {
+                        for(CodeStatement s:newStatements) {
                             f.addStatement(s);
                         }
                     }
                 } else {
-                    List<SourceStatement> l = config.lineParser.parse(Tokenizer.tokenize(sl.line), 
+                    List<CodeStatement> l = config.lineParser.parse(Tokenizer.tokenize(sl.line), 
                             sl, f, f.getStatements().size(), code, config);
                     if (l == null) {
                         // we fail to assemble the macro, but it's ok, some times it can happen
                         succeeded = false;
                         break;
                     }
-                    for(SourceStatement s:l) {
-                        List<SourceStatement> l2 = preProcessor.handleStatement(sl, s, f, code, false);
+                    for(CodeStatement s:l) {
+                        List<CodeStatement> l2 = preProcessor.handleStatement(sl, s, f, code, false);
                         if (l2 == null) {
                             f.addStatement(s);
                         } else {
-                            for(SourceStatement s2:l2) {
+                            for(CodeStatement s2:l2) {
                                 f.addStatement(s2);
                             }
                         }
@@ -455,7 +455,7 @@ public class GlassDialect implements Dialect {
             }
             
             // resolve local labels:
-            for(SourceStatement s:f.getStatements()) {
+            for(CodeStatement s:f.getStatements()) {
                 s.resolveLocalLabels(code);
             }
             
@@ -469,12 +469,12 @@ public class GlassDialect implements Dialect {
         // this is a debug message, not a warning, as it can definitively happen if macros contain unresolved symbols:
         if (succeeded) {
             // Add all the new symbols to the source:
-            for(SourceStatement s:f.getStatements()) {
+            for(CodeStatement s:f.getStatements()) {
                 if (s.label != null &&
                     !s.label.name.startsWith(config.preProcessor.unnamedMacroPrefix)) {
                     Object value = s.label.getValue(code, true);
                     if (value != null && value instanceof Integer) {
-                        SourceStatement label_s = new SourceStatement(SourceStatement.STATEMENT_CONSTANT, macro.definingStatement.sl, macro.definingStatement.source, config);
+                        CodeStatement label_s = new CodeStatement(CodeStatement.STATEMENT_CONSTANT, macro.definingStatement.sl, macro.definingStatement.source, config);
                         label_s.label = s.label;
                         label_s.label.exp = Expression.constantExpression((Integer)value, config);
                         SourceFile label_f = macro.definingStatement.source;

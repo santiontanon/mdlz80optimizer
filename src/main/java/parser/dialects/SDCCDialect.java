@@ -10,8 +10,8 @@ import code.CodeBase;
 import code.Expression;
 import code.SourceConstant;
 import code.SourceFile;
-import code.SourceStatement;
-import static code.SourceStatement.STATEMENT_ORG;
+import code.CodeStatement;
+import static code.CodeStatement.STATEMENT_ORG;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -120,7 +120,7 @@ public class SDCCDialect implements Dialect {
     }
     
     
-    private SourceConstant getLastAbsoluteLabel(SourceStatement s) 
+    private SourceConstant getLastAbsoluteLabel(CodeStatement s) 
     {
         // sjasm considers any label as an absolute label, even if it's associated with an equ,
         // so, no need to check if s.label.isLabel() (as in asMSX):
@@ -136,7 +136,7 @@ public class SDCCDialect implements Dialect {
     
     
     @Override
-    public Pair<String, SourceConstant> newSymbolName(String name, Expression value, SourceStatement s) {        
+    public Pair<String, SourceConstant> newSymbolName(String name, Expression value, CodeStatement s) {        
         // A relative label
         if (isLocalLabelName(name)) {
             SourceConstant lastAbsoluteLabel = getLastAbsoluteLabel(s);        
@@ -151,7 +151,7 @@ public class SDCCDialect implements Dialect {
 
 
     @Override
-    public Pair<String, SourceConstant> symbolName(String name, SourceStatement s) {
+    public Pair<String, SourceConstant> symbolName(String name, CodeStatement s) {
         // A relative label
         if (isLocalLabelName(name)) {
             SourceConstant lastAbsoluteLabel = getLastAbsoluteLabel(s);
@@ -166,8 +166,8 @@ public class SDCCDialect implements Dialect {
     
     
     @Override
-    public boolean parseLine(List<String> tokens, List<SourceStatement> l, SourceLine sl,
-            SourceStatement s, SourceStatement previous, SourceFile source, CodeBase code) 
+    public boolean parseLine(List<String> tokens, List<CodeStatement> l, SourceLine sl,
+            CodeStatement s, CodeStatement previous, SourceFile source, CodeBase code) 
     {
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase(".module")) {
             linesToKeepIfGeneratingDialectAsm.add(sl);
@@ -211,7 +211,7 @@ public class SDCCDialect implements Dialect {
                 }
                 String symbolName = tmp.getLeft();
                 SourceConstant c = new SourceConstant(symbolName, "s_" + areaName, exp, s, config);
-                s.type = SourceStatement.STATEMENT_NONE;
+                s.type = CodeStatement.STATEMENT_NONE;
                 s.label = c;
                 if (code.addSymbol(c.name, c) != 1) {
                     return false;
@@ -227,7 +227,7 @@ public class SDCCDialect implements Dialect {
     // Some dialect functions can be translated to standard expressions. This is preferable than direct evaluation, 
     // if possible, since expressions that contain labels might change value during optimization:
     @Override
-    public Expression translateToStandardExpression(String functionName, List<Expression> args, SourceStatement s, CodeBase code)
+    public Expression translateToStandardExpression(String functionName, List<Expression> args, CodeStatement s, CodeBase code)
     {
         // lower byte:
         if (functionName.equalsIgnoreCase("<") && args.size() == 1) {
@@ -301,7 +301,7 @@ public class SDCCDialect implements Dialect {
     }
     
     
-    public String toStringLabelWithoutSafetyEqu(SourceStatement s, boolean useOriginalNames)
+    public String toStringLabelWithoutSafetyEqu(CodeStatement s, boolean useOriginalNames)
     {
         boolean tmp = config.output_safetyEquDollar;
         config.output_safetyEquDollar = false;
@@ -312,9 +312,9 @@ public class SDCCDialect implements Dialect {
     
     
     @Override
-    public String statementToString(SourceStatement s, CodeBase code, boolean useOriginalNames, Path rootPath) {
+    public String statementToString(CodeStatement s, CodeBase code, boolean useOriginalNames, Path rootPath) {
         switch(s.type) {
-            case SourceStatement.STATEMENT_NONE:
+            case CodeStatement.STATEMENT_NONE:
                 if (linesToKeepIfGeneratingDialectAsm.contains(s.sl)) {
                     return s.sl.line;
                 } else {
@@ -330,7 +330,7 @@ public class SDCCDialect implements Dialect {
                 return str;
             }
             
-            case SourceStatement.STATEMENT_CPUOP:
+            case CodeStatement.STATEMENT_CPUOP:
             {
                 String str = toStringLabelWithoutSafetyEqu(s, useOriginalNames) + "    ";
                 
@@ -424,7 +424,7 @@ public class SDCCDialect implements Dialect {
                 return str;
             }
             
-            case SourceStatement.STATEMENT_CONSTANT:
+            case CodeStatement.STATEMENT_CONSTANT:
             {
                 boolean tmp = config.output_equsWithoutColon;
                 // sdasz80 does not like colons in equs:
@@ -435,7 +435,7 @@ public class SDCCDialect implements Dialect {
                 return str;
             }   
             
-            case SourceStatement.STATEMENT_DATA_BYTES:
+            case CodeStatement.STATEMENT_DATA_BYTES:
             {
                 String str = toStringLabelWithoutSafetyEqu(s, useOriginalNames) + "    ";
                 if (s.data.size() == 1 && s.data.get(0).evaluatesToStringConstant()) {
@@ -453,7 +453,7 @@ public class SDCCDialect implements Dialect {
                 return str;
             }
 
-            case SourceStatement.STATEMENT_DATA_WORDS:
+            case CodeStatement.STATEMENT_DATA_WORDS:
             {
                 String str = toStringLabelWithoutSafetyEqu(s, useOriginalNames) + "    ";
                 str += ".word ";
@@ -467,7 +467,7 @@ public class SDCCDialect implements Dialect {
                 return str;
             }
 
-            case SourceStatement.STATEMENT_DEFINE_SPACE:
+            case CodeStatement.STATEMENT_DEFINE_SPACE:
             {
                 // SDCC does not allow a "value":
                 return "    "+config.lineParser.KEYWORD_DS+" " + s.space;

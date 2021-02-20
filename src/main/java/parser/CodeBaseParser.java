@@ -14,7 +14,7 @@ import cl.MDLConfig;
 import code.CodeBase;
 import code.Expression;
 import code.SourceFile;
-import code.SourceStatement;
+import code.CodeStatement;
 import util.Resources;
 
 public class CodeBaseParser {
@@ -25,7 +25,7 @@ public class CodeBaseParser {
     // Expressions that we don't want to keep expanded, but want to replace by concrete values
     // once the code is parsed. Examples of this are dialect-specific functions, which we want
     // to resolve before generating asm output to maintain maximum compatibility in the output:
-    public List<Pair<Expression, SourceStatement>> expressionsToReplaceByValueAtTheEnd = new ArrayList<>();
+    public List<Pair<Expression, CodeStatement>> expressionsToReplaceByValueAtTheEnd = new ArrayList<>();
 
 
     public CodeBaseParser(MDLConfig a_config) {
@@ -49,7 +49,7 @@ public class CodeBaseParser {
         
         // Resolve local labels:
         for(SourceFile f:code.getSourceFiles()) {
-            for(SourceStatement s:f.getStatements()) {
+            for(CodeStatement s:f.getStatements()) {
                 s.resolveLocalLabels(code);
             }
         }        
@@ -65,7 +65,7 @@ public class CodeBaseParser {
         if (config.dialectParser != null) {
             if (!config.dialectParser.performAnyFinalActions(code)) return false;
         }
-        for(Pair<Expression, SourceStatement> pair:expressionsToReplaceByValueAtTheEnd) {
+        for(Pair<Expression, CodeStatement> pair:expressionsToReplaceByValueAtTheEnd) {
             Expression exp = pair.getLeft();
             Object value = exp.evaluate(pair.getRight(), code, false);
             if (value == null) {
@@ -91,7 +91,7 @@ public class CodeBaseParser {
     }
 
     public SourceFile parseSourceFile(String fileName, CodeBase code, SourceFile parent,
-            SourceStatement parentInclude) {
+            CodeStatement parentInclude) {
         if (code.getSourceFile(fileName) != null) {
             config.warn("Re-entering into "+fileName+" ignored...");
             return null;
@@ -191,19 +191,19 @@ public class CodeBaseParser {
                 // if (sl.lineNumber != null) line_lineNumber = tmp.getLeft().lineNumber;
 
                 if (config.preProcessor.withinMacroDefinition()) {
-                    List<SourceStatement> newStatements =  config.preProcessor.parseMacroLine(tokens, sl, f, code, config);
+                    List<CodeStatement> newStatements =  config.preProcessor.parseMacroLine(tokens, sl, f, code, config);
                     if (newStatements == null) {
                         config.error("Error parsing source file " + f.fileName + " while within a macro expansion");
                         return false;
                     } else {
-                        for(SourceStatement s:newStatements) {
+                        for(CodeStatement s:newStatements) {
                             if (config.eagerMacroEvaluation ||
                                 (config.macrosToEvaluateEagerly.contains(s.macroCallName))) {
-                                List<SourceStatement> l2 = config.preProcessor.handleStatement(sl, s, f, code, true);
+                                List<CodeStatement> l2 = config.preProcessor.handleStatement(sl, s, f, code, true);
                                 if (l2 == null) {
                                     f.addStatement(s);
                                 } else {
-                                    for(SourceStatement s2:l2) {
+                                    for(CodeStatement s2:l2) {
                                         f.addStatement(s2);
                                     }
                                 }
@@ -213,17 +213,17 @@ public class CodeBaseParser {
                         }
                     }
                 } else {
-                    List<SourceStatement> l = config.lineParser.parse(tokens, sl, f, f.getStatements().size(), code, config);
+                    List<CodeStatement> l = config.lineParser.parse(tokens, sl, f, f.getStatements().size(), code, config);
                     if (l == null) {
                         config.error("Error parsing source file " + f.fileName + " in " + sl);
                         return false;
                     }
-                    for(SourceStatement s:l) {
-                        List<SourceStatement> l2 = config.preProcessor.handleStatement(sl, s, f, code, false);
+                    for(CodeStatement s:l) {
+                        List<CodeStatement> l2 = config.preProcessor.handleStatement(sl, s, f, code, false);
                         if (l2 == null) {
                             f.addStatement(s);
                         } else {
-                            for(SourceStatement s2:l2) {
+                            for(CodeStatement s2:l2) {
                                 f.addStatement(s2);
                             }
                         }
@@ -274,13 +274,13 @@ public class CodeBaseParser {
         int n_expanded = 0;
         int n_failed = 0;
         for(int i = 0;i<f.getStatements().size();i++) {
-            SourceStatement s_macro = f.getStatements().get(i);
+            CodeStatement s_macro = f.getStatements().get(i);
 
-            if (s_macro.type == SourceStatement.STATEMENT_MACROCALL) {
+            if (s_macro.type == CodeStatement.STATEMENT_MACROCALL) {
                 // expand macro!
                 // config.trace("expandAllMacros: Expanding macro: " + s_macro.macroCallName != null ? s_macro.macroCallName : s_macro.macroCallMacro.name);
 
-                List<SourceStatement> l2 = config.preProcessor.handleStatement(s_macro.sl, s_macro, f, code, true);
+                List<CodeStatement> l2 = config.preProcessor.handleStatement(s_macro.sl, s_macro, f, code, true);
                 int insertionPoint = i;
                 if (l2 == null) {
                     config.debug("Cannot yet expand macro "+s_macro.macroCallName+" in "+s_macro.sl);
@@ -313,25 +313,25 @@ public class CodeBaseParser {
                     }
                     SourceLine sl = tmp.getLeft();
                     if (config.preProcessor.withinMacroDefinition()) {
-                        List<SourceStatement> newStatements =  config.preProcessor.parseMacroLine(tokens, sl, f, code, config);
+                        List<CodeStatement> newStatements =  config.preProcessor.parseMacroLine(tokens, sl, f, code, config);
                         if (newStatements == null) {
                             return null;
                         } else {
-                            for(SourceStatement s:newStatements) {
+                            for(CodeStatement s:newStatements) {
                                 f.addStatement(insertionPoint, s);
                                 insertionPoint++;
                             }
                         }
                     } else {
-                        List<SourceStatement> l = config.lineParser.parse(tokens, sl, f, insertionPoint, code, config);
+                        List<CodeStatement> l = config.lineParser.parse(tokens, sl, f, insertionPoint, code, config);
                         if (l == null) return null;
-                        for(SourceStatement s:l) {
-                            List<SourceStatement> l3 = config.preProcessor.handleStatement(sl, s, f, code, false);
+                        for(CodeStatement s:l) {
+                            List<CodeStatement> l3 = config.preProcessor.handleStatement(sl, s, f, code, false);
                             if (l3 == null) {
                                 f.addStatement(insertionPoint, s);
                                 insertionPoint++;
                             } else {
-                                for(SourceStatement s3:l3) {
+                                for(CodeStatement s3:l3) {
                                     f.addStatement(insertionPoint, s3);
                                     insertionPoint++;
                                 }                                
@@ -346,7 +346,7 @@ public class CodeBaseParser {
 
         if (n_expanded > 0) {
             // resolve local labels again for all the new lines:
-            for(SourceStatement s:f.getStatements()) {
+            for(CodeStatement s:f.getStatements()) {
                 s.resolveLocalLabels(code);
             }
         }

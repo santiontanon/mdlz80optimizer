@@ -12,7 +12,7 @@ import cl.MDLLogger;
 import cl.OptimizationResult;
 import code.CodeBase;
 import code.SourceFile;
-import code.SourceStatement;
+import code.CodeStatement;
 import java.io.FileReader;
 import java.io.FileWriter;
 import org.apache.commons.io.FilenameUtils;
@@ -258,12 +258,12 @@ public class PatternBasedOptimizer implements MDLWorker {
                         }
                     }
                     
-                    SourceStatement statementToDisplayMessageOn = null;
+                    CodeStatement statementToDisplayMessageOn = null;
                     int startIndex = i;
                     int endIndex = startIndex;
                     for(int id:bestMatch.map.keySet()) {
                         if (id == 0) statementToDisplayMessageOn = bestMatch.map.get(id).get(0);
-                        for(SourceStatement s:bestMatch.map.get(id)) {
+                        for(CodeStatement s:bestMatch.map.get(id)) {
                             int idx = f.getStatements().indexOf(s);
                             if (idx > endIndex) endIndex = idx;
                         }
@@ -272,7 +272,7 @@ public class PatternBasedOptimizer implements MDLWorker {
                         config.warn("Could not identify the statement to display the optimization message on...");
                         statementToDisplayMessageOn = f.getStatements().get(i);
                     }
-//                    SourceStatement endStatement = null;
+//                    CodeStatement endStatement = null;
 //                    if (f.getStatements().size()>endIndex+1) {
 //                        endStatement = f.getStatements().get(endIndex+1);
 //                    }
@@ -336,9 +336,9 @@ public class PatternBasedOptimizer implements MDLWorker {
                     }
                     if (replacement == null ||
                         !replacement.toString().equals(pattern.toString())) {
-                        List<SourceStatement> toRemoveL = match.map.get(ID);
-                        for(SourceStatement toRemove:toRemoveL) {
-                            for(SourceStatement added:previous.added) {
+                        List<CodeStatement> toRemoveL = match.map.get(ID);
+                        for(CodeStatement toRemove:toRemoveL) {
+                            for(CodeStatement added:previous.added) {
                                 if (toRemove == added) return true;
                             }
                         }
@@ -379,14 +379,14 @@ public class PatternBasedOptimizer implements MDLWorker {
                 if (match.f == f) {
                     // check that the optimization is not on a macro (do not apply optimizations to macros!):
                     boolean fromMacro = false;
-                    for(SourceStatement s: match.removed) {
+                    for(CodeStatement s: match.removed) {
                         if (s.sl.expandedFrom != null) {
                             // this was expanded from a macro:
                             fromMacro = true;
                             break;
                         }
                     }
-                    for(SourceStatement s: match.added) {
+                    for(CodeStatement s: match.added) {
                         if (s.sl.expandedFrom != null) {
                             // this was expanded from a macro:
                             fromMacro = true;
@@ -399,7 +399,7 @@ public class PatternBasedOptimizer implements MDLWorker {
                         continue;
                     }
                     
-                    for(SourceStatement s: match.removed) {
+                    for(CodeStatement s: match.removed) {
                         List<String> updatedLines = lines.get(s.sl.lineNumber-1);
                         if (updatedLines.size() == 1) {
                             updatedLines.add("; " + updatedLines.remove(0) + "  ; -mdl");
@@ -431,7 +431,7 @@ public class PatternBasedOptimizer implements MDLWorker {
                             }
                         }
                     }
-                    for(SourceStatement s: match.added) {
+                    for(CodeStatement s: match.added) {
                         List<String> updatedLines = lines.get(s.sl.lineNumber-1);
                         if (config.dialectParser != null) {
                             updatedLines.add(config.dialectParser.statementToString(s, code, true, null) + "  ; +mdl");
@@ -443,9 +443,9 @@ public class PatternBasedOptimizer implements MDLWorker {
             }
             
             // 3) Update includes:
-            for(SourceStatement s : f.getStatements()) {
-                if (s.type == SourceStatement.STATEMENT_INCLUDE) {
-                    SourceStatement s2 = new SourceStatement(s.type, s.sl, s.source, config);
+            for(CodeStatement s : f.getStatements()) {
+                if (s.type == CodeStatement.STATEMENT_INCLUDE) {
+                    CodeStatement s2 = new CodeStatement(s.type, s.sl, s.source, config);
                     s2.rawInclude = s.rawInclude + ".mdl.asm";
                     List<String> updatedLines = lines.get(s.sl.lineNumber-1);
                     if (updatedLines.size() == 1) {

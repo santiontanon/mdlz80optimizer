@@ -11,7 +11,7 @@ import code.CPUOp;
 import code.CodeBase;
 import code.Expression;
 import code.SourceFile;
-import code.SourceStatement;
+import code.CodeStatement;
 import parser.SourceLine;
 import parser.Tokenizer;
 
@@ -57,7 +57,7 @@ public class CPUOpPattern {
         // replace variables by the matched values:
         CodeBase code = new CodeBase(config);
         SourceFile f = new SourceFile("", null, null, code, config);
-        SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_CPUOP, new SourceLine("", f, 0), f, config);
+        CodeStatement s = new CodeStatement(CodeStatement.STATEMENT_CPUOP, new SourceLine("", f, 0), f, config);
         List<Expression> instantiatedArgs = new ArrayList<>();
         for(Expression arg:args) {
             String argStr = arg.toString();

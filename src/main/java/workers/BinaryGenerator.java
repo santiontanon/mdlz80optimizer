@@ -9,7 +9,7 @@ import cl.MDLConfig;
 import code.CodeBase;
 import code.Expression;
 import code.SourceFile;
-import code.SourceStatement;
+import code.CodeStatement;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
@@ -68,20 +68,20 @@ public class BinaryGenerator implements MDLWorker {
     
     public boolean writeBytes(SourceFile sf, CodeBase code, OutputStream os) throws Exception
     {
-        for (SourceStatement ss:sf.getStatements()) {
+        for (CodeStatement ss:sf.getStatements()) {
             switch(ss.type) {
-                case SourceStatement.STATEMENT_NONE:
-                case SourceStatement.STATEMENT_ORG:
-                case SourceStatement.STATEMENT_CONSTANT:
-                case SourceStatement.STATEMENT_MACRO:
-                case SourceStatement.STATEMENT_MACROCALL:
+                case CodeStatement.STATEMENT_NONE:
+                case CodeStatement.STATEMENT_ORG:
+                case CodeStatement.STATEMENT_CONSTANT:
+                case CodeStatement.STATEMENT_MACRO:
+                case CodeStatement.STATEMENT_MACROCALL:
                     break;
 
-                case SourceStatement.STATEMENT_INCLUDE:
+                case CodeStatement.STATEMENT_INCLUDE:
                     if (!writeBytes(ss.include, code, os)) return false;
                     break;
 
-                case SourceStatement.STATEMENT_INCBIN:
+                case CodeStatement.STATEMENT_INCBIN:
                 {
                     int skip = 0;
                     int size = 0;
@@ -105,13 +105,13 @@ public class BinaryGenerator implements MDLWorker {
                     break;
                 }
 
-                case SourceStatement.STATEMENT_DATA_BYTES:
+                case CodeStatement.STATEMENT_DATA_BYTES:
                     for(Expression exp: ss.data) {        
                         if (!expressionToBytes(exp, ss, code, os)) return false;
                     }
                     break;
 
-                case SourceStatement.STATEMENT_DATA_WORDS:
+                case CodeStatement.STATEMENT_DATA_WORDS:
                     for(Expression exp: ss.data) {
                         if (exp.evaluatesToNumericConstant()) {
                             int v = exp.evaluateToInteger(ss, code, true);
@@ -124,7 +124,7 @@ public class BinaryGenerator implements MDLWorker {
                     }
                     break;
 
-                case SourceStatement.STATEMENT_DATA_DOUBLE_WORDS:
+                case CodeStatement.STATEMENT_DATA_DOUBLE_WORDS:
                     for(Expression exp: ss.data) {
                         if (exp.evaluatesToNumericConstant()) {
                             int v = exp.evaluateToInteger(ss, code, true);
@@ -139,7 +139,7 @@ public class BinaryGenerator implements MDLWorker {
                     }
                     break;
 
-                case SourceStatement.STATEMENT_DEFINE_SPACE:
+                case CodeStatement.STATEMENT_DEFINE_SPACE:
                     if (ss.space_value != null) {
                         int value = ss.space_value.evaluateToInteger(ss, code, true);
                         int amount = ss.space.evaluateToInteger(ss, code, true);
@@ -147,7 +147,7 @@ public class BinaryGenerator implements MDLWorker {
                     }
                     break;
 
-                case SourceStatement.STATEMENT_CPUOP:
+                case CodeStatement.STATEMENT_CPUOP:
                 {
                     List<Integer> data = ss.op.assembleToBytes(ss, code, config);
                     if (data == null) {
@@ -166,7 +166,7 @@ public class BinaryGenerator implements MDLWorker {
     }
     
     
-    public boolean expressionToBytes(Expression exp, SourceStatement ss, CodeBase code, OutputStream os) throws Exception 
+    public boolean expressionToBytes(Expression exp, CodeStatement ss, CodeBase code, OutputStream os) throws Exception 
     {
         Object val = exp.evaluate(ss, code, true);
         if (val == null) {
@@ -177,7 +177,7 @@ public class BinaryGenerator implements MDLWorker {
     }
     
     
-    public boolean valueToBytes(Object val, SourceStatement ss, CodeBase code, OutputStream os) throws Exception 
+    public boolean valueToBytes(Object val, CodeStatement ss, CodeBase code, OutputStream os) throws Exception 
     {
         if (val instanceof Integer) {
             int v = (Integer)val;

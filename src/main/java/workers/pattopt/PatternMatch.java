@@ -5,7 +5,7 @@ package workers.pattopt;
 
 import code.Expression;
 import code.SourceFile;
-import code.SourceStatement;
+import code.CodeStatement;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -16,7 +16,7 @@ import java.util.List;
  */
 public class PatternMatch {
     public Pattern pattern;
-    public HashMap<Integer, List<SourceStatement>> map = new HashMap<>();
+    public HashMap<Integer, List<CodeStatement>> map = new HashMap<>();
     public HashMap<String, Expression> variables = new HashMap<>();
     
     // If the pattern is applied, these will be added to the list of equalities to check later on:
@@ -24,8 +24,8 @@ public class PatternMatch {
     
     // If the pattern is applied, we record the set of SourceStatements that were added, and those that were removed:
     SourceFile f = null;
-    List<SourceStatement> removed = new ArrayList<>();
-    List<SourceStatement> added = new ArrayList<>();
+    List<CodeStatement> removed = new ArrayList<>();
+    List<CodeStatement> added = new ArrayList<>();
     
     public PatternMatch(Pattern a_patt, SourceFile a_f)
     {

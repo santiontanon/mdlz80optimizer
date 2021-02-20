@@ -234,7 +234,7 @@ public class CPUOp {
     }
 
     
-    public boolean evaluateAllExpressions(SourceStatement s, CodeBase code, MDLConfig config)
+    public boolean evaluateAllExpressions(CodeStatement s, CodeBase code, MDLConfig config)
     {
         for(int i = 0;i<args.size();i++) {
             // preserve indirections:
@@ -257,7 +257,7 @@ public class CPUOp {
     }    
     
     
-    public List<Integer> assembleToBytes(SourceStatement s, CodeBase code, MDLConfig config)
+    public List<Integer> assembleToBytes(CodeStatement s, CodeBase code, MDLConfig config)
     {
         List<Integer> data = new ArrayList<>();
         int nn_state = 0;
@@ -456,7 +456,7 @@ public class CPUOp {
     }
     
     
-    public boolean labelInRange(SourceStatement s, CodeBase code)
+    public boolean labelInRange(CodeStatement s, CodeBase code)
     {
         if (!isJump()) return true;
         

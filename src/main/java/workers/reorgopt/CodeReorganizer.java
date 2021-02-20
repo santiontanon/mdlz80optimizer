@@ -10,7 +10,7 @@ import cl.OptimizationResult;
 import code.CodeBase;
 import code.Expression;
 import code.SourceFile;
-import code.SourceStatement;
+import code.CodeStatement;
 import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -155,12 +155,12 @@ public class CodeReorganizer implements MDLWorker {
         int idx_data = 0;
         int state = CodeBlock.TYPE_UNKNOWN;  // 0: no code, no data, 1: code, 2: data
 
-        for(SourceStatement s:topBlock.statements) {
+        for(CodeStatement s:topBlock.statements) {
             boolean startNewBlock = false;
             int newState = state;
             if (block == null) block = new CodeBlock(null, CodeBlock.TYPE_UNKNOWN, s);
             switch (s.type) {
-                case SourceStatement.STATEMENT_CPUOP:
+                case CodeStatement.STATEMENT_CPUOP:
                     // code:
                     if (state == CodeBlock.TYPE_DATA) {
                         // change of block type, we need to look back for a label, and start a new block:
@@ -170,10 +170,10 @@ public class CodeReorganizer implements MDLWorker {
                     }
                     newState = CodeBlock.TYPE_CODE;
                     break;
-                case SourceStatement.STATEMENT_DATA_BYTES:
-                case SourceStatement.STATEMENT_DATA_WORDS:
-                case SourceStatement.STATEMENT_DATA_DOUBLE_WORDS:
-                case SourceStatement.STATEMENT_INCBIN:
+                case CodeStatement.STATEMENT_DATA_BYTES:
+                case CodeStatement.STATEMENT_DATA_WORDS:
+                case CodeStatement.STATEMENT_DATA_DOUBLE_WORDS:
+                case CodeStatement.STATEMENT_INCBIN:
                     // data:
                     if (state == CodeBlock.TYPE_CODE) {
                         // change of block type, we need to look back for a label, and start a new block:
@@ -183,7 +183,7 @@ public class CodeReorganizer implements MDLWorker {
                     }
                     newState = CodeBlock.TYPE_DATA;
                     break;
-                case SourceStatement.STATEMENT_ORG:
+                case CodeStatement.STATEMENT_ORG:
                     if (s.org.type == Expression.EXPRESSION_SUM &&
                         s.org.args.size() == 2 &&
                         s.org.args.get(0).type == Expression.EXPRESSION_SYMBOL &&
@@ -203,7 +203,7 @@ public class CodeReorganizer implements MDLWorker {
                         newState = CodeBlock.TYPE_UNKNOWN;
                     }
                     break;
-                case SourceStatement.STATEMENT_DEFINE_SPACE:
+                case CodeStatement.STATEMENT_DEFINE_SPACE:
                     if (s.space_value != null ||
                         (s.space.evaluatesToIntegerConstant() &&
                          !s.space.containsLabel(code) &&
@@ -222,8 +222,8 @@ public class CodeReorganizer implements MDLWorker {
                         newState = CodeBlock.TYPE_UNKNOWN;
                     }
                     break;
-                case SourceStatement.STATEMENT_MACRO:
-                case SourceStatement.STATEMENT_MACROCALL:
+                case CodeStatement.STATEMENT_MACRO:
+                case CodeStatement.STATEMENT_MACROCALL:
                     // we should not have found any of these:
                     config.error("CodeReorganizer: Found a statement of type " + s.type + " in findTopCodeBlocks.");
                     return null;
@@ -233,7 +233,7 @@ public class CodeReorganizer implements MDLWorker {
             }             
             
             if (startNewBlock) {
-                List<SourceStatement> moveToNewBlock = new ArrayList<>();
+                List<CodeStatement> moveToNewBlock = new ArrayList<>();
                 if (!block.statements.isEmpty()) {                    
                     if (state == CodeBlock.TYPE_CODE) {
                         block.ID = topBlock.ID + "_C" + idx_code;
@@ -248,7 +248,7 @@ public class CodeReorganizer implements MDLWorker {
                     if (s.label == null) {
                         boolean labelFound = false;
                         for(int i = block.statements.size()-1;i>=0;i--) {
-                            if (block.statements.get(i).type == SourceStatement.STATEMENT_NONE) {
+                            if (block.statements.get(i).type == CodeStatement.STATEMENT_NONE) {
                                 moveToNewBlock.add(0, block.statements.get(i));
                                 if (block.statements.get(i).label != null) {
                                     labelFound = true;
@@ -259,7 +259,7 @@ public class CodeReorganizer implements MDLWorker {
                             }
                         }
                         if (labelFound) {
-                            for(SourceStatement s2:moveToNewBlock) {
+                            for(CodeStatement s2:moveToNewBlock) {
                                 block.statements.remove(s2);
                             }
                         } else {
@@ -295,14 +295,14 @@ public class CodeReorganizer implements MDLWorker {
             // find the last non empty/comment statement of block1:
             int block1_lastNonEmpty = -1;
             for(int j = block1.statements.size()-1;j>=0;j--) {
-                if (block1.statements.get(j).type != SourceStatement.STATEMENT_NONE) {
+                if (block1.statements.get(j).type != CodeStatement.STATEMENT_NONE) {
                     block1_lastNonEmpty = j;
                     break;
                 }
             }
             int block2_firstNonEmpty = -1;
             for(int j = 0;j<block2.statements.size();j++) {
-                if (block2.statements.get(j).type != SourceStatement.STATEMENT_NONE) {
+                if (block2.statements.get(j).type != CodeStatement.STATEMENT_NONE) {
                     block2_firstNonEmpty = j;
                     break;
                 }
@@ -312,14 +312,14 @@ public class CodeReorganizer implements MDLWorker {
                 SourceFile b2_source = block2.statements.get(block2_firstNonEmpty).source;
                 if (b1_source != b2_source) {
                     if (block1.statements.get(block1.statements.size()-1).source != b1_source) {
-                        List<SourceStatement> toMove = new ArrayList<>();
+                        List<CodeStatement> toMove = new ArrayList<>();
                         for(int j = block1.statements.size()-1; j > block1_lastNonEmpty; j--) {
-                            SourceStatement s = block1.statements.get(j);
+                            CodeStatement s = block1.statements.get(j);
                             if (s.source == b2_source) {
                                 toMove.add(s);
                             }
                         }
-                        for(SourceStatement s:toMove) {
+                        for(CodeStatement s:toMove) {
                             block1.statements.remove(s);
                             block2.statements.add(0, s);
                         }
@@ -337,18 +337,18 @@ public class CodeReorganizer implements MDLWorker {
         // Detect any potential jump tables and protect them from optimizations:
         // Look for series of "jp" instructions one oafter another, after a label:
         for(int i = 0;i<subarea.statements.size();i++) {
-            if (subarea.statements.get(i).type == SourceStatement.STATEMENT_NONE && 
+            if (subarea.statements.get(i).type == CodeStatement.STATEMENT_NONE && 
                 subarea.statements.get(i).label != null) {
                 // we found a label:
                 if (subarea.statements.size() > i + 2) {
-                    if (subarea.statements.get(i+1).type == SourceStatement.STATEMENT_CPUOP &&
+                    if (subarea.statements.get(i+1).type == CodeStatement.STATEMENT_CPUOP &&
                         subarea.statements.get(i+1).op.isJump() && 
                         !subarea.statements.get(i+1).op.isConditional() &&
-                        subarea.statements.get(i+2).type == SourceStatement.STATEMENT_CPUOP &&
+                        subarea.statements.get(i+2).type == CodeStatement.STATEMENT_CPUOP &&
                         subarea.statements.get(i+2).op.isJump() && 
                         !subarea.statements.get(i+2).op.isConditional()) {
                         // we found a jump table, protect it:
-                        SourceStatement s = subarea.statements.get(i);
+                        CodeStatement s = subarea.statements.get(i);
                         if (s.comment == null) {
                             s.comment = "; mdl:no-opt (mdl suspects this is a jump table)";
                         } else {
@@ -357,7 +357,7 @@ public class CodeReorganizer implements MDLWorker {
                         i++;
                         while(i<subarea.statements.size()) {
                             s = subarea.statements.get(i);
-                            if (s.type == SourceStatement.STATEMENT_CPUOP &&
+                            if (s.type == CodeStatement.STATEMENT_CPUOP &&
                                 s.op.isJump() && 
                                 !s.op.isConditional()) {
                                 if (s.comment == null) {
@@ -433,11 +433,11 @@ public class CodeReorganizer implements MDLWorker {
         
         // check if any local labels have been moved out of their contexts, and fix them:
         for(int i = 0;i<subarea.statements.size();i++) {
-            SourceStatement s = subarea.statements.get(i);
+            CodeStatement s = subarea.statements.get(i);
             if (s.label != null && s.label.relativeTo != null) {
                 // relative label!
                 boolean found = false;
-                SourceStatement s2 = s;
+                CodeStatement s2 = s;
                 while(s2 != null) {
                     if (s2.label != null && s2.label.relativeTo == null) {
                         // absolute label:
@@ -470,8 +470,8 @@ public class CodeReorganizer implements MDLWorker {
         SourceFile insertionFile;
         int insertionPoint;
         
-        List<Pair<SourceStatement, Pair<SourceFile, Integer>>> undoTrail = new ArrayList<>();
-        for(SourceStatement s: toMove.statements) {
+        List<Pair<CodeStatement, Pair<SourceFile, Integer>>> undoTrail = new ArrayList<>();
+        for(CodeStatement s: toMove.statements) {
             SourceFile undoFile = s.source;
             int undoPoint = s.source.getStatements().indexOf(s);
             undoTrail.add(0, Pair.of(s, Pair.of(undoFile, undoPoint)));
@@ -506,7 +506,7 @@ public class CodeReorganizer implements MDLWorker {
             }            
         }
                     
-        for(SourceStatement s: toMove.statements) {
+        for(CodeStatement s: toMove.statements) {
             insertionFile.addStatement(insertionPoint, s);
             s.source = insertionFile;
             insertionPoint++;
@@ -515,8 +515,8 @@ public class CodeReorganizer implements MDLWorker {
         // Check all relative jumps are still within reach:
         boolean canncelOptimization = false;
         code.resetAddresses();
-        for(SourceStatement s: subarea.statements) {
-            if (s.type == SourceStatement.STATEMENT_CPUOP) {
+        for(CodeStatement s: subarea.statements) {
+            if (s.type == CodeStatement.STATEMENT_CPUOP) {
                 if (s.op.isJump()) {
                     if (!s.op.labelInRange(s, code)) {
                         canncelOptimization = true;
@@ -527,7 +527,7 @@ public class CodeReorganizer implements MDLWorker {
         }
         
         // Get the jump we should remove:
-        SourceStatement jump;
+        CodeStatement jump;
         if (moveBefore) {
             jump = toMove.getLastCpuOpStatement();
         } else {
@@ -541,11 +541,11 @@ public class CodeReorganizer implements MDLWorker {
 
         // if they are not, undo the optimization:
         if (canncelOptimization) {
-            for(SourceStatement s: toMove.statements) {
+            for(CodeStatement s: toMove.statements) {
                 insertionFile.getStatements().remove(s);
             }
-            for(Pair<SourceStatement, Pair<SourceFile, Integer>> undo: undoTrail) {
-                SourceStatement s = undo.getLeft();
+            for(Pair<CodeStatement, Pair<SourceFile, Integer>> undo: undoTrail) {
+                CodeStatement s = undo.getLeft();
                 SourceFile undoFile = undo.getRight().getLeft();
                 int undoPoint = undo.getRight().getRight();
                 s.source.getStatements().remove(s);
@@ -561,7 +561,7 @@ public class CodeReorganizer implements MDLWorker {
         String timeSavedString = (timeSaved.length == 1 || timeSaved[0] == timeSaved[1] ?
                                     "" + timeSaved[0] :
                                     "" + timeSaved[0] + "/" + timeSaved[1]);
-        jump.type = SourceStatement.STATEMENT_NONE;
+        jump.type = CodeStatement.STATEMENT_NONE;
         jump.comment = "; " + jump.sl.line + "  ; -mdl";
         jump.op = null;
         code.resetAddresses();
@@ -631,13 +631,13 @@ public class CodeReorganizer implements MDLWorker {
         List<CodeBlock> codeBlocks = subarea.subBlocks;
         int idx = 0;
         CodeBlock block = null;
-        for(SourceStatement s:subarea.statements) {
+        for(CodeStatement s:subarea.statements) {
             if (block == null) {
                 block = new CodeBlock(subarea.ID + "_B" + idx, CodeBlock.TYPE_CODE, s);
                 idx++;
             }
             block.statements.add(s);
-            if (s.type == SourceStatement.STATEMENT_CPUOP) {
+            if (s.type == CodeStatement.STATEMENT_CPUOP) {
                 if (s.op.isRet() || s.op.isJump()) {
                     if (s.op.isConditional()) {
                         // conditional jump/ret:
@@ -663,7 +663,7 @@ public class CodeReorganizer implements MDLWorker {
     {
         for(int i = 0;i<codeBlocks.size();i++) {
             CodeBlock block = codeBlocks.get(i);
-            SourceStatement last = block.getLastCpuOpStatement();
+            CodeStatement last = block.getLastCpuOpStatement();
             
             if (last != null) {
                 if (last.op.isJump()) {

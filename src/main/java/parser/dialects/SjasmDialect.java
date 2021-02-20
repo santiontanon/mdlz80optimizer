@@ -14,7 +14,7 @@ import code.CodeBase;
 import code.Expression;
 import code.SourceConstant;
 import code.SourceFile;
-import code.SourceStatement;
+import code.CodeStatement;
 import java.io.File;
 import java.util.Collections;
 import java.util.Comparator;
@@ -24,6 +24,7 @@ import parser.LineParser;
 import parser.MacroExpansion;
 import parser.SourceLine;
 import parser.SourceMacro;
+import parser.TextMacro;
 import parser.Tokenizer;
 import workers.reorgopt.CodeBlock;
 
@@ -39,7 +40,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
         Expression alignment;
         int actualAddress = -1;
         
-        public SJasmCodeBlock(SourceStatement a_s, int a_page, Expression a_address, Expression a_alignment)
+        public SJasmCodeBlock(CodeStatement a_s, int a_page, Expression a_address, Expression a_alignment)
         {
             super(null, CodeBlock.TYPE_UNKNOWN, a_s);
             startStatement = a_s;
@@ -51,7 +52,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
         public int size(CodeBase code)
         {
             int size = 0;
-            for(SourceStatement s:statements) {
+            for(CodeStatement s:statements) {
                 size += s.sizeInBytes(code, false, true, false);
             }
             return size;
@@ -60,12 +61,12 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
 
 
     public static class CodePage {
-        public SourceStatement s;
+        public CodeStatement s;
         public Expression start;
         public Expression size;
         public List<SJasmCodeBlock> blocks = new ArrayList<>();
         
-        public CodePage(SourceStatement a_s, Expression a_start, Expression a_size)
+        public CodePage(CodeStatement a_s, Expression a_start, Expression a_size)
         {
             s = a_s;
             start = a_start;
@@ -160,13 +161,17 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
     
     HashMap<Integer,CodePage> pages = new HashMap<>();
     
-    List<SourceStatement> enhancedJrList = new ArrayList<>();
-    List<SourceStatement> enhancedDjnzList = new ArrayList<>();
+    List<CodeStatement> enhancedJrList = new ArrayList<>();
+    List<CodeStatement> enhancedDjnzList = new ArrayList<>();
     
     List<String> outputFileNames = new ArrayList<>();
     
     public SjasmDialect(MDLConfig a_config) {
         config = a_config;
+
+        config.lineParser.tokensPreventingTextMacroExpansion.add("define");
+        config.lineParser.tokensPreventingTextMacroExpansion.add("xdefine");
+        config.lineParser.tokensPreventingTextMacroExpansion.add("assign");
 
         config.lineParser.addKeywordSynonym("byte", config.lineParser.KEYWORD_DB);
         config.lineParser.addKeywordSynonym("defb", config.lineParser.KEYWORD_DB);
@@ -466,8 +471,8 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
     
     
     @Override
-    public boolean parseLine(List<String> tokens, List<SourceStatement> l, SourceLine sl,
-            SourceStatement s, SourceStatement previous, SourceFile source, CodeBase code) 
+    public boolean parseLine(List<String> tokens, List<CodeStatement> l, SourceLine sl,
+            CodeStatement s, CodeStatement previous, SourceFile source, CodeBase code) 
     {
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("struct")) {
             tokens.remove(0);
@@ -482,7 +487,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             }
             struct.file = source;
             struct.start = s;
-            s.type = SourceStatement.STATEMENT_CONSTANT;
+            s.type = CodeStatement.STATEMENT_CONSTANT;
             SourceConstant c = new SourceConstant(struct.name, struct.name, null, s, config);
             s.label = c;
             if (code.addSymbol(c.name, c) != 1) return false;
@@ -503,14 +508,14 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             int offset = 0;
             int start = source.getStatements().indexOf(struct.start) + 1;
             for (int i = start; i < source.getStatements().size(); i++) {
-                SourceStatement s2 = source.getStatements().get(i);
+                CodeStatement s2 = source.getStatements().get(i);
                 int offset_prev = offset;
                 switch (s2.type) {
-                    case SourceStatement.STATEMENT_NONE:
+                    case CodeStatement.STATEMENT_NONE:
                         break;
-                    case SourceStatement.STATEMENT_DATA_BYTES:
-                    case SourceStatement.STATEMENT_DATA_WORDS:
-                    case SourceStatement.STATEMENT_DATA_DOUBLE_WORDS:
+                    case CodeStatement.STATEMENT_DATA_BYTES:
+                    case CodeStatement.STATEMENT_DATA_WORDS:
+                    case CodeStatement.STATEMENT_DATA_DOUBLE_WORDS:
                     {
                         int size = s2.sizeInBytes(code, true, true, true);
                         offset += size;
@@ -527,10 +532,10 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                         return false;
                 }
                 if (s2.label != null) {
-                    s2.type = SourceStatement.STATEMENT_CONSTANT;
+                    s2.type = CodeStatement.STATEMENT_CONSTANT;
                     s2.label.exp = Expression.constantExpression(offset_prev, config);
                 } else {
-                    s2.type = SourceStatement.STATEMENT_NONE;
+                    s2.type = CodeStatement.STATEMENT_NONE;
                 }                
             }
 
@@ -588,7 +593,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             } else {
                 s.label.exp = Expression.constantExpression(mapCounter, Expression.RENDER_AS_16BITHEX, config);
             }
-            s.type = SourceStatement.STATEMENT_CONSTANT;
+            s.type = CodeStatement.STATEMENT_CONSTANT;
             mapCounter += exp.evaluateToInteger(s, code, false);
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
@@ -743,7 +748,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             codeBlocks.add(new SJasmCodeBlock(s, currentPage, addressExp, alignmentExp));
             
             // ignore (but still add the statement, so we know where the codeblock starts)
-            s.type = SourceStatement.STATEMENT_NONE;
+            s.type = CodeStatement.STATEMENT_NONE;
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("page")) {
@@ -776,7 +781,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                 Expression addressExp = null;
                 codeBlocks.add(new SJasmCodeBlock(s, currentPage, addressExp, null));
                 // parse it as an "org"
-                s.type = SourceStatement.STATEMENT_NONE;
+                s.type = CodeStatement.STATEMENT_NONE;
                 return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
             } else {
                 config.error("Missing page number in " + sl);
@@ -798,7 +803,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                 tokensCopy.addAll(tokens);
                 // we need to parse it every time, to create multiple different copies of the statements:
                 config.expressionParser.sjasmConterVariables.add(i);
-                List<SourceStatement> l2 = config.lineParser.parse(tokensCopy, sl, source, previous, code, config);
+                List<CodeStatement> l2 = config.lineParser.parse(tokensCopy, sl, source, previous, code, config);
                 config.expressionParser.sjasmConterVariables.remove(config.expressionParser.sjasmConterVariables.size()-1);
                 if (l2 == null) {
                     config.error("Cannot parse line in " + sl);
@@ -851,7 +856,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                 config.error("Cannot parse expression in " + sl);
                 return false;
             }
-            s.type = SourceStatement.STATEMENT_DEFINE_SPACE;
+            s.type = CodeStatement.STATEMENT_DEFINE_SPACE;
             // ds (((($-1)/exp)+1)*exp-$)
             s.space = Expression.operatorExpression(Expression.EXPRESSION_SUB,
                         Expression.operatorExpression(Expression.EXPRESSION_MUL, 
@@ -940,7 +945,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             
             // parse as "dec b; jp nz,label":
             {
-                SourceStatement auxiliaryS = new SourceStatement(SourceStatement.STATEMENT_CPUOP, sl, source, config);
+                CodeStatement auxiliaryS = new CodeStatement(CodeStatement.STATEMENT_CPUOP, sl, source, config);
                 List<Expression> auxiliaryArguments = new ArrayList<>();
                 auxiliaryArguments.add(Expression.symbolExpression("b", auxiliaryS, code, config));
                 List<CPUOp> op_l = config.opParser.parseOp("dec", auxiliaryArguments, s, previous, code);
@@ -954,7 +959,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                 auxiliaryArguments.add(exp);
                 List<CPUOp> op_l = config.opParser.parseOp("jp", auxiliaryArguments, s, previous, code);
                 if (op_l == null || op_l.size() != 1) return false;
-                s.type = SourceStatement.STATEMENT_CPUOP;
+                s.type = CodeStatement.STATEMENT_CPUOP;
                 s.op = op_l.get(0);
             }
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
@@ -965,67 +970,61 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                  tokens.get(0).equalsIgnoreCase("assign"))) {
             String keyword = tokens.remove(0);
 
+            // Text macros:
+
             // read variable name:
-            String token = tokens.remove(0);
-            if (!config.lineParser.caseSensitiveSymbols) token = token.toLowerCase();
+            String macroName = tokens.remove(0);
+            if (!config.lineParser.caseSensitiveSymbols) macroName = macroName.toLowerCase();
             
-            // optionally read the expression:
-            List<Expression> expressions = new ArrayList<>();
-            if (!tokens.isEmpty() && !Tokenizer.isSingleLineComment(tokens.get(0))) {
-                do {
-                    if (!expressions.isEmpty() && tokens.get(0).equals(",")) {
+            List<String> macroArguments = new ArrayList<>();
+            List<String> macroTokens = new ArrayList<>();
+
+            // check if it's a define with parameters:
+            if (tokens.get(0).equals("(")) {
+                // define with arguments:
+                tokens.remove(0);
+                while(true) {
+                    macroArguments.add(tokens.remove(0));
+                    if (tokens.isEmpty()) {
+                        config.error(keyword + ": Cannot parse line " + sl);
+                        return false;                            
+                    }
+                    if (tokens.get(0).equals(")")) {
+                        tokens.remove(0);
+                        break;
+                    }
+                    if (tokens.get(0).equals(",")) {
                         tokens.remove(0);
                     }
-                    Expression exp2 = config.expressionParser.parse(tokens, s, previous, code);
-                    if (exp2 == null) {
-                        config.error("parseEqu: Cannot parse line " + sl);
-                        return false;
-                    }
-                    // remove unnecessary parenthesis:
-                    while(exp2.type == Expression.EXPRESSION_PARENTHESIS) {
-                        exp2 = exp2.args.get(0);
-                    }
+                }
+            }
+                    
+            // parameters parsed, parse the body:
+            macroTokens.addAll(tokens);
+            tokens.clear();
 
-                    if (keyword.equalsIgnoreCase("xdefine")) {
-                        // resolve symbols internally:
-                        exp2 = exp2.resolveEagerSymbols(code);
-
-                    } else if (keyword.equalsIgnoreCase("assign")) {
-                        Integer v = exp2.evaluateToInteger(s, code, false);
-                        if (v == null) {
-                            config.error("Could not evaulate " + exp2 + " in " + sl);
-                            return false;
-                        }
-                        exp2 = Expression.constantExpression(v, config);
-                    }
-                    expressions.add(exp2);
-                } while (!tokens.isEmpty() && tokens.get(0).equals(","));
-            } else {
-                expressions.add(Expression.constantExpression(0, config));
+            if (keyword.equalsIgnoreCase("assign")) {
+                // evaluate expression, and just assign the result:
+                config.preProcessor.expandTextMacros(macroTokens, s, sl);
+                Expression exp = config.expressionParser.parse(macroTokens, s, previous, code);
+                if (exp == null) {
+                    config.error(keyword + ": Cannot parse line " + sl);
+                    return false;                            
+                }
+                Object value = exp.evaluate(s, code, true);
+                if (value == null) {
+                    config.error(keyword + ": Cannot evaluate expression in " + sl);
+                    return false;                            
+                }
+                String valueString = value.toString();
+                macroTokens = Tokenizer.tokenize(valueString);
+            } else if (keyword.equalsIgnoreCase("xdefine")) {
+                // evaluate the text macros within the definition
+                config.preProcessor.expandTextMacros(macroTokens, s, sl);
             }
             
-            Expression exp;
-            
-            if (expressions.size() == 1) {
-                exp = expressions.get(0);
-            } else {
-                exp = Expression.listExpression(expressions, config);
-            }
-
-            // parse as a :=:
-            SourceConstant c = config.lineParser.newSourceConstant(token, exp, s, previous);
-            if (c == null) {
-                config.error("Problem defining symbol " + config.lineParser.getLabelPrefix() + token + " in " + sl);
-                return false;
-            }
-            s.label = c;
-            int res = code.addSymbol(c.name, c);
-            if (res == -1) return false;
-            if (res == 0) s.redefinedLabel = true;
-            s.label.resolveEagerly = true;
-            
-            // these variables should not be part of the source code:
-            l.clear();
+            TextMacro macro = new TextMacro(macroName, macroArguments, macroTokens, s);
+            config.preProcessor.addTextMacro(macro);
             
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }      
@@ -1039,7 +1038,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                 config.error("Cannot parse phase address in " + sl);
                 return false;
             }            
-            s.type = SourceStatement.STATEMENT_ORG;
+            s.type = CodeStatement.STATEMENT_ORG;
             s.org = exp;
             
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
@@ -1058,11 +1057,11 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
 
 
     @Override
-    public boolean parseFakeCPUOps(List<String> tokens, SourceLine sl, List<SourceStatement> l, SourceStatement previous, SourceFile source, CodeBase code) 
+    public boolean parseFakeCPUOps(List<String> tokens, SourceLine sl, List<CodeStatement> l, CodeStatement previous, SourceFile source, CodeBase code) 
     {
         // This function only adds the additional instructions beyond the first one. So, it will leave in "tokens", the set of
         // tokens necessary for MDL's regular parser to still parse the first op
-        SourceStatement s = l.get(0);
+        CodeStatement s = l.get(0);
         
         if (tokens.size()>=4 && 
             (tokens.get(0).equalsIgnoreCase("push") || tokens.get(0).equalsIgnoreCase("pop"))) {
@@ -1094,7 +1093,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                 int toremove = (regpairs.size()-1)*2;
                 for(int i = 0;i<toremove;i++) tokens.remove(2);
                 for(int i = 1;i<regpairs.size();i++) {
-                    SourceStatement auxiliaryS = new SourceStatement(SourceStatement.STATEMENT_CPUOP, sl, source, config);
+                    CodeStatement auxiliaryS = new CodeStatement(CodeStatement.STATEMENT_CPUOP, sl, source, config);
                     List<Expression> auxiliaryArguments = new ArrayList<>();
                     auxiliaryArguments.add(Expression.symbolExpression(regpairs.get(i), auxiliaryS, code, config));
                     List<CPUOp> op_l = config.opParser.parseOp(tokens.get(0), auxiliaryArguments, s, previous, code);
@@ -1112,7 +1111,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                     && (tokens.get(i).equals("++") || tokens.get(i).equals("--"))
                     && code.isRegisterPair(tokens.get(i + 1))) {
                 // pre increment/decrement:
-                SourceStatement auxiliaryS = new SourceStatement(SourceStatement.STATEMENT_CPUOP, sl, source, config);
+                CodeStatement auxiliaryS = new CodeStatement(CodeStatement.STATEMENT_CPUOP, sl, source, config);
                 List<Expression> auxiliaryArguments = new ArrayList<>();
                 auxiliaryArguments.add(Expression.symbolExpression(tokens.get(i + 1), auxiliaryS, code, config));
                 List<CPUOp> op_l = config.opParser.parseOp(tokens.get(i).equals("++") ? "inc" : "dec", auxiliaryArguments, s, previous, code);
@@ -1129,7 +1128,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                     && (tokens.get(i).equals("++") || tokens.get(i).equals("--"))
                     && code.isRegisterPair(tokens.get(i - 1))) {
                 // post increment/decrement:
-                SourceStatement auxiliaryS = new SourceStatement(SourceStatement.STATEMENT_CPUOP, sl, source, config);
+                CodeStatement auxiliaryS = new CodeStatement(CodeStatement.STATEMENT_CPUOP, sl, source, config);
                 List<Expression> auxiliaryArguments = new ArrayList<>();
                 auxiliaryArguments.add(Expression.symbolExpression(tokens.get(i - 1), auxiliaryS, code, config));
                 List<CPUOp> op_l = config.opParser.parseOp(tokens.get(i).equals("++") ? "inc" : "dec", auxiliaryArguments, s, previous, code);
@@ -1149,7 +1148,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
 
 
     @Override
-    public Integer evaluateExpression(String functionName, List<Expression> args, SourceStatement s, CodeBase code, boolean silent)
+    public Integer evaluateExpression(String functionName, List<Expression> args, CodeStatement s, CodeBase code, boolean silent)
     {
         if (functionName.equalsIgnoreCase("high") && args.size() == 1) {
             Integer value = args.get(0).evaluateToInteger(s, code, silent);
@@ -1178,7 +1177,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
 
     
     @Override
-    public Expression translateToStandardExpression(String functionName, List<Expression> args, SourceStatement s, CodeBase code) {
+    public Expression translateToStandardExpression(String functionName, List<Expression> args, CodeStatement s, CodeBase code) {
         if (functionName.equalsIgnoreCase("high") && args.size() == 1) {
             return Expression.operatorExpression(Expression.EXPRESSION_RSHIFT,
                     Expression.parenthesisExpression(
@@ -1199,7 +1198,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
     
     
     @Override
-    public MacroExpansion instantiateMacro(SourceMacro macro, List<Expression> args, SourceStatement macroCall, CodeBase code)
+    public MacroExpansion instantiateMacro(SourceMacro macro, List<Expression> args, CodeStatement macroCall, CodeBase code)
     {
         List<SourceLine> lines2 = new ArrayList<>();
         MacroExpansion me = new MacroExpansion(macro, macroCall, lines2);
@@ -1342,9 +1341,9 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
 
             {
                 // get the very first statement, and iterate over all the rest:
-                SourceStatement s = code.getMain().getStatements().get(0);
+                CodeStatement s = code.getMain().getStatements().get(0);
                 while(s != null) {
-                    if (s.type == SourceStatement.STATEMENT_INCLUDE) {
+                    if (s.type == CodeStatement.STATEMENT_INCLUDE) {
                         s = s.include.getStatements().get(0);
                     } else {
                         // See if a new block starts:
@@ -1409,7 +1408,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             code.setMain(reconstructedFile);
 
             // start by adding initialBlock:
-            for(SourceStatement s:initialBlock.statements) {
+            for(CodeStatement s:initialBlock.statements) {
                 s.source = reconstructedFile;
                 reconstructedFile.addStatement(s);
             }
@@ -1421,7 +1420,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
 
             for(int idx:pageIndexes) {
                 CodePage page = pages.get(idx);
-                SourceStatement org = new SourceStatement(SourceStatement.STATEMENT_ORG, new SourceLine("", reconstructedFile, reconstructedFile.getStatements().size()+1), reconstructedFile, config);
+                CodeStatement org = new CodeStatement(CodeStatement.STATEMENT_ORG, new SourceLine("", reconstructedFile, reconstructedFile.getStatements().size()+1), reconstructedFile, config);
                 org.org = page.start;
                 reconstructedFile.addStatement(org);
                 int pageStart = page.start.evaluateToInteger(page.s, code, true);
@@ -1430,7 +1429,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                 for(SJasmCodeBlock block:page.blocks) {
                     if (block.actualAddress > currentAddress) {
                         // insert space:
-                        SourceStatement space = new SourceStatement(SourceStatement.STATEMENT_DEFINE_SPACE, new SourceLine("", reconstructedFile, reconstructedFile.getStatements().size()+1), reconstructedFile, config);
+                        CodeStatement space = new CodeStatement(CodeStatement.STATEMENT_DEFINE_SPACE, new SourceLine("", reconstructedFile, reconstructedFile.getStatements().size()+1), reconstructedFile, config);
                         space.space = Expression.operatorExpression(Expression.EXPRESSION_SUB,
                                         Expression.constantExpression(block.actualAddress, config),
                                         Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, space, code, config),
@@ -1439,7 +1438,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                         reconstructedFile.addStatement(space);
                         config.debug("inserting space (end of block) of " + (block.actualAddress-currentAddress));
                     }
-                    for(SourceStatement s:block.statements) {
+                    for(CodeStatement s:block.statements) {
                         s.source = reconstructedFile;
                         reconstructedFile.addStatement(s);
                     }
@@ -1448,7 +1447,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                 }
                 if (pageSize != null && currentAddress < pageStart + pageSize) {
                     // insert space:
-                    SourceStatement space = new SourceStatement(SourceStatement.STATEMENT_DEFINE_SPACE, new SourceLine("", reconstructedFile, reconstructedFile.getStatements().size()+1), reconstructedFile, config);
+                    CodeStatement space = new CodeStatement(CodeStatement.STATEMENT_DEFINE_SPACE, new SourceLine("", reconstructedFile, reconstructedFile.getStatements().size()+1), reconstructedFile, config);
                     space.space = Expression.operatorExpression(Expression.EXPRESSION_SUB,
                                     Expression.constantExpression(pageStart + pageSize, config),
                                     Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, space, code, config),
@@ -1470,7 +1469,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
     }
         
     
-    public SJasmCodeBlock findCodeBlock(SourceStatement s)
+    public SJasmCodeBlock findCodeBlock(CodeStatement s)
     {
         for(SJasmCodeBlock cb:codeBlocks) {
             if (cb.statements.contains(s)) return cb;
@@ -1483,7 +1482,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
     public void resolveEnhancedJumps(CodeBase code)
     {
         // resolve enhanced jumps:
-        for(SourceStatement s:enhancedJrList) {
+        for(CodeStatement s:enhancedJrList) {
             SJasmCodeBlock b1 = findCodeBlock(s);
             SJasmCodeBlock b2 = null;
             if (s.op != null && !s.op.args.isEmpty()) {
@@ -1515,11 +1514,11 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                 }
             }
         }
-        for(SourceStatement s:enhancedDjnzList) {
+        for(CodeStatement s:enhancedDjnzList) {
             SJasmCodeBlock b1 = findCodeBlock(s);
             SJasmCodeBlock b2 = null;
             if (s.op != null && !s.op.args.isEmpty()) {
-                SourceStatement previous = s.source.getPreviousStatementTo(s, code);
+                CodeStatement previous = s.source.getPreviousStatementTo(s, code);
                 if (previous.source == s.source && 
                         previous.op != null && 
                         previous.op.spec.getName().equalsIgnoreCase("dec")) {
@@ -1557,7 +1556,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
     }
     
     
-    SJasmCodeBlock blockStartingAt(SourceStatement s)
+    SJasmCodeBlock blockStartingAt(CodeStatement s)
     {
         for(SJasmCodeBlock b:codeBlocks) {
             if (b.startStatement == s) return b;
@@ -1573,7 +1572,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
     // here a basic common case (if needed, more cases will be covered in the 
     // future, but this syntax is very problematic given the way macros are
     // resolved in MDL...):    
-    public List<SourceLine> expandVariableNumberOfArgsMacro(List<Expression> args, SourceStatement macroCall, SourceMacro macro, CodeBase code, MDLConfig config)
+    public List<SourceLine> expandVariableNumberOfArgsMacro(List<Expression> args, CodeStatement macroCall, SourceMacro macro, CodeBase code, MDLConfig config)
     {
         List<SourceLine> lines2 = new ArrayList<>();
         

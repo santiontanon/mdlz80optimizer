@@ -9,7 +9,7 @@ import code.CodeBase;
 import code.Expression;
 import code.SourceConstant;
 import code.SourceFile;
-import code.SourceStatement;
+import code.CodeStatement;
 import java.util.List;
 import org.apache.commons.lang3.tuple.Pair;
 import parser.SourceLine;
@@ -54,7 +54,7 @@ public class TniAsmDialect implements Dialect {
     }
     
     
-    private SourceConstant getLastAbsoluteLabel(SourceStatement s) 
+    private SourceConstant getLastAbsoluteLabel(CodeStatement s) 
     {
         // sjasm considers any label as an absolute label, even if it's associated with an equ,
         // so, no need to check if s.label.isLabel() (as in asMSX):
@@ -70,7 +70,7 @@ public class TniAsmDialect implements Dialect {
     
 
     @Override
-    public Pair<String, SourceConstant> newSymbolName(String name, Expression value, SourceStatement s) {
+    public Pair<String, SourceConstant> newSymbolName(String name, Expression value, CodeStatement s) {
         // A relative label
         if (name.startsWith(".")) {
             SourceConstant lastAbsoluteLabel = getLastAbsoluteLabel(s);        
@@ -85,7 +85,7 @@ public class TniAsmDialect implements Dialect {
 
 
     @Override
-    public Pair<String, SourceConstant> symbolName(String name, SourceStatement s) {
+    public Pair<String, SourceConstant> symbolName(String name, CodeStatement s) {
         // A relative label
         if (name.startsWith(".")) {
             SourceConstant lastAbsoluteLabel = getLastAbsoluteLabel(s);
@@ -100,9 +100,9 @@ public class TniAsmDialect implements Dialect {
     
     
     @Override
-    public boolean parseLine(List<String> tokens, List<SourceStatement> l,
+    public boolean parseLine(List<String> tokens, List<CodeStatement> l,
             SourceLine sl,
-            SourceStatement s, SourceStatement previous, SourceFile source, CodeBase code)
+            CodeStatement s, CodeStatement previous, SourceFile source, CodeBase code)
     {
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("rw")) {
             tokens.remove(0);

@@ -5,7 +5,7 @@
  */
 package parser;
 
-import code.SourceStatement;
+import code.CodeStatement;
 import java.util.List;
 
 /**
@@ -13,13 +13,22 @@ import java.util.List;
  * @author santi
  */
 public class MacroExpansion {
-    public SourceMacro m;
-    public SourceStatement macroCall;
+    public SourceMacro sm = null;
+    public TextMacro tm = null;
+    public CodeStatement macroCall;
     public List<SourceLine> lines;
 
-    public MacroExpansion(SourceMacro a_m, SourceStatement a_mc, List<SourceLine> a_lines)
+    public MacroExpansion(SourceMacro a_m, CodeStatement a_mc, List<SourceLine> a_lines)
     {
-        m = a_m;
+        sm = a_m;
+        macroCall = a_mc;
+        lines = a_lines;
+    }
+
+
+    public MacroExpansion(TextMacro a_m, CodeStatement a_mc, List<SourceLine> a_lines)
+    {
+        tm = a_m;
         macroCall = a_mc;
         lines = a_lines;
     }

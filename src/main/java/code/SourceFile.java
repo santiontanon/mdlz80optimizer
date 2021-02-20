@@ -15,12 +15,12 @@ public class SourceFile {
     MDLConfig config;
 
     public String fileName = null;
-    List<SourceStatement> statements = new ArrayList<>();
+    List<CodeStatement> statements = new ArrayList<>();
     public SourceFile parent = null;
-    public SourceStatement parentInclude = null;
+    public CodeStatement parentInclude = null;
     public CodeBase code = null;
 
-    public SourceFile(String a_fileName, SourceFile a_parent, SourceStatement a_parentInclude, CodeBase a_code, MDLConfig a_config) {
+    public SourceFile(String a_fileName, SourceFile a_parent, CodeStatement a_parentInclude, CodeBase a_code, MDLConfig a_config) {
         fileName = a_fileName;
         parent = a_parent;
         parentInclude = a_parentInclude;
@@ -34,37 +34,37 @@ public class SourceFile {
     }
 
 
-    public List<SourceStatement> getStatements()
+    public List<CodeStatement> getStatements()
     {
         return statements;
     }
 
 
-    public void addStatement(SourceStatement s) {
+    public void addStatement(CodeStatement s) {
         statements.add(s);
     }
 
 
-    public void addStatement(int position, SourceStatement s) {
+    public void addStatement(int position, CodeStatement s) {
         statements.add(position, s);
     }
 
 
     public void resetAddresses()
     {
-        for(SourceStatement s:statements) {
+        for(CodeStatement s:statements) {
             s.resetAddress();
         }
     }
 
 
-    public SourceStatement getNextStatementTo(SourceStatement s, CodeBase code)
+    public CodeStatement getNextStatementTo(CodeStatement s, CodeBase code)
     {
         int index = statements.indexOf(s);
         if (index == -1) {
             if (!statements.isEmpty()) {
                 // assume the statement has not yet been added, so, return the first:
-                SourceStatement s2 = statements.get(0);
+                CodeStatement s2 = statements.get(0);
                 if (s2.include != null) {
                     return s2.include.getNextStatementTo(null, code);
                 }
@@ -81,7 +81,7 @@ public class SourceFile {
     }
 
 
-    public SourceStatement getPreviousStatementTo(SourceStatement s, CodeBase code)
+    public CodeStatement getPreviousStatementTo(CodeStatement s, CodeBase code)
     {
         int index = statements.indexOf(s);
         if (index == -1) {
@@ -104,7 +104,7 @@ public class SourceFile {
         
     public Integer sizeInBytesInternal(CodeBase code, boolean withIncludes, boolean withIncbin, boolean withVirtual, List<String> variableStack) {
         int size = 0;
-        for (SourceStatement s : statements) {
+        for (CodeStatement s : statements) {
             Integer s_size = s.sizeInBytesInternal(code, withIncludes, withIncbin, withVirtual, variableStack);
             if (s_size == null) return null;
             size += s_size;
@@ -114,9 +114,9 @@ public class SourceFile {
 
 
     // returns <statement, callstack>
-    public List<Pair<SourceStatement, List<SourceStatement>>> 
-        nextExecutionStatements(SourceStatement s, boolean goInsideInclude,
-                                List<SourceStatement> callStack, CodeBase code)
+    public List<Pair<CodeStatement, List<CodeStatement>>> 
+        nextExecutionStatements(CodeStatement s, boolean goInsideInclude,
+                                List<CodeStatement> callStack, CodeBase code)
     {
         int index = statements.indexOf(s);
         if (index == -1) {
@@ -131,13 +131,13 @@ public class SourceFile {
     This function returns "null" when there are some potential next statements that cannot be determined.
     For example, when encountering a "ret", a "jp hl", a "call CONSTANT", where CONSTANT is not a label (could be a system call)
     */
-    public List<Pair<SourceStatement, List<SourceStatement>>> 
+    public List<Pair<CodeStatement, List<CodeStatement>>> 
         nextExecutionStatements(int index, boolean goInsideInclude,
-                                List<SourceStatement> callStack, CodeBase code)
+                                List<CodeStatement> callStack, CodeBase code)
     {
-        SourceStatement s = statements.get(index);
+        CodeStatement s = statements.get(index);
         switch(s.type) {
-            case SourceStatement.STATEMENT_CPUOP:
+            case CodeStatement.STATEMENT_CPUOP:
             {
                 if (s.op.isRst()) {
                     // not currently suported
@@ -146,13 +146,13 @@ public class SourceFile {
                 if (s.op.isRet()) {
                     // we don't know where are we going to jump to:
                     if (callStack != null && !callStack.isEmpty()) {
-                        SourceStatement target = callStack.get(callStack.size()-1);
+                        CodeStatement target = callStack.get(callStack.size()-1);
                         if (target != null) {
-                            List<SourceStatement> newCallStack = new ArrayList<>();
+                            List<CodeStatement> newCallStack = new ArrayList<>();
                             for(int i = 0;i<callStack.size()-1;i++) {
                                 newCallStack.add(callStack.get(i));
                             }
-                            List<Pair<SourceStatement, List<SourceStatement>>> next = new ArrayList<>();
+                            List<Pair<CodeStatement, List<CodeStatement>>> next = new ArrayList<>();
                             next.add(Pair.of(target, newCallStack));
                             if (s.op.isConditional()) {
                                 next.addAll(immediatelyNextExecutionStatements(index, callStack, code));
@@ -177,7 +177,7 @@ public class SourceFile {
                         return null;
                     }
                 }
-                SourceStatement jumpTargetStatement = null;
+                CodeStatement jumpTargetStatement = null;
                 if (label != null && label.isLabel()) {
                     jumpTargetStatement = label.definingStatement;
                 } else if (label != null) {
@@ -186,16 +186,16 @@ public class SourceFile {
                 }
 
                 if (jumpTargetStatement != null) {
-                    // get target SourceStatement:
-                        List<Pair<SourceStatement, List<SourceStatement>>> next;
+                    // get target CodeStatement:
+                        List<Pair<CodeStatement, List<CodeStatement>>> next;
                     if (s.op.isConditional()) {
                         next = immediatelyNextExecutionStatements(index, callStack, code);
                     } else {
                         next = new ArrayList<>();
                     }
-                    List<SourceStatement> newCallStack = callStack;
+                    List<CodeStatement> newCallStack = callStack;
                     if (newCallStack != null && s.op.isCall()) {
-                        List<Pair<SourceStatement, List<SourceStatement>>> returnFromCall = immediatelyNextExecutionStatements(index, callStack, code);
+                        List<Pair<CodeStatement, List<CodeStatement>>> returnFromCall = immediatelyNextExecutionStatements(index, callStack, code);
                         if (returnFromCall.size() != 1) {
                             config.error("immediatelyNextExecutionStatements returned " + returnFromCall.size() + ", instead of 1!");
                             return null;
@@ -207,7 +207,7 @@ public class SourceFile {
                     next.add(Pair.of(jumpTargetStatement, newCallStack));
                     return next;
                 } else {
-                    List<SourceStatement> newCallStack = callStack;
+                    List<CodeStatement> newCallStack = callStack;
                     if (newCallStack != null) {
                         if (s.op.isPush()) {
                             newCallStack = new ArrayList<>();
@@ -229,11 +229,11 @@ public class SourceFile {
                 }
             }
 
-            case SourceStatement.STATEMENT_INCLUDE:
+            case CodeStatement.STATEMENT_INCLUDE:
                 // go inside the include:
                 if (goInsideInclude && !s.include.statements.isEmpty()) {
                     SourceFile fi = s.include;
-                    List<Pair<SourceStatement, List<SourceStatement>>> next = new ArrayList<>();
+                    List<Pair<CodeStatement, List<CodeStatement>>> next = new ArrayList<>();
                     next.add(Pair.of(fi.statements.get(0), callStack));
                     return next;
                 } else {
@@ -241,8 +241,8 @@ public class SourceFile {
                     return immediatelyNextExecutionStatements(index, callStack, code);
                 }
 
-            case SourceStatement.STATEMENT_MACRO:
-            case SourceStatement.STATEMENT_MACROCALL:
+            case CodeStatement.STATEMENT_MACRO:
+            case CodeStatement.STATEMENT_MACROCALL:
                 throw new IllegalStateException("Macros should have been resolved before optimization!");
 
             default:
@@ -251,11 +251,11 @@ public class SourceFile {
     }
 
 
-    public List<Pair<SourceStatement, List<SourceStatement>>> immediatelyNextExecutionStatements(int index,
-            List<SourceStatement> callStack, CodeBase code)
+    public List<Pair<CodeStatement, List<CodeStatement>>> immediatelyNextExecutionStatements(int index,
+            List<CodeStatement> callStack, CodeBase code)
     {
         if (statements.size() > index+1) {
-            List<Pair<SourceStatement, List<SourceStatement>>> next = new ArrayList<>();
+            List<Pair<CodeStatement, List<CodeStatement>>> next = new ArrayList<>();
             next.add(Pair.of(statements.get(index+1), callStack));
             return next;
         }
@@ -270,7 +270,7 @@ public class SourceFile {
 
     public void evaluateAllExpressions(CodeBase code)
     {
-        for(SourceStatement s:statements) {
+        for(CodeStatement s:statements) {
             s.evaluateAllExpressions(code, config);
         }
     }

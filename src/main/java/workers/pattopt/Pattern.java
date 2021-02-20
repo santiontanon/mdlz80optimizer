@@ -16,7 +16,7 @@ import code.CodeBase;
 import code.Expression;
 import code.SourceConstant;
 import code.SourceFile;
-import code.SourceStatement;
+import code.CodeStatement;
 import parser.SourceLine;
 import parser.Tokenizer;
 
@@ -49,11 +49,11 @@ public class Pattern {
     
     
     static class DepCheckNode {
-        SourceStatement s;
+        CodeStatement s;
         CPUOpDependency dep;
-        List<SourceStatement> callStack;
+        List<CodeStatement> callStack;
         
-        public DepCheckNode(SourceStatement a_s, CPUOpDependency a_dep, List<SourceStatement> a_cs)
+        public DepCheckNode(CodeStatement a_s, CPUOpDependency a_dep, List<CodeStatement> a_cs)
         {
             s = a_s;
             dep = a_dep;
@@ -61,7 +61,7 @@ public class Pattern {
         }
         
         
-        public boolean match(CPUOpDependency a_dep, List<SourceStatement> a_cs)
+        public boolean match(CPUOpDependency a_dep, List<CodeStatement> a_cs)
         {
             if (!a_dep.equals(dep)) return false;
             if (callStack == null) {
@@ -265,7 +265,7 @@ public class Pattern {
     }
     
     
-    public boolean unifyExpressions(Expression pattern, Expression arg2, boolean expressionRoot, PatternMatch match, SourceStatement s, CodeBase code)
+    public boolean unifyExpressions(Expression pattern, Expression arg2, boolean expressionRoot, PatternMatch match, CodeStatement s, CodeBase code)
     {
         if (pattern.type == Expression.EXPRESSION_SYMBOL &&
             pattern.symbolName.startsWith("?")) {
@@ -327,7 +327,7 @@ public class Pattern {
     }
 
 
-    public boolean opMatch(CPUOpPattern pat1, CPUOp op2, SourceStatement s, CodeBase code, PatternMatch match)
+    public boolean opMatch(CPUOpPattern pat1, CPUOp op2, CodeStatement s, CodeBase code, PatternMatch match)
     {
         if (pat1.opName.startsWith("?op")) {
             if (!match.addVariableMatch(pat1.opName, Expression.symbolExpressionInternal(op2.spec.opName, s, code, false, config))) {
@@ -382,8 +382,8 @@ public class Pattern {
     {
         int index = a_index;
         int index_to_display_message_on = -1;
-        List<SourceStatement> l = f.getStatements();
-        if (l.get(index).type != SourceStatement.STATEMENT_CPUOP) return null;
+        List<CodeStatement> l = f.getStatements();
+        if (l.get(index).type != CodeStatement.STATEMENT_CPUOP) return null;
         PatternMatch match = new PatternMatch(this, f);
         
         // Match the CPU ops:
@@ -395,14 +395,14 @@ public class Pattern {
                     return null;
                 }
                 CPUOpPattern nextPatt = pattern.get(i+1);
-                List<SourceStatement> wildcardMatches = new ArrayList<>();
+                List<CodeStatement> wildcardMatches = new ArrayList<>();
 
                 while(true) {
                     if (index >= l.size()) return null;
-                    SourceStatement s = l.get(index);
+                    CodeStatement s = l.get(index);
                     if (i!=0 && s.label != null) return null;
                     if (s.comment != null && s.comment.contains(config.PRAGMA_NO_OPTIMIZATION)) return null;
-                    if (s.type == SourceStatement.STATEMENT_CPUOP) {
+                    if (s.type == CodeStatement.STATEMENT_CPUOP) {
                         PatternMatch matchTmp = new PatternMatch(match);
                         if (opMatch(nextPatt, s.op, s, code, matchTmp)) {
                             // we are done!
@@ -424,15 +424,15 @@ public class Pattern {
                 match.map.put(patt.ID, wildcardMatches);
             } else if (patt.repetitionVariable != null) {
                 // it's a potentially repeated line:
-                List<SourceStatement> statementsMatched = new ArrayList<>();
+                List<CodeStatement> statementsMatched = new ArrayList<>();
                 int count = 0;
                 while(true) {
                     if (index >= l.size()) return null;
-                    SourceStatement s = l.get(index);
+                    CodeStatement s = l.get(index);
                     if (i!=0 && s.label != null) return null;
                     if (i==0 && s.label != null && count>0) break;
                     if (s.comment != null && s.comment.contains(config.PRAGMA_NO_OPTIMIZATION)) return null;
-                    if (s.type == SourceStatement.STATEMENT_CPUOP) {
+                    if (s.type == CodeStatement.STATEMENT_CPUOP) {
                         if (opMatch(patt, l.get(index).op, l.get(index), code, match)) {
                             count += 1;
                         } else {
@@ -460,15 +460,15 @@ public class Pattern {
                 // not a wildcard, not a repetition:
                 while(true) {
                     if (index >= l.size()) return null;
-                    SourceStatement s = l.get(index);
+                    CodeStatement s = l.get(index);
                     if (i!=0 && s.label != null) return null;
                     if (s.comment != null && s.comment.contains(config.PRAGMA_NO_OPTIMIZATION)) return null;
-                    if (s.type == SourceStatement.STATEMENT_CPUOP) break;
+                    if (s.type == CodeStatement.STATEMENT_CPUOP) break;
                     if (!s.isEmptyAllowingComments()) return null;
                     index++;
                 }
                 if (!opMatch(patt, l.get(index).op, l.get(index), code, match)) return null;
-                List<SourceStatement> tmp = new ArrayList<>();
+                List<CodeStatement> tmp = new ArrayList<>();
                 tmp.add(l.get(index));
                 match.map.put(patt.ID, tmp);
                 index++;
@@ -738,7 +738,7 @@ public class Pattern {
             }
             case "reachableByJr":
             {
-                SourceStatement start = match.map.get(Integer.parseInt(constraint.args[0])).get(0);
+                CodeStatement start = match.map.get(Integer.parseInt(constraint.args[0])).get(0);
                 Integer startAddress = start.getAddress(code);
                 if (startAddress == null) {
                     return false;
@@ -759,7 +759,7 @@ public class Pattern {
             case "regsNotModified":
             {
                 int idx = Integer.parseInt(constraint.args[0]);
-                List<SourceStatement> statements = new ArrayList<>();
+                List<CodeStatement> statements = new ArrayList<>();
                 if (match.map.containsKey(idx)) {
                     statements.addAll(match.map.get(idx));
                 } else {
@@ -767,7 +767,7 @@ public class Pattern {
                 }
                 for(int i = 1;i<constraint.args.length;i++) {
                     String reg = constraint.args[i];
-                    for(SourceStatement s:statements) {
+                    for(CodeStatement s:statements) {
                         if (!regNotModified(s, reg, f, code)) {
                             return false;
                         }
@@ -780,7 +780,7 @@ public class Pattern {
             case "flagsNotModified":
             {
                 int idx = Integer.parseInt(constraint.args[0]);
-                List<SourceStatement> statements = new ArrayList<>();
+                List<CodeStatement> statements = new ArrayList<>();
                 if (match.map.containsKey(idx)) {
                     statements.addAll(match.map.get(idx));
                 } else {
@@ -788,7 +788,7 @@ public class Pattern {
                 }
                 for(int i = 1;i<constraint.args.length;i++) {
                     String flag = constraint.args[i];
-                    for(SourceStatement s:statements) {
+                    for(CodeStatement s:statements) {
                         if (!flagNotModified(s, flag, f, code)) {
                             return false;
                         }
@@ -801,7 +801,7 @@ public class Pattern {
             case "regsNotUsed":
             {
                 int idx = Integer.parseInt(constraint.args[0]);
-                List<SourceStatement> statements = new ArrayList<>();
+                List<CodeStatement> statements = new ArrayList<>();
                 if (match.map.containsKey(idx)) {
                     statements.addAll(match.map.get(idx));
                 } else {
@@ -809,7 +809,7 @@ public class Pattern {
                 }
                 for(int i = 1;i<constraint.args.length;i++) {
                     String reg = constraint.args[i];
-                    for(SourceStatement s:statements) {
+                    for(CodeStatement s:statements) {
                         if (!regNotUsed(s, reg, f, code)) {
                             return false;
                         }
@@ -822,7 +822,7 @@ public class Pattern {
             case "flagsNotUsed":
             {
                 int idx = Integer.parseInt(constraint.args[0]);
-                List<SourceStatement> statements = new ArrayList<>();
+                List<CodeStatement> statements = new ArrayList<>();
                 if (match.map.containsKey(idx)) {
                     statements.addAll(match.map.get(idx));
                 } else {
@@ -830,7 +830,7 @@ public class Pattern {
                 }
                 for(int i = 1;i<constraint.args.length;i++) {
                     String flag = constraint.args[i];
-                    for(SourceStatement s:statements) {
+                    for(CodeStatement s:statements) {
                         if (!flagNotUsed(s, flag, f, code)) {
                             return false;
                         }
@@ -843,15 +843,15 @@ public class Pattern {
             case "evenPushPops":
             {
                 int idx = Integer.parseInt(constraint.args[0]);
-                List<SourceStatement> statements = new ArrayList<>();
+                List<CodeStatement> statements = new ArrayList<>();
                 if (match.map.containsKey(idx)) {
                     statements.addAll(match.map.get(idx));
                 } else {
                     return false;
                 }
                 int stackMovements = 0;
-                for(SourceStatement s:statements) {
-                    if (s.type == SourceStatement.STATEMENT_CPUOP) {
+                for(CodeStatement s:statements) {
+                    if (s.type == CodeStatement.STATEMENT_CPUOP) {
                         if (s.op.spec.opName.equalsIgnoreCase("push")) {
                             stackMovements -= 2;
                         } else if (s.op.spec.opName.equalsIgnoreCase("pop")) {
@@ -888,15 +888,15 @@ public class Pattern {
             case "atLeastOneCPUOp":
             {
                 int idx = Integer.parseInt(constraint.args[0]);
-                List<SourceStatement> statements = new ArrayList<>();
+                List<CodeStatement> statements = new ArrayList<>();
                 if (match.map.containsKey(idx)) {
                     statements.addAll(match.map.get(idx));
                 } else {
                     return false;
                 }
                 boolean found = false;
-                for(SourceStatement s:statements) {
-                    if (s.type == SourceStatement.STATEMENT_CPUOP) {
+                for(CodeStatement s:statements) {
+                    if (s.type == CodeStatement.STATEMENT_CPUOP) {
                         found = true;
                         break;
                     }
@@ -917,12 +917,12 @@ public class Pattern {
                          List<EqualityConstraint> equalitiesToMaintain)
     {
         // undo record:
-        List<Pair<Integer, SourceStatement>> undo = new ArrayList<>();
+        List<Pair<Integer, CodeStatement>> undo = new ArrayList<>();
         
-        List<SourceStatement> l = f.getStatements();
+        List<CodeStatement> l = f.getStatements();
         List<Integer> replacementIndexes = new ArrayList<>();
         int insertionPoint = -1;
-        SourceStatement lastRemoved = null;
+        CodeStatement lastRemoved = null;
                 
         for(CPUOpPattern p:replacement) {
             replacementIndexes.add(p.ID);
@@ -951,8 +951,8 @@ public class Pattern {
                 }                
             } else {
                 // It is a regular op (not a wildcard):
-                SourceStatement removedLabel = null;
-                for(SourceStatement s:match.map.get(key)) {
+                CodeStatement removedLabel = null;
+                for(CodeStatement s:match.map.get(key)) {
                     insertionPoint = l.indexOf(s);
                     lastRemoved = l.remove(insertionPoint);
                     match.removed.add(lastRemoved);
@@ -974,7 +974,7 @@ public class Pattern {
                 for(int j = 0;j<replacement.size();j++) {
                     if (replacement.get(j).ID == pattern.get(i).ID) {
                         replacementIndexes.remove((Integer)replacement.get(j).ID);
-                        SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_CPUOP, lastRemoved.sl, lastRemoved.source, config);
+                        CodeStatement s = new CodeStatement(CodeStatement.STATEMENT_CPUOP, lastRemoved.sl, lastRemoved.source, config);
                         // if the original statement had a label, we need to keep it!
                         if (removedLabel != null) {
                             s.label = removedLabel.label;
@@ -997,7 +997,7 @@ public class Pattern {
                 }
                 if (!replaced && removedLabel != null) {
                     // We were losing a label. Insert a dummy statement with the label we lost:
-                    SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_NONE, removedLabel.sl, removedLabel.source, config);
+                    CodeStatement s = new CodeStatement(CodeStatement.STATEMENT_NONE, removedLabel.sl, removedLabel.source, config);
                     s.label = removedLabel.label;
                     s.label.definingStatement = s;
                     l.add(insertionPoint, s);
@@ -1017,7 +1017,7 @@ public class Pattern {
                 config.error("Could not determine the source for an additional replacement for: " + replacement.get(idx));
                 return false;
             }
-            SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_CPUOP, lastRemoved.sl, lastRemoved.source, config);
+            CodeStatement s = new CodeStatement(CodeStatement.STATEMENT_CPUOP, lastRemoved.sl, lastRemoved.source, config);
             s.op = new CPUOp(replacement.get(idx).instantiate(match, this, config));
             if (s.op == null) {
                 config.error("The replacement was: " + replacement.get(idx));
@@ -1060,10 +1060,10 @@ public class Pattern {
     }
 
 
-    public boolean regNotModified(SourceStatement s, String reg, SourceFile f, CodeBase code)
+    public boolean regNotModified(CodeStatement s, String reg, SourceFile f, CodeBase code)
     {
         CPUOpDependency dep = new CPUOpDependency(reg.toUpperCase(), null, null, null, null);        
-        if (s.type == SourceStatement.STATEMENT_CPUOP) {
+        if (s.type == CodeStatement.STATEMENT_CPUOP) {
             CPUOp op = s.op;            
             if (op.isRet()) {
                 // It's hard to tell where is this instruction going to jump,
@@ -1080,10 +1080,10 @@ public class Pattern {
     }
     
     
-    public boolean flagNotModified(SourceStatement s, String flag, SourceFile f, CodeBase code)
+    public boolean flagNotModified(CodeStatement s, String flag, SourceFile f, CodeBase code)
     {
         CPUOpDependency dep = new CPUOpDependency(null, flag.toUpperCase(), null, null, null);        
-        if (s.type == SourceStatement.STATEMENT_CPUOP) {
+        if (s.type == CodeStatement.STATEMENT_CPUOP) {
             CPUOp op = s.op;            
             if (op.isRet()) {
                 // It's hard to tell where is this instruction going to jump,
@@ -1100,10 +1100,10 @@ public class Pattern {
     }    
     
 
-    public boolean regNotUsed(SourceStatement s, String reg, SourceFile f, CodeBase code)
+    public boolean regNotUsed(CodeStatement s, String reg, SourceFile f, CodeBase code)
     {
         CPUOpDependency dep = new CPUOpDependency(reg.toUpperCase(), null, null, null, null);        
-        if (s.type == SourceStatement.STATEMENT_CPUOP) {
+        if (s.type == CodeStatement.STATEMENT_CPUOP) {
             CPUOp op = s.op;            
             if (op.isRet()) {
                 // It's hard to tell where is this instruction going to jump,
@@ -1119,10 +1119,10 @@ public class Pattern {
     }
     
     
-    public boolean flagNotUsed(SourceStatement s, String flag, SourceFile f, CodeBase code)
+    public boolean flagNotUsed(CodeStatement s, String flag, SourceFile f, CodeBase code)
     {
         CPUOpDependency dep = new CPUOpDependency(null, flag.toUpperCase(), null, null, null);        
-        if (s.type == SourceStatement.STATEMENT_CPUOP) {
+        if (s.type == CodeStatement.STATEMENT_CPUOP) {
             CPUOp op = s.op;            
             if (op.isRet()) {
                 // It's hard to tell where is this instruction going to jump,
@@ -1138,14 +1138,14 @@ public class Pattern {
     }    
     
     
-    public Boolean regNotUsedAfter(SourceStatement s, String reg, SourceFile f, CodeBase code)
+    public Boolean regNotUsedAfter(CodeStatement s, String reg, SourceFile f, CodeBase code)
     {
         CPUOpDependency dep = new CPUOpDependency(reg.toUpperCase(), null, null, null, null);
         return depNotUsedAfter(s, dep, f, code);
     }
 
 
-    public Boolean flagNotUsedAfter(SourceStatement s, String flag, SourceFile f, CodeBase code)
+    public Boolean flagNotUsedAfter(CodeStatement s, String flag, SourceFile f, CodeBase code)
     {
         CPUOpDependency dep = new CPUOpDependency(null, flag.toUpperCase(), null, null, null);
         return depNotUsedAfter(s, dep, f, code);
@@ -1154,18 +1154,18 @@ public class Pattern {
 
     // - returns true/false if we know for sure the dependency is or not used
     // - returns null when it's unclear
-    public Boolean depNotUsedAfter(SourceStatement s, CPUOpDependency a_dep, SourceFile f, CodeBase code)
+    public Boolean depNotUsedAfter(CodeStatement s, CPUOpDependency a_dep, SourceFile f, CodeBase code)
     {
         List<DepCheckNode> open = new ArrayList<>();
-        HashMap<SourceStatement,List<DepCheckNode>> closed = new HashMap<>();
-        List<Pair<SourceStatement, List<SourceStatement>>> tmp = f.nextExecutionStatements(s, true, new ArrayList<>(), code);
+        HashMap<CodeStatement,List<DepCheckNode>> closed = new HashMap<>();
+        List<Pair<CodeStatement, List<CodeStatement>>> tmp = f.nextExecutionStatements(s, true, new ArrayList<>(), code);
         if (tmp == null) {
             // It's hard to tell where is this instruction going to jump,
             // so we act conservatively, and block the optimization:
             // config.trace("    unclear next statement after " + s);
             return false;
         }
-        for(Pair<SourceStatement, List<SourceStatement>> pair:tmp) {
+        for(Pair<CodeStatement, List<CodeStatement>> pair:tmp) {
             DepCheckNode node = new DepCheckNode(pair.getLeft(), a_dep, pair.getRight());
             open.add(node);
             List<DepCheckNode> l = new ArrayList<>();
@@ -1174,12 +1174,12 @@ public class Pattern {
         }
         while(!open.isEmpty()) {
             DepCheckNode node = open.remove(0);
-            SourceStatement next = node.s;
+            CodeStatement next = node.s;
             CPUOpDependency dep = node.dep;
-            List<SourceStatement> callStack = node.callStack;
+            List<CodeStatement> callStack = node.callStack;
             // config.trace("    "+next.sl.lineNumber+": "+next);
 
-            if (next.type == SourceStatement.STATEMENT_CPUOP) {
+            if (next.type == CodeStatement.STATEMENT_CPUOP) {
                 CPUOp op = next.op;
 //                if (op.isRet()) {
 //                    // It's hard to tell where is this instruction going to jump,
@@ -1196,9 +1196,9 @@ public class Pattern {
 //                if (dep == null) {
 //                    // config.trace("    dependency broken!");
 //                }
-            } else if (next.type == SourceStatement.STATEMENT_DATA_BYTES ||
-                       next.type == SourceStatement.STATEMENT_DATA_WORDS ||
-                       next.type == SourceStatement.STATEMENT_DATA_DOUBLE_WORDS) {
+            } else if (next.type == CodeStatement.STATEMENT_DATA_BYTES ||
+                       next.type == CodeStatement.STATEMENT_DATA_WORDS ||
+                       next.type == CodeStatement.STATEMENT_DATA_DOUBLE_WORDS) {
                 // There is either a bug in the program, or some assembler instructions
                 // are coded directly in data statements, assume dependency for safety:
                 return false;
@@ -1206,16 +1206,16 @@ public class Pattern {
             
             if (dep != null) {
                 // add successors:
-                List<Pair<SourceStatement, List<SourceStatement>>> nextNext_l = next.source.nextExecutionStatements(next, true, callStack, code);
+                List<Pair<CodeStatement, List<CodeStatement>>> nextNext_l = next.source.nextExecutionStatements(next, true, callStack, code);
                 if (nextNext_l == null) {
                     // It's hard to tell where is this instruction going to jump,
                     // so we act conservatively, and block the optimization:
                     // config.trace("    unclear next statement after: "+next);
                     return null;
                 }
-                for(Pair<SourceStatement, List<SourceStatement>> nextNext_pair: nextNext_l) {
-                    SourceStatement nextNext = nextNext_pair.getLeft();
-                    List<SourceStatement> netNext_stack = nextNext_pair.getRight();
+                for(Pair<CodeStatement, List<CodeStatement>> nextNext_pair: nextNext_l) {
+                    CodeStatement nextNext = nextNext_pair.getLeft();
+                    List<CodeStatement> netNext_stack = nextNext_pair.getRight();
                     if (!closed.containsKey(nextNext)) {
                         DepCheckNode nextNode = new DepCheckNode(nextNext, dep, netNext_stack);
                         open.add(nextNode);

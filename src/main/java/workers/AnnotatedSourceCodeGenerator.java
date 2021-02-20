@@ -9,7 +9,7 @@ import java.util.List;
 import cl.MDLConfig;
 import code.CodeBase;
 import code.SourceFile;
-import code.SourceStatement;
+import code.CodeStatement;
 import parser.Tokenizer;
 
 /**
@@ -89,7 +89,7 @@ public class AnnotatedSourceCodeGenerator implements MDLWorker {
 
     public void sourceFileString(SourceFile sf, StringBuilder sb, CodeBase code)
     {
-        for (SourceStatement ss:sf.getStatements()) {
+        for (CodeStatement ss:sf.getStatements()) {
             sb.append("  ");
             Integer address = ss.getAddress(code);
             if (address == null) {

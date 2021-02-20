@@ -21,7 +21,7 @@ public class CPUOpSpecArg {
     public Integer max = null;
 
 
-    public boolean match(Expression exp, CPUOpSpec spec, SourceStatement s, CodeBase code)
+    public boolean match(Expression exp, CPUOpSpec spec, CodeStatement s, CodeBase code)
     {
         if (condition != null) {
             if (exp.type == Expression.EXPRESSION_REGISTER_OR_FLAG &&

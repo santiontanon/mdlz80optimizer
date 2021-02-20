@@ -6,7 +6,7 @@
 package parser;
 
 import code.SourceFile;
-import code.SourceStatement;
+import code.CodeStatement;
 
 /**
  *
@@ -16,7 +16,7 @@ public class SourceLine {
     public String line;
     public SourceFile source;
     public Integer lineNumber;
-    public SourceStatement expandedFrom;
+    public CodeStatement expandedFrom;
     
     public String labelPrefixToPush = null;
     public String labelPrefixToPop = null;
@@ -31,7 +31,7 @@ public class SourceLine {
     }
 
 
-    public SourceLine(String a_line, SourceFile a_f, Integer a_ln, SourceStatement a_expandedFrom)
+    public SourceLine(String a_line, SourceFile a_f, Integer a_ln, CodeStatement a_expandedFrom)
     {
         line = a_line;
         source = a_f;

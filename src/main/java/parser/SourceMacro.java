@@ -10,14 +10,14 @@ import cl.MDLConfig;
 import code.CodeBase;
 import code.Expression;
 import code.SourceConstant;
-import code.SourceStatement;
+import code.CodeStatement;
 import java.util.HashMap;
 import parser.dialects.SjasmDialect;
 
 
 public class SourceMacro {
     public String name = null;
-    public SourceStatement definingStatement = null;
+    public CodeStatement definingStatement = null;
     public List<String> argNames = new ArrayList<>();
     public boolean variableNumberofArgs = false;
     public List<Expression> defaultValues = new ArrayList<>();
@@ -33,14 +33,14 @@ public class SourceMacro {
     // define a temporary local label:
     public List<String> temporaryLabelArgNames = new ArrayList<>();    
 
-    public SourceMacro(String a_name, SourceStatement a_ds)
+    public SourceMacro(String a_name, CodeStatement a_ds)
     {
         name = a_name;
         definingStatement = a_ds;
     }
 
 
-    public SourceMacro(String a_name, List<String> a_args, List<Expression> a_defaultValues, SourceStatement a_ds, MDLConfig config)
+    public SourceMacro(String a_name, List<String> a_args, List<Expression> a_defaultValues, CodeStatement a_ds, MDLConfig config)
     {        
         name = a_name;
 
@@ -82,7 +82,7 @@ public class SourceMacro {
     }
 
 
-    public MacroExpansion instantiate(List<Expression> args, SourceStatement macroCall, CodeBase code, MDLConfig config)
+    public MacroExpansion instantiate(List<Expression> args, CodeStatement macroCall, CodeBase code, MDLConfig config)
     {        
         List<SourceLine> lines2 = new ArrayList<>();
         MacroExpansion me = new MacroExpansion(this, macroCall, lines2);
@@ -104,8 +104,8 @@ public class SourceMacro {
                 scope = macroCall.label.name;
             } else {
                 // check if the label was in the previous statement:
-                SourceStatement previous = macroCall.source.getPreviousStatementTo(macroCall, code);
-                if (previous.source == macroCall.source && previous.label != null && previous.type == SourceStatement.STATEMENT_NONE) {
+                CodeStatement previous = macroCall.source.getPreviousStatementTo(macroCall, code);
+                if (previous.source == macroCall.source && previous.label != null && previous.type == CodeStatement.STATEMENT_NONE) {
                     scope = previous.label.name;
                 } else {
                     scope = config.preProcessor.nextMacroExpansionContextName(macroCall.labelPrefix);
@@ -219,8 +219,8 @@ public class SourceMacro {
             if (macroCall.label != null) {
                 scope = macroCall.label.name;
             } else {
-                SourceStatement previous = macroCall.source.getPreviousStatementTo(macroCall, code);
-                if (previous.source == macroCall.source && previous.label != null && previous.type == SourceStatement.STATEMENT_NONE) {
+                CodeStatement previous = macroCall.source.getPreviousStatementTo(macroCall, code);
+                if (previous.source == macroCall.source && previous.label != null && previous.type == CodeStatement.STATEMENT_NONE) {
                     scope = previous.label.name;
                 } else {
                     scope = config.preProcessor.nextMacroExpansionContextName(macroCall.labelPrefix);
@@ -236,7 +236,7 @@ public class SourceMacro {
     
     public SourceLine replaceMacroArgs(SourceLine sl, List<String> names, List<Expression> args, 
                                        HashMap<String, String> temporaryLabelsMap, 
-                                       SourceStatement macroCall, MDLConfig config)
+                                       CodeStatement macroCall, MDLConfig config)
     {
         String line2 = sl.line;
         List<String> tokens = Tokenizer.tokenizeIncludingBlanks(line2);

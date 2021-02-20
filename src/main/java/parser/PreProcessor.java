@@ -11,7 +11,7 @@ import cl.MDLConfig;
 import code.CodeBase;
 import code.SourceConstant;
 import code.SourceFile;
-import code.SourceStatement;
+import code.CodeStatement;
 import java.util.HashMap;
 
 
@@ -61,6 +61,8 @@ public class PreProcessor {
     // However, we cannot do the usual name/#params key as some might have a variable number.
     // So, we just associate macro names with a list, and then see which one are we calling:
     public LinkedHashMap<String, List<SourceMacro>> macros = new LinkedHashMap<>();
+    
+    public LinkedHashMap<String, List<TextMacro>> textMacros = new LinkedHashMap<>();
 
 
     public PreProcessor(MDLConfig a_config)
@@ -158,13 +160,13 @@ public class PreProcessor {
     }
 
     
-    SourceConstant macroCallLabel(SourceStatement macroCall, CodeBase code)
+    SourceConstant macroCallLabel(CodeStatement macroCall, CodeBase code)
     {
         if (macroCall.label != null) {
             return macroCall.label;
 //        } else {
-//            SourceStatement previous = macroCall.source.getPreviousStatementTo(macroCall, code);
-//            if (previous.source == macroCall.source && previous.label != null && previous.type == SourceStatement.STATEMENT_NONE) {
+//            CodeStatement previous = macroCall.source.getPreviousStatementTo(macroCall, code);
+//            if (previous.source == macroCall.source && previous.label != null && previous.type == CodeStatement.STATEMENT_NONE) {
 //                return previous.label;
 //            }
         }
@@ -175,14 +177,14 @@ public class PreProcessor {
     // Since the statements to be added might have to be added somewhere in the middle of a file, when expanding macros at the very end of parsing,
     // we cannot insert them directly here. So, we just return a list of statements to be inserted wherever necessary by the calling code:
     // - the return value is null if failure, and a list of statements if succeeded
-    public List<SourceStatement> parseMacroLine(List<String> tokens, SourceLine sl, SourceFile f, CodeBase code, MDLConfig config)
+    public List<CodeStatement> parseMacroLine(List<String> tokens, SourceLine sl, SourceFile f, CodeBase code, MDLConfig config)
     {
-        List<SourceStatement> newStatements = new ArrayList<>();
+        List<CodeStatement> newStatements = new ArrayList<>();
         SourceMacro m = currentState.currentMacro;
         if (!tokens.isEmpty() && isMacroName(tokens.get(0), MACRO_ENDM)) {
             if (currentState.currentMacroNameStack.isEmpty()) {
                 if (isMacroName(m.name, MACRO_REPT)) {
-                    SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_MACROCALL, sl, f, config);
+                    CodeStatement s = new CodeStatement(CodeStatement.STATEMENT_MACROCALL, sl, f, config);
                     s.macroCallMacro = m;
                     s.macroCallArguments = m.preDefinedMacroArgs;
                     s.label = macroCallLabel(m.definingStatement, code);
@@ -196,7 +198,7 @@ public class PreProcessor {
                     m.addLine(sl);
 
                 } else if (dialectMacros.containsKey(m.name)) {
-                    SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_MACROCALL, sl, f, config);
+                    CodeStatement s = new CodeStatement(CodeStatement.STATEMENT_MACROCALL, sl, f, config);
                     s.macroCallMacro = m;
                     s.macroCallArguments = m.preDefinedMacroArgs;
                     s.label = macroCallLabel(m.definingStatement, code);
@@ -216,7 +218,7 @@ public class PreProcessor {
         } else if (!tokens.isEmpty() && isMacroName(tokens.get(0), MACRO_ENDR)) {
             if (currentState.currentMacroNameStack.isEmpty()) {
                 if (isMacroName(m.name, MACRO_REPT)) {
-                    SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_MACROCALL, sl, f, config);
+                    CodeStatement s = new CodeStatement(CodeStatement.STATEMENT_MACROCALL, sl, f, config);
                     s.macroCallMacro = m;
                     s.macroCallArguments = m.preDefinedMacroArgs;
                     s.label = macroCallLabel(m.definingStatement, code);
@@ -237,7 +239,7 @@ public class PreProcessor {
                     isMacroName(m.name, MACRO_IFNDEF) ||
                     (dialectMacros.containsKey(m.name) &&
                      dialectMacros.get(m.name).equalsIgnoreCase(tokens.get(0)))) {
-                    SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_MACROCALL, sl, f, config);
+                    CodeStatement s = new CodeStatement(CodeStatement.STATEMENT_MACROCALL, sl, f, config);
                     s.macroCallMacro = m;
                     s.macroCallArguments = m.preDefinedMacroArgs;
                     s.label = macroCallLabel(m.definingStatement, code);
@@ -278,7 +280,7 @@ public class PreProcessor {
             m.addLine(sl);
         } else if (!tokens.isEmpty() && dialectMacros.containsValue(tokens.get(0).toLowerCase())) {
             if (currentState.currentMacroNameStack.isEmpty()) {
-                SourceStatement s = new SourceStatement(SourceStatement.STATEMENT_MACROCALL, sl, f, config);
+                CodeStatement s = new CodeStatement(CodeStatement.STATEMENT_MACROCALL, sl, f, config);
                 s.macroCallMacro = m;
                 s.macroCallArguments = m.preDefinedMacroArgs;
                 s.label = macroCallLabel(m.definingStatement, code);
@@ -296,12 +298,12 @@ public class PreProcessor {
     }
 
 
-    public List<SourceStatement> handleStatement(SourceLine sl,
-            SourceStatement s, SourceFile source, CodeBase code, boolean expandMacroCalls)
+    public List<CodeStatement> handleStatement(SourceLine sl,
+            CodeStatement s, SourceFile source, CodeBase code, boolean expandMacroCalls)
     {
-        List<SourceStatement> l = new ArrayList<>();
+        List<CodeStatement> l = new ArrayList<>();
         
-        if (s.type == SourceStatement.STATEMENT_MACROCALL) {
+        if (s.type == CodeStatement.STATEMENT_MACROCALL) {
             if (s.macroCallMacro != null) {                
                 if (!expandMacroCalls) return null;
                 
@@ -312,7 +314,7 @@ public class PreProcessor {
                 }
                 
                 if (s.label != null) {
-                    SourceStatement auxiliar = new SourceStatement(SourceStatement.STATEMENT_NONE, s.sl, s.source, config);
+                    CodeStatement auxiliar = new CodeStatement(CodeStatement.STATEMENT_NONE, s.sl, s.source, config);
                     auxiliar.label = s.label;
                     auxiliar.labelPrefix = s.labelPrefix;
                     l.add(auxiliar);
@@ -380,7 +382,7 @@ public class PreProcessor {
                         return null;
                     }
                     if (s.label != null) {
-                        SourceStatement auxiliar = new SourceStatement(SourceStatement.STATEMENT_NONE, s.sl, s.source, config);
+                        CodeStatement auxiliar = new CodeStatement(CodeStatement.STATEMENT_NONE, s.sl, s.source, config);
                         auxiliar.label = s.label;
                         auxiliar.labelPrefix = s.labelPrefix;
                         l.add(auxiliar);
@@ -396,7 +398,7 @@ public class PreProcessor {
                 }
             }
         } else {
-            if (s.type == SourceStatement.STATEMENT_MACRO) {
+            if (s.type == CodeStatement.STATEMENT_MACRO) {
                 if (currentState.currentMacro != null) {
                     config.error("Something weird just happend (expanding two macros at once, contact the developer) in " + sl);
                     return null;
@@ -441,11 +443,153 @@ public class PreProcessor {
         return true;
     }
 
-    
+
+    public boolean addTextMacro(TextMacro m)
+    {
+        config.debug("adding text macro: " + m.name);
+        List<TextMacro> l = textMacros.get(m.name);
+        if (l == null) {
+            l = new ArrayList<>();
+            textMacros.put(m.name, l);
+        }
+        
+        // check if it's a redefinition:
+        TextMacro found = null;
+        for(TextMacro m2:l) {
+            if (m.argNames.size() == m2.argNames.size()) {
+                found = m2;
+                break;
+            }
+        }
+        if (found != null) l.remove(found);
+        l.add(m);
+        return true;
+    }
+
+
     public String nextMacroExpansionContextName(String labelPrefix)
     {
         macroExpansionCounter++;
         if (labelPrefix == null) return unnamedMacroPrefix + macroExpansionCounter;
         return labelPrefix + unnamedMacroPrefix + macroExpansionCounter;
+    }
+    
+    
+    public void expandTextMacros(List<String> tokens, CodeStatement s, SourceLine sl)
+    {        
+        for(int i = 0;i<tokens.size();i++) {
+            String token = tokens.get(i);
+            List<TextMacro> matches = textMacros.get(token);
+            if (matches != null) {                
+                // detect number of arguments:
+                List<List<String>> argumentTokens = new ArrayList<>();
+                int startToken = i;
+                int endToken = i + 1;
+                TextMacro match = null;
+                if (i < tokens.size()-1 && tokens.get(i+1).equals("(")) {
+                    List<String> currentArgumentTokens = new ArrayList<>();
+                    int parenthesis = 1;
+                    for(int j = i+2;j<tokens.size();j++) {
+                        if (tokens.get(j).equals(",")) {
+                            if (parenthesis == 1) {
+                                argumentTokens.add(currentArgumentTokens);
+                                currentArgumentTokens = new ArrayList<>();
+                            } else {
+                                currentArgumentTokens.add(tokens.get(j));
+                            }
+                        } else if (tokens.get(j).equals("(")) {
+                            parenthesis ++;
+                            currentArgumentTokens.add(tokens.get(j));
+                        } else if (tokens.get(j).equals(")")) {
+                            parenthesis --;
+                            if (parenthesis == 0) {
+                                if (!currentArgumentTokens.isEmpty()) {
+                                    argumentTokens.add(currentArgumentTokens);
+                                }
+                                endToken = j + 1;
+                                break;
+                            }
+                            currentArgumentTokens.add(tokens.get(j));
+                        } else {
+                            currentArgumentTokens.add(tokens.get(j));
+                        }
+                    }
+                    if (parenthesis == 0) {
+                        // we have a potential parameter list, try to parse it!                        
+                        for(TextMacro m:matches) {
+                            if (m.argNames.size() == argumentTokens.size()) {
+                                match = m;
+                                break;
+                            }
+                        }
+                    }
+                }
+                if (match == null) {
+                    for(TextMacro m:matches) {
+                        if (m.argNames.isEmpty()) {
+                            match = m;
+                            endToken = i + 1;
+                            break;
+                        }
+                    }
+                }
+
+                if (match != null) {
+                    int nTokensToRemove = endToken - startToken;
+
+                    // remove the macro tokens:
+                    for(int k = 0;k<nTokensToRemove;k++) {
+                        tokens.remove(startToken);
+                    }
+
+                    // instantiate the macro:
+                    List<String> instantiatedTokens = match.instantiate(argumentTokens);
+
+                    // check for line splits:
+                    List<List<String>> lines = new ArrayList<>();
+                    List<String> line = new ArrayList<>();
+                    for(String itoken: instantiatedTokens) {
+                        if (itoken.equals("\\")) {
+                            // new line!
+                            lines.add(line);
+                            line = new ArrayList<>();
+                        } else {
+                            line.add(itoken);
+                        }
+                    }
+                    if (!line.isEmpty()) lines.add(line);
+
+                    if (!lines.isEmpty()) {
+                        line = lines.remove(0);
+
+                        if (lines.isEmpty()) {
+                            tokens.addAll(startToken, line);
+                        } else {
+                            // push all the left-over tokens after the macro to the last line:
+                            while(tokens.size() > startToken) {
+                                lines.get(lines.size()-1).add(tokens.remove(startToken));
+                            }
+                            tokens.addAll(startToken, line);
+
+                            // add the rest of the lines to the next lines to parse:
+                            List<SourceLine> s_lines = new ArrayList<>();
+                            for(List<String> line2:lines) {
+                                String concatenated = "";
+                                for(String token2:line2) {
+                                    concatenated += token2 += " ";
+                                }
+                                s_lines.add(new SourceLine(concatenated, sl.source, sl.lineNumber));
+                            }
+                            MacroExpansion expansion = new MacroExpansion(match, s, s_lines);
+                            currentState.macroExpansions.add(0, expansion);
+                        }
+                    }
+
+                    // recurse to see if there are more macros to expand:
+                    expandTextMacros(tokens, s, sl);
+                    return;
+                }
+            }
+        }        
     }
 }

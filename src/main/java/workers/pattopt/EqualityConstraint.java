@@ -8,7 +8,7 @@ package workers.pattopt;
 import cl.MDLConfig;
 import code.CodeBase;
 import code.Expression;
-import code.SourceStatement;
+import code.CodeStatement;
 
 /**
  *
@@ -17,10 +17,11 @@ import code.SourceStatement;
 public class EqualityConstraint {
     boolean inequality = false;
     Expression exp1, exp2;
-    SourceStatement s1, s2;
+    CodeStatement s1;
+    CodeStatement s2;
 
-    public EqualityConstraint(Expression a_exp1, SourceStatement a_s1,
-                              Expression a_exp2, SourceStatement a_s2,
+    public EqualityConstraint(Expression a_exp1, CodeStatement a_s1,
+                              Expression a_exp2, CodeStatement a_s2,
                               boolean a_in) {
         exp1 = a_exp1;
         exp2 = a_exp2;

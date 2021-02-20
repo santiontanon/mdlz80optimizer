@@ -8,7 +8,7 @@ package test;
 import cl.MDLConfig;
 import code.CodeBase;
 import code.SourceFile;
-import code.SourceStatement;
+import code.CodeStatement;
 import java.io.IOException;
 import java.util.List;
 import org.junit.Assert;
@@ -59,11 +59,11 @@ public class CPUOpSpecTest {
         }
         SourceFile dummy = new SourceFile("dummy.asm", null, null, code, config);
         
-        List<SourceStatement> l = config.lineParser.parse(Tokenizer.tokenize(opString), new SourceLine("", dummy, 0), dummy, 0, code, config);
+        List<CodeStatement> l = config.lineParser.parse(Tokenizer.tokenize(opString), new SourceLine("", dummy, 0), dummy, 0, code, config);
         if (l == null || l.isEmpty()) return null;
         String output = null;
-        for(SourceStatement s:l) {
-            if (s == null || s.type != SourceStatement.STATEMENT_CPUOP ||
+        for(CodeStatement s:l) {
+            if (s == null || s.type != CodeStatement.STATEMENT_CPUOP ||
                 s.op == null) return null;
             if (output == null) {
                 output = s.op.toString();

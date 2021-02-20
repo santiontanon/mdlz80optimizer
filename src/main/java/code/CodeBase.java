@@ -149,13 +149,13 @@ public class CodeBase {
     }
 
     
-    public SourceStatement statementDefiningLabel(String name)
+    public CodeStatement statementDefiningLabel(String name)
     {
         SourceConstant sc = getSymbol(name);
         if (sc == null) return null;
         return sc.definingStatement;
 //        for(SourceFile f:sources.values()) {
-//            for(SourceStatement s:f.getStatements()) {
+//            for(CodeStatement s:f.getStatements()) {
 //                if (s.label != null && s.label.name.equals(name)) return s;
 //            }
 //        }

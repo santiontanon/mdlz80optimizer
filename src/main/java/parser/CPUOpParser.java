@@ -13,7 +13,7 @@ import code.CPUOpSpec;
 import code.CPUOpSpecArg;
 import code.CodeBase;
 import code.Expression;
-import code.SourceStatement;
+import code.CodeStatement;
 
 /**
  *
@@ -81,7 +81,7 @@ public class CPUOpParser {
 
     // "previous" is used for label scoping (it should be the statement that will be right before "s", after inserting "s"
     // into the SourceFile, since "s" might not have been yet inserted into it:    
-    public List<CPUOp> parseOp(String a_op, List<Expression> a_args, SourceStatement s, SourceStatement previous, CodeBase code)
+    public List<CPUOp> parseOp(String a_op, List<Expression> a_args, CodeStatement s, CodeStatement previous, CodeBase code)
     {
         List<CPUOpSpec> candidates = getOpSpecs(a_op);
         for(CPUOpSpec opSpec:candidates) {
@@ -137,7 +137,7 @@ public class CPUOpParser {
     }
 
 
-    public List<CPUOp> parseOp(String a_op, CPUOpSpec spec, List<Expression> a_args, SourceStatement s, SourceStatement previous, CodeBase code)
+    public List<CPUOp> parseOp(String a_op, CPUOpSpec spec, List<Expression> a_args, CodeStatement s, CodeStatement previous, CodeBase code)
     {
         if (!a_op.equalsIgnoreCase(spec.opName)) return null;
         if (spec.args.size() != a_args.size()) return null;

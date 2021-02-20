@@ -7,7 +7,7 @@ package workers.reorgopt;
 
 import code.CodeBase;
 import code.SourceConstant;
-import code.SourceStatement;
+import code.CodeStatement;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,8 +23,8 @@ public class CodeBlock {
     
     public String ID = null;
     public int type = TYPE_UNKNOWN;
-    public SourceStatement startStatement;
-    public List<SourceStatement> statements = new ArrayList<>();
+    public CodeStatement startStatement;
+    public List<CodeStatement> statements = new ArrayList<>();
     public List<CodeBlock> subBlocks = new ArrayList<>();
     
     public SourceConstant label;    // label with which ths CodeBlock starts (if any)
@@ -32,7 +32,7 @@ public class CodeBlock {
     public List<BlockFlowEdge> outgoing = new ArrayList<>();
     
         
-    public CodeBlock(String a_ID, int a_type, SourceStatement a_start)
+    public CodeBlock(String a_ID, int a_type, CodeStatement a_start)
     {
         ID = a_ID;
         type = a_type;
@@ -40,7 +40,7 @@ public class CodeBlock {
     }
 
 
-    public CodeBlock(String a_ID, int a_type, SourceStatement a_start, SourceStatement a_end, CodeBase code)
+    public CodeBlock(String a_ID, int a_type, CodeStatement a_start, CodeStatement a_end, CodeBase code)
     {
         ID = a_ID;
         type = a_type;
@@ -51,10 +51,10 @@ public class CodeBlock {
     }
         
     
-    public boolean addStatementsFromTo(SourceStatement start, SourceStatement end, CodeBase code)
+    public boolean addStatementsFromTo(CodeStatement start, CodeStatement end, CodeBase code)
     {
         int idx = start.source.getStatements().indexOf(start);
-        SourceStatement s = start;
+        CodeStatement s = start;
 //        System.out.println("addStatementsFromTo: " + start.source.fileName);
 //        System.out.println("    start: " + start);
 //        System.out.println("    end: " + end);
@@ -80,28 +80,28 @@ public class CodeBlock {
     public boolean findStartLabel()
     {
         label = null;
-        for(SourceStatement s:statements) {
+        for(CodeStatement s:statements) {
             if (s.label != null) {
                 label = s.label;
                 return true;
             }
             
-            if (s.type != SourceStatement.STATEMENT_NONE &&
-                s.type != SourceStatement.STATEMENT_CONSTANT) return false;
+            if (s.type != CodeStatement.STATEMENT_NONE &&
+                s.type != CodeStatement.STATEMENT_CONSTANT) return false;
         }
         
         return false;
     }
     
     
-    public SourceStatement getLastCpuOpStatement()
+    public CodeStatement getLastCpuOpStatement()
     {
         for(int i = statements.size()-1; i>=0; i--) {
-            SourceStatement s = statements.get(i);
-            if (s.type == SourceStatement.STATEMENT_CPUOP) return s;
+            CodeStatement s = statements.get(i);
+            if (s.type == CodeStatement.STATEMENT_CPUOP) return s;
 
-            if (s.type != SourceStatement.STATEMENT_NONE &&
-                s.type != SourceStatement.STATEMENT_CONSTANT) return null;
+            if (s.type != CodeStatement.STATEMENT_NONE &&
+                s.type != CodeStatement.STATEMENT_CONSTANT) return null;
         }
         
         return null;

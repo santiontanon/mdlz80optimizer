@@ -10,7 +10,7 @@ import code.CodeBase;
 import code.Expression;
 import code.SourceConstant;
 import code.SourceFile;
-import code.SourceStatement;
+import code.CodeStatement;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -40,10 +40,10 @@ public class ASMSXDialect implements Dialect {
 
     public static class PrintRecord {
         String keyword;
-        SourceStatement previousStatement;  // not the current, as it was probably not added to the file
+        CodeStatement previousStatement;  // not the current, as it was probably not added to the file
         Expression exp;
         
-        public PrintRecord(String a_kw, SourceStatement a_prev, Expression a_exp)
+        public PrintRecord(String a_kw, CodeStatement a_prev, Expression a_exp)
         {
             keyword = a_kw;
             previousStatement = a_prev;
@@ -59,12 +59,12 @@ public class ASMSXDialect implements Dialect {
     String searchFileName = "data/asmsx-search.asm";    
     String searchFileNameZilog = "data/asmsx-search-zilog.asm";    
 
-    SourceStatement romHeaderStatement = null;
-    SourceStatement basicHeaderStatement = null;
+    CodeStatement romHeaderStatement = null;
+    CodeStatement basicHeaderStatement = null;
     Expression startAddressLabel = null;
-    List<SourceStatement> pageDefinitions = new ArrayList<>();
-    List<SourceStatement> phaseStatements = new ArrayList<>();
-    List<SourceStatement> dephaseStatements = new ArrayList<>();
+    List<CodeStatement> pageDefinitions = new ArrayList<>();
+    List<CodeStatement> phaseStatements = new ArrayList<>();
+    List<CodeStatement> dephaseStatements = new ArrayList<>();
     
     boolean zilogMode = false;
     
@@ -205,7 +205,7 @@ public class ASMSXDialect implements Dialect {
     }
 
     
-    private SourceConstant getLastAbsoluteLabel(SourceStatement s) 
+    private SourceConstant getLastAbsoluteLabel(CodeStatement s) 
     {
         while(s != null) {
             if (s.label != null && s.label.isLabel() && 
@@ -221,7 +221,7 @@ public class ASMSXDialect implements Dialect {
     
 
     @Override
-    public Pair<String, SourceConstant> newSymbolName(String name, Expression value, SourceStatement s) {
+    public Pair<String, SourceConstant> newSymbolName(String name, Expression value, CodeStatement s) {
         // TODO(santi@): complete this list (or maybe have a better way than an if-then rule list!
         if (name.equalsIgnoreCase(".bios") ||
             name.equalsIgnoreCase("bios") ||
@@ -279,7 +279,7 @@ public class ASMSXDialect implements Dialect {
 
 
     @Override
-    public Pair<String, SourceConstant> symbolName(String name, SourceStatement s) {
+    public Pair<String, SourceConstant> symbolName(String name, CodeStatement s) {
         if (name.startsWith("@@")) {
             SourceConstant lastAbsoluteLabel = getLastAbsoluteLabel(s);        
             if (lastAbsoluteLabel != null) {
@@ -314,15 +314,15 @@ public class ASMSXDialect implements Dialect {
     
 
     @Override
-    public boolean parseLine(List<String> tokens, List<SourceStatement> l, SourceLine sl, 
-            SourceStatement s, SourceStatement previous, SourceFile source, CodeBase code) 
+    public boolean parseLine(List<String> tokens, List<CodeStatement> l, SourceLine sl, 
+            CodeStatement s, CodeStatement previous, SourceFile source, CodeBase code) 
     {        
         if (tokens.size()>=1 && (tokens.get(0).equalsIgnoreCase(".bios") || tokens.get(0).equalsIgnoreCase("bios"))) {
             tokens.remove(0);
             // Define all the bios calls:
             List<List<String>> tokenizedLines = tokenizeFileLines(biosCallsFileName);
             for(List<String> tokens2: tokenizedLines) {
-                List<SourceStatement> l2 = config.lineParser.parse(tokens2, sl, source, -1, code, config);
+                List<CodeStatement> l2 = config.lineParser.parse(tokens2, sl, source, -1, code, config);
                 l.addAll(l2);
             }
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
@@ -337,7 +337,7 @@ public class ASMSXDialect implements Dialect {
             }
             
             for(List<String> tokens2: tokenizedLines) {
-                List<SourceStatement> l2 = config.lineParser.parse(tokens2, sl, source, -1, code, config);
+                List<CodeStatement> l2 = config.lineParser.parse(tokens2, sl, source, -1, code, config);
                 l.addAll(l2);
             }
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
@@ -368,7 +368,7 @@ public class ASMSXDialect implements Dialect {
                 config.error("Cannot parse .page parameter in "+sl.fileNameLineString()+": " + sl.line);
                 return false;
             }
-            s.type = SourceStatement.STATEMENT_ORG;
+            s.type = CodeStatement.STATEMENT_ORG;
             s.org = Expression.operatorExpression(Expression.EXPRESSION_MUL,
                     Expression.parenthesisExpression(page_exp, "(", config),
                     Expression.constantExpression(16*1024, Expression.RENDER_AS_16BITHEX, config), config);
@@ -404,14 +404,14 @@ public class ASMSXDialect implements Dialect {
         }
         if (tokens.size()>=1 && (tokens.get(0).equalsIgnoreCase(".byte") || tokens.get(0).equalsIgnoreCase("byte"))) {
             tokens.remove(0);
-            s.type = SourceStatement.STATEMENT_DEFINE_SPACE;
+            s.type = CodeStatement.STATEMENT_DEFINE_SPACE;
             s.space = Expression.constantExpression(1, config);
             s.space_value = null;
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
         if (tokens.size()>=1 && (tokens.get(0).equalsIgnoreCase(".word") || tokens.get(0).equalsIgnoreCase("word"))) {
             tokens.remove(0);
-            s.type = SourceStatement.STATEMENT_DEFINE_SPACE;
+            s.type = CodeStatement.STATEMENT_DEFINE_SPACE;
             s.space = Expression.constantExpression(2, config);
             s.space_value = null;
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
@@ -451,7 +451,7 @@ public class ASMSXDialect implements Dialect {
             // Generates a ROM header (and stores a pointer to the start address, to later modify with the .start directive):
             List<Expression> data = new ArrayList<>();
             romHeaderStatement = s;
-            s.type = SourceStatement.STATEMENT_DATA_BYTES;
+            s.type = CodeStatement.STATEMENT_DATA_BYTES;
             s.data = data;
             data.add(Expression.constantExpression("AB", config));
             if (startAddressLabel == null) {
@@ -473,7 +473,7 @@ public class ASMSXDialect implements Dialect {
             // Generates a BASIC header (and stores a pointer to the start address, to later modify with the .start directive):
             List<Expression> data = new ArrayList<>();
             basicHeaderStatement = s;
-            s.type = SourceStatement.STATEMENT_DATA_BYTES;
+            s.type = CodeStatement.STATEMENT_DATA_BYTES;
             s.data = data;
             data.add(Expression.constantExpression(0xfe, Expression.RENDER_AS_8BITHEX, config));
             data.add(Expression.constantExpression(0, config)); 
@@ -579,7 +579,7 @@ public class ASMSXDialect implements Dialect {
                 // generate "select" code:
                 if (page.isRegister(code) && page.registerOrFlagName.equals("a")) {
                     // ld (address), a:
-                    s.type = SourceStatement.STATEMENT_CPUOP;
+                    s.type = CodeStatement.STATEMENT_CPUOP;
                     List<Expression> sArguments = new ArrayList<>();
                     if (config.opParser.indirectionsOnlyWithSquareBrackets) {
                         sArguments.add(Expression.parenthesisExpression(address, "[", config));
@@ -596,7 +596,7 @@ public class ASMSXDialect implements Dialect {
 
                 } else {
                     // push af; ld a, page; ld (address), a; pop af:
-                    SourceStatement s1 = new SourceStatement(SourceStatement.STATEMENT_CPUOP, sl, source, config);
+                    CodeStatement s1 = new CodeStatement(CodeStatement.STATEMENT_CPUOP, sl, source, config);
                     List<Expression> s1Arguments = new ArrayList<>();
                     s1Arguments.add(Expression.symbolExpression("af", s1, code, config));
                     List<CPUOp> op_l = config.opParser.parseOp("push", s1Arguments, s1, previous, code);
@@ -607,7 +607,7 @@ public class ASMSXDialect implements Dialect {
                     s1.op = op_l.get(0);
                     l.add(0, s1);
 
-                    SourceStatement s2 = new SourceStatement(SourceStatement.STATEMENT_CPUOP, sl, source, config);
+                    CodeStatement s2 = new CodeStatement(CodeStatement.STATEMENT_CPUOP, sl, source, config);
                     List<Expression> s2Arguments = new ArrayList<>();
                     s2Arguments.add(Expression.symbolExpression("a", s2, code, config));
                     s2Arguments.add(page);
@@ -619,7 +619,7 @@ public class ASMSXDialect implements Dialect {
                     s2.op = op_l.get(0);
                     l.add(1, s2);
 
-                    s.type = SourceStatement.STATEMENT_CPUOP;
+                    s.type = CodeStatement.STATEMENT_CPUOP;
                     List<Expression> sArguments = new ArrayList<>();
                     if (config.opParser.indirectionsOnlyWithSquareBrackets) {
                         sArguments.add(Expression.parenthesisExpression(address, "[", config));
@@ -634,7 +634,7 @@ public class ASMSXDialect implements Dialect {
                     }
                     s.op = op_l.get(0);
 
-                    SourceStatement s4 = new SourceStatement(SourceStatement.STATEMENT_CPUOP, sl, source, config);
+                    CodeStatement s4 = new CodeStatement(CodeStatement.STATEMENT_CPUOP, sl, source, config);
                     List<Expression> s4Arguments = new ArrayList<>();
                     s4Arguments.add(Expression.symbolExpression("af", s4, code, config));
                     op_l = config.opParser.parseOp("pop", s4Arguments, s4, previous, code);
@@ -666,7 +666,7 @@ public class ASMSXDialect implements Dialect {
             }
             // just set an org, and record it as a page definition org:
             // - org (address / pageSize) * pageSize
-            s.type = SourceStatement.STATEMENT_ORG;
+            s.type = CodeStatement.STATEMENT_ORG;
             s.org = Expression.operatorExpression(Expression.EXPRESSION_MUL, 
                         Expression.parenthesisExpression(
                             Expression.operatorExpression(Expression.EXPRESSION_DIV, 
@@ -693,7 +693,7 @@ public class ASMSXDialect implements Dialect {
             
             if (s.label != null) {
                 // if there was a label in the "phase" line, create a new one:
-                s = new SourceStatement(SourceStatement.STATEMENT_ORG, sl, source, config);
+                s = new CodeStatement(CodeStatement.STATEMENT_ORG, sl, source, config);
                 l.add(s);
             }
             
@@ -707,7 +707,7 @@ public class ASMSXDialect implements Dialect {
             
             // Add the label before the org:
             String phase_pre_label_name = PHASE_PRE_LABEL_PREFIX + phaseStatements.size();
-            s.type = SourceStatement.STATEMENT_ORG;
+            s.type = CodeStatement.STATEMENT_ORG;
             s.org = exp;
             s.label = new SourceConstant(phase_pre_label_name, phase_pre_label_name, 
                                          Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, s, code, config),
@@ -715,7 +715,7 @@ public class ASMSXDialect implements Dialect {
             code.addSymbol(phase_pre_label_name, s.label);
             
             // Add the label after the org:
-            s = new SourceStatement(SourceStatement.STATEMENT_NONE, sl, source, config);
+            s = new CodeStatement(CodeStatement.STATEMENT_NONE, sl, source, config);
             l.add(s);
             String phase_post_label_name = PHASE_POST_LABEL_PREFIX + phaseStatements.size();
             s.label = new SourceConstant(phase_post_label_name, phase_post_label_name, 
@@ -730,7 +730,7 @@ public class ASMSXDialect implements Dialect {
             
             if (s.label != null) {
                 // if there was a label in the "phase" line, create a new one:
-                s = new SourceStatement(SourceStatement.STATEMENT_ORG, sl, source, config);
+                s = new CodeStatement(CodeStatement.STATEMENT_ORG, sl, source, config);
                 l.add(s);
             }            
 
@@ -748,7 +748,7 @@ public class ASMSXDialect implements Dialect {
                                     Expression.symbolExpression(phase_post_label_name, s, code, config), config), 
                             zilogMode ? "[":"(", config), config);
             
-            s.type = SourceStatement.STATEMENT_ORG;
+            s.type = CodeStatement.STATEMENT_ORG;
             s.org = exp;
             s.label = new SourceConstant(dephase_label_name, dephase_label_name, 
                                          Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, s, code, config),
@@ -785,7 +785,7 @@ public class ASMSXDialect implements Dialect {
 
 
     @Override
-    public Number evaluateExpression(String functionName, List<Expression> args, SourceStatement s, CodeBase code, boolean silent)
+    public Number evaluateExpression(String functionName, List<Expression> args, CodeStatement s, CodeBase code, boolean silent)
     {
         if ((functionName.equalsIgnoreCase(".random") || 
              functionName.equalsIgnoreCase("random")) && args.size() == 1) {
@@ -860,9 +860,9 @@ public class ASMSXDialect implements Dialect {
     {                
         if (basicHeaderStatement != null) {
             // Look for the very first org (and make sure the basic header is BEFORE the org):
-            SourceStatement s = code.getMain().getNextStatementTo(null, code);
+            CodeStatement s = code.getMain().getNextStatementTo(null, code);
             while(s != null) {
-                if (s.type == SourceStatement.STATEMENT_ORG) {
+                if (s.type == CodeStatement.STATEMENT_ORG) {
                     // set the load address:
                     basicHeaderStatement.data.set(1, Expression.operatorExpression(Expression.EXPRESSION_MOD, 
                             Expression.parenthesisExpression(s.org, "(", config), 
@@ -876,7 +876,7 @@ public class ASMSXDialect implements Dialect {
                     int idx = s.source.getStatements().indexOf(s);
                     s.source.getStatements().add(idx, basicHeaderStatement);                    
                     break;
-                } else if (s.type == SourceStatement.STATEMENT_CPUOP) {
+                } else if (s.type == CodeStatement.STATEMENT_CPUOP) {
                     // give up
                     break;
                 }
@@ -887,9 +887,9 @@ public class ASMSXDialect implements Dialect {
         // start/load addresses for rom/basic headers if not yet set:
         if (basicHeaderStatement != null && startAddressLabel == null) {
             // Look for the very first assembler instruction:
-            SourceStatement s = code.getMain().getNextStatementTo(null, code);
+            CodeStatement s = code.getMain().getNextStatementTo(null, code);
             while(s != null) {
-                if (s.type == SourceStatement.STATEMENT_CPUOP) {
+                if (s.type == CodeStatement.STATEMENT_CPUOP) {
                     // found it!
                     basicHeaderStatement.data.set(5,Expression.operatorExpression(Expression.EXPRESSION_MOD, 
                             Expression.constantExpression(s.getAddress(code), Expression.RENDER_AS_16BITHEX, config), 
@@ -904,11 +904,11 @@ public class ASMSXDialect implements Dialect {
         }
                 
         {
-            SourceStatement firstGeneratingBytes = null;
-            SourceStatement lastGeneratingBytes = null;
-            SourceStatement s = code.getMain().getNextStatementTo(null, code);
+            CodeStatement firstGeneratingBytes = null;
+            CodeStatement lastGeneratingBytes = null;
+            CodeStatement s = code.getMain().getNextStatementTo(null, code);
             while(s != null) {
-                if (s.type == SourceStatement.STATEMENT_INCLUDE && !s.include.getStatements().isEmpty()) {
+                if (s.type == CodeStatement.STATEMENT_INCLUDE && !s.include.getStatements().isEmpty()) {
                     s = s.include.getStatements().get(0);
                 }
                 if (s.sizeInBytes(code, false, true, false) > 0) {
@@ -922,13 +922,13 @@ public class ASMSXDialect implements Dialect {
             // the space until reaching the address of the org/page! (also, if you have two orgs with the same
             // address, the latter code will overwrite the first:
             if (firstGeneratingBytes != null && lastGeneratingBytes != null) {
-                SourceStatement previous = null;
+                CodeStatement previous = null;
                 s = firstGeneratingBytes;
                 while(s != lastGeneratingBytes) {
-                    if (s.type == SourceStatement.STATEMENT_INCLUDE && !s.include.getStatements().isEmpty()) {
+                    if (s.type == CodeStatement.STATEMENT_INCLUDE && !s.include.getStatements().isEmpty()) {
                         s = s.include.getStatements().get(0);
                     }
-                    if (previous != null && s.type == SourceStatement.STATEMENT_ORG) {
+                    if (previous != null && s.type == CodeStatement.STATEMENT_ORG) {
                         // make sure we don't do it for the first org, or for orgs concerning phase/dephase:
                         if (basicHeaderStatement != previous &&
                             !phaseStatements.contains(s) &&
@@ -952,7 +952,7 @@ public class ASMSXDialect implements Dialect {
                             if (pad > 0) {
                                 // we need to insert filler space:
                                 config.debug("asMSX: pad: " + pad + " to reach " + orgAddress);
-                                SourceStatement padStatement = new SourceStatement(SourceStatement.STATEMENT_DEFINE_SPACE, null, lastGeneratingBytes.source, config);
+                                CodeStatement padStatement = new CodeStatement(CodeStatement.STATEMENT_DEFINE_SPACE, null, lastGeneratingBytes.source, config);
                                 padStatement.space = Expression.constantExpression(pad, config);
                                 padStatement.space_value = Expression.constantExpression(0, config);
                                 previous.source.addStatement(previous.source.getStatements().indexOf(previous)+1, padStatement);                            
@@ -979,7 +979,7 @@ public class ASMSXDialect implements Dialect {
                     config.debug("asMSX: size: " + size);
                     config.debug("asMSX: target_size: " + target_size);
                     config.debug("asMSX: pad: " + pad);
-                    SourceStatement padStatement = new SourceStatement(SourceStatement.STATEMENT_DEFINE_SPACE, null, lastGeneratingBytes.source, config);
+                    CodeStatement padStatement = new CodeStatement(CodeStatement.STATEMENT_DEFINE_SPACE, null, lastGeneratingBytes.source, config);
                     padStatement.space = Expression.constantExpression(pad, config);
                     padStatement.space_value = Expression.constantExpression(0, config);
                     lastGeneratingBytes.source.addStatement(lastGeneratingBytes.source.getStatements().indexOf(lastGeneratingBytes)+1, padStatement);
@@ -1007,7 +1007,7 @@ public class ASMSXDialect implements Dialect {
                 {
                     SourceFile f = pr.previousStatement.source;
                     int idx = f.getStatements().indexOf(pr.previousStatement);
-                    SourceStatement s = null;
+                    CodeStatement s = null;
                     if (f.getStatements().size() > idx+1) s = f.getStatements().get(idx+1);
                     Integer value = pr.exp.evaluateToInteger(s, code, false);
                     if (value == null) {
@@ -1021,7 +1021,7 @@ public class ASMSXDialect implements Dialect {
                 {
                     SourceFile f = pr.previousStatement.source;
                     int idx = f.getStatements().indexOf(pr.previousStatement);
-                    SourceStatement s = null;
+                    CodeStatement s = null;
                     if (f.getStatements().size() > idx+1) s = f.getStatements().get(idx+1);
                     Integer value = pr.exp.evaluateToInteger(s, code, false);
                     if (value == null) {
@@ -1041,7 +1041,7 @@ public class ASMSXDialect implements Dialect {
     }
 
     
-    public String toStringLabelWithoutSafetyEqu(SourceStatement s, boolean useOriginalNames)
+    public String toStringLabelWithoutSafetyEqu(CodeStatement s, boolean useOriginalNames)
     {
         boolean tmp = config.output_safetyEquDollar;
         config.output_safetyEquDollar = false;
@@ -1052,9 +1052,9 @@ public class ASMSXDialect implements Dialect {
     
 
     @Override
-    public String statementToString(SourceStatement s, CodeBase code, boolean useOriginalNames, Path rootPath) {
+    public String statementToString(CodeStatement s, CodeBase code, boolean useOriginalNames, Path rootPath) {
         switch(s.type) {
-            case SourceStatement.STATEMENT_CPUOP:
+            case CodeStatement.STATEMENT_CPUOP:
             {
                 String str = s.toStringLabel(useOriginalNames, false);              
                 boolean tmp = config.output_indirectionsWithSquareBrakets;

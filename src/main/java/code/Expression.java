@@ -81,43 +81,43 @@ public class Expression {
     }
 
     
-    public Integer evaluateToInteger(SourceStatement s, CodeBase code, boolean silent) {
+    public Integer evaluateToInteger(CodeStatement s, CodeBase code, boolean silent) {
         return (Integer)evaluateInternal(s, code, silent, null, new ArrayList<>());
     }
    
     
     /*
-    - previous only needs to be specified if this is called on a SourceStatement not yet added to a source file
+    - previous only needs to be specified if this is called on a CodeStatement not yet added to a source file
       (for example, when parsing a macro being expanded), so that we know which will be the previous statement once it is added
     */
-    public Integer evaluateToInteger(SourceStatement s, CodeBase code, boolean silent, SourceStatement previous) {
+    public Integer evaluateToInteger(CodeStatement s, CodeBase code, boolean silent, CodeStatement previous) {
         return (Integer)evaluateInternal(s, code, silent, previous, new ArrayList<>());
     }
 
 
     /*
-    - previous only needs to be specified if this is called on a SourceStatement not yet added to a source file
+    - previous only needs to be specified if this is called on a CodeStatement not yet added to a source file
       (for example, when parsing a macro being expanded), so that we know which will be the previous statement once it is added
     */
-    public Integer evaluateToIntegerInternal(SourceStatement s, CodeBase code, boolean silent, SourceStatement previous, List<String> variableStack) {
+    public Integer evaluateToIntegerInternal(CodeStatement s, CodeBase code, boolean silent, CodeStatement previous, List<String> variableStack) {
         return (Integer)evaluateInternal(s, code, silent, previous, variableStack);
     }
 
-    public String evaluateToString(SourceStatement s, CodeBase code, boolean silent) {
+    public String evaluateToString(CodeStatement s, CodeBase code, boolean silent) {
         return (String)evaluateInternal(s, code, silent, null, new ArrayList<>());
     }
     
 
-    public Object evaluate(SourceStatement s, CodeBase code, boolean silent) {
+    public Object evaluate(CodeStatement s, CodeBase code, boolean silent) {
         return evaluateInternal(s, code, silent, null, new ArrayList<>());
     }
     
     
     /*
-    - previous only needs to be specified if this is called on a SourceStatement not yet added to a source file
+    - previous only needs to be specified if this is called on a CodeStatement not yet added to a source file
       (for example, when parsing a macro being expanded), so that we know which will be the previous statement once it is added
     */
-    public Object evaluateInternal(SourceStatement s, CodeBase code, boolean silent, SourceStatement previous, List<String> variableStack) {
+    public Object evaluateInternal(CodeStatement s, CodeBase code, boolean silent, CodeStatement previous, List<String> variableStack) {
         switch (type) {
             case EXPRESSION_INTEGER_CONSTANT:
                 return integerConstant;
@@ -221,8 +221,8 @@ public class Expression {
                         c2.exp.type == Expression.EXPRESSION_SYMBOL &&
                         c1.exp.symbolName.equals(CodeBase.CURRENT_ADDRESS) &&
                         c2.exp.symbolName.equals(CodeBase.CURRENT_ADDRESS)) {
-                        SourceStatement d1 = c1.definingStatement;
-                        SourceStatement d2 = c2.definingStatement;
+                        CodeStatement d1 = c1.definingStatement;
+                        CodeStatement d2 = c2.definingStatement;
                         if (d1 != null && d2 != null && d1.source == d2.source) {
                             int idx1 = d1.source.getStatements().indexOf(d1);
                             int idx2 = d1.source.getStatements().indexOf(d2);
@@ -1101,7 +1101,7 @@ public class Expression {
         }
     }
     
-    public boolean resolveLocalLabels(String labelPrefix, SourceStatement s, CodeBase code)
+    public boolean resolveLocalLabels(String labelPrefix, CodeStatement s, CodeBase code)
     {
         if (type == EXPRESSION_SYMBOL) {
             if (symbolName.equals(CodeBase.CURRENT_ADDRESS)) return true;
@@ -1232,12 +1232,12 @@ public class Expression {
     }
 
     
-    public static Expression symbolExpression(String symbol, SourceStatement s, CodeBase code, MDLConfig config) {
+    public static Expression symbolExpression(String symbol, CodeStatement s, CodeBase code, MDLConfig config) {
         return symbolExpressionInternal(symbol, s, code, true, config);
     }    
     
     
-    public static Expression symbolExpressionInternal(String symbol, SourceStatement s, CodeBase code, boolean evaluateEagerSymbols, MDLConfig config) {
+    public static Expression symbolExpressionInternal(String symbol, CodeStatement s, CodeBase code, boolean evaluateEagerSymbols, MDLConfig config) {
         if (code.isRegister(symbol) || code.isCondition(symbol)) {
             Expression exp = new Expression(EXPRESSION_REGISTER_OR_FLAG, config);
             exp.registerOrFlagName = symbol;

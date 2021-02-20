@@ -10,7 +10,7 @@ import java.util.List;
 import cl.MDLConfig;
 import code.CodeBase;
 import code.SourceFile;
-import code.SourceStatement;
+import code.CodeStatement;
 
 public class DotGenerator implements MDLWorker {
     public static final String BINARY_COLOR = "gray";
@@ -67,9 +67,9 @@ public class DotGenerator implements MDLWorker {
             sb.append(sourceFileDotCountent(f, code));
             sb.append("\"]\n");
 
-            for(SourceStatement s : f.getStatements()) {
+            for(CodeStatement s : f.getStatements()) {
                 if (config.includeBinariesInAnalysis) {
-                    if (s.type == SourceStatement.STATEMENT_INCBIN) {
+                    if (s.type == CodeStatement.STATEMENT_INCBIN) {
                         sName = "" + (nodeNames.size()+1);
                         nodeNames.put(s.incbin.getName(), sName);
 
@@ -89,13 +89,13 @@ public class DotGenerator implements MDLWorker {
 
         // edges:
         for(SourceFile f: code.getSourceFiles()) {
-            for(SourceStatement s : f.getStatements()) {
-                if (s.type == SourceStatement.STATEMENT_INCLUDE) {
+            for(CodeStatement s : f.getStatements()) {
+                if (s.type == CodeStatement.STATEMENT_INCLUDE) {
                     sb.append(nodeNames.get(f.fileName));
                     sb.append(" -> ");
                     sb.append(nodeNames.get(s.include.fileName));
                     sb.append("\n");
-                } else if (s.type == SourceStatement.STATEMENT_INCBIN) {
+                } else if (s.type == CodeStatement.STATEMENT_INCBIN) {
                     if (config.includeBinariesInAnalysis) {
                         sb.append(nodeNames.get(f.fileName));
                         sb.append(" -> ");

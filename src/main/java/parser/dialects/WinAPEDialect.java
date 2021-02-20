@@ -10,7 +10,7 @@ import code.CodeBase;
 import code.Expression;
 import code.SourceConstant;
 import code.SourceFile;
-import code.SourceStatement;
+import code.CodeStatement;
 import java.util.List;
 import org.apache.commons.lang3.tuple.Pair;
 import parser.SourceLine;
@@ -49,7 +49,7 @@ public class WinAPEDialect implements Dialect {
     
 
     @Override
-    public Pair<String, SourceConstant> newSymbolName(String name, Expression value, SourceStatement previous) 
+    public Pair<String, SourceConstant> newSymbolName(String name, Expression value, CodeStatement previous) 
     {
         if (name.equalsIgnoreCase("write") ||
             name.equalsIgnoreCase("close")) {
@@ -60,15 +60,15 @@ public class WinAPEDialect implements Dialect {
 
 
     @Override
-    public Pair<String, SourceConstant> symbolName(String name, SourceStatement previous) 
+    public Pair<String, SourceConstant> symbolName(String name, CodeStatement previous) 
     {
         return Pair.of(name, null);
     }
     
     
     @Override
-    public boolean parseLine(List<String> tokens, List<SourceStatement> l, SourceLine sl,
-            SourceStatement s, SourceStatement previous, SourceFile source, CodeBase code)
+    public boolean parseLine(List<String> tokens, List<CodeStatement> l, SourceLine sl,
+            CodeStatement s, CodeStatement previous, SourceFile source, CodeBase code)
     {
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("write")) {
             tokens.remove(0);

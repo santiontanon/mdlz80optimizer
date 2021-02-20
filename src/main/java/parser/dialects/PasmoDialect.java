@@ -10,7 +10,7 @@ import code.CodeBase;
 import code.Expression;
 import code.SourceConstant;
 import code.SourceFile;
-import code.SourceStatement;
+import code.CodeStatement;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.lang3.tuple.Pair;
@@ -56,7 +56,7 @@ public class PasmoDialect implements Dialect {
     
 
     @Override
-    public Pair<String, SourceConstant> newSymbolName(String name, Expression value, SourceStatement previous) 
+    public Pair<String, SourceConstant> newSymbolName(String name, Expression value, CodeStatement previous) 
     {
         if (name.equalsIgnoreCase("proc") ||
             name.equalsIgnoreCase("endp") ||
@@ -74,7 +74,7 @@ public class PasmoDialect implements Dialect {
 
 
     @Override
-    public Pair<String, SourceConstant> symbolName(String name, SourceStatement previous) 
+    public Pair<String, SourceConstant> symbolName(String name, CodeStatement previous) 
     {
         if (localLabels.contains(name)) {
             return Pair.of(currentScope + name, null);
@@ -85,8 +85,8 @@ public class PasmoDialect implements Dialect {
     
     
     @Override
-    public boolean parseLine(List<String> tokens, List<SourceStatement> l, SourceLine sl,
-            SourceStatement s, SourceStatement previous, SourceFile source, CodeBase code)
+    public boolean parseLine(List<String> tokens, List<CodeStatement> l, SourceLine sl,
+            CodeStatement s, CodeStatement previous, SourceFile source, CodeBase code)
     {
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("proc")) {
             tokens.remove(0);

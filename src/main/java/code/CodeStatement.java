@@ -12,16 +12,16 @@ import parser.SourceLine;
 import parser.SourceMacro;
 
 /**
- * A "SourceStatement" can contain zero or one the following plus a comment:
- * - constant definition (a label or a constant)
- * - an "org" directive
- * - an "include" statement
- * - an "incbin" statement
- * - a macro definition
- * - a call to a macro
- * - a z80 instruction
+ * A "CodeStatement" can contain zero or one the following plus a comment:
+ - constant definition (a label or a constant)
+ - an "org" directive
+ - an "include" statement
+ - an "incbin" statement
+ - a macro definition
+ - a call to a macro
+ - a z80 instruction
  */
-public class SourceStatement {
+public class CodeStatement {
     public static final int STATEMENT_NONE = -1;
     public static final int STATEMENT_ORG = 0;
     public static final int STATEMENT_INCLUDE = 1;
@@ -76,7 +76,7 @@ public class SourceStatement {
     // the context is stored here, in order to resolve labels after code is fully parsed:
     public String labelPrefix = null;
     
-    public SourceStatement(int a_type, SourceLine a_sl, SourceFile a_source, MDLConfig a_config)
+    public CodeStatement(int a_type, SourceLine a_sl, SourceFile a_source, MDLConfig a_config)
     {
         type = a_type;
         sl = a_sl;
@@ -111,18 +111,18 @@ public class SourceStatement {
 
 
     /*
-    - previous only needs to be specified if this is called on a SourceStatement not yet added to a source file
+    - previous only needs to be specified if this is called on a CodeStatement not yet added to a source file
       (for example, when parsing a macro being expanded), so that we know which will be the previous statement once it is added
     */
-    public Integer getAddressInternal(CodeBase code, boolean recurse, SourceStatement previous, List<String> variableStack)
+    public Integer getAddressInternal(CodeBase code, boolean recurse, CodeStatement previous, List<String> variableStack)
     {
 
         if (recurse) {
             if (address != null) return address;
             
             // go back iteratively to prevent a stack overflow:
-            List<SourceStatement> trail = new ArrayList<>();
-            SourceStatement prev = (previous != null ? previous : source.getPreviousStatementTo(this, code));
+            List<CodeStatement> trail = new ArrayList<>();
+            CodeStatement prev = (previous != null ? previous : source.getPreviousStatementTo(this, code));
             SourceFile prevSource = prev == null ? null : prev.source;
             int prevIdx = prevSource == null ? -1 : prevSource.getStatements().indexOf(prev);
             Integer prevAddressAfter = null;
@@ -151,7 +151,7 @@ public class SourceStatement {
             }
             
             // trace forward and update all addresses:
-            for(SourceStatement s:trail) {
+            for(CodeStatement s:trail) {
                 s.address = prevAddressAfter;
                 if (s.type == STATEMENT_INCLUDE) {
                     prevAddressAfter = s.getAddressAfterInternal(code, true, variableStack);
@@ -298,7 +298,7 @@ public class SourceStatement {
                 // check if the next statement is an equ, and generate an additinoal "equ $", since 
                 // some assemblers (Glass in particular), interpret this as two labels being defined with
                 // the same value, thus misinterpreting the code of other assemblers.
-                SourceStatement next = source.getNextStatementTo(this, source.code);
+                CodeStatement next = source.getNextStatementTo(this, source.code);
                 while(next != null) {
                     if (next.type == STATEMENT_NONE && next.label == null) {
                         next = next.source.getNextStatementTo(next, source.code);

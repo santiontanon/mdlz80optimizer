@@ -11,7 +11,7 @@ import java.util.List;
 import cl.MDLConfig;
 import code.CodeBase;
 import code.SourceFile;
-import code.SourceStatement;
+import code.CodeStatement;
 import java.nio.file.Paths;
 import java.util.Arrays;
 
@@ -105,10 +105,10 @@ public class SourceCodeGenerator implements MDLWorker {
     }   
     
 
-    public void sourceFileString(List<SourceStatement> statements, CodeBase code, StringBuilder sb)
+    public void sourceFileString(List<CodeStatement> statements, CodeBase code, StringBuilder sb)
     {
-        for (SourceStatement ss:statements) {
-            if (ss.type == SourceStatement.STATEMENT_INCLUDE) {
+        for (CodeStatement ss:statements) {
+            if (ss.type == CodeStatement.STATEMENT_INCLUDE) {
                 if (ss.label != null) {
                     // make sure we don't lose the label:
                     sb.append(ss.label.name);
@@ -123,7 +123,7 @@ public class SourceCodeGenerator implements MDLWorker {
                     }
                 }
                 sourceFileString(ss.include, code, sb);
-            } else if (ss.type == SourceStatement.STATEMENT_INCBIN && expandIncbin) {
+            } else if (ss.type == CodeStatement.STATEMENT_INCBIN && expandIncbin) {
                 int skip = 0;
                 int size = 0;
                 if (ss.incbinSkip != null) skip = ss.incbinSkip.evaluateToInteger(ss, code, false);

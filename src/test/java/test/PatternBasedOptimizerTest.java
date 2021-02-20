@@ -13,7 +13,7 @@ import cl.OptimizationResult;
 import code.CodeBase;
 import code.SourceConstant;
 import code.SourceFile;
-import code.SourceStatement;
+import code.CodeStatement;
 import java.util.ArrayList;
 import java.util.List;
 import workers.AnnotatedSourceCodeGenerator;
@@ -98,7 +98,7 @@ public class PatternBasedOptimizerTest {
         List<SourceConstant> labelsBefore = new ArrayList<>();
         List<SourceConstant> labelsAfter = new ArrayList<>();
         for(SourceFile f:code.getSourceFiles()) {
-            for(SourceStatement s:f.getStatements()) {
+            for(CodeStatement s:f.getStatements()) {
                 if (s.label != null && s.label.isLabel()) {
                     labelsBefore.add(s.label);
                 }
@@ -108,7 +108,7 @@ public class PatternBasedOptimizerTest {
         OptimizationResult r = pbo.optimize(code);
 
         for(SourceFile f:code.getSourceFiles()) {
-            for(SourceStatement s:f.getStatements()) {
+            for(CodeStatement s:f.getStatements()) {
                 if (s.label != null && s.label.isLabel()) {
                     labelsAfter.add(s.label);
                 }

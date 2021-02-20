@@ -21,9 +21,9 @@ public class SourceConstant {
     public boolean resolveEagerly = false; // Variables where this is true, will be evaluated right away
                                            // This is needed for := variables in sjasm and asMSX
     
-    public SourceStatement definingStatement;  // the statement where it was defined
+    public CodeStatement definingStatement;  // the statement where it was defined
     
-    public SourceConstant(String a_name, String a_originalName, Expression a_exp, SourceStatement a_s, MDLConfig config)
+    public SourceConstant(String a_name, String a_originalName, Expression a_exp, CodeStatement a_s, MDLConfig config)
     {
         name = a_name;
         originalName = a_originalName;
@@ -44,7 +44,7 @@ public class SourceConstant {
     }
 
 
-    public Object getValueInternal(CodeBase code, boolean silent, SourceStatement previous, List<String> variableStack)
+    public Object getValueInternal(CodeBase code, boolean silent, CodeStatement previous, List<String> variableStack)
     {
         if (valueCache != null) {
             return valueCache;

@@ -8,7 +8,7 @@ import java.util.List;
 import cl.MDLConfig;
 import code.CodeBase;
 import code.Expression;
-import code.SourceStatement;
+import code.CodeStatement;
 import java.util.ArrayList;
 
 import org.apache.commons.lang3.StringUtils;
@@ -38,7 +38,7 @@ public class ExpressionParser {
 
     // "previous" is used for label scoping (it should be the statement that will be right before "s", after inserting "s"
     // into the SourceFile, since "s" might not have been yet inserted into it:
-    public Expression parse(List<String> tokens, SourceStatement s, SourceStatement previous, CodeBase code)
+    public Expression parse(List<String> tokens, CodeStatement s, CodeStatement previous, CodeBase code)
     {
         Expression exp = parseInternal(tokens, s, previous, code);
         if (exp == null) return null;
@@ -262,7 +262,7 @@ public class ExpressionParser {
         return exp;
     }
 
-    public Expression parseInternal(List<String> tokens, SourceStatement s, SourceStatement previous, CodeBase code)
+    public Expression parseInternal(List<String> tokens, CodeStatement s, CodeStatement previous, CodeBase code)
     {
         boolean hashWasRemoved = false;
         if (sdccStyleHashMarksForConstants && tokens.size() >= 1 && tokens.get(0).equals("#")) {

@@ -9,7 +9,7 @@ import code.CodeBase;
 import code.Expression;
 import code.SourceConstant;
 import code.SourceFile;
-import code.SourceStatement;
+import code.CodeStatement;
 import java.nio.file.Path;
 import org.apache.commons.lang3.tuple.Pair;
 import parser.MacroExpansion;
@@ -37,7 +37,7 @@ public interface Dialect {
     // - "s" here is used to determine the label context. So, it should be a statement that is already in a
     //   SourceFile. If parsing a new statement that is not yet in the SourceFile, here, pass the previous statement (after
     //   which "s" will be inserted).
-    Pair<String, SourceConstant> newSymbolName(String name, Expression value, SourceStatement s);
+    Pair<String, SourceConstant> newSymbolName(String name, Expression value, CodeStatement s);
 
     // Like the previous function, but called just when a symbol is used, not when it is defined
     // Should return the actual symbol name (e.g., just "name" if this is an absolute symbol,
@@ -45,12 +45,12 @@ public interface Dialect {
     // - "s" here is used to determine the label context. So, it should be a statement that is already in a
     //   SourceFile. If parsing a new statement that is not yet in the SourceFile, here, pass the previous statement (after
     //   which "s" will be inserted).
-    Pair<String, SourceConstant> symbolName(String name, SourceStatement s);
+    Pair<String, SourceConstant> symbolName(String name, CodeStatement s);
 
     // When the default line parser cannot parse a line, this function will be invoked instead. Returns true if it could
     // successfully parse the line, and false if an error occurred.
-    default boolean parseLine(List<String> tokens, List<SourceStatement> l, 
-            SourceLine sl, SourceStatement s, SourceStatement previous, SourceFile source, CodeBase code) {
+    default boolean parseLine(List<String> tokens, List<CodeStatement> l, 
+            SourceLine sl, CodeStatement s, CodeStatement previous, SourceFile source, CodeBase code) {
         // (no-op by default)
         return false;
     }
@@ -59,7 +59,7 @@ public interface Dialect {
     // This is dangerous for several reasons, as they hide different instructions and it might not be obvious how flags are
     // affected, or what is happening under the hood, making debugging harder. So, MDL generates a warning message 
     // when these are found.
-    default boolean parseFakeCPUOps(List<String> tokens, SourceLine sl, List<SourceStatement> l, SourceStatement previous, SourceFile source, CodeBase code) {
+    default boolean parseFakeCPUOps(List<String> tokens, SourceLine sl, List<CodeStatement> l, CodeStatement previous, SourceFile source, CodeBase code) {
         // (no-op by default)
         return true;
     }
@@ -67,14 +67,14 @@ public interface Dialect {
     // Some dialects implement custom functions (e.g., asMSX has a "random" function). They cannot
     // be included in the general parser, as if someone uses a different assembler, those could be used
     // as macro names, causing a collision. So, they are implemented via this function:
-    default Number evaluateExpression(String functionName, List<Expression> args, SourceStatement s, CodeBase code, boolean silent) {
+    default Number evaluateExpression(String functionName, List<Expression> args, CodeStatement s, CodeBase code, boolean silent) {
         // (no-op by default)
         return null;
     }
 
     // Some dialect functions can be translated to standard expressions. This is preferable than direct evaluation, 
     // if possible, since expressions that contain labels might change value during optimization:
-    default Expression translateToStandardExpression(String functionName, List<Expression> args, SourceStatement s, CodeBase code) {
+    default Expression translateToStandardExpression(String functionName, List<Expression> args, CodeStatement s, CodeBase code) {
         // (no-op by default)
         return null;
     }
@@ -92,7 +92,7 @@ public interface Dialect {
     }
     
     // Called to expand any dialect-specific macros:
-    default MacroExpansion instantiateMacro(SourceMacro macro, List<Expression> args, SourceStatement macroCall, CodeBase code) {
+    default MacroExpansion instantiateMacro(SourceMacro macro, List<Expression> args, CodeStatement macroCall, CodeBase code) {
         // (no-op by default)
         return null;
     }
@@ -116,7 +116,7 @@ public interface Dialect {
     }
     
     // Translates a statement to string using the syntax of the specific dialect:
-    default String statementToString(SourceStatement s, CodeBase code, boolean useOriginalNames, Path rootPath) {
+    default String statementToString(CodeStatement s, CodeBase code, boolean useOriginalNames, Path rootPath) {
         return s.toStringUsingRootPath(rootPath, useOriginalNames);
     }
     

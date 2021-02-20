@@ -11,7 +11,7 @@ import code.CodeBase;
 import code.Expression;
 import code.SourceConstant;
 import code.SourceFile;
-import code.SourceStatement;
+import code.CodeStatement;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -29,7 +29,7 @@ public abstract class SjasmDerivativeDialect implements Dialect {
     public static class SjasmStruct {
         String name;
         SourceFile file;
-        SourceStatement start;
+        CodeStatement start;
         List<String> attributeNames = new ArrayList<>();
         List<Integer> attributeSizes = new ArrayList<>();
     }
@@ -50,7 +50,7 @@ public abstract class SjasmDerivativeDialect implements Dialect {
     HashMap<String,Integer> symbolPage = new HashMap<>();
     
     
-    private SourceConstant getLastAbsoluteLabel(SourceStatement s) 
+    private SourceConstant getLastAbsoluteLabel(CodeStatement s) 
     {
         
         while(s != null) {
@@ -87,8 +87,8 @@ public abstract class SjasmDerivativeDialect implements Dialect {
     }
         
     
-    public boolean parseLineStruct(List<String> tokens, List<SourceStatement> l, SourceLine sl,
-            SourceStatement s, SourceStatement previous, SourceFile source, CodeBase code) {
+    public boolean parseLineStruct(List<String> tokens, List<CodeStatement> l, SourceLine sl,
+            CodeStatement s, CodeStatement previous, SourceFile source, CodeBase code) {
     
         // struct definitions:
         for(SjasmStruct st:structs) {
@@ -118,16 +118,16 @@ public abstract class SjasmDerivativeDialect implements Dialect {
                 l.clear();
                 
                 for(int i = 0;i<data.size();i++) {
-                    SourceStatement s2;
+                    CodeStatement s2;
                     switch(st.attributeSizes.get(i)) {
                         case 1:
-                            s2 = new SourceStatement(SourceStatement.STATEMENT_DATA_BYTES, sl, source, config);
+                            s2 = new CodeStatement(CodeStatement.STATEMENT_DATA_BYTES, sl, source, config);
                             break;
                         case 2:
-                            s2 = new SourceStatement(SourceStatement.STATEMENT_DATA_WORDS, sl, source, config);
+                            s2 = new CodeStatement(CodeStatement.STATEMENT_DATA_WORDS, sl, source, config);
                             break;
                         case 4:
-                            s2 = new SourceStatement(SourceStatement.STATEMENT_DATA_DOUBLE_WORDS, sl, source, config);
+                            s2 = new CodeStatement(CodeStatement.STATEMENT_DATA_DOUBLE_WORDS, sl, source, config);
                             break;
                         default:
                             config.error("Field " + st.attributeNames.get(i) + " of struct " + st.name + " has an unsupported size in " + sl);
@@ -147,7 +147,7 @@ public abstract class SjasmDerivativeDialect implements Dialect {
     
     
     @Override
-    public Pair<String, SourceConstant> newSymbolName(String name, Expression value, SourceStatement previous) {
+    public Pair<String, SourceConstant> newSymbolName(String name, Expression value, CodeStatement previous) {
         SourceConstant lastAbsoluteLabel = null;
         if (name.startsWith("@")) {
             name = name.substring(1);
@@ -179,7 +179,7 @@ public abstract class SjasmDerivativeDialect implements Dialect {
     
     
     @Override
-    public Pair<String, SourceConstant> symbolName(String name, SourceStatement previous) {
+    public Pair<String, SourceConstant> symbolName(String name, CodeStatement previous) {
         SourceConstant lastAbsoluteLabel = null;
         if (name.startsWith(".")) {
             lastAbsoluteLabel = getLastAbsoluteLabel(previous);
