@@ -3,10 +3,10 @@
 ; - Patterns suggested by others are credited to them below.
 ; - If you do a pull request with more patterns, please credit yourself in a comment before the pattern.
 
-include "pbo-patterns-core.txt"
-include "pbo-patterns-core-sdcc-unsafe.txt"
+include "pbo-patterns.txt"
 
 pattern: Replace jp ?const1 with jr ?const1
+name: jp2jr
 0: jp ?const1
 replacement:
 0: jr ?const1

@@ -29,6 +29,10 @@ public class MDLConfig {
     public static final int HEX_STYLE_H_CAPS = 3;
     public static final int HEX_STYLE_0X = 4;
     public static final int HEX_STYLE_0X_CAPS = 5;
+    
+    public static final String CPC_TAG = "cpc";
+    public static final String SDCC_UNSAFE_TAG = "sdcc-unsafe";
+    public static final String TSTATEZ80_TAG = "tstatez80";
 
     // arguments:
     public String inputFile = null;
@@ -55,6 +59,8 @@ public class MDLConfig {
                                                  // for the SDCC dialect, where we don't know the base address ahead
                                                  // of time.
 
+    public List<String> ignorePatternsWithTags = new ArrayList<>();
+    
     // warning messages:
     public boolean warning_labelWithoutColon = false;
     public boolean warning_jpHlWithParenthesis = false;
@@ -136,6 +142,9 @@ public class MDLConfig {
 
     public MDLConfig() {
         logger = new MDLLogger(MDLLogger.INFO);
+        
+        // ignore all the platform specific patterns, by default:
+        ignorePatternsWithTags.add(CPC_TAG);
     }
 
 
@@ -192,6 +201,8 @@ public class MDLConfig {
                                 case "z80cpc":
                                     cpuInstructionSet = "data/z80cpc-instruction-set.tsv";
                                     timeUnit = "nop";
+                                    ignorePatternsWithTags.remove(CPC_TAG);
+                                    ignorePatternsWithTags.add(TSTATEZ80_TAG);
                                     break;
                                 default:
                                 error("Unrecognized cpu " + cpuString);

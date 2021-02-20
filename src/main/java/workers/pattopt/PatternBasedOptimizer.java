@@ -31,31 +31,6 @@ public class PatternBasedOptimizer implements MDLWorker {
     public static String defaultInputPatternsSizeFileName = "data/pbo-patterns-size.txt";
     public static String defaultInputPatternsSpeedFileName = "data/pbo-patterns-speed.txt";
     
-    /*
-    public static class OptimizationResult {
-        public int bytesSaved = 0;
-        public int timeSaved[] = {0,0}; // some instructions have two times (e.g., if a condition is met or not)
-        public int patternApplications = 0;
-
-        public void aggregate(OptimizationResult r) {
-            bytesSaved += r.bytesSaved;
-            patternApplications += r.patternApplications;
-            timeSaved[0] += r.timeSaved[0];
-            timeSaved[1] += r.timeSaved[1];
-        }
-        
-        
-        public String timeString() {
-            if (timeSaved[0] == timeSaved[1]) {
-                return ""+timeSaved[0];
-            } else {
-                return timeSaved[0] + "/" + timeSaved[1];
-            }        
-        }
-    }
-    */
-    
-
     public boolean logPotentialOptimizations = false;    
     public boolean generateFilesWithAppliedOptimizations = false;
     public boolean onlyOnePotentialOptimizationPerLine = true;
@@ -150,6 +125,25 @@ public class PatternBasedOptimizer implements MDLWorker {
     }
     
     
+    Pattern getPattern(String name)
+    {
+        for(Pattern p: patterns) {
+            if (p.name != null && p.name.equals(name)) return p;
+        }
+        return null;
+    }
+    
+    
+    boolean tagCheck(Pattern p)
+    {
+        for(String tag:p.tags) {
+            if (config.ignorePatternsWithTags.contains(tag)) return false;
+        }
+        
+        return true;
+    }
+    
+    
     void loadPatterns(String fileName) 
     {
         config.debug("Loading patterns from " + fileName);
@@ -159,7 +153,11 @@ public class PatternBasedOptimizer implements MDLWorker {
                 String line = br.readLine();
                 if (line == null) {
                     if (!patternString.equals("")) {
-                        patterns.add(new Pattern(patternString, config));
+                        Pattern p = new Pattern(patternString, config);
+                        if ((p.name == null || getPattern(p.name) == null) && tagCheck(p)) {
+                            // do not load the same pattern twice (some are repeated in some files for convenience):
+                            patterns.add(p);
+                        }
                     }
                     break;
                 }
@@ -169,7 +167,11 @@ public class PatternBasedOptimizer implements MDLWorker {
 
                 if (line.equals("")) {
                     if (!patternString.equals("")) {
-                        patterns.add(new Pattern(patternString, config));
+                        Pattern p = new Pattern(patternString, config);
+                        if ((p.name == null || getPattern(p.name) == null) && tagCheck(p)) {
+                            // do not load the same pattern twice (some are repeated in some files for convenience):
+                            patterns.add(p);
+                        }
                         patternString = "";
                     }
                 } else {

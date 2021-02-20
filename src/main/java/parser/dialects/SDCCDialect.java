@@ -92,10 +92,8 @@ public class SDCCDialect implements Dialect {
         Tokenizer.sdccStyleHashMarksForConstants = true;
         config.hexStyle = MDLConfig.HEX_STYLE_0X;
         config.labelsHaveSafeValues = false;
-        
-        PatternBasedOptimizer.defaultInputPatternsFileName = "data/pbo-patterns-sdcc-speed.txt";;
-        PatternBasedOptimizer.defaultInputPatternsSizeFileName = "data/pbo-patterns-sdcc-size.txt";
-        PatternBasedOptimizer.defaultInputPatternsSpeedFileName = "data/pbo-patterns-sdcc-speed.txt";
+
+        config.ignorePatternsWithTags.add(MDLConfig.SDCC_UNSAFE_TAG);
         
         config.lineParser.resetKeywordsHintingALabel();
     }    

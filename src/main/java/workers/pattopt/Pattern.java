@@ -17,6 +17,7 @@ import code.Expression;
 import code.SourceConstant;
 import code.SourceFile;
 import code.CodeStatement;
+import java.util.Arrays;
 import parser.SourceLine;
 import parser.Tokenizer;
 
@@ -42,7 +43,9 @@ public class Pattern {
     
     MDLConfig config;
 
-    String name;
+    String name = null;
+    String message = null;
+    List<String> tags = new ArrayList<>();    
     List<CPUOpPattern> pattern = new ArrayList<>();
     List<CPUOpPattern> replacement = new ArrayList<>();
     List<Constraint> constraints = new ArrayList<>();
@@ -89,8 +92,12 @@ public class Pattern {
         for(String line:lines) {
             line = line.trim();
             if (line.startsWith("pattern:")) {
-                name = line.substring(8).trim();
+                message = line.substring(8).trim();
                 state = 1;
+            } else if (line.startsWith("name:")) {
+                name = line.substring(5).trim();
+            } else if (line.startsWith("tags:")) {
+                tags.addAll(Arrays.asList(line.substring(5).split(" ")));
             } else if (line.equals("replacement:")) {
                 state = 2;
             } else if (line.equals("constraints:")) {
@@ -170,22 +177,22 @@ public class Pattern {
             }
         }
         if (!found) {
-            config.error("Pattern \""+name+"\" does not contain a non wildcard line with ID 0!");
+            config.error("Pattern \""+message+"\" does not contain a non wildcard line with ID 0!");
         }
 
-        // config.trace("parsed pattern: " + name);
+        // config.trace("parsed pattern: " + message);
     }
 
 
     public String getName()
     {
-        return name;
+        return message;
     }
         
     
     public String getInstantiatedName(PatternMatch match)
     {
-        String tmp = name;
+        String tmp = message;
         for(String variable:match.variables.keySet()) {
             tmp = tmp.replace(variable, match.variables.get(variable).toString());
         }

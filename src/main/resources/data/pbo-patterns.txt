@@ -30,5 +30,1407 @@
 ; You can add ":ID" after any constraint, which the effect that the constraint will be checked right after the pattern line
 ; with number == ID is matched.
 
-include "pbo-patterns-core.txt"
-include "pbo-patterns-core-sdcc-unsafe.txt"
+; add tags to patterns to indicate if they are specific to some platform/dialect. Currently recognized tags:
+; cpc: will only be loaded when z80cpc cpu is selected
+; sdcc-unsafe: will not be loaded when the sdcc/sdasz80 dialects are selected
+; tstatez80: will only be loaded on t-state-based z80s (z80/z80msx)
+
+; thanks to pgimeno for noticing the needed constraint
+pattern: Replace cp ?const1; ?op1 c,?const2; ?op1 z,?const2 with cp ?const1+1; ?op1 c,?const2
+0: cp ?const1
+1: ?op1 c,?const2
+2: ?op1 z,?const2
+replacement:
+0: cp ?const1+1
+1: ?op1 c,?const2
+constraints:
+in(?op1,jp,jr)
+notEqual(?const1,255)
+
+pattern: Replace cp 0 with or a
+0: cp 0
+replacement:
+0: or a
+
+pattern: Replace cp 1 with dec a
+0: cp 1
+replacement:
+0: dec a
+constraints:
+regsNotUsedAfter(0,A)
+
+pattern: Replace cp 255 with inc a
+0: cp 255
+replacement:
+0: inc a
+constraints:
+regsNotUsedAfter(0,A)
+
+pattern: Remove unused ld ?reg,?any
+0: ld ?reg,?any
+replacement:
+constraints:
+regsNotUsedAfter(0,?reg)
+
+pattern: Replace ld a,?const with xor a
+0: ld a,?const
+replacement:
+0: xor a
+constraints:
+equal(?const,0)
+flagsNotUsedAfter(0,S,Z,H,P/V,N,C)
+
+pattern: Replace srl a; srl a; srl a with rrca; rrca; rrca; and #1f
+0: srl a
+1: srl a
+2: srl a
+replacement:
+0: rrca
+1: rrca
+2: rrca
+2: and #1f
+
+pattern: Replace pop ?regpair1; ld ?regpair2h,?regpair1h; ld ?regpair2l,?regpair1l with pop ?regpair2
+0: pop ?regpair1
+1: ld ?regpair2h,?regpair1h
+2: ld ?regpair2l,?regpair1l
+replacement:
+0: pop ?regpair2
+constraints:
+in(?regpair1,BC,DE,HL)
+regpair(?regpair1,?regpair1h,?regpair1l)
+regpair(?regpair2,?regpair2h,?regpair2l)
+in(?regpair2,BC,DE,HL)
+regsNotUsedAfter(2,?regpair1)
+
+pattern: Replace pop ?regpair1; ld ?regpair2l,?regpair1l; ld ?regpair2h,?regpair1h with pop ?regpair2
+0: pop ?regpair1
+2: ld ?regpair2l,?regpair1l
+1: ld ?regpair2h,?regpair1h
+replacement:
+0: pop ?regpair2
+constraints:
+in(?regpair1,BC,DE,HL)
+regpair(?regpair1,?regpair1h,?regpair1l)
+regpair(?regpair2,?regpair2h,?regpair2l)
+in(?regpair2,BC,DE,HL)
+regsNotUsedAfter(2,?regpair1)
+
+pattern: Replace ld a,(?const1); ?opincdec a; ld (?const1),a with ld hl,?const1; ?opincdec (hl)
+0: ld a,(?const1)
+1: ?opincdec a
+2: ld (?const1),a
+replacement:
+0: ld hl,?const1
+1: ?opincdec (hl)
+constraints:
+in(?opincdec,inc,dec)
+regsNotUsedAfter(2,A,HL)
+
+pattern: Replace ld a,(?const1); ?opincdec a; ld (?const1),a with ld hl,?const1; ?opincdec (hl); ld a,(hl)
+0: ld a,(?const1)
+1: ?opincdec a
+2: ld (?const1),a
+replacement:
+0: ld hl,?const1
+1: ?opincdec (hl)
+2: ld a,(hl)
+constraints:
+in(?opincdec,inc,dec)
+regsNotUsedAfter(2,HL)
+
+pattern: Replace ld ?reg,?const1; ld (hl),?reg with ld (hl),?const1
+0: ld ?reg,?const1
+1: *
+2: ld (hl),?reg
+replacement:
+0: ld (hl),?const1
+1: *
+constraints:
+regsNotModified(1, HL)
+regsNotUsed(1,?reg)
+regsNotUsedAfter(2,?reg)
+
+pattern: Replace dec b; jr nz,label with djnz label
+0: dec b
+1: jr nz,?const1
+replacement:
+0: djnz ?const1
+
+pattern: Replace ld a,(hl); lde (de),a; inc hl; inc de with ldi
+0: ld a,(hl)
+1: ld (de),a
+2: inc hl
+3: inc de
+replacement:
+0: ldi
+constraints:
+regsNotUsedAfter(3,A,BC)
+
+; thanks to pgimeno for suggesting this permutation
+pattern: Replace ld a,(hl); inc hl; lde (de),a; inc de with ldi
+0: ld a,(hl)
+2: inc hl
+1: ld (de),a
+3: inc de
+replacement:
+0: ldi
+constraints:
+regsNotUsedAfter(3,A,BC)
+
+pattern: Replace ld a,(hl); ld (de),a; inc de; inc hl; with ldi
+0: ld a,(hl)
+1: ld (de),a
+3: inc de
+2: inc hl
+replacement:
+0: ldi
+constraints:
+regsNotUsedAfter(3,A,BC)
+
+pattern: Replace ld a,(hl); lde (de),a; inc hl; inc de with ldi; inc bc
+0: ld a,(hl)
+1: ld (de),a
+2: inc hl
+3: inc de
+replacement:
+0: ldi
+1: inc bc
+constraints:
+regsNotUsedAfter(3,A)
+
+; thanks to pgimeno for suggesting this permutation
+pattern: Replace ld a,(hl); inc hl; lde (de),a; inc de with ldi; inc bc
+0: ld a,(hl)
+2: inc hl
+1: ld (de),a
+3: inc de
+replacement:
+0: ldi
+1: inc bc
+constraints:
+regsNotUsedAfter(3,A)
+
+pattern: Replace ld a,(hl); lde (de),a; inc de; inc hl; with ldi
+0: ld a,(hl)
+1: ld (de),a
+3: inc de
+2: inc hl
+replacement:
+0: ldi
+1: inc bc
+constraints:
+regsNotUsedAfter(3,A)
+
+; thanks to grauw for suggesting the "and" variation
+pattern: Replace ld ?regpair,?const1; ?op a; sbc hl,?regpair with ld ?regpair,-(?const1); add hl,?regpair
+0: ld ?regpair,?const1
+1: ?op a
+2: sbc hl,?regpair
+replacement:
+0: ld ?regpair,-(?const1)
+1: add hl,?regpair
+constraints:
+in(?op,or,and)
+in(?regpair,BC,DE)
+flagsNotUsedAfter(2,S,Z,P/V,N)
+
+pattern: Replace neg; add a,?const1 with cpl; add a,?const1+1
+0: neg
+1: add a,?const1
+replacement:
+0: cpl
+1: add a,?const1+1
+
+pattern: Replace xor 255 with cpl
+0: xor 255
+replacement:
+0: cpl
+constraints:
+flagsNotUsedAfter(0,S,Z,P/V,C)
+
+pattern: Replace ld a,?reg; neg with xor a; sub ?reg
+0: ld a,?reg
+1: neg
+replacement:
+0: xor a
+1: sub ?reg
+
+pattern: Replace ld a,?reg; sub ?const; neg with ld a,?const; sub ?reg
+0: ld a,?reg
+1: sub ?const
+2: neg
+replacement:
+0: ld a,?const
+1: sub ?reg
+
+pattern: Replace sla l; rl h with add hl,hl
+0: sla l
+1: rl h
+replacement:
+0: add hl,hl
+constraints:
+flagsNotUsedAfter(1,S,Z,P/V,C)
+
+; thanks to grauw for suggesting this pattern
+pattern: Replace sla a with add a,a
+0: sla a
+replacement:
+0: add a,a
+constraints:
+flagsNotUsedAfter(0,H,P/V)
+
+; theNestruo
+pattern: Replace call ?const; ret with jp ?const
+0: call ?const
+1: ret
+replacement:
+0: jp ?const
+
+pattern: Replace and 1; cp 1; ?op z,?const with rra; ?op nz,?const
+0: and 1
+1: cp 1
+2: ?op z,?const
+replacement:
+0: rra
+1: ?op c,?const
+constraints:
+in(?op,jr,jp,call)
+regsNotUsedAfter(2,A)
+
+pattern: Replace and 1; cp 1; ?op z,?const with and 1; ?op nz,?const
+0: and 1
+1: cp 1
+2: ?op z,?const
+replacement:
+0: and 1
+1: ?op nz,?const
+constraints:
+in(?op,jr,jp,call)
+
+pattern: Replace bit 0,a; ?op z,?const with rra; ?op nc,?const
+0: bit 0,a
+1: ?op z,?const
+replacement:
+0: rra
+1: ?op nc,?const
+constraints:
+in(?op,jr,jp,call)
+regsNotUsedAfter(1,A)
+
+pattern: Replace bit 0,a; ?op nz,?const with rra; ?op c,?const
+0: bit 0,a
+1: ?op nz,?const
+replacement:
+0: rra
+1: ?op c,?const
+constraints:
+in(?op,jr,jp,call)
+regsNotUsedAfter(1,A)
+
+pattern: Replace bit 7,a; ?op z,?const with rla; ?op nc,?const
+0: bit 7,a
+1: ?op z,?const
+replacement:
+0: rla
+1: ?op nc,?const
+constraints:
+in(?op,jr,jp,call)
+regsNotUsedAfter(1,A)
+
+pattern: Replace bit 7,a; ?op nz,?const with rla; ?op c,?const
+0: bit 7,a
+1: ?op nz,?const
+replacement:
+0: rla
+1: ?op c,?const
+constraints:
+in(?op,jr,jp,call)
+regsNotUsedAfter(1,A)
+
+pattern: Replace ld ?regixiy,?const1; ld ?reg,(?regixiy+?const2) with ld hl,?const1+?const2; ld ?reg,(hl)
+0: ld ?regixiy,?const1
+1: ld ?reg,(?regixiy+?const2)
+replacement:
+0: ld hl,?const1+?const2
+1: ld ?reg,(hl)
+constraints:
+in(?regixiy,IX,IY)
+regsNotUsedAfter(1,?regixiy,HL)
+
+pattern: Replace ld ?regixiy,?const1; ld ?reg,(?regixiy) with ld hl,?const1; ld ?reg,(hl)
+0: ld ?regixiy,?const1
+1: ld ?reg,(?regixiy)
+replacement:
+0: ld hl,?const1
+1: ld ?reg,(hl)
+constraints:
+in(?regixiy,IX,IY)
+regsNotUsedAfter(1,?regixiy,HL)
+
+pattern: Replace ld ?regixiy,?const1; ld (?regixiy+?const2),?const3 with ld hl,?const1+?const2; ld (hl),?const3
+0: ld ?regixiy,?const1
+1: ld (?regixiy+?const2),?const3
+replacement:
+0: ld hl,?const1+?const2
+1: ld (hl),?const3
+constraints:
+in(?regixiy,IX,IY)
+regsNotUsedAfter(1,?regixiy,HL)
+
+pattern: Replace ld ?regixiy,?const1; ld (?regixiy),?const3 with ld hl,?const1; ld (hl),?const3
+0: ld ?regixiy,?const1
+1: ld (?regixiy),?const3
+replacement:
+0: ld hl,?const1
+1: ld (hl),?const3
+constraints:
+in(?regixiy,IX,IY)
+regsNotUsedAfter(1,?regixiy,HL)
+
+pattern: Replace ld ?regixiy,?const1; ld ?reg1,(?regixiy+?const2); ld ?reg2,(?regixiy+?const3) with ld hl,?const1+?const2; ld ?reg1,(hl); inc hl; ld ?reg2,(hl)
+0: ld ?regixiy,?const1
+1: ld ?reg1,(?regixiy+?const2)
+2: ld ?reg2,(?regixiy+?const3)
+replacement:
+0: ld hl,?const1+?const2
+1: ld ?reg1,(hl)
+2: inc hl
+3: ld ?reg2,(hl)
+constraints:
+in(?regixiy,IX,IY)
+notIn(?reg1,H,L)
+notIn(?reg2,H,L)
+equal(?const2+1,?const3)
+regsNotUsedAfter(2,?regixiy,HL)
+
+pattern: Replace ld ?regixiy,?const1; ld ?reg1,(?regixiy); ld ?reg2,(?regixiy+1) with ld hl,?const1; ld ?reg1,(hl); inc hl; ld ?reg2,(hl)
+0: ld ?regixiy,?const1
+1: ld ?reg1,(?regixiy)
+2: ld ?reg2,(?regixiy+1)
+replacement:
+0: ld hl,?const1
+1: ld ?reg1,(hl)
+2: inc hl
+3: ld ?reg2,(hl)
+constraints:
+in(?regixiy,IX,IY)
+notIn(?reg1,H,L)
+notIn(?reg2,H,L)
+regsNotUsedAfter(2,?regixiy,HL)
+
+pattern: Remove ld ?reg,?reg
+0: ld ?reg,?reg
+replacement:
+
+; theNestruo
+pattern: Replace ld ?reg,?const1; ld (?regixiy+?const2),?reg with ld (?regixiy+?const2),?const1
+0: ld ?reg,?const1
+1: ld (?regixiy+?const2),?reg
+replacement:
+0: ld (?regixiy+?const2),?const1
+constraints:
+in(?regixiy,IX,IY)
+regsNotUsedAfter(1,?reg)
+
+; theNestruo
+pattern: Replace xor a; ld (?regixiy+?const2),a with ld (?regixiy+?const2),0
+0: xor a
+1: ld (?regixiy+?const2),a
+replacement:
+0: ld (?regixiy+?const2),0
+constraints:
+in(?regixiy,IX,IY)
+regsNotUsedAfter(1,A)
+
+pattern: Remove duplicate ld ?reg,?const
+2: ld ?reg,?const
+1: *
+0: ld ?reg,?const
+replacement:
+2: ld ?reg,?const
+1: *
+constraints:
+regsNotModified(1, ?reg)
+
+pattern: Remove duplicate ld ?reg1,?reg2
+2: ld ?reg1,?reg2
+1: *
+0: ld ?reg1,?reg2
+replacement:
+2: ld ?reg1,?reg2
+1: *
+constraints:
+regsNotModified(1, ?reg1, ?reg2)
+
+; Thanks to theNestruo for suggesting the idea for this pattern:
+pattern: Replace ld (?reg2),?const with ld (?reg2),?reg (as ?reg == ?const here)
+2: ld ?reg,?const
+1: *
+0: ld (?reg2),?const
+replacement:
+2: ld ?reg,?const
+1: *
+0: ld (?reg2),?reg
+constraints:
+in(?reg,A,B,C,D,E,H,L)
+in(?reg2,HL,IX,IY)
+regsNotModified(1,?reg)
+
+; Thanks to theNestruo for suggesting the idea for this pattern:
+pattern: Replace ld ?reg2,?const with ld ?reg2,?reg (as ?reg == ?const here)
+2: ld ?reg,?const
+1: *
+0: ld ?reg2,?const
+replacement:
+2: ld ?reg,?const
+1: *
+0: ld ?reg2,?reg
+constraints:
+in(?reg,A,B,C,D,E,H,L)
+in(?reg2,A,B,C,D,E,H,L)
+regsNotModified(1,?reg)
+
+; Thanks to theNestruo for suggesting the idea for this pattern: (part1)
+; Notice this pattern is split in two, to prevent generating things like ld h,ixl, which do not exist in the z80
+pattern: Replace ld ?reg2,?const2 with ld ?reg2,?regpairl (as ?regpairl == ?const2 here)
+2: ld ?regpair,?const1
+1: *
+0: ld ?reg2,?const2
+replacement:
+2: ld ?regpair,?const1
+1: *
+0: ld ?reg2,?regpairl
+constraints:
+regpair(?regpair,?regpairh,?regpairl)
+in(?reg2,A,B,C,D,E)
+equal(?const2, (?const1) & #00ff)
+regsNotModified(1,?regpairl)
+
+; Thanks to theNestruo for suggesting the idea for this pattern: (part2)
+pattern: Replace ld ?reg2,?const2 with ld ?reg2,?regpairl (as ?regpairl == ?const2 here)
+2: ld ?regpair,?const1
+1: *
+0: ld ?reg2,?const2
+replacement:
+2: ld ?regpair,?const1
+1: *
+0: ld ?reg2,?regpairl
+constraints:
+regpair(?regpair,?regpairh,?regpairl)
+in(?reg2,H,L)
+in(?regpair,BC,DE)
+equal(?const2, (?const1) & #00ff)
+regsNotModified(1,?regpairl)
+
+; Thanks to theNestruo for suggesting the idea for this pattern: (part1)
+; Notice this pattern is split in two, to prevent generating things like ld h,ixh, which do not exist in the z80
+pattern: Replace ld ?reg2,?const2 with ld ?reg2,?regpairh (as ?regpairh == ?const2 here)
+2: ld ?regpair,?const1
+1: *
+0: ld ?reg2,?const2
+replacement:
+2: ld ?regpair,?const1
+1: *
+0: ld ?reg2,?regpairh
+constraints:
+regpair(?regpair,?regpairh,?regpairl)
+in(?reg2,A,B,C,D,E)
+equal((?const2) & #00ff, (?const1 & #ffff) >> 8)
+regsNotModified(1,?regpairh)
+
+; Thanks to theNestruo for suggesting the idea for this pattern: (part2)
+pattern: Replace ld ?reg2,?const2 with ld ?reg2,?regpairh (as ?regpairh == ?const2 here)
+2: ld ?regpair,?const1
+1: *
+0: ld ?reg2,?const2
+replacement:
+2: ld ?regpair,?const1
+1: *
+0: ld ?reg2,?regpairh
+constraints:
+regpair(?regpair,?regpairh,?regpairl)
+in(?reg2,H,L)
+in(?regpair,BC,DE)
+equal((?const2) & #00ff, (?const1 & #ffff) >> 8)
+regsNotModified(1,?regpairh)
+
+; Thanks to Jltursan for suggesting this pattern:
+pattern: Replace inc hl; dec bc; ld a,?reg1; or ?reg2; jr nz,?const with cpi; jp pe,?const
+0: inc hl
+1: *
+2: dec bc
+3: ld a,?reg1
+4: or ?reg2
+5: jr nz,?const
+replacement:
+1: *
+2: cpi
+5: jp pe,?const
+constraints:
+in(?reg1,B,C)
+in(?reg2,C,B)
+notEqual(?reg1,?reg2)
+regsNotUsed(1,HL)
+regsNotModified(1,HL)
+flagsNotUsedAfter(5,S,Z,H,P/V,N,C)
+regsNotUsedAfter(5,A)
+
+; Thanks to Artrag for this variation:
+pattern: Replace dec hl; dec bc; ld a,?reg1; or ?reg2; jr nz,?const with cpd; jp pe,?const
+0: dec ?regpair1
+1: *
+2: dec ?regpair2
+3: ld a,?reg1
+4: or ?reg2
+5: jr nz,?const
+replacement:
+1: *
+2: cpd
+5: jp pe,?const
+constraints:
+in(?regpair1,BC,HL)
+in(?regpair2,BC,HL)
+in(?reg1,B,C)
+in(?reg2,C,B)
+notEqual(?reg1,?reg2)
+notEqual(?regpair1,?regpair2)
+regsNotUsed(1,HL)
+regsNotModified(1,HL)
+flagsNotUsedAfter(5,S,Z,H,P/V,N,C)
+regsNotUsedAfter(5,A)
+
+; Note that we include the "atLeastOneCPUOp" constraint, to prevent eliminating the usual push af; pop af combination used for timing
+pattern: Remove push ?reg / pop ?reg as register is not modified in between
+0: push ?reg
+1: *
+2: pop ?reg
+replacement:
+1: *
+constraints:
+regsNotModified(1,?reg)
+evenPushPops(1)
+atLeastOneCPUOp(1)
+
+; Note that we include the "atLeastOneCPUOp" constraint, to prevent eliminating the usual push af; pop af combination used for timing
+pattern: Remove push ?reg / pop ?reg as register is not used afterwards
+0: push ?reg
+1: *
+2: pop ?reg
+replacement:
+1: *
+constraints:
+evenPushPops(1)
+atLeastOneCPUOp(1)
+regsNotUsedAfter(2,?reg)
+
+; Thanks to theNestruo for suggesting the idea for this pattern:
+pattern: Remove unnecessary xor a (a must be zero here)
+1: or a
+2: ?op nz,?const
+3: *
+0: xor a
+replacement:
+1: or a
+2: ?op nz,?const
+3: *
+constraints:
+in(?op,jr,jp)
+regsNotModified(3,A)
+
+; Thanks to theNestruo for suggesting the idea for this pattern:
+pattern: Remove unnecessary ld a,0 (a must be zero here)
+1: or a
+2: ?op nz,?const
+3: *
+0: ld a,0
+replacement:
+1: or a
+2: ?op nz,?const
+3: *
+constraints:
+in(?op,jr,jp)
+regsNotModified(3,A)
+
+; Thanks to theNestruo for suggesting the idea for this pattern:
+pattern: Remove unnecessary ld b,0 (b must be 0 here)
+1: djnz ?const
+2: *
+0: ld b,0
+replacement:
+1: djnz ?const
+2: *
+constraints:
+regsNotModified(2,B)
+
+pattern: Replace dec a; add a, ?const with add a, (?const)-1
+0: dec a
+1: add a, ?const
+replacement:
+1: add a, (?const)-1
+
+pattern: Replace inc a; add a, ?const with add a, (?const)+1
+0: inc a
+1: add a, ?const
+replacement:
+1: add a, (?const)+1
+
+pattern: Replace add a,?const with inc a
+0: add a,?const
+replacement:
+0: inc a
+constraints:
+equal(?const,1)
+flagsNotUsedAfter(1,C)
+
+pattern: Replace add a,?const with dec a
+0: add a,?const
+replacement:
+0: dec a
+constraints:
+equal(?const,-1)
+flagsNotUsedAfter(1,C)
+
+pattern: Replace ?op a,?const with ?op a,?reg (as ?reg == ?const here)
+2: ld ?reg,?const
+1: *
+0: ?op a,?const
+replacement:
+2: ld ?reg,?const
+1: *
+0: ?op a,?reg
+constraints:
+in(?op,add,adc,sub,sbc)
+in(?reg,A,B,C,D,E,H,L)
+regsNotModified(1,?reg)
+
+pattern: Replace ?op a,?const with ?op a,?reg (as ?reg == ?const here)
+2: ld ?reg,?const
+1: *
+0: ?op ?const
+replacement:
+2: ld ?reg,?const
+1: *
+0: ?op ?reg
+constraints:
+in(?op,sub,and,or,xor)
+in(?reg,A,B,C,D,E,H,L)
+regsNotModified(1,?reg)
+
+pattern: Replace ?op a,?const with ?op a,?regl (as ?regl == ?const2 here)
+2: ld ?regpair,?const1
+1: *
+0: ?op a,?const2
+replacement:
+2: ld ?regpair,?const1
+1: *
+0: ?op a,?regl
+constraints:
+in(?op,add,adc,sbc)
+regpair(?regpair,?regh,?regl)
+in(?regpair,HL,BC,DE)
+regsNotModified(1,?regl)
+equal(?const1&#ff,?const2)
+
+pattern: Replace ?op a,?const with ?op a,?regl (as ?regl == ?const2 here)
+2: ld ?regpair,?const1
+1: *
+0: ?op ?const2
+replacement:
+2: ld ?regpair,?const1
+1: *
+0: ?op ?regl
+constraints:
+in(?op,sub,and,or,xor)
+regpair(?regpair,?regh,?regl)
+in(?regpair,HL,BC,DE)
+regsNotModified(1,?regl)
+equal(?const1&#ff,?const2)
+
+pattern: Replace ?op a,?const2 with ?op a,?regh (as ?regh == ?const2 here)
+2: ld ?regpair,?const1
+1: *
+0: ?op a,?const2
+replacement:
+2: ld ?regpair,?const
+1: *
+0: ?op a,?regh
+constraints:
+in(?op,add,adc,sbc)
+regpair(?regpair,?regh,?regl)
+in(?regpair,HL,BC,DE)
+regsNotModified(1,?regh)
+equal((?const1&#ff00)>>8,?const2)
+
+pattern: Replace ?op a,?const2 with ?op a,?regh (as ?regh == ?const2 here)
+2: ld ?regpair,?const1
+1: *
+0: ?op ?const2
+replacement:
+2: ld ?regpair,?const
+1: *
+0: ?op ?regh
+constraints:
+in(?op,sub,and,or,xor)
+regpair(?regpair,?regh,?regl)
+in(?regpair,HL,BC,DE)
+regsNotModified(1,?regh)
+equal((?const1&#ff00)>>8,?const2)
+
+pattern: Replace ld ?regpair,?const2 with ld ?regpairh,?reg; ld ?regpairl,?reg (as ?reg == ?const1 here)
+2: ld ?reg,?const1
+1: *
+0: ld ?regpair,?const2
+replacement:
+2: ld ?reg,?const1
+1: *
+0: ld ?regpairh,?reg
+3: ld ?regpairl,?reg
+constraints:
+in(?reg,A,B,C,D,E,H,L)
+regpair(?regpair,?regpairl,?regpairh)
+in(?regpair,HL,DE,BC)
+equal(?const2,(?const1&#ff)*256+(?const1&#ff))
+
+pattern: Replace ld a,(?const); ?op ?any; ld (?const),a with ld hl,?const; ld a,(hl); ?op ?any; ld (hl),a
+0: ld a,(?const)
+1: ?op a,?any
+2: ld (?const),a
+replacement:
+0: ld hl,?const
+1: ld a,(hl)
+2: ?op a,?any
+3: ld (hl),a
+constraints:
+in(?op,add,adc,sbc)
+regsNotUsedAfter(0,HL)
+
+; The following two patterns are alternatives to the one above, in case the one above does not match:
+pattern: Replace ld a,(?const); ?op ?any; ld (?const),a with ld de,?const; ld a,(de); ?op ?any; ld (de),a
+0: ld a,(?const)
+1: ?op a,?any
+2: ld (?const),a
+replacement:
+0: ld de,?const
+1: ld a,(de)
+2: ?op a,?any
+3: ld (de),a
+constraints:
+in(?op,add,adc,sbc)
+regsNotUsedAfter(0,DE)
+
+pattern: Replace ld a,(?const); ?op ?any; ld (?const),a with ld bc,?const; ld a,(bc); ?op ?any; ld (bc),a
+0: ld a,(?const)
+1: ?op a,?any
+2: ld (?const),a
+replacement:
+0: ld bc,?const
+1: ld a,(bc)
+2: ?op a,?any
+3: ld (bc),a
+constraints:
+in(?op,add,adc,sbc)
+regsNotUsedAfter(0,BC)
+
+pattern: Replace ld a,(?const); ?op ?any; ld (?const),a with ld hl,?const; ld a,(hl); ?op ?any; ld (hl),a
+0: ld a,(?const)
+1: ?op ?any
+2: ld (?const),a
+replacement:
+0: ld hl,?const
+1: ld a,(hl)
+2: ?op ?any
+3: ld (hl),a
+constraints:
+in(?op,and,or,xor,sub)
+regsNotUsedAfter(0,HL)
+
+; The following two patterns are alternatives to the one above, in case the one above does not match:
+pattern: Replace ld a,(?const); ?op ?any; ld (?const),a with ld de,?const; ld a,(de); ?op ?any; ld (de),a
+0: ld a,(?const)
+1: ?op ?any
+2: ld (?const),a
+replacement:
+0: ld de,?const
+1: ld a,(de)
+2: ?op ?any
+3: ld (de),a
+constraints:
+in(?op,and,or,xor,sub)
+regsNotUsedAfter(0,DE)
+
+pattern: Replace ld a,(?const); ?op ?any; ld (?const),a with ld bc,?const; ld a,(bc); ?op ?any; ld (bc),a
+0: ld a,(?const)
+1: ?op ?any
+2: ld (?const),a
+replacement:
+0: ld bc,?const
+1: ld a,(bc)
+2: ?op ?any
+3: ld (bc),a
+constraints:
+in(?op,and,or,xor,sub)
+regsNotUsedAfter(0,BC)
+
+pattern: Replace push de; ld de, ?const1; add hl, de; pop de with ld bc, ?const1; add hl, bc
+0: push de
+1: ld de, ?const1
+2: add hl, de
+3: pop de
+replacement:
+1: ld bc, ?const1
+2: add hl, bc
+constraints:
+regsNotUsedAfter(3,BC)
+
+pattern: Replace push bc; ld bc, ?const1; add hl, bc; pop bc with ld de, ?const1; add hl, de
+0: push bc
+1: ld bc, ?const1
+2: add hl, bc
+3: pop bc
+replacement:
+1: ld de, ?const1
+2: add hl, de
+constraints:
+regsNotUsedAfter(3,DE)
+
+pattern: Replace inc ?reg; ... inc ?reg with ld a,?reg; add a,?const; ld ?reg,a
+0: [?const] inc ?reg
+replacement:
+0: ld a,?reg
+1: add a,?const
+2: ld ?reg,a
+constraints:
+in(?reg,B,C,D,E,H,L,IXL,IYL)
+equal(?const >= 4, -1) 
+regsNotUsedAfter(0,A)
+
+pattern: Replace inc ?regixiy; ... inc ?regixiy with ld bc,?const; add ?regixiy,bc
+0: [?const] inc ?regixiy
+replacement:
+0: ld bc,?const
+1: add ?regixiy,bc
+constraints:
+in(?regixiy,IX,IY)
+equal(?const >= 3, -1) 
+regsNotUsedAfter(0,BC)
+
+pattern: Replace dec ?regixiy; ... dec ?regixiy with ld bc,-?const; add ?regixiy,bc
+0: [?const] dec ?regixiy
+replacement:
+0: ld bc,-?const
+1: add ?regixiy,bc
+constraints:
+in(?regixiy,IX,IY)
+equal(?const >= 3, -1) 
+regsNotUsedAfter(0,BC)
+
+pattern: Replace inc ?regixiy; ... inc ?regixiy with ld de,?const; add ?regixiy,de
+0: [?const] inc ?regixiy
+replacement:
+0: ld de,?const
+1: add ?regixiy,de
+constraints:
+in(?regixiy,IX,IY)
+equal(?const >= 3, -1) 
+regsNotUsedAfter(0,DE)
+
+pattern: Replace dec ?regixiy; ... dec ?regixiy with ld de,-?const; add ?regixiy,de
+0: [?const] dec ?regixiy
+replacement:
+0: ld de,-?const
+1: add ?regixiy,de
+constraints:
+in(?regixiy,IX,IY)
+equal(?const >= 3, -1) 
+regsNotUsedAfter(0,DE)
+
+pattern: Replace inc ?regixiy; ... inc ?regixiy with push bc; ld bc,?const; add ?regixiy,bc; pop bc
+0: [?const] inc ?regixiy
+replacement:
+0: push bc
+1: ld bc,?const
+2: add ?regixiy,bc
+3: pop bc
+constraints:
+equal(?const >= 5, -1) 
+in(?regixiy,IX,IY)
+
+pattern: Replace dec ?regixiy; ... dec ?regixiy with push bc; ld bc,-?const; add ?regixiy,bc; pop bc
+0: [?const] dec ?regixiy
+replacement:
+0: push bc
+1: ld bc,-?const
+2: add ?regixiy,bc
+3: pop bc
+constraints:
+in(?regixiy,IX,IY)
+equal(?const >= 5, -1) 
+
+pattern: Replace inc a; ... inc a with add a,?const
+0: [?const] inc a
+replacement:
+0: add a,?const
+constraints:
+equal(?const >= 2, -1) 
+
+pattern: Replace dec a; ... dec a with add a,-?const
+0: [?const] dec a
+replacement:
+0: add a,-?const
+constraints:
+equal(?const >= 2, -1) 
+
+pattern: Replace scf; ccf with or a
+0: scf
+1: ccf
+replacement:
+0: or a
+
+pattern: Replace push ?regpair1; pop ?regpair2 with ld ?reg2h,?reg1h; ld ?reg2l,?reg1l
+0: push ?regpair1
+1: pop ?regpair2
+replacement:
+0: ld ?reg2h,?reg1h
+1: ld ?reg2l,?reg1l
+constraints:
+in(?regpair1,BC,DE,HL)
+in(?regpair2,BC,DE,HL)
+regpair(?regpair1,?reg1h,?reg1l)
+regpair(?regpair2,?reg2h,?reg2l)
+
+pattern: Replace ld ?reg, a; ld a, ?const; add a, ?reg with add a, ?const
+0: ld ?reg, a
+1: ld a, ?const
+2: add a, ?reg
+replacement:
+0: add a, ?const
+constraints:
+regsNotUsedAfter(2, ?reg)
+
+pattern: Remove unnecessary ?op ?const
+0: ?op ?const
+replacement:
+constraints:
+equal(?const,0)
+in(?op,and,or,xor,sub)
+flagsNotUsedAfter(0,S,Z,H,P/V,N,C)
+
+pattern: Remove unnecessary ?op a,?const
+0: ?op a,?const
+replacement:
+constraints:
+equal(?const,0)
+in(?op,add)
+flagsNotUsedAfter(0,S,Z,H,P/V,N,C)
+
+pattern: Remove unnecessary and a / or a
+0: ?opjrjp c,?const
+1: *
+2: ?opandor a
+3: sbc hl,?reg
+replacement:
+0: ?opjrjp c,?const
+1: *
+3: sbc hl,?reg
+constraints:
+in(?opjrjp,jr,jp)
+in(?opandor,and,or)
+in(?reg,BC,DE,HL,SP)
+flagsNotModified(1,C)
+
+pattern: Remove unnecessary and a / or a
+0: ret c
+1: *
+2: ?opandor a
+3: sbc hl,?reg
+replacement:
+0: ret c
+1: *
+3: sbc hl,?reg
+constraints:
+in(?opandor,and,or)
+in(?reg,BC,DE,HL,SP)
+flagsNotModified(1,C)
+
+pattern: Remove unnecessary and a / or a
+0: ?opresCarry ?any
+1: *
+2: ?opandor a
+3: sbc hl,?reg
+replacement:
+0: ?opresCarry ?any
+1: *
+3: sbc hl,?reg
+constraints:
+in(?opresCarry,and,or,xor)
+in(?opandor,and,or)
+in(?reg,BC,DE,HL,SP)
+flagsNotModified(1,C)
+
+pattern: Remove unnecessary conditional jumps (mainly this is a warning) 
+0: ?opresCarry ?any
+1: *
+2: ?opjrjp nc,?const
+replacement:
+0: ?opresCarry ?any
+1: *
+2: ?opjrjp ?const
+constraints:
+in(?opresCarry,and,or,xor)
+in(?opjrjp,jr,jp,call)
+flagsNotModified(1,C)
+
+pattern: Remove unnecessary conditional ret (mainly this is a warning)
+0: ?opresCarry ?any
+1: *
+2: ret nc
+replacement:
+0: ?opresCarry ?any
+1: *
+2: ret
+constraints:
+in(?opresCarry,and,or,xor)
+flagsNotModified(1,C)
+
+pattern: Remove unnecessary conditional jumps (mainly this is a warning) 
+0: ?opjrjp c,?const1
+1: *
+2: ?opjrjp nc,?const2
+replacement:
+0:?opjrjp c,?const1
+1: *
+2: ?opjrjp ?const2
+constraints:
+in(?opjrjp,jr,jp)
+flagsNotModified(1,C)
+
+pattern: Remove unnecessary conditional jumps (mainly this is a warning)
+0: ?opjrjp nc,?const1
+1: *
+2: ?opjrjp c,?const2
+replacement:
+0: ?opjrjp nc,?const1
+1: *
+2: ?opjrjp ?const2
+constraints:
+in(?opjrjp,jr,jp)
+flagsNotModified(1,C)
+
+
+pattern: Remove unnecessary conditional jumps (mainly this is a warning) 
+0: ?opjrjp z,?const1
+1: *
+2: ?opjrjp nz,?const2
+replacement:
+0:?opjrjp z,?const1
+1: *
+2: ?opjrjp ?const2
+constraints:
+in(?opjrjp,jr,jp)
+flagsNotModified(1,Z)
+
+pattern: Remove unnecessary conditional jumps (mainly this is a warning)
+0: ?opjrjp nz,?const1
+1: *
+2: ?opjrjp z,?const2
+replacement:
+0: ?opjrjp nz,?const1
+1: *
+2: ?opjrjp ?const2
+constraints:
+in(?opjrjp,jr,jp)
+flagsNotModified(1,Z)
+
+pattern: Replace ld ?regpair,?const2 with inc ?regpair
+2: ld ?regpair,?const1
+1: *
+0: ld ?regpair,?const2
+replacement:
+2: ld ?regpair,?const1
+1: *
+0: inc ?regpair
+constraints:
+in(?regpair,BC,DE,HL,IC,IY)
+equal(?const2,?const1+1)
+regsNotModified(1,?regpair)
+
+pattern: Replace ld ?regpair,?const2 with dec ?regpair
+2: ld ?regpair,?const1
+1: *
+0: ld ?regpair,?const2
+replacement:
+2: ld ?regpair,?const1
+1: *
+0: dec ?regpair
+constraints:
+in(?regpair,BC,DE,HL,IC,IY)
+equal(?const2,?const1-1)
+regsNotModified(1,?regpair)
+
+pattern: Replace ld de,?any; ex de,hl with ld hl,?any
+0: ld de, ?any
+1: ex de, hl
+replacement:
+0: ld hl, ?any
+constraints:
+regsNotUsedAfter(1,DE)
+
+pattern: Replace add hl, ?any; ex de,hl; ld (?const1), de with add hl,?any; ld (?const1), hl
+0: add hl, ?any
+1: ex de, hl
+2: ld (?const1), de
+replacement:
+0: add hl, ?any
+2: ld (?const1), hl
+constraints:
+regsNotUsedAfter(2,DE,HL)
+
+pattern: Replace ld (?regixiy + ?const), a; inc (?regixiy + ?const); ... inc (?regixiy + ?const) with add a, ?const2; ld (?regixiy + ?const), a
+0: ld (?regixiy + ?const), a
+1: [?const2] inc (?regixiy + ?const)
+replacement:
+0: add a, ?const2
+1: ld (?regixiy + ?const), a
+constraints:
+in(?regixiy,IX,IY)
+equal(?const2 > 1, -1)
+regsNotUsedAfter(1,A)
+
+pattern: Replace ld (?regixiy + ?const), a; inc (?regixiy + ?const) with inc a; ld (?regixiy + ?const), a
+0: ld (?regixiy + ?const), a
+1: [?const2] inc (?regixiy + ?const)
+replacement:
+0: inc a
+1: ld (?regixiy + ?const), a
+constraints:
+in(?regixiy,IX,IY)
+equal(?const2 , 1)
+regsNotUsedAfter(1,A)
+
+pattern: Remove unused ?op ?regpair
+0: ?op ?regpair
+replacement:
+constraints:
+in(?op,inc,dec)
+in(?regpair,BC,DE,HL,IX,IY)
+regsNotUsedAfter(0,?regpair)
+
+pattern: Remove unused ?op ?reg
+0: ?op ?reg
+replacement:
+constraints:
+in(?op,inc,dec)
+in(?reg,A,B,C,D,E,H,L,IXL,IXH,IYL,IYH)
+regsNotUsedAfter(0,?reg)
+flagsNotUsedAfter(0,S,Z,H,P/V,N)
+
+pattern: Remove unused ?op ?any
+0: ?op ?any
+replacement:
+constraints:
+in(?op,or,and,xor)
+regsNotUsedAfter(0,A)
+flagsNotUsedAfter(0,S,Z,H,P/V,N,C)
+
+pattern: Remove unused ?op a,?any
+0: ?op a,?any
+replacement:
+constraints:
+in(?op,add,adc,sbc)
+regsNotUsedAfter(0,A)
+flagsNotUsedAfter(0,S,Z,H,P/V,N,C)
+
+pattern: Remove unused sub ?any
+0: sub ?any
+replacement:
+constraints:
+regsNotUsedAfter(0,A)
+flagsNotUsedAfter(0,S,Z,H,P/V,N,C)
+
+pattern: Remove unused add ?reg,?any
+0: add ?reg,?any
+replacement:
+constraints:
+in(?reg,HL,IX,IY)
+regsNotUsedAfter(0,?reg)
+flagsNotUsedAfter(0,H,N,C)
+
+pattern: Remove unused ?op ?reg,?any
+0: ?op ?reg,?any
+replacement:
+constraints:
+in(?op,adc,sbc)
+in(?reg,HL,IX,IY)
+regsNotUsedAfter(0,?reg)
+flagsNotUsedAfter(0,S,Z,H,P/V,N,C)
+
+pattern: ld hl,?any; ld ?regpairl,(hl); inc hl; ld ?regpairh,(hl) -> ld ?regpair,(?any)
+0: ld hl,?any
+1: ld ?regpairl,(hl)
+2: inc hl
+3: ld ?regpairh,(hl)
+replacement:
+0: ld ?regpair,(?any)
+constraints:
+regpair(?regpair,?regpairh,?regpairl)
+regsNotUsedAfter(3,HL)
+
+pattern: bit 6,a; ?op nz,?const -> add a,a; ?op m,?const
+0: bit 6,a
+1: ?op nz,?const
+replacement:
+0: add a,a
+1: ?op m,?const
+constraints:
+in(?op,jp)
+regsNotUsedAfter(1,A)
+
+pattern: bit 6,a; ?op z,?const -> add a,a; ?op p,?const
+0: bit 6,a
+1: ?op z,?const
+replacement:
+0: add a,a
+1: ?op p,?const
+constraints:
+in(?op,jp)
+regsNotUsedAfter(1,A)
+
+pattern: Remove redundant ?op ?any
+0: ?op ?any
+1: ?op ?any
+replacement:
+0: ?op ?any
+constraints:
+in(?op,and,or)
+
+pattern: Remove redundant ?op a
+0: ?op a
+replacement:
+constraints:
+in(?op,and,or)
+flagsNotUsedAfter(0,S,Z,H,P/V,N,C)
+
+pattern: Replace xor a; inc a by ld a,1
+0: xor a
+1: inc a
+replacement:
+0: ld a,1
+constraints:
+flagsNotUsedAfter(1,S,Z,H,P/V,N,C)
+
+pattern: Replace jp ?const1 with jr ?const1
+name: jp2jr
+tags: cpc
+0: jp ?const1
+replacement:
+0: jr ?const1
+constraints:
+reachableByJr(0,?const1)
+
+; theNestruo
+pattern: Replace ld ?regpair,?const1 with ld ?regpairl,(?const1 & #00ff)
+tags: sdcc-unsafe
+0: ld ?regpair,?const1
+replacement:
+0: ld ?regpairl,(?const1 & #00ff)
+constraints:
+regpair(?regpair,?regpairh,?regpairl)
+regsNotUsedAfter(0,?regpairh)
+
+pattern: Replace ld ?regpair,?const1 with ld ?regpairh,(?const1) >> 8
+tags: sdcc-unsafe
+0: ld ?regpair,?const1
+replacement:
+0: ld ?regpairh,(?const1) >> 8
+constraints:
+regpair(?regpair,?regpairh,?regpairl)
+regsNotUsedAfter(0,?regpairl)
+
+; Thanks to Metalion/theNestruo for suggesting the idea for this pattern:
+pattern: Replace ld ?regpair,?const2 with ld ?regpairl,(?const2) & #00ff
+tags: sdcc-unsafe
+2: ld ?regpair,?const1 
+1: *
+0: ld ?regpair,?const2 
+replacement:
+2: ld ?regpair,?const1 
+1: * 
+0: ld ?regpairl,(?const2) & #00ff
+constraints:
+regsNotModified(1, ?regpair)
+regpair(?regpair,?regpairh,?regpairl)
+equal((?const1) & #ff00, (?const2) & #ff00)
+
+; Thanks to theNestruo for suggesting the idea for this pattern:
+pattern: Replace ld ?regpair,?const2 with ld ?regpairh,(?const2) >> 8
+tags: sdcc-unsafe
+2: ld ?regpair,?const1 
+1: * 
+0: ld ?regpair,?const2 
+replacement:
+2: ld ?regpair,?const1 
+1: * 
+0: ld ?regpairh,(?const2) >> 8
+constraints:
+regsNotModified(1, ?regpair)
+regpair(?regpair,?regpairh,?regpairl)
+equal((?const1) & #00ff, (?const2) & #00ff)
+
+; Thanks to theNestruo for suggesting the idea for this pattern:
+pattern: Replace ld (?reg2),?const2 with ld (?reg2),?regpairl (as ?regpairl == ?const2 here)
+tags: sdcc-unsafe
+2: ld ?regpair,?const1
+1: *
+0: ld (?reg2),?const2
+replacement:
+2: ld ?regpair,?const1
+1: *
+0: ld (?reg2),?regpairl
+constraints:
+regpair(?regpair,?regpairh,?regpairl)
+in(?reg2,HL,IX,IY)
+equal(?const2, (?const1) & #00ff)
+regsNotModified(1,?regpairl)
+
+; Thanks to theNestruo for suggesting the idea for this pattern:
+pattern: Replace ld (?reg2),?const2 with ld (?reg2),?regpairh (as ?regpairh == ?const2 here)
+tags: sdcc-unsafe
+2: ld ?regpair,?const1
+1: *
+0: ld (?reg2),?const2
+replacement:
+2: ld ?regpair,?const1
+1: *
+0: ld (?reg2),?regpairh
+constraints:
+regpair(?regpair,?regpairh,?regpairl)
+in(?reg2,HL,IX,IY)
+equal(?const2, (?const1) >> 8)
+regsNotModified(1,?regpairh)
+
+pattern: Replace ld ?regpair1h,?const1; ld ?regpair1l,?const2 with ld ?regpair1,((?const2) & #00ff) + ((?const1) << 8)
+tags: sdcc-unsafe
+0: ld ?regpair1h,?const1
+1: *
+2: ld ?regpair1l,?const2
+replacement:
+0: ld ?regpair1,((?const2) & #00ff) + ((?const1) << 8)
+1: *
+constraints:
+regpair(?regpair1,?regpair1h,?regpair1l) : 0
+regsNotUsed(1,?regpair1h)
+
+pattern: Replace ld ?regpair1l,?const2; ld ?regpair1h,?const1 with ld ?regpair1,((?const2) & #00ff) + ((?const1) << 8)
+tags: sdcc-unsafe
+0: ld ?regpair1l,?const2
+1: *
+2: ld ?regpair1h,?const1
+replacement:
+0: ld ?regpair1,((?const2) & #00ff) + ((?const1) << 8)
+1: *
+constraints:
+regpair(?regpair1,?regpair1h,?regpair1l) : 0
+regsNotUsed(1,?regpair1l)
+
+

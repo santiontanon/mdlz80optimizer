@@ -66,7 +66,7 @@ public class CPUOpPattern {
             }
             Expression exp = config.expressionParser.parse(Tokenizer.tokenize(argStr), null, null, code);
             if (exp == null) {
-                config.error("Cannot parse argument '" + argStr + "' when instantiating pattern " + pattern.name);
+                config.error("Cannot parse argument '" + argStr + "' when instantiating pattern " + pattern.message);
                 return null;
             }
             instantiatedArgs.add(exp);
