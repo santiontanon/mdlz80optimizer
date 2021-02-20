@@ -18,3 +18,9 @@
   	define e 1
   	assign e e+1
   	byte e
+
+  define three 3  ; definition with comment
+  byte (three)*2
+
+  DEFINE VT_CLSCREND    27,"J"  ; Clear to end of screen: Clear screen from cursor onwards.
+  byte 1, VT_CLSCREND, 2

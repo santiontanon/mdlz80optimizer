@@ -1000,7 +1000,10 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             }
                     
             // parameters parsed, parse the body:
-            macroTokens.addAll(tokens);
+            for(String token:tokens) {
+                if (Tokenizer.isSingleLineComment(token)) break;
+                macroTokens.add(token);
+            }
             tokens.clear();
 
             if (keyword.equalsIgnoreCase("assign")) {
