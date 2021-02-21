@@ -82,7 +82,7 @@ Tasks and task/specific flags: Tasks will be executed in the order in which they
   
 - ```-posilent```: Supresses the pattern-based-optimizer output
   
-- ```-poapply```: For each assembler \<file\> parsed by MDL, a corresponding \<file\>.mdl.asm is generated with the optimizations applied to it.
+- ```-poapply```: (will be deprecated soon) For each assembler \<file\> parsed by MDL, a corresponding \<file\>.mdl.asm is generated with the optimizations applied to it.
   
 - ```-popotential```: Reports lines where a potential optimization was not applied for safety, but could maybe be done manually (at most one potential optimization per line is shown).
   
