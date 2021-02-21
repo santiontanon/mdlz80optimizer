@@ -84,7 +84,6 @@ public class SymbolTableGenerator implements MDLWorker {
                 includeConstants) {
                 sb.append(name);
                 sb.append(": equ ");
-                System.out.println(symbol.name + " expression: " + symbol.exp);
                 if (symbol.exp.isConstant()) {
                     sb.append(symbol.getValue(code, true));
                 } else if (symbol.isLabel()) {

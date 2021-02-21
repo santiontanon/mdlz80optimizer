@@ -55,9 +55,6 @@ public class CodeBlock {
     {
         int idx = start.source.getStatements().indexOf(start);
         CodeStatement s = start;
-//        System.out.println("addStatementsFromTo: " + start.source.fileName);
-//        System.out.println("    start: " + start);
-//        System.out.println("    end: " + end);
         
         while(s != end) {
             if (s == null) return false;

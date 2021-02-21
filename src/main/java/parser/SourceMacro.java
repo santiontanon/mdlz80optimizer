@@ -198,7 +198,6 @@ public class SourceMacro {
                     if (config.dialectParser != null) {
                         String newLabel = config.dialectParser.getNextTemporaryLabel();
                         if (newLabel != null) {
-                            System.out.println("newLabel: " + newLabel + " with labelPrefix: " + macroCall.labelPrefix);
                             temporaryLabelsMap.put(label, newLabel);
                         }
                     }
