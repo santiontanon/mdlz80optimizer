@@ -1452,7 +1452,11 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                 CodeStatement org = new CodeStatement(CodeStatement.STATEMENT_ORG, new SourceLine("", reconstructedFile, reconstructedFile.getStatements().size()+1), reconstructedFile, config);
                 org.org = page.start;
                 reconstructedFile.addStatement(org);
-                int pageStart = page.start.evaluateToInteger(page.s, code, true);
+                Integer pageStart = page.start.evaluateToInteger(page.s, code, true);
+                if (pageStart == null) {
+                    config.error("Cannot evaluate " + page.start + " in " + page.s.sl);
+                    return false;
+                }
                 Integer pageSize = (page.size == null ? null:page.size.evaluateToInteger(page.s, code, true));
                 int currentAddress = pageStart;
                 for(SJasmCodeBlock block:page.blocks) {

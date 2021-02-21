@@ -989,7 +989,7 @@ public class ASMSXDialect implements Dialect {
                             if (pad > 0 && padExp != null) {
                                 // we need to insert filler space:
                                 config.debug("asMSX: pad: " + pad + " to reach " + orgAddress);
-                                CodeStatement padStatement = new CodeStatement(CodeStatement.STATEMENT_DEFINE_SPACE, null, lastGeneratingBytes.source, config);
+                                CodeStatement padStatement = new CodeStatement(CodeStatement.STATEMENT_DEFINE_SPACE, null, previous.source, config);
                                 padStatement.space = padExp;
                                 padStatement.space_value = Expression.constantExpression(0, config);
                                 previous.source.addStatement(previous.source.getStatements().indexOf(previous)+1, padStatement);                            

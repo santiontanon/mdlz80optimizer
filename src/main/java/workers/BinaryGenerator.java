@@ -141,8 +141,16 @@ public class BinaryGenerator implements MDLWorker {
 
                 case CodeStatement.STATEMENT_DEFINE_SPACE:
                     if (ss.space_value != null) {
-                        int value = ss.space_value.evaluateToInteger(ss, code, true);
-                        int amount = ss.space.evaluateToInteger(ss, code, true);
+                        Integer value = ss.space_value.evaluateToInteger(ss, code, true);
+                        Integer amount = ss.space.evaluateToInteger(ss, code, true);
+                        if (value == null) {
+                            config.error("Cannot evaluate " + ss.space_value + " in " + ss.sl);
+                            return false;
+                        }
+                        if (amount == null) {
+                            config.error("Cannot evaluate " + ss.space + " in " + ss.sl);
+                            return false;
+                        }
                         for(int i = 0;i<amount;i++) os.write(value);
                     }
                     break;
