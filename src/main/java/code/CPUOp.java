@@ -257,6 +257,13 @@ public class CPUOp {
     }    
     
     
+    public static boolean offsetWithinJrRange(int diff)
+    {
+        if (diff < -127 || diff > 129) return false;
+        return true;
+    }
+    
+    
     public List<Integer> assembleToBytes(CodeStatement s, CodeBase code, MDLConfig config)
     {
         List<Integer> data = new ArrayList<>();
@@ -280,8 +287,16 @@ public class CPUOp {
                         config.error("Unable to resolve '" + args.get(args.size()-1) + "' in " + s.sl);
                         return null;                        
                     }
-                    int offset = (target - base)&0xff;
-                    data.add(offset);
+
+                    int offset = (target - base);
+                    
+                    // check if it's within jr range!:
+                    if (!offsetWithinJrRange(offset)) {
+                        config.error("Jump offset out of range: " + offset + " in " + s.sl);
+                        return null;
+                    }
+                    
+                    data.add(offset & 0xff);
                 } else {
                     // ld IX/IY offet:
                     int arg_idx = -1;

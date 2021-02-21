@@ -750,6 +750,7 @@ public class Pattern {
                 if (startAddress == null) {
                     return false;
                 }
+                startAddress += + start.sizeInBytes(code, true, true, true);
                 SourceConstant sc = code.getSymbol(constraint.args[1]);
                 if (sc == null) {
                     return false;
@@ -760,7 +761,7 @@ public class Pattern {
                 }
                 Integer endAddress = (Integer)tmp;
                 int diff = endAddress - startAddress;
-                if (diff < -126 || diff > 130) return false;
+                if (!CPUOp.offsetWithinJrRange(diff)) return false;
                 break;
             }
             case "regsNotModified":
