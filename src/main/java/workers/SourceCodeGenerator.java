@@ -38,12 +38,11 @@ public class SourceCodeGenerator implements MDLWorker {
 
     @Override
     public String docString() {
-        return "  -asm <output file>: (task) saves the resulting assembler code in a single asm file (if no " +
-               "optimizations are performed, then this will just output the same code read as input " +
-               "(but with all macros and include statements expanded).\n" +
-               "  -asm-dialect <output file>: (task) same as '-asm', but tries to mimic the syntax of the defined dialect in the output (experimental feature, not fully implemented!).\n" +
-               "  -asm-expand-inbcin: replaces all incbin commands with their actual data in the output " +
-               "assembler file, effectively, making the output assembler file self-contained.\n";
+        // This string has MD tags, so that I can easily generate the corresponding documentation in github with the 
+        // hidden "-helpmd" flag:        
+        return "- ```-asm <output file>```: (task) saves the resulting assembler code in a single asm file (if no optimizations are performed, then this will just output the same code read as input (but with all macros and include statements expanded).\n" +
+               "- ```-asm-dialect <output file>```: (task) same as '-asm', but tries to mimic the syntax of the defined dialect in the output (experimental feature, not fully implemented!).\n" +
+               "- ```-asm-expand-inbcin```: replaces all incbin commands with their actual data in the output assembler file, effectively, making the output assembler file self-contained.\n";
     }
 
 

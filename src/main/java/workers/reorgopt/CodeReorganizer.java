@@ -54,8 +54,10 @@ public class CodeReorganizer implements MDLWorker {
     
     @Override
     public String docString() {
-        return "  -ro: (task) runs the code reoganizer optimizer.\n" + 
-               "  -rohtml <file>: generates a visualization of the division of the code before code reoganizer optimization as an html file.\n";
+        // This string has MD tags, so that I can easily generate the corresponding documentation in github with the 
+        // hidden "-helpmd" flag:        
+        return "- ```-ro```: (task) runs the code reoganizer optimizer.\n" + 
+               "- ```-rohtml <file>```: generates a visualization of the division of the code before code reoganizer optimization as an html file.\n";
     }
 
     @Override

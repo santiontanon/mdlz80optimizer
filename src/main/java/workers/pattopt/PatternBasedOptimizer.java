@@ -59,12 +59,14 @@ public class PatternBasedOptimizer implements MDLWorker {
 
     @Override
     public String docString() {
-        return "  -po: (task) Runs the pattern-based optimizer using the latest settings. Notice that the -posilent, -poapply, etc. flags need to be passed *before* the call to -po that they which to affect and which is the one that triggers the optimizer. You can pass an optional parameter, like '-po size' or '-po speed', which are shortcuts for '-po -popatterns data/pbo-patterns-size.txt' and '-po -popatterns data/pbo-patterns-speed.txt' (some dialects might change the defaults of these two)\n" +
-               "  -posilent: Supresses the pattern-based-optimizer output\n" +
-               "  -poapply: "+MDLLogger.ANSI_RED+"(deprecated) "+MDLLogger.ANSI_RESET+"For each assembler <file> parsed by MDL, a corresponding <file>.mdl.asm is generated with the optimizations applied to it.\n" + 
-               "  -popotential: Reports lines where a potential optimization was not applied for safety, but could maybe be done manually (at most one potential optimization per line is shown).\n" +
-               "  -popotential-all: Same as above, but without the one-per-line constraint.\n" +
-               "  -popatterns <file>: specifies the file to load optimization patterns from (default 'data/pbo-patterns.txt', " +
+        // This string has MD tags, so that I can easily generate the corresponding documentation in github with the 
+        // hidden "-helpmd" flag:        
+        return "- ```-po```: (task) Runs the pattern-based optimizer using the latest settings. Notice that the ```-posilent```, ```-poapply```, etc. flags need to be passed *before* the call to ```-po``` that they which to affect and which is the one that triggers the optimizer. You can pass an optional parameter, like ````-po size``` or ```-po speed```, which are shortcuts for '-po -popatterns data/pbo-patterns-size.txt' and '-po -popatterns data/pbo-patterns-speed.txt' (some dialects might change the defaults of these two)\n" +
+               "- ```-posilent```: Supresses the pattern-based-optimizer output\n" +
+               "- ```-poapply```: "+MDLLogger.ANSI_RED+"(deprecated) "+MDLLogger.ANSI_RESET+"For each assembler ```<file>``` parsed by MDL, a corresponding ```<file>.mdl.asm``` is generated with the optimizations applied to it.\n" + 
+               "- ```-popotential```: Reports lines where a potential optimization was not applied for safety, but could maybe be done manually (at most one potential optimization per line is shown).\n" +
+               "- ```-popotential-all```: Same as above, but without the one-per-line constraint.\n" +
+               "- ```-popatterns <file>```: specifies the file to load optimization patterns from (default 'data/pbo-patterns.txt', " +
                                      "which contains patterns that optimize both size and speed). For targetting size optimizations, use " +
                                      "'data/pbo-patterns-size.txt'. Notice that some dialects might change the default, for example, the " +
                                      "sdcc dialect sets the default to 'data/pbo-patterns-sdcc-speed.txt'\n";
@@ -262,6 +264,7 @@ public class PatternBasedOptimizer implements MDLWorker {
                     PatternMatch bestMatch = null;
                     int bestSavings = 0;    // selection is based on bytes saved
                     for(Pair<Pattern,PatternMatch> p:matches) {
+                        config.debug("optimization option: " + p.getLeft().getInstantiatedName(p.getRight()));
                         int savings = p.getLeft().getSpaceSaving(p.getRight(), code);
                         if (bestPatt == null || savings > bestSavings) {
                             bestPatt = p.getLeft();

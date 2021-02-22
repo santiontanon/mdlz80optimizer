@@ -33,7 +33,9 @@ public class BinaryGenerator implements MDLWorker {
     
     @Override
     public String docString() {
-        return "  -bin <output file>: (task) generates an assembled binary.\n";
+        // This string has MD tags, so that I can easily generate the corresponding documentation in github with the 
+        // hidden "-helpmd" flag:        
+        return "- ```-bin <output file>```: (task) generates an assembled binary.\n";
     }
 
     

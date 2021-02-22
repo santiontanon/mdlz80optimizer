@@ -1433,4 +1433,19 @@ constraints:
 regpair(?regpair1,?regpair1h,?regpair1l) : 0
 regsNotUsed(1,?regpair1l)
 
+pattern: Replace ld ?reg, (hl); cp ?reg  with  cp (hl)
+0: ld ?reg, (hl)
+1: cp ?reg
+replacement:
+0: cp (hl)
+constraints:
+regsNotUsedAfter(1,?reg)
 
+pattern: Replace ld ?reg, a; ld a, (hl); cp ?reg  with  cp (hl)
+0: ld ?reg, a
+1: ld a, (hl)
+2: cp ?reg
+replacement:
+0: cp (hl)
+constraints:
+regsNotUsedAfter(2,?reg,A)

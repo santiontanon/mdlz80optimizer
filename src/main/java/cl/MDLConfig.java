@@ -101,43 +101,48 @@ public class MDLConfig {
     // Accumulated stats to be reported at the end of execution:
     public OptimizationResult optimizerStats = new OptimizationResult();
 
+    // This string has MD tags, so that I can easily generate the corresponding documentation in github with the 
+    // hidden "-helpmd" flag:
     public String docString = "MDL "+Main.VERSION_STRING+" (A Z80 assembler optimizer) by Santiago Ontañón (Brain Games, 2020-2021)\n"
-            + "https://github.com/santiontanon/mdlz80optimizer\n" + "\n"
-            + "arguments: <input assembler file> [options/tasks]\n"
+            + "https://github.com/santiontanon/mdlz80optimizer\n"
+            + "\n"
+            + "Command Line Arguments:\n"
+            + "```java -jar mdl.jar <input assembler file> [options/tasks]```\n"
+            + "\n"
             + "Tasks will be executed in the order in which they are specified in the commandline, and using all the flag specified previously. Tasks can be repeated many times in the same command line.\n"
-            + "  -cpu <type>: to select a different CPU (z80/z80msx/z80cpc) (default: z80msx).\n"
-            + "  -dialect <type>: to allow parsing different assembler dialects "
+            + "- ```-cpu <type>```: to select a different CPU (z80/z80msx/z80cpc) (default: z80msx).\n"
+            + "- ```-dialect <type>```: to allow parsing different assembler dialects "
                     + "(" + StringUtils.join(Dialects.knownDialects(), '/') + ") "
                     + "(default: mdl, which supports some basic code idioms common to various assemblers).\n"
             + "                   Note that even when selecting a dialect, not all syntax of a given assembler might be supported.\n"
-            + "  -I <folder>: adds a folder to the include search path.\n"
-            + "  -quiet: turns off info messages; only outputs warnings and errors.\n"
-            + "  -debug: turns on debug messages.\n"
-            + "  -trace: turns on trace messages.\n"
-            + "  -warn: turns on all warnings.\n"
-            + "  -warn-labelnocolon: turns on warnings for not placing colons after labels.\n"
-            + "  -warn-jp(rr): turns on warnings for using confusing 'jp (hl)' instead of 'jp hl' (this is turned off by default in dialects that do not support this).\n"
-            + "  -warn-unofficial: turns on warnings for using unofficial op syntax (e.g., 'add 1' instead of 'add a,1'.\n"
-            + "  -warn-ambiguous: turns on warnings for using ambiguous or error-inducing syntax in some dialects.\n"
-            + "  -do-not-convert-to-official: turns off automatic conversion of unofficial op syntax to official ones in assembler output.\n"
-            + "  -hex#: hex numbers render like #ffff (default). These flags also have analogous effect on binary and octal constant rendering.\n"
-            + "  -HEX#: hex numbers render like #FFFF.\n"
-            + "  -hexh: hex numbers render like 0ffffh.\n"
-            + "  -HEXH: hex numbers render like 0FFFFh.\n"
-            + "  -hex0x: hex numbers render like 0xffff.\n"
-            + "  -HEX0X: hex numbers render like 0XFFFF.\n"
-            + "  -+bin: includes binary files (incbin) in the output analyses.\n"
-            + "  -no-opt-pragma <value>: changes the pragma to be inserted in a comment on a line to prevent optimizing it (default: "
+            + "- ```-I <folder>```: adds a folder to the include search path.\n"
+            + "- ```-quiet```: turns off info messages; only outputs warnings and errors.\n"
+            + "- ```-debug```: turns on debug messages.\n"
+            + "- ```-trace```: turns on trace messages.\n"
+            + "- ```-warn```: turns on all warnings.\n"
+            + "- ```-warn-labelnocolon```: turns on warnings for not placing colons after labels.\n"
+            + "- ```-warn-jp(rr)```: turns on warnings for using confusing 'jp (hl)' instead of 'jp hl' (this is turned off by default in dialects that do not support this).\n"
+            + "- ```-warn-unofficial```: turns on warnings for using unofficial op syntax (e.g., 'add 1' instead of 'add a,1'.\n"
+            + "- ```-warn-ambiguous```: turns on warnings for using ambiguous or error-inducing syntax in some dialects.\n"
+            + "- ```-do-not-convert-to-official```: turns off automatic conversion of unofficial op syntax to official ones in assembler output.\n"
+            + "- ```-hex#```: hex numbers render like #ffff (default). These flags also have analogous effect on binary and octal constant rendering.\n"
+            + "- ```-HEX#```: hex numbers render like #FFFF.\n"
+            + "- ```-hexh```: hex numbers render like 0ffffh.\n"
+            + "- ```-HEXH```: hex numbers render like 0FFFFh.\n"
+            + "- ```-hex0x```: hex numbers render like 0xffff.\n"
+            + "- ```-HEX0X```: hex numbers render like 0XFFFF.\n"
+            + "- ```-+bin```: includes binary files (incbin) in the output analyses.\n"
+            + "- ```-no-opt-pragma <value>```: changes the pragma to be inserted in a comment on a line to prevent optimizing it (default: "
             + PRAGMA_NO_OPTIMIZATION + ")\n"
-            + "  -out-opcase <case>: whether to convert the assembler operators to upper or lower case. Possible values are: none/lower/upper (none does no conversion). Default is 'lower'.\n"
-            + "  -out-allow-ds-virtual: allows 'ds virtual' in the generated assembler (not all assemblers support this, but simplifies output)\n"
-            + "  -out-colonless-equs: equs will look like 'label equ value' instead of 'label: equ value'\n"
-            + "  -out-remove-safety-equdollar: labels preceding an equ statement are rendered as 'label: equ $' by default for safety (some assemblers interpret them differently otherwise). Use this flag to deactivate this behavior.\n"
-            + "  -out-labels-no-dots: local labels get resolved to `context.label', some assemblers do not like '.' in labels however. This flag replaces them by underscores.\n"
-            + "  -out-squarebracket-ind: use [] for indirections in the output, rather than ().\n"
-            + "  -out-data-instead-of-ds: will replace statements like 'ds 4, 0' by 'db 0, 0, 0, 0.\n"
-            + "  -out-do-not-evaluate-dialect-functions: some assembler dialects define functions like random/sin/cos that can be used to form expressions. By default, MDL replaces them by the result of their execution before generating assembler output (as those might not be defined in other assemblers, and thus this keeps the assembler output as compatible as possible). Use this flag if you don't want this to happen.\n"
-            + "  -out-evaluate-all-expressions: this flag makes MDL resolve all expressions down to their ultimate numeric or string value when generating assembler code.\n";
+            + "- ```-out-opcase <case>```: whether to convert the assembler operators to upper or lower case. Possible values are: none/lower/upper (none does no conversion). Default is 'lower'.\n"
+            + "- ```-out-allow-ds-virtual```: allows 'ds virtual' in the generated assembler (not all assemblers support this, but simplifies output)\n"
+            + "- ```-out-colonless-equs```: equs will look like 'label equ value' instead of 'label: equ value'\n"
+            + "- ```-out-remove-safety-equdollar```: labels preceding an equ statement are rendered as 'label: equ $' by default for safety (some assemblers interpret them differently otherwise). Use this flag to deactivate this behavior.\n"
+            + "- ```-out-labels-no-dots```: local labels get resolved to `context.label', some assemblers do not like '.' in labels however. This flag replaces them by underscores.\n"
+            + "- ```-out-squarebracket-ind```: use [] for indirections in the output, rather than ().\n"
+            + "- ```-out-data-instead-of-ds```: will replace statements like ```ds 4, 0``` by ```db 0, 0, 0, 0```.\n"
+            + "- ```-out-do-not-evaluate-dialect-functions```: some assembler dialects define functions like random/sin/cos that can be used to form expressions. By default, MDL replaces them by the result of their execution before generating assembler output (as those might not be defined in other assemblers, and thus this keeps the assembler output as compatible as possible). Use this flag if you don't want this to happen.\n"
+            + "- ```-out-evaluate-all-expressions```: this flag makes MDL resolve all expressions down to their ultimate numeric or string value when generating assembler code.\n";
 
 
     public MDLConfig() {
@@ -167,13 +172,21 @@ public class MDLConfig {
     public boolean somethingToDo() {
         return !executionQueue.isEmpty();
     }
+    
+    
+    // Removes .md annotations (used for the GitHub documentation), for printing on the console:
+    private String removeMDTags(String text)
+    {
+        return text.replace("- ```-", "  -").replace("```", "");
+    }
 
     /*
      * Returns null if everything is fine, and an error string otherwise.
      */
     public boolean parseArgs(String... argsArray) throws IOException {
         if (argsArray.length == 0) {
-            info(docString);
+            
+            info(removeMDTags(docString));
             return true;
         }
 
@@ -185,6 +198,13 @@ public class MDLConfig {
             String arg = args.get(0);
             if (arg.startsWith("-")) {
                 switch (arg) {
+                    
+                    // This is a hidden flag, as it has no utility for the user, and is only used
+                    // to generate the documentation for GitHub:
+                    case "-helpmd":
+                        info(docString);
+                        return true;
+                        
                     case "-cpu":
                         if (args.size()>=2) {
                             args.remove(0);

@@ -31,7 +31,9 @@ public class AnnotatedSourceCodeGenerator implements MDLWorker {
 
     @Override
     public String docString() {
-        return "  -asm+ <output file>: (task) generates a single text file containing the original assembler code " +
+        // This string has MD tags, so that I can easily generate the corresponding documentation in github with the 
+        // hidden "-helpmd" flag:        
+        return "- ```-asm+ <output file>```: (task) generates a single text file containing the original assembler code " +
                "(with macros expanded), that includes size and time annotations at the beginning of each file " +
                "to help with manual optimizations beyond what MDL already provides.\n";
     }

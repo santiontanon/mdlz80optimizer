@@ -27,8 +27,9 @@ public class DotGenerator implements MDLWorker {
     @Override
     public String docString()
     {
-        return "  -dot <output file>: (task) generates a dot file with a graph representing the whole source code.\n" +
-               "                      convert it to a png using 'dot' like this: dot -Tpng <output file>.dot -o <output file>.png\n";
+        // This string has MD tags, so that I can easily generate the corresponding documentation in github with the 
+        // hidden "-helpmd" flag:        
+        return "- ```-dot <output file>```: (task) generates a dot file with a graph representing the whole source code. Convert it to a png using 'dot' like this: ```dot -Tpng <output file>.dot -o <output file>.png```\n";
     }
 
 

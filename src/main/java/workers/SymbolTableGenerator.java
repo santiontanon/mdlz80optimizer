@@ -32,8 +32,10 @@ public class SymbolTableGenerator implements MDLWorker {
 
     @Override
     public String docString() {
-        return "  -st <output file>: (task) to output the symbol table.\n" +
-               "  -st-constants: includes constants, in addition to labels, in the output symbol table.\n";
+        // This string has MD tags, so that I can easily generate the corresponding documentation in github with the 
+        // hidden "-helpmd" flag:        
+        return "- ```-st <output file>```: (task) to output the symbol table.\n" +
+               "- ```-st-constants```: includes constants, in addition to labels, in the output symbol table.\n";
     }
 
     @Override
