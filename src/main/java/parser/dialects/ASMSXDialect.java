@@ -463,9 +463,22 @@ public class ASMSXDialect implements Dialect {
             
             // Generates a ROM header (and stores a pointer to the start address, to later modify with the .start directive):
             List<Expression> data = new ArrayList<>();
-            romHeaderStatement = s;
-            s.type = CodeStatement.STATEMENT_DATA_BYTES;
+            // Add an "org" to start at 0x4000 if necessary:
+            {
+                Integer currentAddress = s.getAddress(code, previous);
+                if (currentAddress == null || currentAddress != 0x4000) {
+                    s.type = CodeStatement.STATEMENT_ORG;
+                    s.org = Expression.constantExpression(0x4000, Expression.RENDER_AS_16BITHEX, config);
+
+                    s = new CodeStatement(CodeStatement.STATEMENT_DATA_BYTES, new SourceLine(sl), source, config);
+                    l.add(s);
+                } else {
+                    s.type = CodeStatement.STATEMENT_DATA_BYTES;
+                }
+            }
+            
             s.data = data;
+            romHeaderStatement = s;
             data.add(Expression.constantExpression("AB", config));
             if (startAddressLabel == null) {
                 data.add(Expression.constantExpression(0, config)); // start address place holder

@@ -110,6 +110,12 @@ public class CodeStatement {
     }
 
 
+    public Integer getAddress(CodeBase code, CodeStatement previous)
+    {
+        return getAddressInternal(code, true, previous, new ArrayList<>());
+    }
+
+    
     /*
     - previous only needs to be specified if this is called on a CodeStatement not yet added to a source file
       (for example, when parsing a macro being expanded), so that we know which will be the previous statement once it is added

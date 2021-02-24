@@ -1,5 +1,4 @@
 ; Test case: 
-	org #4000
 	.megarom ascii8
     .start loop
 
