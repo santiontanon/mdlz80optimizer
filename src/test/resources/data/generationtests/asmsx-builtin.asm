@@ -4,6 +4,6 @@
     .start loop
 
 loop:
-	jr loop
+	jp loop
 
 .printtext "hello!"

@@ -592,9 +592,47 @@ public class ASMSXDialect implements Dialect {
             if (address == null) {
                 config.error("Cannot parse expression in "+sl.fileNameLineString()+": " + sl.line);
                 return false;
-            }
+            }      
             
             if (romType != ROM_STANDARD) {
+                switch(romType){
+                    case MEGAROM_KONAMI_SCC:
+                        // address += 0x1000
+                        address = Expression.operatorExpression(Expression.EXPRESSION_SUM, 
+                                Expression.parenthesisExpressionIfNotConstant(address, "(", config),
+                                Expression.constantExpression(0x1000, Expression.RENDER_AS_16BITHEX, config), config);
+                        break;
+                    case MEGAROM_ASCII8:
+                        // address = 0x6000 + (address - 0x4000) / 4;
+                        address = Expression.operatorExpression(Expression.EXPRESSION_SUM, 
+                                Expression.constantExpression(0x6000, Expression.RENDER_AS_16BITHEX, config), 
+                                Expression.operatorExpression(Expression.EXPRESSION_DIV, 
+                                        Expression.parenthesisExpression(
+                                                Expression.operatorExpression(Expression.EXPRESSION_SUB, 
+                                                        Expression.parenthesisExpressionIfNotConstant(address, "(", config), 
+                                                        Expression.constantExpression(0x4000, Expression.RENDER_AS_16BITHEX, config), config), "(", config),
+                                        Expression.constantExpression(4, config), config), config);
+                        break;
+                    case MEGAROM_ASCII16:
+                    {
+                        // address = (address == 0x4000 ? 0x6000 : 0x7000)
+                        if (!address.evaluatesToIntegerConstant()) {
+                            config.error("address argument of 'select' directive ("+address+") cannot be evaluated to an integer constant in " + sl);
+                            return false;
+                        }
+                        Integer addressInt = address.evaluateToInteger(s, code, true);
+                        if (addressInt == null) {
+                            config.error("address argument of 'select' directive ("+address+") cannot be evaluated to an integer constant in " + sl);
+                            return false;
+                        }
+                        if (addressInt == 0x4000) {
+                            address = Expression.constantExpression(0x6000, config);
+                        } else {
+                            address = Expression.constantExpression(0x7000, config);
+                        }
+                        break;
+                    }
+                }
                 // generate "select" code:
                 if (page.isRegister(code) && page.registerOrFlagName.equals("a")) {
                     // ld (address), a:
@@ -609,6 +647,7 @@ public class ASMSXDialect implements Dialect {
                     List<CPUOp> op_l = config.opParser.parseOp("ld", sArguments, s, previous, code);
                     if (op_l == null || op_l.size() != 1) {
                         config.error("Error creating 'ld (<address>),a' instruction in "+sl.fileNameLineString()+": " + sl.line);
+                        config.error("<address> here is "+address);
                         return false;
                     }
                     s.op = op_l.get(0);

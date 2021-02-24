@@ -5,7 +5,7 @@
     .subpage 1 at #6000
     .subpage 2 at #6000
 loop:
-	jr loop
+	jp loop
 	push af
 	ld a, 1
 	ld [#6000], a

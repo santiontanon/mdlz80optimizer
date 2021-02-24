@@ -1,6 +1,6 @@
 ; Test case: 
 	org #4000
-	.megarom konami
+	.megarom ascii8
     .start loop
 
     .subpage 1 at #6000
@@ -16,5 +16,3 @@ loop:
 
     ld b,5
     .select b at 08000h
-
-.printtext      "hello!"

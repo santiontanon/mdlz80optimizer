@@ -47,6 +47,8 @@ public class ASMSXTest {
     @Test public void test7() throws IOException { Assert.assertTrue(test("data/generationtests/asmsx-phase.asm", false,
                                                                           "data/generationtests/asmsx-phase-expected.asm",
                                                                           "data/generationtests/asmsx-phase-dialect-expected.asm")); }
+    @Test public void test8() throws IOException { Assert.assertTrue(test("data/generationtests/asmsx-megarom.asm", false, 
+                                                                          "data/generationtests/asmsx-megarom-expected.asm", null)); }
     
 
     private boolean test(String inputFile, boolean zilogMode, String expectedOutputFile, String expectedDialectOutputFile) throws IOException
