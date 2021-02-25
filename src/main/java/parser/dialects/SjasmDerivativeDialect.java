@@ -173,7 +173,7 @@ public abstract class SjasmDerivativeDialect implements Dialect {
         if (forbiddenLabelNames.contains(name.toLowerCase())) return null;
         
         if (currentPages.isEmpty()) {
-            // config.warn("Defining a symbol, without any page selected, defaulting to 0");
+             config.warn("Defining a symbol, without any page selected, defaulting to 0");
             symbolPage.put(name, 0);
         } else {
             // set to the first candidate page for not (this will be overwritten later,

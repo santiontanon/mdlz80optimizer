@@ -140,11 +140,15 @@ public class BinaryGenerator implements MDLWorker {
                     List<Integer> data = new ArrayList<>();
                     for(Expression exp: ss.data) {
                         if (exp.evaluatesToNumericConstant()) {
-                            int v = exp.evaluateToInteger(ss, code, true);
+                            Integer v = exp.evaluateToInteger(ss, code, true);
+                            if (v == null) {
+                                config.error("Cannot evaluate expression " + exp + " when generating a binary.");
+                                return false;
+                            }
                             data.add(v&0x00ff);
                             data.add((v>>8)&0x00ff);
                         } else {
-                            config.error("Cannot evaluate expression " + exp + "when generating a binary.");
+                            config.error("Cannot evaluate expression " + exp + " when generating a binary.");
                             return false;
                         }
                     }

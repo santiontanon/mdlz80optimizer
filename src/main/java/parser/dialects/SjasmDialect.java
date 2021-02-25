@@ -200,6 +200,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
         config.expressionParser.dialectFunctionsSingleArgumentNoParenthesis.add("high");
         config.expressionParser.dialectFunctionsSingleArgumentNoParenthesis.add("low");
         config.expressionParser.dialectFunctionsSingleArgumentNoParenthesis.add(":");
+        config.expressionParser.dialectFunctionsSingleArgumentNoParenthesis.add("::");
                 
         // We define it as a dialectMacro instead of as a synonym of "REPT", as it has some special syntax for
         // indicating the current iteration
@@ -413,6 +414,9 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
         Tokenizer.stringEscapeSequences.put("t", "\t");
         Tokenizer.stringEscapeSequences.put("v", "\u0011");
         config.lineParser.applyEscapeSequencesToIncludeArguments = false;
+        
+        currentPages.clear();
+        currentPages.add(0);  // page 0 by default
         
         /*
         forbiddenLabelNames.add("struct");
@@ -1173,15 +1177,32 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
         }
         if (functionName.equalsIgnoreCase(":") && args.size() == 1) {
             if (args.get(0).type != Expression.EXPRESSION_SYMBOL) {
-                config.error("':' operator used on a non-symbol expression at " + s.sl);
+                config.error("':' operator used on a non-symbol expression in " + s.sl);
                 return null;
             }
             Integer page = symbolPage.get(args.get(0).symbolName);
             if (page == null) {
-                config.error("Unknown page of symbol "+args.get(0).symbolName+" at " + s.sl);
+                config.error("Unknown page of symbol "+args.get(0).symbolName+" in " + s.sl);
                 return null;
             }
             return page;
+        }
+        if (functionName.equalsIgnoreCase("::") && args.size() == 1) {
+            if (!args.get(0).evaluatesToIntegerConstant()) {
+                config.error("Argument to '::' could not be evaluated to an integer page in " + s.sl);
+                return null;
+            }
+            Integer page = args.get(0).evaluateToInteger(s, code, silent);
+            if (page == null) {
+                config.error("Argument to '::' could not be evaluated to an integer page in " + s.sl);
+                return null;
+            }
+            
+            Expression pageSize = Expression.parenthesisExpression(
+                    Expression.operatorExpression(Expression.EXPRESSION_SUB, 
+                            Expression.symbolExpression("__sjasm_page_"+page+"_end", s, code, config), 
+                            Expression.symbolExpression("__sjasm_page_"+page+"_start", s, code, config), config), "(", config);
+            return pageSize.evaluateToInteger(s, code, silent);
         }
         return null;
     }
@@ -1203,7 +1224,23 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                     args.get(0),
                     Expression.constantExpression(0x00ff, Expression.RENDER_AS_16BITHEX, config), config);
         }
-
+        if (functionName.equalsIgnoreCase("::") && args.size() == 1) {
+            if (!args.get(0).evaluatesToIntegerConstant()) {
+                config.error("Argument to '::' could not be evaluated to an integer page in " + s.sl);
+                return null;
+            }
+            Integer page = args.get(0).evaluateToInteger(s, code, true);
+            if (page == null) {
+                config.error("Argument to '::' could not be evaluated to an integer page in " + s.sl);
+                return null;
+            }
+            
+            Expression pageSize = Expression.parenthesisExpression(
+                    Expression.operatorExpression(Expression.EXPRESSION_SUB, 
+                            Expression.symbolExpression("__sjasm_page_"+page+"_end", s, code, config), 
+                            Expression.symbolExpression("__sjasm_page_"+page+"_start", s, code, config), config), "(", config);
+            return pageSize;
+        }
         return null;
     }
     
@@ -1368,13 +1405,12 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                         s = s.source.getNextStatementTo(s, code);
                     }
                 }
-              }
+            }
 
             if (initialBlock.size(code) > 0) {
                 config.error("sjasm initial block has non empty size!");
                 return false;
             }
-            
             
             // Resolve enhanced jr/jp, only within-block:
             resolveEnhancedJumps(code);
@@ -1459,6 +1495,14 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                 }
                 Integer pageSize = (page.size == null ? null:page.size.evaluateToInteger(page.s, code, true));
                 int currentAddress = pageStart;
+                
+                // Add page start labels to each page:                
+                CodeStatement pageStartStatement = new CodeStatement(CodeStatement.STATEMENT_NONE, page.s.sl, page.s.source, config);
+                pageStartStatement.label = new SourceConstant("__sjasm_page_" + idx + "_start", "__sjasm_page_" + idx + "_start", 
+                        Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, pageStartStatement, code, config), pageStartStatement, config);
+                reconstructedFile.addStatement(pageStartStatement);
+                code.addSymbol(pageStartStatement.label.name, pageStartStatement.label);
+                
                 for(SJasmCodeBlock block:page.blocks) {
                     if (block.actualAddress > currentAddress) {
                         // insert space:
@@ -1491,6 +1535,14 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                 } else {
                     pageSize = currentAddress - pageStart;
                 }
+
+                // Add page end labels to each page:                
+                CodeStatement pageEndStatement = new CodeStatement(CodeStatement.STATEMENT_NONE, page.s.sl, page.s.source, config);
+                pageEndStatement.label = new SourceConstant("__sjasm_page_" + idx + "_end", "__sjasm_page_" + idx + "_end", 
+                        Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, pageEndStatement, code, config), pageEndStatement, config);
+                reconstructedFile.addStatement(pageEndStatement);
+                code.addSymbol(pageEndStatement.label.name, pageEndStatement.label);
+                
                 config.debug("page " + idx + " from " + pageStart + " to " + (pageStart+pageSize));
             }
 
