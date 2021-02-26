@@ -66,16 +66,16 @@ public class GlassDialect implements Dialect {
         config.preProcessor.dialectMacros.put("irp", "endm");
         
         // recognized escape sequences by Glass:
-        Tokenizer.stringEscapeSequences.put("0", "\u0000");
-        Tokenizer.stringEscapeSequences.put("a", "\u0007");
-        Tokenizer.stringEscapeSequences.put("t", "\t");
-        Tokenizer.stringEscapeSequences.put("n", "\n");
-        Tokenizer.stringEscapeSequences.put("f", "\f");
-        Tokenizer.stringEscapeSequences.put("r", "\r");
-        Tokenizer.stringEscapeSequences.put("e", "\u0027");
-        Tokenizer.stringEscapeSequences.put("\"", "\"");
-        Tokenizer.stringEscapeSequences.put("'", "'");
-        Tokenizer.stringEscapeSequences.put("\\", "\\");
+        config.tokenizer.stringEscapeSequences.put("0", "\u0000");
+        config.tokenizer.stringEscapeSequences.put("a", "\u0007");
+        config.tokenizer.stringEscapeSequences.put("t", "\t");
+        config.tokenizer.stringEscapeSequences.put("n", "\n");
+        config.tokenizer.stringEscapeSequences.put("f", "\f");
+        config.tokenizer.stringEscapeSequences.put("r", "\r");
+        config.tokenizer.stringEscapeSequences.put("e", "\u0027");
+        config.tokenizer.stringEscapeSequences.put("\"", "\"");
+        config.tokenizer.stringEscapeSequences.put("'", "'");
+        config.tokenizer.stringEscapeSequences.put("\\", "\\");
     }
 
 
@@ -221,7 +221,7 @@ public class GlassDialect implements Dialect {
         }
         if (sl == null) return null;
         
-        Tokenizer.tokenize(sl.line, unfilteredTokens);
+        config.tokenizer.tokenize(sl.line, unfilteredTokens);
         if (!unfilteredTokens.isEmpty() && unfilteredTokens.get(unfilteredTokens.size()-1).equals(",")) {
             // unfinished line, get the next one!
             List<String> tokens2 = new ArrayList<>();
@@ -436,7 +436,7 @@ public class GlassDialect implements Dialect {
                         }
                     }
                 } else {
-                    List<CodeStatement> l = config.lineParser.parse(Tokenizer.tokenize(sl.line), 
+                    List<CodeStatement> l = config.lineParser.parse(config.tokenizer.tokenize(sl.line), 
                             sl, f, f.getStatements().size(), code, config);
                     if (l == null) {
                         // we fail to assemble the macro, but it's ok, some times it can happen

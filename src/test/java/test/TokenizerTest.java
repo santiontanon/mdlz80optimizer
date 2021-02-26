@@ -3,12 +3,10 @@
  */
 package test;
 
+import cl.MDLConfig;
 import java.util.List;
-
 import org.junit.Assert;
 import org.junit.Test;
-
-import parser.Tokenizer;
 
 /**
  *
@@ -16,6 +14,12 @@ import parser.Tokenizer;
  */
 public class TokenizerTest {
 
+    private final MDLConfig config;
+
+    public TokenizerTest() {
+        config = new MDLConfig();
+    }
+    
     @Test public void test1() {
         Assert.assertArrayEquals(new String[]{"ld","a",",","2"}, tokenize("ld a,2"));
     }
@@ -64,11 +68,11 @@ public class TokenizerTest {
         Assert.assertArrayEquals(new String[]{"\"string\\t\\r\\n\""}, tokenize("\"string\\t\\r\\n\""));
     }
     @Test public void test15a() {
-        Tokenizer.stringEscapeSequences.put("t", "\t");
-        Tokenizer.stringEscapeSequences.put("r", "\r");
-        Tokenizer.stringEscapeSequences.put("n", "\n");
+        config.tokenizer.stringEscapeSequences.put("t", "\t");
+        config.tokenizer.stringEscapeSequences.put("r", "\r");
+        config.tokenizer.stringEscapeSequences.put("n", "\n");
         Assert.assertArrayEquals(new String[]{"\"string\t\r\n\""}, tokenize("\"string\\t\\r\\n\""));
-        Tokenizer.stringEscapeSequences.clear();
+        config.tokenizer.stringEscapeSequences.clear();
     }
     @Test public void test16() {
         Assert.assertArrayEquals(new String[]{";\"J\" \"I\" \"H\" \"G\" \"F\" \"E\" \"D\" \"C\""}, tokenize(";\"J\" \"I\" \"H\" \"G\" \"F\" \"E\" \"D\" \"C\""));
@@ -89,9 +93,9 @@ public class TokenizerTest {
         Assert.assertArrayEquals(new String[]{"db","(","%","+","1",")","*","(","%%","+","1",")","/","(","%","%","8",")"}, tokenize("db (%+1)*(%%+1)/(% % 8)"));
     }
     @Test public void test22() {
-        Tokenizer.allowAndpersandHex = true;
+        config.tokenizer.allowAndpersandHex = true;
         Assert.assertArrayEquals(new String[]{"&C0DE"}, tokenize("&C0DE"));
-        Tokenizer.allowAndpersandHex = false;
+        config.tokenizer.allowAndpersandHex = false;
     }
     @Test public void test23() {
         Assert.assertArrayEquals(new String[]{"_main","::"}, tokenize("_main::"));
@@ -100,26 +104,26 @@ public class TokenizerTest {
         Assert.assertArrayEquals(new String[]{"ld","hl",",","#0x0000"}, tokenize("ld	hl, #0x0000"));
     }
     @Test public void test25() {
-        Tokenizer.sdccStyleHashMarksForConstants = true;
+        config.tokenizer.sdccStyleHashMarksForConstants = true;
         Assert.assertArrayEquals(new String[]{"ld","hl",",","#","0x0000"}, tokenize("ld	hl, #0x0000"));
-        Tokenizer.sdccStyleHashMarksForConstants = false;
+        config.tokenizer.sdccStyleHashMarksForConstants = false;
     }
     @Test public void test26() {
-        Tokenizer.sdccStyleDollarInLabels = true;
+        config.tokenizer.sdccStyleDollarInLabels = true;
         Assert.assertArrayEquals(new String[]{"00102$",":"}, tokenize("00102$:"));
-        Tokenizer.sdccStyleDollarInLabels = true;
+        config.tokenizer.sdccStyleDollarInLabels = true;
     }
     @Test public void test27() {
-        Tokenizer.stringEscapeSequences.put("\\", "\\");
-        Tokenizer.stringEscapeSequences.put("\"", "\"");
+        config.tokenizer.stringEscapeSequences.put("\\", "\\");
+        config.tokenizer.stringEscapeSequences.put("\"", "\"");
         Assert.assertArrayEquals(new String[]{"db", "\"\"\"", ",", "\"~\""}, tokenize("db \"\\\"\", \"~\""));
-        Tokenizer.stringEscapeSequences.clear();
+        config.tokenizer.stringEscapeSequences.clear();
     }
 
     
-    private static String[] tokenize(String line)
+    private String[] tokenize(String line)
     {
-        List<String> tokens = Tokenizer.tokenize(line);
+        List<String> tokens = config.tokenizer.tokenize(line);
         return tokens != null
                 ? tokens.toArray(new String[0])
                 : null;

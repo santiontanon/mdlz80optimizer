@@ -134,7 +134,7 @@ public class CodeBaseParser {
             sl = new SourceLine(line, f, file_linenumber);
         }
 
-        Tokenizer.tokenize(sl.line, unfilteredTokens);
+        config.tokenizer.tokenize(sl.line, unfilteredTokens);
         if (!unfilteredTokens.isEmpty() && unfilteredTokens.get(unfilteredTokens.size()-1).equals(",")) {
             // unfinished line, get the next one!
             List<String> tokens2 = new ArrayList<>();
@@ -149,11 +149,11 @@ public class CodeBaseParser {
         // remove multi-line comments
         for(String token:unfilteredTokens) {
             if (withinMultilineComment) {
-                if (Tokenizer.isMultiLineCommentEnd(token)) {
+                if (config.tokenizer.isMultiLineCommentEnd(token)) {
                     withinMultilineComment = false;
                 }
             } else {
-                if (Tokenizer.isMultiLineCommentStart(token)) {
+                if (config.tokenizer.isMultiLineCommentStart(token)) {
                     withinMultilineComment = true;
                 } else {
                     tokens.add(token);

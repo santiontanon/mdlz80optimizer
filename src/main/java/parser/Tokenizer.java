@@ -11,9 +11,24 @@ import java.util.StringTokenizer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class Tokenizer {    
-    public static final List<String> doubleTokens = new ArrayList<>();
-    static{
+public class Tokenizer {
+    public List<String> doubleTokens = new ArrayList<>();
+    
+    public HashMap<String,String> stringEscapeSequences = new HashMap<>();
+    
+    
+    public boolean allowAndpersandHex = false;
+    public boolean sdccStyleHashMarksForConstants = false;
+    public boolean sdccStyleDollarInLabels = false;
+    public boolean curlyBracesAreComments = true;
+    
+    
+    Matcher doubleMatcher = Pattern.compile("[\\x00-\\x20]*[+-]?(((((\\p{Digit}+)(\\.)?((\\p{Digit}+)?)([eE][+-]?(\\p{Digit}+))?)|(\\.((\\p{Digit}+))([eE][+-]?(\\p{Digit}+))?)|(((0[xX](\\p{XDigit}+)(\\.)?)|(0[xX](\\p{XDigit}+)?(\\.)(\\p{XDigit}+)))[pP][+-]?(\\p{Digit}+)))[fFdD]?))[\\x00-\\x20]*")
+            .matcher("");   
+    
+    
+    public Tokenizer()
+    {
         doubleTokens.add("<<");
         doubleTokens.add(">>");
         doubleTokens.add("<=");
@@ -31,36 +46,24 @@ public class Tokenizer {
         doubleTokens.add("--");
         doubleTokens.add("::");
         doubleTokens.add("=:");
-        doubleTokens.add("==");
-    }    
+        doubleTokens.add("==");        
+    }
     
-    public static HashMap<String,String> stringEscapeSequences = new HashMap<>();
-    
-    
-    public static boolean allowAndpersandHex = false;
-    public static boolean sdccStyleHashMarksForConstants = false;
-    public static boolean sdccStyleDollarInLabels = false;
-    public static boolean curlyBracesAreComments = true;
-    
-    
-    static Matcher doubleMatcher = Pattern.compile("[\\x00-\\x20]*[+-]?(((((\\p{Digit}+)(\\.)?((\\p{Digit}+)?)([eE][+-]?(\\p{Digit}+))?)|(\\.((\\p{Digit}+))([eE][+-]?(\\p{Digit}+))?)|(((0[xX](\\p{XDigit}+)(\\.)?)|(0[xX](\\p{XDigit}+)?(\\.)(\\p{XDigit}+)))[pP][+-]?(\\p{Digit}+)))[fFdD]?))[\\x00-\\x20]*")
-            .matcher("");        
-    
-    public static List<String> tokenizeIncludingBlanks(String line) {
+    public List<String> tokenizeIncludingBlanks(String line) {
         return tokenize(line, new ArrayList<>(), true);
     }
     
     
-    public static List<String> tokenize(String line) {
+    public List<String> tokenize(String line) {
         return tokenize(line, new ArrayList<>(), false);
     }
 
-    public static List<String> tokenize(String line, List<String> tokens) {
+    public List<String> tokenize(String line, List<String> tokens) {
         return tokenize(line, tokens, false);
     }
     
     
-    public static List<String> tokenize(String line, List<String> tokens, boolean includeBlanks) {
+    public List<String> tokenize(String line, List<String> tokens, boolean includeBlanks) {
         StringTokenizer st;
         if (sdccStyleDollarInLabels) {
             st = new StringTokenizer(line, " \r\n\t()[]#,;:+-*/%|&'\"!?<>=~^{}\\", true);
@@ -118,7 +121,7 @@ public class Tokenizer {
                     }
                 }
             }
-            if (previous != null && Tokenizer.isSingleLineComment(previous)) {
+            if (previous != null && isSingleLineComment(previous)) {
                 String token = previous + next;
                 while(st.hasMoreTokens()) token += st.nextToken();
                 tokens.remove(tokens.size()-1);
@@ -173,20 +176,20 @@ public class Tokenizer {
     }
     
     
-    public static boolean isString(String token)
+    public boolean isString(String token)
     {
         if (token.startsWith("\"") && token.endsWith("\"")) return true;
         return false;
     }
     
     
-    public static String stringValue(String token)
+    public String stringValue(String token)
     {
         return token.substring(1, token.length()-1);
     }
     
     
-    public static boolean isSymbol(String token)
+    public boolean isSymbol(String token)
     {
         if (token.equalsIgnoreCase("af'")) return true;
         if (token.equals("$")) return true;
@@ -203,7 +206,7 @@ public class Tokenizer {
         return false;
     }
     
-    public static boolean isInteger(String token)
+    public boolean isInteger(String token)
     {
         // From: https://stackoverflow.com/questions/237159/whats-the-best-way-to-check-if-a-string-represents-an-integer-in-java
         // Much faster than regexps, external libraries, or Integer.parseInt:
@@ -230,13 +233,13 @@ public class Tokenizer {
         return true;
     }
 
-    public static boolean isDouble(String token)
+    public boolean isDouble(String token)
     {
         return doubleMatcher.reset(token).matches();
     }
     
     
-    public static boolean isHexCharacter(int c)
+    public boolean isHexCharacter(int c)
     {
         if (c>='a' && c<='f') return true;
         if (c>='A' && c<='F') return true;
@@ -245,13 +248,13 @@ public class Tokenizer {
     }
     
     
-    public static boolean isHex(String token)
+    public boolean isHex(String token)
     {
         return parseHex(token) != null;
     }
 
     
-    public static Integer parseHex(String token)
+    public Integer parseHex(String token)
     {
         int value = 0;
         int startIndex = 0;
@@ -272,7 +275,7 @@ public class Tokenizer {
     }
     
     
-    public static String toHex(int value, int length)
+    public String toHex(int value, int length)
     {
         String allowed = "0123456789abcdef";
         String hex = "";
@@ -290,7 +293,7 @@ public class Tokenizer {
     }
     
     
-    public static String toHexWord(int value, int hex_style)
+    public String toHexWord(int value, int hex_style)
     {
         switch (hex_style) {
             case MDLConfig.HEX_STYLE_HASH:
@@ -299,7 +302,7 @@ public class Tokenizer {
                 return "#" + toHex(value, 4).toUpperCase();
             case MDLConfig.HEX_STYLE_H:
             {
-                String hex = Tokenizer.toHex(value, 4);
+                String hex = toHex(value, 4);
                 if (hex.charAt(0) >= 'a' && hex.charAt(0) <= 'f') {
                     hex = "0" + hex;
                 }
@@ -307,7 +310,7 @@ public class Tokenizer {
             }
             case MDLConfig.HEX_STYLE_H_CAPS:
             {
-                String hex = Tokenizer.toHex(value, 4);
+                String hex = toHex(value, 4);
                 if (hex.charAt(0) >= 'a' && hex.charAt(0) <= 'f') {
                     hex = "0" + hex;
                 }
@@ -323,7 +326,7 @@ public class Tokenizer {
     }
     
     
-    public static String toHexByte(int value, int hex_style)
+    public String toHexByte(int value, int hex_style)
     {
         switch (hex_style) {
             case MDLConfig.HEX_STYLE_HASH:
@@ -332,7 +335,7 @@ public class Tokenizer {
                 return "#" + toHex(value, 2).toUpperCase();
             case MDLConfig.HEX_STYLE_H:
             {
-                String hex = Tokenizer.toHexByte(value, 2);
+                String hex = toHexByte(value, 2);
                 if (hex.charAt(0) >= 'a' && hex.charAt(0) <= 'f') {
                     hex = "0" + hex;
                 }
@@ -340,7 +343,7 @@ public class Tokenizer {
             }
             case MDLConfig.HEX_STYLE_H_CAPS:
             {
-                String hex = Tokenizer.toHex(value, 2);
+                String hex = toHex(value, 2);
                 if (hex.charAt(0) >= 'a' && hex.charAt(0) <= 'f') {
                     hex = "0" + hex;
                 }
@@ -357,13 +360,13 @@ public class Tokenizer {
     }
     
     
-    public static boolean isBinary(String token)
+    public boolean isBinary(String token)
     {
         return parseBinary(token) != null;
     }
 
     
-    public static Integer parseBinary(String token)
+    public Integer parseBinary(String token)
     {
         int value = 0;
         String allowed = "01";
@@ -382,7 +385,7 @@ public class Tokenizer {
     }    
     
     
-    public static String toBin(int value, int length)
+    public String toBin(int value, int length)
     {
         String allowed = "01";
         String bin = "";
@@ -400,13 +403,13 @@ public class Tokenizer {
     }  
 
     
-    public static String toBin(int value, int length, int hex_style)
+    public String toBin(int value, int length, int hex_style)
     {
         switch (hex_style) {
             case MDLConfig.HEX_STYLE_HASH:
             case MDLConfig.HEX_STYLE_H:
             {
-                String hex = Tokenizer.toBin(value, length);
+                String hex = toBin(value, length);
                 if (hex.charAt(0) >= 'a' && hex.charAt(0) <= 'f') {
                     hex = "0" + hex;
                 }
@@ -415,7 +418,7 @@ public class Tokenizer {
             case MDLConfig.HEX_STYLE_HASH_CAPS:
             case MDLConfig.HEX_STYLE_H_CAPS:
             {
-                String hex = Tokenizer.toBin(value, length);
+                String hex = toBin(value, length);
                 if (hex.charAt(0) >= 'a' && hex.charAt(0) <= 'f') {
                     hex = "0" + hex;
                 }
@@ -431,13 +434,13 @@ public class Tokenizer {
     }    
 
 
-    public static boolean isOctal(String token)
+    public boolean isOctal(String token)
     {
         return parseOctal(token) != null;
     }
 
     
-    public static Integer parseOctal(String token)
+    public Integer parseOctal(String token)
     {
         int value = 0;
         String allowed = "01234567";
@@ -456,7 +459,7 @@ public class Tokenizer {
     }    
     
     
-    public static String toOct(int value)
+    public String toOct(int value)
     {
         String allowed = "01234567";
         String oct = "";
@@ -471,13 +474,13 @@ public class Tokenizer {
     }  
     
     
-    public static String toOct(int value, int hex_style)
+    public String toOct(int value, int hex_style)
     {
         switch (hex_style) {
             case MDLConfig.HEX_STYLE_HASH:
             case MDLConfig.HEX_STYLE_H:
             {
-                String hex = Tokenizer.toOct(value);
+                String hex = toOct(value);
                 if (hex.charAt(0) >= 'a' && hex.charAt(0) <= 'f') {
                     hex = "0" + hex;
                 }
@@ -486,7 +489,7 @@ public class Tokenizer {
             case MDLConfig.HEX_STYLE_HASH_CAPS:
             case MDLConfig.HEX_STYLE_H_CAPS:
             {
-                String hex = Tokenizer.toOct(value);
+                String hex = toOct(value);
                 if (hex.charAt(0) >= 'a' && hex.charAt(0) <= 'f') {
                     hex = "0" + hex;
                 }
@@ -502,21 +505,21 @@ public class Tokenizer {
     }    
     
     
-    public static boolean isSingleLineComment(String token) {
+    public boolean isSingleLineComment(String token) {
         if (token.startsWith(";")) return true;
         if (token.startsWith("//")) return true;
         return false;
     }
     
 
-    public static boolean isMultiLineCommentStart(String token) {
+    public boolean isMultiLineCommentStart(String token) {
         if (token.equals("/*")) return true;
         if (curlyBracesAreComments && token.equals("{")) return true;
         return false;
     }
     
 
-    public static boolean isMultiLineCommentEnd(String token) {
+    public boolean isMultiLineCommentEnd(String token) {
         if (token.equals("*/")) return true;
         if (curlyBracesAreComments && token.equals("}")) return true;
         return false;

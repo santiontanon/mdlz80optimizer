@@ -14,7 +14,6 @@ import code.Expression;
 import parser.CodeBaseParser;
 import parser.ExpressionParser;
 import parser.LineParser;
-import parser.Tokenizer;
 
 /**
  *
@@ -22,11 +21,12 @@ import parser.Tokenizer;
  */
 public class ExpressionTest {
 
+    private final MDLConfig config;
     private final CodeBase code;
     private final ExpressionParser expressionParser;
 
     public ExpressionTest() {
-        MDLConfig config = new MDLConfig();
+        config = new MDLConfig();
         code = new CodeBase(config);
         config.codeBaseParser = new CodeBaseParser(config);
         config.lineParser = new LineParser(config, config.codeBaseParser);      
@@ -56,9 +56,9 @@ public class ExpressionTest {
     @Test public void test20() { Assert.assertEquals(Integer.valueOf(0x99), evaluate("0x99")); }
     @Test public void test21() { Assert.assertEquals(Integer.valueOf(0x99), evaluate("0X99")); }
     @Test public void test22() { 
-        Tokenizer.allowAndpersandHex = true;
+        config.tokenizer.allowAndpersandHex = true;
         Assert.assertEquals(Integer.valueOf(0xc0de), evaluate("&C0DE")); 
-        Tokenizer.allowAndpersandHex = false;
+        config.tokenizer.allowAndpersandHex = false;
     }
     @Test public void test23() { Assert.assertEquals(Integer.valueOf(1), evaluate("+(1)")); }
     @Test public void test24() { Assert.assertEquals(Integer.valueOf(1), evaluate("+1")); }
@@ -69,7 +69,7 @@ public class ExpressionTest {
 
     private Object evaluate(String line)
     {
-        List<String> tokens = Tokenizer.tokenize(line);
+        List<String> tokens = config.tokenizer.tokenize(line);
         Expression exp = expressionParser.parse(tokens, null, null, code);
         System.out.println(exp);
 

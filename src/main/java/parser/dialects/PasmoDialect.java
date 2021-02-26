@@ -111,9 +111,9 @@ public class PasmoDialect implements Dialect {
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("local")) {
             tokens.remove(0);
             
-            while(!tokens.isEmpty() && !Tokenizer.isSingleLineComment(tokens.get(0))) {
+            while(!tokens.isEmpty() && !config.tokenizer.isSingleLineComment(tokens.get(0))) {
                 localLabels.add(tokens.remove(0));
-                if (tokens.isEmpty() || Tokenizer.isSingleLineComment(tokens.get(0))) break;
+                if (tokens.isEmpty() || config.tokenizer.isSingleLineComment(tokens.get(0))) break;
                 if (!tokens.remove(0).equals(",")) {
                     config.error("Cannot parse label list in " + sl);
                 }

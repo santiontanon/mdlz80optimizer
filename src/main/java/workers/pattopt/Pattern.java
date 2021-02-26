@@ -130,7 +130,7 @@ public class Pattern {
                     }
                     case 3: // constraints:
                     {
-                        List<String> tokens = Tokenizer.tokenize(line);
+                        List<String> tokens = config.tokenizer.tokenize(line);
                         String name = tokens.remove(0);
                         int triggerAfterID = -1;
                         List<Expression> expressions = new ArrayList<>();
@@ -362,7 +362,7 @@ public class Pattern {
         List<String> tokens2 = new ArrayList<>();
         for(int i = 0;i<tokens.size();i++) {
             if (tokens.get(i).equals("?") && match.variables.containsKey("?" + tokens.get(i+1))) {                            
-                List<String> tokensTmp = Tokenizer.tokenize(match.variables.get("?" + tokens.get(i+1)).toString());
+                List<String> tokensTmp = config.tokenizer.tokenize(match.variables.get("?" + tokens.get(i+1)).toString());
                 tokens2.addAll(tokensTmp);
                 i++;    // we skip the second token we used
             } else {
@@ -554,8 +554,8 @@ public class Pattern {
             {                    
                 String v1_str = constraint.args[0];
                 String v2_str = constraint.args[1];
-                List<String> v1_tokens = applyBindingsToTokens(Tokenizer.tokenize(v1_str), match);
-                List<String> v2_tokens = applyBindingsToTokens(Tokenizer.tokenize(v2_str), match);
+                List<String> v1_tokens = applyBindingsToTokens(config.tokenizer.tokenize(v1_str), match);
+                List<String> v2_tokens = applyBindingsToTokens(config.tokenizer.tokenize(v2_str), match);
 
                 Expression exp1 = config.expressionParser.parse(v1_tokens, null, null, code);
                 Expression exp2 = config.expressionParser.parse(v2_tokens, null, null, code);
@@ -591,8 +591,8 @@ public class Pattern {
             {
                 String v1_str = constraint.args[0];
                 String v2_str = constraint.args[1];
-                List<String> v1_tokens = applyBindingsToTokens(Tokenizer.tokenize(v1_str), match);
-                List<String> v2_tokens = applyBindingsToTokens(Tokenizer.tokenize(v2_str), match);
+                List<String> v1_tokens = applyBindingsToTokens(config.tokenizer.tokenize(v1_str), match);
+                List<String> v2_tokens = applyBindingsToTokens(config.tokenizer.tokenize(v2_str), match);
 
                 Expression exp1 = config.expressionParser.parse(v1_tokens, null, null, code);
                 Expression exp2 = config.expressionParser.parse(v2_tokens, null, null, code);
@@ -1266,7 +1266,7 @@ public class Pattern {
         }
         for(Constraint c:constraints) {
             for(String arg:c.args) {
-                List<String> tokens = Tokenizer.tokenize(arg);
+                List<String> tokens = config.tokenizer.tokenize(arg);
                 Expression exp = config.expressionParser.parse(tokens, null, null, code);
                 definedSymbols.addAll(exp.getAllSymbols());
             }

@@ -272,36 +272,36 @@ public class ExpressionParser {
         } 
         
         if (tokens.size() >= 1 &&
-            Tokenizer.isInteger(tokens.get(0))) {
+            config.tokenizer.isInteger(tokens.get(0))) {
             // integer constant:
             String token = tokens.remove(0);
             return Expression.constantExpression(Integer.parseInt(token), config);
         }
         if (allowFloatingPointNumbers && tokens.size() >= 1 &&
-            Tokenizer.isDouble(tokens.get(0))) {
+            config.tokenizer.isDouble(tokens.get(0))) {
             // double constant:
             String token = tokens.remove(0);
             return Expression.constantExpression(Double.parseDouble(token), config);
         }
         if (tokens.size() >= 1 &&
-            Tokenizer.isString(tokens.get(0))) {
+            config.tokenizer.isString(tokens.get(0))) {
             // string constant:
             String token = tokens.remove(0);
-            return Expression.constantExpression(Tokenizer.stringValue(token), config);
+            return Expression.constantExpression(config.tokenizer.stringValue(token), config);
         }
         if (tokens.size() >= 1 &&
             (tokens.get(0).charAt(0) >= '0' && tokens.get(0).charAt(0) <= '9') &&
             (tokens.get(0).endsWith("h") || tokens.get(0).endsWith("H"))) {
             // should be a hex constant:
             String token = tokens.get(0);
-            if (Tokenizer.isHex(token)) {
+            if (config.tokenizer.isHex(token)) {
                 tokens.remove(0);
                 if (token.length()<=3) {
                     // 8 bit:
-                    return Expression.constantExpression(Tokenizer.parseHex(token), Expression.RENDER_AS_8BITHEX, config);
+                    return Expression.constantExpression(config.tokenizer.parseHex(token), Expression.RENDER_AS_8BITHEX, config);
                 } else {
                     // 16 bit:
-                    return Expression.constantExpression(Tokenizer.parseHex(token), Expression.RENDER_AS_16BITHEX, config);
+                    return Expression.constantExpression(config.tokenizer.parseHex(token), Expression.RENDER_AS_16BITHEX, config);
                 }
             }
         }
@@ -310,12 +310,12 @@ public class ExpressionParser {
             (tokens.get(0).endsWith("b") || tokens.get(0).endsWith("B"))) {
             // should be a binary constant:
             String token = tokens.get(0);
-            if (Tokenizer.isBinary(token)) {
+            if (config.tokenizer.isBinary(token)) {
                 tokens.remove(0);
                 if (token.length()<=9) {
-                    return Expression.constantExpression(Tokenizer.parseBinary(token), Expression.RENDER_AS_8BITBIN, config);
+                    return Expression.constantExpression(config.tokenizer.parseBinary(token), Expression.RENDER_AS_8BITBIN, config);
                 } else {
-                    return Expression.constantExpression(Tokenizer.parseBinary(token), Expression.RENDER_AS_16BITBIN, config);
+                    return Expression.constantExpression(config.tokenizer.parseBinary(token), Expression.RENDER_AS_16BITBIN, config);
                 }
             }
         }
@@ -323,12 +323,12 @@ public class ExpressionParser {
             (tokens.get(0).startsWith("0b") || tokens.get(0).startsWith("0B"))) {
             // should be a binary constant:
             String token = tokens.get(0).substring(2);
-            if (Tokenizer.isBinary(token)) {
+            if (config.tokenizer.isBinary(token)) {
                 tokens.remove(0);
                 if (token.length()<=8) {
-                    return Expression.constantExpression(Tokenizer.parseBinary(token), Expression.RENDER_AS_8BITBIN, config);
+                    return Expression.constantExpression(config.tokenizer.parseBinary(token), Expression.RENDER_AS_8BITBIN, config);
                 } else {
-                    return Expression.constantExpression(Tokenizer.parseBinary(token), Expression.RENDER_AS_16BITBIN, config);
+                    return Expression.constantExpression(config.tokenizer.parseBinary(token), Expression.RENDER_AS_16BITBIN, config);
                 }
             }
         }
@@ -337,23 +337,23 @@ public class ExpressionParser {
             (tokens.get(0).endsWith("o") || tokens.get(0).endsWith("O"))) {
             // should be a octal constant:
             String token = tokens.get(0);
-            if (Tokenizer.isOctal(token)) {
+            if (config.tokenizer.isOctal(token)) {
                 tokens.remove(0);
-                return Expression.constantExpression(Tokenizer.parseOctal(token), Expression.RENDER_AS_OCT, config);
+                return Expression.constantExpression(config.tokenizer.parseOctal(token), Expression.RENDER_AS_OCT, config);
             }
         }
         if (tokens.size() >= 1 && tokens.get(0).length() > 1 &&
             (tokens.get(0).startsWith("#") || tokens.get(0).startsWith("$")  || tokens.get(0).startsWith("&"))) {
             // should be a hex constant:
             String token = tokens.get(0);
-            if (Tokenizer.isHex(token)) {
+            if (config.tokenizer.isHex(token)) {
                 tokens.remove(0);
                 if (token.length()<=3) {
                     // 8 bit:
-                    return Expression.constantExpression(Tokenizer.parseHex(token), Expression.RENDER_AS_8BITHEX, config);
+                    return Expression.constantExpression(config.tokenizer.parseHex(token), Expression.RENDER_AS_8BITHEX, config);
                 } else {
                     // 16 bit:
-                    return Expression.constantExpression(Tokenizer.parseHex(token), Expression.RENDER_AS_16BITHEX, config);
+                    return Expression.constantExpression(config.tokenizer.parseHex(token), Expression.RENDER_AS_16BITHEX, config);
                 }
             }
         }
@@ -361,14 +361,14 @@ public class ExpressionParser {
             (tokens.get(0).startsWith("0x") || tokens.get(0).startsWith("0X"))) {
             // should be a hex constant:
             String token = tokens.get(0).substring(2);
-            if (Tokenizer.isHex(token)) {
+            if (config.tokenizer.isHex(token)) {
                 tokens.remove(0);
                 if (token.length()<=2) {
                     // 8 bit:
-                    return Expression.constantExpression(Tokenizer.parseHex(token), Expression.RENDER_AS_8BITHEX, config);
+                    return Expression.constantExpression(config.tokenizer.parseHex(token), Expression.RENDER_AS_8BITHEX, config);
                 } else {
                     // 16 bit:
-                    return Expression.constantExpression(Tokenizer.parseHex(token), Expression.RENDER_AS_16BITHEX, config);
+                    return Expression.constantExpression(config.tokenizer.parseHex(token), Expression.RENDER_AS_16BITHEX, config);
                 }
             }
         }
@@ -441,7 +441,7 @@ public class ExpressionParser {
                     }
                 }
                 return exp;
-            } else if (Tokenizer.isSymbol(tokens.get(0))) {
+            } else if (config.tokenizer.isSymbol(tokens.get(0))) {
                 String token = tokens.remove(0);
                 if (!caseSensitiveSymbols) token = token.toLowerCase();
 
@@ -468,7 +468,7 @@ public class ExpressionParser {
                     canBeCounterVariable = false;
                 }
                 if (canBeCounterVariable && tokens.size() >= 2) {
-                    if (Tokenizer.isInteger(tokens.get(1))) {
+                    if (config.tokenizer.isInteger(tokens.get(1))) {
                         canBeCounterVariable = false;
                     }
                 }
@@ -484,10 +484,10 @@ public class ExpressionParser {
             (tokens.get(0).equals("%"))) {
             // should be a binary constant:
             String token = tokens.get(1);
-            if (Tokenizer.isBinary(token)) {
+            if (config.tokenizer.isBinary(token)) {
                 tokens.remove(0);
                 tokens.remove(0);
-                return Expression.constantExpression(Tokenizer.parseBinary(token), config);
+                return Expression.constantExpression(config.tokenizer.parseBinary(token), config);
             }
         }
         if (tokens.size() >= 2 &&

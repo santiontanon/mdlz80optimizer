@@ -59,7 +59,7 @@ public class CPUOpSpecTest {
         }
         SourceFile dummy = new SourceFile("dummy.asm", null, null, code, config);
         
-        List<CodeStatement> l = config.lineParser.parse(Tokenizer.tokenize(opString), new SourceLine("", dummy, 0), dummy, 0, code, config);
+        List<CodeStatement> l = config.lineParser.parse(config.tokenizer.tokenize(opString), new SourceLine("", dummy, 0), dummy, 0, code, config);
         if (l == null || l.isEmpty()) return null;
         String output = null;
         for(CodeStatement s:l) {

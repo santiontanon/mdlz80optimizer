@@ -42,7 +42,7 @@ public class CPUOpSpec {
         
         bytesRepresentation = new ArrayList<>();
         for(String byteString:byteRepresentationRaw.split(" ")) {
-            List<String> tokens = Tokenizer.tokenize(byteString);
+            List<String> tokens = config.tokenizer.tokenize(byteString);
             if (tokens.get(0).equals("o") ||
                 tokens.get(0).equals("n") ||
                 tokens.get(0).equals("nn")) {

@@ -229,7 +229,7 @@ public class CPUOpParser {
                                     }   break;
                             }
                             if (exp != null) {
-                                tokens.addAll(Tokenizer.tokenize(exp.toString()));
+                                tokens.addAll(config.tokenizer.tokenize(exp.toString()));
                             }
                         } else if (spec.args.get(1).regOffsetIndirection != null) {
                             Expression exp = null;
@@ -249,14 +249,14 @@ public class CPUOpParser {
                                     }   break;
                             }
                             if (exp != null) {
-                                tokens.addAll(Tokenizer.tokenize(exp.toString()));
+                                tokens.addAll(config.tokenizer.tokenize(exp.toString()));
                             }
                         } else {
                             return null;
                         }
                     } else if (token.equals("nn")) {
                         // we assume this occurs only as the second argument:
-                        tokens.addAll(Tokenizer.tokenize(a_args.get(1).toString()));
+                        tokens.addAll(config.tokenizer.tokenize(a_args.get(1).toString()));
                     } else {
                         tokens.add(token);
                     }
@@ -264,7 +264,7 @@ public class CPUOpParser {
                 String opName = tokens.remove(0);
                 List<Expression> arguments = new ArrayList<>();
                 while (!tokens.isEmpty()) {
-                    if (Tokenizer.isSingleLineComment(tokens.get(0))) break;
+                    if (config.tokenizer.isSingleLineComment(tokens.get(0))) break;
                     Expression exp = config.expressionParser.parse(tokens, s, previous, code);
                     if (exp == null) return null;
                     arguments.add(exp);

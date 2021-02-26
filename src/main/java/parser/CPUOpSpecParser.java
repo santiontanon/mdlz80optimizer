@@ -33,7 +33,7 @@ public class CPUOpSpecParser {
         try (BufferedReader br = Resources.asReader(config.cpuInstructionSet)) {
             List<CPUOpSpec> specs = IOUtils.readLines(br)
                     .stream()
-                    .filter(line -> !Tokenizer.isSingleLineComment(line))
+                    .filter(line -> !config.tokenizer.isSingleLineComment(line))
                     .map(line -> parseOpSpecLine(line.split("\t"), config))
                     .filter(opSpec -> opSpec != null)
                     .collect(Collectors.toList());

@@ -278,20 +278,20 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
         addFakeInstruction("exa", "ex AF,AF'");
 
         // recognized escape sequences by sjasm:
-        Tokenizer.stringEscapeSequences.put("\\", "\\");
-        Tokenizer.stringEscapeSequences.put("?", "\u0063");
-        Tokenizer.stringEscapeSequences.put("'", "'");
-        Tokenizer.stringEscapeSequences.put("\"", "\"");
-        Tokenizer.stringEscapeSequences.put("a", "\u0007");
-        Tokenizer.stringEscapeSequences.put("b", "\u0008");
-        Tokenizer.stringEscapeSequences.put("d", "\u0127");
-        Tokenizer.stringEscapeSequences.put("e", "\u0027");
-        Tokenizer.stringEscapeSequences.put("f", "\u0012");
-        Tokenizer.stringEscapeSequences.put("n", "\n");
-        Tokenizer.stringEscapeSequences.put("r", "\r");
-        Tokenizer.stringEscapeSequences.put("t", "\t");
-        Tokenizer.stringEscapeSequences.put("v", "\u0011");
-        Tokenizer.curlyBracesAreComments = false;
+        config.tokenizer.stringEscapeSequences.put("\\", "\\");
+        config.tokenizer.stringEscapeSequences.put("?", "\u0063");
+        config.tokenizer.stringEscapeSequences.put("'", "'");
+        config.tokenizer.stringEscapeSequences.put("\"", "\"");
+        config.tokenizer.stringEscapeSequences.put("a", "\u0007");
+        config.tokenizer.stringEscapeSequences.put("b", "\u0008");
+        config.tokenizer.stringEscapeSequences.put("d", "\u0127");
+        config.tokenizer.stringEscapeSequences.put("e", "\u0027");
+        config.tokenizer.stringEscapeSequences.put("f", "\u0012");
+        config.tokenizer.stringEscapeSequences.put("n", "\n");
+        config.tokenizer.stringEscapeSequences.put("r", "\r");
+        config.tokenizer.stringEscapeSequences.put("t", "\t");
+        config.tokenizer.stringEscapeSequences.put("v", "\u0011");
+        config.tokenizer.curlyBracesAreComments = false;
         config.lineParser.applyEscapeSequencesToIncludeArguments = false;
         
         forbiddenLabelNames.add("struct");
@@ -438,8 +438,8 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("output")) {
             // Just ignore ...
             while(!tokens.isEmpty()) {
-                if (Tokenizer.isSingleLineComment(tokens.get(0)) || 
-                    Tokenizer.isMultiLineCommentStart(tokens.get(0))) break;
+                if (config.tokenizer.isSingleLineComment(tokens.get(0)) || 
+                    config.tokenizer.isMultiLineCommentStart(tokens.get(0))) break;
                 tokens.remove(0);
             }
 
@@ -700,8 +700,8 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("savebin")) {
             // Just ignore ...
             while(!tokens.isEmpty()) {
-                if (Tokenizer.isSingleLineComment(tokens.get(0)) || 
-                    Tokenizer.isMultiLineCommentStart(tokens.get(0))) break;
+                if (config.tokenizer.isSingleLineComment(tokens.get(0)) || 
+                    config.tokenizer.isMultiLineCommentStart(tokens.get(0))) break;
                 tokens.remove(0);
             }
             
@@ -732,7 +732,7 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
             
             // optionally read the expression:
             Expression exp = null;
-            if (!tokens.isEmpty() && !Tokenizer.isSingleLineComment(tokens.get(0))) {                    
+            if (!tokens.isEmpty() && !config.tokenizer.isSingleLineComment(tokens.get(0))) {                    
                 exp = config.expressionParser.parse(tokens, s, previous, code);
                 if (exp == null) {
                     config.error("parseEqu: Cannot parse line " + sl);
@@ -796,7 +796,7 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
                 regpairs.add(regpair);
                 idx++;
                 if (tokens.size()<=idx) break;
-                if (Tokenizer.isSingleLineComment(tokens.get(idx))) break;
+                if (config.tokenizer.isSingleLineComment(tokens.get(idx))) break;
                 if (!tokens.get(idx).equals(",")) {
                     process = false;
                     break;

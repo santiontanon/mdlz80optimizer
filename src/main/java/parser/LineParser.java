@@ -187,7 +187,7 @@ public class LineParser {
             name = tmp.getLeft();
             relativeTo = tmp.getRight();
         } else {            
-            if (!allowNumberLabels || !Tokenizer.isInteger(name)) {
+            if (!allowNumberLabels || !config.tokenizer.isInteger(name)) {
                 name = labelPrefix + name;
             }
         }
@@ -302,7 +302,7 @@ public class LineParser {
         } else if (config.dialectParser != null && config.dialectParser.recognizeIdiom(tokens)) {
             // this one might return one or more statements:
             return config.dialectParser.parseLine(tokens, l, sl, s, previous, source, code);
-        } else if (Tokenizer.isSymbol(token)) {
+        } else if (config.tokenizer.isSymbol(token)) {
             // try to parseArgs it as an assembler instruction or macro call:
             tokens.remove(0);
             if (config.opParser.isOpName(token)) {
@@ -327,8 +327,8 @@ public class LineParser {
         if (config.opParser.isOpName(token, 0)) return false;
         if (config.preProcessor.isMacroName(token, config.preProcessor.MACRO_MACRO)) return false;
         if (macroDefinitionStyle == MACRO_MACRO_NAME_ARGS && config.preProcessor.isMacro(token)) return false;
-        if (Tokenizer.isSymbol(token)) return true;
-        if (allowNumberLabels && Tokenizer.isInteger(token)) return true;
+        if (config.tokenizer.isSymbol(token)) return true;
+        if (allowNumberLabels && config.tokenizer.isInteger(token)) return true;
         return false;
     }
 
@@ -385,7 +385,7 @@ public class LineParser {
                 return parseRestofTheLine(tokens, l, sl, s, previous, source, code);
             }
         } else if (canBeLabel(token) && !config.preProcessor.isMacroIncludingEnds(token)) {
-            if (sl.line.startsWith(token) && (tokens.size() == 1 || Tokenizer.isSingleLineComment(tokens.get(1)))) {
+            if (sl.line.startsWith(token) && (tokens.size() == 1 || config.tokenizer.isSingleLineComment(tokens.get(1)))) {
                 if (!config.opParser.getOpSpecs(tokens.get(0)).isEmpty()) return true;
                 
                 if (config.dialectParser != null &&
@@ -478,7 +478,7 @@ public class LineParser {
         if (tokens.isEmpty()) {
             return true;
         }
-        if (tokens.size() == 1 && Tokenizer.isSingleLineComment(tokens.get(0))) {
+        if (tokens.size() == 1 && config.tokenizer.isSingleLineComment(tokens.get(0))) {
             s.comment = tokens.get(0);
             return true;
         }
@@ -498,11 +498,11 @@ public class LineParser {
         }
 
         // skip optional second argument of .org (last memory address, tniASM syntax)
-        if (!tokens.isEmpty() && !Tokenizer.isSingleLineComment(tokens.get(0))) {
+        if (!tokens.isEmpty() && !config.tokenizer.isSingleLineComment(tokens.get(0))) {
             if (tokens.get(0).equals(",")) {
                 tokens.remove(0);
             }
-            if (tokens.isEmpty() || Tokenizer.isSingleLineComment(tokens.get(0))) {
+            if (tokens.isEmpty() || config.tokenizer.isSingleLineComment(tokens.get(0))) {
                 config.error("parseOrg: Cannot parse line " + sl);
                 return false;
             }
@@ -523,18 +523,18 @@ public class LineParser {
         if (tokens.size() >= 1) {
             String rawFileName = null;
             String token = tokens.get(0);
-            if (Tokenizer.isString(token)) {
+            if (config.tokenizer.isString(token)) {
                 tokens.remove(0);
-                rawFileName = Tokenizer.stringValue(token);
+                rawFileName = config.tokenizer.stringValue(token);
                 
                 if (!applyEscapeSequencesToIncludeArguments) {
-                    HashMap<String,String> tmp = Tokenizer.stringEscapeSequences;
-                    Tokenizer.stringEscapeSequences = new HashMap<>();
-                    List<String> tokens2 = Tokenizer.tokenize(sl.line);
-                    Tokenizer.stringEscapeSequences = tmp;
+                    HashMap<String,String> tmp = config.tokenizer.stringEscapeSequences;
+                    config.tokenizer.stringEscapeSequences = new HashMap<>();
+                    List<String> tokens2 = config.tokenizer.tokenize(sl.line);
+                    config.tokenizer.stringEscapeSequences = tmp;
                     for(String token2:tokens2) {
-                        if (Tokenizer.isString(token2)) {
-                            rawFileName = Tokenizer.stringValue(token2);
+                        if (config.tokenizer.isString(token2)) {
+                            rawFileName = config.tokenizer.stringValue(token2);
                             break;
                         }
                     }
@@ -543,8 +543,8 @@ public class LineParser {
                 if (allowIncludesWithoutQuotes) {
                     rawFileName = "";
                     while (!tokens.isEmpty()) {
-                        if (Tokenizer.isSingleLineComment(tokens.get(0))
-                                || Tokenizer.isMultiLineCommentStart(tokens.get(0))) {
+                        if (config.tokenizer.isSingleLineComment(tokens.get(0))
+                                || config.tokenizer.isMultiLineCommentStart(tokens.get(0))) {
                             break;
                         }
                         rawFileName += tokens.remove(0);
@@ -580,18 +580,18 @@ public class LineParser {
         }
         String rawFileName = null;
         String token = tokens.get(0);
-        if (Tokenizer.isString(token)) {
+        if (config.tokenizer.isString(token)) {
             tokens.remove(0);
-            rawFileName = Tokenizer.stringValue(token);
+            rawFileName = config.tokenizer.stringValue(token);
             
             if (!applyEscapeSequencesToIncludeArguments) {
-                HashMap<String,String> tmp = Tokenizer.stringEscapeSequences;
-                Tokenizer.stringEscapeSequences = new HashMap<>();
-                List<String> tokens2 = Tokenizer.tokenize(sl.line);
-                Tokenizer.stringEscapeSequences = tmp;
+                HashMap<String,String> tmp = config.tokenizer.stringEscapeSequences;
+                config.tokenizer.stringEscapeSequences = new HashMap<>();
+                List<String> tokens2 = config.tokenizer.tokenize(sl.line);
+                config.tokenizer.stringEscapeSequences = tmp;
                 for(String token2:tokens2) {
-                    if (Tokenizer.isString(token2)) {
-                        rawFileName = Tokenizer.stringValue(token2);
+                    if (config.tokenizer.isString(token2)) {
+                        rawFileName = config.tokenizer.stringValue(token2);
                         break;
                     }
                 }
@@ -601,8 +601,8 @@ public class LineParser {
                 rawFileName = "";
                 while (!tokens.isEmpty()) {
                     if (tokens.get(0).equals(",")
-                            || Tokenizer.isSingleLineComment(tokens.get(0))
-                            || Tokenizer.isMultiLineCommentStart(tokens.get(0))) {
+                            || config.tokenizer.isSingleLineComment(tokens.get(0))
+                            || config.tokenizer.isMultiLineCommentStart(tokens.get(0))) {
                         break;
                     }
                     rawFileName += tokens.remove(0);
@@ -627,11 +627,11 @@ public class LineParser {
         // optional skip and size arguments (they could be separated by commas or not, depending on the assembler dialect):
         Expression skip_exp = null;
         Expression size_exp = null;
-        if (!tokens.isEmpty() && !Tokenizer.isSingleLineComment(tokens.get(0))) {
+        if (!tokens.isEmpty() && !config.tokenizer.isSingleLineComment(tokens.get(0))) {
             if (tokens.get(0).equals(",")) {
                 tokens.remove(0);
             }
-            if (!tokens.isEmpty() && !Tokenizer.isSingleLineComment(tokens.get(0))) {
+            if (!tokens.isEmpty() && !config.tokenizer.isSingleLineComment(tokens.get(0))) {
                 skip_exp = config.expressionParser.parse(tokens, s, previous, code);
                 if (skip_exp == null) {
                     config.error("parseIncbin: Cannot parse line " + sl);
@@ -639,11 +639,11 @@ public class LineParser {
                 }
             }
         }
-        if (!tokens.isEmpty() && !Tokenizer.isSingleLineComment(tokens.get(0))) {
+        if (!tokens.isEmpty() && !config.tokenizer.isSingleLineComment(tokens.get(0))) {
             if (tokens.get(0).equals(",")) {
                 tokens.remove(0);
             }
-            if (!tokens.isEmpty() && !Tokenizer.isSingleLineComment(tokens.get(0))) {
+            if (!tokens.isEmpty() && !config.tokenizer.isSingleLineComment(tokens.get(0))) {
                 size_exp = config.expressionParser.parse(tokens, s, previous, code);
                 if (skip_exp == null) {
                     config.error("parseIncbin: Cannot parse line " + sl);
@@ -718,7 +718,7 @@ public class LineParser {
         List<Expression> data = new ArrayList<>();
         boolean done = false;
         if (allowEmptyDB_DW_DD_definitions) {
-            if (tokens.isEmpty() || Tokenizer.isSingleLineComment(tokens.get(0))) {
+            if (tokens.isEmpty() || config.tokenizer.isSingleLineComment(tokens.get(0))) {
                 data.add(Expression.constantExpression(0, config));
                 done = true;
             }
@@ -811,7 +811,7 @@ public class LineParser {
         List<Expression> arguments = new ArrayList<>();
 
         while (!tokens.isEmpty()) {
-            if (Tokenizer.isSingleLineComment(tokens.get(0)) ||
+            if (config.tokenizer.isSingleLineComment(tokens.get(0)) ||
                 (allowColonSeparatedInstructions && tokens.get(0).equals(":"))) {
                 break;
             }
@@ -824,7 +824,7 @@ public class LineParser {
                         || opName.equalsIgnoreCase("djnz")) {
                     String token = tokens.get(0);
                     if ((token.endsWith("f") || token.endsWith("F") || token.endsWith("b") || token.endsWith("B"))
-                            && Tokenizer.isInteger(token.substring(0, token.length() - 1))) {
+                            && config.tokenizer.isInteger(token.substring(0, token.length() - 1))) {
                         if (!caseSensitiveSymbols) token = token.toLowerCase();
                         Pair<String, SourceConstant> tmp = config.dialectParser.symbolName(token, s);
                         if (tmp == null) return false;
@@ -943,8 +943,8 @@ public class LineParser {
         List<String> args = new ArrayList<>();
         List<Expression> defaultValues = new ArrayList<>();
         while (!tokens.isEmpty()
-                && !Tokenizer.isSingleLineComment(tokens.get(0))
-                && !Tokenizer.isMultiLineCommentStart(tokens.get(0))) {
+                && !config.tokenizer.isSingleLineComment(tokens.get(0))
+                && !config.tokenizer.isMultiLineCommentStart(tokens.get(0))) {
             String token = tokens.get(0);
             tokens.remove(0);
             String argName = token;
@@ -989,7 +989,7 @@ public class LineParser {
             isIfDef = true;
         }
         while (!tokens.isEmpty()) {
-            if (Tokenizer.isSingleLineComment(tokens.get(0)) ||
+            if (config.tokenizer.isSingleLineComment(tokens.get(0)) ||
                 (allowColonSeparatedInstructions && tokens.get(0).equals(":"))) {
                 break;
             }

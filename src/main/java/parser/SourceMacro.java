@@ -57,7 +57,7 @@ public class SourceMacro {
         definingStatement = a_ds;
         
         // check for macros with numeric arguments:
-        if (argNames.size() == 1 && Tokenizer.isInteger(argNames.get(0))) {
+        if (argNames.size() == 1 && config.tokenizer.isInteger(argNames.get(0))) {
             // macro with numeric arguments!
             int nargs = Integer.parseInt(argNames.get(0));
             argNames.clear();
@@ -242,12 +242,12 @@ public class SourceMacro {
                                        CodeStatement macroCall, MDLConfig config)
     {
         String line2 = sl.line;
-        List<String> tokens = Tokenizer.tokenizeIncludingBlanks(line2);
+        List<String> tokens = config.tokenizer.tokenizeIncludingBlanks(line2);
         line2 = "";
 
         String previous = null;
         for(String token:tokens) {
-            if (previous != null && config.lineParser.macroArguentPrefixes.contains(previous) && Tokenizer.isSymbol(token)) {
+            if (previous != null && config.lineParser.macroArguentPrefixes.contains(previous) && config.tokenizer.isSymbol(token)) {
                 // variable name starting with "?" (or equivalent parameter prefix for the dialect):
                 line2 = line2.substring(0, line2.length()-1);
                 token = previous + token;

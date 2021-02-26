@@ -270,7 +270,7 @@ public class CPUOp {
         int nn_state = 0;
         
         for(String v[]:spec.bytesRepresentation) {
-            int baseByte = Tokenizer.parseHex(v[0]);
+            int baseByte = config.tokenizer.parseHex(v[0]);
             if (v[1].equals("")) {
                 data.add(baseByte);
                 

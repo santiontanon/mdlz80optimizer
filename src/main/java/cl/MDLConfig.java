@@ -17,6 +17,7 @@ import parser.CodeBaseParser;
 import parser.ExpressionParser;
 import parser.LineParser;
 import parser.PreProcessor;
+import parser.Tokenizer;
 import parser.dialects.Dialect;
 import parser.dialects.Dialects;
 import workers.MDLWorker;
@@ -87,6 +88,7 @@ public class MDLConfig {
 
     // utils:
     public MDLLogger logger;
+    public Tokenizer tokenizer;
     public PreProcessor preProcessor;
     public LineParser lineParser;
     public ExpressionParser expressionParser;
@@ -150,6 +152,8 @@ public class MDLConfig {
         
         // ignore all the platform specific patterns, by default:
         ignorePatternsWithTags.add(CPC_TAG);
+
+        tokenizer = new Tokenizer();
     }
 
 

@@ -64,7 +64,7 @@ public class CPUOpPattern {
             for(String variable:match.variables.keySet()) {
                 argStr = argStr.replace(variable, match.variables.get(variable).toString());
             }
-            Expression exp = config.expressionParser.parse(Tokenizer.tokenize(argStr), null, null, code);
+            Expression exp = config.expressionParser.parse(config.tokenizer.tokenize(argStr), null, null, code);
             if (exp == null) {
                 config.error("Cannot parse argument '" + argStr + "' when instantiating pattern " + pattern.message);
                 return null;
@@ -90,7 +90,7 @@ public class CPUOpPattern {
 
     public static CPUOpPattern parse(String line, CodeBase code, MDLConfig config)
     {
-        List<String> tokens = Tokenizer.tokenize(line);
+        List<String> tokens = config.tokenizer.tokenize(line);
         CPUOpPattern pat = new CPUOpPattern();
         pat.ID = Integer.parseInt(tokens.remove(0));
         if (!tokens.remove(0).equals(":")) {
@@ -119,7 +119,7 @@ public class CPUOpPattern {
         }
         
         while(!tokens.isEmpty()) {
-            if (Tokenizer.isSingleLineComment(tokens.get(0))) break;
+            if (config.tokenizer.isSingleLineComment(tokens.get(0))) break;
             Expression exp = config.expressionParser.parse(tokens, null, null ,code);
             if (exp == null) {
                 config.error("Cannot parse CPUOpPattern: " + line);

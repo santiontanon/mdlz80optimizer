@@ -309,7 +309,7 @@ public class ASMSXDialect implements Dialect {
             while(true) {
                 String line = br.readLine();
                 if (line == null) break;
-                tokenizedLines.add(Tokenizer.tokenize(line));
+                tokenizedLines.add(config.tokenizer.tokenize(line));
             }
             return tokenizedLines;
         } catch (IOException e) {
@@ -1120,7 +1120,7 @@ public class ASMSXDialect implements Dialect {
                     if (value == null) {
                         config.error("Cannot evaluate expression " + pr.exp);
                     } else {
-                        config.info("" + Tokenizer.toHex(value, 4));
+                        config.info("" + config.tokenizer.toHex(value, 4));
                     }
                     break;
                 }

@@ -175,7 +175,7 @@ public class PatternBasedOptimizer implements MDLWorker {
                 }
                 line = line.trim();
                 // ignore comments:
-                if (Tokenizer.isSingleLineComment(line)) continue;
+                if (config.tokenizer.isSingleLineComment(line)) continue;
 
                 if (line.equals("")) {
                     if (!patternString.equals("")) {
@@ -188,10 +188,10 @@ public class PatternBasedOptimizer implements MDLWorker {
                     }
                 } else {
                     if (line.startsWith("include")) {
-                        List<String> tokens = Tokenizer.tokenize(line);
+                        List<String> tokens = config.tokenizer.tokenize(line);
                         if (tokens.size()>=2) {
                             String name = tokens.get(1);
-                            if (Tokenizer.isString(name)) {
+                            if (config.tokenizer.isString(name)) {
                                 // include another pattern file:
                                 name = name.substring(1, name.length()-1);
                                 String path = config.lineParser.pathConcat(FilenameUtils.getFullPath(fileName), name);

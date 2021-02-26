@@ -34,7 +34,7 @@ public class WinAPEDialect implements Dialect {
         config.lineParser.KEYWORD_INCLUDE = "read";
         
         config.warning_jpHlWithParenthesis = false;  // I don't think WinAPE supports "jp hl"
-        Tokenizer.allowAndpersandHex = true;
+        config.tokenizer.allowAndpersandHex = true;
     }
 
     

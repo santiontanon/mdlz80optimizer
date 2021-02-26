@@ -92,9 +92,9 @@ public class SymbolTableGenerator implements MDLWorker {
                     Object value = symbol.getValue(code, true);
                     if (value instanceof Integer) {
                         if (config.hexStyleChanged) {
-                            sb.append(Tokenizer.toHexWord((Integer)value, config.hexStyle));
+                            sb.append(config.tokenizer.toHexWord((Integer)value, config.hexStyle));
                         } else {
-                            sb.append(Tokenizer.toHexWord((Integer)value, MDLConfig.HEX_STYLE_0X));
+                            sb.append(config.tokenizer.toHexWord((Integer)value, MDLConfig.HEX_STYLE_0X));
                         }
                     } else {
                         sb.append(value);

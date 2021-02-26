@@ -605,24 +605,24 @@ public class Expression {
                 switch(renderMode) {
                     case RENDER_AS_8BITHEX:
                         if (integerConstant >= 0 && integerConstant <= 0xff) {
-                            return Tokenizer.toHexByte(integerConstant, config.hexStyle);
+                            return config.tokenizer.toHexByte(integerConstant, config.hexStyle);
                         }
                         break;
                     case RENDER_AS_16BITHEX:
                         if (integerConstant >= 0 && integerConstant <= 0xffff) {
-                            return Tokenizer.toHexWord(integerConstant, config.hexStyle);
+                            return config.tokenizer.toHexWord(integerConstant, config.hexStyle);
                         }
                         break;
                     case RENDER_AS_OCT:
-                        return Tokenizer.toOct(integerConstant, config.hexStyle);
+                        return config.tokenizer.toOct(integerConstant, config.hexStyle);
                     case RENDER_AS_8BITBIN:
                         if (integerConstant >= 0 && integerConstant <= 0xff) {
-                            return Tokenizer.toBin(integerConstant, 8, config.hexStyle);
+                            return config.tokenizer.toBin(integerConstant, 8, config.hexStyle);
                         }
                         break;
                     case RENDER_AS_16BITBIN:
                         if (integerConstant >= 0 && integerConstant <= 0xffff) {
-                            return Tokenizer.toBin(integerConstant, 16, config.hexStyle);
+                            return config.tokenizer.toBin(integerConstant, 16, config.hexStyle);
                         }
                         break;
                 }

@@ -400,19 +400,19 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
         addFakeInstruction("ldd (IY+o),nn", "ld (IY+o),nn\ndec IY");
 
         // recognized escape sequences by sjasm:
-        Tokenizer.stringEscapeSequences.put("\\", "\\");
-        Tokenizer.stringEscapeSequences.put("?", "\u0063");
-        Tokenizer.stringEscapeSequences.put("'", "'");
-        Tokenizer.stringEscapeSequences.put("\"", "\"");
-        Tokenizer.stringEscapeSequences.put("a", "\u0007");
-        Tokenizer.stringEscapeSequences.put("b", "\u0008");
-        Tokenizer.stringEscapeSequences.put("d", "\u0127");
-        Tokenizer.stringEscapeSequences.put("e", "\u0027");
-        Tokenizer.stringEscapeSequences.put("f", "\u0012");
-        Tokenizer.stringEscapeSequences.put("n", "\n");
-        Tokenizer.stringEscapeSequences.put("r", "\r");
-        Tokenizer.stringEscapeSequences.put("t", "\t");
-        Tokenizer.stringEscapeSequences.put("v", "\u0011");
+        config.tokenizer.stringEscapeSequences.put("\\", "\\");
+        config.tokenizer.stringEscapeSequences.put("?", "\u0063");
+        config.tokenizer.stringEscapeSequences.put("'", "'");
+        config.tokenizer.stringEscapeSequences.put("\"", "\"");
+        config.tokenizer.stringEscapeSequences.put("a", "\u0007");
+        config.tokenizer.stringEscapeSequences.put("b", "\u0008");
+        config.tokenizer.stringEscapeSequences.put("d", "\u0127");
+        config.tokenizer.stringEscapeSequences.put("e", "\u0027");
+        config.tokenizer.stringEscapeSequences.put("f", "\u0012");
+        config.tokenizer.stringEscapeSequences.put("n", "\n");
+        config.tokenizer.stringEscapeSequences.put("r", "\r");
+        config.tokenizer.stringEscapeSequences.put("t", "\t");
+        config.tokenizer.stringEscapeSequences.put("v", "\u0011");
         config.lineParser.applyEscapeSequencesToIncludeArguments = false;
         
         currentPages.clear();
@@ -624,8 +624,8 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             tokens.remove(0);
             String folder = "";
             while(!tokens.isEmpty()) {
-                if (Tokenizer.isSingleLineComment(tokens.get(0)) || 
-                    Tokenizer.isMultiLineCommentStart(tokens.get(0))) break;
+                if (config.tokenizer.isSingleLineComment(tokens.get(0)) || 
+                    config.tokenizer.isMultiLineCommentStart(tokens.get(0))) break;
                 folder += tokens.remove(0);
             }
 
@@ -642,8 +642,8 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             String fileName = "";
             // Just ignore ...
             while(!tokens.isEmpty()) {
-                if (Tokenizer.isSingleLineComment(tokens.get(0)) || 
-                    Tokenizer.isMultiLineCommentStart(tokens.get(0))) break;
+                if (config.tokenizer.isSingleLineComment(tokens.get(0)) || 
+                    config.tokenizer.isMultiLineCommentStart(tokens.get(0))) break;
                 fileName += tokens.remove(0);
             }
 
@@ -1012,7 +1012,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                     
             // parameters parsed, parse the body:
             for(String token:tokens) {
-                if (Tokenizer.isSingleLineComment(token)) break;
+                if (config.tokenizer.isSingleLineComment(token)) break;
                 macroTokens.add(token);
             }
             tokens.clear();
@@ -1031,7 +1031,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                     return false;                            
                 }
                 String valueString = value.toString();
-                macroTokens = Tokenizer.tokenize(valueString);
+                macroTokens = config.tokenizer.tokenize(valueString);
             } else if (keyword.equalsIgnoreCase("xdefine")) {
                 // evaluate the text macros within the definition
                 config.preProcessor.expandTextMacros(macroTokens, s, sl);
@@ -1097,7 +1097,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                 regpairs.add(regpair);
                 idx++;
                 if (tokens.size()<=idx) break;
-                if (Tokenizer.isSingleLineComment(tokens.get(idx))) break;
+                if (config.tokenizer.isSingleLineComment(tokens.get(idx))) break;
                 if (!tokens.get(idx).equals(",")) {
                     process = false;
                     break;
@@ -1296,7 +1296,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             } else if (args.size() == 1) {
                 // this macro allows for a file name without quotes, so, reconstruct the name:
                 String tmp = args.get(0).toString();
-                List<String> tokens = Tokenizer.tokenize(tmp);
+                List<String> tokens = config.tokenizer.tokenize(tmp);
                 fileName = "";
                 for(String token:tokens) fileName += token;
             } else {
@@ -1320,7 +1320,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             } else if (args.size() == 1) {
                 // this macro allows for a file name without quotes, so, reconstruct the name:
                 String tmp = args.get(0).toString();
-                List<String> tokens = Tokenizer.tokenize(tmp);
+                List<String> tokens = config.tokenizer.tokenize(tmp);
                 fileName = "";
                 for(String token:tokens) fileName += token;
             } else {
@@ -1673,7 +1673,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
         
         for(SourceLine sl:macro.lines) {
             String line2 = sl.line;
-            List<String> tokens = Tokenizer.tokenizeIncludingBlanks(line2);
+            List<String> tokens = config.tokenizer.tokenizeIncludingBlanks(line2);
             line2 = "";
 
             boolean allEmptySoFar = true;
@@ -1713,13 +1713,13 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             
             if (repeatLinesToExecute != null) {
                 SourceLine repeatStatement = repeatLinesToExecute.remove(0);
-                List<String> tokens2 = Tokenizer.tokenize(repeatStatement.line);
+                List<String> tokens2 = config.tokenizer.tokenize(repeatStatement.line);
                 tokens2.remove(0);  // skip "repeat"
                 Expression exp = config.expressionParser.parse(tokens2, macroCall, macroCall.source.getPreviousStatementTo(macroCall, code), code);
                 int nIterations = exp.evaluateToInteger(macroCall, code, false);
                 for(int i = 0;i<nIterations;i++) {
                     for(SourceLine sl3:repeatLinesToExecute) {
-                        List<String> tokens3 = Tokenizer.tokenizeIncludingBlanks(sl3.line);
+                        List<String> tokens3 = config.tokenizer.tokenizeIncludingBlanks(sl3.line);
                         String line3 = "";
                         for(String token:tokens3) {
                             String newToken = token;
@@ -1733,7 +1733,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                         
                         if (line3.trim().toLowerCase().startsWith("rotate ")) {
                             // execute a rotate:
-                            List<String> tokensRotate = Tokenizer.tokenize(line3);
+                            List<String> tokensRotate = config.tokenizer.tokenize(line3);
                             tokensRotate.remove(0); // skip "rotate"
                             Expression expRotate = config.expressionParser.parse(tokensRotate, macroCall, macroCall.source.getPreviousStatementTo(macroCall, code), code);
                             int nRotations = expRotate.evaluateToInteger(macroCall, code, false);

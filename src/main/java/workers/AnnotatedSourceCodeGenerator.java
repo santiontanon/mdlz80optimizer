@@ -161,7 +161,7 @@ public class AnnotatedSourceCodeGenerator implements MDLWorker {
             if (address == null) {
                 sb.append("????");
             } else {
-                sb.append(Tokenizer.toHexWord(address, config.hexStyle));
+                sb.append(config.tokenizer.toHexWord(address, config.hexStyle));
             }
             sb.append("  ");
             Integer size = ss.sizeInBytes(code, true, true, true);
@@ -200,7 +200,7 @@ public class AnnotatedSourceCodeGenerator implements MDLWorker {
                 sb.append("<td>????</td>");
             } else {
                 sb.append("<td>");
-                sb.append(Tokenizer.toHexWord(address, config.hexStyle));
+                sb.append(config.tokenizer.toHexWord(address, config.hexStyle));
                 sb.append("</td>");
             }
             
@@ -209,7 +209,7 @@ public class AnnotatedSourceCodeGenerator implements MDLWorker {
                 sb.append("<td></td>");
             } else {
                 sb.append("<td>");
-                sb.append(Tokenizer.toHexWord(position, config.hexStyle));
+                sb.append(config.tokenizer.toHexWord(position, config.hexStyle));
                 sb.append("</td>");
             }
             
@@ -234,7 +234,7 @@ public class AnnotatedSourceCodeGenerator implements MDLWorker {
                 } else {
                     sb.append("<td><pre>");
                     for(Integer v:data) {
-                        sb.append(Tokenizer.toHex(v, 2));
+                        sb.append(config.tokenizer.toHex(v, 2));
                         sb.append(" ");
                     }
                     sb.append("</pre></td>");

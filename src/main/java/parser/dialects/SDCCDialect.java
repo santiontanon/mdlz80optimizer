@@ -86,8 +86,8 @@ public class SDCCDialect implements Dialect {
         config.lineParser.sdccStyleOffsets = true;
         
         // Note, these have to be deactivated as soon as we are done parsing (otherwise, the optimizer patterns will not be parsed right)
-        Tokenizer.sdccStyleDollarInLabels = true;
-        Tokenizer.sdccStyleHashMarksForConstants = true;
+        config.tokenizer.sdccStyleDollarInLabels = true;
+        config.tokenizer.sdccStyleHashMarksForConstants = true;
         config.hexStyle = MDLConfig.HEX_STYLE_0X;
         config.labelsHaveSafeValues = false;
 
@@ -175,7 +175,7 @@ public class SDCCDialect implements Dialect {
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase(".optsdcc")) {
             linesToKeepIfGeneratingDialectAsm.add(sl);
             tokens.remove(0);
-            while(!tokens.isEmpty() && !Tokenizer.isSingleLineComment(tokens.get(0))) tokens.remove(0);
+            while(!tokens.isEmpty() && !config.tokenizer.isSingleLineComment(tokens.get(0))) tokens.remove(0);
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase(".globl")) {
@@ -249,8 +249,8 @@ public class SDCCDialect implements Dialect {
     @Override
     public boolean performAnyFinalActions(CodeBase code)
     {            
-        Tokenizer.sdccStyleDollarInLabels = false;
-        Tokenizer.sdccStyleHashMarksForConstants = false;
+        config.tokenizer.sdccStyleDollarInLabels = false;
+        config.tokenizer.sdccStyleHashMarksForConstants = false;
         
         return true;
     }
