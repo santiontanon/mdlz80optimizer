@@ -11,6 +11,7 @@ import code.CodeBase;
 import code.Expression;
 import code.SourceFile;
 import code.CodeStatement;
+import code.SourceConstant;
 import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -433,33 +434,52 @@ public class CodeReorganizer implements MDLWorker {
             }
         }while(anyMove);
         
-        // check if any local labels have been moved out of their contexts, and fix them:
-        for(int i = 0;i<subarea.statements.size();i++) {
-            CodeStatement s = subarea.statements.get(i);
-            if (s.label != null && s.label.relativeTo != null) {
-                // relative label!
-                boolean found = false;
-                CodeStatement s2 = s;
-                while(s2 != null) {
-                    if (s2.label != null && s2.label.relativeTo == null) {
-                        // absolute label:
-                        if (s.label.relativeTo == s2.label) {
-                            found = true;
+        // check if any local labels or "jumps to a local label" have been moved
+        // out of their contexts, and fix them:
+        boolean repeat = true;
+        while(repeat) {
+            repeat = false;
+            for(int i = 0;i<subarea.statements.size();i++) {
+                CodeStatement s = subarea.statements.get(i);
+                SourceConstant label = null;
+                if (s.label != null && s.label.relativeTo != null) {
+                    // relative label!
+                    label = s.label;
+                } else if (s.op != null && s.op.isJump()) {
+                    Expression labelExp = s.op.getTargetJumpExpression();
+                    if (labelExp.type == Expression.EXPRESSION_SYMBOL) {
+                        String name = labelExp.symbolName;
+                        SourceConstant sc = code.getSymbol(name);
+                        if (sc != null && sc.relativeTo != null) {
+                            // jumping to a relative label!
+                            label = sc;
                         }
-                        break;
                     }
-                    s2 = s2.source.getPreviousStatementTo(s2, code);
                 }
-                if (!found) {
-                    // we found a local label out of context!
-                    config.debug("CodeReorganizer: local label out of context! " + s.label.originalName + " should be right after " + s.label.relativeTo.originalName + " but isn't!");
-                    
-                    // turn the local label into an absolute label:
-                    s.label.relativeTo = null;
-                    s.label.originalName = s.label.name;
-                    
-                    // reset the loop: (santi: this is an ugly hack, I know...)
-                    i = -1;
+                if (label != null) {
+                    boolean found = false;
+                    CodeStatement s2 = s;
+                    while(s2 != null) {
+                        if (s2.label != null && s2.label.relativeTo == null) {
+                            // absolute label:
+                            if (label.relativeTo == s2.label) {
+                                found = true;
+                            }
+                            break;
+                        }
+                        s2 = s2.source.getPreviousStatementTo(s2, code);
+                    }
+                    if (!found) {
+                        // we found a local label out of context!
+                        config.debug("CodeReorganizer: local label out of context! " + label.originalName + " should in the context of " + label.relativeTo.originalName + " but isn't!");
+
+                        // turn the local label into an absolute label:
+                        label.relativeTo = null;
+                        label.originalName = label.name;
+
+                        // reset the loop:
+                        repeat = true;
+                    }
                 }
             }
         }

@@ -68,6 +68,10 @@ public class ReorganizerTest {
     @Test public void test11() throws Exception { Assert.assertTrue(test("data/reorganizertests/test-local2.asm", "glass",
                                                                          "data/reorganizertests/test-local2-expected.asm", null,
                                                                          "data/reorganizertests/test-local2-expected.bin")); }
+    @Test public void test12() throws Exception { Assert.assertTrue(test("data/reorganizertests/test-local3.asm", "sdcc",
+                                                                         "data/reorganizertests/test-local3-expected.asm",
+                                                                         "data/reorganizertests/test-local3-dialect-expected.asm",
+                                                                         "data/reorganizertests/test-local3-expected.bin")); }
 
     private boolean test(String inputFile, String dialect,
                          String expectedOutputFile, String expectedOutputFileDialect,
@@ -97,29 +101,30 @@ public class ReorganizerTest {
         }
                 
         // check binary generation (to make sure the reorganizer modified the code correctly):
-        BinaryGenerator bg = new BinaryGenerator(config);
-        ListOutputStream out = new ListOutputStream();
-        bg.writeBytes(code.getMain(), code, out);        
-        List<Integer> actualBytes = out.getData();
+        if (expectedBinaryOutputFile != null) {
+            BinaryGenerator bg = new BinaryGenerator(config);
+            ListOutputStream out = new ListOutputStream();
+            bg.writeBytes(code.getMain(), code, out);        
+            List<Integer> actualBytes = out.getData();
         
-        List<Integer> expectedBytes = new ArrayList<>();        
-        InputStream is = Resources.asInputStream(expectedBinaryOutputFile);
-        while(is.available() != 0) {
-            expectedBytes.add(is.read());
-        }
-        
-        if (actualBytes.size() != expectedBytes.size()) {
-            System.out.println("Expected " + expectedBytes.size() + " bytes, but got " + actualBytes.size() + " bytes.");
-            return false;
-        }
+            List<Integer> expectedBytes = new ArrayList<>();        
+            InputStream is = Resources.asInputStream(expectedBinaryOutputFile);
+            while(is.available() != 0) {
+                expectedBytes.add(is.read());
+            }
 
-        for(int i = 0;i<actualBytes.size();i++) {
-            if (!actualBytes.get(i).equals(expectedBytes.get(i))) {
-                System.out.println("Byte " + i + " was expected to be " + expectedBytes.get(i) + ", but was " + actualBytes.get(i));
+            if (actualBytes.size() != expectedBytes.size()) {
+                System.out.println("Expected " + expectedBytes.size() + " bytes, but got " + actualBytes.size() + " bytes.");
                 return false;
             }
+
+            for(int i = 0;i<actualBytes.size();i++) {
+                if (!actualBytes.get(i).equals(expectedBytes.get(i))) {
+                    System.out.println("Byte " + i + " was expected to be " + expectedBytes.get(i) + ", but was " + actualBytes.get(i));
+                    return false;
+                }
+            }
         }
-        
         
         return true;
     }    
