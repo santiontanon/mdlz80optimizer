@@ -13,6 +13,7 @@ import code.SourceConstant;
 import code.SourceFile;
 import code.CodeStatement;
 import java.util.HashMap;
+import util.TextUtils;
 
 
 /**
@@ -258,7 +259,8 @@ public class PreProcessor {
             if (currentState.currentMacroNameStack.isEmpty() &&
                 (isMacroName(m.name, MACRO_IF) ||
                  isMacroName(m.name, MACRO_IFDEF) ||
-                 isMacroName(m.name, MACRO_IFNDEF))) {
+                 isMacroName(m.name, MACRO_IFNDEF) ||
+                 TextUtils.anyMatchesIgnoreCase(m.name, dialectIfs))) {
                 m.insideElse = true;
             } else {
                 m.addLine(sl);

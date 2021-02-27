@@ -249,6 +249,11 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
         config.macrosToEvaluateEagerly.add("ifdif");
         config.macrosToEvaluateEagerly.add("ifdifi");
         
+        config.preProcessor.dialectIfs.add("ifexists");
+        config.preProcessor.dialectIfs.add("ifnexists");
+        config.preProcessor.dialectIfs.add("ifdif");
+        config.preProcessor.dialectIfs.add("ifdifi");
+        
         // It is important that registers on the left-hand-side are capitalized (the right hand side does not matter):
         addFakeInstruction("RL BC", "rl c\nrl b");
         addFakeInstruction("RL DE", "rl e\nrl d");
@@ -1417,9 +1422,16 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             
         } else if (macro.name.equals("ifdif")) {
             if (args.size() == 2) {
-                String arg1 = args.get(0).evaluate(macroCall, code, true) + "";
-                String arg2 = args.get(0).evaluate(macroCall, code, true) + "";
+                String arg1 = (args.get(0).type == Expression.EXPRESSION_REGISTER_OR_FLAG ?
+                                args.get(0).registerOrFlagName : 
+                                args.get(0).evaluate(macroCall, code, true) + "");
+                String arg2 = (args.get(1).type == Expression.EXPRESSION_REGISTER_OR_FLAG ?
+                                args.get(1).registerOrFlagName : 
+                                args.get(1).evaluate(macroCall, code, true) + "");
                 if (arg1.equals(arg2)) {
+                    if (macro.elseLines != null) {
+                        lines2.addAll(macro.elseLines);
+                    }
                     return me;
                 } else {
                     lines2.addAll(macro.lines);
@@ -1432,9 +1444,16 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
 
         } else if (macro.name.equals("ifdifi")) {
             if (args.size() == 2) {
-                String arg1 = args.get(0).evaluate(macroCall, code, true) + "";
-                String arg2 = args.get(0).evaluate(macroCall, code, true) + "";
+                String arg1 = (args.get(0).type == Expression.EXPRESSION_REGISTER_OR_FLAG ?
+                                args.get(0).registerOrFlagName : 
+                                args.get(0).evaluate(macroCall, code, true) + "");
+                String arg2 = (args.get(1).type == Expression.EXPRESSION_REGISTER_OR_FLAG ?
+                                args.get(1).registerOrFlagName : 
+                                args.get(1).evaluate(macroCall, code, true) + "");
                 if (arg1.equalsIgnoreCase(arg2)) {
+                    if (macro.elseLines != null) {
+                        lines2.addAll(macro.elseLines);
+                    }
                     return me;
                 } else {
                     lines2.addAll(macro.lines);
