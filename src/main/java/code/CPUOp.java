@@ -6,7 +6,6 @@ package code;
 import cl.MDLConfig;
 import java.util.ArrayList;
 import java.util.List;
-import parser.Tokenizer;
 
 public class CPUOp {
     MDLConfig config;

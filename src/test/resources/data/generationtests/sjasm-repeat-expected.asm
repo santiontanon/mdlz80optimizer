@@ -1,3 +1,4 @@
+__sjasm_page_0_start:
 scorebar_sat:
     db 0 * 8 - 8 - 1
     db 0
@@ -116,3 +117,4 @@ scorebar_sat:
     db #98
     db 0
     db #d0
+__sjasm_page_0_end:

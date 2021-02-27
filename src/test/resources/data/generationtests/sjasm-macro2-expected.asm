@@ -1,3 +1,4 @@
+__sjasm_page_0_start:
 ; Test case: 
 	ld a, #0203 & #00ff
 	ld (var), a
@@ -17,3 +18,4 @@ loop:
 	jr loop
 var:
 	db 0
+__sjasm_page_0_end:

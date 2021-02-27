@@ -1,3 +1,4 @@
+__sjasm_page_0_start: equ $
 ; Test case: 
 CONSTANT: equ 0
 label1:
@@ -13,3 +14,4 @@ label2:
 	nop
 loop:
 	jp loop
+__sjasm_page_0_end:

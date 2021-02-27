@@ -25,7 +25,6 @@ import parser.MacroExpansion;
 import parser.SourceLine;
 import parser.SourceMacro;
 import parser.TextMacro;
-import parser.Tokenizer;
 import workers.reorgopt.CodeBlock;
 
 /**
@@ -52,18 +51,23 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             alignment = a_alignment;
         }
         
-        public int size(CodeBase code)
+        public Integer size(CodeBase code)
         {
             int size = 0;
             for(CodeStatement s:statements) {
-                size += s.sizeInBytes(code, false, true, false);
+                Integer sSize = s.sizeInBytes(code, false, true, false);
+                if (sSize == null) {
+                    config.error("Cannot evaluate the size of a statement in " + s.sl);
+                    return null;
+                }
+                size += sSize;
             }
             return size;
         }
     }
 
 
-    public static class CodePage {
+    public class CodePage {
         public CodeStatement s;
         public Expression start;
         public Expression size;
@@ -114,8 +118,13 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                 // otherwise, find a spot:
                 int pageStart = start.evaluateToInteger(s, code, true);
                 int blockAddress = pageStart;
-                int blockSize = block.size(code);
                 int alignedAddress = blockAddress + (alignment - (blockAddress%alignment))%alignment;
+                Integer blockSize = block.size(code);
+                
+                if (blockSize == null) {
+                    config.error("Cannot assess block size!");
+                    return false;
+                }
                 
                 for(SJasmCodeBlock b2:blocks) {                    
                     if (b2.actualAddress-alignedAddress >= blockSize) {
@@ -157,17 +166,42 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
     }
     
     
+    public class SJasmOutput {
+        String ID;
+        String fileName;
+        CodeStatement startStatement;
+        HashMap<Integer,CodePage> pages = new HashMap<>();
+        List<SJasmCodeBlock> codeBlocks = new ArrayList<>();
+        SJasmCodeBlock defaultBlock;
+        
+        SourceFile reconstructedFile = null;
+        
+        public SJasmOutput(String a_ID, String a_fileName, CodeStatement a_startStatement) {
+            ID = a_ID;
+            fileName = a_fileName;
+            startStatement = a_startStatement;
+            
+            List<Integer> currentPages = new ArrayList<>();
+            currentPages.add(0);
+            defaultBlock = new SJasmCodeBlock(a_startStatement, currentPages, null, null);            
+        }
+    }
+    
+    
     int mapCounter = 0;
     List<Integer> mapCounterStack = new ArrayList<>();
         
-    List<SJasmCodeBlock> codeBlocks = new ArrayList<>();
+//    List<SJasmCodeBlock> codeBlocks = new ArrayList<>();
+//    List<SJasmCodeBlock> defaultBlocks = new ArrayList<>();
+//    SJasmCodeBlock currentCodeBlock = null;
     
-    HashMap<Integer,CodePage> pages = new HashMap<>();
+//    HashMap<Integer,CodePage> pages = null;
     
     List<CodeStatement> enhancedJrList = new ArrayList<>();
     List<CodeStatement> enhancedDjnzList = new ArrayList<>();
     
-    List<String> outputFileNames = new ArrayList<>();
+    List<SJasmOutput> outputFiles = new ArrayList<>();
+    SJasmOutput currentOutput = null;
     
     public SjasmDialect(MDLConfig a_config) {
         config = a_config;
@@ -418,6 +452,11 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
         currentPages.clear();
         currentPages.add(0);  // page 0 by default
         
+        // default output:
+        currentOutput = new SJasmOutput("", null, null);
+        outputFiles.add(currentOutput);
+//        currentCodeBlock = currentOutput.defaultBlock;
+        
         /*
         forbiddenLabelNames.add("struct");
         forbiddenLabelNames.add("ends");
@@ -646,12 +685,10 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                     config.tokenizer.isMultiLineCommentStart(tokens.get(0))) break;
                 fileName += tokens.remove(0);
             }
-
-            outputFileNames.add(fileName);
-            if (outputFileNames.size() > 1) {
-                config.error("More than one 'output' statement in the same assembler file is not supported. Output of MDL might not be correct.");
-            }
             
+            currentOutput = new SJasmOutput("_output"+outputFiles.size(), fileName, s);
+            outputFiles.add(currentOutput);
+                        
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);            
         }
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("defpage")) {
@@ -681,7 +718,10 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             }
             int pageNumber = pageExp.evaluateToInteger(s, code, false);
             CodePage page = new CodePage(s, pageStartExp, pageSizeExp);
-            pages.put(pageNumber, page);
+            if (currentOutput.pages.containsKey(pageNumber)) {
+                config.warn("Redefining page " + pageNumber + " in " + sl);
+            }
+            currentOutput.pages.put(pageNumber, page);
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
         if (tokens.size() >= 1 && tokens.get(0).equalsIgnoreCase("code")) {
@@ -753,7 +793,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                 }
             }            
                         
-            codeBlocks.add(new SJasmCodeBlock(s, currentPages, addressExp, alignmentExp));
+            currentOutput.codeBlocks.add(new SJasmCodeBlock(s, currentPages, addressExp, alignmentExp));
             
             // ignore (but still add the statement, so we know where the codeblock starts)
             s.type = CodeStatement.STATEMENT_NONE;
@@ -790,7 +830,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                 }
                 
                 Expression addressExp = null;
-                codeBlocks.add(new SJasmCodeBlock(s, currentPages, addressExp, null));
+                currentOutput.codeBlocks.add(new SJasmCodeBlock(s, currentPages, addressExp, null));
                 // parse it as an "org"
                 s.type = CodeStatement.STATEMENT_NONE;
                 return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
@@ -1198,10 +1238,29 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                 return null;
             }
             
+            SJasmOutput output = null;
+            if (outputFiles.get(0).reconstructedFile == null) {
+                // we are still parsing:
+                output = currentOutput;
+            } else {
+                for(SJasmOutput o:outputFiles) {
+                    if (o.reconstructedFile != null) {
+                        if (o.reconstructedFile.getStatements().contains(s)) {
+                            output = o;
+                            break;
+                        }
+                    }
+                }
+            }
+            if (output == null) {
+                // We don't know how to evaluate it yet:
+                return null;
+            }
+            
             Expression pageSize = Expression.parenthesisExpression(
                     Expression.operatorExpression(Expression.EXPRESSION_SUB, 
-                            Expression.symbolExpression("__sjasm_page_"+page+"_end", s, code, config), 
-                            Expression.symbolExpression("__sjasm_page_"+page+"_start", s, code, config), config), "(", config);
+                            Expression.symbolExpression("__sjasm_page_"+page+output.ID+"_end", s, code, config), 
+                            Expression.symbolExpression("__sjasm_page_"+page+output.ID+"_start", s, code, config), config), "(", config);
             return pageSize.evaluateToInteger(s, code, silent);
         }
         return null;
@@ -1235,10 +1294,29 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                 return null;
             }
             
+            SJasmOutput output = null;
+            if (outputFiles.get(0).reconstructedFile == null) {
+                // we are still parsing:
+                output = currentOutput;
+            } else {
+                for(SJasmOutput o:outputFiles) {
+                    if (o.reconstructedFile != null) {
+                        if (o.reconstructedFile.getStatements().contains(s)) {
+                            output = o;
+                            break;
+                        }
+                    }
+                }
+            }
+            if (output == null) {
+                // We don't know how to evaluate it yet:
+                return null;
+            }
+            
             Expression pageSize = Expression.parenthesisExpression(
                     Expression.operatorExpression(Expression.EXPRESSION_SUB, 
-                            Expression.symbolExpression("__sjasm_page_"+page+"_end", s, code, config), 
-                            Expression.symbolExpression("__sjasm_page_"+page+"_start", s, code, config), config), "(", config);
+                            Expression.symbolExpression("__sjasm_page_"+page+output.ID+"_end", s, code, config), 
+                            Expression.symbolExpression("__sjasm_page_"+page+output.ID+"_start", s, code, config), config), "(", config);
             return pageSize;
         }
         return null;
@@ -1380,78 +1458,100 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             config.warn("Use of sjasm reusable labels, which are conductive to human error.");
         }
                 
-        // if there are no blocks defined, we are done:
-        if (!codeBlocks.isEmpty()) {
-                
-            // Reorganize all the "code" blocks into the different pages:
-            SJasmCodeBlock initialBlock = new SJasmCodeBlock(null, null, null, null);
-            SJasmCodeBlock currentBlock = initialBlock;
-
-            {
-                // get the very first statement, and iterate over all the rest:
-                CodeStatement s = code.getMain().getStatements().get(0);
-                while(s != null) {
-                    if (s.type == CodeStatement.STATEMENT_INCLUDE) {
-                        s = s.include.getStatements().get(0);
-                    } else {
-                        // See if a new block starts:
-                        SJasmCodeBlock block = blockStartingAt(s);
-                        if (block == null) {
-                            currentBlock.statements.add(s);
-                        } else {
-                           currentBlock = block;
-                           currentBlock.statements.add(s);
-                        }
-                        s = s.source.getNextStatementTo(s, code);
-                    }
-                }
+        // set the starting statement of the first default block:
+        SJasmOutput defaultOutput = outputFiles.get(0);
+        defaultOutput.startStatement = code.getMain().getStatements().get(0);
+        defaultOutput.defaultBlock.startStatement = defaultOutput.startStatement;
+        
+        // Create a new source file per output, and add all the code blocks:
+        code.getSourceFiles().clear();
+        
+        boolean first = true;
+        for(SJasmOutput output:outputFiles) {
+            output.reconstructedFile = new SourceFile(code.getMain().fileName, null, null, code, config);
+            code.addSourceFile(output.reconstructedFile);
+            if (first) {
+                code.setMain(output.reconstructedFile);
             }
-
-            if (initialBlock.size(code) > 0) {
-                config.error("sjasm initial block has non empty size!");
+            if (!reconstructOutputFile(output, code)) {
                 return false;
             }
             
-            // Resolve enhanced jr/jp, only within-block:
-            resolveEnhancedJumps(code);
+            first = false;
+        }
+        
+        if (outputFiles.size() > 1 && defaultOutput.reconstructedFile.sizeInBytes(code, true, true, true) == 0) {
+            SJasmOutput firstdefined = outputFiles.get(1);
+            firstdefined.reconstructedFile.getStatements().addAll(0, defaultOutput.reconstructedFile.getStatements());
+            code.getSourceFiles().remove(defaultOutput.reconstructedFile);
+            code.setMain(firstdefined.reconstructedFile);
+        }
+        return true;
+    }
+        
+        
+    public boolean reconstructOutputFile(SJasmOutput output, CodeBase code)
+    {
+        // Reorganize all the "code" blocks into the different pages:
+        SJasmCodeBlock initialBlock = new SJasmCodeBlock(null, null, null, null);
+        SJasmCodeBlock currentBlock = initialBlock;
 
-            // Assign blocks to pages, first those that have a defined address, then the rest:
-            // Start with those that have a defined address:
-            List<SJasmCodeBlock> blocksToAssign = new ArrayList<>();
-            for(SJasmCodeBlock b:codeBlocks) {
-                Integer address = null;
-                if (b.address != null) address = b.address.evaluateToInteger(b.startStatement, code, true);
-                if (address == null) {
-                    blocksToAssign.add(b);
+        {
+            // get the very first statement, and iterate over all the rest:
+            CodeStatement s = output.startStatement;
+            SJasmOutput nextOutput = null;
+            if (outputFiles.indexOf(output) < outputFiles.size() - 1) {
+                nextOutput = outputFiles.get(outputFiles.indexOf(output) + 1);
+            }
+            
+            while(s != null) {
+                if (s.type == CodeStatement.STATEMENT_INCLUDE) {
+                    s = s.include.getStatements().get(0);
                 } else {
-                    for(Integer pageIdx:b.candidatePages) {
-                        CodePage page = pages.get(pageIdx);
-                        if (page.addBlock(b, code, config)) {
-                            // assign all the symbols in this block to this page:
-                            for(CodeStatement bs:b.statements) {
-                                if (bs.label != null) {
-                                    symbolPage.put(bs.label.name, pageIdx);
-                                }
-                            }
-                        } else {
-                            config.error("Could not add block of size " + b.size(code) + " to page " + page + "!");
-                            return false;
-                        }
+                    // Stop when a new output starts:
+                    if (nextOutput != null && nextOutput != output) {
+                        break;
                     }
+                    
+                    // check if we have reached the next output:
+                    if (nextOutput != null && nextOutput.startStatement == s) break;
+                    
+                    // See if a new block starts:
+                    SJasmCodeBlock block = blockStartingAt(s, output);
+                    if (block == null) {
+                        currentBlock.statements.add(s);
+                    } else {
+                       currentBlock = block;
+                       currentBlock.statements.add(s);
+                    }
+                    s = s.source.getNextStatementTo(s, code);
                 }
             }
+        }
+        
+        if (initialBlock.size(code) > 0) {
+            config.error("sjasm initial block has non empty size!");
+            return false;
+        }
 
-            // Sort the rest of codeblocks by size, and assign them to pages where they fit:
-            Collections.sort(blocksToAssign, new Comparator<SJasmCodeBlock>() {
-                @Override
-                public int compare(SJasmCodeBlock b1, SJasmCodeBlock b2) {
-                    return -Integer.compare(b1.size(code), b2.size(code));
-                }
-            });
+        // Resolve enhanced jr/jp, only within-block:
+        resolveEnhancedJumps(code, output);
 
-            for(SJasmCodeBlock b:blocksToAssign) {
+        // Assign blocks to pages, first those that have a defined address, then the rest:
+        // Start with those that have a defined address:
+        List<SJasmCodeBlock> blocksToAssign = new ArrayList<>();
+        // these are those that are created by default, before defining any "code" block,
+        // and should go at the very beginning:
+        List<SJasmCodeBlock> initialBlocks = new ArrayList<>();
+        initialBlocks.add(output.defaultBlock);
+        for(SJasmCodeBlock b:output.codeBlocks) {
+            Integer address = null;
+            if (b.address != null) address = b.address.evaluateToInteger(b.startStatement, code, true);
+            if (address == null) {
+                blocksToAssign.add(b);
+            } else {
                 for(Integer pageIdx:b.candidatePages) {
-                    CodePage page = pages.get(pageIdx);
+                    CodePage page = output.pages.get(pageIdx);
                     if (page.addBlock(b, code, config)) {
                         // assign all the symbols in this block to this page:
                         for(CodeStatement bs:b.statements) {
@@ -1465,117 +1565,151 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                     }
                 }
             }
+        }
 
-            // Create a new source file, and add all the code blocks:
-            SourceFile reconstructedFile = new SourceFile(code.getMain().fileName, null, null, code, config);
-            code.getSourceFiles().clear();
-            code.addSourceFile(reconstructedFile);
-            code.setMain(reconstructedFile);
-
-            // start by adding initialBlock:
-            for(CodeStatement s:initialBlock.statements) {
-                s.source = reconstructedFile;
-                reconstructedFile.addStatement(s);
+        // Sort the rest of codeblocks by size, and assign them to pages where they fit:
+        Collections.sort(blocksToAssign, new Comparator<SJasmCodeBlock>() {
+            @Override
+            public int compare(SJasmCodeBlock b1, SJasmCodeBlock b2) {
+                Integer s1 = b1.size(code);
+                Integer s2 = b2.size(code);
+                if (s1 == null || s2 == null) return 0;
+                return -Integer.compare(s1, s2);
             }
+        });
 
-            // add the rest of blocks, inserting appropriate spacing in between:
-            List<Integer> pageIndexes = new ArrayList<>();
-            pageIndexes.addAll(pages.keySet());
-            Collections.sort(pageIndexes);
+        blocksToAssign.addAll(0, initialBlocks);
 
-            for(int idx:pageIndexes) {
-                CodePage page = pages.get(idx);
-                CodeStatement org = new CodeStatement(CodeStatement.STATEMENT_ORG, new SourceLine("", reconstructedFile, reconstructedFile.getStatements().size()+1), reconstructedFile, config);
-                org.org = page.start;
-                reconstructedFile.addStatement(org);
-                Integer pageStart = page.start.evaluateToInteger(page.s, code, true);
-                if (pageStart == null) {
-                    config.error("Cannot evaluate " + page.start + " in " + page.s.sl);
+        for(SJasmCodeBlock b:blocksToAssign) {
+            for(Integer pageIdx:b.candidatePages) {
+                CodePage page = output.pages.get(pageIdx);
+                if (page == null && pageIdx == 0 && output.pages.isEmpty()) {
+                    // no pages defined in the code, define a default page:
+                    page = new CodePage(output.startStatement, 
+                                        Expression.constantExpression(0, config), null);
+                    output.pages.put(0, page);
+                }
+                if (page.addBlock(b, code, config)) {
+                    // assign all the symbols in this block to this page:
+                    for(CodeStatement bs:b.statements) {
+                        if (bs.label != null) {
+                            symbolPage.put(bs.label.name, pageIdx);
+                        }
+                    }
+                } else {
+                    config.error("Could not add block of size " + b.size(code) + " to page " + page + "!");
                     return false;
                 }
-                Integer pageSize = (page.size == null ? null:page.size.evaluateToInteger(page.s, code, true));
-                int currentAddress = pageStart;
-                
-                // Add page start labels to each page:                
-                CodeStatement pageStartStatement = new CodeStatement(CodeStatement.STATEMENT_NONE, page.s.sl, page.s.source, config);
-                pageStartStatement.label = new SourceConstant("__sjasm_page_" + idx + "_start", "__sjasm_page_" + idx + "_start", 
-                        Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, pageStartStatement, code, config), pageStartStatement, config);
-                reconstructedFile.addStatement(pageStartStatement);
-                code.addSymbol(pageStartStatement.label.name, pageStartStatement.label);
-                
-                for(SJasmCodeBlock block:page.blocks) {
-                    if (block.actualAddress > currentAddress) {
-                        // insert space:
-                        CodeStatement space = new CodeStatement(CodeStatement.STATEMENT_DEFINE_SPACE, new SourceLine("", reconstructedFile, reconstructedFile.getStatements().size()+1), reconstructedFile, config);
-                        space.space = Expression.operatorExpression(Expression.EXPRESSION_SUB,
-                                        Expression.constantExpression(block.actualAddress, config),
-                                        Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, space, code, config),
-                                        config);
-                        space.space_value = Expression.constantExpression(0, config);
-                        reconstructedFile.addStatement(space);
-                        config.debug("inserting space (end of block) of " + (block.actualAddress-currentAddress));
-                    }
-                    for(CodeStatement s:block.statements) {
-                        s.source = reconstructedFile;
-                        reconstructedFile.addStatement(s);
-                    }
-                    code.resetAddresses();
-                    currentAddress = block.actualAddress + block.size(code);
-                }
-                if (pageSize != null && currentAddress < pageStart + pageSize) {
+            }
+        }
+
+        // start by adding initialBlock:
+        for(CodeStatement s:initialBlock.statements) {
+            s.source = output.reconstructedFile;
+            output.reconstructedFile.addStatement(s);
+        }
+
+        // add the rest of blocks, inserting appropriate spacing in between:
+        List<Integer> pageIndexes = new ArrayList<>();
+        pageIndexes.addAll(output.pages.keySet());
+        Collections.sort(pageIndexes);
+
+        for(int idx:pageIndexes) {
+            CodePage page = output.pages.get(idx);
+            if (!output.reconstructedFile.getStatements().isEmpty() || 
+                page.start.type != Expression.EXPRESSION_INTEGER_CONSTANT ||
+                page.start.integerConstant != 0) {
+                CodeStatement org = new CodeStatement(CodeStatement.STATEMENT_ORG, 
+                        new SourceLine("", output.reconstructedFile, output.reconstructedFile.getStatements().size()+1), output.reconstructedFile, config);
+                org.org = page.start;
+                output.reconstructedFile.addStatement(org);
+            }
+            Integer pageStart = page.start.evaluateToInteger(page.s, code, true);
+            if (pageStart == null) {
+                config.error("Cannot evaluate " + page.start + " in " + page.s.sl);
+                return false;
+            }
+            Integer pageSize = (page.size == null ? null:page.size.evaluateToInteger(page.s, code, true));
+            int currentAddress = pageStart;
+
+            // Add page start labels to each page:
+            CodeStatement pageStartStatement = new CodeStatement(CodeStatement.STATEMENT_NONE, page.s.sl, page.s.source, config);
+            pageStartStatement.label = new SourceConstant("__sjasm_page_" + idx + output.ID+"_start", "__sjasm_page_" + idx + output.ID+"_start", 
+                    Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, pageStartStatement, code, config), pageStartStatement, config);
+            output.reconstructedFile.addStatement(pageStartStatement);
+            code.addSymbol(pageStartStatement.label.name, pageStartStatement.label);
+
+            for(SJasmCodeBlock block:page.blocks) {
+                if (block.actualAddress > currentAddress) {
                     // insert space:
-                    CodeStatement space = new CodeStatement(CodeStatement.STATEMENT_DEFINE_SPACE, new SourceLine("", reconstructedFile, reconstructedFile.getStatements().size()+1), reconstructedFile, config);
+                    CodeStatement space = new CodeStatement(CodeStatement.STATEMENT_DEFINE_SPACE, 
+                            new SourceLine("", output.reconstructedFile, output.reconstructedFile.getStatements().size()+1), output.reconstructedFile, config);
                     space.space = Expression.operatorExpression(Expression.EXPRESSION_SUB,
-                                    Expression.constantExpression(pageStart + pageSize, config),
+                                    Expression.constantExpression(block.actualAddress, config),
                                     Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, space, code, config),
                                     config);
                     space.space_value = Expression.constantExpression(0, config);
-                    reconstructedFile.addStatement(space);
-                    config.debug("inserting space (end of page) of " + ((pageStart + pageSize) - currentAddress) + " from " + currentAddress + " to " + (pageStart + pageSize));
-                } else {
-                    pageSize = currentAddress - pageStart;
+                    output.reconstructedFile.addStatement(space);
+                    config.debug("inserting space (end of block) of " + (block.actualAddress-currentAddress));
                 }
-
-                // Add page end labels to each page:                
-                CodeStatement pageEndStatement = new CodeStatement(CodeStatement.STATEMENT_NONE, page.s.sl, page.s.source, config);
-                pageEndStatement.label = new SourceConstant("__sjasm_page_" + idx + "_end", "__sjasm_page_" + idx + "_end", 
-                        Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, pageEndStatement, code, config), pageEndStatement, config);
-                reconstructedFile.addStatement(pageEndStatement);
-                code.addSymbol(pageEndStatement.label.name, pageEndStatement.label);
-                
-                config.debug("page " + idx + " from " + pageStart + " to " + (pageStart+pageSize));
+                for(CodeStatement s:block.statements) {
+                    s.source = output.reconstructedFile;
+                    output.reconstructedFile.addStatement(s);
+                }
+                code.resetAddresses();
+                currentAddress = block.actualAddress + block.size(code);
+            }
+            if (pageSize != null && currentAddress < pageStart + pageSize) {
+                // insert space:
+                CodeStatement space = new CodeStatement(CodeStatement.STATEMENT_DEFINE_SPACE, new SourceLine("", output.reconstructedFile, output.reconstructedFile.getStatements().size()+1), output.reconstructedFile, config);
+                space.space = Expression.operatorExpression(Expression.EXPRESSION_SUB,
+                                Expression.constantExpression(pageStart + pageSize, config),
+                                Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, space, code, config),
+                                config);
+                space.space_value = Expression.constantExpression(0, config);
+                output.reconstructedFile.addStatement(space);
+                config.debug("inserting space (end of page) of " + ((pageStart + pageSize) - currentAddress) + " from " + currentAddress + " to " + (pageStart + pageSize));
+            } else {
+                pageSize = currentAddress - pageStart;
             }
 
-            code.resetAddresses();
-        } else {
-            resolveEnhancedJumps(code);
+            // Add page end labels to each page:                
+            CodeStatement pageEndStatement = new CodeStatement(CodeStatement.STATEMENT_NONE, page.s.sl, page.s.source, config);
+            pageEndStatement.label = new SourceConstant("__sjasm_page_" + idx + output.ID+"_end", "__sjasm_page_" + idx + output.ID+"_end", 
+                    Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, pageEndStatement, code, config), pageEndStatement, config);
+            output.reconstructedFile.addStatement(pageEndStatement);
+            code.addSymbol(pageEndStatement.label.name, pageEndStatement.label);
+
+            config.debug("page " + idx + " from " + pageStart + " to " + (pageStart+pageSize));
         }
+
+        code.resetAddresses();
         return true;
     }
         
     
-    public SJasmCodeBlock findCodeBlock(CodeStatement s)
+    public SJasmCodeBlock findCodeBlock(CodeStatement s, SJasmOutput output)
     {
-        for(SJasmCodeBlock cb:codeBlocks) {
+        if (output.defaultBlock.statements.contains(s)) return output.defaultBlock;
+        for(SJasmCodeBlock cb:output.codeBlocks) {
             if (cb.statements.contains(s)) return cb;
         }
-        
         return null;
     }
     
 
-    public void resolveEnhancedJumps(CodeBase code)
+    public void resolveEnhancedJumps(CodeBase code, SJasmOutput output)
     {
         // resolve enhanced jumps:
         for(CodeStatement s:enhancedJrList) {
-            SJasmCodeBlock b1 = findCodeBlock(s);
+            SJasmCodeBlock b1 = findCodeBlock(s, output);
             SJasmCodeBlock b2 = null;
             if (s.op != null && !s.op.args.isEmpty()) {
                 Expression label = s.op.args.get(s.op.args.size()-1);
                 if (label.type == Expression.EXPRESSION_SYMBOL) {
                     SourceConstant c = code.getSymbol(label.symbolName);
                     if (c != null) {
-                        b2 = findCodeBlock(c.definingStatement);
+                        b2 = findCodeBlock(c.definingStatement, output);
                     } else {
                     }
                 } else {
@@ -1600,7 +1734,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             }
         }
         for(CodeStatement s:enhancedDjnzList) {
-            SJasmCodeBlock b1 = findCodeBlock(s);
+            SJasmCodeBlock b1 = findCodeBlock(s, output);
             SJasmCodeBlock b2 = null;
             if (s.op != null && !s.op.args.isEmpty()) {
                 CodeStatement previous = s.source.getPreviousStatementTo(s, code);
@@ -1611,7 +1745,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                     if (label.type == Expression.EXPRESSION_SYMBOL) {
                         SourceConstant c = code.getSymbol(label.symbolName);
                         if (c != null) {
-                            b2 = findCodeBlock(c.definingStatement);
+                            b2 = findCodeBlock(c.definingStatement, output);
                         }
                     }
                     // only consider jumps within the same block:
@@ -1627,6 +1761,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                                 List<CPUOp> l = config.opParser.parseOp("djnz", args, s, previous, code);
                                 if (l != null && l.size() == 1) {
                                     previous.source.getStatements().remove(previous);
+                                    b1.statements.remove(previous);
                                     s.op = l.get(0);
                                     code.resetAddresses();
                                 }
@@ -1641,14 +1776,15 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
     }
     
     
-    SJasmCodeBlock blockStartingAt(CodeStatement s)
+    SJasmCodeBlock blockStartingAt(CodeStatement s, SJasmOutput output)
     {
-        for(SJasmCodeBlock b:codeBlocks) {
+        if (output.defaultBlock.startStatement == s) return output.defaultBlock;
+        for(SJasmCodeBlock b:output.codeBlocks) {
             if (b.startStatement == s) return b;
         }
         return null;
-    }
-    
+    }  
+        
     
     // Sjasm is an eager-evaluated assembler, which clashes with the lazy 
     // evaluation done by MDL. So, in order to capture the "rotate" syntax used

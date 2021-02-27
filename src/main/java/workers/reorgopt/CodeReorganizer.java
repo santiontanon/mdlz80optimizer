@@ -556,12 +556,15 @@ public class CodeReorganizer implements MDLWorker {
             jump = destination.getLastCpuOpStatement();
         }
         
-        if (jump.comment != null && jump.comment.contains(config.PRAGMA_NO_OPTIMIZATION)) {
+        if (jump == null) {
+            config.warn("Cannot find a cpu op in a code block!");
+            canncelOptimization = true;
+        } else if (jump.comment != null && jump.comment.contains(config.PRAGMA_NO_OPTIMIZATION)) {
             config.debug("CodeReorganizer: canceling optimization due to a " + config.PRAGMA_NO_OPTIMIZATION + " directive");
             canncelOptimization = true;
         }
 
-        // if they are not, undo the optimization:
+        // If anything looks wrong, undo the optimization:
         if (canncelOptimization) {
             for(CodeStatement s: toMove.statements) {
                 insertionFile.getStatements().remove(s);

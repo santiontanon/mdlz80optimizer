@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import cl.MDLConfig;
-import parser.Tokenizer;
 
 public class Expression {
 

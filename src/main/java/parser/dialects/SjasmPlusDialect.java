@@ -19,7 +19,6 @@ import parser.LineParser;
 import parser.MacroExpansion;
 import parser.SourceLine;
 import parser.SourceMacro;
-import parser.Tokenizer;
 
 /**
  *

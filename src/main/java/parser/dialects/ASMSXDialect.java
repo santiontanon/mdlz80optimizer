@@ -20,7 +20,6 @@ import java.util.Random;
 import org.apache.commons.lang3.tuple.Pair;
 import parser.LineParser;
 import parser.SourceLine;
-import parser.Tokenizer;
 import util.Resources;
 
 /**

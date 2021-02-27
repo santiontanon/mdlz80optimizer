@@ -23,13 +23,14 @@ public class SourceConstant {
     
     public CodeStatement definingStatement;  // the statement where it was defined
     
-    public SourceConstant(String a_name, String a_originalName, Expression a_exp, CodeStatement a_s, MDLConfig config)
+    public SourceConstant(String a_name, String a_originalName, Expression a_exp, CodeStatement a_s, MDLConfig a_config)
     {
         name = a_name;
         originalName = a_originalName;
         valueCache = null;
         exp = a_exp;
         definingStatement = a_s;
+        config = a_config;
     }
     
     
@@ -51,7 +52,7 @@ public class SourceConstant {
             return valueCache;
         } else {
             if (variableStack.contains(name)) {
-                config.warn("Circular dependency on " +this+ " when evaluating expression");
+                config.warn("Circular dependency on '" + this.name + "' when evaluating expression, stack: " + variableStack + ", expression: " + exp);
                 return null;
             }
             variableStack.add(name);

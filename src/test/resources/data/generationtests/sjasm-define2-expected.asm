@@ -1,3 +1,4 @@
+__sjasm_page_0_start:
 ; Test case: 
     db 1 * 1
     dw 0
@@ -14,3 +15,4 @@
   	db 2
     db (3) * 2
     db 1, 27, "J", 2
+__sjasm_page_0_end:

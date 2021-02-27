@@ -1,3 +1,4 @@
+__sjasm_page_0_start:
 ; Test case: 
   ld c, a  ; 5
   rla  ; 5
@@ -9,3 +10,4 @@
   ld h, a  ; 5
 loop:
 	jr loop
+__sjasm_page_0_end:

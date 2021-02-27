@@ -1,3 +1,4 @@
+__sjasm_page_0_start: equ $
 slide: equ 8
 centrifuge: equ 8
 speed_max: equ 16
@@ -55,3 +56,4 @@ db 0, 0
 db 0, 1
 db 1, 0
 db 1, 1
+__sjasm_page_0_end:

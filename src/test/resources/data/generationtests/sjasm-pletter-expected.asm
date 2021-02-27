@@ -1,3 +1,4 @@
+__sjasm_page_0_start:
 pletter._unpack:
     ld a, (hl)
     inc hl
@@ -121,3 +122,4 @@ pletter._modes:
     dw pletter.mode5
     dw pletter.mode6
     dw pletter.mode7
+__sjasm_page_0_end:

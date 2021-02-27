@@ -15,7 +15,6 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.lang3.tuple.Pair;
 import parser.SourceLine;
-import parser.Tokenizer;
 
 /**
  *

@@ -1,3 +1,4 @@
+__sjasm_page_0_start:
 ; Test case: 
 label1:
 	jp loop
@@ -19,3 +20,4 @@ var3: equ #c002
 var4: equ #c003
 var5: equ #c004
 var6: equ #c005
+__sjasm_page_0_end:
