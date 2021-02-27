@@ -10,6 +10,7 @@ import code.CodeBase;
 import code.Expression;
 import code.SourceFile;
 import code.CodeStatement;
+import code.OutputBinary;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
@@ -18,12 +19,16 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.commons.lang3.tuple.Pair;
+import util.TextUtils;
 
 /**
  *
  * @author santi
  */
 public class BinaryGenerator implements MDLWorker {
+
+    public static String AUTO_FILENAME = "auto";
+    
     MDLConfig config = null;
     String outputFileName = null;
 
@@ -37,7 +42,7 @@ public class BinaryGenerator implements MDLWorker {
     public String docString() {
         // This string has MD tags, so that I can easily generate the corresponding documentation in github with the 
         // hidden "-helpmd" flag:        
-        return "- ```-bin <output file>```: (task) generates an assembled binary.\n";
+        return "- ```-bin <output file>```: (task) generates an assembled binary. Use ```"+AUTO_FILENAME+"``` as the output file name to respect the filenames specified in the sourcefiles of some dialects, or to auto generate an output name.\n";
     }
 
     
@@ -57,13 +62,29 @@ public class BinaryGenerator implements MDLWorker {
         if (outputFileName != null) {
             config.debug("Executing "+this.getClass().getSimpleName()+" worker...");
             
-            try (FileOutputStream os = new FileOutputStream(outputFileName)) {
-                if (!writeBytes(code.getMain(), code, os)) return false;
-                os.flush();
-            } catch (Exception e) {
-                config.error("Cannot write to file " + outputFileName + ": " + e);
-                config.error(Arrays.toString(e.getStackTrace()));
-                return false;
+            for(OutputBinary output:code.outputs) {
+                String finalOutputFileName = outputFileName;
+                if (finalOutputFileName.equals(AUTO_FILENAME)) {
+                    // autogenerate filenames:
+                    if (outputFileName == null) {
+                        finalOutputFileName = output.main.fileName + ".mdl.bin";
+                    }
+                }
+                int idx = code.outputs.indexOf(output);
+                if (idx > 0) {
+                    Pair<String, String> tmp = TextUtils.splitFileNameExtension(finalOutputFileName);
+                    finalOutputFileName = tmp.getLeft() + "-output" + (idx+1) + tmp.getRight();
+                }            
+            
+
+                try (FileOutputStream os = new FileOutputStream(finalOutputFileName)) {
+                    if (!writeBytes(output.main, code, os)) return false;
+                    os.flush();
+                } catch (Exception e) {
+                    config.error("Cannot write to file " + finalOutputFileName + ": " + e);
+                    config.error(Arrays.toString(e.getStackTrace()));
+                    return false;
+                }
             }
         }
         return true;

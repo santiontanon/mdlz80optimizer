@@ -258,7 +258,7 @@ public class CPUOp {
     
     public static boolean offsetWithinJrRange(int diff)
     {
-        if (diff < -127 || diff > 129) return false;
+        if (diff < -128 || diff > 127) return false;
         return true;
     }
     

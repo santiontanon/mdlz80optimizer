@@ -4,20 +4,24 @@
 package code;
 
 import cl.MDLConfig;
+import java.util.ArrayList;
 
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Set;
 
-public class CodeBase {
+public class CodeBase {    
     public static final String CURRENT_ADDRESS = "$";
 
     MDLConfig config;
 
-    SourceFile main;
+//    SourceFile main;
     LinkedHashMap<String, SourceFile> sources = new LinkedHashMap<>();
     LinkedHashMap<String, SourceConstant> symbols = new LinkedHashMap<>();
+
+    // List of the expected output binaries:
+    public List<OutputBinary> outputs = new ArrayList<>();
 
 
     public CodeBase(MDLConfig a_config)
@@ -192,16 +196,23 @@ public class CodeBase {
         }
     }
 
-
-    public void setMain(SourceFile s)
+//
+//    public void setMain(SourceFile s)
+//    {
+//        main = s;
+//    }
+//
+//
+//    public SourceFile getMain()
+//    {
+//        return main;
+//    }
+    
+    
+    public void addOutput(String binaryName, SourceFile main)
     {
-        main = s;
-    }
-
-
-    public SourceFile getMain()
-    {
-        return main;
+        OutputBinary output = new OutputBinary(binaryName, main);
+        outputs.add(output);
     }
 
 

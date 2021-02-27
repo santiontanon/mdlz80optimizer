@@ -59,7 +59,7 @@ public class MessagesTest {
             if (config.codeBaseParser.parseMainSourceFile(config.inputFile, code)) {
                 BinaryGenerator bg = new BinaryGenerator(config);
                 ListOutputStream out = new ListOutputStream();
-                bg.writeBytes(code.getMain(), code, out);                
+                bg.writeBytes(code.outputs.get(0).main, code, out);                
             }
             
             printStream.flush();

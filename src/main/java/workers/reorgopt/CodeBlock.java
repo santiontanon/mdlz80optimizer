@@ -8,6 +8,7 @@ package workers.reorgopt;
 import code.CodeBase;
 import code.SourceConstant;
 import code.CodeStatement;
+import code.OutputBinary;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -24,6 +25,7 @@ public class CodeBlock {
     public String ID = null;
     public int type = TYPE_UNKNOWN;
     public CodeStatement startStatement;
+    public OutputBinary output = null;
     public List<CodeStatement> statements = new ArrayList<>();
     public List<CodeBlock> subBlocks = new ArrayList<>();
     
@@ -51,7 +53,7 @@ public class CodeBlock {
     }
         
     
-    public boolean addStatementsFromTo(CodeStatement start, CodeStatement end, CodeBase code)
+    public final boolean addStatementsFromTo(CodeStatement start, CodeStatement end, CodeBase code)
     {
         int idx = start.source.getStatements().indexOf(start);
         CodeStatement s = start;
@@ -74,7 +76,7 @@ public class CodeBlock {
     }
     
     
-    public boolean findStartLabel()
+    public final boolean findStartLabel()
     {
         label = null;
         for(CodeStatement s:statements) {

@@ -1459,32 +1459,30 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
         }
                 
         // set the starting statement of the first default block:
+        SourceFile oldMain = code.outputs.get(0).main;
         SJasmOutput defaultOutput = outputFiles.get(0);
-        defaultOutput.startStatement = code.getMain().getStatements().get(0);
+        defaultOutput.startStatement = oldMain.getStatements().get(0);
         defaultOutput.defaultBlock.startStatement = defaultOutput.startStatement;
         
         // Create a new source file per output, and add all the code blocks:
         code.getSourceFiles().clear();
+        code.outputs.clear();
         
-        boolean first = true;
         for(SJasmOutput output:outputFiles) {
-            output.reconstructedFile = new SourceFile(code.getMain().fileName, null, null, code, config);
+            String fileName = oldMain.getPath() + File.separator + output.fileName + ".asm";
+            output.reconstructedFile = new SourceFile(fileName, null, null, code, config);
             code.addSourceFile(output.reconstructedFile);
-            if (first) {
-                code.setMain(output.reconstructedFile);
-            }
+            code.addOutput(output.fileName, output.reconstructedFile);
             if (!reconstructOutputFile(output, code)) {
                 return false;
             }
-            
-            first = false;
         }
         
         if (outputFiles.size() > 1 && defaultOutput.reconstructedFile.sizeInBytes(code, true, true, true) == 0) {
             SJasmOutput firstdefined = outputFiles.get(1);
             firstdefined.reconstructedFile.getStatements().addAll(0, defaultOutput.reconstructedFile.getStatements());
             code.getSourceFiles().remove(defaultOutput.reconstructedFile);
-            code.setMain(firstdefined.reconstructedFile);
+            code.outputs.remove(0);
         }
         return true;
     }
@@ -1508,13 +1506,10 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                 if (s.type == CodeStatement.STATEMENT_INCLUDE) {
                     s = s.include.getStatements().get(0);
                 } else {
-                    // Stop when a new output starts:
-                    if (nextOutput != null && nextOutput != output) {
+                    // check if we have reached the next output:
+                    if (nextOutput != null && nextOutput.startStatement == s) {
                         break;
                     }
-                    
-                    // check if we have reached the next output:
-                    if (nextOutput != null && nextOutput.startStatement == s) break;
                     
                     // See if a new block starts:
                     SJasmCodeBlock block = blockStartingAt(s, output);
@@ -1528,7 +1523,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                 }
             }
         }
-        
+                
         if (initialBlock.size(code) > 0) {
             config.error("sjasm initial block has non empty size!");
             return false;
@@ -1560,7 +1555,12 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                             }
                         }
                     } else {
-                        config.error("Could not add block of size " + b.size(code) + " to page " + page + "!");
+                        Integer blockSize = b.size(code);
+                        if (blockSize == null) {
+                            config.error("Could not calculate size of a block to add it to page " + pageIdx + "!");
+                        } else {
+                            config.error("Could not add block of size " + blockSize + " to page " + pageIdx + "!");
+                        }
                         return false;
                     }
                 }
@@ -1597,7 +1597,12 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                         }
                     }
                 } else {
-                    config.error("Could not add block of size " + b.size(code) + " to page " + page + "!");
+                    Integer blockSize = b.size(code);
+                    if (blockSize == null) {
+                        config.error("Could not calculate size of a block to add it to page " + pageIdx + "!");
+                    } else {                   
+                        config.error("Could not add block of size " + b.size(code) + " to page " + page + "!");
+                    }
                     return false;
                 }
             }
@@ -1633,7 +1638,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             int currentAddress = pageStart;
 
             // Add page start labels to each page:
-            CodeStatement pageStartStatement = new CodeStatement(CodeStatement.STATEMENT_NONE, page.s.sl, page.s.source, config);
+            CodeStatement pageStartStatement = new CodeStatement(CodeStatement.STATEMENT_NONE, page.s.sl, output.reconstructedFile, config);
             pageStartStatement.label = new SourceConstant("__sjasm_page_" + idx + output.ID+"_start", "__sjasm_page_" + idx + output.ID+"_start", 
                     Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, pageStartStatement, code, config), pageStartStatement, config);
             output.reconstructedFile.addStatement(pageStartStatement);
@@ -1674,7 +1679,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             }
 
             // Add page end labels to each page:                
-            CodeStatement pageEndStatement = new CodeStatement(CodeStatement.STATEMENT_NONE, page.s.sl, page.s.source, config);
+            CodeStatement pageEndStatement = new CodeStatement(CodeStatement.STATEMENT_NONE, page.s.sl, output.reconstructedFile, config);
             pageEndStatement.label = new SourceConstant("__sjasm_page_" + idx + output.ID+"_end", "__sjasm_page_" + idx + output.ID+"_end", 
                     Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, pageEndStatement, code, config), pageEndStatement, config);
             output.reconstructedFile.addStatement(pageEndStatement);

@@ -10,6 +10,7 @@ import code.Expression;
 import code.SourceConstant;
 import code.SourceFile;
 import code.CodeStatement;
+import code.OutputBinary;
 import java.nio.file.Path;
 import org.apache.commons.lang3.tuple.Pair;
 import parser.MacroExpansion;
@@ -129,9 +130,11 @@ public interface Dialect {
     // where MDL should be free to move things around within a block without causing problems):
     default void getBlockAreas(CodeBase code, List<CodeBlock> blocks)
     {
-        if (code.getMain() != null && !code.getMain().getStatements().isEmpty()) {
-            CodeBlock top = new CodeBlock("TB0", CodeBlock.TYPE_UNKNOWN, code.getMain().getStatements().get(0), null, code);
-            blocks.add(top);
+        for(OutputBinary output: code.outputs) {
+            if (output.main != null && !output.main.getStatements().isEmpty()) {
+                CodeBlock top = new CodeBlock("TB0", CodeBlock.TYPE_UNKNOWN, output.main.getStatements().get(0), null, code);
+                blocks.add(top);
+            }
         }
     }
 }

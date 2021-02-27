@@ -12,14 +12,19 @@ import cl.MDLConfig;
 import code.CodeBase;
 import code.SourceFile;
 import code.CodeStatement;
+import code.OutputBinary;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import org.apache.commons.lang3.tuple.Pair;
+import util.TextUtils;
 
 /**
  *
  * @author santi
  */
 public class SourceCodeGenerator implements MDLWorker {
+    
+    public static String AUTO_FILENAME = "auto";
 
     MDLConfig config = null;
 
@@ -40,8 +45,8 @@ public class SourceCodeGenerator implements MDLWorker {
     public String docString() {
         // This string has MD tags, so that I can easily generate the corresponding documentation in github with the 
         // hidden "-helpmd" flag:        
-        return "- ```-asm <output file>```: (task) saves the resulting assembler code in a single asm file (if no optimizations are performed, then this will just output the same code read as input (but with all macros and include statements expanded).\n" +
-               "- ```-asm-dialect <output file>```: (task) same as '-asm', but tries to mimic the syntax of the defined dialect in the output (experimental feature, not fully implemented!).\n" +
+        return "- ```-asm <output file>```: (task) saves the resulting assembler code in a single asm file (if no optimizations are performed, then this will just output the same code read as input (but with all macros and include statements expanded). Use ```"+AUTO_FILENAME+"``` as the output file name to respect the filenames specified in the sourcefiles of some dialects, or to auto generate an output name.\n" +
+               "- ```-asm-dialect <output file>```: (task) same as '-asm', but tries to mimic the syntax of the defined dialect in the output (experimental feature, not fully implemented!).  Use ```"+AUTO_FILENAME+"``` as the output file name to respect the filenames specified in the sourcefiles of some dialects, or to auto generate an output name.\n" +
                "- ```-asm-expand-inbcin```: replaces all incbin commands with their actual data in the output assembler file, effectively, making the output assembler file self-contained.\n";
     }
 
@@ -67,7 +72,7 @@ public class SourceCodeGenerator implements MDLWorker {
         }
         return false;
     }
-
+    
 
     @Override
     public boolean work(CodeBase code) {
@@ -77,34 +82,56 @@ public class SourceCodeGenerator implements MDLWorker {
 
             if (config.evaluateAllExpressions) code.evaluateAllExpressions();
             
-            try (FileWriter fw = new FileWriter(outputFileName)) {
-                fw.write(sourceFileString(code.getMain(), code));
-                fw.flush();
-            } catch (Exception e) {
-                config.error("Cannot write to file " + outputFileName + ": " + e);
-                config.error(Arrays.toString(e.getStackTrace()));
-                return false;
+            for(OutputBinary output:code.outputs) {
+                String finalOutputFileName = outputFileName;
+                if (finalOutputFileName.equals(AUTO_FILENAME)) {
+                    // autogenerate filenames:
+                    if (outputFileName == null) {
+                        Pair<String, String> tmp = TextUtils.splitFileNameExtension(output.main.fileName);
+                        finalOutputFileName = tmp.getLeft() + ".mdl" + tmp.getRight();
+                    }
+                }
+                int idx = code.outputs.indexOf(output);
+                if (idx > 0) {
+                    Pair<String, String> tmp = TextUtils.splitFileNameExtension(finalOutputFileName);
+                    finalOutputFileName = tmp.getLeft() + "-output" + (idx+1) + tmp.getRight();
+                }
+            
+                try (FileWriter fw = new FileWriter(finalOutputFileName)) {
+                    fw.write(sourceFileString(output.main, output, code));
+                    fw.flush();
+                } catch (Exception e) {
+                    config.error("Cannot write to file " + finalOutputFileName + ": " + e);
+                    config.error(Arrays.toString(e.getStackTrace()));
+                    return false;
+                }
             }
         }
         return true;
     }
 
+    
+    public String outputFileString(OutputBinary output, CodeBase code)
+    {
+        return sourceFileString(output.main, output, code);
+    }
+    
 
-    public String sourceFileString(SourceFile sf, CodeBase code)
+    public String sourceFileString(SourceFile sf, OutputBinary output, CodeBase code)
     {
         StringBuilder sb = new StringBuilder();
-        sourceFileString(sf, code, sb);
+        sourceFileString(sf, output, code, sb);
         return sb.toString();
     }
 
     
-    public void sourceFileString(SourceFile sf, CodeBase code, StringBuilder sb)
+    public void sourceFileString(SourceFile sf, OutputBinary output, CodeBase code, StringBuilder sb)
     {
-        sourceFileString(sf.getStatements(), code, sb);
+        sourceFileString(sf.getStatements(), output, code, sb);
     }   
     
 
-    public void sourceFileString(List<CodeStatement> statements, CodeBase code, StringBuilder sb)
+    public void sourceFileString(List<CodeStatement> statements, OutputBinary output, CodeBase code, StringBuilder sb)
     {
         for (CodeStatement ss:statements) {
             if (ss.type == CodeStatement.STATEMENT_INCLUDE) {
@@ -121,7 +148,7 @@ public class SourceCodeGenerator implements MDLWorker {
                         sb.append(":\n");                        
                     }
                 }
-                sourceFileString(ss.include, code, sb);
+                sourceFileString(ss.include, output, code, sb);
             } else if (ss.type == CodeStatement.STATEMENT_INCBIN && expandIncbin) {
                 int skip = 0;
                 int size = 0;
@@ -155,9 +182,9 @@ public class SourceCodeGenerator implements MDLWorker {
                 }
             } else {
                 if (mimicTargetDialect && config.dialectParser != null) {
-                    sb.append(config.dialectParser.statementToString(ss, code, true, Paths.get(code.getMain().getPath())));
+                    sb.append(config.dialectParser.statementToString(ss, code, true, Paths.get(output.main.getPath())));
                 } else {
-                    sb.append(ss.toStringUsingRootPath(Paths.get(code.getMain().getPath()), false));
+                    sb.append(ss.toStringUsingRootPath(Paths.get(output.main.getPath()), false));
                 }
                 sb.append("\n");
             }

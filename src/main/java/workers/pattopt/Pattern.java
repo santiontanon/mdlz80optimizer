@@ -19,7 +19,6 @@ import code.SourceFile;
 import code.CodeStatement;
 import java.util.Arrays;
 import parser.SourceLine;
-import parser.Tokenizer;
 
 /**
  *
@@ -750,7 +749,7 @@ public class Pattern {
                 if (startAddress == null) {
                     return false;
                 }
-                startAddress += + start.sizeInBytes(code, true, true, true);
+                startAddress += start.sizeInBytes(code, true, true, true);
                 SourceConstant sc = code.getSymbol(constraint.args[1]);
                 if (sc == null) {
                     return false;

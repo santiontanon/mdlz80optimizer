@@ -91,12 +91,12 @@ public class ReorganizerTest {
         ro.work(code);
         
         SourceCodeGenerator scg = new SourceCodeGenerator(config);
-        String result = scg.sourceFileString(code.getMain(), code);
+        String result = scg.outputFileString(code.outputs.get(0), code);
         if (!compareOutput(result, expectedOutputFile)) return false;
         
         if (expectedOutputFileDialect != null) {
             scg.mimicTargetDialect = true;
-            String resultDialect = scg.sourceFileString(code.getMain(), code);
+            String resultDialect = scg.outputFileString(code.outputs.get(0), code);
             if (!compareOutput(resultDialect, expectedOutputFileDialect)) return false;            
         }
                 
@@ -104,7 +104,7 @@ public class ReorganizerTest {
         if (expectedBinaryOutputFile != null) {
             BinaryGenerator bg = new BinaryGenerator(config);
             ListOutputStream out = new ListOutputStream();
-            bg.writeBytes(code.getMain(), code, out);        
+            bg.writeBytes(code.outputs.get(0).main, code, out);        
             List<Integer> actualBytes = out.getData();
         
             List<Integer> expectedBytes = new ArrayList<>();        

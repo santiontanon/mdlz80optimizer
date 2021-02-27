@@ -98,8 +98,9 @@ public class CodeBaseParser {
         }
 
         SourceFile f = new SourceFile(fileName, parent, parentInclude, code, config);
-        if (parent == null)
-            code.setMain(f);
+        if (parent == null) {
+            code.addOutput(null, f);
+        }
         code.addSourceFile(f);
         config.preProcessor.pushState();
         try {

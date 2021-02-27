@@ -10,10 +10,10 @@ import cl.MDLConfig;
 import code.CodeBase;
 import code.SourceFile;
 import code.CodeStatement;
+import code.OutputBinary;
 import java.util.ArrayList;
 import java.util.HashMap;
 import org.apache.commons.lang3.tuple.Pair;
-import parser.Tokenizer;
 
 /**
  *
@@ -70,7 +70,9 @@ public class AnnotatedSourceCodeGenerator implements MDLWorker {
             HashMap<CodeStatement, Integer> positionInBinaryMap = new HashMap<>();
             List<Pair<CodeStatement, List<Integer>>> statementBytes = new ArrayList<>();
             BinaryGenerator gen = new BinaryGenerator(config);
-            if (!gen.generateStatementBytes(code.getMain(), code, statementBytes)) return false;
+            for(OutputBinary output: code.outputs) {
+                if (!gen.generateStatementBytes(output.main, code, statementBytes)) return false;
+            }
             int position = 0;
             for(Pair<CodeStatement, List<Integer>> pair:statementBytes) {
                 positionInBinaryMap.put(pair.getLeft(), position);

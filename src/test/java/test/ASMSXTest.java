@@ -64,14 +64,14 @@ public class ASMSXTest {
 
         // Compare standard assembler generation:
         SourceCodeGenerator scg = new SourceCodeGenerator(config);
-        String result = scg.sourceFileString(code.getMain(), code);        
+        String result = scg.outputFileString(code.outputs.get(0), code);
         if (!compareOutputs(result, expectedOutputFile)) return false;
 
         // Compare dialect assembler generation:
         if (expectedDialectOutputFile != null) {
             SourceCodeGenerator scg_dialect = new SourceCodeGenerator(config);
             scg_dialect.mimicTargetDialect = true;
-            String resultDialect = scg_dialect.sourceFileString(code.getMain(), code);        
+            String resultDialect = scg_dialect.outputFileString(code.outputs.get(0), code);
             if (!compareOutputs(resultDialect, expectedDialectOutputFile)) return false;
         }
         

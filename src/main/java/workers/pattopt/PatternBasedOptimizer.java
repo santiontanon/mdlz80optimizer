@@ -17,7 +17,6 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.tuple.Pair;
-import parser.Tokenizer;
 import util.Resources;
 import workers.MDLWorker;
 

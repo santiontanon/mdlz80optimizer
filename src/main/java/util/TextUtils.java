@@ -1,9 +1,11 @@
 package util;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.Collection;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 
 /**
  * Convenience utility class with text-related utilities
@@ -125,4 +127,18 @@ public class TextUtils {
     private TextUtils() {
         super();
     }
+    
+    
+    public static Pair<String, String> splitFileNameExtension(String fileName) {
+        for(int i = fileName.length()-1; i >= 0; i--) {
+            if (fileName.charAt(i) == '.') {
+                return Pair.of(fileName.substring(0, i), fileName.substring(i));
+            } else if (fileName.charAt(i) == File.separatorChar) {
+                break;
+            }
+        }
+        
+        return Pair.of(fileName, "");
+    }
+
 }

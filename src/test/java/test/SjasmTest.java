@@ -32,47 +32,47 @@ public class SjasmTest {
     }
 
     @Test public void test1() throws IOException { Assert.assertTrue(test("data/generationtests/sjasm-rept1.asm",
-                                                                          "data/generationtests/sjasm-rept1-expected.asm")); }
+                                                                          new String[] {"data/generationtests/sjasm-rept1-expected.asm"})); }
     @Test public void test2() throws IOException { Assert.assertTrue(test("data/generationtests/sjasm-macro.asm",
-                                                                          "data/generationtests/sjasm-macro-expected.asm")); }
+                                                                          new String[] {"data/generationtests/sjasm-macro-expected.asm"})); }
     @Test public void test3() throws IOException { Assert.assertTrue(test("data/generationtests/sjasm-rept2.asm",
-                                                                          "data/generationtests/sjasm-rept2-expected.asm")); }
+                                                                          new String[] {"data/generationtests/sjasm-rept2-expected.asm"})); }
     @Test public void test4() throws IOException { Assert.assertTrue(test("data/generationtests/sjasm-repeat1.asm",
-                                                                          "data/generationtests/sjasm-repeat1-expected.asm")); }
+                                                                          new String[] {"data/generationtests/sjasm-repeat1-expected.asm"})); }
     @Test public void test5() throws IOException { Assert.assertTrue(test("data/generationtests/sjasm-repeat2.asm",
-                                                                          "data/generationtests/sjasm-repeat2-expected.asm")); }
+                                                                          new String[] {"data/generationtests/sjasm-repeat2-expected.asm"})); }
     @Test public void test6() throws IOException { Assert.assertTrue(test("data/generationtests/sjasm-macro2.asm",
-                                                                          "data/generationtests/sjasm-macro2-expected.asm")); }
+                                                                          new String[] {"data/generationtests/sjasm-macro2-expected.asm"})); }
     @Test public void test7() throws IOException { Assert.assertTrue(test("data/generationtests/sjasm-macro3.asm",
-                                                                          "data/generationtests/sjasm-macro3-expected.asm")); }
+                                                                          new String[] {"data/generationtests/sjasm-macro3-expected.asm"})); }
     @Test public void test8() throws IOException { Assert.assertTrue(test("data/generationtests/sjasm-labels.asm",
-                                                                          "data/generationtests/sjasm-labels-expected.asm")); }
+                                                                          new String[] {"data/generationtests/sjasm-labels-expected.asm"})); }
     @Test public void test9() throws IOException { Assert.assertTrue(test("data/generationtests/sjasm-mixed.asm",
-                                                                          "data/generationtests/sjasm-mixed-expected.asm")); }
+                                                                          new String[] {"data/generationtests/sjasm-mixed-expected.asm"})); }
     @Test public void test10() throws IOException { Assert.assertTrue(test("data/generationtests/sjasm-modules.asm",
-                                                                           "data/generationtests/sjasm-modules-expected.asm")); }
+                                                                           new String[] {"data/generationtests/sjasm-modules-expected.asm"})); }
     @Test public void test11() throws IOException { Assert.assertTrue(test("data/generationtests/sjasm-pletter.asm",
-                                                                           "data/generationtests/sjasm-pletter-expected.asm")); }
+                                                                           new String[] {"data/generationtests/sjasm-pletter-expected.asm"})); }
     @Test public void test12() throws IOException { Assert.assertTrue(test("data/generationtests/sjasm-ifdef.asm",
-                                                                           "data/generationtests/sjasm-ifdef-expected.asm")); }
+                                                                           new String[] {"data/generationtests/sjasm-ifdef-expected.asm"})); }
     @Test public void test13() throws IOException { Assert.assertTrue(test("data/generationtests/sjasm-enhancedjr.asm",
-                                                                           "data/generationtests/sjasm-enhancedjr-expected.asm")); }
+                                                                           new String[] {"data/generationtests/sjasm-enhancedjr-expected.asm"})); }
     @Test public void test14() throws IOException { Assert.assertTrue(test("data/generationtests/sjasm-define.asm",
-                                                                           "data/generationtests/sjasm-define-expected.asm")); }
+                                                                           new String[] {"data/generationtests/sjasm-define-expected.asm"})); }
     @Test public void test15() throws IOException { Assert.assertTrue(test("data/generationtests/sjasm-macro4.asm",
-                                                                           "data/generationtests/sjasm-macro4-expected.asm")); }
+                                                                           new String[] {"data/generationtests/sjasm-macro4-expected.asm"})); }
     @Test public void test16() throws IOException { Assert.assertTrue(test("data/generationtests/sjasm-ifexists.asm",
-                                                                           "data/generationtests/sjasm-ifexists-expected.asm")); }
+                                                                           new String[] {"data/generationtests/sjasm-ifexists-expected.asm"})); }
     @Test public void test17() throws IOException { Assert.assertTrue(test("data/generationtests/sjasm-repeat.asm",
-                                                                           "data/generationtests/sjasm-repeat-expected.asm")); }
+                                                                           new String[] {"data/generationtests/sjasm-repeat-expected.asm"})); }
     @Test public void test18() throws IOException { Assert.assertTrue(test("data/generationtests/sjasm-define2.asm",
-                                                                           "data/generationtests/sjasm-define2-expected.asm")); }
+                                                                           new String[] {"data/generationtests/sjasm-define2-expected.asm"})); }
     @Test public void test19() throws IOException { Assert.assertTrue(test("data/generationtests/sjasm-sjasmplus-abyte.asm",
-                                                                           "data/generationtests/sjasm-abyte-expected.asm")); }
+                                                                           new String[] {"data/generationtests/sjasm-abyte-expected.asm"})); }
     @Test public void test20() throws IOException { Assert.assertTrue(test("data/generationtests/sjasm-pages.asm",
-                                                                           "data/generationtests/sjasm-pages-expected.asm")); }
+                                                                           new String[] {"data/generationtests/sjasm-pages-expected.asm"})); }
 
-    private boolean test(String inputFile, String expectedOutputFile) throws IOException
+    private boolean test(String inputFile, String[] expectedOutputFiles) throws IOException
     {
         Assert.assertTrue(config.parseArgs(inputFile,"-dialect","sjasm"));
         Assert.assertTrue(
@@ -81,30 +81,36 @@ public class SjasmTest {
 
         SourceCodeGenerator scg = new SourceCodeGenerator(config);
 
-        String result = scg.sourceFileString(code.getMain(), code);
-        List<String> lines = new ArrayList<>();
-        StringTokenizer st = new StringTokenizer(result, "\n");
-        while(st.hasMoreTokens()) {
-            lines.add(st.nextToken().trim());
+        if (expectedOutputFiles.length != code.outputs.size()) {
+            config.error("Expected " + expectedOutputFiles.length + " outputs, but got " + code.outputs.size());
+            return false;
         }
-        
-        List<String> expectedLines = new ArrayList<>();
-        BufferedReader br = Resources.asReader(expectedOutputFile);
-        while(true) {
-            String line = br.readLine();
-            if (line == null) break;
-            expectedLines.add(line.trim());
-        }
-        System.out.println("\n--------------------------------------");
-        System.out.println(result);
-        System.out.println("--------------------------------------\n");
-        
-        for(int i = 0;i<Math.max(lines.size(), expectedLines.size());i++) {
-            String line = lines.size() > i ? lines.get(i):"";
-            String expectedLine = expectedLines.size() > i ? expectedLines.get(i):"";
-            if (!line.equals(expectedLine)) {
-                System.out.println("Line " + i + " was expected to be:\n'" + expectedLine + "'\nbut was:\n'" + line + "'");
-                return false;
+        for(int outputIdx = 0; outputIdx < expectedOutputFiles.length; outputIdx++) {
+            String result = scg.outputFileString(code.outputs.get(outputIdx), code);
+            List<String> lines = new ArrayList<>();
+            StringTokenizer st = new StringTokenizer(result, "\n");
+            while(st.hasMoreTokens()) {
+                lines.add(st.nextToken().trim());
+            }
+
+            List<String> expectedLines = new ArrayList<>();
+            BufferedReader br = Resources.asReader(expectedOutputFiles[outputIdx]);
+            while(true) {
+                String line = br.readLine();
+                if (line == null) break;
+                expectedLines.add(line.trim());
+            }
+            System.out.println("\n--------------------------------------");
+            System.out.println(result);
+            System.out.println("--------------------------------------\n");
+
+            for(int i = 0;i<Math.max(lines.size(), expectedLines.size());i++) {
+                String line = lines.size() > i ? lines.get(i):"";
+                String expectedLine = expectedLines.size() > i ? expectedLines.get(i):"";
+                if (!line.equals(expectedLine)) {
+                    config.error("Line " + i + " was expected to be:\n'" + expectedLine + "'\nbut was:\n'" + line + "'");
+                    return false;
+                }
             }
         }
         

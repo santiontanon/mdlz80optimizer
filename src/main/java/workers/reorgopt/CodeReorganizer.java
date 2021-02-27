@@ -11,6 +11,7 @@ import code.CodeBase;
 import code.Expression;
 import code.SourceFile;
 import code.CodeStatement;
+import code.OutputBinary;
 import code.SourceConstant;
 import java.io.FileWriter;
 import java.util.ArrayList;
@@ -91,9 +92,12 @@ public class CodeReorganizer implements MDLWorker {
         if (config.dialectParser != null) {
             config.dialectParser.getBlockAreas(code, areas);
         } else {
-            if (code.getMain() != null && !code.getMain().getStatements().isEmpty()) {
-                CodeBlock top = new CodeBlock("TB0", CodeBlock.TYPE_UNKNOWN, code.getMain().getStatements().get(0), null, code);
-                areas.add(top);
+            for(OutputBinary output:code.outputs) {
+                if (output.main != null && !output.main.getStatements().isEmpty()) {
+                    CodeBlock top = new CodeBlock("TB0", CodeBlock.TYPE_UNKNOWN, output.main.getStatements().get(0), null, code);
+                    top.output = output;
+                    areas.add(top);
+                }
             }
         }
         
@@ -161,7 +165,10 @@ public class CodeReorganizer implements MDLWorker {
         for(CodeStatement s:topBlock.statements) {
             boolean startNewBlock = false;
             int newState = state;
-            if (block == null) block = new CodeBlock(null, CodeBlock.TYPE_UNKNOWN, s);
+            if (block == null) {
+                block = new CodeBlock(null, CodeBlock.TYPE_UNKNOWN, s);
+                block.output = topBlock.output;
+            }
             switch (s.type) {
                 case CodeStatement.STATEMENT_CPUOP:
                     // code:
@@ -273,6 +280,7 @@ public class CodeReorganizer implements MDLWorker {
                 }
                 // start a new block:
                 block = new CodeBlock(null, CodeBlock.TYPE_UNKNOWN, s);
+                block.output = topBlock.output;
                 block.statements.addAll(moveToNewBlock);
                 block.statements.add(s);                
             }
@@ -659,6 +667,7 @@ public class CodeReorganizer implements MDLWorker {
         for(CodeStatement s:subarea.statements) {
             if (block == null) {
                 block = new CodeBlock(subarea.ID + "_B" + idx, CodeBlock.TYPE_CODE, s);
+                block.output = subarea.output;
                 idx++;
             }
             block.statements.add(s);
@@ -812,7 +821,7 @@ public class CodeReorganizer implements MDLWorker {
                 fw.write("<div class=\"content\">\n");
                 if (topBlock.subBlocks.isEmpty()) {
                     StringBuilder sb = new StringBuilder();
-                    generator.sourceFileString(topBlock.statements, code, sb);
+                    generator.sourceFileString(topBlock.statements, topBlock.output, code, sb);
                     StringTokenizer st = new StringTokenizer(sb.toString(), "\n");
                     fw.write("<table class=\"topblock\">\n");
                     while(st.hasMoreTokens()) {
@@ -859,7 +868,7 @@ public class CodeReorganizer implements MDLWorker {
         for(CodeBlock block:blocks) {
             if (block.subBlocks.isEmpty()) {
                 StringBuilder sb = new StringBuilder();
-                generator.sourceFileString(block.statements, code, sb);
+                generator.sourceFileString(block.statements, block.output, code, sb);
                 StringTokenizer st = new StringTokenizer(sb.toString(), "\n");
 
                 if (block.type == CodeBlock.TYPE_CODE) {

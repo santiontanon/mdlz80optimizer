@@ -57,6 +57,7 @@ public class SourceConstant {
             }
             variableStack.add(name);
             valueCache = exp.evaluateInternal(definingStatement, code, silent, previous, variableStack);
+            variableStack.remove(name);
             return valueCache;
         }
     }

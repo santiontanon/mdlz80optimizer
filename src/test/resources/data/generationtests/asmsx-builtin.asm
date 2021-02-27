@@ -1,5 +1,5 @@
 ; Test case: 
-	org #4000
+	org #8000
 	.rom
     .start loop
 

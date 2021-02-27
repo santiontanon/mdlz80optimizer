@@ -464,8 +464,14 @@ public class ASMSXDialect implements Dialect {
             List<Expression> data = new ArrayList<>();
             // Add an "org" to start at 0x4000 if necessary:
             {
-                Integer currentAddress = s.getAddress(code, previous);
-                if (currentAddress == null || currentAddress != 0x4000) {
+                boolean found = false;
+                for(CodeStatement s2:source.getStatements()) {
+                    if (s2.org != null) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
                     s.type = CodeStatement.STATEMENT_ORG;
                     s.org = Expression.constantExpression(0x4000, Expression.RENDER_AS_16BITHEX, config);
 
@@ -936,7 +942,7 @@ public class ASMSXDialect implements Dialect {
     {                
         if (basicHeaderStatement != null) {
             // Look for the very first org (and make sure the basic header is BEFORE the org):
-            CodeStatement s = code.getMain().getNextStatementTo(null, code);
+            CodeStatement s = code.outputs.get(0).main.getNextStatementTo(null, code);
             while(s != null) {
                 if (s.type == CodeStatement.STATEMENT_ORG) {
                     // set the load address:
@@ -963,7 +969,7 @@ public class ASMSXDialect implements Dialect {
         // start/load addresses for rom/basic headers if not yet set:
         if (basicHeaderStatement != null && startAddressLabel == null) {
             // Look for the very first assembler instruction:
-            CodeStatement s = code.getMain().getNextStatementTo(null, code);
+            CodeStatement s = code.outputs.get(0).main.getNextStatementTo(null, code);
             while(s != null) {
                 if (s.type == CodeStatement.STATEMENT_CPUOP) {
                     // found it!
@@ -982,7 +988,7 @@ public class ASMSXDialect implements Dialect {
         {
             CodeStatement firstGeneratingBytes = null;
             CodeStatement lastGeneratingBytes = null;
-            CodeStatement s = code.getMain().getNextStatementTo(null, code);
+            CodeStatement s = code.outputs.get(0).main.getNextStatementTo(null, code);
             while(s != null) {
                 if (s.type == CodeStatement.STATEMENT_INCLUDE && !s.include.getStatements().isEmpty()) {
                     s = s.include.getStatements().get(0);

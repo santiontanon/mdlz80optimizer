@@ -45,7 +45,7 @@ public class GenerationTest {
 
         SourceCodeGenerator scg = new SourceCodeGenerator(config);
 
-        String result = scg.sourceFileString(code.getMain(), code);
+        String result = scg.outputFileString(code.outputs.get(0), code);
         List<String> lines = new ArrayList<>();
         StringTokenizer st = new StringTokenizer(result, "\n");
         while(st.hasMoreTokens()) {

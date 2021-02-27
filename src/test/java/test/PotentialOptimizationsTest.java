@@ -65,7 +65,7 @@ public class PotentialOptimizationsTest {
         
         AnnotatedSourceCodeGenerator scg = new AnnotatedSourceCodeGenerator(config);
 
-        String result = scg.sourceFileString(code.getMain(), code);
+        String result = scg.sourceFileString(code.outputs.get(0).main, code);
         System.out.println("\n--------------------------------------");
         System.out.println(result);
         System.out.println("--------------------------------------\n");
