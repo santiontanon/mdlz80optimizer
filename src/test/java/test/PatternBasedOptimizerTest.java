@@ -90,6 +90,8 @@ public class PatternBasedOptimizerTest {
     @Test public void test51cpc() throws IOException { test("data/tests/test51.asm", null, "z80cpc", "speed",  1, 0, 0); }
     @Test public void test52() throws IOException { test("data/tests/test52.asm", null, null, "size",  1, 3, 3); }
     @Test public void test52sdcc() throws IOException { test("data/tests/test52sdcc.asm", "sdcc", null, "size",  0, 0, 0); }
+    @Test public void test54() throws IOException { test("data/tests/test54.asm", null, null, "size",  2, 4, 4); }
+    @Test public void test54ldo() throws IOException { testWithoutLabelDependentOptimizations("data/tests/test54.asm", null, null, "size",  0, 0, 0); }
     
     private void test(String inputFile, String dialect, String cpu, String target, int expectedSavedBytes, int expectedSavedTime1, int expectedSavedTime2) throws IOException
     {
@@ -108,8 +110,35 @@ public class PatternBasedOptimizerTest {
         }
         Assert.assertTrue(
                 "Could not parse file " + inputFile,
-                config.codeBaseParser.parseMainSourceFile(config.inputFile, code));
+                config.codeBaseParser.parseMainSourceFile(config.inputFile, code));        
+        testInternal(expectedSavedBytes, expectedSavedTime1, expectedSavedTime2);
+    }
 
+    
+    private void testWithoutLabelDependentOptimizations(String inputFile, String dialect, String cpu, String target, int expectedSavedBytes, int expectedSavedTime1, int expectedSavedTime2) throws IOException
+    {
+        if (dialect == null) {
+            if (cpu == null) {
+                Assert.assertTrue(config.parseArgs(inputFile, "-po-ldo", "-po", target));
+            } else {
+                Assert.assertTrue(config.parseArgs(inputFile, "-cpu", cpu, "-po-ldo", "-po", target));
+            }
+        } else {
+            if (cpu == null) {
+                Assert.assertTrue(config.parseArgs(inputFile, "-dialect", dialect, "-po-ldo", "-po", target));
+            } else {
+                Assert.assertTrue(config.parseArgs(inputFile, "-dialect", dialect, "-cpu", cpu,  "-po-ldo", "-po", target));
+            }
+        }
+        Assert.assertTrue(
+                "Could not parse file " + inputFile,
+                config.codeBaseParser.parseMainSourceFile(config.inputFile, code));        
+        testInternal(expectedSavedBytes, expectedSavedTime1, expectedSavedTime2);
+    }
+    
+
+    private void testInternal(int expectedSavedBytes, int expectedSavedTime1, int expectedSavedTime2) throws IOException
+    {
         // Make sure we don't lose any labels:
         List<SourceConstant> labelsBefore = new ArrayList<>();
         List<SourceConstant> labelsAfter = new ArrayList<>();

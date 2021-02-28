@@ -33,6 +33,7 @@ public class PatternBasedOptimizer implements MDLWorker {
     public boolean logPotentialOptimizations = false;    
     public boolean generateFilesWithAppliedOptimizations = false;
     public boolean onlyOnePotentialOptimizationPerLine = true;
+    public boolean preventLabelDependentOptimizations = false;
     
     MDLConfig config;
     boolean trigger = false;
@@ -68,7 +69,8 @@ public class PatternBasedOptimizer implements MDLWorker {
                "- ```-popatterns <file>```: specifies the file to load optimization patterns from (default 'data/pbo-patterns.txt', " +
                                      "which contains patterns that optimize both size and speed). For targetting size optimizations, use " +
                                      "'data/pbo-patterns-size.txt'. Notice that some dialects might change the default, for example, the " +
-                                     "sdcc dialect sets the default to 'data/pbo-patterns-sdcc-speed.txt'\n";
+                                     "sdcc dialect sets the default to 'data/pbo-patterns-sdcc-speed.txt'\n" +
+               "- ```-po-ldo```: some pattern-based optimizations depend on the specific value that some labels take ('label-dependent optimizations', ldo). These might be dangerous for code that is still in development. This flag disables those optimizations for al subsequence calls to ```-po```.\n";
     }
 
     @Override
@@ -111,6 +113,11 @@ public class PatternBasedOptimizer implements MDLWorker {
         if (flags.get(0).equals("-popatterns") && flags.size()>=2) {
             flags.remove(0);
             inputPatternsFileName = flags.remove(0);
+            return true;
+        }
+        if (flags.get(0).equals("-po-ldo")) {
+            flags.remove(00);
+            preventLabelDependentOptimizations = true;
             return true;
         }
         return false;
@@ -236,6 +243,12 @@ public class PatternBasedOptimizer implements MDLWorker {
                 matches.clear();
                 for(Pattern patt: patterns) {
                     PatternMatch match = patt.match(i, f, code, this);
+                    if (match != null &&
+                        preventLabelDependentOptimizations &&
+                        match.dependsOnLabelValues(code)) {
+                        config.debug("-po-ldo prevented an an optimization match.");
+                        match = null;
+                    }
                     if (match != null) {
                         if (generateFilesWithAppliedOptimizations) {
                             // prevent matches to lines on which there is already an optimization:
@@ -327,7 +340,9 @@ public class PatternBasedOptimizer implements MDLWorker {
             }
         }        
 
-        config.info("PatternBasedOptimizer: "+r.optimizerSpecificStats.get("Pattern-based optimizer pattern applications")+" patterns applied, " +
+        Integer npatterns = r.optimizerSpecificStats.get("Pattern-based optimizer pattern applications");
+        if (npatterns == null) npatterns = 0;
+        config.info("PatternBasedOptimizer: "+npatterns+" patterns applied, " +
                     r.bytesSaved+" bytes, " + 
                     r.timeSavingsString() + " " +config.timeUnit+"s saved.");
         return r;
@@ -508,6 +523,7 @@ public class PatternBasedOptimizer implements MDLWorker {
         w.logPotentialOptimizations = logPotentialOptimizations;
         w.generateFilesWithAppliedOptimizations = generateFilesWithAppliedOptimizations;
         w.onlyOnePotentialOptimizationPerLine = onlyOnePotentialOptimizationPerLine;
+        w.preventLabelDependentOptimizations = preventLabelDependentOptimizations;
         w.trigger = trigger;
         w.silent = silent;
         w.inputPatternsFileName = inputPatternsFileName;

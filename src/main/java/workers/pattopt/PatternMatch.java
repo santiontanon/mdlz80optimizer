@@ -3,6 +3,7 @@
  */
 package workers.pattopt;
 
+import code.CodeBase;
 import code.Expression;
 import code.SourceFile;
 import code.CodeStatement;
@@ -52,5 +53,17 @@ public class PatternMatch {
             variables.put(variable, value);
             return true;
         }
+    }
+    
+    
+    public boolean dependsOnLabelValues(CodeBase code)
+    {
+        for(EqualityConstraint ec:newEqualities) {
+            if (ec.exp1.containsLabel(code) ||
+                ec.exp2.containsLabel(code)) {
+                return true;
+            }
+        }
+        return false;
     }
 }
