@@ -13,6 +13,10 @@ Moreover, mdl accepts a number of command line arguments in order to make it do 
 
 The latest version can always be downloaded from the "releases" section: https://github.com/santiontanon/mdlz80optimizer/releases
 
+I also recorded a series of videos explaining how does MDL work:
+- Version 1.4: https://www.youtube.com/watch?v=yVniGPu-znc (in Spanish), https://www.youtube.com/watch?v=2M8la7TuCzw&t=1s (in English)
+- Introduction to the main idea (earlier versions): https://www.youtube.com/watch?v=g5aoF4-r4v4 , https://www.youtube.com/watch?v=TCtm3FRz45c , and https://www.youtube.com/watch?v=30SEguEDWp0 (in English)
+
 ## Command Line Arguments
 
 ```java -jar mdl.jar <input assembler file> [options/tasks]```
@@ -116,7 +120,14 @@ MDL includes several other functionalities, aimed at helping optimizing Z80 asse
 java -jar mdl.jar main.asm -asm+ main-annotated.txt
 ```
 
-Of course you could also add a ```-po``` there, if you want to optimize the code before annotating it.
+or
+
+```
+java -jar mdl.jar main.asm -asm+:html main-annotated.html
+```
+
+
+Of course you could also add a ```-po``` or ```-ro``` there, if you want to optimize the code before annotating it.
 
 MDL can also generate tables with how much space each of your assembler files uses (if you include many files from a main assembler file, MDL will analyze all of them), and can even generate a little visual reprsentation of your code (saved as a standard .dot file that can then be turned into a pdf or png image to view it using the [dot](https://graphviz.org) tool).
 
