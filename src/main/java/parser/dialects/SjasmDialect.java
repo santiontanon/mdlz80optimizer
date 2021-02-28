@@ -1558,8 +1558,8 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                     if (block == null) {
                         currentBlock.statements.add(s);
                     } else {
-                       currentBlock = block;
-                       currentBlock.statements.add(s);
+                        currentBlock = block;
+                        currentBlock.statements.add(s);
                     }
                     s = s.source.getNextStatementTo(s, code);
                 }
@@ -1569,6 +1569,10 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
         if (initialBlock.size(code) > 0) {
             config.error("sjasm initial block has non empty size!");
             return false;
+        }
+        
+        for(SJasmCodeBlock b:output.codeBlocks) {
+            System.out.println("block ("+output.codeBlocks.indexOf(b)+"): " + b.statements.size() + "  from " + b.startStatement.fileNameLineString());
         }
 
         // Resolve enhanced jr/jp, only within-block:
@@ -1587,6 +1591,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             if (address == null) {
                 blocksToAssign.add(b);
             } else {
+                boolean added = false;
                 for(Integer pageIdx:b.candidatePages) {
                     CodePage page = output.pages.get(pageIdx);
                     if (page.addBlock(b, code, config)) {
@@ -1596,15 +1601,18 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                                 symbolPage.put(bs.label.name, pageIdx);
                             }
                         }
-                    } else {
-                        Integer blockSize = b.size(code);
-                        if (blockSize == null) {
-                            config.error("Could not calculate size of a block to add it to page " + pageIdx + "!");
-                        } else {
-                            config.error("Could not add block of size " + blockSize + " to page " + pageIdx + "!");
-                        }
-                        return false;
+                        added = true;
+                        break;
                     }
+                }
+                if (!added) {
+                    Integer blockSize = b.size(code);
+                    if (blockSize == null) {
+                        config.error("Could not calculate size of a block to add it to pages " + b.candidatePages + "!");
+                    } else {
+                        config.error("Could not add block of size " + blockSize + " to pages " + b.candidatePages + "!");
+                    }
+                    return false;
                 }
             }
         }
@@ -1623,6 +1631,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
         blocksToAssign.addAll(0, initialBlocks);
 
         for(SJasmCodeBlock b:blocksToAssign) {
+            boolean added = false;
             for(Integer pageIdx:b.candidatePages) {
                 CodePage page = output.pages.get(pageIdx);
                 if (page == null && pageIdx == 0 && output.pages.isEmpty()) {
@@ -1632,21 +1641,25 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                     output.pages.put(0, page);
                 }
                 if (page.addBlock(b, code, config)) {
+                    System.out.println("  block " + output.codeBlocks.indexOf(b) + " added to page " + pageIdx);
                     // assign all the symbols in this block to this page:
                     for(CodeStatement bs:b.statements) {
                         if (bs.label != null) {
                             symbolPage.put(bs.label.name, pageIdx);
                         }
                     }
-                } else {
-                    Integer blockSize = b.size(code);
-                    if (blockSize == null) {
-                        config.error("Could not calculate size of a block to add it to page " + pageIdx + "!");
-                    } else {                   
-                        config.error("Could not add block of size " + b.size(code) + " to page " + page + "!");
-                    }
-                    return false;
+                    added = true;
+                    break;
                 }
+            }
+            if (!added) {
+                Integer blockSize = b.size(code);
+                if (blockSize == null) {
+                    config.error("Could not calculate size of a block to add it to pages " + b.candidatePages + "!");
+                } else {                   
+                    config.error("Could not add block of size " + b.size(code) + " to pages " + b.candidatePages + "!");
+                }
+                return false;
             }
         }
 
@@ -1688,6 +1701,8 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             output.reconstructedFile.addStatement(pageStartStatement);
             code.addSymbol(pageStartStatement.label.name, pageStartStatement.label);
             auxiliaryStatementsToRemoveIfGeneratingDialectasm.add(pageStartStatement);
+
+            System.out.println("page " + idx + " has " + page.blocks.size() + " blocks");
 
             for(SJasmCodeBlock block:page.blocks) {
                 if (block.actualAddress > currentAddress) {
@@ -1733,6 +1748,8 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
 
             config.debug("page " + idx + " from " + pageStart + " to " + (pageStart+pageSize));
         }
+        
+        System.out.println("output reconstruction contains: " + output.reconstructedFile.getStatements().size());
 
         code.resetAddresses();
         return true;
