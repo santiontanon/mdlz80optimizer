@@ -16,6 +16,7 @@ import code.SourceConstant;
 import code.SourceFile;
 import code.CodeStatement;
 import java.io.File;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -684,7 +685,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("output")) {
             tokens.remove(0);
             String fileName = "";
-            // Just ignore ...
+
             while(!tokens.isEmpty()) {
                 if (config.tokenizer.isSingleLineComment(tokens.get(0)) || 
                     config.tokenizer.isMultiLineCommentStart(tokens.get(0))) break;
@@ -693,6 +694,8 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             
             currentOutput = new SJasmOutput("_output"+outputFiles.size(), fileName, s);
             outputFiles.add(currentOutput);
+            
+            linesToKeepIfGeneratingDialectAsm.add(s);
                         
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);            
         }
@@ -727,6 +730,9 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                 config.warn("Redefining page " + pageNumber + " in " + sl);
             }
             currentOutput.pages.put(pageNumber, page);
+            
+            linesToKeepIfGeneratingDialectAsm.add(s);
+            
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
         if (tokens.size() >= 1 && tokens.get(0).equalsIgnoreCase("code")) {
@@ -802,6 +808,9 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             
             // ignore (but still add the statement, so we know where the codeblock starts)
             s.type = CodeStatement.STATEMENT_NONE;
+            
+            linesToKeepIfGeneratingDialectAsm.add(s);
+            
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("page")) {
@@ -838,6 +847,9 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                 currentOutput.codeBlocks.add(new SJasmCodeBlock(s, currentPages, addressExp, null));
                 // parse it as an "org"
                 s.type = CodeStatement.STATEMENT_NONE;
+                
+                linesToKeepIfGeneratingDialectAsm.add(s);
+                
                 return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
             } else {
                 config.error("Missing page number in " + sl);
@@ -936,7 +948,9 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             
             modules.add(0, moduleName);
             config.lineParser.pushLabelPrefix(moduleName + ".");
-
+            
+            linesToKeepIfGeneratingDialectAsm.add(s);
+            
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
         if (tokens.size() >= 1 && tokens.get(0).equalsIgnoreCase("endmodule")) {
@@ -967,6 +981,8 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                     return false;
                 }
             }
+            
+            linesToKeepIfGeneratingDialectAsm.add(s);
             
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
@@ -1100,6 +1116,8 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             s.type = CodeStatement.STATEMENT_ORG;
             s.org = exp;
             
+            linesToKeepIfGeneratingDialectAsm.add(s);
+            
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
         
@@ -1107,6 +1125,9 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             tokens.remove(0);
             
             // ignore for now...
+            
+            linesToKeepIfGeneratingDialectAsm.add(s);
+            
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
         
@@ -1275,13 +1296,15 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
     @Override
     public Expression translateToStandardExpression(String functionName, List<Expression> args, CodeStatement s, CodeBase code) {
         if (functionName.equalsIgnoreCase("high") && args.size() == 1) {
-            return Expression.operatorExpression(Expression.EXPRESSION_RSHIFT,
+            Expression exp = Expression.operatorExpression(Expression.EXPRESSION_RSHIFT,
                     Expression.parenthesisExpression(
                         Expression.operatorExpression(Expression.EXPRESSION_BITAND, 
                             args.get(0),
                             Expression.constantExpression(0xff00, Expression.RENDER_AS_16BITHEX, config), config), 
                         "(", config),
                     Expression.constantExpression(8, config), config);
+//            exp.originalDialectExpression = ???;
+            return exp;
         }
         if (functionName.equalsIgnoreCase("low") && args.size() == 1) {
             return Expression.operatorExpression(Expression.EXPRESSION_BITAND, 
@@ -1647,6 +1670,8 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                         new SourceLine("", output.reconstructedFile, output.reconstructedFile.getStatements().size()+1), output.reconstructedFile, config);
                 org.org = page.start;
                 output.reconstructedFile.addStatement(org);
+                
+                auxiliaryStatementsToRemoveIfGeneratingDialectasm.add(org);
             }
             Integer pageStart = page.start.evaluateToInteger(page.s, code, true);
             if (pageStart == null) {
@@ -1662,6 +1687,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                     Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, pageStartStatement, code, config), pageStartStatement, config);
             output.reconstructedFile.addStatement(pageStartStatement);
             code.addSymbol(pageStartStatement.label.name, pageStartStatement.label);
+            auxiliaryStatementsToRemoveIfGeneratingDialectasm.add(pageStartStatement);
 
             for(SJasmCodeBlock block:page.blocks) {
                 if (block.actualAddress > currentAddress) {
@@ -1703,6 +1729,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                     Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, pageEndStatement, code, config), pageEndStatement, config);
             output.reconstructedFile.addStatement(pageEndStatement);
             code.addSymbol(pageEndStatement.label.name, pageEndStatement.label);
+            auxiliaryStatementsToRemoveIfGeneratingDialectasm.add(pageEndStatement);
 
             config.debug("page " + idx + " from " + pageStart + " to " + (pageStart+pageSize));
         }
@@ -1922,4 +1949,25 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
 
         return lines2;
     }
+    
+    
+    @Override
+    public String statementToString(CodeStatement s, CodeBase code, boolean useOriginalNames, Path rootPath) {
+        if (linesToKeepIfGeneratingDialectAsm.contains(s)) {
+//            System.out.println("writing '"+s.sl.line+"' instead of '"+s.toString()+"'");
+            return s.sl.line;
+        }
+
+        if (auxiliaryStatementsToRemoveIfGeneratingDialectasm.contains(s)) return "";
+        
+        return s.toStringUsingRootPath(rootPath, useOriginalNames, true);
+    }    
+    
+    
+    @Override
+    public boolean supportsMultipleOutputs()
+    {
+        return true;
+    }    
+    
 }

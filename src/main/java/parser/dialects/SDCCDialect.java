@@ -259,14 +259,14 @@ public class SDCCDialect implements Dialect {
     {
         // mark the value as a constant:
         if (exp.evaluatesToStringConstant()) {
-            return exp.toStringInternal(true, useOriginalNames, code);
+            return exp.toStringInternal(true, useOriginalNames, true, code);
         } else if (exp.type == Expression.EXPRESSION_PARENTHESIS) {
             return "(#" + exp.args.get(0) + ")";
         } else {
             if (exp.args != null && exp.args.size()>1) {
-                return "#(" + exp.toStringInternal(true, useOriginalNames, code) + ")";
+                return "#(" + exp.toStringInternal(true, useOriginalNames, true, code) + ")";
             } else {
-                return "#" + exp.toStringInternal(true, useOriginalNames, code);
+                return "#" + exp.toStringInternal(true, useOriginalNames, true, code);
             }
         }
     }
@@ -376,7 +376,7 @@ public class SDCCDialect implements Dialect {
                             !s.op.spec.opName.equalsIgnoreCase("in") &&
                             !s.op.spec.opName.equalsIgnoreCase("out")) {
                             // no mark on left-hand side indirections (except in/out):
-                            str += args.get(i).toStringInternal(true, useOriginalNames, code);
+                            str += args.get(i).toStringInternal(true, useOriginalNames, true, code);
                         } else {
                             // mark the value as a constant:
                             str += renderExpressionWithConstantMark(args.get(i), useOriginalNames, code);
@@ -388,29 +388,29 @@ public class SDCCDialect implements Dialect {
                             switch (exp.type) {
                                 case Expression.EXPRESSION_SUM:
                                     if (exp.args.get(0).type == Expression.EXPRESSION_REGISTER_OR_FLAG) {
-                                        str += exp.args.get(1).toString() + " " + "(" + exp.args.get(0).toStringInternal(true, useOriginalNames, code) + ")";
+                                        str += exp.args.get(1).toString() + " " + "(" + exp.args.get(0).toStringInternal(true, useOriginalNames, true, code) + ")";
                                     } else {
-                                        str += exp.args.get(0).toString() + " " + "(" + exp.args.get(1).toStringInternal(true, useOriginalNames, code) + ")";
+                                        str += exp.args.get(0).toString() + " " + "(" + exp.args.get(1).toStringInternal(true, useOriginalNames, true, code) + ")";
                                     }   break;
                                 case Expression.EXPRESSION_SUB:
                                     if (exp.args.get(0).type == Expression.EXPRESSION_REGISTER_OR_FLAG) {
                                         Expression aux = Expression.operatorExpression(Expression.EXPRESSION_SIGN_CHANGE, exp.args.get(1), config);
-                                        str += aux.toString() + " " + "(" + exp.args.get(0).toStringInternal(true, useOriginalNames, code) + ")";
+                                        str += aux.toString() + " " + "(" + exp.args.get(0).toStringInternal(true, useOriginalNames, true, code) + ")";
                                     } else {
                                         
                                     }   break;
                                 case Expression.EXPRESSION_REGISTER_OR_FLAG:
-                                    str += "0 " + "(" + exp.args.get(0).toStringInternal(true, useOriginalNames, code) + ")";
+                                    str += "0 " + "(" + exp.args.get(0).toStringInternal(true, useOriginalNames, true, code) + ")";
                                     break;
                                 default:
-                                    str += args.get(i).toStringInternal(true, useOriginalNames, code);
+                                    str += args.get(i).toStringInternal(true, useOriginalNames, true, code);
                                     break;
                             }
                         } else {
-                            str += args.get(i).toStringInternal(true, useOriginalNames, code);
+                            str += args.get(i).toStringInternal(true, useOriginalNames, true, code);
                         }
                     } else {
-                        str += args.get(i).toStringInternal(true, useOriginalNames, code);
+                        str += args.get(i).toStringInternal(true, useOriginalNames, true, code);
                     }
                 }
                 
@@ -469,7 +469,7 @@ public class SDCCDialect implements Dialect {
             }
             
             default:
-                return s.toStringUsingRootPath(rootPath, useOriginalNames);
+                return s.toStringUsingRootPath(rootPath, useOriginalNames, true);
         }
     }    
     

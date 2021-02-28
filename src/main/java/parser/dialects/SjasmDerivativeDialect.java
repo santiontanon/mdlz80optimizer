@@ -48,6 +48,12 @@ public abstract class SjasmDerivativeDialect implements Dialect {
     List<Integer> currentPages = new ArrayList<>();
     HashMap<String,Integer> symbolPage = new HashMap<>();
     
+
+    // Some lines do not make sense in standard zilog assembler, and MDL removes them,
+    // but if we want to generate assembler targetting this dialect, we need those lines.
+    List<CodeStatement> linesToKeepIfGeneratingDialectAsm = new ArrayList<>(); 
+    List<CodeStatement> auxiliaryStatementsToRemoveIfGeneratingDialectasm = new ArrayList<>();
+    
     
     private SourceConstant getLastAbsoluteLabel(CodeStatement s) 
     {

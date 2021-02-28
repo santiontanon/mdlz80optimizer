@@ -82,28 +82,52 @@ public class SourceCodeGenerator implements MDLWorker {
 
             if (config.evaluateAllExpressions) code.evaluateAllExpressions();
             
-            for(OutputBinary output:code.outputs) {
+            if (mimicTargetDialect && config.dialectParser != null && config.dialectParser.supportsMultipleOutputs()) {
+                // Write all the outputs into a single assembler file:
                 String finalOutputFileName = outputFileName;
                 if (finalOutputFileName.equals(AUTO_FILENAME)) {
                     // autogenerate filenames:
                     if (outputFileName == null) {
-                        Pair<String, String> tmp = TextUtils.splitFileNameExtension(output.main.fileName);
+                        Pair<String, String> tmp = TextUtils.splitFileNameExtension(code.outputs.get(0).main.fileName);
                         finalOutputFileName = tmp.getLeft() + ".mdl" + tmp.getRight();
                     }
                 }
-                int idx = code.outputs.indexOf(output);
-                if (idx > 0) {
-                    Pair<String, String> tmp = TextUtils.splitFileNameExtension(finalOutputFileName);
-                    finalOutputFileName = tmp.getLeft() + "-output" + (idx+1) + tmp.getRight();
-                }
-            
+                
                 try (FileWriter fw = new FileWriter(finalOutputFileName)) {
-                    fw.write(sourceFileString(output.main, output, code));
-                    fw.flush();
+                    for(OutputBinary output:code.outputs) {                
+                        fw.write(sourceFileString(output.main, output, code));
+                        fw.flush();
+                    }
                 } catch (Exception e) {
                     config.error("Cannot write to file " + finalOutputFileName + ": " + e);
                     config.error(Arrays.toString(e.getStackTrace()));
                     return false;
+                }
+                
+            } else {            
+                for(OutputBinary output:code.outputs) {
+                    String finalOutputFileName = outputFileName;
+                    if (finalOutputFileName.equals(AUTO_FILENAME)) {
+                        // autogenerate filenames:
+                        if (outputFileName == null) {
+                            Pair<String, String> tmp = TextUtils.splitFileNameExtension(output.main.fileName);
+                            finalOutputFileName = tmp.getLeft() + ".mdl" + tmp.getRight();
+                        }
+                    }
+                    int idx = code.outputs.indexOf(output);
+                    if (idx > 0) {
+                        Pair<String, String> tmp = TextUtils.splitFileNameExtension(finalOutputFileName);
+                        finalOutputFileName = tmp.getLeft() + "-output" + (idx+1) + tmp.getRight();
+                    }
+
+                    try (FileWriter fw = new FileWriter(finalOutputFileName)) {
+                        fw.write(sourceFileString(output.main, output, code));
+                        fw.flush();
+                    } catch (Exception e) {
+                        config.error("Cannot write to file " + finalOutputFileName + ": " + e);
+                        config.error(Arrays.toString(e.getStackTrace()));
+                        return false;
+                    }
                 }
             }
         }
@@ -184,7 +208,7 @@ public class SourceCodeGenerator implements MDLWorker {
                 if (mimicTargetDialect && config.dialectParser != null) {
                     sb.append(config.dialectParser.statementToString(ss, code, true, Paths.get(output.main.getPath())));
                 } else {
-                    sb.append(ss.toStringUsingRootPath(Paths.get(output.main.getPath()), false));
+                    sb.append(ss.toStringUsingRootPath(Paths.get(output.main.getPath()), false, mimicTargetDialect));
                 }
                 sb.append("\n");
             }

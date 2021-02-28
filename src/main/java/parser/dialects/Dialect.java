@@ -118,7 +118,7 @@ public interface Dialect {
     
     // Translates a statement to string using the syntax of the specific dialect:
     default String statementToString(CodeStatement s, CodeBase code, boolean useOriginalNames, Path rootPath) {
-        return s.toStringUsingRootPath(rootPath, useOriginalNames);
+        return s.toStringUsingRootPath(rootPath, useOriginalNames, true);
     }
     
     default String getNextTemporaryLabel()
@@ -136,5 +136,12 @@ public interface Dialect {
                 blocks.add(top);
             }
         }
+    }
+    
+    
+    // Whether the dialect supports multiple output binaries from a single assembler file:
+    default boolean supportsMultipleOutputs()
+    {
+        return false;
     }
 }

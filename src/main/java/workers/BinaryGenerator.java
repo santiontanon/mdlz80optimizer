@@ -18,6 +18,7 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import util.TextUtils;
 
@@ -64,19 +65,23 @@ public class BinaryGenerator implements MDLWorker {
             
             for(OutputBinary output:code.outputs) {
                 String finalOutputFileName = outputFileName;
-                if (finalOutputFileName.equals(AUTO_FILENAME)) {
+                boolean addSufix = true;
+                if (outputFileName.equals(AUTO_FILENAME)) {
                     // autogenerate filenames:
-                    if (outputFileName == null) {
+                    if (output.fileName != null) {
+                        String path = FilenameUtils.getFullPath(output.main.fileName);
+                        finalOutputFileName = path + output.fileName;
+                        addSufix = false;
+                    } else {
                         finalOutputFileName = output.main.fileName + ".mdl.bin";
                     }
                 }
                 int idx = code.outputs.indexOf(output);
-                if (idx > 0) {
+                if (addSufix && idx > 0) {
                     Pair<String, String> tmp = TextUtils.splitFileNameExtension(finalOutputFileName);
                     finalOutputFileName = tmp.getLeft() + "-output" + (idx+1) + tmp.getRight();
                 }            
             
-
                 try (FileOutputStream os = new FileOutputStream(finalOutputFileName)) {
                     if (!writeBytes(output.main, code, os)) return false;
                     os.flush();

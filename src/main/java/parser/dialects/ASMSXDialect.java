@@ -78,8 +78,7 @@ public class ASMSXDialect implements Dialect {
     List<PrintRecord> toPrint = new ArrayList<>();
     
     // Some lines do not make sense in standard zilog assembler, and MDL removes them,
-    // but if we want to generate assembler targetting SDCC/SDASZ80, we need those lines.
-    // Examples are the ".area" or ".globl" statements
+    // but if we want to generate assembler targetting this dialect, we need those lines.
     List<SourceLine> linesToKeepIfGeneratingDialectAsm = new ArrayList<>(); 
     List<CodeStatement> auxiliaryStatementsToRemoveIfGeneratingDialectasm = new ArrayList<>();
     
@@ -1169,7 +1168,7 @@ public class ASMSXDialect implements Dialect {
             }
             
             default:
-                return s.toStringUsingRootPath(rootPath, useOriginalNames);
+                return s.toStringUsingRootPath(rootPath, useOriginalNames, true);
         }
     }    
         

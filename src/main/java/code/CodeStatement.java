@@ -276,7 +276,7 @@ public class CodeStatement {
     @Override
     public String toString()
     {
-        return toStringUsingRootPath(null, false);
+        return toStringUsingRootPath(null, false, false);
     }
 
     
@@ -323,7 +323,7 @@ public class CodeStatement {
     }
     
 
-    public String toStringUsingRootPath(Path rootPath, boolean useOriginalNames)
+    public String toStringUsingRootPath(Path rootPath, boolean useOriginalNames, boolean mimicTargetDialect)
     {
         String str = toStringLabel(useOriginalNames, false);
         
@@ -365,13 +365,13 @@ public class CodeStatement {
                 break;
             }
             case STATEMENT_CONSTANT:
-                str += " "+config.lineParser.KEYWORD_STD_EQU+" " + label.exp.toString();
+                str += " "+config.lineParser.KEYWORD_STD_EQU+" " + label.exp.toStringInternal(false, false, mimicTargetDialect, null);
                 break;
             case STATEMENT_DATA_BYTES:
                 str += "    "+config.lineParser.KEYWORD_STD_DB+" ";
                 {
                     for(int i = 0;i<data.size();i++) {
-                        str += data.get(i).toStringInternal(true, false, null);
+                        str += data.get(i).toStringInternal(true, false, mimicTargetDialect, null);
                         if (i != data.size()-1) {
                             str += ", ";
                         }
@@ -382,7 +382,7 @@ public class CodeStatement {
                 str += "    "+config.lineParser.KEYWORD_STD_DW+" ";
                 {
                     for(int i = 0;i<data.size();i++) {
-                        str += data.get(i).toString();
+                        str += data.get(i).toStringInternal(false, false, mimicTargetDialect, null);
                         if (i != data.size()-1) {
                             str += ", ";
                         }
@@ -393,7 +393,7 @@ public class CodeStatement {
                 str += "    "+config.lineParser.KEYWORD_STD_DD+" ";
                 {
                     for(int i = 0;i<data.size();i++) {
-                        str += data.get(i).toString();
+                        str += data.get(i).toStringInternal(false, false, mimicTargetDialect, null);
                         if (i != data.size()-1) {
                             str += ", ";
                         }
@@ -403,15 +403,15 @@ public class CodeStatement {
             case STATEMENT_DEFINE_SPACE:
                 if (space_value == null) {
                     if (config.output_allowDSVirtual) {
-                        str += "    "+config.lineParser.KEYWORD_STD_DS+" virtual " + space;
+                        str += "    "+config.lineParser.KEYWORD_STD_DS+" virtual " + space.toStringInternal(false, false, mimicTargetDialect, null);;
                     } else {
-                        str += "\n    "+config.lineParser.KEYWORD_STD_ORG+" $ + " + space;
+                        str += "\n    "+config.lineParser.KEYWORD_STD_ORG+" $ + " + space.toStringInternal(false, false, mimicTargetDialect, null);;
                     }
                 } else {
                     if (config.output_replaceDsByData) {
                         int break_each = 16;
                         int space_as_int = space.evaluateToInteger(this, this.source.code, true);
-                        String space_str = space_value.toString();
+                        String space_str = space_value.toStringInternal(false, false, mimicTargetDialect, null);
                         str += "    "+config.lineParser.KEYWORD_STD_DB+" ";
                         {
                             for(int i = 0;i<space_as_int;i++) {
@@ -447,9 +447,9 @@ public class CodeStatement {
                 }
                 for(int i = 0;i<macroCallArguments.size();i++) {
                     if (i==0) {
-                        str += macroCallArguments.get(i);
+                        str += macroCallArguments.get(i).toStringInternal(false, false, mimicTargetDialect, null);
                     } else {
-                        str += ", " + macroCallArguments.get(i);
+                        str += ", " + macroCallArguments.get(i).toStringInternal(false, false, mimicTargetDialect, null);
                     }
                 }
                 return str;

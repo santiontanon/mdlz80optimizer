@@ -72,6 +72,7 @@ public class Expression {
     public String registerOrFlagName;
     public String parenthesis;  // whether the parenthesis is "(", "[", or "{"
     public String dialectFunction;
+    public Expression originalDialectExpression = null; // if the expression was translated, we preserve the original
     public List<Expression> args = null;
 
     private Expression(int a_type, MDLConfig a_config) {
@@ -586,11 +587,15 @@ public class Expression {
     
     @Override
     public String toString() {
-        return toStringInternal(false, false, null);
+        return toStringInternal(false, false, false, null);
     }    
     
 
-    public String toStringInternal(boolean splitSpecialCharactersInStrings, boolean useOriginalNames, CodeBase code) {
+    public String toStringInternal(boolean splitSpecialCharactersInStrings, boolean useOriginalNames, boolean mimicTargetDialect, CodeBase code) {
+        if (mimicTargetDialect && originalDialectExpression != null) {
+            return originalDialectExpression.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, code);
+        }
+        
         switch (type) {
             case EXPRESSION_REGISTER_OR_FLAG:
                 if (config.output_opsInLowerCase) {
@@ -679,19 +684,19 @@ public class Expression {
                         || args.get(0).type == EXPRESSION_STRING_CONSTANT
                         || args.get(0).type == EXPRESSION_PARENTHESIS
                         || args.get(0).type == EXPRESSION_SYMBOL) {
-                    return "-" + args.get(0).toString();
+                    return "-" + args.get(0).toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, code);
                 } else {
-                    return "-(" + args.get(0).toString() + ")";
+                    return "-(" + args.get(0).toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, code) + ")";
                 }
             case EXPRESSION_PARENTHESIS:
-                return "(" + args.get(0).toString() + ")";
+                return "(" + args.get(0).toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, code) + ")";
             case EXPRESSION_SUM: {
                 String str = null;
                 for (Expression arg : args) {
                     if (str == null) {
-                        str = arg.toString();
+                        str = arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, code);
                     } else {
-                        str += " + " + arg.toString();
+                        str += " + " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, code);
                     }
                 }
                 return str;
@@ -700,9 +705,9 @@ public class Expression {
                 String str = null;
                 for (Expression arg : args) {
                     if (str == null) {
-                        str = arg.toString();
+                        str = arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, code);
                     } else {
-                        str += " - " + arg.toString();
+                        str += " - " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, code);
                     }
                 }
                 return str;
@@ -711,9 +716,9 @@ public class Expression {
                 String str = null;
                 for (Expression arg : args) {
                     if (str == null) {
-                        str = arg.toString();
+                        str = arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, code);
                     } else {
-                        str += " * " + arg.toString();
+                        str += " * " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, code);
                     }
                 }
                 return str;
@@ -722,9 +727,9 @@ public class Expression {
                 String str = null;
                 for (Expression arg : args) {
                     if (str == null) {
-                        str = arg.toString();
+                        str = arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, code);
                     } else {
-                        str += " / " + arg.toString();
+                        str += " / " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, code);
                     }
                 }
                 return str;
@@ -733,9 +738,9 @@ public class Expression {
                 String str = null;
                 for (Expression arg : args) {
                     if (str == null) {
-                        str = arg.toString();
+                        str = arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, code);
                     } else {
-                        str += " % " + arg.toString();
+                        str += " % " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, code);
                     }
                 }
                 return str;
@@ -744,9 +749,9 @@ public class Expression {
                 String str = null;
                 for (Expression arg : args) {
                     if (str == null) {
-                        str = arg.toString();
+                        str = arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, code);
                     } else {
-                        str += " || " + arg.toString();
+                        str += " || " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, code);
                     }
                 }
                 return str;
@@ -755,9 +760,9 @@ public class Expression {
                 String str = null;
                 for (Expression arg : args) {
                     if (str == null) {
-                        str = arg.toString();
+                        str = arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, code);
                     } else {
-                        str += " && " + arg.toString();
+                        str += " && " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, code);
                     }
                 }
                 return str;
@@ -766,9 +771,9 @@ public class Expression {
                 String str = null;
                 for (Expression arg : args) {
                     if (str == null) {
-                        str = arg.toString();
+                        str = arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, code);
                     } else {
-                        str += " = " + arg.toString();
+                        str += " = " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, code);
                     }
                 }
                 return str;
@@ -777,9 +782,9 @@ public class Expression {
                 String str = null;
                 for (Expression arg : args) {
                     if (str == null) {
-                        str = arg.toString();
+                        str = arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, code);
                     } else {
-                        str += " < " + arg.toString();
+                        str += " < " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, code);
                     }
                 }
                 return str;
@@ -788,9 +793,9 @@ public class Expression {
                 String str = null;
                 for (Expression arg : args) {
                     if (str == null) {
-                        str = arg.toString();
+                        str = arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, code);
                     } else {
-                        str += " > " + arg.toString();
+                        str += " > " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, code);
                     }
                 }
                 return str;
@@ -799,9 +804,9 @@ public class Expression {
                 String str = null;
                 for (Expression arg : args) {
                     if (str == null) {
-                        str = arg.toString();
+                        str = arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, code);
                     } else {
-                        str += " <= " + arg.toString();
+                        str += " <= " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, code);
                     }
                 }
                 return str;
@@ -810,9 +815,9 @@ public class Expression {
                 String str = null;
                 for (Expression arg : args) {
                     if (str == null) {
-                        str = arg.toString();
+                        str = arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, code);
                     } else {
-                        str += " >= " + arg.toString();
+                        str += " >= " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, code);
                     }
                 }
                 return str;
@@ -822,27 +827,27 @@ public class Expression {
                 String str = null;
                 for (Expression arg : args) {
                     if (str == null) {
-                        str = arg.toString();
+                        str = arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, code);
                     } else {
-                        str += " != " + arg.toString();
+                        str += " != " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, code);
                     }
                 }
                 return str;
             }
 
             case EXPRESSION_TERNARY_IF: {
-                return args.get(0).toString() + " ? "
-                        + args.get(1).toString() + " : "
-                        + args.get(2).toString();
+                return args.get(0).toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, code) + " ? "
+                        + args.get(1).toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, code) + " : "
+                        + args.get(2).toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, code);
             }
 
             case EXPRESSION_LSHIFT: {
                 String str = null;
                 for (Expression arg : args) {
                     if (str == null) {
-                        str = arg.toString();
+                        str = arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, code);
                     } else {
-                        str += " << " + arg.toString();
+                        str += " << " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, code);
                     }
                 }
                 return str;
@@ -852,9 +857,9 @@ public class Expression {
                 String str = null;
                 for (Expression arg : args) {
                     if (str == null) {
-                        str = arg.toString();
+                        str = arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, code);
                     } else {
-                        str += " >> " + arg.toString();
+                        str += " >> " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, code);
                     }
                 }
                 return str;
@@ -864,9 +869,9 @@ public class Expression {
                 String str = null;
                 for (Expression arg : args) {
                     if (str == null) {
-                        str = arg.toString();
+                        str = arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, code);
                     } else {
-                        str += " | " + arg.toString();
+                        str += " | " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, code);
                     }
                 }
                 return str;
@@ -876,9 +881,9 @@ public class Expression {
                 String str = null;
                 for (Expression arg : args) {
                     if (str == null) {
-                        str = arg.toString();
+                        str = arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, code);
                     } else {
-                        str += " & " + arg.toString();
+                        str += " & " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, code);
                     }
                 }
                 return str;
@@ -889,17 +894,17 @@ public class Expression {
                         || args.get(0).type == EXPRESSION_STRING_CONSTANT
                         || args.get(0).type == EXPRESSION_PARENTHESIS
                         || args.get(0).type == EXPRESSION_SYMBOL) {
-                    return "~" + args.get(0).toString();
+                    return "~" + args.get(0).toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, code);
                 } else {
-                    return "~(" + args.get(0).toString() + ")";
+                    return "~(" + args.get(0).toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, code) + ")";
                 }
             case EXPRESSION_BITXOR: {
                 String str = null;
                 for (Expression arg : args) {
                     if (str == null) {
-                        str = arg.toString();
+                        str = arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, code);
                     } else {
-                        str += " ^ " + arg.toString();
+                        str += " ^ " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, code);
                     }
                 }
                 return str;
@@ -910,34 +915,34 @@ public class Expression {
                         || args.get(0).type == EXPRESSION_STRING_CONSTANT
                         || args.get(0).type == EXPRESSION_PARENTHESIS
                         || args.get(0).type == EXPRESSION_SYMBOL) {
-                    return "!" + args.get(0).toString();
+                    return "!" + args.get(0).toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, code);
                 } else {
-                    return "!(" + args.get(0).toString() + ")";
+                    return "!(" + args.get(0).toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, code) + ")";
                 }
             case EXPRESSION_DIALECT_FUNCTION:
             {
                 String str = dialectFunction + "(";
                 for(int i = 0;i<args.size();i++) {
                     if (i == 0) {
-                        str += args.get(i).toString();
+                        str += args.get(i).toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, code);
                     } else {
-                        str += ", " + args.get(i).toString();
+                        str += ", " + args.get(i).toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, code);
                     }
                 }
                 return str += ")";
             }
             case EXPRESSION_PLUS_SIGN:
             {
-                return "+" + args.get(0).toString();
+                return "+" + args.get(0).toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, code);
             }
             case EXPRESSION_LIST:
             {
                 String str = "";
                 for(int i = 0;i<args.size();i++) {
                     if (i == 0) {
-                        str += args.get(i).toString();
+                        str += args.get(i).toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, code);
                     } else {
-                        str += ", " + args.get(i).toString();
+                        str += ", " + args.get(i).toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, code);
                     }
                 }
                 return str;

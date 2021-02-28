@@ -406,17 +406,19 @@ public class ExpressionParser {
                         first = false;
                     }
                 }
-                // First, try to translate it:
-                Expression exp = config.dialectParser.translateToStandardExpression(functionName, args, s, code);
-                if (exp == null) {
-                    // otherwise, we just create it as is:
-                    exp = Expression.dialectFunctionExpression(functionName, args, config);
-                    if (exp != null) {
-                        if (config.evaluateDialectFunctions) {
-                            config.codeBaseParser.expressionsToReplaceByValueAtTheEnd.add(Pair.of(exp, s));
-                        }
+                
+                // Create it as is, then try to translate it:
+                Expression exp = Expression.dialectFunctionExpression(functionName, args, config);
+                Expression translated = config.dialectParser.translateToStandardExpression(functionName, args, s, code);
+                if (translated != null) {
+                    translated.originalDialectExpression = exp;
+                    exp = translated;
+                } else {
+                    if (config.evaluateDialectFunctions) {
+                        config.codeBaseParser.expressionsToReplaceByValueAtTheEnd.add(Pair.of(exp, s));
                     }
                 }
+                
                 return exp;
                 
             } else if (dialectFunctionsSingleArgumentNoParenthesis.contains(tokens.get(0).toLowerCase())) {
@@ -429,15 +431,16 @@ public class ExpressionParser {
                     return null;
                 }
                 args.add(arg);
-                // First, try to translate it:
-                Expression exp = config.dialectParser.translateToStandardExpression(functionName, args, s, code);
-                if (exp == null) {
-                    // otherwise, we just create it as is:
-                    exp = Expression.dialectFunctionExpression(functionName, args, config);
-                    if (exp != null) {
-                        if (config.evaluateDialectFunctions) {
-                            config.codeBaseParser.expressionsToReplaceByValueAtTheEnd.add(Pair.of(exp, s));
-                        }
+                
+                // Create it as is, then try to translate it:
+                Expression exp = Expression.dialectFunctionExpression(functionName, args, config);
+                Expression translated = config.dialectParser.translateToStandardExpression(functionName, args, s, code);
+                if (translated != null) {
+                    translated.originalDialectExpression = exp;
+                    exp = translated;
+                } else {
+                    if (config.evaluateDialectFunctions) {
+                        config.codeBaseParser.expressionsToReplaceByValueAtTheEnd.add(Pair.of(exp, s));
                     }
                 }
                 return exp;
