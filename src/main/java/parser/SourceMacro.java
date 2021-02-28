@@ -124,7 +124,7 @@ public class SourceMacro {
                         linesTmp.add(new SourceLine(sl.line, sl.source, sl.lineNumber));
                     }
                 }
-                if (scope != null) {
+                if (scope != null && config.preProcessor.addScopeLabelsToRept) {
                     lines2.add(new SourceLine(scope + "." + i + ":", macroCall.sl.source, macroCall.sl.lineNumber));
                 }
                 scopeMacroExpansionLines(scope+"." + i, linesTmp, code, config);

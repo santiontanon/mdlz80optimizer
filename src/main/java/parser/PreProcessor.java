@@ -31,6 +31,8 @@ public class PreProcessor {
     public String MACRO_ELSE = "else";
     public String MACRO_ENDIF = "endif";
     
+    public boolean addScopeLabelsToRept = false;
+    
     // Some dialects define many variants of conditionals, such as "ifexists", "ifdifni", etc.
     // which might have to be evaluated eagerly, those are added here:
     public List<String> dialectIfs = new ArrayList<>();

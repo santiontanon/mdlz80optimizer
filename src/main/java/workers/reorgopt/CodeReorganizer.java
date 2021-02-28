@@ -86,6 +86,7 @@ public class CodeReorganizer implements MDLWorker {
         OptimizationResult savings = new OptimizationResult();
         savings.addOptimizerSpecific(SAVINGS_REORGANIZATIONS_CODE, 0);
         
+        code.resetAddresses();
         if (!checkLocalLabelsInRange(code)) {
             config.error("Code Reorganizer: Some local labels are out of range to begin with, canceling execution...");
             return false;

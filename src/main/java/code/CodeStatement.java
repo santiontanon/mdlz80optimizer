@@ -353,7 +353,7 @@ public class CodeStatement {
             {
                 String path = incbinOriginalStr;
                 if (rootPath != null) {
-                    path = rootPath.toAbsolutePath().normalize().relativize(incbin.toPath().toAbsolutePath().normalize()).toString();
+                    path = rootPath.toAbsolutePath().normalize().relativize(incbin.toPath().toAbsolutePath().normalize()).toString();                    
                 }
                 // Make sure we don't have a windows/Unix path separator problem:
                 if (path.contains("\\")) {

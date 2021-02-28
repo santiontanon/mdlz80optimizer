@@ -196,18 +196,6 @@ public class CodeBase {
         }
     }
 
-//
-//    public void setMain(SourceFile s)
-//    {
-//        main = s;
-//    }
-//
-//
-//    public SourceFile getMain()
-//    {
-//        return main;
-//    }
-    
     
     public void addOutput(String binaryName, SourceFile main)
     {

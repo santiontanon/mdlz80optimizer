@@ -692,6 +692,9 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                 fileName += tokens.remove(0);
             }
             
+            if (fileName.startsWith("\"")) fileName = fileName.substring(1);
+            if (fileName.endsWith("\"")) fileName = fileName.substring(0, fileName.length()-1);
+            
             currentOutput = new SJasmOutput("_output"+outputFiles.size(), fileName, s);
             outputFiles.add(currentOutput);
             
@@ -1511,7 +1514,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
         code.outputs.clear();
         
         for(SJasmOutput output:outputFiles) {
-            String fileName = oldMain.getPath() + File.separator + output.fileName + ".asm";
+            String fileName = oldMain.getPath() + output.fileName + ".asm";
             output.reconstructedFile = new SourceFile(fileName, null, null, code, config);
             code.addSourceFile(output.reconstructedFile);
             code.addOutput(output.fileName, output.reconstructedFile);
