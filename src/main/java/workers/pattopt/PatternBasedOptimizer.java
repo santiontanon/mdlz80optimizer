@@ -299,10 +299,6 @@ public class PatternBasedOptimizer implements MDLWorker {
                         config.warn("Could not identify the statement to display the optimization message on...");
                         statementToDisplayMessageOn = f.getStatements().get(i);
                     }
-//                    CodeStatement endStatement = null;
-//                    if (f.getStatements().size()>endIndex+1) {
-//                        endStatement = f.getStatements().get(endIndex+1);
-//                    }
 
                     if (bestPatt.apply(f, bestMatch, code, equalitiesToMaintain)) {
                         if (config.isInfoEnabled()) {

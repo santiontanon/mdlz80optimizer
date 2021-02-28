@@ -10,15 +10,19 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Set;
+import org.apache.commons.lang3.tuple.Pair;
+import parser.SourceLine;
 
 public class CodeBase {    
     public static final String CURRENT_ADDRESS = "$";
 
     MDLConfig config;
 
-//    SourceFile main;
     LinkedHashMap<String, SourceFile> sources = new LinkedHashMap<>();
     LinkedHashMap<String, SourceConstant> symbols = new LinkedHashMap<>();
+    
+    // Stores the mdl:no-opt-start / mdl:no-opt-end protected blocks of code:
+    public List<Pair<SourceLine, SourceLine>> optimizationProtectedBlocks = new ArrayList<>();
 
     // List of the expected output binaries:
     public List<OutputBinary> outputs = new ArrayList<>();
@@ -210,4 +214,25 @@ public class CodeBase {
             f.evaluateAllExpressions(this);
         }
     }
+    
+    
+    public boolean protectedFromOptimization(CodeStatement s) 
+    {
+        if (s.comment != null && s.comment.contains(config.PRAGMA_NO_OPTIMIZATION)) return true;
+        return protectedFromOptimization(s.sl);
+    }
+
+
+    public boolean protectedFromOptimization(SourceLine sl) 
+    {
+        if (sl.line.contains(config.PRAGMA_NO_OPTIMIZATION)) return true;
+        for(Pair<SourceLine, SourceLine> block: optimizationProtectedBlocks) {
+            if (sl.precedesEq(block.getRight()) &&
+                block.getLeft().precedesEq(sl)) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
 }

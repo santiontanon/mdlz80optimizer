@@ -85,6 +85,8 @@ public class MDLConfig {
 
     // code annotations:
     public String PRAGMA_NO_OPTIMIZATION = "mdl:no-opt";
+    public String PRAGMA_NO_OPTIMIZATION_START = "mdl:no-opt-start";
+    public String PRAGMA_NO_OPTIMIZATION_END = "mdl:no-opt-end";
 
     // utils:
     public MDLLogger logger;
@@ -136,6 +138,10 @@ public class MDLConfig {
             + "- ```-+bin```: includes binary files (incbin) in the output analyses.\n"
             + "- ```-no-opt-pragma <value>```: changes the pragma to be inserted in a comment on a line to prevent optimizing it (default: "
             + PRAGMA_NO_OPTIMIZATION + ")\n"
+            + "- ```-no-opt-start-pragma <value>```: changes the pragma to be inserted in a comment on a line to mark it as the start of a block of lines to be protected from optimization (default: "
+            + PRAGMA_NO_OPTIMIZATION_START + ")\n"
+            + "- ```-no-opt-end-pragma <value>```: changes the pragma to be inserted in a comment on a line to mark it as the end of a block of lines to be protected from optimization (default: "
+            + PRAGMA_NO_OPTIMIZATION_END + ")\n"
             + "- ```-out-opcase <case>```: whether to convert the assembler operators to upper or lower case. Possible values are: none/lower/upper (none does no conversion). Default is 'lower'.\n"
             + "- ```-out-allow-ds-virtual```: allows 'ds virtual' in the generated assembler (not all assemblers support this, but simplifies output)\n"
             + "- ```-out-colonless-equs```: equs will look like 'label equ value' instead of 'label: equ value'\n"

@@ -505,6 +505,7 @@ public class CodeReorganizer implements MDLWorker {
         // Move the statements:
         SourceFile insertionFile;
         int insertionPoint;
+        boolean cancelOptimization = false;
         
         List<Pair<CodeStatement, Pair<SourceFile, Integer>>> undoTrail = new ArrayList<>();
         for(CodeStatement s: toMove.statements) {
@@ -541,6 +542,18 @@ public class CodeReorganizer implements MDLWorker {
                 return false;
             }            
         }
+        
+        // Check if the destination point is protected:
+        if (code.protectedFromOptimization(insertionFile.getStatements().get(insertionPoint))) {
+            cancelOptimization = true;
+        } else {
+            for(CodeStatement s: toMove.statements) {
+                if (code.protectedFromOptimization(s)) {
+                    cancelOptimization = true;
+                    break;
+                }
+            }
+        }
                     
         for(CodeStatement s: toMove.statements) {
             insertionFile.addStatement(insertionPoint, s);
@@ -549,7 +562,6 @@ public class CodeReorganizer implements MDLWorker {
         }
         
         // Check all relative jumps are still within reach:
-        boolean cancelOptimization = false;
         code.resetAddresses();
         // unfortunately we need to check the whole code base, as jump statements might be
         // outside of the current area, but jumping to a label inside of the current area:
@@ -566,8 +578,9 @@ public class CodeReorganizer implements MDLWorker {
         if (jump == null) {
             config.warn("Cannot find a cpu op in a code block!");
             cancelOptimization = true;
-        } else if (jump.comment != null && jump.comment.contains(config.PRAGMA_NO_OPTIMIZATION)) {
-            config.debug("CodeReorganizer: canceling optimization due to a " + config.PRAGMA_NO_OPTIMIZATION + " directive");
+//        } else if (jump.comment != null && jump.comment.contains(config.PRAGMA_NO_OPTIMIZATION)) {
+        } else if (code.protectedFromOptimization(jump)) {
+            config.debug("CodeReorganizer: canceling optimization since code is protected from optimizations.");
             cancelOptimization = true;
         }
 

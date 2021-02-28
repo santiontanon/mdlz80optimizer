@@ -92,6 +92,7 @@ public class PatternBasedOptimizerTest {
     @Test public void test52sdcc() throws IOException { test("data/tests/test52sdcc.asm", "sdcc", null, "size",  0, 0, 0); }
     @Test public void test54() throws IOException { test("data/tests/test54.asm", null, null, "size",  2, 4, 4); }
     @Test public void test54ldo() throws IOException { testWithoutLabelDependentOptimizations("data/tests/test54.asm", null, null, "size",  0, 0, 0); }
+    @Test public void test55() throws IOException { test("data/tests/test55.asm", null, null, "size",  2, 8, 8); }
     
     private void test(String inputFile, String dialect, String cpu, String target, int expectedSavedBytes, int expectedSavedTime1, int expectedSavedTime2) throws IOException
     {

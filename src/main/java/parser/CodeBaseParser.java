@@ -62,6 +62,9 @@ public class CodeBaseParser {
             return false;
         }
         
+        // Find the optimization protected regions:
+        findOptimizationProtectedRegions(code);
+        
         if (config.dialectParser != null) {
             if (!config.dialectParser.performAnyFinalActions(code)) return false;
         }
@@ -89,6 +92,7 @@ public class CodeBaseParser {
 
         return true;
     }
+    
 
     public SourceFile parseSourceFile(String fileName, CodeBase code, SourceFile parent,
             CodeStatement parentInclude) {
@@ -356,4 +360,30 @@ public class CodeBaseParser {
     }
 
 
+    public void findOptimizationProtectedRegions(CodeBase code)
+    {
+        for (SourceFile f : code.getSourceFiles()) {
+            SourceLine currentStart = null;
+            for (CodeStatement s: f.getStatements()) {
+                if (s.comment != null && s.comment.contains(config.PRAGMA_NO_OPTIMIZATION_START)) {
+                    if (currentStart == null) {
+                        currentStart = s.sl;
+                    } else {
+                        config.warn(config.PRAGMA_NO_OPTIMIZATION_START + " annotation in line " + currentStart.fileNameLineString() + " does not have a matching " + config.PRAGMA_NO_OPTIMIZATION_END);
+                    }
+                } else if (s.comment != null && s.comment.contains(config.PRAGMA_NO_OPTIMIZATION_END)) {
+                    if (currentStart == null) {
+                        config.warn(config.PRAGMA_NO_OPTIMIZATION_END + " annotation in line " + s.sl.fileNameLineString() + " does not have a matching " + config.PRAGMA_NO_OPTIMIZATION_START);
+                    } else {
+                        // new pair found!
+                        code.optimizationProtectedBlocks.add(Pair.of(currentStart, s.sl));
+                        currentStart = null;
+                    }
+                }
+            }
+            if (currentStart != null) {
+                config.warn(config.PRAGMA_NO_OPTIMIZATION_START + " annotation in line " + currentStart.fileNameLineString() + " does not have a matching " + config.PRAGMA_NO_OPTIMIZATION_END);
+            }
+        }
+    }
 }

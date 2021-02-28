@@ -72,6 +72,10 @@ public class ReorganizerTest {
                                                                          "data/reorganizertests/test-local3-expected.asm",
                                                                          "data/reorganizertests/test-local3-dialect-expected.asm",
                                                                          "data/reorganizertests/test-local3-expected.bin")); }
+    @Test public void test13() throws Exception { Assert.assertTrue(test("data/reorganizertests/test-protection.asm", null,
+                                                                         "data/reorganizertests/test-protection-expected.asm", null, null)); }
+    @Test public void test14() throws Exception { Assert.assertTrue(test("data/reorganizertests/test-protection2.asm", null,
+                                                                         "data/reorganizertests/test-protection2-expected.asm", null, null)); }
 
     private boolean test(String inputFile, String dialect,
                          String expectedOutputFile, String expectedOutputFileDialect,

@@ -407,7 +407,8 @@ public class Pattern {
                     if (index >= l.size()) return null;
                     CodeStatement s = l.get(index);
                     if (i!=0 && s.label != null) return null;
-                    if (s.comment != null && s.comment.contains(config.PRAGMA_NO_OPTIMIZATION)) return null;
+                    if (code.protectedFromOptimization(s)) return null;
+//                    if (s.comment != null && s.comment.contains(config.PRAGMA_NO_OPTIMIZATION)) return null;
                     if (s.type == CodeStatement.STATEMENT_CPUOP) {
                         PatternMatch matchTmp = new PatternMatch(match);
                         if (opMatch(nextPatt, s.op, s, code, matchTmp)) {
@@ -437,7 +438,8 @@ public class Pattern {
                     CodeStatement s = l.get(index);
                     if (i!=0 && s.label != null) return null;
                     if (i==0 && s.label != null && count>0) break;
-                    if (s.comment != null && s.comment.contains(config.PRAGMA_NO_OPTIMIZATION)) return null;
+                    if (code.protectedFromOptimization(s)) return null;
+//                    if (s.comment != null && s.comment.contains(config.PRAGMA_NO_OPTIMIZATION)) return null;
                     if (s.type == CodeStatement.STATEMENT_CPUOP) {
                         if (opMatch(patt, l.get(index).op, l.get(index), code, match)) {
                             count += 1;
@@ -468,7 +470,8 @@ public class Pattern {
                     if (index >= l.size()) return null;
                     CodeStatement s = l.get(index);
                     if (i!=0 && s.label != null) return null;
-                    if (s.comment != null && s.comment.contains(config.PRAGMA_NO_OPTIMIZATION)) return null;
+                    if (code.protectedFromOptimization(s)) return null;
+//                    if (s.comment != null && s.comment.contains(config.PRAGMA_NO_OPTIMIZATION)) return null;
                     if (s.type == CodeStatement.STATEMENT_CPUOP) break;
                     if (!s.isEmptyAllowingComments()) return null;
                     index++;

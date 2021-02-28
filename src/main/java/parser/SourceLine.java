@@ -7,6 +7,8 @@ package parser;
 
 import code.SourceFile;
 import code.CodeStatement;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  *
@@ -63,4 +65,45 @@ public class SourceLine {
         }
         return str;
     }    
+    
+    
+    // Returns true is this occurs earlier than sl in the source code (or if they are the same line)
+    public boolean precedesEq(SourceLine sl) 
+    {
+        if (this == sl) return true;
+
+        List<SourceLine> thisParents = new ArrayList<>();
+        List<SourceLine> slParents = new ArrayList<>();
+        {
+            SourceLine tmp = this;
+            while (tmp != null) {
+                thisParents.add(tmp);
+                if (tmp.source.parentInclude != null) {
+                    tmp = tmp.source.parentInclude.sl;
+                } else {
+                    tmp = null;
+                }
+            }
+            tmp = sl;
+            while (tmp != null) {
+                slParents.add(tmp);
+                if (tmp.source.parentInclude != null) {
+                    tmp = tmp.source.parentInclude.sl;
+                } else {
+                    tmp = null;
+                }
+            }
+        }
+        
+        // find the closest common file:
+        for(SourceLine thisTmp : thisParents) {
+            for(SourceLine slTmp: slParents) {
+                if (thisTmp.source == slTmp.source) {
+                    return thisTmp.lineNumber <= slTmp.lineNumber;
+                }
+            }
+        }
+        
+        return false;
+    }
 }
