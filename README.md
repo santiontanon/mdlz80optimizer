@@ -1,7 +1,7 @@
 # MDL (a Z80 assembler optimizer)
 Santiago Ontañón (Brain Games)
 
-I spend an enourmous amount of time optimizing the Z80 assembler code of my games to make them fit within small 32KB or 48KB cartridges, and to make them run fast enough. So, I thought I'd try to write a tool that automatically does some of the optimizations that I do manually. I named it MDL after the "minimum description length" principle since, in a way, the goal of MDL is to reach the minimum description length representation of a program (although it currently only does **very** simple optimizations).
+I spend an enourmous amount of time optimizing the Z80 assembler code of my games to make them fit within small 32KB or 48KB cartridges, and to make them run fast enough. So, I thought I'd try to write a tool that automatically does some of the optimizations that I do manually. I named it MDL after the "minimum description length" principle since, in a way, the goal of MDL is to reach the minimum description length representation of a program (although it currently only does simple optimizations).
 
 MDL (Minimum Description Length), is a command line tool to optimize Z80 assembler code. It is distributed as a Java JAR file, and from the command line, you can launch it like this:
 
