@@ -136,4 +136,4 @@ MDL can also generate tables with how much space each of your assembler files us
 
 - MDL is a command line tool, so you need access to a terminal
 
-- Java version 8 installed in your computer
+- Java version 8 or higher installed in your computer
