@@ -1729,6 +1729,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                                 config);
                 space.space_value = Expression.constantExpression(0, config);
                 output.reconstructedFile.addStatement(space);
+                auxiliaryStatementsToRemoveIfGeneratingDialectasm.add(space);
                 config.debug("inserting space (end of page) of " + ((pageStart + pageSize) - currentAddress) + " from " + currentAddress + " to " + (pageStart + pageSize));
             } else {
                 pageSize = currentAddress - pageStart;
