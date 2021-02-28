@@ -355,6 +355,12 @@ public class ASMSXDialect implements Dialect {
                 config.error("Cannot parse expression in "+sl.fileNameLineString()+": " + sl.line);
                 return false;
             }
+            String filename = filename_exp.evaluateToString(s, code, true);
+            if (filename == null) {
+                config.error("Cannot evaluate filename in " + sl.fileNameLineString());
+                return false;
+            }
+            code.outputs.get(0).fileName = filename;
             linesToKeepIfGeneratingDialectAsm.add(sl);
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
