@@ -487,10 +487,10 @@ public class CPUOp {
             Expression target = args.get(idx);
             Integer endAddress = target.evaluateToInteger(s, code, true);
             if (endAddress == null) return false;
-            Integer startAddress = s.getAddress(code);
+            Integer startAddress = s.getAddressAfter(code);
             if (startAddress == null) return false;
             int diff = endAddress - startAddress;
-            if (diff < -126 || diff > 130) return false;                
+            if (!offsetWithinJrRange(diff)) return false;   
         }
         return true;
     }

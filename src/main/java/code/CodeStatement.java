@@ -109,6 +109,12 @@ public class CodeStatement {
         return getAddressInternal(code, true, null, new ArrayList<>());
     }
 
+    
+    public Integer getAddressAfter(CodeBase code)
+    {
+        return getAddressAfterInternal(code, true, new ArrayList<>());
+    }
+    
 
     public Integer getAddress(CodeBase code, CodeStatement previous)
     {

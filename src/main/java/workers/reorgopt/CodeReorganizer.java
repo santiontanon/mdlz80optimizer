@@ -85,6 +85,11 @@ public class CodeReorganizer implements MDLWorker {
     public boolean work(CodeBase code) {
         OptimizationResult savings = new OptimizationResult();
         savings.addOptimizerSpecific(SAVINGS_REORGANIZATIONS_CODE, 0);
+        
+        if (!checkLocalLabelsInRange(code)) {
+            config.error("Code Reorganizer: Some local labels are out of range to begin with, canceling execution...");
+            return false;
+        }
 
         // First, find the "areas" that we can work with, e.g. "pages in a MegaROM".
         // These are areas of code such that we can move things around inside, but not across.
@@ -543,18 +548,11 @@ public class CodeReorganizer implements MDLWorker {
         }
         
         // Check all relative jumps are still within reach:
-        boolean canncelOptimization = false;
+        boolean cancelOptimization = false;
         code.resetAddresses();
-        for(CodeStatement s: subarea.statements) {
-            if (s.type == CodeStatement.STATEMENT_CPUOP) {
-                if (s.op.isJump()) {
-                    if (!s.op.labelInRange(s, code)) {
-                        canncelOptimization = true;
-                        break;
-                    }
-                }
-            }
-        }
+        // unfortunately we need to check the whole code base, as jump statements might be
+        // outside of the current area, but jumping to a label inside of the current area:
+        if (!checkLocalLabelsInRange(code)) cancelOptimization = true;
         
         // Get the jump we should remove:
         CodeStatement jump;
@@ -566,14 +564,14 @@ public class CodeReorganizer implements MDLWorker {
         
         if (jump == null) {
             config.warn("Cannot find a cpu op in a code block!");
-            canncelOptimization = true;
+            cancelOptimization = true;
         } else if (jump.comment != null && jump.comment.contains(config.PRAGMA_NO_OPTIMIZATION)) {
             config.debug("CodeReorganizer: canceling optimization due to a " + config.PRAGMA_NO_OPTIMIZATION + " directive");
-            canncelOptimization = true;
+            cancelOptimization = true;
         }
 
         // If anything looks wrong, undo the optimization:
-        if (canncelOptimization) {
+        if (cancelOptimization) {
             for(CodeStatement s: toMove.statements) {
                 insertionFile.getStatements().remove(s);
             }
@@ -655,7 +653,7 @@ public class CodeReorganizer implements MDLWorker {
             }
             
         }
-        
+                
         return true;
     }
     
@@ -758,6 +756,24 @@ public class CodeReorganizer implements MDLWorker {
                 }
             }
         }        
+    }
+    
+    
+    private boolean checkLocalLabelsInRange(CodeBase code)
+    {
+        for(SourceFile f:code.getSourceFiles()) {
+            for(CodeStatement s:f.getStatements()) {
+                if (s.type == CodeStatement.STATEMENT_CPUOP) {
+                    if (s.op.isJump()) {
+                        if (!s.op.labelInRange(s, code)) {
+                            return false;
+                        }
+                    }
+                }
+            }
+        }
+        
+        return true;
     }
     
 

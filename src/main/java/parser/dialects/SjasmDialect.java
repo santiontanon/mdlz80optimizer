@@ -1571,10 +1571,6 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             return false;
         }
         
-        for(SJasmCodeBlock b:output.codeBlocks) {
-            System.out.println("block ("+output.codeBlocks.indexOf(b)+"): " + b.statements.size() + "  from " + b.startStatement.fileNameLineString());
-        }
-
         // Resolve enhanced jr/jp, only within-block:
         resolveEnhancedJumps(code, output);
 
@@ -1641,7 +1637,6 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                     output.pages.put(0, page);
                 }
                 if (page.addBlock(b, code, config)) {
-                    System.out.println("  block " + output.codeBlocks.indexOf(b) + " added to page " + pageIdx);
                     // assign all the symbols in this block to this page:
                     for(CodeStatement bs:b.statements) {
                         if (bs.label != null) {
@@ -1702,8 +1697,6 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             code.addSymbol(pageStartStatement.label.name, pageStartStatement.label);
             auxiliaryStatementsToRemoveIfGeneratingDialectasm.add(pageStartStatement);
 
-            System.out.println("page " + idx + " has " + page.blocks.size() + " blocks");
-
             for(SJasmCodeBlock block:page.blocks) {
                 if (block.actualAddress > currentAddress) {
                     // insert space:
@@ -1749,8 +1742,6 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             config.debug("page " + idx + " from " + pageStart + " to " + (pageStart+pageSize));
         }
         
-        System.out.println("output reconstruction contains: " + output.reconstructedFile.getStatements().size());
-
         code.resetAddresses();
         return true;
     }
@@ -1971,7 +1962,6 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
     @Override
     public String statementToString(CodeStatement s, CodeBase code, boolean useOriginalNames, Path rootPath) {
         if (linesToKeepIfGeneratingDialectAsm.contains(s)) {
-//            System.out.println("writing '"+s.sl.line+"' instead of '"+s.toString()+"'");
             return s.sl.line;
         }
 
