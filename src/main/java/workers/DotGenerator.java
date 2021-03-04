@@ -34,6 +34,12 @@ public class DotGenerator implements MDLWorker {
 
 
     @Override
+    public String simpleDocString() {
+        return "";
+    }
+    
+    
+    @Override
     public boolean parseFlag(List<String> flags)
     {
         if (flags.get(0).equals("-dot") && flags.size()>=2) {

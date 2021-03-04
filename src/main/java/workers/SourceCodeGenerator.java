@@ -52,6 +52,12 @@ public class SourceCodeGenerator implements MDLWorker {
 
 
     @Override
+    public String simpleDocString() {
+        return "- ```-asm <output file>```: (task) saves the resulting assembler code in a single asm file.\n";
+    }
+
+    
+    @Override
     public boolean parseFlag(List<String> flags) {
         if (flags.get(0).equals("-asm") && flags.size()>=2) {
             flags.remove(0);

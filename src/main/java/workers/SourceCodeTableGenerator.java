@@ -36,6 +36,13 @@ public class SourceCodeTableGenerator implements MDLWorker {
         return "- ```-sft <output file>```: (task) generates a tsv file with some statistics about the source files.\n";
     }
 
+    
+    @Override
+    public String simpleDocString() {
+        return "";
+    }
+
+    
     @Override
     public boolean parseFlag(List<String> flags) {
         if (flags.get(0).equals("-sft") && flags.size()>=2) {

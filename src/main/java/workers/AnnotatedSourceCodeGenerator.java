@@ -43,6 +43,12 @@ public class AnnotatedSourceCodeGenerator implements MDLWorker {
 
 
     @Override
+    public String simpleDocString() {
+        return "";
+    }
+
+    
+    @Override
     public boolean parseFlag(List<String> flags) {
         if (flags.get(0).equals("-asm+") && flags.size()>=2) {
             flags.remove(0);

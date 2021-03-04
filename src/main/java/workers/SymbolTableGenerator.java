@@ -38,6 +38,13 @@ public class SymbolTableGenerator implements MDLWorker {
                "- ```-st-constants```: includes constants, in addition to labels, in the output symbol table.\n";
     }
 
+    
+    @Override
+    public String simpleDocString() {
+        return "";
+    }
+
+    
     @Override
     public boolean parseFlag(List<String> flags) {
         if (flags.get(0).equals("-st") && flags.size()>=2) {

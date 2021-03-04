@@ -119,9 +119,6 @@ public class Pattern {
                         CPUOpPattern patt = CPUOpPattern.parse(line, patternCB, config);
                         if (patt != null) {
                             replacement.add(patt);
-                            if (patt.repetitionVariable != null) {
-                                config.error("repetition variables will be ignored in replacement pattern lines!");
-                            }
                         } else {
                             config.error("Cannot parse replacement line: " + line);
                         }
@@ -217,7 +214,12 @@ public class Pattern {
         for(CPUOpPattern pat:replacement) {
             if (!pat.isWildcard()) {
                 CPUOp ipat = pat.instantiate(match, this, config);
-                replacementSize += ipat.sizeInBytes();
+                int irepSize = ipat.sizeInBytes();
+                int n = 1;
+                if (pat.repetitionVariable != null) {
+                    n = match.variables.get(pat.repetitionVariable).evaluateToInteger(null, code, true);
+                }
+                replacementSize += n * irepSize;
             }
         }
         int spaceSaving = patternSize - replacementSize;
@@ -240,18 +242,22 @@ public class Pattern {
                 if (tmp.length>1) {
                     patternTime[1] += n * tmp[1];
                 } else {
-                    patternTime[1] += n *tmp[0];
+                    patternTime[1] += n * tmp[0];
                 }
             }
         }
         for(CPUOpPattern pat:replacement) {
             if (!pat.isWildcard()) {
                 int tmp[] = pat.instantiate(match, this, config).timing();
-                replacementTime[0] += tmp[0];
+                int n = 1;
+                if (pat.repetitionVariable != null) {
+                    n = match.variables.get(pat.repetitionVariable).evaluateToInteger(null, code, true);
+                }
+                replacementTime[0] += n * tmp[0];
                 if (tmp.length>1) {            
-                    replacementTime[1] += tmp[1];
+                    replacementTime[1] += n * tmp[1];
                 } else {
-                    replacementTime[1] += tmp[0];
+                    replacementTime[1] += n * tmp[0];
                 }
             }
         }
@@ -997,12 +1003,33 @@ public class Pattern {
                             config.error("The replacement was: " + replacement.get(j));
                             return false;
                         }
-                        l.add(insertionPoint, s);
-                        match.added.add(s);
-                        insertionPoint++;
-                        replaced = true;
-                        undo.add(Pair.of(null, s));
-                        break;
+                        if (replacement.get(j).repetitionVariable == null) {
+                            l.add(insertionPoint, s);
+                            match.added.add(s);
+                            insertionPoint++;
+                            replaced = true;
+                            undo.add(Pair.of(null, s));
+                            break;
+                        } else {
+                            // We need to insert "s" more than one time:
+                            Integer repetitions = match.variables.get(replacement.get(j).repetitionVariable).evaluateToInteger(null, code, true);
+                            if (repetitions == null) {
+                                config.error("Problem applying optimization pattern, could not evaluate " + replacement.get(j).repetitionVariable + " to an integer!");
+                                return false;
+                            }
+                            for(int k = 0;k<repetitions;k++) {
+                                l.add(insertionPoint, s);
+                                match.added.add(s);
+                                insertionPoint++;
+                                replaced = true;
+                                undo.add(Pair.of(null, s));
+                                
+                                // new statement for the next iteration (notice we will create one too many, but it's fine):
+                                s = new CodeStatement(CodeStatement.STATEMENT_CPUOP, lastRemoved.sl, lastRemoved.source, config);
+                                s.op = new CPUOp(replacement.get(j).instantiate(match, this, config));                    
+                            }
+                            break;
+                        }
                     }
                 }
                 if (!replaced && removedLabel != null) {
@@ -1058,9 +1085,8 @@ public class Pattern {
                         // add:
                         l.add(undo.get(i).getLeft(), undo.get(i).getRight());
                     }
-                }
-                 while(equalitiesToMaintain.size() > previousLength) equalitiesToMaintain.remove(equalitiesToMaintain.size()-1);
-                config.info("Optimization undone, as it was breaking the equality constraint: " + eq.exp1 + " == " + eq.exp2);
+                } while(equalitiesToMaintain.size() > previousLength) equalitiesToMaintain.remove(equalitiesToMaintain.size()-1);
+                config.debug("Optimization undone, as it was breaking the equality constraint: " + eq.exp1 + " == " + eq.exp2);
                 code.resetAddresses();
                 return false;
             }

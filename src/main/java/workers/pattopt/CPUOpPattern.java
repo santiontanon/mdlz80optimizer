@@ -13,7 +13,6 @@ import code.Expression;
 import code.SourceFile;
 import code.CodeStatement;
 import parser.SourceLine;
-import parser.Tokenizer;
 
 /**
  *
@@ -60,7 +59,8 @@ public class CPUOpPattern {
         CodeStatement s = new CodeStatement(CodeStatement.STATEMENT_CPUOP, new SourceLine("", f, 0), f, config);
         List<Expression> instantiatedArgs = new ArrayList<>();
         for(Expression arg:args) {
-            String argStr = arg.toString();
+            String originalArgStr = arg.toString();
+            String argStr = originalArgStr;
             for(String variable:match.variables.keySet()) {
                 argStr = argStr.replace(variable, match.variables.get(variable).toString());
             }
@@ -69,6 +69,19 @@ public class CPUOpPattern {
                 config.error("Cannot parse argument '" + argStr + "' when instantiating pattern " + pattern.message);
                 return null;
             }
+            // When expressions had variables, simplify them if possible, to
+            // minimize problems with some assemblers that do not like complex
+            // expressions in arguments:
+            if (!originalArgStr.equals(argStr)) {
+                if (exp.type != Expression.EXPRESSION_INTEGER_CONSTANT && 
+                    exp.evaluatesToIntegerConstant()) {
+                    Integer value = exp.evaluateToInteger(s, code, true);
+                    if (value != null) {
+                        exp = Expression.constantExpression(value, config);
+                    }
+                }
+            }
+            
             instantiatedArgs.add(exp);
         }
         String instantiatedOpName = opName;

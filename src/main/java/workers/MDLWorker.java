@@ -12,6 +12,12 @@ public interface MDLWorker {
     */
     public String docString();
 
+    
+    /*
+    Text explaining how to use the flags to configure this generator
+    */
+    public String simpleDocString();
+
     /*
     - Parses command-line flags.
     - It should just start parsing from the beginning of the list, and pop those flags it can recognize.

@@ -115,7 +115,7 @@ public class MDLConfig {
             + "\n"
             + "Tasks will be executed in the order in which they are specified in the commandline, and using all the flag specified previously. Tasks can be repeated many times in the same command line.\n"
             + "- ```-cpu <type>```: to select a different CPU (z80/z80msx/z80cpc) (default: z80msx).\n"
-            + "- ```-dialect <type>```: to allow parsing different assembler dialects "
+            + "- ```-dialect <dialect>```: to allow parsing different assembler dialects "
                     + "(" + StringUtils.join(Dialects.knownDialects(), '/') + ") "
                     + "(default: mdl, which supports some basic code idioms common to various assemblers).\n"
             + "                   Note that even when selecting a dialect, not all syntax of a given assembler might be supported.\n"
@@ -152,7 +152,17 @@ public class MDLConfig {
             + "- ```-out-do-not-evaluate-dialect-functions```: some assembler dialects define functions like random/sin/cos that can be used to form expressions. By default, MDL replaces them by the result of their execution before generating assembler output (as those might not be defined in other assemblers, and thus this keeps the assembler output as compatible as possible). Use this flag if you don't want this to happen.\n"
             + "- ```-out-evaluate-all-expressions```: this flag makes MDL resolve all expressions down to their ultimate numeric or string value when generating assembler code.\n";
 
-
+    public String simpleDocString = "MDL "+Main.VERSION_STRING+" (A Z80 assembler optimizer) by Santiago Ontañón (Brain Games, 2020-2021)\n"
+            + "https://github.com/santiontanon/mdlz80optimizer\n"
+            + "\n"
+            + "Command Line Arguments:\n"
+            + "```java -jar mdl.jar <input assembler file> [options/tasks]```\n"
+            + "\n"
+            + "- ```-help```: for more help (just type ```java -jar mdl.jar -help```).\n"
+            + "- ```-dialect <dialect>```: selects which assembler dialect to use "
+                    + "(" + StringUtils.join(Dialects.knownDialects(), '/') + ").\n";
+    
+    
     public MDLConfig() {
         logger = new MDLLogger(MDLLogger.INFO);
         
@@ -166,6 +176,7 @@ public class MDLConfig {
     public void registerWorker(MDLWorker r) {
         workers.add(r);
         docString += r.docString();
+        simpleDocString += r.simpleDocString();
     }
 
     public boolean executeWorkers(CodeBase code) {
@@ -196,7 +207,7 @@ public class MDLConfig {
     public boolean parseArgs(String... argsArray) throws IOException {
         if (argsArray.length == 0) {
             
-            info(removeMDTags(docString));
+            info(removeMDTags(simpleDocString));
             return true;
         }
 
@@ -209,6 +220,10 @@ public class MDLConfig {
             if (arg.startsWith("-")) {
                 switch (arg) {
                     
+                    case "-help":
+                        info(removeMDTags(docString));
+                        return true;
+                        
                     // This is a hidden flag, as it has no utility for the user, and is only used
                     // to generate the documentation for GitHub:
                     case "-helpmd":

@@ -46,6 +46,12 @@ public class BinaryGenerator implements MDLWorker {
         return "- ```-bin <output file>```: (task) generates an assembled binary. Use ```"+AUTO_FILENAME+"``` as the output file name to respect the filenames specified in the sourcefiles of some dialects, or to auto generate an output name.\n";
     }
 
+
+    @Override
+    public String simpleDocString() {
+        return "- ```-bin <output file>```: (task) generates an assembled binary.\n";
+    }
+
     
     @Override
     public boolean parseFlag(List<String> flags) {

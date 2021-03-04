@@ -80,15 +80,13 @@ constraints:
 equal(?const,0)
 flagsNotUsedAfter(0,S,Z,H,P/V,N,C)
 
-pattern: Replace srl a; srl a; srl a with rrca; rrca; rrca; and #1f
-0: srl a
-1: srl a
-2: srl a
+pattern: Replace srl a; ...; srl a with rrca; ...; rrca; and #ff >> ?const1
+0: [?const1] srl a
 replacement:
-0: rrca
-1: rrca
-2: rrca
-2: and #1f
+0: [?const1] rrca
+1: and #ff >> ?const1
+constraints:
+equal(?const1 >= 3, -1)
 
 pattern: Replace pop ?regpair1; ld ?regpair2h,?regpair1h; ld ?regpair2l,?regpair1l with pop ?regpair2
 0: pop ?regpair1

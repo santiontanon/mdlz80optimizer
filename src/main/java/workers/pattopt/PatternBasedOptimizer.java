@@ -74,6 +74,11 @@ public class PatternBasedOptimizer implements MDLWorker {
     }
 
     @Override
+    public String simpleDocString() {
+        return "- ```-po```: (task) Runs the pattern-based optimizer.\n";
+    }
+    
+    @Override
     public boolean parseFlag(List<String> flags) {
         if (flags.get(0).equals("-po")) {
             flags.remove(0);

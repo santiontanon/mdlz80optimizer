@@ -53,6 +53,7 @@ public class CodeReorganizer implements MDLWorker {
     {
         config = a_config;
     }
+
     
     @Override
     public String docString() {
@@ -62,6 +63,13 @@ public class CodeReorganizer implements MDLWorker {
                "- ```-rohtml <file>```: generates a visualization of the division of the code before code reoganizer optimization as an html file.\n";
     }
 
+    
+    @Override
+    public String simpleDocString() {
+        return "- ```-ro```: (task) Runs the code reoganizer optimizer.\n";
+    }
+
+    
     @Override
     public boolean parseFlag(List<String> flags) {
         if (flags.get(0).equals("-ro")) {
