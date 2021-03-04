@@ -715,7 +715,7 @@ in(?op,sub,and,or,xor)
 in(?reg,A,B,C,D,E,H,L)
 regsNotModified(1,?reg)
 
-pattern: Replace ?op a,?const with ?op a,?regl (as ?regl == ?const2 here)
+pattern: Replace ?op a,?const2 with ?op a,?regl (as ?regl == ?const2 here)
 2: ld ?regpair,?const1
 1: *
 0: ?op a,?const2
@@ -730,7 +730,7 @@ in(?regpair,HL,BC,DE)
 regsNotModified(1,?regl)
 equal(?const1&#ff,?const2)
 
-pattern: Replace ?op a,?const with ?op a,?regl (as ?regl == ?const2 here)
+pattern: Replace ?op ?const2 with ?op ?regl (as ?regl == ?const2 here)
 2: ld ?regpair,?const1
 1: *
 0: ?op ?const2
@@ -760,7 +760,7 @@ in(?regpair,HL,BC,DE)
 regsNotModified(1,?regh)
 equal((?const1&#ff00)>>8,?const2)
 
-pattern: Replace ?op a,?const2 with ?op a,?regh (as ?regh == ?const2 here)
+pattern: Replace ?op ?const2 with ?op ?regh (as ?regh == ?const2 here)
 2: ld ?regpair,?const1
 1: *
 0: ?op ?const2

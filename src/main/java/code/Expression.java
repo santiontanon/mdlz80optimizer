@@ -1182,6 +1182,19 @@ public class Expression {
     }
     
     
+    public boolean containsSymbol()
+    {
+        if (type == EXPRESSION_SYMBOL) {
+            return true;
+        } else if (args != null) {
+            for(Expression arg:args) {
+                if (arg.containsSymbol()) return true;
+            }                
+        }
+        return false;
+    }    
+    
+    
     public boolean containsCurrentAddress()
     {
         if (type == EXPRESSION_SYMBOL &&

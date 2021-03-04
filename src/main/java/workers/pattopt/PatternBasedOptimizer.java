@@ -279,14 +279,25 @@ public class PatternBasedOptimizer implements MDLWorker {
                     // there was at least a match, pick the best!
                     Pattern bestPatt = null;
                     PatternMatch bestMatch = null;
-                    int bestSavings = 0;    // selection is based on bytes saved
+                    // selection is based on bytes saved, if there are ties, resolve by time saved,
+                    // and if there are ties, resolve based on equality constraints
+                    int bestSizeSavings = 0;    
+                    int bestTimeSavings = 0;
+                    int bestNumConstraints = 0;
                     for(Pair<Pattern,PatternMatch> p:matches) {
                         config.debug("optimization option: " + p.getLeft().getInstantiatedName(p.getRight()));
-                        int savings = p.getLeft().getSpaceSaving(p.getRight(), code);
-                        if (bestPatt == null || savings > bestSavings) {
+                        int sizeSavings = p.getLeft().getSpaceSaving(p.getRight(), code);
+                        int timeSavings = p.getLeft().getTimeSaving(p.getRight(), code)[0];
+                        int numConstraints = p.getRight().newEqualities.size();
+                        if (bestPatt == null ||
+                            sizeSavings > bestSizeSavings ||
+                            (sizeSavings == bestSizeSavings && timeSavings > bestTimeSavings) ||
+                            (sizeSavings == bestSizeSavings && timeSavings == bestTimeSavings && numConstraints < bestNumConstraints)) {
                             bestPatt = p.getLeft();
                             bestMatch = p.getRight();
-                            bestSavings = savings;
+                            bestSizeSavings = sizeSavings;
+                            bestTimeSavings = timeSavings;
+                            bestNumConstraints = numConstraints;
                         }
                     }
                     
@@ -305,13 +316,17 @@ public class PatternBasedOptimizer implements MDLWorker {
                         statementToDisplayMessageOn = f.getStatements().get(i);
                     }
 
-                    if (bestPatt.apply(f, bestMatch, code, equalitiesToMaintain)) {
+                    if (bestPatt != null && 
+                        bestPatt.apply(f, bestMatch, code, equalitiesToMaintain)) {
                         if (config.isInfoEnabled()) {
                             int bytesSaved = bestPatt.getSpaceSaving(bestMatch, code);
                             String timeSavedString = bestPatt.getTimeSavingString(bestMatch, code);
                             config.info("Pattern-based optimization", statementToDisplayMessageOn.fileNameLineString(), 
                                     bestPatt.getInstantiatedName(bestMatch)+" ("+bytesSaved+" bytes, " +
                                     timeSavedString + " " +config.timeUnit+"s saved)");
+                            for(EqualityConstraint ec:bestMatch.newEqualities) {
+                                config.debug("new equality constraint: " + ec.exp1 + " == " + ec.exp2);
+                            }
 
 //                            if (config.isDebugEnabled()) {
 //                                StringBuilder previousCode = new StringBuilder();
@@ -336,6 +351,8 @@ public class PatternBasedOptimizer implements MDLWorker {
                         i = Math.max(0, i-2);   // go back a couple of statements, as more optimizations might chain
                         
                         appliedOptimizations.add(bestMatch);
+                    } else {
+                        config.debug("Optimization pattern application failed");
                     }
                 }
             }

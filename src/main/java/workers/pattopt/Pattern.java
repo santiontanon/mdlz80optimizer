@@ -586,7 +586,9 @@ public class Pattern {
                         return false;
                     }
 
-                    match.newEqualities.add(new EqualityConstraint(exp1, null, exp2, null, false));
+                    if (exp1.containsSymbol() || exp2.containsSymbol()) {
+                        match.newEqualities.add(new EqualityConstraint(exp1, null, exp2, null, false));
+                    }
                 } else {
                     // If they are not, then there is no need to evaluateToInteger, as they should just string match:
                     if (!v1_str.equalsIgnoreCase(v2_str)) {
