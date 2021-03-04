@@ -1049,7 +1049,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
 
             // read variable name:
             String macroName = tokens.remove(0);
-            if (!config.lineParser.caseSensitiveSymbols) macroName = macroName.toLowerCase();
+            if (!config.caseSensitiveSymbols) macroName = macroName.toLowerCase();
             
             List<String> macroArguments = new ArrayList<>();
             List<String> macroTokens = new ArrayList<>();

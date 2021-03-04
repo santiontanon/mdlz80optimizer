@@ -727,7 +727,7 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
 
             // read variable name:
             String token = tokens.remove(0);
-            if (!config.lineParser.caseSensitiveSymbols) token = token.toLowerCase();
+            if (!config.caseSensitiveSymbols) token = token.toLowerCase();
             
             // optionally read the expression:
             Expression exp = null;

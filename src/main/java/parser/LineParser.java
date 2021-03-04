@@ -61,7 +61,6 @@ public class LineParser {
     // sjasm defines macros like: "macro macroname arg1,...,agn" instead of "macroname: macro arg1,...,argn":
     public int macroDefinitionStyle = MACRO_LABEL_MACRO_ARGS;
     public boolean allowNumberLabels = false;   // also for sjasm (for "reusable" labels)
-    public boolean caseSensitiveSymbols = true;
     public boolean applyEscapeSequencesToIncludeArguments = true;
 
     public boolean sdccStyleOffsets = false;
@@ -349,7 +348,7 @@ public class LineParser {
                 String colonToken = tokens.remove(0);   // we remember the type of "colon" used,
                                                         // since in some dialects, it does matter
 
-                if (!caseSensitiveSymbols) token = token.toLowerCase();
+                if (!config.caseSensitiveSymbols) token = token.toLowerCase();
                 SourceConstant c = newSourceConstant(token, exp, s, previous);
                 if (c == null) {
                     config.error("Problem defining symbol " + labelPrefix + token + " in " + sl);
@@ -368,7 +367,7 @@ public class LineParser {
                 String colonToken = tokens.remove(0);   // we remember the type of "colon" used,
                                                         // since in some dialects, it does matter
 
-                if (!caseSensitiveSymbols) token = token.toLowerCase();
+                if (!config.caseSensitiveSymbols) token = token.toLowerCase();
                 SourceConstant c = newSourceConstant(token, exp, s, previous);
                 if (c == null) {
                     config.error("Problem defining symbol " + labelPrefix + token + " in " + sl);
@@ -399,7 +398,7 @@ public class LineParser {
                 Expression exp = Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, s, code, config);
                 tokens.remove(0);
 
-                if (!caseSensitiveSymbols) token = token.toLowerCase();
+                if (!config.caseSensitiveSymbols) token = token.toLowerCase();
                 SourceConstant c = newSourceConstant(token, exp, s, previous);
                 if (c == null) {
                     config.error("Problem defining symbol " + labelPrefix + token + " in " + sl);
@@ -435,7 +434,7 @@ public class LineParser {
                                 "Label " + token + " defined without a colon.");
                     }
                     tokens.remove(0);
-                    if (!caseSensitiveSymbols) token = token.toLowerCase();
+                    if (!config.caseSensitiveSymbols) token = token.toLowerCase();
                     SourceConstant c = newSourceConstant(token, null, s, previous);
                     if (c == null) {
                         config.error("Problem defining symbol " + labelPrefix + token + " in " + sl);
@@ -825,7 +824,7 @@ public class LineParser {
                     String token = tokens.get(0);
                     if ((token.endsWith("f") || token.endsWith("F") || token.endsWith("b") || token.endsWith("B"))
                             && config.tokenizer.isInteger(token.substring(0, token.length() - 1))) {
-                        if (!caseSensitiveSymbols) token = token.toLowerCase();
+                        if (!config.caseSensitiveSymbols) token = token.toLowerCase();
                         Pair<String, SourceConstant> tmp = config.dialectParser.symbolName(token, s);
                         if (tmp == null) return false;
                         token = tmp.getLeft();
@@ -996,7 +995,7 @@ public class LineParser {
             Expression exp;
             if (isIfDef) {
                 String token = tokens.remove(0);
-                if (!caseSensitiveSymbols) token = token.toLowerCase();
+                if (!config.caseSensitiveSymbols) token = token.toLowerCase();
                 if (config.dialectParser != null) {
                     Pair<String, SourceConstant> tmp = config.dialectParser.symbolName(token, previous);
                     if (tmp == null) return false;

@@ -27,7 +27,6 @@ public class ExpressionParser {
     public boolean sjasmPlusCurlyBracketExpressions = false;
     
     public boolean allowFloatingPointNumbers = false;
-    public boolean caseSensitiveSymbols = true;
     
 
     public ExpressionParser(MDLConfig a_config)
@@ -446,7 +445,7 @@ public class ExpressionParser {
                 return exp;
             } else if (config.tokenizer.isSymbol(tokens.get(0))) {
                 String token = tokens.remove(0);
-                if (!caseSensitiveSymbols) token = token.toLowerCase();
+                if (!config.caseSensitiveSymbols) token = token.toLowerCase();
 
                 if (previous == null && s != null && s.source != null) previous = s.source.getPreviousStatementTo(s, code);
                 token = config.lineParser.newSymbolNameNotLabel(token, previous);
@@ -540,7 +539,7 @@ public class ExpressionParser {
             tokens.remove(0);
             // variable name symbol:
             String token = "?" + tokens.remove(0);
-            if (!caseSensitiveSymbols) token = token.toLowerCase();
+            if (!config.caseSensitiveSymbols) token = token.toLowerCase();
             return Expression.symbolExpression(token, s, code, config);
         }
         if (tokens.size() >= 3 &&

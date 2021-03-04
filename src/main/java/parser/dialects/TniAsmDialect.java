@@ -39,8 +39,7 @@ public class TniAsmDialect implements Dialect {
         config.lineParser.addKeywordSynonym("rb", config.lineParser.KEYWORD_DS);
         
         config.lineParser.defineSpaceVirtualByDefault = true;
-        config.lineParser.caseSensitiveSymbols = false;
-        config.expressionParser.caseSensitiveSymbols = false;
+        config.caseSensitiveSymbols = false;
     }
 
     

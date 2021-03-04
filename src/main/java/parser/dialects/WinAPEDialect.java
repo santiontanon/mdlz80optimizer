@@ -11,6 +11,8 @@ import code.Expression;
 import code.SourceConstant;
 import code.SourceFile;
 import code.CodeStatement;
+import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.lang3.tuple.Pair;
 import parser.SourceLine;
@@ -25,6 +27,12 @@ public class WinAPEDialect implements Dialect {
     
     public String writingTo = null;
 
+    // Some lines do not make sense in standard zilog assembler, and MDL removes them,
+    // but if we want to generate assembler targetting this dialect, we need those lines.
+    List<SourceLine> linesToKeepIfGeneratingDialectAsm = new ArrayList<>(); 
+    List<CodeStatement> auxiliaryStatementsToRemoveIfGeneratingDialectasm = new ArrayList<>();
+    
+    
     public WinAPEDialect(MDLConfig a_config) {
         super();
 
@@ -34,6 +42,7 @@ public class WinAPEDialect implements Dialect {
         
         config.warning_jpHlWithParenthesis = false;  // I don't think WinAPE supports "jp hl"
         config.tokenizer.allowAndpersandHex = true;
+        config.caseSensitiveSymbols = false;
     }
 
     
@@ -42,6 +51,7 @@ public class WinAPEDialect implements Dialect {
     {
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("write")) return true;
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("close")) return true;
+        if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("align")) return true;
         
         return false;
     }
@@ -51,7 +61,8 @@ public class WinAPEDialect implements Dialect {
     public Pair<String, SourceConstant> newSymbolName(String name, Expression value, CodeStatement previous) 
     {
         if (name.equalsIgnoreCase("write") ||
-            name.equalsIgnoreCase("close")) {
+            name.equalsIgnoreCase("close") ||
+            name.equalsIgnoreCase("align")) {
             return null;
         }
         return Pair.of(config.lineParser.getLabelPrefix() + name, null);
@@ -73,18 +84,58 @@ public class WinAPEDialect implements Dialect {
             tokens.remove(0);
             
             if (writingTo != null) {
-                config.warn("MDL does not support generating more than one binary file in a single assembler file. If you are generating assembler code directly with MDL, it will not result in a correct binary.");
+                config.warn("More than one binary file in a single assembler file not yet supported for the WinAPE dialect. If you need this feature, please open an issue in GitHub.");
             }
             
             writingTo = tokens.remove(0);
             
+            code.outputs.get(0).fileName = writingTo;
+            linesToKeepIfGeneratingDialectAsm.add(sl);
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
         if (tokens.size() >= 1 && tokens.get(0).equalsIgnoreCase("close")) {
             tokens.remove(0);
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
+        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("align")) {
+            tokens.remove(0);
+            Expression exp = config.expressionParser.parse(tokens, s, previous, code);
+            if (exp == null) {
+                config.error("Cannot parse expression in " + sl);
+                return false;
+            }
+            s.type = CodeStatement.STATEMENT_DEFINE_SPACE;
+            // ds (((($-1)/exp)+1)*exp-$)
+            s.space = Expression.operatorExpression(Expression.EXPRESSION_SUB,
+                        Expression.operatorExpression(Expression.EXPRESSION_MUL, 
+                          Expression.parenthesisExpression(
+                            Expression.operatorExpression(Expression.EXPRESSION_SUM, 
+                              Expression.operatorExpression(Expression.EXPRESSION_DIV, 
+                                Expression.parenthesisExpression(
+                                  Expression.operatorExpression(Expression.EXPRESSION_SUB, 
+                                      Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, s, code, config), 
+                                      Expression.constantExpression(1, config), config), "(", config),
+                                  exp, config), 
+                              Expression.constantExpression(1, config), config), "(", config), 
+                          exp, config),
+                        Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, s, code, config), config);
+            s.space_value = Expression.constantExpression(0, config);
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
+        }           
         
         return false;
     }    
+    
+    
+    @Override
+    public String statementToString(CodeStatement s, CodeBase code, boolean useOriginalNames, Path rootPath) {
+        if (linesToKeepIfGeneratingDialectAsm.contains(s.sl)) {
+            return s.sl.line;
+        }
+
+        if (auxiliaryStatementsToRemoveIfGeneratingDialectasm.contains(s)) return "";
+        
+        return s.toStringUsingRootPath(rootPath, useOriginalNames, true);
+    }    
+    
 }
