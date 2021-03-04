@@ -66,7 +66,7 @@ Any number of constraints can be specified, and all must be satisfied for a patt
 - ```in(variable, value1, ..., valuen)```: if the value of variable ```variable``` is one of the specified ones.
 - ```notIn(variable, value1, ..., valuen)```: if the value of variable ```variable``` is not one of the specified ones.
 - ```regpair(regpair,regpair_high,regpair_low)```: checks that regpair is a register pair (BC, DE, HL, IC, IY) made up of the two subregisters regpair_high,regpair_low.
-- ```reachableByJr(#, label)```: satisfied if ```label'' is reacheable via a short ```jr```jump from instruction #
+- ```reachableByJr(#, label)```: satisfied if ```label``` is reacheable via a short ```jr``` jump from instruction #
 - ```evenPushPops(#)```: satisfied if there is the same number of push instructions than of pop instructions in the instruction block # (this usually denotes a wildcard). If ```sp``` is modified in any way that is not a push/pop, this constraint will also fail for safety reasons.
 - ```atLeastOneCPUOp(#)```: satisfied if there is at least one CPU instruction in the lines matched by # (usually a wildcard).
 
