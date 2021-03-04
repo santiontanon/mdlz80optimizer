@@ -552,7 +552,8 @@ public class CodeReorganizer implements MDLWorker {
         }
         
         // Check if the destination point is protected:
-        if (code.protectedFromOptimization(insertionFile.getStatements().get(insertionPoint))) {
+        if (insertionPoint < insertionFile.getStatements().size() &&
+            code.protectedFromOptimization(insertionFile.getStatements().get(insertionPoint))) {
             cancelOptimization = true;
         } else {
             for(CodeStatement s: toMove.statements) {
