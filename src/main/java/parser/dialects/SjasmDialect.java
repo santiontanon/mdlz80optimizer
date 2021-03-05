@@ -262,8 +262,6 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
         // It is important that registers on the left-hand-side are capitalized (the right hand side does not matter):
         addFakeInstruction("RL BC", "rl c\nrl b");
         addFakeInstruction("RL DE", "rl e\nrl d");
-        addFakeInstruction("RL BC", "rl c\nrl b");
-        addFakeInstruction("RL DE", "rl e\nrl d");
         addFakeInstruction("RL HL", "rl l\nrl h");
         addFakeInstruction("RR BC", "rr b\nrr c");
         addFakeInstruction("RR DE", "rr d\nrr e");
