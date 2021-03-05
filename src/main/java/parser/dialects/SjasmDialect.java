@@ -1558,6 +1558,12 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             
             while(s != null) {
                 if (s.type == CodeStatement.STATEMENT_INCLUDE) {
+                    // make sure we do not lose te label:
+                    if (s.label != null) {
+                        CodeStatement labelS = new CodeStatement(CodeStatement.STATEMENT_NONE, s.sl, s.source, config);
+                        labelS.label = s.label;
+                        currentBlock.statements.add(labelS);
+                    }
                     s = s.include.getStatements().get(0);
                 } else {
                     // check if we have reached the next output:
