@@ -117,7 +117,11 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                 return true;
             } else {            
                 // otherwise, find a spot:
-                int pageStart = start.evaluateToInteger(s, code, true);
+                Integer pageStart = start.evaluateToInteger(s, code, true);
+                if (pageStart == null) {
+                    config.error("Cannot evaluate expression " + start + " while finding a spot for a block");
+                    return false;                    
+                }
                 int blockAddress = pageStart;
                 int alignedAddress = blockAddress + (alignment - (blockAddress%alignment))%alignment;
                 Integer blockSize = block.size(code);
