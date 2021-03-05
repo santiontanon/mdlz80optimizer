@@ -87,6 +87,10 @@ public class SourceMacro {
         List<SourceLine> lines2 = new ArrayList<>();
         MacroExpansion me = new MacroExpansion(this, macroCall, lines2);
         if (config.preProcessor.isMacroName(name, config.preProcessor.MACRO_REPT)) {
+            if (args.isEmpty()) {
+                config.error("No argument found for "+name+" macro in " + macroCall.sl);
+                return null;
+            }
             Integer reptNRepetitions_value = args.get(0).evaluateToInteger(macroCall, code, false);
             if (reptNRepetitions_value == null) {
                 config.error("Could not evaluate REPT argument " + args.get(0));
@@ -131,6 +135,10 @@ public class SourceMacro {
                 lines2.addAll(linesTmp);
             }
         } else if (config.preProcessor.isMacroName(name, config.preProcessor.MACRO_IF)) {
+            if (args.isEmpty()) {
+                config.error("No argument found for "+name+" macro in " + macroCall.sl);
+                return null;
+            }
             Integer ifCondition_value = args.get(0).evaluateToInteger(macroCall, code, false);
             if (ifCondition_value == null) {
                 config.error("Could not evaluate IF argument " + args.get(0) + ": " + macroCall.sl);
@@ -143,6 +151,10 @@ public class SourceMacro {
                 lines2.addAll(lines);
             }
         } else if (config.preProcessor.isMacroName(name, config.preProcessor.MACRO_IFDEF)) {
+            if (args.isEmpty()) {
+                config.error("No argument found for "+name+" macro in " + macroCall.sl);
+                return null;
+            }
             Expression exp = args.get(0);
             boolean defined = false;
             if (exp.type == Expression.EXPRESSION_SYMBOL) {
@@ -161,6 +173,10 @@ public class SourceMacro {
             }
             
         } else if (config.preProcessor.isMacroName(name, config.preProcessor.MACRO_IFNDEF)) {
+            if (args.isEmpty()) {
+                config.error("No argument found for "+name+" macro in " + macroCall.sl);
+                return null;
+            }
             Expression exp = args.get(0);
             boolean defined = false;
             if (exp.type == Expression.EXPRESSION_SYMBOL) {

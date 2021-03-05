@@ -1,6 +1,4 @@
 ; Test case: 
-; - lines 4-5 should be optimized
-; - lines 9-10 should be optimized to djnz
 
 	ld hl,var1
 	ld de,var2

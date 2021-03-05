@@ -240,93 +240,130 @@ public class PatternBasedOptimizer implements MDLWorker {
     public OptimizationResult optimize(CodeBase code) {
         initPatterns();
         OptimizationResult r = new OptimizationResult();
-        List<Pair<Pattern,PatternMatch>> matches = new ArrayList<>();
+        
+        // Finding the optimal set of optimizations would require systematic search,
+        // which would be unfeasible computationally. So, just use a simple heuristic to
+        // obtain at least a decent set of optimizations (even if there is no guarantee
+        // of being close to the optimal). We do two passes, in the first pass, we only
+        // perform optimizations that would NOT set any equality constraints. And in the second
+        // pass, we allow any kind of optimizations:
         
         for (SourceFile f : code.getSourceFiles()) {
             for (int i = 0; i < f.getStatements().size(); i++) {
-                alreadyShownAPotentialOptimization = false;
-                matches.clear();
-                for(Pattern patt: patterns) {
-                    PatternMatch match = patt.match(i, f, code, this);
-                    if (match != null &&
-                        preventLabelDependentOptimizations &&
-                        match.dependsOnLabelValues(code)) {
-                        config.debug("-po-ldo prevented an an optimization match.");
-                        match = null;
-                    }
-                    if (match != null) {
-                        if (generateFilesWithAppliedOptimizations) {
-                            // prevent matches to lines on which there is already an optimization:
-                            boolean overlapsWithPreviousOptimization = false;
-                            for(PatternMatch previous:appliedOptimizations) {
-                                if (machesLinesGeneratedByPreviousPattern(match, previous)) {
-                                    overlapsWithPreviousOptimization = true;
-                                    break;
-                                }
-                            }
-                            if (!overlapsWithPreviousOptimization) {
-                                matches.add(Pair.of(patt,match));
-                            } else {
-                                config.debug("Prevented an optimization!");
-                            }
-                        } else {
-                            matches.add(Pair.of(patt,match));
-                        }
-                    }
+                if (optimizeStartingFromLine(f, i, code, r, false)) {
+                    i = Math.max(0, i-2);   // go back a couple of statements, as more optimizations might chain
                 }
+            }
+        }
+        for (SourceFile f : code.getSourceFiles()) {
+            for (int i = 0; i < f.getStatements().size(); i++) {
+                if (optimizeStartingFromLine(f, i, code, r, true)) {
+                    i = Math.max(0, i-2);   // go back a couple of statements, as more optimizations might chain                    
+                }
+            }
+        }
 
-                if (!matches.isEmpty()) {
-                    // there was at least a match, pick the best!
-                    Pattern bestPatt = null;
-                    PatternMatch bestMatch = null;
-                    // selection is based on bytes saved, if there are ties, resolve by time saved,
-                    // and if there are ties, resolve based on equality constraints
-                    int bestSizeSavings = 0;    
-                    int bestTimeSavings = 0;
-                    int bestNumConstraints = 0;
-                    for(Pair<Pattern,PatternMatch> p:matches) {
-                        config.debug("optimization option: " + p.getLeft().getInstantiatedName(p.getRight()));
-                        int sizeSavings = p.getLeft().getSpaceSaving(p.getRight(), code);
-                        int timeSavings = p.getLeft().getTimeSaving(p.getRight(), code)[0];
-                        int numConstraints = p.getRight().newEqualities.size();
-                        if (bestPatt == null ||
-                            sizeSavings > bestSizeSavings ||
-                            (sizeSavings == bestSizeSavings && timeSavings > bestTimeSavings) ||
-                            (sizeSavings == bestSizeSavings && timeSavings == bestTimeSavings && numConstraints < bestNumConstraints)) {
-                            bestPatt = p.getLeft();
-                            bestMatch = p.getRight();
-                            bestSizeSavings = sizeSavings;
-                            bestTimeSavings = timeSavings;
-                            bestNumConstraints = numConstraints;
+        Integer npatterns = r.optimizerSpecificStats.get("Pattern-based optimizer pattern applications");
+        if (npatterns == null) npatterns = 0;
+        config.info("PatternBasedOptimizer: "+npatterns+" patterns applied, " +
+                    r.bytesSaved+" bytes, " + 
+                    r.timeSavingsString() + " " +config.timeUnit+"s saved.");
+        return r;
+    }
+    
+    
+    // Returns whether any optimization was done:
+    public boolean optimizeStartingFromLine(SourceFile f, int i, CodeBase code, OptimizationResult r, boolean lastPass)
+    {
+        List<Pair<Pattern,PatternMatch>> matches = new ArrayList<>();
+        alreadyShownAPotentialOptimization = false;
+        // we only print potential optimizations in the last pass:
+        if (!lastPass) alreadyShownAPotentialOptimization = true;
+        for(Pattern patt: patterns) {
+            PatternMatch match = patt.match(i, f, code, this);
+            if (match != null &&
+                preventLabelDependentOptimizations &&
+                match.dependsOnLabelValues(code)) {
+                config.debug("-po-ldo prevented an an optimization match.");
+                match = null;
+            }
+            // We stop matches that add new equalities in the first pass:
+            if (!lastPass && match != null && !match.newEqualities.isEmpty()) {
+                match = null;
+            }
+            if (match != null) {
+                if (generateFilesWithAppliedOptimizations) {
+                    // prevent matches to lines on which there is already an optimization:
+                    boolean overlapsWithPreviousOptimization = false;
+                    for(PatternMatch previous:appliedOptimizations) {
+                        if (machesLinesGeneratedByPreviousPattern(match, previous)) {
+                            overlapsWithPreviousOptimization = true;
+                            break;
                         }
                     }
-                    
-                    CodeStatement statementToDisplayMessageOn = null;
-                    int startIndex = i;
-                    int endIndex = startIndex;
-                    for(int id:bestMatch.map.keySet()) {
-                        if (id == 0) statementToDisplayMessageOn = bestMatch.map.get(id).get(0);
-                        for(CodeStatement s:bestMatch.map.get(id)) {
-                            int idx = f.getStatements().indexOf(s);
-                            if (idx > endIndex) endIndex = idx;
-                        }
+                    if (!overlapsWithPreviousOptimization) {
+                        matches.add(Pair.of(patt,match));
+                    } else {
+                        config.debug("Prevented an optimization!");
                     }
-                    if (statementToDisplayMessageOn == null) {
-                        config.warn("Could not identify the statement to display the optimization message on...");
-                        statementToDisplayMessageOn = f.getStatements().get(i);
-                    }
+                } else {
+                    matches.add(Pair.of(patt,match));
+                }
+            }
+        }
 
-                    if (bestPatt != null && 
-                        bestPatt.apply(f, bestMatch, code, equalitiesToMaintain)) {
-                        if (config.isInfoEnabled()) {
-                            int bytesSaved = bestPatt.getSpaceSaving(bestMatch, code);
-                            String timeSavedString = bestPatt.getTimeSavingString(bestMatch, code);
-                            config.info("Pattern-based optimization", statementToDisplayMessageOn.fileNameLineString(), 
-                                    bestPatt.getInstantiatedName(bestMatch)+" ("+bytesSaved+" bytes, " +
-                                    timeSavedString + " " +config.timeUnit+"s saved)");
-                            for(EqualityConstraint ec:bestMatch.newEqualities) {
-                                config.debug("new equality constraint: " + ec.exp1 + " == " + ec.exp2);
-                            }
+        if (!matches.isEmpty()) {
+            // there was at least a match, pick the best!
+            Pattern bestPatt = null;
+            PatternMatch bestMatch = null;
+            // selection is based on bytes saved, if there are ties, resolve by time saved,
+            // and if there are ties, resolve based on equality constraints
+            int bestSizeSavings = 0;    
+            int bestTimeSavings = 0;
+            int bestNumConstraints = 0;
+            for(Pair<Pattern,PatternMatch> p:matches) {
+                config.debug("optimization option: " + p.getLeft().getInstantiatedName(p.getRight()));
+                int sizeSavings = p.getLeft().getSpaceSaving(p.getRight(), code);
+                int timeSavings = p.getLeft().getTimeSaving(p.getRight(), code)[0];
+                int numConstraints = p.getRight().newEqualities.size();
+                if (bestPatt == null ||
+                    sizeSavings > bestSizeSavings ||
+                    (sizeSavings == bestSizeSavings && timeSavings > bestTimeSavings) ||
+                    (sizeSavings == bestSizeSavings && timeSavings == bestTimeSavings && numConstraints < bestNumConstraints)) {
+                    bestPatt = p.getLeft();
+                    bestMatch = p.getRight();
+                    bestSizeSavings = sizeSavings;
+                    bestTimeSavings = timeSavings;
+                    bestNumConstraints = numConstraints;
+                }
+            }
+
+            CodeStatement statementToDisplayMessageOn = null;
+            int startIndex = i;
+            int endIndex = startIndex;
+            for(int id:bestMatch.map.keySet()) {
+                if (id == 0) statementToDisplayMessageOn = bestMatch.map.get(id).get(0);
+                for(CodeStatement s:bestMatch.map.get(id)) {
+                    int idx = f.getStatements().indexOf(s);
+                    if (idx > endIndex) endIndex = idx;
+                }
+            }
+            if (statementToDisplayMessageOn == null) {
+                config.warn("Could not identify the statement to display the optimization message on...");
+                statementToDisplayMessageOn = f.getStatements().get(i);
+            }
+
+            if (bestPatt != null && 
+                bestPatt.apply(f, bestMatch, code, equalitiesToMaintain)) {
+                if (config.isInfoEnabled()) {
+                    int bytesSaved = bestPatt.getSpaceSaving(bestMatch, code);
+                    String timeSavedString = bestPatt.getTimeSavingString(bestMatch, code);
+                    config.info("Pattern-based optimization", statementToDisplayMessageOn.fileNameLineString(), 
+                            bestPatt.getInstantiatedName(bestMatch)+" ("+bytesSaved+" bytes, " +
+                            timeSavedString + " " +config.timeUnit+"s saved)");
+                    for(EqualityConstraint ec:bestMatch.newEqualities) {
+                        config.debug("new equality constraint: " + ec.exp1 + " == " + ec.exp2);
+                    }
 
 //                            if (config.isDebugEnabled()) {
 //                                StringBuilder previousCode = new StringBuilder();
@@ -345,25 +382,16 @@ public class PatternBasedOptimizer implements MDLWorker {
 //
 //                                config.debug(previousCode + "\nReplaced by:" + newCode);
 //                            }
-                        }
-                        r.addOptimizerSpecific("Pattern-based optimizer pattern applications", 1);
-                        r.addSavings(bestPatt.getSpaceSaving(bestMatch, code), bestPatt.getTimeSaving(bestMatch, code));
-                        i = Math.max(0, i-2);   // go back a couple of statements, as more optimizations might chain
-                        
-                        appliedOptimizations.add(bestMatch);
-                    } else {
-                        config.debug("Optimization pattern application failed");
-                    }
                 }
+                r.addOptimizerSpecific("Pattern-based optimizer pattern applications", 1);
+                r.addSavings(bestPatt.getSpaceSaving(bestMatch, code), bestPatt.getTimeSaving(bestMatch, code));
+                appliedOptimizations.add(bestMatch);
+                return true;
+            } else {
+                config.debug("Optimization pattern application failed");
             }
-        }        
-
-        Integer npatterns = r.optimizerSpecificStats.get("Pattern-based optimizer pattern applications");
-        if (npatterns == null) npatterns = 0;
-        config.info("PatternBasedOptimizer: "+npatterns+" patterns applied, " +
-                    r.bytesSaved+" bytes, " + 
-                    r.timeSavingsString() + " " +config.timeUnit+"s saved.");
-        return r;
+        }
+        return false;
     }
     
     

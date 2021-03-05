@@ -43,7 +43,7 @@ public class PatternBasedOptimizerTest {
     @Test public void test5() throws IOException { test("data/tests/test5.asm", null, null, "size",  1, -2, -2); }
     @Test public void test6() throws IOException { test("data/tests/test6.asm", null, null, "size",  7, 18, 23); }
     @Test public void test7() throws IOException { test("data/tests/test7.asm", null, null, "size",  2, 8, 8); }
-    @Test public void test8() throws IOException { test("data/tests/test8.asm", null, null, "size",  3, 6, 6); }
+    @Test public void test8() throws IOException { test("data/tests/test8.asm", null, null, "size",  5, 29, 29); }
     @Test public void test9() throws IOException { test("data/tests/test9.asm", null, null, "size",  0, 0, 0); }
     @Test public void test10() throws IOException { test("data/tests/test10.asm", null, null, "size",  2, 10, 10); }
     @Test public void test11() throws IOException { test("data/tests/test11.asm", null, null, "size",  4, 8, 8); }
@@ -51,9 +51,9 @@ public class PatternBasedOptimizerTest {
     @Test public void test13() throws IOException { test("data/tests/test13.asm", null, null, "size",  1, -2, -2); }
     @Test public void test14() throws IOException { test("data/tests/test14.asm", null, null, "size",  2, 3, 3); }
     @Test public void test15() throws IOException { test("data/tests/test15.asm", null, null, "size",  3, 7, 7); }
-    @Test public void test16() throws IOException { test("data/tests/test16.asm", null, null, "size",  6, 25, 25); }
+    @Test public void test16() throws IOException { test("data/tests/test16.asm", null, null, "size",  8, 33, 33); }
     @Test public void test17() throws IOException { test("data/tests/test17.asm", null, null, "size",  7, 22, 22); }
-    @Test public void test18() throws IOException { test("data/tests/test18.asm", null, null, "size",  6, 15, 15); }
+    @Test public void test18() throws IOException { test("data/tests/test18.asm", null, null, "size",  7, 18, 18); }
     @Test public void test19() throws IOException { test("data/tests/test19.asm", null, null, "size",  3, 8, 8); }
     @Test public void test20() throws IOException { test("data/tests/test20.asm", null, null, "size",  9, 4, 19); }
     @Test public void test21() throws IOException { test("data/tests/test21.asm", null, null, "size",  4, 9, 9); }
@@ -63,7 +63,7 @@ public class PatternBasedOptimizerTest {
     @Test public void test25() throws IOException { test("data/tests/test25.asm", null, null, "size",  1, -2, -2); }
     @Test public void test26() throws IOException { test("data/tests/test26.asm", null, null, "size",  1, -2, -2); }
     @Test public void test27() throws IOException { test("data/tests/test27.asm", null, null, "size",  5, 14, 14); }
-    @Test public void test28() throws IOException { test("data/tests/test28.asm", null, null, "size",  7, 34, 34); }
+    @Test public void test28() throws IOException { test("data/tests/test28.asm", null, null, "size",  8, 37, 37); }
     @Test public void test29() throws IOException { test("data/tests/test29.asm", null, null, "size",  3, 4, 4); }
     @Test public void test30() throws IOException { test("data/tests/test30.asm", null, null, "size",  3, 6, 6); }
     @Test public void test31() throws IOException { test("data/tests/test31.asm", null, null, "size",  8, 32, 32); }
@@ -71,7 +71,7 @@ public class PatternBasedOptimizerTest {
     @Test public void test33() throws IOException { test("data/tests/test33.asm", null, null, "size",  3, -6, -6); }
     @Test public void test34() throws IOException { test("data/tests/test34.asm", null, null, "size",  1, 5, 5); }
     @Test public void test35() throws IOException { test("data/tests/test35.asm", null, null, "size",  1, 8, 3); }
-    @Test public void test36() throws IOException { test("data/tests/test36.asm", null, null, "size",  4, 46, 46); }
+    @Test public void test36() throws IOException { test("data/tests/test36.asm", null, null, "size",  7, 57, 57); }
     @Test public void test37() throws IOException { test("data/tests/test37.asm", null, null, "size",  3, 13, 13); }
     @Test public void test38() throws IOException { test("data/tests/test38.asm", null, null, "size",  4, 24, 24); }
     @Test public void test39() throws IOException { test("data/tests/test39.asm", null, null, "size",  0, 0, 0); }

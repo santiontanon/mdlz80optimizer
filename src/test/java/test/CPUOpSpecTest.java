@@ -14,7 +14,6 @@ import java.util.List;
 import org.junit.Assert;
 import org.junit.Test;
 import parser.SourceLine;
-import parser.Tokenizer;
 
 /**
  *
@@ -43,7 +42,7 @@ public class CPUOpSpecTest {
     @Test public void test12() throws IOException { Assert.assertEquals("push hl\npop ix", test("ld ix, hl", "sjasm")); }
     @Test public void test13() throws IOException { Assert.assertEquals("ld c, (ix + (3 + 4))\nld b, (ix + (3 + 4) + 1)", test("ld bc,(ix+(3+4))", "sjasm")); }
     @Test public void test14() throws IOException { Assert.assertEquals("sbc a, (ix + 1)", test("sbc (ix+1)", null)); }
-    @Test public void test15() throws IOException { Assert.assertEquals("pop bc\npop af\npop hl", test("pop bc,af,hl", "sjasm")); }
+    @Test public void test15() throws IOException { Assert.assertEquals("pop hl\npop af\npop bc", test("pop bc,af,hl", "sjasm")); }
     @Test public void test16() throws IOException { Assert.assertEquals("ld (iy), c\ninc iy\nld (iy), b\ninc iy", test("ldi (IY),BC", "sjasm")); }    
     @Test public void test17() throws IOException { Assert.assertEquals("ld (iy + 1), c\ninc iy\nld (iy + 1), b\ninc iy", test("ldi (IY+1),BC", "sjasm")); }    
     @Test public void test18() throws IOException { Assert.assertEquals("ld (ix), d\ninc ix", test("ldi (IX),D", "sjasm")); }    

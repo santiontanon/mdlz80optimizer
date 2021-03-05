@@ -296,13 +296,13 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
         addFakeInstruction("LD HL,HL", "ld h,h\nld l,l");
         addFakeInstruction("LD HL,IX", "push ix\npop hl");
         addFakeInstruction("LD HL,IY", "push iy\npop hl");
-        addFakeInstruction("LD IX,BC", "ld ixh,b\nld ixl,c");
-        addFakeInstruction("LD IX,DE", "ld ixh,d\nld ixl,e");
+        addFakeInstruction("LD IX,BC", "ld ixl,c\nld ixh,b");
+        addFakeInstruction("LD IX,DE", "ld ixl,e\nld ixh,d");
         addFakeInstruction("LD IX,HL", "push hl\npop ix");
-        addFakeInstruction("LD IX,IX", "ld ixh,ixh\nld ixl,ixl");
+        addFakeInstruction("LD IX,IX", "ld ixl,ixl\nld ixh,ixh");
         addFakeInstruction("LD IX,IY", "push iy\npop ix");
-        addFakeInstruction("LD IY,BC", "ld iyh,b\nld iyl,c");
-        addFakeInstruction("LD IY,DE", "ld iyh,d\nld iyl,e");
+        addFakeInstruction("LD IY,BC", "ld iyl,c\nld iyh,b");
+        addFakeInstruction("LD IY,DE", "ld iyl,e\nld iyh,d");
         addFakeInstruction("LD IY,HL", "push hl\npop iy");
         addFakeInstruction("LD IY,IX", "push ix\npop iy");
         addFakeInstruction("LD IY,IY", "ld iyh,iyh\nld iyl,iyl");
@@ -1163,7 +1163,12 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                     process = false;
                     break;
                 }
-                regpairs.add(regpair);
+                if (tokens.get(0).equalsIgnoreCase("pop")) {
+                    // for "pop", we add them in reverse:
+                    regpairs.add(0, regpair);                    
+                } else {
+                    regpairs.add(regpair);
+                }
                 idx++;
                 if (tokens.size()<=idx) break;
                 if (config.tokenizer.isSingleLineComment(tokens.get(idx))) break;
@@ -1176,6 +1181,10 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             if (process && regpairs.size()>1) {
                 int toremove = (regpairs.size()-1)*2;
                 for(int i = 0;i<toremove;i++) tokens.remove(2);
+                
+                // we overwrite the argument of the first, since in the case of a pop, the order might have changed:
+                tokens.set(1, regpairs.get(0));
+                
                 for(int i = 1;i<regpairs.size();i++) {
                     CodeStatement auxiliaryS = new CodeStatement(CodeStatement.STATEMENT_CPUOP, sl, source, config);
                     List<Expression> auxiliaryArguments = new ArrayList<>();
