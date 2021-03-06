@@ -81,6 +81,36 @@ public class Expression {
     }
 
     
+    public void copyFrom(Expression e)
+    {
+        config = e.config;
+        type = e.type;
+        integerConstant = e.integerConstant;
+        renderMode = e.renderMode;
+        doubleConstant = e.doubleConstant;
+        stringConstant = e.stringConstant;
+        symbolName = e.symbolName;
+        registerOrFlagName = e.registerOrFlagName;
+        parenthesis = e.parenthesis;
+        dialectFunction = e.dialectFunction;
+        originalDialectExpression = e.originalDialectExpression;
+        if (e.args != null) {
+            args = new ArrayList<>();
+            args.addAll(e.args);
+        }        
+    }
+
+
+    @Override
+    public Expression clone()
+    {
+        Expression e = new Expression(type, config);
+        e.copyFrom(this);
+        
+        return e;
+    }
+
+
     public Integer evaluateToInteger(CodeStatement s, CodeBase code, boolean silent) {
         return (Integer)evaluateInternal(s, code, silent, null, new ArrayList<>());
     }
@@ -209,6 +239,7 @@ public class Expression {
                 if (args.size() != 2) {
                     return null;
                 }
+                
                 // - special case for when these are labels, like: label1-label2,
                 // and it is not possible to assign an absolute value to the labels,
                 // but it is possible to know their difference:
@@ -229,7 +260,13 @@ public class Expression {
                             if (idx1 >= 0 && idx2 >= 0 && idx1 >= idx2) {
                                 Integer diff = 0;
                                 for(int i = idx2; i<idx1;i++) {
-                                    Integer size = d1.source.getStatements().get(i).sizeInBytesInternal(code, true, true, true, variableStack);
+                                    CodeStatement si = d1.source.getStatements().get(i);
+                                    if (si.type == CodeStatement.STATEMENT_ORG) {
+                                        // stop! this method will not work if there is an org!
+                                        diff = null;
+                                        break;
+                                    }
+                                    Integer size = si.sizeInBytesInternal(code, true, true, true, variableStack);
                                     if (size == null) {
                                         diff = null;
                                         break;
@@ -242,7 +279,7 @@ public class Expression {
                             }
                         }
                     }
-                }
+                }                    
                 
                 Object v1 = args.get(0).evaluateInternal(s, code, silent, previous, variableStack);
                 Object v2 = args.get(1).evaluateInternal(s, code, silent, previous, variableStack);

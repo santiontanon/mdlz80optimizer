@@ -246,7 +246,7 @@ public class SDCCDialect implements Dialect {
     
 
     @Override
-    public boolean performAnyFinalActions(CodeBase code)
+    public boolean postParseActions(CodeBase code)
     {            
         config.tokenizer.sdccStyleDollarInLabels = false;
         config.tokenizer.sdccStyleHashMarksForConstants = false;

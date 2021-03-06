@@ -943,7 +943,7 @@ public class ASMSXDialect implements Dialect {
     
     
     @Override
-    public boolean performAnyFinalActions(CodeBase code)
+    public boolean postParseActions(CodeBase code)
     {                
         if (basicHeaderStatement != null) {
             // Look for the very first org (and make sure the basic header is BEFORE the org):

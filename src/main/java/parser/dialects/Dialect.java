@@ -111,11 +111,20 @@ public interface Dialect {
     }
 
     // Called after all the code is parsed and all macros expanded
-    default boolean performAnyFinalActions(CodeBase code) {
+    default boolean postParseActions(CodeBase code) {
         // (no-op by default)
         return true;
     }
     
+    // Called after any modification to the code was done (e.g., after an
+    // optimizer is run). For example, this is used by some dialects to enforce
+    // a desired page size (which might have been modified by the optimizers, 
+    // who are not aware of the concept of "pages").
+    default boolean postCodeModificationActions(CodeBase code) {
+        // (no-op by default)
+        return true;
+    }
+        
     // Translates a statement to string using the syntax of the specific dialect:
     default String statementToString(CodeStatement s, CodeBase code, boolean useOriginalNames, Path rootPath) {
         return s.toStringUsingRootPath(rootPath, useOriginalNames, true);

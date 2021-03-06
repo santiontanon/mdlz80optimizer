@@ -961,7 +961,7 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
     
     
     @Override
-    public boolean performAnyFinalActions(CodeBase code)
+    public boolean postParseActions(CodeBase code)
     {
         for(PrintRecord pr:toPrint) {
             String accum = "";

@@ -105,4 +105,12 @@ public class CodeBlock {
         
         return null;
     }
+    
+    
+    public void resetAddresses()
+    {
+        for(CodeStatement s:statements) {
+            s.resetAddress();;
+        }
+    }
 }

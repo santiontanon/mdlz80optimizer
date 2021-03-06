@@ -43,7 +43,7 @@ public class CodeStatement {
     public SourceFile source;   // Before any optimizations, this should be equivalent to the source obtained
                                 // from navigating up the sl.expandedFrom all the way to the parent
     
-    Integer address = null;    // this is just an internal cache of the address
+    public Integer address = null;    // this is just an internal cache of the address
     
     public Expression org;
     public String rawInclude = null;    // name exactly as it appeared in the original statement

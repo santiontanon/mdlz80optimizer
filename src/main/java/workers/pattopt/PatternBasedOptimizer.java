@@ -233,6 +233,7 @@ public class PatternBasedOptimizer implements MDLWorker {
                 applyOptimizationsToOriginalFiles(code);
             }
         }
+        if (config.dialectParser != null) return config.dialectParser.postCodeModificationActions(code);
         return true;
     }
 

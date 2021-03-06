@@ -15,5 +15,9 @@ __sjasm_page_1_output1_start:
 data2:
 	dw $
     dw (__sjasm_page_0_output1_end - __sjasm_page_0_output1_start)
-    dw (__sjasm_page_1_output1_end - __sjasm_page_1_output1_start)
+    dw 8
+    org #1000
+page1label:
+    dw page1label
 __sjasm_page_1_output1_end:
+    ds 248, 0

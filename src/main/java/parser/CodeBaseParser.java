@@ -66,10 +66,20 @@ public class CodeBaseParser {
         findOptimizationProtectedRegions(code);
         
         if (config.dialectParser != null) {
-            if (!config.dialectParser.performAnyFinalActions(code)) return false;
+            if (!config.dialectParser.postParseActions(code)) return false;
         }
         for(Pair<Expression, CodeStatement> pair:expressionsToReplaceByValueAtTheEnd) {
             Expression exp = pair.getLeft();
+            if (config.dialectParser != null && exp.dialectFunction != null) {
+                Expression translated = config.dialectParser.translateToStandardExpression(exp.dialectFunction, exp.args, pair.getRight(), code);
+                if (translated != null) {
+                    Expression original = exp.clone();
+                    exp.copyFrom(translated);
+                    exp.originalDialectExpression = original;
+                    continue;
+                }
+            }
+            
             Object value = exp.evaluate(pair.getRight(), code, false);
             if (value == null) {
                 config.error("Cannot resolve expression " + exp + " after loading all the source code!");

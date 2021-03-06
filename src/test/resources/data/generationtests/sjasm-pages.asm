@@ -1,7 +1,7 @@
     output sjasm-pages-expected.bin
 
     defpage 0, $4040
-    defpage 1, $8080
+    defpage 1, $8080, $100
 
     code 
 start:
@@ -19,3 +19,7 @@ data2:
 	dw $
     dw ::0
     dw ::1
+
+    org $1000
+page1label:
+    dw page1label

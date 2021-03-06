@@ -69,14 +69,17 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
 
 
     public class CodePage {
-        public CodeStatement s;
+        public CodeStatement definingStatement;
         public Expression start;
         public Expression size;
         public List<SJasmCodeBlock> blocks = new ArrayList<>();
+        public CodeStatement fillerStatement = null;    // contains filler space, right before the end of page label
+        public CodeStatement pageStartStatement = null;   // contains the start of page label
+        public CodeStatement pageEndStatement = null;   // contains the end of page label
         
         public CodePage(CodeStatement a_s, Expression a_start, Expression a_size)
         {
-            s = a_s;
+            definingStatement = a_s;
             start = a_start;
             size = a_size;
         }
@@ -117,7 +120,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                 return true;
             } else {            
                 // otherwise, find a spot:
-                Integer pageStart = start.evaluateToInteger(s, code, true);
+                Integer pageStart = start.evaluateToInteger(definingStatement, code, true);
                 if (pageStart == null) {
                     config.error("Cannot evaluate expression " + start + " while finding a spot for a block");
                     return false;                    
@@ -145,7 +148,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                     // Make sure the address is properly aligned:
                     alignedAddress = blockAddress + (alignment - (blockAddress%alignment))%alignment;
                     if (size != null) {
-                        Integer evaluatedSize = size.evaluateToInteger(s, code, false);
+                        Integer evaluatedSize = size.evaluateToInteger(definingStatement, code, false);
                         if (evaluatedSize == null) {
                             config.error("Cannot evaluate expression " + evaluatedSize + " while finding a spot for a block");
                             return false;
@@ -168,6 +171,50 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                 return true;
             }
         }
+        
+        
+        boolean canUseLabelsToAssessSize(CodeBase code) {
+            CodeStatement s = pageStartStatement;
+            while(s != null && s != pageEndStatement) {
+                if (s.type == CodeStatement.STATEMENT_ORG) return false;
+                s = s.source.getNextStatementTo(s, code);
+            }
+            if (s == null) return false;  // since we are not done yet parsing the page, so, we don't know
+            return true;
+        }
+        
+        
+        Integer sizeWithoutFiller(CodeBase code) { 
+            int pageSize = 0;
+            CodeStatement s = pageStartStatement;
+            while(s != null && s != pageEndStatement) {
+                Integer sSize = s.sizeInBytes(code, true, true, true);
+                if (sSize == null) {
+                    config.error("Cannot assess the size of statement in " + s.sl);
+                    return null;
+                }
+                pageSize += sSize;                    
+                s = s.source.getNextStatementTo(s, code);
+            }
+            if (s == null) return null;  // since we are not done yet parsing the page, so, we don't know
+            return pageSize;
+        }
+                
+        
+        Integer sizeWithFiller(CodeBase code) {
+            Integer pageSize = sizeWithoutFiller(code);
+            if (pageSize == null) return null;
+            if (fillerStatement != null) {
+                Integer space = fillerStatement.space.evaluateToInteger(fillerStatement, code, true);
+                if (space == null) {
+                    config.error("Cannot evaluate " + fillerStatement.space + " to an integer value!");
+                    return null;
+                }
+                pageSize += space;
+            }
+            return pageSize;
+        }
+                        
     }
     
     
@@ -775,7 +822,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             if (!tokens.isEmpty() && tokens.get(0).equalsIgnoreCase("page")) {
                 tokens.remove(0);
                 
-                // check if it's something of the form: "1..5":
+                // check if it'definingStatement something of the form: "1..5":
                 if (!tokens.isEmpty()) {
                     String pageToken = tokens.get(0);
                     int idx = pageToken.indexOf("..");
@@ -1056,7 +1103,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             List<String> macroArguments = new ArrayList<>();
             List<String> macroTokens = new ArrayList<>();
 
-            // check if it's a define with parameters:
+            // check if it'definingStatement a define with parameters:
             if (!tokens.isEmpty() && tokens.get(0).equals("(")) {
                 // define with arguments:
                 tokens.remove(0);
@@ -1146,7 +1193,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
     public boolean parseFakeCPUOps(List<String> tokens, SourceLine sl, List<CodeStatement> l, CodeStatement previous, SourceFile source, CodeBase code) 
     {
         // This function only adds the additional instructions beyond the first one. So, it will leave in "tokens", the set of
-        // tokens necessary for MDL's regular parser to still parse the first op
+        // tokens necessary for MDL'definingStatement regular parser to still parse the first op
         CodeStatement s = l.get(0);
         
         if (tokens.size()>=4 && 
@@ -1272,8 +1319,8 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                 config.error("Argument to '::' could not be evaluated to an integer page in " + s.sl);
                 return null;
             }
-            Integer page = args.get(0).evaluateToInteger(s, code, silent);
-            if (page == null) {
+            Integer pageIdx = args.get(0).evaluateToInteger(s, code, silent);
+            if (pageIdx == null) {
                 config.error("Argument to '::' could not be evaluated to an integer page in " + s.sl);
                 return null;
             }
@@ -1297,11 +1344,20 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                 return null;
             }
             
-            Expression pageSize = Expression.parenthesisExpression(
-                    Expression.operatorExpression(Expression.EXPRESSION_SUB, 
-                            Expression.symbolExpression("__sjasm_page_"+page+output.ID+"_end", s, code, config), 
-                            Expression.symbolExpression("__sjasm_page_"+page+output.ID+"_start", s, code, config), config), "(", config);
-            return pageSize.evaluateToInteger(s, code, silent);
+            CodePage page = output.pages.get(pageIdx);
+            if (page == null) {
+                config.error("Page " + pageIdx + " is not defined!");
+                return null;
+            }
+            if (page.canUseLabelsToAssessSize(code)) {            
+                Expression pageSize = Expression.parenthesisExpression(
+                        Expression.operatorExpression(Expression.EXPRESSION_SUB, 
+                                Expression.symbolExpression("__sjasm_page_"+pageIdx+output.ID+"_end", s, code, config), 
+                                Expression.symbolExpression("__sjasm_page_"+pageIdx+output.ID+"_start", s, code, config), config), "(", config);
+                return pageSize.evaluateToInteger(s, code, silent);
+            } else {
+                return page.sizeWithoutFiller(code);
+            }
         }
         return null;
     }
@@ -1330,8 +1386,8 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                 config.error("Argument to '::' could not be evaluated to an integer page in " + s.sl);
                 return null;
             }
-            Integer page = args.get(0).evaluateToInteger(s, code, true);
-            if (page == null) {
+            Integer pageIdx = args.get(0).evaluateToInteger(s, code, true);
+            if (pageIdx == null) {
                 config.error("Argument to '::' could not be evaluated to an integer page in " + s.sl);
                 return null;
             }
@@ -1355,11 +1411,21 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                 return null;
             }
             
-            Expression pageSize = Expression.parenthesisExpression(
-                    Expression.operatorExpression(Expression.EXPRESSION_SUB, 
-                            Expression.symbolExpression("__sjasm_page_"+page+output.ID+"_end", s, code, config), 
-                            Expression.symbolExpression("__sjasm_page_"+page+output.ID+"_start", s, code, config), config), "(", config);
-            return pageSize;
+            CodePage page = output.pages.get(pageIdx);
+            if (page == null) {
+                config.error("Page " + pageIdx + " is not defined!");
+                return null;
+            }
+            
+            if (page.canUseLabelsToAssessSize(code)) {
+                Expression pageSize = Expression.parenthesisExpression(
+                        Expression.operatorExpression(Expression.EXPRESSION_SUB, 
+                                Expression.symbolExpression("__sjasm_page_"+pageIdx+output.ID+"_end", s, code, config), 
+                                Expression.symbolExpression("__sjasm_page_"+pageIdx+output.ID+"_start", s, code, config), config), "(", config);
+                return pageSize;
+            } else {
+                return null;
+            }
         }
         return null;
     }
@@ -1508,7 +1574,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
     
 
     @Override
-    public boolean performAnyFinalActions(CodeBase code)
+    public boolean postParseActions(CodeBase code)
     {
         if (reusableLabelCounts.size() > 0 && config.warning_ambiguous) {
             config.warn("Use of sjasm reusable labels, which are conductive to human error.");
@@ -1540,7 +1606,8 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             code.getSourceFiles().remove(defaultOutput.reconstructedFile);
             code.outputs.remove(0);
         }
-        return true;
+        
+        return postCodeModificationActions(code);
     }
         
         
@@ -1701,16 +1768,17 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                 
                 auxiliaryStatementsToRemoveIfGeneratingDialectasm.add(org);
             }
-            Integer pageStart = page.start.evaluateToInteger(page.s, code, true);
+            Integer pageStart = page.start.evaluateToInteger(page.definingStatement, code, true);
             if (pageStart == null) {
-                config.error("Cannot evaluate " + page.start + " in " + page.s.sl);
+                config.error("Cannot evaluate " + page.start + " in " + page.definingStatement.sl);
                 return false;
             }
-            Integer pageSize = (page.size == null ? null:page.size.evaluateToInteger(page.s, code, true));
+            Integer pageSize = (page.size == null ? null:page.size.evaluateToInteger(page.definingStatement, code, true));
             int currentAddress = pageStart;
 
             // Add page start labels to each page:
-            CodeStatement pageStartStatement = new CodeStatement(CodeStatement.STATEMENT_NONE, page.s.sl, output.reconstructedFile, config);
+            CodeStatement pageStartStatement = new CodeStatement(CodeStatement.STATEMENT_NONE, page.definingStatement.sl, output.reconstructedFile, config);
+            page.pageStartStatement = pageStartStatement;
             pageStartStatement.label = new SourceConstant("__sjasm_page_" + idx + output.ID+"_start", "__sjasm_page_" + idx + output.ID+"_start", 
                     Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, pageStartStatement, code, config), pageStartStatement, config);
             output.reconstructedFile.addStatement(pageStartStatement);
@@ -1737,9 +1805,19 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                 code.resetAddresses();
                 currentAddress = block.actualAddress + block.size(code);
             }
+
+            // Add page end labels to each page:                
+            page.pageEndStatement = new CodeStatement(CodeStatement.STATEMENT_NONE, page.definingStatement.sl, output.reconstructedFile, config);
+            page.pageEndStatement.label = new SourceConstant("__sjasm_page_" + idx + output.ID+"_end", "__sjasm_page_" + idx + output.ID+"_end", 
+                    Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, page.pageEndStatement, code, config), page.pageEndStatement, config);
+            output.reconstructedFile.addStatement(page.pageEndStatement);
+            code.addSymbol(page.pageEndStatement.label.name, page.pageEndStatement.label);
+            auxiliaryStatementsToRemoveIfGeneratingDialectasm.add(page.pageEndStatement);
+
             if (pageSize != null && currentAddress < pageStart + pageSize) {
                 // insert space:
                 CodeStatement space = new CodeStatement(CodeStatement.STATEMENT_DEFINE_SPACE, new SourceLine("", output.reconstructedFile, output.reconstructedFile.getStatements().size()+1), output.reconstructedFile, config);
+                page.fillerStatement = space;
                 space.space = Expression.operatorExpression(Expression.EXPRESSION_SUB,
                                 Expression.constantExpression(pageStart + pageSize, config),
                                 Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, space, code, config),
@@ -1751,14 +1829,6 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             } else {
                 pageSize = currentAddress - pageStart;
             }
-
-            // Add page end labels to each page:                
-            CodeStatement pageEndStatement = new CodeStatement(CodeStatement.STATEMENT_NONE, page.s.sl, output.reconstructedFile, config);
-            pageEndStatement.label = new SourceConstant("__sjasm_page_" + idx + output.ID+"_end", "__sjasm_page_" + idx + output.ID+"_end", 
-                    Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, pageEndStatement, code, config), pageEndStatement, config);
-            output.reconstructedFile.addStatement(pageEndStatement);
-            code.addSymbol(pageEndStatement.label.name, pageEndStatement.label);
-            auxiliaryStatementsToRemoveIfGeneratingDialectasm.add(pageEndStatement);
 
             config.debug("page " + idx + " from " + pageStart + " to " + (pageStart+pageSize));
         }
@@ -1780,70 +1850,83 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
 
     public void resolveEnhancedJumps(CodeBase code, SJasmOutput output)
     {
-        // resolve enhanced jumps:
-        for(CodeStatement s:enhancedJrList) {
-            SJasmCodeBlock b1 = findCodeBlock(s, output);
-            SJasmCodeBlock b2 = null;
-            if (s.op != null && !s.op.args.isEmpty()) {
-                Expression label = s.op.args.get(s.op.args.size()-1);
-                if (label.type == Expression.EXPRESSION_SYMBOL) {
-                    SourceConstant c = code.getSymbol(label.symbolName);
-                    if (c != null) {
-                        b2 = findCodeBlock(c.definingStatement, output);
-                    } else {
-                    }
-                } else {
-                }
-                // only consider jumps within the same block:
-                if (b1 == b2) {
-                    Integer address = s.getAddress(code);
-                    Integer targetAddress = label.evaluateToInteger(null, code, true);
-                    if (address != null && targetAddress != null) {
-                        int diff = targetAddress - address;
-                        if (diff >= -126 && diff <= 130) {
-                            // change to jr!:
-                            List<CPUOp> l = config.opParser.parseOp("jr", s.op.args, s, 
-                                    s.source.getPreviousStatementTo(s, code), code);
-                            if (l != null && l.size() == 1) {
-                                s.op = l.get(0);
-                                code.resetAddresses();
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        for(CodeStatement s:enhancedDjnzList) {
-            SJasmCodeBlock b1 = findCodeBlock(s, output);
-            SJasmCodeBlock b2 = null;
-            if (s.op != null && !s.op.args.isEmpty()) {
-                CodeStatement previous = s.source.getPreviousStatementTo(s, code);
-                if (previous.source == s.source && 
-                        previous.op != null && 
-                        previous.op.spec.getName().equalsIgnoreCase("dec")) {
+        // resolve enhanced jumps (each time we resolve one, we might have to check all of them again, as changing one from jp->jr
+        // might allow others to be changed as well that were previously not changed):
+        boolean repeat = true;
+        while(repeat) {
+            repeat = false;
+            for(CodeStatement s:enhancedJrList) {
+                // check if we have already changed it:
+                if (s.op.spec.getName().equalsIgnoreCase("jr")) continue;
+                SJasmCodeBlock b1 = findCodeBlock(s, output);
+                SJasmCodeBlock b2 = null;
+                if (s.op != null && !s.op.args.isEmpty()) {
                     Expression label = s.op.args.get(s.op.args.size()-1);
                     if (label.type == Expression.EXPRESSION_SYMBOL) {
                         SourceConstant c = code.getSymbol(label.symbolName);
                         if (c != null) {
                             b2 = findCodeBlock(c.definingStatement, output);
+                        } else {
                         }
+                    } else {
                     }
                     // only consider jumps within the same block:
-                    if (b1 == b2) {                    
-                        Integer address = s.getAddress(code);
+                    if (b1 == b2) {
+                        code.resetAddresses();
+                        b1.resetAddresses();
+                        Integer address = s.getAddressAfter(code);
                         Integer targetAddress = label.evaluateToInteger(null, code, true);
                         if (address != null && targetAddress != null) {
                             int diff = targetAddress - address;
-                            if (diff >= -126 && diff <= 130) {
-                                // change to djnz!:
-                                List<Expression> args = new ArrayList<>();
-                                args.add(label);
-                                List<CPUOp> l = config.opParser.parseOp("djnz", args, s, previous, code);
+                            if (CPUOp.offsetWithinJrRange(diff)) {
+                                // change to jr!:
+                                List<CPUOp> l = config.opParser.parseOp("jr", s.op.args, s, 
+                                        s.source.getPreviousStatementTo(s, code), code);
                                 if (l != null && l.size() == 1) {
-                                    previous.source.getStatements().remove(previous);
-                                    b1.statements.remove(previous);
                                     s.op = l.get(0);
-                                    code.resetAddresses();
+                                    repeat = true;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            for(CodeStatement s:enhancedDjnzList) {
+                // check if we have already changed it:
+                if (s.op.spec.getName().equalsIgnoreCase("djnz")) continue;
+                SJasmCodeBlock b1 = findCodeBlock(s, output);
+                SJasmCodeBlock b2 = null;
+                if (s.op != null && !s.op.args.isEmpty()) {
+                    CodeStatement previous = s.source.getPreviousStatementTo(s, code);
+                    if (previous.source == s.source && 
+                            previous.op != null && 
+                            previous.op.spec.getName().equalsIgnoreCase("dec")) {
+                        Expression label = s.op.args.get(s.op.args.size()-1);
+                        if (label.type == Expression.EXPRESSION_SYMBOL) {
+                            SourceConstant c = code.getSymbol(label.symbolName);
+                            if (c != null) {
+                                b2 = findCodeBlock(c.definingStatement, output);
+                            }
+                        }
+                        // only consider jumps within the same block:
+                        if (b1 == b2) {
+                            code.resetAddresses();
+                            b1.resetAddresses();
+                            Integer address = s.getAddressAfter(code);
+                            Integer targetAddress = label.evaluateToInteger(null, code, true);
+                            if (address != null && targetAddress != null) {
+                                int diff = targetAddress - address;
+                                if (CPUOp.offsetWithinJrRange(diff)) {
+                                    // change to djnz!:
+                                    List<Expression> args = new ArrayList<>();
+                                    args.add(label);
+                                    List<CPUOp> l = config.opParser.parseOp("djnz", args, s, previous, code);
+                                    if (l != null && l.size() == 1) {
+                                        previous.source.getStatements().remove(previous);
+                                        b1.statements.remove(previous);
+                                        s.op = l.get(0);
+                                        repeat = true;
+                                    }
                                 }
                             }
                         }
@@ -1853,6 +1936,9 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
         }
         
         code.resetAddresses();
+        for(SJasmCodeBlock b: output.codeBlocks) {
+            b.resetAddresses();
+        }
     }
     
     
@@ -1998,4 +2084,58 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
         return true;
     }    
     
+    
+    @Override
+    public boolean postCodeModificationActions(CodeBase code) {
+        for(SJasmOutput output:outputFiles) {
+            for(Integer pageIdx:output.pages.keySet()) {
+                CodePage page = output.pages.get(pageIdx);
+                // if the page has no target size, ignore:
+                if (page.size == null) continue;
+
+                CodeStatement pageStart = page.pageStartStatement;
+                CodeStatement pageEnd = page.pageEndStatement;                
+                Integer desiredPageSize = page.size.evaluateToInteger(null, code, true);
+                    if (desiredPageSize == null) {
+                        config.error("Cannot assess page "+pageIdx+" size!");
+                        return false;
+                    }
+                Integer pageSize = page.sizeWithoutFiller(code);
+                
+                if (pageSize < desiredPageSize) {
+                    // adjust space:
+                    if (page.fillerStatement != null) {
+                        page.fillerStatement.space = Expression.constantExpression(desiredPageSize - pageSize, config);
+                    } else {
+                        // create a filler statement:
+                        CodeStatement space = new CodeStatement(CodeStatement.STATEMENT_DEFINE_SPACE, new SourceLine("", output.reconstructedFile, output.reconstructedFile.getStatements().size()+1), output.reconstructedFile, config);
+                        page.fillerStatement = space;
+                        space.space = Expression.constantExpression(desiredPageSize - pageSize, config);
+                        space.space_value = Expression.constantExpression(0, config);
+                        output.reconstructedFile.addStatement(output.reconstructedFile.getStatements().indexOf(page.pageEndStatement)+1, space);
+                        auxiliaryStatementsToRemoveIfGeneratingDialectasm.add(space);
+                        config.debug("inserting space (end of page) of " + (desiredPageSize - pageSize));
+                    }
+                } else if (pageSize > desiredPageSize) {
+                    if (page.fillerStatement != null) {
+                        Integer space = page.fillerStatement.space.evaluateToInteger(page.fillerStatement, code, true);
+                        if (space == null) {
+                            config.error("Cannot evaluate " + page.fillerStatement.space + " to an integer value! (expression inserted by MDL to fill up space in page " + pageIdx + ")");
+                            return false;
+                        }
+                        if (pageSize - space <= desiredPageSize) {
+                            page.fillerStatement.space = Expression.constantExpression(desiredPageSize - (pageSize - space), config);
+                        } else {
+                            // at least remove the extra space, but still display overflow message:
+                            page.fillerStatement.space = Expression.constantExpression(0, config);
+                            config.warn("Page "+pageIdx+" overflows its desired size of " + desiredPageSize + " (currently has size " + (pageSize-space) + ").");
+                        }
+                    } else {
+                        config.warn("Page "+pageIdx+" overflows its desired size of " + desiredPageSize + " (currently has size " + pageSize + ").");
+                    }                    
+                }
+            }
+        }
+        return true;
+    }    
 }

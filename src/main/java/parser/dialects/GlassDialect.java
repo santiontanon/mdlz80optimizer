@@ -296,7 +296,7 @@ public class GlassDialect implements Dialect {
     
     
     @Override
-    public boolean performAnyFinalActions(CodeBase code)
+    public boolean postParseActions(CodeBase code)
     {                        
         // Resolve sections:
         // Find the corresponding "ds" for each section:

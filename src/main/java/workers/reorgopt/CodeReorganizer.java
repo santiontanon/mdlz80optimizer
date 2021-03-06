@@ -152,6 +152,7 @@ public class CodeReorganizer implements MDLWorker {
 
         config.optimizerStats.addSavings(savings);
         
+        if (config.dialectParser != null) return config.dialectParser.postCodeModificationActions(code);
         return true;
     }
 
