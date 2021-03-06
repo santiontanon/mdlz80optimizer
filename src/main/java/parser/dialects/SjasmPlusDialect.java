@@ -83,6 +83,9 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
         config.preProcessor.macroSynonyms.put("edup", config.preProcessor.MACRO_ENDR);
         
         // It is important that registers on the left-hand-side are capitalized (the right hand side does not matter):
+        // Notice that these are similar, but not exactly identical than the definitions of sjasm. Hence, they are
+        // separated. For example, "ld ix,bc", in sjasm expands to "ld ixl,c\nld ixh,b" but in sjasm expands to 
+        // "ld ixh,b\nld ixl,c". There are about 10 instructions that differ like this.
         addFakeInstruction("RL BC", "rl c\nrl b");
         addFakeInstruction("RL DE", "rl e\nrl d");
         addFakeInstruction("RL HL", "rl l\nrl h");

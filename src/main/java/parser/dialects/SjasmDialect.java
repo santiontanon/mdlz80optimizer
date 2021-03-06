@@ -306,7 +306,12 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
         config.preProcessor.dialectIfs.add("ifdif");
         config.preProcessor.dialectIfs.add("ifdifi");
         
+        // - Notice 1: these fake instructions were removed from sjasm after it transitioned to version 0.4
+        // I include them here just for compatibility with projects that were designed for older versions of sjasm
         // It is important that registers on the left-hand-side are capitalized (the right hand side does not matter):
+        // - Notice 2: these are similar, but not exactly identical than the definitions of sjasmplus. Hence, they are
+        // separated. For example, "ld ix,bc", in sjasm expands to "ld ixl,c\nld ixh,b" but in sjasm expands to 
+        // "ld ixh,b\nld ixl,c". There are about 10 instructions that differ like this.        
         addFakeInstruction("RL BC", "rl c\nrl b");
         addFakeInstruction("RL DE", "rl e\nrl d");
         addFakeInstruction("RL HL", "rl l\nrl h");
@@ -354,7 +359,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
         addFakeInstruction("LD IY,DE", "ld iyl,e\nld iyh,d");
         addFakeInstruction("LD IY,HL", "push hl\npop iy");
         addFakeInstruction("LD IY,IX", "push ix\npop iy");
-        addFakeInstruction("LD IY,IY", "ld iyh,iyh\nld iyl,iyl");
+        addFakeInstruction("LD IY,IY", "ld iyl,iyl\nld iyh,iyh");
         addFakeInstruction("LD (HL),BC", "ld (hl),c\ninc hl\nld (hl),b\ndec hl");
         addFakeInstruction("LD (HL),DE", "ld (hl),e\ninc hl\nld (hl),d\ndec hl");
         addFakeInstruction("LDI BC,(HL)", "ld c,(hl)\ninc hl\nld b,(hl)\ninc hl");
