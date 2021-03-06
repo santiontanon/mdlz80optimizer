@@ -17,9 +17,9 @@ public class MDLLogger {
     public static final int SILENT = 5;
     
     // colors:
-    public static final String ANSI_RESET = "\u001B[0m";
-    public static final String ANSI_RED = "\u001B[31m";
-    public static final String ANSI_YELLOW = "\u001B[33m";
+    public static String ANSI_RESET = "\u001B[0m";
+    public static String ANSI_RED = "\u001B[31m";
+    public static String ANSI_YELLOW = "\u001B[33m";
 
     List<Integer> minLevelToLogStack = new ArrayList<>();
     int minLevelToLog = INFO;
@@ -40,6 +40,20 @@ public class MDLLogger {
     public void setMinLevelToLog(int a_minLevelToLog)
     {
         minLevelToLog = a_minLevelToLog;
+    }
+    
+    
+    public void useColors(boolean val) 
+    {
+        if (val) {
+            ANSI_RESET = "\u001B[0m";
+            ANSI_RED = "\u001B[31m";
+            ANSI_YELLOW = "\u001B[33m";
+        } else {
+            ANSI_RESET = "";
+            ANSI_RED = "";
+            ANSI_YELLOW = "";
+        }
     }
  
     

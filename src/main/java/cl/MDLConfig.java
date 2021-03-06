@@ -115,12 +115,15 @@ public class MDLConfig {
             + "```java -jar mdl.jar <input assembler file> [options/tasks]```\n"
             + "\n"
             + "Tasks will be executed in the order in which they are specified in the commandline, and using all the flag specified previously. Tasks can be repeated many times in the same command line.\n"
+            + "- ```-help```: to show this information (this is the only flag that can be used without specifying an input file).\n"
             + "- ```-cpu <type>```: to select a different CPU (z80/z80msx/z80cpc) (default: z80msx).\n"
             + "- ```-dialect <dialect>```: to allow parsing different assembler dialects "
                     + "(" + StringUtils.join(Dialects.knownDialects(), '/') + ") "
                     + "(default: mdl, which supports some basic code idioms common to various assemblers).\n"
             + "                   Note that even when selecting a dialect, not all syntax of a given assembler might be supported.\n"
             + "- ```-I <folder>```: adds a folder to the include search path.\n"
+            + "- ```-ansion```: turns on color message output usin ANSI codes (default: on in Unix, off in Windows).\n"
+            + "- ```-ansioff```: turns off color message output usin ANSI codes.\n"
             + "- ```-quiet```: turns off info messages; only outputs warnings and errors.\n"
             + "- ```-debug```: turns on debug messages.\n"
             + "- ```-trace```: turns on trace messages.\n"
@@ -159,13 +162,21 @@ public class MDLConfig {
             + "Command Line Arguments:\n"
             + "```java -jar mdl.jar <input assembler file> [options/tasks]```\n"
             + "\n"
-            + "- ```-help```: for more help (just type ```java -jar mdl.jar -help```).\n"
+            + "- ```-help```: for an exhaustive list of flags (just type ```java -jar mdl.jar -help```).\n"
             + "- ```-dialect <dialect>```: selects which assembler dialect to use "
                     + "(" + StringUtils.join(Dialects.knownDialects(), '/') + ").\n";
     
     
     public MDLConfig() {
         logger = new MDLLogger(MDLLogger.INFO);
+        // Detect if we are on a unix system and activate color ANSI codes (which
+        // are not supported by default on Windows):
+        if (System.console() != null && System.getenv().get("TERM") != null) {
+            // use colors by default only on Unix (otherwi
+            logger.useColors(true);
+        } else {
+            logger.useColors(false);
+        }
         
         // ignore all the platform specific patterns, by default:
         ignorePatternsWithTags.add(CPC_TAG);
@@ -288,6 +299,16 @@ public class MDLConfig {
                         }
                         break;
 
+                    case "-ansion":
+                        logger.useColors(true);
+                        args.remove(0);
+                        break;
+
+                    case "-ansioff":
+                        logger.useColors(false);
+                        args.remove(0);
+                        break;
+                        
                     case "-quiet":
                         logger.minLevelToLog = MDLLogger.WARNING;
                         args.remove(0);
