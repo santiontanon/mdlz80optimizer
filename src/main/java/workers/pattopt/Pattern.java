@@ -341,14 +341,14 @@ public class Pattern {
 
     public boolean opMatch(CPUOpPattern pat1, CPUOp op2, CodeStatement s, CodeBase code, PatternMatch match)
     {
+        if (pat1.args.size() != op2.args.size()) return false;
         if (pat1.opName.startsWith("?op")) {
-            if (!match.addVariableMatch(pat1.opName, Expression.symbolExpressionInternal(op2.spec.opName, s, code, false, config))) {
+            if (!match.addVariableMatch(pat1.opName, op2.spec.opNameExp)) {
                 return false;
             }
         } else {
             if (!pat1.opName.equals(op2.spec.opName)) return false;
         }
-        if (pat1.args.size() != op2.args.size()) return false;
 
         for(int i = 0;i<pat1.args.size();i++) {
             Expression arg1 = pat1.args.get(i);
@@ -1120,7 +1120,8 @@ public class Pattern {
                         // add:
                         l.add(undo.get(i).getLeft(), undo.get(i).getRight());
                     }
-                } while(equalitiesToMaintain.size() > previousLength) equalitiesToMaintain.remove(equalitiesToMaintain.size()-1);
+                }
+                while(equalitiesToMaintain.size() > previousLength) equalitiesToMaintain.remove(equalitiesToMaintain.size()-1);
                 config.debug("Optimization undone, as it was breaking the equality constraint: " + eq.exp1 + " == " + eq.exp2);
                 code.resetAddresses();
                 return false;
@@ -1349,5 +1350,17 @@ public class Pattern {
         }
         
         return true;
+    }
+    
+    
+    public boolean hasPotentialEqualityConstraints()
+    {
+        for(Constraint c:constraints) {
+            if (c.name.equals("equal") ||
+                c.name.equals("notEqual")) {
+                return true;
+            }
+        }
+        return false;
     }
 }

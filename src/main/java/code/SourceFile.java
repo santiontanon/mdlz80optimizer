@@ -176,18 +176,16 @@ public class SourceFile {
                         // not all next statements can be determined:
                         return null;
                     }
-                }
-                CodeStatement jumpTargetStatement = null;
-                if (label != null && label.isLabel()) {
-                    jumpTargetStatement = label.definingStatement;
-                } else if (label != null) {
-                    // not all next statements can be determined:
-                    return null;
-                }
+                    CodeStatement jumpTargetStatement = null;
+                    if (label.isLabel()) {
+                        jumpTargetStatement = label.definingStatement;
+                    } else {
+                        // not all next statements can be determined:
+                        return null;
+                    }
 
-                if (jumpTargetStatement != null) {
                     // get target CodeStatement:
-                        List<Pair<CodeStatement, List<CodeStatement>>> next;
+                    List<Pair<CodeStatement, List<CodeStatement>>> next;
                     if (s.op.isConditional()) {
                         next = immediatelyNextExecutionStatements(index, callStack, code);
                     } else {

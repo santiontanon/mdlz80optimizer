@@ -11,6 +11,7 @@ import java.util.List;
 public class CPUOpSpec {
     MDLConfig config;
     public String opName;
+    public Expression opNameExp;
     public List<CPUOpSpecArg> args = new ArrayList<>();
     int sizeInBytes;
     int times[];
@@ -33,6 +34,7 @@ public class CPUOpSpec {
     public CPUOpSpec(String a_opName, int a_size, int a_times[], String a_byteRepresentation, boolean a_official, MDLConfig a_config)
     {
         opName = a_opName;
+        opNameExp = Expression.symbolExpressionInternal2(opName, a_config);
         sizeInBytes = a_size;
         times = a_times;
         byteRepresentationRaw = a_byteRepresentation;

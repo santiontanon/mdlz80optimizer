@@ -1347,6 +1347,14 @@ public class Expression {
             return exp;
         }
     }
+    
+    
+    public static Expression symbolExpressionInternal2(String symbol, MDLConfig config) {
+        Expression exp = new Expression(EXPRESSION_SYMBOL, config);
+        exp.symbolName = symbol;
+        return exp;
+    }
+    
 
     public static Expression signChangeExpression(Expression arg, MDLConfig config) {
         Expression exp = new Expression(EXPRESSION_SIGN_CHANGE, config);

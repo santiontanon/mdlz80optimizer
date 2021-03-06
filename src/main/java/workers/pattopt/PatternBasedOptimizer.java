@@ -281,6 +281,9 @@ public class PatternBasedOptimizer implements MDLWorker {
         // we only print potential optimizations in the last pass:
         if (!lastPass) alreadyShownAPotentialOptimization = true;
         for(Pattern patt: patterns) {
+            // in the last pass, we only consider patterns that could lead to an equality constraint:
+//            if (lastPass && !patt.hasPotentialEqualityConstraints()) continue;
+            
             PatternMatch match = patt.match(i, f, code, this);
             if (match != null &&
                 preventLabelDependentOptimizations &&
