@@ -21,7 +21,7 @@ label2:
 	inc l
 	inc l
 	inc l
-	ld (hl),0
+	ld (hl),1
 
 	dec iy	; this sequence of inc iy should be optimized 
 	dec iy	; and two patterns should actually match:

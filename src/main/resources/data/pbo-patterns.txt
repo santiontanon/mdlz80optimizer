@@ -1447,3 +1447,41 @@ replacement:
 0: cp (hl)
 constraints:
 regsNotUsedAfter(2,?reg,A)
+
+pattern: Replace inc a;dec a with or a
+0: inc a
+1: dec a
+replacement:
+0: or a
+constraints:
+flagsNotUsedAfter(0,C)
+
+pattern: Replace sub ?const1 with dec a
+0: sub ?const1
+replacement:
+0: dec a
+constraints:
+equal(?const1, 1)
+flagsNotUsedAfter(0,C)
+
+pattern: Replace ld (?any1),0;...;ld (?any2),0 with xor a;ld (?any1),a;...;ld (?any2),0
+0: ld (?any1),0
+2: *
+3: ld (?any2),0
+replacement:
+1: xor a
+0: ld (?any1),a
+2: *
+3: ld (?any2),a
+constraints:
+regsNotUsed(2,A)
+regsNotUsedAfter(3,A)
+flagsNotUsedAfter(0,S,Z,H,P/V,N,C)
+
+pattern: Replace cpl; cp ?const with cp ~(?const)
+0: cpl
+1: cp ?const
+replacement:
+1: cp ~(?const)
+constraints:
+regsNotUsedAfter(1,A)

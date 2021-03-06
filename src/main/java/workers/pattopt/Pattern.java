@@ -938,12 +938,14 @@ public class Pattern {
         List<Pair<Integer, CodeStatement>> undo = new ArrayList<>();
         
         List<CodeStatement> l = f.getStatements();
-        List<Integer> replacementIndexes = new ArrayList<>();
+        List<Integer> replacementIDs = new ArrayList<>();
         int insertionPoint = -1;
+        CPUOpPattern lastReplacementInserted = null;
+        HashMap<CPUOpPattern, Integer> replacementInsertionPoints = new HashMap<>();
         CodeStatement lastRemoved = null;
                 
         for(CPUOpPattern p:replacement) {
-            replacementIndexes.add(p.ID);
+            replacementIDs.add(p.ID);
         }
         for(int i = 0;i<pattern.size();i++) {
             int key = pattern.get(i).ID;
@@ -952,7 +954,7 @@ public class Pattern {
                 boolean found = false;
                 for(int j = 0;j<replacement.size();j++) {
                     if (replacement.get(j).ID == pattern.get(i).ID) {
-                        replacementIndexes.remove((Integer)replacement.get(j).ID);
+                        replacementIDs.remove((Integer)replacement.get(j).ID);
                         if (!replacement.get(j).isWildcard()) {
                             config.error("Replacing instructions matched with a wildcard is not yet supported!");
                             return false;
@@ -991,7 +993,7 @@ public class Pattern {
                 boolean replaced = false;
                 for(int j = 0;j<replacement.size();j++) {
                     if (replacement.get(j).ID == pattern.get(i).ID) {
-                        replacementIndexes.remove((Integer)replacement.get(j).ID);
+                        replacementIDs.remove((Integer)replacement.get(j).ID);
                         CodeStatement s = new CodeStatement(CodeStatement.STATEMENT_CPUOP, lastRemoved.sl, lastRemoved.source, config);
                         // if the original statement had a label, we need to keep it!
                         if (removedLabel != null) {
@@ -1006,10 +1008,12 @@ public class Pattern {
                             return false;
                         }
                         if (replacement.get(j).repetitionVariable == null) {
+                            replacementInsertionPoints.put(replacement.get(j), insertionPoint);
                             l.add(insertionPoint, s);
                             match.added.add(s);
                             insertionPoint++;
                             replaced = true;
+                            lastReplacementInserted = replacement.get(j);
                             undo.add(Pair.of(null, s));
                             break;
                         } else {
@@ -1020,10 +1024,12 @@ public class Pattern {
                                 return false;
                             }
                             for(int k = 0;k<repetitions;k++) {
+                                replacementInsertionPoints.put(replacement.get(j), insertionPoint);
                                 l.add(insertionPoint, s);
                                 match.added.add(s);
                                 insertionPoint++;
                                 replaced = true;
+                                lastReplacementInserted = replacement.get(j);
                                 undo.add(Pair.of(null, s));
                                 
                                 // new statement for the next iteration (notice we will create one too many, but it's fine):
@@ -1047,24 +1053,51 @@ public class Pattern {
             }
         }
         // add the missing replacements:
-        for(int idx:replacementIndexes) {
-            if (insertionPoint == -1) {
-                config.error("Could not determine the insertion point in an additional replacement for: " + replacement.get(idx));
+        for(int ID:replacementIDs) {
+            CPUOpPattern r = null;
+            int rInsertionPoint = -1;
+            for(CPUOpPattern r2:replacement) {
+                if (r2.ID == ID) {
+                    r = r2;
+                    break;
+                }
+            }
+            if (r == null) {
+                config.error("Could not find replacement pattern with ID " + ID);
+                return false;
+            }
+            
+            // find the insertion point:
+            int lastIdx = replacement.indexOf(lastReplacementInserted);
+            int idx = replacement.indexOf(r);
+            if (lastIdx == -1 || idx == lastIdx + 1) {
+                rInsertionPoint = insertionPoint;
+            } else if (idx + 1 < replacement.size()) {
+                rInsertionPoint = replacementInsertionPoints.get(replacement.get(idx+1));
+            } else {
+                config.error("Could not determine the insertion point in an additional replacement for: " + r);
+                return false;
+            }
+            
+            if (rInsertionPoint == -1) {
+                config.error("Could not determine the insertion point in an additional replacement for: " + r);
                 return false;
             }
             if (lastRemoved == null) {
-                config.error("Could not determine the source for an additional replacement for: " + replacement.get(idx));
+                config.error("Could not determine the source for an additional replacement for: " + r);
                 return false;
             }
             CodeStatement s = new CodeStatement(CodeStatement.STATEMENT_CPUOP, lastRemoved.sl, lastRemoved.source, config);
-            s.op = new CPUOp(replacement.get(idx).instantiate(match, this, config));
+            s.op = new CPUOp(r.instantiate(match, this, config));
             if (s.op == null) {
-                config.error("The replacement was: " + replacement.get(idx));
+                config.error("The replacement was: " + r);
                 return false;
             }
-            l.add(insertionPoint, s);
+            l.add(rInsertionPoint, s);
             match.added.add(s);
-            insertionPoint++;
+            rInsertionPoint++;
+            insertionPoint = rInsertionPoint;
+            lastReplacementInserted = r;
             undo.add(Pair.of(null, s));
         }
         
