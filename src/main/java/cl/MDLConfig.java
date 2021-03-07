@@ -72,6 +72,7 @@ public class MDLConfig {
     public boolean evaluateAllExpressions = false;
     public boolean evaluateDialectFunctions = true;
     public boolean caseSensitiveSymbols = true;
+    public boolean convertSymbolstoUpperCase = false;
 
     // Two variables, as if they are both false, no conversion is done
     public boolean output_opsInLowerCase = true;

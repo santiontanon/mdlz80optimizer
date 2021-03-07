@@ -15,6 +15,7 @@ import code.SourceFile;
 import code.CodeStatement;
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.io.IOException;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import util.Resources;
@@ -36,6 +37,8 @@ public class PatternBasedOptimizer implements MDLWorker {
     public boolean preventLabelDependentOptimizations = false;
     
     MDLConfig config;
+    MDLConfig patternsConfig;   // we have a separate configuration, as the assembler used to define the patterns
+                                // might be different form the current dialect.
     boolean trigger = false;
     boolean silent = false;
     int nPasses = 2;
@@ -55,6 +58,13 @@ public class PatternBasedOptimizer implements MDLWorker {
     public PatternBasedOptimizer(MDLConfig a_config)
     {
         config = a_config;
+        patternsConfig = new MDLConfig();
+        try {
+            patternsConfig.parseArgs("dummy", "-dialect", "mdl");
+        } catch(IOException e) {
+            config.error("Problem initializing the PatternBasedOptimizer!");
+        }
+        patternsConfig.logger = config.logger;
     }
 
 
@@ -185,13 +195,17 @@ public class PatternBasedOptimizer implements MDLWorker {
     void loadPatterns(String fileName) 
     {
         config.debug("Loading patterns from " + fileName);
+        
+        // Since different dialects have different syntax, we replace the tokenizer temporarily to parse the
+        // optimization patterns, which use standard syntax:
+        
         try (BufferedReader br = Resources.asReader(fileName)) {
             String patternString = "";
             while(true) {
                 String line = br.readLine();
                 if (line == null) {
                     if (!patternString.equals("")) {
-                        Pattern p = new Pattern(patternString, config);
+                        Pattern p = new Pattern(patternString, patternsConfig);
                         if ((p.name == null || getPattern(p.name) == null) && tagCheck(p)) {
                             // do not load the same pattern twice (some are repeated in some files for convenience):
                             patterns.add(p);
@@ -205,7 +219,7 @@ public class PatternBasedOptimizer implements MDLWorker {
 
                 if (line.equals("")) {
                     if (!patternString.equals("")) {
-                        Pattern p = new Pattern(patternString, config);
+                        Pattern p = new Pattern(patternString, patternsConfig);
                         if ((p.name == null || getPattern(p.name) == null) && tagCheck(p)) {
                             // do not load the same pattern twice (some are repeated in some files for convenience):
                             patterns.add(p);
@@ -234,7 +248,7 @@ public class PatternBasedOptimizer implements MDLWorker {
                 }
             }
         } catch (Exception e) {
-            config.error("PatternBasedOptimizer: error initializing patterns! " + e);
+            config.error("PatternBasedOptimizer: error initializing patterns!");
         }
     }
 

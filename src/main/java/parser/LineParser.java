@@ -26,15 +26,15 @@ public class LineParser {
     public static final int MACRO_BOTH = 3;
     
     // Standard versions, to be used for generating standard assembler:
-    public String KEYWORD_STD_ORG = "org";
-    public String KEYWORD_STD_INCLUDE = "include";
-    public String KEYWORD_STD_INCBIN = "incbin";
-    public String KEYWORD_STD_EQU = "equ";
-    public String KEYWORD_STD_DB = "db";
-    public String KEYWORD_STD_DW = "dw";
-    public String KEYWORD_STD_DD = "dd";
-    public String KEYWORD_STD_DS = "ds";
-    public String KEYWORD_STD_COLON = ":";
+    public final String KEYWORD_STD_ORG = "org";
+    public final String KEYWORD_STD_INCLUDE = "include";
+    public final String KEYWORD_STD_INCBIN = "incbin";
+    public final String KEYWORD_STD_EQU = "equ";
+    public final String KEYWORD_STD_DB = "db";
+    public final String KEYWORD_STD_DW = "dw";
+    public final String KEYWORD_STD_DD = "dd";
+    public final String KEYWORD_STD_DS = "ds";
+    public final String KEYWORD_STD_COLON = ":";
 
     // Dialect specific versions that will be used for parsing, or for generatinc dialect assembler:
     public String KEYWORD_ORG = "org";
@@ -48,6 +48,7 @@ public class LineParser {
     public String KEYWORD_COLON = ":";
     HashMap<String, String> keywordSynonyms = new HashMap<>();
     public List<String> keywordsHintingALabel = new ArrayList<>();
+    public List<String> keywordsHintingANonScopedLabel = new ArrayList<>();
     public List<String> macroArguentPrefixes = new ArrayList<>();
     
     // If a label is defined with any of these names, it will be renamed to "__mdlrenamed__"+symbol:
@@ -95,6 +96,8 @@ public class LineParser {
         keywordsHintingALabel.add(KEYWORD_DB);
         keywordsHintingALabel.add(KEYWORD_DW);
         keywordsHintingALabel.add(KEYWORD_DD);        
+
+        keywordsHintingANonScopedLabel.clear();
     }
     
 
@@ -298,7 +301,7 @@ public class LineParser {
                     + sl.fileNameLineString());
             return false;
 
-        } else if (config.dialectParser != null && config.dialectParser.recognizeIdiom(tokens)) {
+        } else if (config.dialectParser != null && config.dialectParser.recognizeIdiom(tokens, s.label, code)) {
             // this one might return one or more statements:
             return config.dialectParser.parseLine(tokens, l, sl, s, previous, source, code);
         } else if (config.tokenizer.isSymbol(token)) {
@@ -349,6 +352,7 @@ public class LineParser {
                                                         // since in some dialects, it does matter
 
                 if (!config.caseSensitiveSymbols) token = token.toLowerCase();
+                if (config.convertSymbolstoUpperCase) token = token.toUpperCase();
                 SourceConstant c = newSourceConstant(token, exp, s, previous);
                 if (c == null) {
                     config.error("Problem defining symbol " + labelPrefix + token + " in " + sl);
@@ -368,6 +372,7 @@ public class LineParser {
                                                         // since in some dialects, it does matter
 
                 if (!config.caseSensitiveSymbols) token = token.toLowerCase();
+                if (config.convertSymbolstoUpperCase) token = token.toUpperCase();
                 SourceConstant c = newSourceConstant(token, exp, s, previous);
                 if (c == null) {
                     config.error("Problem defining symbol " + labelPrefix + token + " in " + sl);
@@ -388,7 +393,7 @@ public class LineParser {
                 if (!config.opParser.getOpSpecs(tokens.get(0)).isEmpty()) return true;
                 
                 if (config.dialectParser != null &&
-                    config.dialectParser.recognizeIdiom(tokens)) return true;
+                    config.dialectParser.recognizeIdiom(tokens, s.label, code)) return true;
                 
                 // it is just a label without colon:
                 if (config.warning_labelWithoutColon) {
@@ -399,6 +404,7 @@ public class LineParser {
                 tokens.remove(0);
 
                 if (!config.caseSensitiveSymbols) token = token.toLowerCase();
+                if (config.convertSymbolstoUpperCase) token = token.toUpperCase();
                 SourceConstant c = newSourceConstant(token, exp, s, previous);
                 if (c == null) {
                     config.error("Problem defining symbol " + labelPrefix + token + " in " + sl);
@@ -414,9 +420,10 @@ public class LineParser {
                 return parseRestofTheLine(tokens, l, sl, s, previous, source, code);
             } else if (tokens.size() >= 2) {
                 boolean isLabel = false;
+                boolean scope = true;
                 if (sl.line.startsWith(token)) isLabel = true;
                 if (config.dialectParser != null && isLabel) {
-                    if (config.dialectParser.recognizeIdiom(tokens)) isLabel = false;
+                    if (config.dialectParser.recognizeIdiom(tokens, s.label, code)) isLabel = false;
                 }
                 if (isLabel) {
                     if (!config.opParser.getOpSpecs(tokens.get(0)).isEmpty()) isLabel = false;
@@ -424,6 +431,13 @@ public class LineParser {
                 for (String keyword : keywordsHintingALabel) {
                     if (isKeyword(tokens.get(1), keyword)) {
                         isLabel = true;
+                        break;
+                    }
+                }
+                for (String keyword : keywordsHintingANonScopedLabel) {
+                    if (isKeyword(tokens.get(1), keyword)) {
+                        isLabel = true;
+                        scope = false;
                         break;
                     }
                 }
@@ -435,10 +449,14 @@ public class LineParser {
                     }
                     tokens.remove(0);
                     if (!config.caseSensitiveSymbols) token = token.toLowerCase();
+                    if (config.convertSymbolstoUpperCase) token = token.toUpperCase();
                     SourceConstant c = newSourceConstant(token, null, s, previous);
                     if (c == null) {
                         config.error("Problem defining symbol " + labelPrefix + token + " in " + sl);
                         return false;
+                    }
+                    if (!scope) {
+                        c.name = c.originalName;
                     }
                     s.type = CodeStatement.STATEMENT_NONE;
                     s.label = c;
@@ -716,6 +734,7 @@ public class LineParser {
             CodeStatement s, CodeStatement previous, SourceFile source, CodeBase code) {
         List<Expression> data = new ArrayList<>();
         boolean done = false;
+
         if (allowEmptyDB_DW_DD_definitions) {
             if (tokens.isEmpty() || config.tokenizer.isSingleLineComment(tokens.get(0))) {
                 data.add(Expression.constantExpression(0, config));
@@ -825,6 +844,7 @@ public class LineParser {
                     if ((token.endsWith("f") || token.endsWith("F") || token.endsWith("b") || token.endsWith("B"))
                             && config.tokenizer.isInteger(token.substring(0, token.length() - 1))) {
                         if (!config.caseSensitiveSymbols) token = token.toLowerCase();
+                        if (config.convertSymbolstoUpperCase) token = token.toUpperCase();
                         Pair<String, SourceConstant> tmp = config.dialectParser.symbolName(token, s);
                         if (tmp == null) return false;
                         token = tmp.getLeft();
@@ -983,6 +1003,10 @@ public class LineParser {
         // special case for "IFDEF", which takes a special kind of argument (which should never be
         // evaluated, regardless if it's an eager variable or not):
         boolean isIfDef = false;
+        
+        if (!config.caseSensitiveSymbols) macroName = macroName.toLowerCase();
+        if (config.convertSymbolstoUpperCase) macroName = macroName.toUpperCase();
+        
         if (config.preProcessor.isMacroName(macroName, config.preProcessor.MACRO_IFDEF) ||
             config.preProcessor.isMacroName(macroName, config.preProcessor.MACRO_IFNDEF)) {
             isIfDef = true;
@@ -996,6 +1020,7 @@ public class LineParser {
             if (isIfDef) {
                 String token = tokens.remove(0);
                 if (!config.caseSensitiveSymbols) token = token.toLowerCase();
+                if (config.convertSymbolstoUpperCase) token = token.toUpperCase();
                 if (config.dialectParser != null) {
                     Pair<String, SourceConstant> tmp = config.dialectParser.symbolName(token, previous);
                     if (tmp == null) return false;

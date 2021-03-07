@@ -47,7 +47,7 @@ public class WinAPEDialect implements Dialect {
 
     
     @Override
-    public boolean recognizeIdiom(List<String> tokens)
+    public boolean recognizeIdiom(List<String> tokens, SourceConstant label, CodeBase code)
     {
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("write")) return true;
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("close")) return true;

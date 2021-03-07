@@ -23,15 +23,14 @@ public class ExpressionTest {
 
     private final MDLConfig config;
     private final CodeBase code;
-    private final ExpressionParser expressionParser;
 
     public ExpressionTest() {
         config = new MDLConfig();
         code = new CodeBase(config);
         config.codeBaseParser = new CodeBaseParser(config);
         config.lineParser = new LineParser(config, config.codeBaseParser);      
-        expressionParser = new ExpressionParser(config);
-        expressionParser.allowFloatingPointNumbers = true;
+        config.expressionParser = new ExpressionParser(config);
+        config.expressionParser.allowFloatingPointNumbers = true;
     }
 
     @Test public void test1() { Assert.assertEquals(Integer.valueOf(2), evaluate("2")); }
@@ -70,7 +69,7 @@ public class ExpressionTest {
     private Object evaluate(String line)
     {
         List<String> tokens = config.tokenizer.tokenize(line);
-        Expression exp = expressionParser.parse(tokens, null, null, code);
+        Expression exp = config.expressionParser.parse(tokens, null, null, code);
         System.out.println(exp);
 
         return exp.evaluatesToNumericConstant()

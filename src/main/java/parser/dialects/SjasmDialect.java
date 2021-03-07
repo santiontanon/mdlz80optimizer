@@ -541,7 +541,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
         
     
     @Override
-    public boolean recognizeIdiom(List<String> tokens) {
+    public boolean recognizeIdiom(List<String> tokens, SourceConstant label, CodeBase code) {
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("struct")) return true;
         if (tokens.size() >= 1 && tokens.get(0).equalsIgnoreCase("ends")) return true;
         if (tokens.size() >= 1 && tokens.get(0).equalsIgnoreCase("end")) return true;
@@ -947,16 +947,18 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                 return false;
             }
             
-            tokens.remove(0);
-            s.label.resolveEagerly = true;
-            if (!config.lineParser.parseEqu(tokens, l, sl, s, previous, source, code)) return false;
             s.label.clearCache();
+            s.label.resolveEagerly = true;            
+            
+            tokens.remove(0);
+            if (!config.lineParser.parseEqu(tokens, l, sl, s, previous, source, code)) return false;
             Integer value = s.label.exp.evaluateToInteger(s, code, false);
             if (value == null) {
                 config.error("Cannot resolve eager variable in " + sl);
                 return false;
             }
             s.label.exp = Expression.constantExpression(value, config);
+            s.label.clearCache();
             
             // these variables should not be part of the source code:
             l.clear();

@@ -21,6 +21,7 @@ public class Tokenizer {
     public boolean sdccStyleHashMarksForConstants = false;
     public boolean sdccStyleDollarInLabels = false;
     public boolean curlyBracesAreComments = true;
+    public boolean allowQuestionMarksInSymbols = false;
     
     
     Matcher doubleMatcher = Pattern.compile("[\\x00-\\x20]*[+-]?(((((\\p{Digit}+)(\\.)?((\\p{Digit}+)?)([eE][+-]?(\\p{Digit}+))?)|(\\.((\\p{Digit}+))([eE][+-]?(\\p{Digit}+))?)|(((0[xX](\\p{XDigit}+)(\\.)?)|(0[xX](\\p{XDigit}+)?(\\.)(\\p{XDigit}+)))[pP][+-]?(\\p{Digit}+)))[fFdD]?))[\\x00-\\x20]*")
@@ -64,12 +65,18 @@ public class Tokenizer {
     
     
     public List<String> tokenize(String line, List<String> tokens, boolean includeBlanks) {
-        StringTokenizer st;
-        if (sdccStyleDollarInLabels) {
-            st = new StringTokenizer(line, " \r\n\t()[]#,;:+-*/%|&'\"!?<>=~^{}\\", true);
-        } else {
-            st = new StringTokenizer(line, " \r\n\t()[]#$,;:+-*/%|&'\"!?<>=~^{}\\", true);
+        String tokenizerString = " \r\n\t()[]#,;:+-*/%|&'\"!<>=~^{}\\";
+        
+        if (!allowQuestionMarksInSymbols) {
+            tokenizerString += "?";
         }
+        if (!sdccStyleDollarInLabels) {
+            tokenizerString += "$";
+//            st = new StringTokenizer(line, " \r\n\t()[]#,;:+-*/%|&'\"!?<>=~^{}\\", true);
+//        } else {
+//            st = new StringTokenizer(line, " \r\n\t()[]#$,;:+-*/%|&'\"!?<>=~^{}\\", true);
+        }
+        StringTokenizer st = new StringTokenizer(line, tokenizerString, true);
         String previous = null;
         while(st.hasMoreTokens()) {
             String next = st.nextToken();
@@ -202,6 +209,7 @@ public class Tokenizer {
             c>='0' && c<='9') {
             return true;
         }
+        if (allowQuestionMarksInSymbols && token.charAt(0) == '?') return true;
         
         return false;
     }
@@ -450,10 +458,10 @@ public class Tokenizer {
             c = Character.toLowerCase(c);
             int idx = allowed.indexOf(c);
             if (idx == -1) {
-                if (i == token.length()-1 && c == 'o') return value;
+                if (i == token.length()-1 && (c == 'o' || c == 'q')) return value;
                 return null;
             }
-            value = value * 2 + idx;
+            value = value * 8 + idx;
         }
         return value;
     }    
@@ -481,18 +489,12 @@ public class Tokenizer {
             case MDLConfig.HEX_STYLE_H:
             {
                 String hex = toOct(value);
-                if (hex.charAt(0) >= 'a' && hex.charAt(0) <= 'f') {
-                    hex = "0" + hex;
-                }
                 return hex + "o";
             }
             case MDLConfig.HEX_STYLE_HASH_CAPS:
             case MDLConfig.HEX_STYLE_H_CAPS:
             {
                 String hex = toOct(value);
-                if (hex.charAt(0) >= 'a' && hex.charAt(0) <= 'f') {
-                    hex = "0" + hex;
-                }
                 return (hex + "O").toUpperCase();
             }
             case MDLConfig.HEX_STYLE_0X:

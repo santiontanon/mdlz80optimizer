@@ -16,7 +16,42 @@ import org.apache.commons.lang3.tuple.Pair;
 
 public class ExpressionParser {
     MDLConfig config;
-
+    
+    public final String OP_STD_RSHIFT = ">>";
+    public final String OP_STD_LSHIFT = "<<";
+    public final String OP_STD_LOGICAL_NEGATION = "!";
+    public final String OP_STD_LOGICAL_OR = "||";
+    public final String OP_STD_LOGICAL_AND = "&&";
+    public final String OP_STD_EQUAL = "=";
+    public final String OP_STD_LOWERTHAN = "<";
+    public final String OP_STD_GREATERTHAN = ">";
+    public final String OP_STD_LEQTHAN = "<=";
+    public final String OP_STD_GEQTHAN = ">=";
+    public final String OP_STD_DIFF = "!=";
+    public final String OP_STD_BIT_NEGATION = "~";
+    public final String OP_STD_BIT_OR = "|";
+    public final String OP_STD_BIT_AND = "&";
+    public final String OP_STD_BIT_XOR = "^";
+    public final String OP_STD_MOD = "%";
+    
+    
+    public String OP_RSHIFT = ">>";
+    public String OP_LSHIFT = "<<";
+    public String OP_LOGICAL_NEGATION = "!";
+    public String OP_LOGICAL_OR = "||";
+    public String OP_LOGICAL_AND = "&&";
+    public String OP_EQUAL = "=";
+    public String OP_LOWERTHAN = "<";
+    public String OP_GREATERTHAN = ">";
+    public String OP_LEQTHAN = "<=";
+    public String OP_GEQTHAN = ">=";
+    public String OP_DIFF = "!=";
+    public String OP_BIT_NEGATION = "~";
+    public String OP_BIT_OR = "|";
+    public String OP_BIT_AND = "&";
+    public String OP_BIT_XOR = "^";
+    public String OP_MOD = "%";
+    
     // make sure to add functions in lower case into this list:
     public List<String> dialectFunctions = new ArrayList<>();
     public List<String> dialectFunctionsSingleArgumentNoParenthesis = new ArrayList<>();
@@ -27,6 +62,9 @@ public class ExpressionParser {
     public boolean sjasmPlusCurlyBracketExpressions = false;
     
     public boolean allowFloatingPointNumbers = false;
+    
+    // This is used by the macro80 dialect:
+    public boolean doubleHashToMarkExternalSymbols = false;
     
 
     public ExpressionParser(MDLConfig a_config)
@@ -103,101 +141,101 @@ public class ExpressionParser {
                 exp = Expression.operatorExpression(Expression.EXPRESSION_DIV, exp, exp2, config);
                 continue;
             }
-            if (StringUtils.equalsAnyIgnoreCase(tokens.get(0), "%", "MOD")) { // "MOD" is tniASM syntax
+            if (StringUtils.equalsIgnoreCase(tokens.get(0), OP_MOD)) {
                 tokens.remove(0);
                 Expression exp2 = parseInternal(tokens, s, previous, code);
                 if (exp2 == null) {
-                    config.error("Missing argument for operator %");
+                    config.error("Missing argument for operator " + OP_MOD);
                     return null;
                 }
                 exp = Expression.operatorExpression(Expression.EXPRESSION_MOD, exp, exp2, config);
                 continue;
             }
-            if (StringUtils.equalsAnyIgnoreCase(tokens.get(0), "|", "OR")) { // "OR" is tniASM syntax
+            if (StringUtils.equalsIgnoreCase(tokens.get(0),OP_BIT_OR)) {
                 tokens.remove(0);
                 Expression exp2 = parseInternal(tokens, s, previous, code);
                 if (exp2 == null) {
-                    config.error("Missing argument for operator |");
+                    config.error("Missing argument for operator " + OP_BIT_OR);
                     return null;
                 }
                 exp = Expression.operatorExpression(Expression.EXPRESSION_BITOR, exp, exp2, config);
                 continue;
             }
-            if (StringUtils.equalsAnyIgnoreCase(tokens.get(0), "&", "AND")) { // "AND" is tniASM syntax
+            if (StringUtils.equalsIgnoreCase(tokens.get(0), OP_BIT_AND)) {
                 tokens.remove(0);
                 Expression exp2 = parseInternal(tokens, s, previous, code);
                 if (exp2 == null) {
-                    config.error("Missing argument for operator &");
+                    config.error("Missing argument for operator " + OP_BIT_AND);
                     return null;
                 }
                 exp = Expression.operatorExpression(Expression.EXPRESSION_BITAND, exp, exp2, config);
                 continue;
             }
-            if (StringUtils.equalsAnyIgnoreCase(tokens.get(0), "^", "XOR")) { // "XOR" is tniASM syntax
+            if (StringUtils.equalsIgnoreCase(tokens.get(0), OP_BIT_XOR)) {
                 tokens.remove(0);
                 Expression exp2 = parseInternal(tokens, s, previous, code);
                 if (exp2 == null) {
-                    config.error("Missing argument for operator ^");
+                    config.error("Missing argument for operator " + OP_BIT_XOR);
                     return null;
                 }
                 exp = Expression.operatorExpression(Expression.EXPRESSION_BITXOR, exp, exp2, config);
                 continue;
             }
-            if (StringUtils.equalsAnyIgnoreCase(tokens.get(0), "=", "==")) {
+            if (StringUtils.equalsAnyIgnoreCase(tokens.get(0), OP_EQUAL, "==")) {
                 tokens.remove(0);
                 Expression exp2 = parseInternal(tokens, s, previous, code);
                 if (exp2 == null) {
-                    config.error("Missing argument for operator =");
+                    config.error("Missing argument for operator " + OP_EQUAL);
                     return null;
                 }
                 exp = Expression.operatorExpression(Expression.EXPRESSION_EQUAL, exp, exp2, config);
                 continue;
             }
-            if (tokens.get(0).equals("<")) {
+            if (tokens.get(0).equalsIgnoreCase(OP_LOWERTHAN)) {
                 tokens.remove(0);
                 Expression exp2 = parseInternal(tokens, s, previous, code);
                 if (exp2 == null) {
-                    config.error("Missing argument for operator <");
+                    config.error("Missing argument for operator " + OP_LOWERTHAN);
                     return null;
                 }
                 exp = Expression.operatorExpression(Expression.EXPRESSION_LOWERTHAN, exp, exp2, config);
                 continue;
             }
-            if (tokens.get(0).equals(">")) {
+            if (tokens.get(0).equalsIgnoreCase(OP_GREATERTHAN)) {
                 tokens.remove(0);
                 Expression exp2 = parseInternal(tokens, s, previous, code);
                 if (exp2 == null) {
-                    config.error("Missing argument for operator >");
+                    config.error("Missing argument for operator " + OP_GREATERTHAN);
                     return null;
                 }
                 exp = Expression.operatorExpression(Expression.EXPRESSION_GREATERTHAN, exp, exp2, config);
                 continue;
             }
-            if (tokens.get(0).equals("<=")) {
+            if (tokens.get(0).equalsIgnoreCase(OP_LEQTHAN)) {
                 tokens.remove(0);
                 Expression exp2 = parseInternal(tokens, s, previous, code);
                 if (exp2 == null) {
-                    config.error("Missing argument for operator <=");
+                    config.error("Missing argument for operator " + OP_LEQTHAN);
                     return null;
                 }
                 exp = Expression.operatorExpression(Expression.EXPRESSION_LEQTHAN, exp, exp2, config);
                 continue;
             }
-            if (tokens.get(0).equals(">=")) {
+            if (tokens.get(0).equalsIgnoreCase(OP_GEQTHAN)) {
                 tokens.remove(0);
                 Expression exp2 = parseInternal(tokens, s, previous, code);
                 if (exp2 == null) {
-                    config.error("Missing argument for operator >=");
+                    config.error("Missing argument for operator " + OP_GEQTHAN);
                     return null;
                 }
                 exp = Expression.operatorExpression(Expression.EXPRESSION_GEQTHAN, exp, exp2, config);
                 continue;
             }
-            if (tokens.get(0).equals("!=")) {
+            if (tokens.get(0).equalsIgnoreCase(OP_DIFF)) {
                 tokens.remove(0);
                 Expression exp2 = parseInternal(tokens, s, previous, code);
                 if (exp2 == null) {
-                    config.error("Missing argument for operator !=");
+                    config.error("Missing argument for operator " + OP_DIFF);
                     return null;
                 }
                 exp = Expression.operatorExpression(Expression.EXPRESSION_DIFF, exp, exp2, config);
@@ -216,41 +254,41 @@ public class ExpressionParser {
                     return null;
                 }
             }
-            if (tokens.get(0).equals("<<")) {
+            if (tokens.get(0).equalsIgnoreCase(OP_LSHIFT)) {
                 tokens.remove(0);
                 Expression exp2 = parseInternal(tokens, s, previous, code);
                 if (exp2 == null) {
-                    config.error("Missing argument for operator <<");
+                    config.error("Missing argument for operator " + OP_LSHIFT);
                     return null;
                 }
                 exp = Expression.operatorExpression(Expression.EXPRESSION_LSHIFT, exp, exp2, config);
                 continue;
             }
-            if (tokens.get(0).equals(">>")) {
+            if (tokens.get(0).equalsIgnoreCase(OP_RSHIFT)) {
                 tokens.remove(0);
                 Expression exp2 = parseInternal(tokens, s, previous, code);
                 if (exp2 == null) {
-                    config.error("Missing argument for operator >>");
+                    config.error("Missing argument for operator " + OP_RSHIFT);
                     return null;
                 }
                 exp = Expression.operatorExpression(Expression.EXPRESSION_RSHIFT, exp, exp2, config);
                 continue;
             }
-            if (tokens.get(0).equals("||")) {
+            if (tokens.get(0).equalsIgnoreCase(OP_LOGICAL_OR)) {
                 tokens.remove(0);
                 Expression exp2 = parseInternal(tokens, s, previous, code);
                 if (exp2 == null) {
-                    config.error("Missing argument for operator ||");
+                    config.error("Missing argument for operator " + OP_LOGICAL_OR);
                     return null;
                 }
                 exp = Expression.operatorExpression(Expression.EXPRESSION_OR, exp, exp2, config);
                 continue;
             }
-            if (tokens.get(0).equals("&&")) {
+            if (tokens.get(0).equalsIgnoreCase(OP_LOGICAL_AND)) {
                 tokens.remove(0);
                 Expression exp2 = parseInternal(tokens, s, previous, code);
                 if (exp2 == null) {
-                    config.error("Missing argument for operator &&");
+                    config.error("Missing argument for operator " + OP_LOGICAL_AND);
                     return null;
                 }
                 exp = Expression.operatorExpression(Expression.EXPRESSION_AND, exp, exp2, config);
@@ -333,7 +371,8 @@ public class ExpressionParser {
         }
         if (tokens.size() >= 1 &&
             (tokens.get(0).charAt(0) >= '0' && tokens.get(0).charAt(0) <= '7') &&
-            (tokens.get(0).endsWith("o") || tokens.get(0).endsWith("O"))) {
+            (tokens.get(0).endsWith("o") || tokens.get(0).endsWith("O") ||
+             tokens.get(0).endsWith("q") || tokens.get(0).endsWith("Q"))) {
             // should be a octal constant:
             String token = tokens.get(0);
             if (config.tokenizer.isOctal(token)) {
@@ -371,6 +410,32 @@ public class ExpressionParser {
                 }
             }
         }
+        if (tokens.size() >= 1 &&
+            (tokens.get(0).charAt(0) >= '0' && tokens.get(0).charAt(0) <= '9') &&
+            (tokens.get(0).endsWith("d") || tokens.get(0).endsWith("D"))) {
+            // should be a decimal constant:
+            String token = tokens.get(0);
+            token = token.substring(0, token.length()-1);
+            if (config.tokenizer.isInteger(token)) {
+                tokens.remove(0);
+                return Expression.constantExpression(Integer.parseInt(token), config);
+            }
+        }
+        if (tokens.size()>=2 &&
+            tokens.get(0).equalsIgnoreCase("x") &&
+            config.tokenizer.isString(tokens.get(1)) &&
+            config.tokenizer.isHex(config.tokenizer.stringValue(tokens.get(1)))) {
+            tokens.remove(0);
+            String token = config.tokenizer.stringValue(tokens.remove(0));
+            if (token.length()<=2) {
+                // 8 bit:
+                return Expression.constantExpression(config.tokenizer.parseHex(token), Expression.RENDER_AS_8BITHEX, config);
+            } else {
+                // 16 bit:
+                return Expression.constantExpression(config.tokenizer.parseHex(token), Expression.RENDER_AS_16BITHEX, config);
+            }            
+        }
+        
         if (tokens.size() >= 1) {
             // check if it's a dialect function:
             if (dialectFunctions.contains(tokens.get(0).toLowerCase())) {
@@ -444,12 +509,29 @@ public class ExpressionParser {
                 }
                 return exp;
             } else if (config.tokenizer.isSymbol(tokens.get(0))) {
-                String token = tokens.remove(0);
+                String token = tokens.get(0);
                 if (!config.caseSensitiveSymbols) token = token.toLowerCase();
+                if (config.convertSymbolstoUpperCase) token = token.toUpperCase();
 
                 if (previous == null && s != null && s.source != null) previous = s.source.getPreviousStatementTo(s, code);
                 token = config.lineParser.newSymbolNameNotLabel(token, previous);
-                return Expression.symbolExpression(token, s, code, config);
+                if (token != null) {
+                    boolean external = false;
+                    tokens.remove(0);
+                    
+                    if (doubleHashToMarkExternalSymbols) {
+                        if (tokens.size() >= 2 &&
+                            tokens.get(0).equals("#") && tokens.get(1).equals("#")) {
+                            tokens.remove(0);
+                            tokens.remove(0);
+                            external = true;
+                        }
+                    }
+                    
+                    Expression exp = Expression.symbolExpression(token, s, code, config);
+                    exp.symbolIsExternal = external;
+                    return exp;
+                }
             }
         }
         // Check if it's a "%", "%%", "%%%", etc. sjasm counter variable:
@@ -520,20 +602,19 @@ public class ExpressionParser {
             }
         }
         if (tokens.size() >= 2 &&
-            StringUtils.equalsAnyIgnoreCase(tokens.get(0), "~", "NOT")) { // "NOT" is tniASM syntax
+            StringUtils.equalsIgnoreCase(tokens.get(0), OP_BIT_NEGATION)) {
             // a bit negated expression:
             tokens.remove(0);
             Expression exp = parseInternal(tokens, s, previous, code);
             return Expression.bitNegationExpression(exp, config);
         }
         if (tokens.size() >= 2 &&
-            tokens.get(0).equals("!")) {
+            tokens.get(0).equalsIgnoreCase(OP_LOGICAL_NEGATION)) {
             // a logical negation expression:
             tokens.remove(0);
             Expression exp = parseInternal(tokens, s, previous, code);
             return Expression.operatorExpression(Expression.EXPRESSION_LOGICAL_NEGATION, exp, config);
         }
-
         if (tokens.size() >= 2 &&
             tokens.get(0).equals("?")) {
             tokens.remove(0);

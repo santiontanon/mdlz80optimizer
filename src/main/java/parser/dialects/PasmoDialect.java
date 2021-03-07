@@ -42,7 +42,7 @@ public class PasmoDialect implements Dialect {
 
     
     @Override
-    public boolean recognizeIdiom(List<String> tokens)
+    public boolean recognizeIdiom(List<String> tokens, SourceConstant label, CodeBase code)
     {
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("proc")) return true;
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("endp")) return true;

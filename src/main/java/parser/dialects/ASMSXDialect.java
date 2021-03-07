@@ -115,7 +115,7 @@ public class ASMSXDialect implements Dialect {
         config.lineParser.resetKeywordsHintingALabel();
         
         config.warning_jpHlWithParenthesis = false;
-        config.lineParser.keywordsHintingALabel.add("=");
+        config.lineParser.keywordsHintingANonScopedLabel.add("=");
         
         config.expressionParser.dialectFunctions.add(".random");
         config.expressionParser.dialectFunctions.add("random");
@@ -146,7 +146,7 @@ public class ASMSXDialect implements Dialect {
 
 
     @Override
-    public boolean recognizeIdiom(List<String> tokens) {
+    public boolean recognizeIdiom(List<String> tokens, SourceConstant label, CodeBase code) {
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase(".bios")) return true;
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("bios")) return true;
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("filename")) return true;
@@ -566,6 +566,14 @@ public class ASMSXDialect implements Dialect {
                 return false;
             }
             
+            SourceConstant c = code.getSymbol(s.label.originalName);
+            if (c == null) {
+                config.error("Cannot resolve eager variable named '"+s.label.originalName+"' in " + sl);
+                return false;
+            }
+            c.clearCache();
+            s.label.resolveEagerly = true;            
+            
             tokens.remove(0);
             if (!config.lineParser.parseEqu(tokens, l, sl, s, previous, source, code)) return false;
             Integer value = s.label.exp.evaluateToInteger(s, code, false, previous);
@@ -574,15 +582,8 @@ public class ASMSXDialect implements Dialect {
                 return false;
             }
             Expression exp = Expression.constantExpression(value, config);
-            SourceConstant c = code.getSymbol(s.label.originalName);
-            c.clearCache();
-            c.exp = exp;            
-            s.label.resolveEagerly = true;
-            // make sure eager variables are not scoped:
-            code.removeSymbol(s.label.name);
-            s.label.name = s.label.originalName;
-            code.addSymbol(s.label.name, s.label);
-            s.label.resolveEagerly = true;            
+            c.exp = exp;
+            s.label.clearCache();
             
             // these variables should not be part of the source code:
             l.clear();

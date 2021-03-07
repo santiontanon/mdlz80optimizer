@@ -97,7 +97,7 @@ public class SDCCDialect implements Dialect {
     
     
     @Override
-    public boolean recognizeIdiom(List<String> tokens) {
+    public boolean recognizeIdiom(List<String> tokens, SourceConstant label, CodeBase code) {
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase(".module")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase(".optsdcc")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase(".globl")) return true;

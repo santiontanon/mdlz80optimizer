@@ -40,11 +40,17 @@ public class TniAsmDialect implements Dialect {
         
         config.lineParser.defineSpaceVirtualByDefault = true;
         config.caseSensitiveSymbols = false;
+        
+        config.expressionParser.OP_BIT_NEGATION = "not";
+        config.expressionParser.OP_BIT_OR = "or";
+        config.expressionParser.OP_BIT_AND = "and";
+        config.expressionParser.OP_BIT_XOR = "xor";
+        config.expressionParser.OP_MOD = "mod";
     }
 
     
     @Override
-    public boolean recognizeIdiom(List<String> tokens)
+    public boolean recognizeIdiom(List<String> tokens, SourceConstant label, CodeBase code)
     {
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("rw")) return true;
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("fname")) return true;
