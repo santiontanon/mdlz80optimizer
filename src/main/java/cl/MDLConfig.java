@@ -42,6 +42,7 @@ public class MDLConfig {
     public String sourceFileOutputFile = null;
     public String dotOutputFile = null;
 
+    public String cpu = "z80msx";
     public String cpuInstructionSet = "data/z80msx-instruction-set.tsv";
     public String timeUnit = "t-state";
     public boolean hexStyleChanged = false; // "true" if the user explicitly requests a hex style
@@ -246,8 +247,8 @@ public class MDLConfig {
                     case "-cpu":
                         if (args.size()>=2) {
                             args.remove(0);
-                            String cpuString = args.remove(0);
-                            switch(cpuString) {
+                            cpu = args.remove(0);
+                            switch(cpu) {
                                 case "z80":
                                     cpuInstructionSet = "data/z80-instruction-set.tsv";
                                     timeUnit = "t-state";
@@ -263,7 +264,7 @@ public class MDLConfig {
                                     ignorePatternsWithTags.add(TSTATEZ80_TAG);
                                     break;
                                 default:
-                                error("Unrecognized cpu " + cpuString);
+                                error("Unrecognized cpu " + cpu);
                                     return false;
                             }
                         } else {

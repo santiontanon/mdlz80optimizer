@@ -58,13 +58,6 @@ public class PatternBasedOptimizer implements MDLWorker {
     public PatternBasedOptimizer(MDLConfig a_config)
     {
         config = a_config;
-        patternsConfig = new MDLConfig();
-        try {
-            patternsConfig.parseArgs("dummy", "-dialect", "mdl");
-        } catch(IOException e) {
-            config.error("Problem initializing the PatternBasedOptimizer!");
-        }
-        patternsConfig.logger = config.logger;
     }
 
 
@@ -159,6 +152,16 @@ public class PatternBasedOptimizer implements MDLWorker {
         if (inputPatternsFileName == null) {
             inputPatternsFileName = defaultInputPatternsFileName;
         }
+        
+        // set the internal configuration, so we can parse the patterns with standard z80 syntax:
+        patternsConfig = new MDLConfig();
+        try {
+            patternsConfig.parseArgs("dummy", "-dialect", "mdl", "-cpu", config.cpu);
+        } catch(IOException e) {
+            config.error("Problem initializing the PatternBasedOptimizer!");
+        }
+        patternsConfig.logger = config.logger;
+        
         loadPatterns(inputPatternsFileName);
     }
     
@@ -255,19 +258,19 @@ public class PatternBasedOptimizer implements MDLWorker {
 
     @Override
     public boolean work(CodeBase code) {
-        if (trigger) {
+        if (trigger) {            
             OptimizationResult r = optimize(code);
             config.optimizerStats.addSavings(r);
             if (generateFilesWithAppliedOptimizations) {
                 applyOptimizationsToOriginalFiles(code);
             }
+            if (config.dialectParser != null) return config.dialectParser.postCodeModificationActions(code);
         }
-        if (config.dialectParser != null) return config.dialectParser.postCodeModificationActions(code);
         return true;
     }
 
 
-    public OptimizationResult optimize(CodeBase code) {
+    public OptimizationResult optimize(CodeBase code) {        
         initPatterns();
         OptimizationResult r = new OptimizationResult();
         
