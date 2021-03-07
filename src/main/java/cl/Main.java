@@ -47,7 +47,11 @@ public class Main {
         // Parse the code base:
         CodeBase code = new CodeBase(config);
         if (!config.codeBaseParser.parseMainSourceFile(config.inputFile, code)) {
-            config.error("Could not fully parse the code (error code 2).");
+            if (config.dialectParser != null) {
+                config.error("Could not fully parse the code (error code 2).");
+            } else {
+                config.error("Could not fully parse the code (error code 2). Maybe missing `-dialect <dialect>` flag?");
+            }
             System.exit(2);
         }
         

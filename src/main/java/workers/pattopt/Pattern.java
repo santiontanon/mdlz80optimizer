@@ -1109,23 +1109,44 @@ public class Pattern {
         
         // Check the equalities:
         // config.debug("Checking " + equalitiesToMaintain.size() + " equalities!");
+        boolean undoOptimization = false;
+        EqualityConstraint brokenEquality = null;
         for(EqualityConstraint eq:equalitiesToMaintain) {
-            if (!eq.check(code, config)) {                
-                // undo the optimization:
-                for(int i = undo.size()-1; i>=0; i--) {
-                    if (undo.get(i).getLeft() == null) {
-                        // remove:
-                        l.remove(undo.get(i).getRight());
-                    } else {
-                        // add:
-                        l.add(undo.get(i).getLeft(), undo.get(i).getRight());
-                    }
-                }
-                while(equalitiesToMaintain.size() > previousLength) equalitiesToMaintain.remove(equalitiesToMaintain.size()-1);
-                config.debug("Optimization undone, as it was breaking the equality constraint: " + eq.exp1 + " == " + eq.exp2);
-                code.resetAddresses();
-                return false;
+            if (!eq.check(code, config)) {    
+                undoOptimization = true;
+                brokenEquality = eq;
+                break;
             }
+        }
+        
+        // If the pattern increased the size of the program:
+        if (!undoOptimization && getSpaceSaving(match, code) < 0) {
+            // Check all relative jumps are still within reach:
+            code.resetAddresses();
+            if (!code.checkLocalLabelsInRange()) {
+                undoOptimization = true;
+            }                
+        }
+
+        if (undoOptimization) {
+            // undo the optimization:
+            for(int i = undo.size()-1; i>=0; i--) {
+                if (undo.get(i).getLeft() == null) {
+                    // remove:
+                    l.remove(undo.get(i).getRight());
+                } else {
+                    // add:
+                    l.add(undo.get(i).getLeft(), undo.get(i).getRight());
+                }
+            }
+            while(equalitiesToMaintain.size() > previousLength) equalitiesToMaintain.remove(equalitiesToMaintain.size()-1);
+            if (brokenEquality != null) {
+                config.debug("Optimization undone, as it was breaking the equality constraint: " + brokenEquality.exp1 + " == " + brokenEquality.exp2);
+            } else {
+                config.debug("Optimization undone, as it was breaking a relative jump.");
+            }
+            code.resetAddresses();
+            return false;            
         }
                 
         return true;

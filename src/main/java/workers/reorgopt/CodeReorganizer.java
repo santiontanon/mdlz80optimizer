@@ -7,6 +7,7 @@ package workers.reorgopt;
 
 import cl.MDLConfig;
 import cl.OptimizationResult;
+import code.CPUOp;
 import code.CodeBase;
 import code.Expression;
 import code.SourceFile;
@@ -95,7 +96,7 @@ public class CodeReorganizer implements MDLWorker {
         savings.addOptimizerSpecific(SAVINGS_REORGANIZATIONS_CODE, 0);
         
         code.resetAddresses();
-        if (!checkLocalLabelsInRange(code)) {
+        if (!code.checkLocalLabelsInRange()) {
             config.error("Code Reorganizer: Some local labels are out of range to begin with, canceling execution...");
             return false;
         }
@@ -360,6 +361,15 @@ public class CodeReorganizer implements MDLWorker {
 
     // Assumption: all the statements within this subarea contain assembler code, and not data
     private void reorganizeBlock(CodeBlock subarea, CodeBase code, OptimizationResult savings) {
+        protectJumpTables(subarea);
+        reorganizeBlockInternal(subarea, code, savings);
+        inlineFunctions(subarea, code, savings);
+        fixLocalLabels(subarea, code);
+    }
+    
+    
+    private void protectJumpTables(CodeBlock subarea)
+    {
         // Detect any potential jump tables and protect them from optimizations:
         // Look for series of "jp" instructions one oafter another, after a label:
         for(int i = 0;i<subarea.statements.size();i++) {
@@ -400,7 +410,10 @@ public class CodeReorganizer implements MDLWorker {
                 }
             }
         }
+    }
         
+    
+    private void reorganizeBlockInternal(CodeBlock subarea, CodeBase code, OptimizationResult savings) {
         // Look for blocks (A) that:
         // - end in a jump to a block B
         // - all the incoming edges to A and B are jumps
@@ -456,7 +469,146 @@ public class CodeReorganizer implements MDLWorker {
                 if (anyMove) break;
             }
         }while(anyMove);
-        
+    }
+    
+    
+    private void inlineFunctions(CodeBlock subarea, CodeBase code, OptimizationResult savings)
+    {
+        for(int i = 0;i<subarea.subBlocks.size();i++) {
+            CodeBlock block = subarea.subBlocks.get(i);
+
+            // a "simpleFunction" is one with a single entry point, and a single ret
+            CodeStatement call = block.isSimpleFunctionCalledOnce(code);
+            if (call == null) continue;
+            
+            if (call.op.isConditional()) continue;
+            if (!call.op.spec.getName().equalsIgnoreCase("call") &&
+                !call.op.spec.getName().equalsIgnoreCase("jp") &&
+                !call.op.spec.getName().equalsIgnoreCase("jr")) {
+                continue;
+            }
+
+            // it's called only once, we can try to inline it!
+            // find if the call is in the same subarea:
+            if (subarea.statements.contains(call)) {
+                boolean cancelOptimization = false;
+                
+                CodeBlock callBlock = null;
+                for(CodeBlock b:subarea.subBlocks) {
+                    if (b.statements.contains(call)) {
+                        callBlock = b;
+                        break;
+                    }
+                }
+                if (callBlock == null) return;
+                
+                // try to inline:
+                // remove call/jp statement:
+                CPUOp callOp = call.op;
+                String callOpComment = call.comment;
+                if (call.comment == null) call.comment = "";
+                call.op = null;
+                call.type = CodeStatement.STATEMENT_NONE;
+                call.comment = ";     " + callOp + "  ; -mdl";
+                
+                // copy all statements of the simple function over to right after the call:
+                List<Pair<SourceFile, Integer>> deleteTrail = new ArrayList<>();
+                int subareaDeletePoint = subarea.statements.indexOf(block.statements.get(0));
+                for(CodeStatement s:block.statements) {
+                    subarea.statements.remove(s);
+                    Pair<SourceFile, Integer> tmp = Pair.of(s.source, s.source.getStatements().indexOf(s));
+                    deleteTrail.add(tmp);
+                    s.source.getStatements().remove(s);
+                }                
+                int insertionPoint = call.source.getStatements().indexOf(call) + 1;
+                int subareaInsertionPoint = subarea.statements.indexOf(call) + 1;
+                int callBlockInsertionPoint = callBlock.statements.indexOf(call) + 1;
+                CodeStatement ret = null;
+                
+                for(CodeStatement s:block.statements) {
+                    call.source.getStatements().add(insertionPoint, s);
+                    s.source = call.source;
+                    insertionPoint++;
+                    subarea.statements.add(subareaInsertionPoint, s);
+                    subareaInsertionPoint++;
+                    callBlock.statements.add(callBlockInsertionPoint, s);
+                    callBlockInsertionPoint++;
+                    if (s.op != null && s.op.isRet()) ret = s;
+                }
+                
+                CPUOp retOp = null;
+                String retOpComment = null; 
+                if (ret == null) {
+                    cancelOptimization = true;
+                } else {
+                    // remove the "ret" statement:
+                    retOp = ret.op;
+                    retOpComment = ret.comment;                
+                    if (ret.comment == null) ret.comment = "";
+                    ret.op = null;
+                    ret.type = CodeStatement.STATEMENT_NONE;
+                    ret.comment = ";     " + retOp + "  ; -mdl";
+                }
+                
+                // remove "block" from the subarea blocks:
+                subarea.subBlocks.remove(block);
+                i--;
+                
+                // Check all relative jumps are still within reach:
+                code.resetAddresses();
+                // unfortunately we need to check the whole code base, as jump statements might be
+                // outside of the current area, but jumping to a label inside of the current area:
+                if (!code.checkLocalLabelsInRange()) cancelOptimization = true;                
+                
+                if (cancelOptimization) {
+                    // undo:
+                    i++;
+                    subarea.subBlocks.add(i, block);
+                    if (ret != null) {
+                        ret.comment = retOpComment;
+                        ret.op = retOp;
+                        ret.type = CodeStatement.STATEMENT_CPUOP;
+                    }
+                    for(CodeStatement s:block.statements) {
+                        callBlock.statements.remove(s);
+                        subarea.statements.remove(s);
+                        call.source.getStatements().remove(s);
+                    }
+                    for(CodeStatement s:block.statements) {
+                        subarea.statements.add(subareaDeletePoint, s);
+                        subareaDeletePoint++;
+                    }
+                    for(int j = block.statements.size()-1;j>=0;j--) {
+                        Pair<SourceFile, Integer> tmp = deleteTrail.remove(0);
+                        tmp.getLeft().getStatements().add(tmp.getRight(), block.statements.get(j));
+                        block.statements.get(j).source = tmp.getLeft();
+                    }       
+                    call.comment = callOpComment;
+                    call.op = callOp;
+                    call.type = CodeStatement.STATEMENT_CPUOP;
+                    
+                } else {
+                    // print optimization message:
+                    int bytesSaved = callOp.sizeInBytes() + retOp.sizeInBytes();
+                    int timeSaved = callOp.timing()[0] + retOp.timing()[0];
+                    savings.addSavings(bytesSaved, new int[]{timeSaved});
+                    savings.addOptimizerSpecific(SAVINGS_REORGANIZATIONS_CODE, 1);
+                    
+                    config.info("Reorganization optimization",
+                            call.sl.fileNameLineString(), 
+                            "move lines " + block.statements.get(0).sl.fileNameLineString() + "-" + 
+                                            block.statements.get(block.statements.size()-1).sl.lineNumber + 
+                            " to right after " + call.sl.fileNameLineString() + 
+                            " to remove a call and a ret statements as "+block.label.originalName+" is only caled once ("+bytesSaved+" bytes, " + timeSaved + " " + config.timeUnit+"s saved)");
+                }
+                code.resetAddresses();
+            }
+        }
+    }
+    
+    
+    private void fixLocalLabels(CodeBlock subarea, CodeBase code)
+    {
         // check if any local labels or "jumps to a local label" have been moved
         // out of their contexts, and fix them:
         boolean repeat = true;
@@ -575,7 +727,7 @@ public class CodeReorganizer implements MDLWorker {
         code.resetAddresses();
         // unfortunately we need to check the whole code base, as jump statements might be
         // outside of the current area, but jumping to a label inside of the current area:
-        if (!checkLocalLabelsInRange(code)) cancelOptimization = true;
+        if (!code.checkLocalLabelsInRange()) cancelOptimization = true;
         
         // Get the jump we should remove:
         CodeStatement jump;
@@ -625,7 +777,7 @@ public class CodeReorganizer implements MDLWorker {
         savings.addOptimizerSpecific(SAVINGS_REORGANIZATIONS_CODE, 1);
         
         // Update the edges, and announce the optimization (with line ranges):        
-        if (moveBefore) {            
+        if (moveBefore) {
             config.info("Reorganization optimization",
                     toMove.statements.get(0).sl.fileNameLineString(), 
                     "move lines " + toMove.statements.get(0).sl.lineNumber + " - " + 
@@ -781,25 +933,7 @@ public class CodeReorganizer implements MDLWorker {
             }
         }        
     }
-    
-    
-    private boolean checkLocalLabelsInRange(CodeBase code)
-    {
-        for(SourceFile f:code.getSourceFiles()) {
-            for(CodeStatement s:f.getStatements()) {
-                if (s.type == CodeStatement.STATEMENT_CPUOP) {
-                    if (s.op.isJump()) {
-                        if (!s.op.labelInRange(s, code)) {
-                            return false;
-                        }
-                    }
-                }
-            }
-        }
         
-        return true;
-    }
-    
 
     private boolean writeOutputToHTML(List<CodeBlock> topBlocks, CodeBase code, String htmlOutputFileName) {
         SourceCodeGenerator generator = new SourceCodeGenerator(config);

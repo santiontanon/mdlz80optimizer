@@ -38,6 +38,7 @@ public class PatternBasedOptimizer implements MDLWorker {
     MDLConfig config;
     boolean trigger = false;
     boolean silent = false;
+    int nPasses = 2;
     String inputPatternsFileName = null;
     List<Pattern> patterns = new ArrayList<>();
     
@@ -62,6 +63,7 @@ public class PatternBasedOptimizer implements MDLWorker {
         // This string has MD tags, so that I can easily generate the corresponding documentation in github with the 
         // hidden "-helpmd" flag:        
         return "- ```-po```: (task) Runs the pattern-based optimizer using the latest settings. Notice that the ```-posilent```, ```-poapply```, etc. flags need to be passed *before* the call to ```-po``` that they which to affect and which is the one that triggers the optimizer. You can pass an optional parameter, like ````-po size``` or ```-po speed```, which are shortcuts for '-po -popatterns data/pbo-patterns-size.txt' and '-po -popatterns data/pbo-patterns-speed.txt' (some dialects might change the defaults of these two)\n" +
+               "- ```-po1```/```-po1```/```-po1```: (task) The same as ```-po```, but specify whether to do 1, 2 or 3 passes of optimization (```-po``` is equivalent to ```-po2```).\n"+
                "- ```-posilent```: Supresses the pattern-based-optimizer output\n" +
                "- ```-poapply```: "+MDLLogger.ANSI_RED+"(deprecated) "+MDLLogger.ANSI_RESET+"For each assembler ```<file>``` parsed by MDL, a corresponding ```<file>.mdl.asm``` is generated with the optimizations applied to it.\n" + 
                "- ```-popotential```: Reports lines where a potential optimization was not applied for safety, but could maybe be done manually (at most one potential optimization per line is shown).\n" +
@@ -80,8 +82,11 @@ public class PatternBasedOptimizer implements MDLWorker {
     
     @Override
     public boolean parseFlag(List<String> flags) {
-        if (flags.get(0).equals("-po")) {
-            flags.remove(0);
+        if (flags.get(0).equals("-po") ||
+            flags.get(0).equals("-po1") ||
+            flags.get(0).equals("-po2") ||
+            flags.get(0).equals("-po3")) {
+            String flag = flags.remove(0);
             if (!flags.isEmpty()) {
                 if (flags.get(0).equals("size")) {
                     inputPatternsFileName = defaultInputPatternsSizeFileName;
@@ -92,6 +97,16 @@ public class PatternBasedOptimizer implements MDLWorker {
                 }
             }
             trigger = true;
+            switch(flag) {
+                case "-po1":
+                    nPasses = 1;
+                    break;
+                case "-po3":
+                    nPasses = 3;
+                    break;
+                default:
+                    nPasses = 2;
+            }
             return true;
         }
         if (flags.get(0).equals("-posilent")) {
@@ -249,17 +264,12 @@ public class PatternBasedOptimizer implements MDLWorker {
         // perform optimizations that would NOT set any equality constraints. And in the second
         // pass, we allow any kind of optimizations:
         
-        for (SourceFile f : code.getSourceFiles()) {
-            for (int i = 0; i < f.getStatements().size(); i++) {
-                if (optimizeStartingFromLine(f, i, code, r, false)) {
-                    i = Math.max(0, i-2);   // go back a couple of statements, as more optimizations might chain
-                }
-            }
-        }
-        for (SourceFile f : code.getSourceFiles()) {
-            for (int i = 0; i < f.getStatements().size(); i++) {
-                if (optimizeStartingFromLine(f, i, code, r, true)) {
-                    i = Math.max(0, i-2);   // go back a couple of statements, as more optimizations might chain                    
+        for(int pass = 0;pass<nPasses;pass++) {
+            for (SourceFile f : code.getSourceFiles()) {
+                for (int i = 0; i < f.getStatements().size(); i++) {
+                    if (optimizeStartingFromLine(f, i, code, r, pass==nPasses-1)) {
+                        i = Math.max(0, i-2);   // go back a couple of statements, as more optimizations might chain
+                    }
                 }
             }
         }
@@ -575,6 +585,7 @@ public class PatternBasedOptimizer implements MDLWorker {
         w.onlyOnePotentialOptimizationPerLine = onlyOnePotentialOptimizationPerLine;
         w.preventLabelDependentOptimizations = preventLabelDependentOptimizations;
         w.trigger = trigger;
+        w.nPasses = nPasses;
         w.silent = silent;
         w.inputPatternsFileName = inputPatternsFileName;
         
