@@ -22,10 +22,13 @@ I also recorded a series of videos explaining how does MDL work:
 ```java -jar mdl.jar <input assembler file> [options/tasks]```
 
 Tasks will be executed in the order in which they are specified in the commandline, and using all the flag specified previously. Tasks can be repeated many times in the same command line.
+- ```-help```: to show this information (this is the only flag that can be used without specifying an input file).
 - ```-cpu <type>```: to select a different CPU (z80/z80msx/z80cpc) (default: z80msx).
-- ```-dialect <type>```: to allow parsing different assembler dialects (mdl/asmsx/asmsx-zilog/glass/sjasm/sjasmplus/tniasm/winape/pasmo/sdcc/sdasz80) (default: mdl, which supports some basic code idioms common to various assemblers).
+- ```-dialect <dialect>```: to allow parsing different assembler dialects (mdl/asmsx/asmsx-zilog/glass/sjasm/sjasmplus/tniasm/winape/pasmo/sdcc/sdasz80/macro80) (default: mdl, which supports some basic code idioms common to various assemblers).
                    Note that even when selecting a dialect, not all syntax of a given assembler might be supported.
 - ```-I <folder>```: adds a folder to the include search path.
+- ```-ansion```: turns on color message output usin ANSI codes (default: on in Unix, off in Windows).
+- ```-ansioff```: turns off color message output usin ANSI codes.
 - ```-quiet```: turns off info messages; only outputs warnings and errors.
 - ```-debug```: turns on debug messages.
 - ```-trace```: turns on trace messages.
@@ -55,6 +58,7 @@ Tasks will be executed in the order in which they are specified in the commandli
 - ```-out-do-not-evaluate-dialect-functions```: some assembler dialects define functions like random/sin/cos that can be used to form expressions. By default, MDL replaces them by the result of their execution before generating assembler output (as those might not be defined in other assemblers, and thus this keeps the assembler output as compatible as possible). Use this flag if you don't want this to happen.
 - ```-out-evaluate-all-expressions```: this flag makes MDL resolve all expressions down to their ultimate numeric or string value when generating assembler code.
 - ```-po```: (task) Runs the pattern-based optimizer using the latest settings. Notice that the ```-posilent```, ```-poapply```, etc. flags need to be passed *before* the call to ```-po``` that they which to affect and which is the one that triggers the optimizer. You can pass an optional parameter, like ````-po size``` or ```-po speed```, which are shortcuts for '-po -popatterns data/pbo-patterns-size.txt' and '-po -popatterns data/pbo-patterns-speed.txt' (some dialects might change the defaults of these two)
+- ```-po1```/```-po2```/```-po3```: (task) The same as ```-po```, but specify whether to do 1, 2 or 3 passes of optimization (```-po``` is equivalent to ```-po2```). The more passes, the slower the optimization. Usually 1 pass is enough, but often 2 passes finds a few additional optimizations. 3 passes rarely finds any additional optimization.
 - ```-posilent```: Supresses the pattern-based-optimizer output
 - ```-poapply```: (deprecated) For each assembler ```<file>``` parsed by MDL, a corresponding ```<file>.mdl.asm``` is generated with the optimizations applied to it.
 - ```-popotential```: Reports lines where a potential optimization was not applied for safety, but could maybe be done manually (at most one potential optimization per line is shown).
@@ -62,6 +66,7 @@ Tasks will be executed in the order in which they are specified in the commandli
 - ```-popatterns <file>```: specifies the file to load optimization patterns from (default 'data/pbo-patterns.txt', which contains patterns that optimize both size and speed). For targetting size optimizations, use 'data/pbo-patterns-size.txt'. Notice that some dialects might change the default, for example, the sdcc dialect sets the default to 'data/pbo-patterns-sdcc-speed.txt'
 - ```-po-ldo```: some pattern-based optimizations depend on the specific value that some labels take ('label-dependent optimizations', ldo). These might be dangerous for code that is still in development. This flag disables those optimizations for al subsequence calls to ```-po```.
 - ```-ro```: (task) runs the code reoganizer optimizer.
+- ```-ro-no-inliner```: deactivates the function inliner in the subsequent calls to ```-ro```.
 - ```-rohtml <file>```: generates a visualization of the division of the code before code reoganizer optimization as an html file.
 - ```-dot <output file>```: (task) generates a dot file with a graph representing the whole source code. Convert it to a png using 'dot' like this: ```dot -Tpng <output file>.dot -o <output file>.png```
 - ```-st <output file>```: (task) to output the symbol table.
