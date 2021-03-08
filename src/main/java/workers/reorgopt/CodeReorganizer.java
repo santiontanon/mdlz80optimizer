@@ -49,6 +49,7 @@ public class CodeReorganizer implements MDLWorker {
     
     String htmlOutputFileName = null;
     boolean trigger = false;
+    boolean runInliner = true;
     
     public CodeReorganizer(MDLConfig a_config)
     {
@@ -61,6 +62,7 @@ public class CodeReorganizer implements MDLWorker {
         // This string has MD tags, so that I can easily generate the corresponding documentation in github with the 
         // hidden "-helpmd" flag:        
         return "- ```-ro```: (task) runs the code reoganizer optimizer.\n" + 
+               "- ```-ro-no-inliner```: deactivates the function inliner in the subsequent calls to ```-ro```.\n" +
                "- ```-rohtml <file>```: generates a visualization of the division of the code before code reoganizer optimization as an html file.\n";
     }
 
@@ -76,6 +78,10 @@ public class CodeReorganizer implements MDLWorker {
         if (flags.get(0).equals("-ro")) {
             flags.remove(0);
             trigger = true;
+            return true;
+        } else if (flags.get(0).equals("-ro-no-inliner")) {
+            flags.remove(0);
+            runInliner = false;
             return true;
         } else if (flags.get(0).equals("-rohtml") && flags.size()>=2) {
             flags.remove(0);
@@ -163,6 +169,7 @@ public class CodeReorganizer implements MDLWorker {
         CodeReorganizer w = new CodeReorganizer(config);
 
         w.htmlOutputFileName = htmlOutputFileName;
+        w.runInliner = runInliner;
         
         // reset state:
         trigger = false;
@@ -363,7 +370,9 @@ public class CodeReorganizer implements MDLWorker {
     private void reorganizeBlock(CodeBlock subarea, CodeBase code, OptimizationResult savings) {
         protectJumpTables(subarea);
         reorganizeBlockInternal(subarea, code, savings);
-        inlineFunctions(subarea, code, savings);
+        if (runInliner) {
+            inlineFunctions(subarea, code, savings);
+        }
         fixLocalLabels(subarea, code);
     }
     

@@ -155,6 +155,8 @@ public class PatternBasedOptimizer implements MDLWorker {
         
         // set the internal configuration, so we can parse the patterns with standard z80 syntax:
         patternsConfig = new MDLConfig();
+        patternsConfig.labelsHaveSafeValues = config.labelsHaveSafeValues;
+
         try {
             patternsConfig.parseArgs("dummy", "-dialect", "mdl", "-cpu", config.cpu);
         } catch(IOException e) {
@@ -198,9 +200,6 @@ public class PatternBasedOptimizer implements MDLWorker {
     void loadPatterns(String fileName) 
     {
         config.debug("Loading patterns from " + fileName);
-        
-        // Since different dialects have different syntax, we replace the tokenizer temporarily to parse the
-        // optimization patterns, which use standard syntax:
         
         try (BufferedReader br = Resources.asReader(fileName)) {
             String patternString = "";

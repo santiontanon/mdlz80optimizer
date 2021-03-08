@@ -1464,15 +1464,15 @@ constraints:
 equal(?const1, 1)
 flagsNotUsedAfter(0,C)
 
-pattern: Replace ld (?any1),0;...;ld (?any2),0 with xor a;ld (?any1),a;...;ld (?any2),0
-0: ld (?any1),0
+pattern: Replace ld (hl),0;...;ld (hl),0 with xor a;ld (hl),a;...;ld (hl),a
+0: ld (hl),0
 2: *
-3: ld (?any2),0
+3: ld (hl),0
 replacement:
 1: xor a
-0: ld (?any1),a
+0: ld (hl),a
 2: *
-3: ld (?any2),a
+3: ld (hl),a
 constraints:
 regsNotUsed(2,A)
 regsNotUsedAfter(3,A)
