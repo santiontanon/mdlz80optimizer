@@ -65,6 +65,7 @@ public class ExpressionTest {
     @Test public void test26() { Assert.assertEquals(Integer.valueOf(Expression.FALSE), evaluate("144!=32*4+4*4")); }
     @Test public void test27() { Assert.assertEquals(Integer.valueOf(97), evaluate("100 - 5 + 2")); }
     @Test public void test28() { Assert.assertEquals(Integer.valueOf(1), evaluate("#00 & ~1 | 1")); }
+    @Test public void test29() { Assert.assertEquals(Integer.valueOf('a'*256+'f'), evaluate("\"af\"")); }
 
     private Object evaluate(String line)
     {
@@ -72,8 +73,12 @@ public class ExpressionTest {
         Expression exp = config.expressionParser.parse(tokens, null, null, code);
         System.out.println(exp);
 
-        return exp.evaluatesToNumericConstant()
-                ? exp.evaluate(null, code, false)
-                : null;
+        if (exp.evaluatesToIntegerConstant()) {
+            return exp.evaluateToInteger(null, code, false);
+        } else if (exp.evaluatesToNumericConstant()) {
+            return exp.evaluate(null, code, false);
+        } else {
+            return null;
+        }
     }
 }

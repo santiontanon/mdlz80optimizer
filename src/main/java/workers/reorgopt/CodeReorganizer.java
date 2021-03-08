@@ -487,6 +487,8 @@ public class CodeReorganizer implements MDLWorker {
                 !call.op.spec.getName().equalsIgnoreCase("jr")) {
                 continue;
             }
+            
+            if (code.protectedFromOptimization(call)) continue;
 
             // it's called only once, we can try to inline it!
             // find if the call is in the same subarea:
@@ -554,11 +556,17 @@ public class CodeReorganizer implements MDLWorker {
                 subarea.subBlocks.remove(block);
                 i--;
                 
-                // Check all relative jumps are still within reach:
-                code.resetAddresses();
-                // unfortunately we need to check the whole code base, as jump statements might be
-                // outside of the current area, but jumping to a label inside of the current area:
-                if (!code.checkLocalLabelsInRange()) cancelOptimization = true;                
+                if (ret != null && code.protectedFromOptimization(ret)) {
+                    cancelOptimization = true;
+                }
+                
+                if (!cancelOptimization) {
+                    // Check all relative jumps are still within reach:
+                    code.resetAddresses();
+                    // unfortunately we need to check the whole code base, as jump statements might be
+                    // outside of the current area, but jumping to a label inside of the current area:
+                    if (!code.checkLocalLabelsInRange()) cancelOptimization = true;                
+                }
                 
                 if (cancelOptimization) {
                     // undo:
@@ -586,7 +594,6 @@ public class CodeReorganizer implements MDLWorker {
                     call.comment = callOpComment;
                     call.op = callOp;
                     call.type = CodeStatement.STATEMENT_CPUOP;
-                    
                 } else {
                     // print optimization message:
                     int bytesSaved = callOp.sizeInBytes() + retOp.sizeInBytes();

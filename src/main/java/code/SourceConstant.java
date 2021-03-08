@@ -75,4 +75,11 @@ public class SourceConstant {
                exp.type == Expression.EXPRESSION_SYMBOL && 
                exp.symbolName.equalsIgnoreCase(CodeBase.CURRENT_ADDRESS);
     }
+    
+    
+    public void setConfig(MDLConfig newConfig)
+    {
+        config = newConfig;
+        if (exp != null) exp.setConfig(newConfig);
+    }    
 }

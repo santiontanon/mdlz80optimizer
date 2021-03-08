@@ -10,6 +10,7 @@ import code.CodeBase;
 import code.Expression;
 import code.CodeStatement;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -34,7 +35,6 @@ public class ExpressionParser {
     public final String OP_STD_BIT_XOR = "^";
     public final String OP_STD_MOD = "%";
     
-    
     public String OP_RSHIFT = ">>";
     public String OP_LSHIFT = "<<";
     public String OP_LOGICAL_NEGATION = "!";
@@ -56,6 +56,8 @@ public class ExpressionParser {
     public List<String> dialectFunctions = new ArrayList<>();
     public List<String> dialectFunctionsSingleArgumentNoParenthesis = new ArrayList<>();
 
+    public HashMap<String, String> opSynonyms = new HashMap<>();
+    
     // dialect-specific variables:
     public List<Integer> sjasmConterVariables = new ArrayList<>();
     public boolean sdccStyleHashMarksForConstants = false;
@@ -70,8 +72,28 @@ public class ExpressionParser {
     public ExpressionParser(MDLConfig a_config)
     {
         config = a_config;
+        
+        opSynonyms.put("and", OP_LOGICAL_AND);
+        opSynonyms.put("or", OP_LOGICAL_OR);
     }
 
+    public void addOpSynonym(String synonym, String kw) {
+        opSynonyms.put(synonym, kw);
+    }
+
+
+    public boolean isOp(String token, String kw) {
+        if (token.equalsIgnoreCase(kw)) {
+            return true;
+        }
+        token = token.toLowerCase();
+        if (opSynonyms.containsKey(token)
+                && opSynonyms.get(token).equalsIgnoreCase(kw)) {
+            return true;
+        }
+        return false;
+    }
+    
 
     // "previous" is used for label scoping (it should be the statement that will be right before "s", after inserting "s"
     // into the SourceFile, since "s" might not have been yet inserted into it:
@@ -141,7 +163,7 @@ public class ExpressionParser {
                 exp = Expression.operatorExpression(Expression.EXPRESSION_DIV, exp, exp2, config);
                 continue;
             }
-            if (StringUtils.equalsIgnoreCase(tokens.get(0), OP_MOD)) {
+            if (isOp(tokens.get(0), OP_MOD)) {
                 tokens.remove(0);
                 Expression exp2 = parseInternal(tokens, s, previous, code);
                 if (exp2 == null) {
@@ -151,7 +173,7 @@ public class ExpressionParser {
                 exp = Expression.operatorExpression(Expression.EXPRESSION_MOD, exp, exp2, config);
                 continue;
             }
-            if (StringUtils.equalsIgnoreCase(tokens.get(0),OP_BIT_OR)) {
+            if (isOp(tokens.get(0), OP_BIT_OR)) {
                 tokens.remove(0);
                 Expression exp2 = parseInternal(tokens, s, previous, code);
                 if (exp2 == null) {
@@ -161,7 +183,7 @@ public class ExpressionParser {
                 exp = Expression.operatorExpression(Expression.EXPRESSION_BITOR, exp, exp2, config);
                 continue;
             }
-            if (StringUtils.equalsIgnoreCase(tokens.get(0), OP_BIT_AND)) {
+            if (isOp(tokens.get(0), OP_BIT_AND)) {
                 tokens.remove(0);
                 Expression exp2 = parseInternal(tokens, s, previous, code);
                 if (exp2 == null) {
@@ -171,7 +193,7 @@ public class ExpressionParser {
                 exp = Expression.operatorExpression(Expression.EXPRESSION_BITAND, exp, exp2, config);
                 continue;
             }
-            if (StringUtils.equalsIgnoreCase(tokens.get(0), OP_BIT_XOR)) {
+            if (isOp(tokens.get(0), OP_BIT_XOR)) {
                 tokens.remove(0);
                 Expression exp2 = parseInternal(tokens, s, previous, code);
                 if (exp2 == null) {
@@ -191,7 +213,7 @@ public class ExpressionParser {
                 exp = Expression.operatorExpression(Expression.EXPRESSION_EQUAL, exp, exp2, config);
                 continue;
             }
-            if (tokens.get(0).equalsIgnoreCase(OP_LOWERTHAN)) {
+            if (isOp(tokens.get(0), OP_LOWERTHAN)) {
                 tokens.remove(0);
                 Expression exp2 = parseInternal(tokens, s, previous, code);
                 if (exp2 == null) {
@@ -201,7 +223,7 @@ public class ExpressionParser {
                 exp = Expression.operatorExpression(Expression.EXPRESSION_LOWERTHAN, exp, exp2, config);
                 continue;
             }
-            if (tokens.get(0).equalsIgnoreCase(OP_GREATERTHAN)) {
+            if (isOp(tokens.get(0), OP_GREATERTHAN)) {
                 tokens.remove(0);
                 Expression exp2 = parseInternal(tokens, s, previous, code);
                 if (exp2 == null) {
@@ -211,7 +233,7 @@ public class ExpressionParser {
                 exp = Expression.operatorExpression(Expression.EXPRESSION_GREATERTHAN, exp, exp2, config);
                 continue;
             }
-            if (tokens.get(0).equalsIgnoreCase(OP_LEQTHAN)) {
+            if (isOp(tokens.get(0), OP_LEQTHAN)) {
                 tokens.remove(0);
                 Expression exp2 = parseInternal(tokens, s, previous, code);
                 if (exp2 == null) {
@@ -221,7 +243,7 @@ public class ExpressionParser {
                 exp = Expression.operatorExpression(Expression.EXPRESSION_LEQTHAN, exp, exp2, config);
                 continue;
             }
-            if (tokens.get(0).equalsIgnoreCase(OP_GEQTHAN)) {
+            if (isOp(tokens.get(0), OP_GEQTHAN)) {
                 tokens.remove(0);
                 Expression exp2 = parseInternal(tokens, s, previous, code);
                 if (exp2 == null) {
@@ -231,7 +253,7 @@ public class ExpressionParser {
                 exp = Expression.operatorExpression(Expression.EXPRESSION_GEQTHAN, exp, exp2, config);
                 continue;
             }
-            if (tokens.get(0).equalsIgnoreCase(OP_DIFF)) {
+            if (isOp(tokens.get(0), OP_DIFF)) {
                 tokens.remove(0);
                 Expression exp2 = parseInternal(tokens, s, previous, code);
                 if (exp2 == null) {
@@ -254,7 +276,7 @@ public class ExpressionParser {
                     return null;
                 }
             }
-            if (tokens.get(0).equalsIgnoreCase(OP_LSHIFT)) {
+            if (isOp(tokens.get(0), OP_LSHIFT)) {
                 tokens.remove(0);
                 Expression exp2 = parseInternal(tokens, s, previous, code);
                 if (exp2 == null) {
@@ -264,7 +286,7 @@ public class ExpressionParser {
                 exp = Expression.operatorExpression(Expression.EXPRESSION_LSHIFT, exp, exp2, config);
                 continue;
             }
-            if (tokens.get(0).equalsIgnoreCase(OP_RSHIFT)) {
+            if (isOp(tokens.get(0), OP_RSHIFT)) {
                 tokens.remove(0);
                 Expression exp2 = parseInternal(tokens, s, previous, code);
                 if (exp2 == null) {
@@ -274,7 +296,7 @@ public class ExpressionParser {
                 exp = Expression.operatorExpression(Expression.EXPRESSION_RSHIFT, exp, exp2, config);
                 continue;
             }
-            if (tokens.get(0).equalsIgnoreCase(OP_LOGICAL_OR)) {
+            if (isOp(tokens.get(0), OP_LOGICAL_OR)) {
                 tokens.remove(0);
                 Expression exp2 = parseInternal(tokens, s, previous, code);
                 if (exp2 == null) {
@@ -284,7 +306,7 @@ public class ExpressionParser {
                 exp = Expression.operatorExpression(Expression.EXPRESSION_OR, exp, exp2, config);
                 continue;
             }
-            if (tokens.get(0).equalsIgnoreCase(OP_LOGICAL_AND)) {
+            if (isOp(tokens.get(0), OP_LOGICAL_AND)) {
                 tokens.remove(0);
                 Expression exp2 = parseInternal(tokens, s, previous, code);
                 if (exp2 == null) {

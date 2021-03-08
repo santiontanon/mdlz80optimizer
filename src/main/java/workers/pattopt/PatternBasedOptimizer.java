@@ -416,6 +416,7 @@ public class PatternBasedOptimizer implements MDLWorker {
                 }
                 r.addOptimizerSpecific("Pattern-based optimizer pattern applications", 1);
                 r.addSavings(bestPatt.getSpaceSaving(bestMatch, code), bestPatt.getTimeSaving(bestMatch, code));
+                bestMatch.setConfig(config);    // we set the dialect configuration to the global one, in order to generate code properly if needed
                 appliedOptimizations.add(bestMatch);
                 return true;
             } else {

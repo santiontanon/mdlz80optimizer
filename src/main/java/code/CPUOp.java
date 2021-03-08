@@ -515,4 +515,13 @@ public class CPUOp {
         }
         return true;
     }
+    
+    
+    public void setConfig(MDLConfig newConfig)
+    {
+        config = newConfig;
+        for(Expression arg:args) {
+            arg.setConfig(newConfig);
+        }
+    }
 }

@@ -44,6 +44,7 @@ public class Macro80Dialect implements Dialect {
         config.lineParser.allowIncludesWithoutQuotes = true;
         config.tokenizer.allowQuestionMarksInSymbols = true;
         
+        config.expressionParser.opSynonyms.clear();
         config.expressionParser.OP_LSHIFT = "shl";
         config.expressionParser.OP_RSHIFT = "shr";
         config.expressionParser.OP_BIT_NEGATION = "not";

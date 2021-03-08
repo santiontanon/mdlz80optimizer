@@ -3,6 +3,7 @@
  */
 package workers.pattopt;
 
+import cl.MDLConfig;
 import code.CodeBase;
 import code.Expression;
 import code.SourceFile;
@@ -65,5 +66,13 @@ public class PatternMatch {
             }
         }
         return false;
+    }
+    
+    
+    public void setConfig(MDLConfig config)
+    {
+        for(CodeStatement s:added) {
+            s.setConfig(config);
+        }
     }
 }

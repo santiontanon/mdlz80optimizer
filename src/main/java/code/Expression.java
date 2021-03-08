@@ -114,7 +114,17 @@ public class Expression {
 
 
     public Integer evaluateToInteger(CodeStatement s, CodeBase code, boolean silent) {
-        return (Integer)evaluateInternal(s, code, silent, null, new ArrayList<>());
+        Object v = evaluateInternal(s, code, silent, null, new ArrayList<>());
+        if (v instanceof Integer) {
+            return (Integer)v;
+        } else if (v instanceof String) {
+            String str = (String)v;
+            if (str.length() == 2) {
+                return str.charAt(0)*256 + str.charAt(1);
+            }
+            return null;
+        }
+        return null;
     }
    
     
@@ -123,7 +133,17 @@ public class Expression {
       (for example, when parsing a macro being expanded), so that we know which will be the previous statement once it is added
     */
     public Integer evaluateToInteger(CodeStatement s, CodeBase code, boolean silent, CodeStatement previous) {
-        return (Integer)evaluateInternal(s, code, silent, previous, new ArrayList<>());
+        Object v = evaluateInternal(s, code, silent, previous, new ArrayList<>());
+        if (v instanceof Integer) {
+            return (Integer)v;
+        } else if (v instanceof String) {
+            String str = (String)v;
+            if (str.length() == 2) {
+                return str.charAt(0)*256 + str.charAt(1);
+            }
+            return null;
+        }
+        return null;        
     }
 
 
@@ -132,7 +152,17 @@ public class Expression {
       (for example, when parsing a macro being expanded), so that we know which will be the previous statement once it is added
     */
     public Integer evaluateToIntegerInternal(CodeStatement s, CodeBase code, boolean silent, CodeStatement previous, List<String> variableStack) {
-        return (Integer)evaluateInternal(s, code, silent, previous, variableStack);
+        Object v = evaluateInternal(s, code, silent, previous, variableStack);
+        if (v instanceof Integer) {
+            return (Integer)v;
+        } else if (v instanceof String) {
+            String str = (String)v;
+            if (str.length() == 2) {
+                return str.charAt(0)*256 + str.charAt(1);
+            }
+            return null;
+        }
+        return null;
     }
 
     public String evaluateToString(CodeStatement s, CodeBase code, boolean silent) {
@@ -1084,7 +1114,8 @@ public class Expression {
             return true;
         }
         if (type == EXPRESSION_STRING_CONSTANT
-                && stringConstant.length() == 1) {
+                && (stringConstant.length() == 1 || 
+                    stringConstant.length() == 2)) {
             return true;
         }
         if (type == EXPRESSION_SIGN_CHANGE
@@ -1135,7 +1166,8 @@ public class Expression {
             return true;
         }
         if (type == EXPRESSION_STRING_CONSTANT
-                && stringConstant.length() == 1) {
+                && (stringConstant.length() == 1 || 
+                    stringConstant.length() == 2)) {
             return true;
         }
         if (type == EXPRESSION_SIGN_CHANGE
@@ -1558,4 +1590,15 @@ public class Expression {
         
         return el;
     }
+    
+    
+    public void setConfig(MDLConfig newConfig)
+    {
+        config = newConfig;
+        if (args != null) {
+            for (Expression arg:args) {
+                arg.setConfig(newConfig);
+            }
+        }
+    }    
 }

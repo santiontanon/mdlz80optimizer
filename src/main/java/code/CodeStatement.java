@@ -545,4 +545,35 @@ public class CodeStatement {
             }            
         }
     }
+    
+    
+    // Each MDLConfig encapsulates a given dialect. Since the optimization patterns are
+    // written in some default dialect, we might neeed to switch the config from one to
+    // the other at some point:
+    public void setConfig(MDLConfig newConfig)
+    {
+        config = newConfig;
+        if (org != null) org.setConfig(newConfig);
+        if (incbinSize != null) incbinSize.setConfig(newConfig);
+        if (incbinSkip != null) incbinSkip.setConfig(newConfig);
+        if (data != null) {
+            for(Expression v:data) {
+                v.setConfig(newConfig);
+            }
+        }
+        if (space != null) space.setConfig(newConfig);
+        if (space_value != null) space_value.setConfig(newConfig);
+        if (op != null) op.setConfig(newConfig);
+        if (macroCallArguments != null) {
+            for(Expression v:macroCallArguments) {
+                if (v != null) v.setConfig(newConfig);
+            }
+        }
+        if (macroDefinitionDefaults != null) {
+            for(Expression v:macroDefinitionDefaults) {
+                if (v != null) v.setConfig(newConfig);
+            }
+        }
+        if (label != null) label.setConfig(newConfig);    
+    }
 }
