@@ -142,7 +142,16 @@ public class ASMSXDialect implements Dialect {
         config.lineParser.macroArguentPrefixes.add("@");
         config.lineParser.macroDefinitionStyle = LineParser.MACRO_BOTH;
         config.preProcessor.macroSynonyms.put("endmacro", config.preProcessor.MACRO_ENDM);
-    }
+        
+        // asMSX has a different operator precedence than the standard C/C++:
+        config.expressionParser.OPERATOR_PRECEDENCE = new int[] {
+            -1, -1, -1, -1, -1,
+            -1, 7, 7, 5, 5,     // (, +, -, *, /
+            5, 13, 11, 10, 9,   // %, ||, &&, =, <
+            9, 9, 9, 10, 16,    // >, <=, >=, !=, ?
+            6, 6, 7, 5, 3,    // <<, >>, |, &, ~
+            7, 3, -1, -1, -1}; // ^, !
+        }
 
 
     @Override

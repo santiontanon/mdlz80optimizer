@@ -68,6 +68,16 @@ public class ExpressionParser {
     // This is used by the macro80 dialect:
     public boolean doubleHashToMarkExternalSymbols = false;
     
+    // indexed by the operator numbers:
+    // Precedences obtained from the ones used by c++: https://en.cppreference.com/w/cpp/language/operator_precedence
+    public int OPERATOR_PRECEDENCE[] = {
+        -1, -1, -1, -1, -1,
+        -1, 6, 6, 5, 5,     // (, +, -, *, /
+        5, 13, 11, 10, 9,   // %, ||, &&, =, <
+        9, 9, 9, 10, 16,    // >, <=, >=, !=, ?
+        7, 7, 13, 11, 3,    // <<, >>, |, &, ~
+        12, 3, -1, -1, -1}; // ^, !
+    
 
     public ExpressionParser(MDLConfig a_config)
     {

@@ -764,8 +764,38 @@ public class LineParser {
             s.type = CodeStatement.STATEMENT_DATA_DOUBLE_WORDS;
         }
         s.data = data;
-
-        return parseRestofTheLine(tokens, l, sl, s, previous, source, code);
+        
+        // Break the data statement into several statements if the use of "$" is detected,
+        // as different dialects have different semantics for it (referring to the
+        // pinter at the beginning of the statement, or at the current byte):
+        List<List<Expression>> all_splits = new ArrayList<>();
+        List<Expression> current_split = new ArrayList<>();
+        for(Expression exp: s.data) {
+            if (exp.containsCurrentAddress()) {
+                // we need to break!
+                if (current_split.isEmpty()) {
+                    current_split.add(exp);
+                } else {
+                    all_splits.add(current_split);
+                    current_split = new ArrayList<>();
+                    current_split.add(exp);
+                }
+            } else {
+                current_split.add(exp);
+            }
+        }
+        if (!current_split.isEmpty()) all_splits.add(current_split);
+        
+        s.data = all_splits.remove(0);
+        CodeStatement last = s;
+        for(List<Expression> split:all_splits) {
+            CodeStatement s2 = new CodeStatement(s.type, sl, source, config);
+            s2.data = split;
+            l.add(s2);
+            last = s2;
+        }
+        
+        return parseRestofTheLine(tokens, l, sl, last, previous, source, code);
     }
 
     public boolean parseDefineSpace(List<String> tokens, List<CodeStatement> l, 

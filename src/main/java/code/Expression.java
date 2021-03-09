@@ -52,16 +52,6 @@ public class Expression {
     public static final int RENDER_AS_8BITBIN = 4;
     public static final int RENDER_AS_16BITBIN = 5;
 
-    // indexed by the numbers above:
-    // Precedences obtained from the ones used by c++: https://en.cppreference.com/w/cpp/language/operator_precedence
-    public static final int OPERATOR_PRECEDENCE[] = {
-        -1, -1, -1, -1, -1,
-        -1, 6, 6, 5, 5,
-        5, 13, 11, 10, 9,
-        9, 9, 9, 10, 16,
-        7, 7, 13, 11, 3,
-        12, 3, -1, -1, -1};
-
     MDLConfig config;
     public int type;
     public int integerConstant;
@@ -1499,16 +1489,16 @@ public class Expression {
 
     public static Expression operatorExpression(int operator, Expression arg1, Expression arg2, MDLConfig config) {
         // look at operator precedence:
-        if (OPERATOR_PRECEDENCE[operator] < 0) {
+        if (config.expressionParser.OPERATOR_PRECEDENCE[operator] < 0) {
             config.error("Precedence for operator " + operator + " is undefined!");
             return null;
         }
-        if (OPERATOR_PRECEDENCE[arg1.type] >= 0
-                && OPERATOR_PRECEDENCE[operator] < OPERATOR_PRECEDENCE[arg1.type]) {
+        if (config.expressionParser.OPERATOR_PRECEDENCE[arg1.type] >= 0
+                && config.expressionParser.OPERATOR_PRECEDENCE[operator] < config.expressionParser.OPERATOR_PRECEDENCE[arg1.type]) {
             // operator has higher precedence than the one in arg1, we need to reorder!
-            if (OPERATOR_PRECEDENCE[arg2.type] >= 0
-                    && OPERATOR_PRECEDENCE[operator] < OPERATOR_PRECEDENCE[arg2.type]) {
-                if (OPERATOR_PRECEDENCE[arg1.type] < OPERATOR_PRECEDENCE[arg2.type]) {
+            if (config.expressionParser.OPERATOR_PRECEDENCE[arg2.type] >= 0
+                    && config.expressionParser.OPERATOR_PRECEDENCE[operator] < config.expressionParser.OPERATOR_PRECEDENCE[arg2.type]) {
+                if (config.expressionParser.OPERATOR_PRECEDENCE[arg1.type] < config.expressionParser.OPERATOR_PRECEDENCE[arg2.type]) {
                     // (1 arg1 (2 operator 3)) arg2 4
                     Expression exp = operatorExpression(operator, arg1.args.get(arg1.args.size() - 1), arg2.args.get(0), config);                    
                     arg1.args.set(arg1.args.size() - 1, exp);
@@ -1527,8 +1517,8 @@ public class Expression {
                 arg1.args.set(arg1.args.size() - 1, exp);
                 return arg1;
             }
-        } else if (OPERATOR_PRECEDENCE[arg2.type] >= 0
-                && OPERATOR_PRECEDENCE[operator] < OPERATOR_PRECEDENCE[arg2.type]) {
+        } else if (config.expressionParser.OPERATOR_PRECEDENCE[arg2.type] >= 0
+                && config.expressionParser.OPERATOR_PRECEDENCE[operator] < config.expressionParser.OPERATOR_PRECEDENCE[arg2.type]) {
             // operator has higher precedence than the one in arg2, we need to reorder!
             // (arg1 operator 3) arg2 4
             Expression exp = operatorExpression(operator, arg1, arg2.args.get(0), config);
