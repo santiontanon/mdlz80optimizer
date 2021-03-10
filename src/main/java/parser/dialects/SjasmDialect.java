@@ -223,6 +223,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
         String fileName;
         CodeStatement startStatement;
         HashMap<Integer,CodePage> pages = new HashMap<>();
+        CodePage lastDefinedPage = null;    // we remember the last defined page, to set the default values for the next page
         List<SJasmCodeBlock> codeBlocks = new ArrayList<>();
         SJasmCodeBlock defaultBlock;
         
@@ -781,12 +782,33 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                     return false;
                 }
             }
-            int pageNumber = pageExp.evaluateToInteger(s, code, false);
+            Integer pageNumber = pageExp.evaluateToInteger(s, code, false);
+            if (pageNumber == null) {
+                config.error("Cannot evaluate " + pageExp + " to an integer in " + sl);
+                return false;                
+            }
+            if (pageStartExp == null) {
+                // use the value of the last defined page:
+                if (currentOutput.lastDefinedPage != null) {
+                    pageStartExp = currentOutput.lastDefinedPage.start;
+                }
+                if (pageStartExp == null) {
+                    config.error("Could not determine the size of page in " + sl);
+                    return false;
+                }
+            }
+            if (pageSizeExp == null) {
+                // use the value of the last defined page:
+                if (currentOutput.lastDefinedPage != null) {
+                    pageSizeExp = currentOutput.lastDefinedPage.size;
+                }
+            }
             CodePage page = new CodePage(s, pageStartExp, pageSizeExp);
             if (currentOutput.pages.containsKey(pageNumber)) {
                 config.warn("Redefining page " + pageNumber + " in " + sl);
             }
             currentOutput.pages.put(pageNumber, page);
+            currentOutput.lastDefinedPage = page;
             
             linesToKeepIfGeneratingDialectAsm.add(s);
             
@@ -2100,13 +2122,13 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                 // if the page has no target size, ignore:
                 if (page.size == null) continue;
 
-                CodeStatement pageStart = page.pageStartStatement;
-                CodeStatement pageEnd = page.pageEndStatement;                
+//                CodeStatement pageStart = page.pageStartStatement;
+//                CodeStatement pageEnd = page.pageEndStatement;                
                 Integer desiredPageSize = page.size.evaluateToInteger(null, code, true);
-                    if (desiredPageSize == null) {
-                        config.error("Cannot assess page "+pageIdx+" size!");
-                        return false;
-                    }
+                if (desiredPageSize == null) {
+                    config.error("Cannot assess page "+pageIdx+" size!");
+                    return false;
+                }
                 Integer pageSize = page.sizeWithoutFiller(code);
                 
                 if (pageSize < desiredPageSize) {
