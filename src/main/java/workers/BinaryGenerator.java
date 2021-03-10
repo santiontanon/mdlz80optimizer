@@ -101,22 +101,19 @@ public class BinaryGenerator implements MDLWorker {
         return true;
     }
     
-    
+
     public boolean writeBytes(SourceFile sf, CodeBase code, OutputStream os) throws Exception
     {
-        List<Pair<CodeStatement, List<Integer>>> statementBytes = new ArrayList<>();
+        List<Pair<CodeStatement, byte[]>> statementBytes = new ArrayList<>();
         if (!generateStatementBytes(sf, code, statementBytes)) return false;
-        for(Pair<CodeStatement, List<Integer>> pair:statementBytes) {
-            List<Integer> data = pair.getRight();
-            for(int value:data) {
-                os.write(value);
-            }
+        for(Pair<CodeStatement, byte[]> pair:statementBytes) {
+            os.write(pair.getRight());
         }
         return true;
     }
+
     
-    
-    public boolean generateStatementBytes(SourceFile sf, CodeBase code, List<Pair<CodeStatement, List<Integer>>> statementBytes)
+    public boolean generateStatementBytes(SourceFile sf, CodeBase code, List<Pair<CodeStatement, byte[]>> statementBytes)
     {
         for (CodeStatement ss:sf.getStatements()) {
             switch(ss.type) {
@@ -133,24 +130,18 @@ public class BinaryGenerator implements MDLWorker {
 
                 case CodeStatement.STATEMENT_INCBIN:
                 {
-                    List<Integer> data = new ArrayList<>();
                     int skip = 0;
                     int size = 0;
                     if (ss.incbinSkip != null) skip = ss.incbinSkip.evaluateToInteger(ss, code, false);
                     if (ss.incbinSize != null) size = ss.incbinSize.evaluateToInteger(ss, code, false);
+                    long flength = ss.incbin.length();
+                    int datalength = Math.max((int)flength - skip, size);
+                    byte data[] = new byte[datalength];
                     try (InputStream is = new FileInputStream(ss.incbin)) {
-                        while(is.available() != 0) {
-                            int value = is.read();
-                            if (skip > 0) {
-                                skip --;
-                                continue;
-                            }
-                            data.add(value);
-                            size --;
-                            if (size <= 0) break;
-                        }
+                        if (skip > 0) is.skip(skip);
+                        is.read(data, 0, datalength);
                     } catch(Exception e) {
-                        config.error("Cannot expand incbin: " + ss.incbin);
+                        config.error("Cannot expand incbin: " + ss.incbin + " (skip: " + skip + ", size: " + size + ", expectedLength: " + datalength + ")");
                         return false;
                     }
                     statementBytes.add(Pair.of(ss, data));
@@ -163,22 +154,27 @@ public class BinaryGenerator implements MDLWorker {
                     for(Expression exp: ss.data) {        
                         if (!expressionToBytes(exp, ss, code, data)) return false;
                     }
-                    statementBytes.add(Pair.of(ss, data));
+                    byte datab[] = new byte[data.size()];
+                    for(int i = 0;i<data.size();i++) {
+                        datab[i] = (byte)(int)data.get(i);
+                    }
+                    statementBytes.add(Pair.of(ss, datab));
                     break;
                 }
 
                 case CodeStatement.STATEMENT_DATA_WORDS:
                 {
-                    List<Integer> data = new ArrayList<>();
-                    for(Expression exp: ss.data) {
+                    byte data[] = new byte[ss.data.size()*2];
+                    for(int i = 0;i<ss.data.size();i++) {
+                        Expression exp = ss.data.get(i);
                         if (exp.evaluatesToNumericConstant()) {
                             Integer v = exp.evaluateToInteger(ss, code, true);
                             if (v == null) {
                                 config.error("Cannot evaluate expression " + exp + " when generating a binary.");
                                 return false;
                             }
-                            data.add(v&0x00ff);
-                            data.add((v>>8)&0x00ff);
+                            data[i*2] = (byte)(int)(v&0x00ff);
+                            data[i*2+1] = (byte)(int)((v>>8)&0x00ff);
                         } else {
                             config.error("Cannot evaluate expression " + exp + " when generating a binary.");
                             return false;
@@ -190,14 +186,15 @@ public class BinaryGenerator implements MDLWorker {
 
                 case CodeStatement.STATEMENT_DATA_DOUBLE_WORDS:
                 {
-                    List<Integer> data = new ArrayList<>();
-                    for(Expression exp: ss.data) {
+                    byte data[] = new byte[ss.data.size()*4];
+                    for(int i = 0;i<ss.data.size();i++) {
+                        Expression exp = ss.data.get(i);
                         if (exp.evaluatesToNumericConstant()) {
                             int v = exp.evaluateToInteger(ss, code, true);
-                            data.add(v&0x00ff);
-                            data.add((v>>8)&0x00ff);
-                            data.add((v>>16)&0x00ff);
-                            data.add((v>>24)&0x00ff);
+                            data[i*4] = (byte)(int)(v&0x00ff);
+                            data[i*4+1] = (byte)(int)((v>>8)&0x00ff);
+                            data[i*4+2] = (byte)(int)((v>>16)&0x00ff);
+                            data[i*4+3] = (byte)(int)((v>>24)&0x00ff);
                         } else {
                             config.error("Cannot evaluate expression " + exp + "when generating a binary.");
                             return false;
@@ -219,9 +216,9 @@ public class BinaryGenerator implements MDLWorker {
                             config.error("Cannot evaluate " + ss.space + " in " + ss.sl);
                             return false;
                         }
-                        List<Integer> data = new ArrayList<>();
+                        byte data[] = new byte[amount];
                         for(int i = 0;i<amount;i++) {
-                            data.add(value);
+                            data[i] = (byte)(int)value;
                         }
                         statementBytes.add(Pair.of(ss, data));
                     }
@@ -234,7 +231,11 @@ public class BinaryGenerator implements MDLWorker {
                         config.error("Cannot convert op " + ss.op + " to bytes!");
                         return false;
                     }
-                    statementBytes.add(Pair.of(ss, data));
+                    byte datab[] = new byte[data.size()];
+                    for(int i = 0;i<data.size();i++) {
+                        datab[i] = (byte)(int)data.get(i);
+                    }
+                    statementBytes.add(Pair.of(ss, datab));
                     break;
                 }
             }

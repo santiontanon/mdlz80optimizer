@@ -6,13 +6,15 @@ package parser;
 import cl.MDLConfig;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.StringTokenizer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Tokenizer {
-    public List<String> doubleTokens = new ArrayList<>();
+//    public List<String> doubleTokens = new ArrayList<>();
+    public HashSet<String> doubleTokens = new HashSet<>();
     
     public HashMap<String,String> stringEscapeSequences = new HashMap<>();
     
@@ -72,9 +74,6 @@ public class Tokenizer {
         }
         if (!sdccStyleDollarInLabels) {
             tokenizerString += "$";
-//            st = new StringTokenizer(line, " \r\n\t()[]#,;:+-*/%|&'\"!?<>=~^{}\\", true);
-//        } else {
-//            st = new StringTokenizer(line, " \r\n\t()[]#$,;:+-*/%|&'\"!?<>=~^{}\\", true);
         }
         StringTokenizer st = new StringTokenizer(line, tokenizerString, true);
         String previous = null;

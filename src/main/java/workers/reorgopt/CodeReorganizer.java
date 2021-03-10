@@ -800,7 +800,7 @@ public class CodeReorganizer implements MDLWorker {
                                     toMove.statements.get(toMove.statements.size()-1).sl.lineNumber + 
                     " to right before " + destination.statements.get(0).sl.fileNameLineString() + 
                     " to remove a jump statement ("+bytesSaved+" bytes, " + timeSavedString + " " + config.timeUnit+"s saved)");
-            
+                        
             // merge blocks:
             destination.ID = toMove.ID + "+" + destination.ID;
             destination.incoming = toMove.incoming;

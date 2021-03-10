@@ -17,8 +17,9 @@ import java.util.List;
 public class ListOutputStream extends OutputStream {
     List<Integer> data = new ArrayList<>();
 
-    public void write(int arg0) throws IOException {
-        data.add(arg0);
+    @Override
+    public void write(int bytevalue) throws IOException {
+        data.add(bytevalue&0xff);
     }
 
     public List<Integer> getData() {

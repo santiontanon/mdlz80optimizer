@@ -74,15 +74,15 @@ public class AnnotatedSourceCodeGenerator implements MDLWorker {
             
             // Calculate the position of each statement in the generated binary:
             HashMap<CodeStatement, Integer> positionInBinaryMap = new HashMap<>();
-            List<Pair<CodeStatement, List<Integer>>> statementBytes = new ArrayList<>();
+            List<Pair<CodeStatement, byte[]>> statementBytes = new ArrayList<>();
             BinaryGenerator gen = new BinaryGenerator(config);
             for(OutputBinary output: code.outputs) {
                 if (!gen.generateStatementBytes(output.main, code, statementBytes)) return false;
             }
             int position = 0;
-            for(Pair<CodeStatement, List<Integer>> pair:statementBytes) {
+            for(Pair<CodeStatement, byte[]> pair:statementBytes) {
                 positionInBinaryMap.put(pair.getLeft(), position);
-                position += pair.getRight().size();
+                position += pair.getRight().length;
             }
             
             try (FileWriter fw = new FileWriter(outputFileName)) {
