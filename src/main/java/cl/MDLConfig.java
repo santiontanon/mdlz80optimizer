@@ -210,8 +210,21 @@ public class MDLConfig {
     
     
     // Removes .md annotations (used for the GitHub documentation), for printing on the console:
-    private String removeMDTags(String text)
+    private String MDtoHelpString(String text)
     {
+        String lines[] = text.split("\n");
+        for(int i = 0;i<lines.length;i++) {
+            String line = lines[i];
+            if (line.startsWith("- ```")) {
+                line = "- " + MDLLogger.ANSI_WHITE + line.substring(5);
+                int idx = line.indexOf("```");
+                if (idx >= 0) {
+                    line = line.substring(0, idx) + MDLLogger.ANSI_RESET + line.substring(idx+3);
+                }
+                lines[i] = line;
+            }
+        }
+        text = String.join("\n", lines);
         return text.replace("- ```-", "  -").replace("```", "");
     }
 
@@ -221,7 +234,7 @@ public class MDLConfig {
     public boolean parseArgs(String... argsArray) throws IOException {
         if (argsArray.length == 0) {
             
-            info(removeMDTags(simpleDocString));
+            info(MDtoHelpString(simpleDocString));
             return true;
         }
 
@@ -235,7 +248,7 @@ public class MDLConfig {
                 switch (arg) {
                     
                     case "-help":
-                        info(removeMDTags(docString));
+                        info(MDtoHelpString(docString));
                         return true;
                         
                     // This is a hidden flag, as it has no utility for the user, and is only used

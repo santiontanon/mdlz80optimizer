@@ -791,10 +791,9 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                 // use the value of the last defined page:
                 if (currentOutput.lastDefinedPage != null) {
                     pageStartExp = currentOutput.lastDefinedPage.start;
-                }
-                if (pageStartExp == null) {
-                    config.error("Could not determine the size of page in " + sl);
-                    return false;
+                } else {
+                    // default address is 0
+                    pageStartExp = Expression.constantExpression(0, config);
                 }
             }
             if (pageSizeExp == null) {

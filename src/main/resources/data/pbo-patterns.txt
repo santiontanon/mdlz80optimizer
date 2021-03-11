@@ -1485,3 +1485,79 @@ replacement:
 1: cp ~(?const)
 constraints:
 regsNotUsedAfter(1,A)
+
+pattern: Replace cp a;?opjp ?anycp,?anylabel with ?opjp ?anylabel
+0: cp a
+1: ?opjp ?anycp,?anylabel
+replacement:
+1: ?opjp ?anylabel
+constraints:
+in(?opjp,jr,jp)
+in(?anycp,Z,NC,P)
+
+pattern: Remove duplicate xor a 
+1: xor a
+2: *
+0: xor a
+replacement:
+1: xor a
+2: *
+constraints:
+regsNotModified(2,A)
+flagsNotUsedAfter(2,S,Z,H,P/V,N,C)
+
+pattern: Replace ld (?any),0 by ld (?any),a
+1: xor a
+2: *
+0: ld (?any),0
+replacement:
+1: xor a
+2: *
+0: ld (?any),a
+constraints:
+regsNotModified(2,A)
+
+pattern: Replace ld a,?const1;or ?const2 by ld a,(?const1) | (?const2)
+0: ld a,?const1
+1: or ?const2
+replacement:
+0: ld a,(?const1) | (?const2)
+constraints:
+flagsNotUsedAfter(1,S,Z,H,P/V,N,C)
+
+pattern: Replace ld a,?const1;or ?const2 by ld a,(?const1) & (?const2)
+0: ld a,?const1
+1: and ?const2
+replacement:
+0: ld a,(?const1) & (?const2)
+constraints:
+flagsNotUsedAfter(1,S,Z,H,P/V,N,C)
+
+pattern: Replace ld a,?const1;and ?const2 by ld a,(?const1) + (?const2)
+0: ld a,?const1
+1: add a,?const2
+replacement:
+0: ld a,(?const1) + (?const2)
+constraints:
+flagsNotUsedAfter(1,S,Z,H,P/V,N,C)
+
+pattern: Replace ld a,?const1;sub ?const2 by ld a,(?const1) - (?const2)
+0: ld a,?const1
+1: sub ?const2
+replacement:
+0: ld a,(?const1) - (?const2)
+constraints:
+flagsNotUsedAfter(1,S,Z,H,P/V,N,C)
+
+pattern: Replace xor a;and ?const2 by ld a,?const2
+0: xor a
+1: add a,?const2
+replacement:
+0: ld a,?const2
+
+pattern: Remove unused ld ?reg1,?reg2;ld ?reg2,?reg1
+0: ld ?reg1,?reg2
+1: ld ?reg2,?reg1
+replacement:
+constraints:
+regsNotUsedAfter(1,?reg1)

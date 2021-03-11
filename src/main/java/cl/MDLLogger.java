@@ -20,6 +20,7 @@ public class MDLLogger {
     public static String ANSI_RESET = "\u001B[0m";
     public static String ANSI_RED = "\u001B[31m";
     public static String ANSI_YELLOW = "\u001B[33m";
+    public static String ANSI_WHITE = "\u001b[37;1m";
 
     List<Integer> minLevelToLogStack = new ArrayList<>();
     int minLevelToLog = INFO;
@@ -55,8 +56,8 @@ public class MDLLogger {
             ANSI_YELLOW = "";
         }
     }
- 
     
+        
     public void silence()
     {
         minLevelToLogStack.add(0, minLevelToLog);
