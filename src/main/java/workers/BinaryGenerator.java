@@ -228,7 +228,7 @@ public class BinaryGenerator implements MDLWorker {
                 {
                     List<Integer> data = ss.op.assembleToBytes(ss, code, config);
                     if (data == null) {
-                        config.error("Cannot convert op " + ss.op + " to bytes!");
+                        config.error("Cannot convert op " + ss.op + " to bytes in " + ss.sl);
                         return false;
                     }
                     byte datab[] = new byte[data.size()];

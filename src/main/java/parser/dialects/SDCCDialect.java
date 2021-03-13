@@ -35,6 +35,7 @@ public class SDCCDialect implements Dialect {
     // Examples are the ".area" or ".globl" statements
     List<SourceLine> linesToKeepIfGeneratingDialectAsm = new ArrayList<>(); 
             
+    List<String> globalLabels = new ArrayList<>();
     HashMap<String, SourceLine> definedAreas = new HashMap<>();
     String currentArea;
     
@@ -180,7 +181,10 @@ public class SDCCDialect implements Dialect {
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase(".globl")) {
             linesToKeepIfGeneratingDialectAsm.add(sl);
             tokens.remove(0);
-            tokens.remove(0);   // label name
+            String label = tokens.remove(0);   // label name
+            if (!globalLabels.contains(label)) {
+                globalLabels.add(label);
+            }
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase(".area")) {
@@ -247,9 +251,21 @@ public class SDCCDialect implements Dialect {
 
     @Override
     public boolean postParseActions(CodeBase code)
-    {            
+    {
         config.tokenizer.sdccStyleDollarInLabels = false;
         config.tokenizer.sdccStyleHashMarksForConstants = false;
+        
+        // look for global labels:
+        for(SourceFile f:code.getSourceFiles()) {
+            for(CodeStatement s:f.getStatements()) {
+                if (s.label != null && s.label.colonTokenUsedInDefinition != null &&
+                     s.label.colonTokenUsedInDefinition.equals("::")) {
+                    if (!globalLabels.contains(s.label.originalName)) {
+                        globalLabels.add(s.label.originalName);
+                    }
+                }
+            }
+        }
         
         return true;
     }
@@ -479,5 +495,13 @@ public class SDCCDialect implements Dialect {
     {
         nextTemporaryLabel++;
         return (nextTemporaryLabel-1) + "$";
+    }
+    
+        
+    
+    @Override
+    public boolean labelIsExported(SourceConstant label)
+    {
+        return globalLabels.contains(label.originalName);
     }
 }

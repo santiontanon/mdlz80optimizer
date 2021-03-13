@@ -31,6 +31,7 @@ public interface Dialect {
         return false;
     }
 
+    
     // Called when a new symbol is defined (so that the dialect parser can do whatever special it
     // needs to do with it, e.g. define local labels, etc.)
     // returns null if we are trying to redefine a pre-defined symbol according to this dialect.
@@ -40,6 +41,7 @@ public interface Dialect {
     //   which "s" will be inserted).
     Pair<String, SourceConstant> newSymbolName(String name, Expression value, CodeStatement s);
 
+    
     // Like the previous function, but called just when a symbol is used, not when it is defined
     // Should return the actual symbol name (e.g., just "name" if this is an absolute symbol,
     // or some concatenation with a prefix if it's a relative symbol)
@@ -48,6 +50,7 @@ public interface Dialect {
     //   which "s" will be inserted).
     Pair<String, SourceConstant> symbolName(String name, CodeStatement s);
 
+    
     // When the default line parser cannot parse a line, this function will be invoked instead. Returns true if it could
     // successfully parse the line, and false if an error occurred.
     default boolean parseLine(List<String> tokens, List<CodeStatement> l, 
@@ -56,6 +59,7 @@ public interface Dialect {
         return false;
     }
 
+    
     // Some dialects allow "fake" instructions (like "ld de,hl", which do not really, exist, but expand to sequence of ops)
     // This is dangerous for several reasons, as they hide different instructions and it might not be obvious how flags are
     // affected, or what is happening under the hood, making debugging harder. So, MDL generates a warning message 
@@ -65,6 +69,7 @@ public interface Dialect {
         return true;
     }
     
+    
     // Some dialects implement custom functions (e.g., asMSX has a "random" function). They cannot
     // be included in the general parser, as if someone uses a different assembler, those could be used
     // as macro names, causing a collision. So, they are implemented via this function:
@@ -73,6 +78,7 @@ public interface Dialect {
         return null;
     }
 
+    
     // Some dialect functions can be translated to standard expressions. This is preferable than direct evaluation, 
     // if possible, since expressions that contain labels might change value during optimization:
     default Expression translateToStandardExpression(String functionName, List<Expression> args, CodeStatement s, CodeBase code) {
@@ -80,17 +86,20 @@ public interface Dialect {
         return null;
     }
     
+    
     // Returns true if a function returns an integer
     default boolean expressionEvaluatesToIntegerConstant(String functionName) {
         // (no-op by default)
         return true;
     }
 
+    
     // Returns true if a function returns a string
     default boolean expressionEvaluatesToStringConstant(String functionName) {
         // (no-op by default)
         return false;
     }
+    
     
     // Called to expand any dialect-specific macros:
     default MacroExpansion instantiateMacro(SourceMacro macro, List<Expression> args, CodeStatement macroCall, CodeBase code) {
@@ -98,11 +107,13 @@ public interface Dialect {
         return null;
     }
 
+    
     // Called right before the code is going to be parsed (this can be used, for example,
     // to predefine constants in the CodeBase class, like "pi" in asMSX):
     default void performAnyInitialActions(CodeBase code) {
         // (no-op by default)
     }
+    
     
     // Called after all the code is parsed before all macros are expanded
     default boolean performAnyPostParsingActions(CodeBase code) {
@@ -110,11 +121,13 @@ public interface Dialect {
         return true;        
     }
 
+    
     // Called after all the code is parsed and all macros expanded
     default boolean postParseActions(CodeBase code) {
         // (no-op by default)
         return true;
     }
+    
     
     // Called after any modification to the code was done (e.g., after an
     // optimizer is run). For example, this is used by some dialects to enforce
@@ -125,6 +138,7 @@ public interface Dialect {
         return true;
     }
         
+    
     // Translates a statement to string using the syntax of the specific dialect:
     default String statementToString(CodeStatement s, CodeBase code, boolean useOriginalNames, Path rootPath) {
         return s.toStringUsingRootPath(rootPath, useOriginalNames, true);
@@ -134,6 +148,7 @@ public interface Dialect {
     {
         return null;
     }
+    
     
     // Get the top level areas (those blocks of code that are contiguous, and
     // where MDL should be free to move things around within a block without causing problems):
@@ -150,6 +165,16 @@ public interface Dialect {
     
     // Whether the dialect supports multiple output binaries from a single assembler file:
     default boolean supportsMultipleOutputs()
+    {
+        return false;
+    }
+    
+    
+    // Some dialects can define labels as "exported" (even if they are not called by
+    // the code MDL is analyzing, they could be called externally). This is important
+    // to prevent some optimizations that might mess up these functions (for example,
+    // they cannot be inlined).
+    default boolean labelIsExported(SourceConstant label)
     {
         return false;
     }

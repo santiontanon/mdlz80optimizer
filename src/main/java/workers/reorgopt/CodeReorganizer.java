@@ -486,6 +486,12 @@ public class CodeReorganizer implements MDLWorker {
         for(int i = 0;i<subarea.subBlocks.size();i++) {
             CodeBlock block = subarea.subBlocks.get(i);
 
+            if (block.label == null) continue;
+            if (config.dialectParser != null && 
+                config.dialectParser.labelIsExported(block.label)) {
+                continue;
+            }
+            
             // a "simpleFunction" is one with a single entry point, and a single ret
             CodeStatement call = block.isSimpleFunctionCalledOnce(code);
             if (call == null) continue;

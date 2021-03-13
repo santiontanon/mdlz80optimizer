@@ -1,2 +1,2 @@
 ERROR: Undefined symbol "undefined_symbol" in data/messagetests/undefined-symbol.asm#4
-ERROR: Cannot convert op ld (undefined_symbol), a to bytes!
+ERROR: Cannot convert op ld (undefined_symbol), a to bytes in data/messagetests/undefined-symbol.asm#4: 	ld (undefined_symbol), a

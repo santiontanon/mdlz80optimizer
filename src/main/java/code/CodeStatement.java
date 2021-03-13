@@ -67,7 +67,7 @@ public class CodeStatement {
     public List<String> macroDefinitionArgs;
     public List<Expression> macroDefinitionDefaults;
     
-    // These two are optional attributes that all statements can have:
+    // These are optional attributes that all statements can have:
     public boolean redefinedLabel = false;
     public SourceConstant label = null; 
     public String comment = null;

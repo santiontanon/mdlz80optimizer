@@ -32,6 +32,8 @@ public class Macro80Dialect implements Dialect {
     List<SourceLine> linesToKeepIfGeneratingDialectAsm = new ArrayList<>(); 
     List<CodeStatement> auxiliaryStatementsToRemoveIfGeneratingDialectasm = new ArrayList<>();
     
+    List<String> globalLabels = new ArrayList<>();
+    
     
     public Macro80Dialect(MDLConfig a_config)
     {
@@ -390,5 +392,30 @@ public class Macro80Dialect implements Dialect {
         
         return s.toStringUsingRootPath(rootPath, useOriginalNames, true);
     }    
-            
+           
+    
+    @Override
+    public boolean postParseActions(CodeBase code)
+    {
+        // look for global labels:
+        for(SourceFile f:code.getSourceFiles()) {
+            for(CodeStatement s:f.getStatements()) {
+                if (s.label != null && s.label.colonTokenUsedInDefinition != null &&
+                     s.label.colonTokenUsedInDefinition.equals("::")) {
+                    if (!globalLabels.contains(s.label.originalName)) {
+                        globalLabels.add(s.label.originalName);
+                    }
+                }
+            }
+        }
+        
+        return true;
+    }    
+    
+    
+    @Override
+    public boolean labelIsExported(SourceConstant label)
+    {
+        return globalLabels.contains(label.originalName);
+    }    
 }
