@@ -135,6 +135,7 @@ public class ASMSXDialect implements Dialect {
         } else {
             config.opParser.indirectionsOnlyWithSquareBrackets = true;
             config.opParser.indirectionsOnlyWithParenthesis = false;
+            config.expressionParser.default_parenthesis = "[";
         }
         
         config.lineParser.macroArguentPrefixes.clear();

@@ -52,6 +52,8 @@ public class ExpressionParser {
     public String OP_BIT_XOR = "^";
     public String OP_MOD = "%";
     
+    public String default_parenthesis = "(";
+    
     // make sure to add functions in lower case into this list:
     public List<String> dialectFunctions = new ArrayList<>();
     public List<String> dialectFunctionsSingleArgumentNoParenthesis = new ArrayList<>();
@@ -71,13 +73,22 @@ public class ExpressionParser {
     // indexed by the operator numbers:
     // Precedences obtained from the ones used by c++: https://en.cppreference.com/w/cpp/language/operator_precedence
     public int OPERATOR_PRECEDENCE[] = {
-        -1, -1, -1, -1, -1,
-        -1, 6, 6, 5, 5,     // (, +, -, *, /
+        -1, -1, -1, -1, 3, // af, 0, "a", symbol, - (unary) 
+        -1, 6, 6, 5, 5,     // (, +, - (binary), *, /
         5, 13, 11, 10, 9,   // %, ||, &&, =, <
         9, 9, 9, 10, 16,    // >, <=, >=, !=, ?
         7, 7, 13, 11, 3,    // <<, >>, |, &, ~
         12, 3, -1, -1, -1}; // ^, !
-    
+
+    // This is a copy of the standard operator precedence, used to see if the precedences in the current
+    // dialect differ from the usual:
+    public final int STD_OPERATOR_PRECEDENCE[] = {
+        -1, -1, -1, -1, 3,
+        -1, 6, 6, 5, 5,     // (, +, -, *, /
+        5, 13, 11, 10, 9,   // %, ||, &&, =, <
+        9, 9, 9, 10, 16,    // >, <=, >=, !=, ?
+        7, 7, 13, 11, 3,    // <<, >>, |, &, ~
+        12, 3, -1, -1, -1}; // ^, !    
 
     public ExpressionParser(MDLConfig a_config)
     {

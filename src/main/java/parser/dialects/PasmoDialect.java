@@ -38,6 +38,15 @@ public class PasmoDialect implements Dialect {
         config = a_config;
                 
         config.warning_jpHlWithParenthesis = false;  // I don't think WinAPE supports "jp hl"
+        
+        // PASMO has a different operator precedence than the standard C/C++:
+        config.expressionParser.OPERATOR_PRECEDENCE = new int[] {
+            -1, -1, -1, -1, 6,
+            -1, 4, 4, 3, 3,     // (, +, -, *, /
+            3, 8, 7, 5, 5,   // %, ||, &&, =, <
+            5, 5, 5, 5, 10,    // >, <=, >=, !=, ?
+            3, 3, 7, 7, 6,    // <<, >>, |, &, ~
+            6, 6, -1, -1, -1}; // ^, !            
     }
 
     

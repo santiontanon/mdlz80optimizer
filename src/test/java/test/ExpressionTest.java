@@ -66,7 +66,14 @@ public class ExpressionTest {
     @Test public void test27() { Assert.assertEquals(Integer.valueOf(97), evaluate("100 - 5 + 2")); }
     @Test public void test28() { Assert.assertEquals(Integer.valueOf(1), evaluate("#00 & ~1 | 1")); }
     @Test public void test29() { Assert.assertEquals(Integer.valueOf('a'*256+'f'), evaluate("\"af\"")); }
-
+    
+    // asmsx has a different priority of "<<", hence if thould be parenthesized:
+    @Test public void rpTest1() { Assert.assertTrue(reparenthesizeTest("1 << 4 + 1", "(1 << 4) + 1", "asmsx"));}
+    @Test public void rpTest2() { Assert.assertTrue(reparenthesizeTest("-a-b", "-(a - b)", "pasmo"));}
+    @Test public void rpTest3() { Assert.assertTrue(reparenthesizeTest("+(-a)-b", "+(-a) - b", "pasmo"));}
+    @Test public void rpTest4() { Assert.assertTrue(reparenthesizeTest("0-a-b", "0 - a - b", "pasmo"));}
+    
+            
     private Object evaluate(String line)
     {
         List<String> tokens = config.tokenizer.tokenize(line);
@@ -79,6 +86,23 @@ public class ExpressionTest {
             return exp.evaluate(null, code, false);
         } else {
             return null;
+        }
+    }
+    
+    
+    private boolean reparenthesizeTest(String line, String expected, String dialect)
+    {
+        try {
+            MDLConfig dialectConfig = new MDLConfig();
+            dialectConfig.parseArgs("dummy", "-dialect", dialect);
+            List<String> tokens = dialectConfig.tokenizer.tokenize(line);
+            Expression exp = dialectConfig.expressionParser.parse(tokens, null, null, code);
+            System.out.println("Actual:" + exp.toString());
+            System.out.println("Expected:" + expected);
+            return exp.toString().equals(expected);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
         }
     }
 }

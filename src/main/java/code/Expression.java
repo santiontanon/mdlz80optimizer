@@ -18,7 +18,7 @@ public class Expression {
     public static final int EXPRESSION_STRING_CONSTANT = 2;
     public static final int EXPRESSION_DOUBLE_CONSTANT = 28;
     public static final int EXPRESSION_SYMBOL = 3;
-    public static final int EXPRESSION_SIGN_CHANGE = 4;
+    public static final int EXPRESSION_SIGN_CHANGE = 4;  // unary "-"
     public static final int EXPRESSION_PARENTHESIS = 5;
     public static final int EXPRESSION_SUM = 6;
     public static final int EXPRESSION_SUB = 7;
@@ -1373,6 +1373,18 @@ public class Expression {
         return null;
     }
     
+    
+    public void parenthesizeIfNecessary()
+    {
+        for(int i = 0;i<args.size();i++) {
+            Expression arg = args.get(i);
+            if (config.expressionParser.STD_OPERATOR_PRECEDENCE[type] <
+                config.expressionParser.STD_OPERATOR_PRECEDENCE[arg.type]) {
+                args.set(i, Expression.parenthesisExpression(arg, config.expressionParser.default_parenthesis, config));
+            }            
+        }
+    }
+    
 
     public static Expression constantExpression(int v, MDLConfig config) {
         Expression exp = new Expression(EXPRESSION_INTEGER_CONSTANT, config);
@@ -1503,18 +1515,21 @@ public class Expression {
                     Expression exp = operatorExpression(operator, arg1.args.get(arg1.args.size() - 1), arg2.args.get(0), config);                    
                     arg1.args.set(arg1.args.size() - 1, exp);
                     arg2.args.set(0, arg1);
+                    arg2.parenthesizeIfNecessary();
                     return arg2;
                 } else {
                     // 1 arg1 ((2 operator 3) arg2 4)
                     Expression exp = operatorExpression(operator, arg1.args.get(arg1.args.size() - 1), arg2.args.get(0), config);
                     arg2.args.set(0, exp);
                     arg1.args.set(arg1.args.size() - 1, arg2);
+                    arg1.parenthesizeIfNecessary();
                     return arg1;
                 }
             } else {
                 // 1 arg1 (2 operator arg2)
                 Expression exp = operatorExpression(operator, arg1.args.get(arg1.args.size() - 1), arg2, config);
                 arg1.args.set(arg1.args.size() - 1, exp);
+                arg1.parenthesizeIfNecessary();
                 return arg1;
             }
         } else if (config.expressionParser.OPERATOR_PRECEDENCE[arg2.type] >= 0
@@ -1523,6 +1538,7 @@ public class Expression {
             // (arg1 operator 3) arg2 4
             Expression exp = operatorExpression(operator, arg1, arg2.args.get(0), config);
             arg2.args.set(0, exp);
+            arg2.parenthesizeIfNecessary();
             return arg2;
         }
 
@@ -1530,6 +1546,7 @@ public class Expression {
         exp.args = new ArrayList<>();
         exp.args.add(arg1);
         exp.args.add(arg2);
+        exp.parenthesizeIfNecessary();
         return exp;
     }
 
