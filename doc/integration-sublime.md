@@ -10,4 +10,4 @@ The output of MDL pattern-based optimizer can be integrated into Sublime Text us
 }
 ```
 
-Of course, the location od mdl.jar in your system might vary. The script above assumes that there is a folder called "java" in your project folder with mdl.jar inside.
+Of course, the location of mdl.jar in your system might vary. The script above assumes that there is a folder called "java" in your project folder with mdl.jar inside. Also, here we are only using the "-po" flag (to call the pattern-based optimizer with default settings). Add other flags (e.g., "-ro", or the dialect selection flags), to configure MDL to your own needs.
