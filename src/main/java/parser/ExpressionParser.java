@@ -67,7 +67,7 @@ public class ExpressionParser {
     public boolean sjasmPlusCurlyBracketExpressions = false;
     
     public boolean allowFloatingPointNumbers = false;
-    
+
     // This is used by the macro80 dialect:
     public boolean doubleHashToMarkExternalSymbols = false;
     

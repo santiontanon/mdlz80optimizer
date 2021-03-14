@@ -11,6 +11,7 @@ import code.Expression;
 import code.SourceConstant;
 import code.SourceFile;
 import code.CodeStatement;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.lang3.tuple.Pair;
@@ -32,12 +33,19 @@ public class PasmoDialect implements Dialect {
     String currentScope = "";
     List<String> currentScopeStack = new ArrayList<>();
     
+    List<CodeStatement> auxiliaryStatementsToRemoveIfGeneratingDialectasm = new ArrayList<>();
+    
     public PasmoDialect(MDLConfig a_config) {
         super();
 
         config = a_config;
-                
+        
+        config.lineParser.addKeywordSynonym("defb", config.lineParser.KEYWORD_DB);
+        config.lineParser.addKeywordSynonym("defw", config.lineParser.KEYWORD_DW);
+
         config.warning_jpHlWithParenthesis = false;  // I don't think Pasmo supports "jp hl"
+
+        config.tokenizer.allowAndpersandHex = true;
         
         config.expressionParser.OP_BIT_XOR = "xor";
         config.expressionParser.dialectFunctionsSingleArgumentNoParenthesis.add("high");
@@ -259,4 +267,72 @@ public class PasmoDialect implements Dialect {
         }
         return null;
     }
+    
+    
+    @Override
+    public boolean postParseActions(CodeBase code)
+    {                  
+        {
+            CodeStatement firstGeneratingBytes = null;
+            CodeStatement lastGeneratingBytes = null;
+            CodeStatement s = code.outputs.get(0).main.getNextStatementTo(null, code);
+            while(s != null) {
+                if (s.type == CodeStatement.STATEMENT_INCLUDE && !s.include.getStatements().isEmpty()) {
+                    s = s.include.getStatements().get(0);
+                }
+                if (s.sizeInBytes(code, false, true, false) > 0) {
+                    if (firstGeneratingBytes == null) firstGeneratingBytes = s;
+                    lastGeneratingBytes = s;
+                }
+                s = s.source.getNextStatementTo(s, code);
+            }
+
+            // "org/page" in asMSX work different than in some other assemblers, and we need to fill with zeros 
+            // the space until reaching the address of the org/page! (also, if you have two orgs with the same
+            // address, the latter code will overwrite the first:
+            if (firstGeneratingBytes != null && lastGeneratingBytes != null) {
+                CodeStatement previous = null;
+                s = firstGeneratingBytes;
+                while(s != lastGeneratingBytes) {
+                    if (s.type == CodeStatement.STATEMENT_INCLUDE && !s.include.getStatements().isEmpty()) {
+                        s = s.include.getStatements().get(0);
+                    }
+                    if (previous != null && s.type == CodeStatement.STATEMENT_ORG) {
+                        int previousAddress = previous.getAddress(code) + previous.sizeInBytes(code, false, true, false);
+                        int orgAddress = s.org.evaluateToInteger(s, code, false);
+                        int pad = 0;
+                        Expression padExp = null;
+                        if (orgAddress > previousAddress) {
+                            pad = orgAddress - previousAddress;
+                            padExp = Expression.operatorExpression(Expression.EXPRESSION_SUB, 
+                                    Expression.parenthesisExpressionIfNotConstant(s.org, "(",config), 
+                                    Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, s, code, config), config);
+                        }
+
+                        if (pad > 0 && padExp != null) {
+                            // we need to insert filler space:
+                            config.debug("pasmo: pad: " + pad + " to reach " + orgAddress);
+                            CodeStatement padStatement = new CodeStatement(CodeStatement.STATEMENT_DEFINE_SPACE, null, previous.source, config);
+                            padStatement.space = padExp;
+                            padStatement.space_value = Expression.constantExpression(0, config);
+                            previous.source.addStatement(previous.source.getStatements().indexOf(previous)+1, padStatement);                            
+                            auxiliaryStatementsToRemoveIfGeneratingDialectasm.add(padStatement);
+                        }
+                    }
+                    previous = s;
+                    s = s.source.getNextStatementTo(s, code);                    
+                }
+            }
+        }
+                
+        return true;
+    }    
+    
+    
+    @Override
+    public String statementToString(CodeStatement s, CodeBase code, boolean useOriginalNames, Path rootPath) {
+        if (auxiliaryStatementsToRemoveIfGeneratingDialectasm.contains(s)) return "";
+        
+        return s.toStringUsingRootPath(rootPath, useOriginalNames, true);
+    }      
 }
