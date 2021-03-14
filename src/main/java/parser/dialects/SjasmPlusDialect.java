@@ -461,9 +461,18 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("align")) {
             tokens.remove(0);
             Expression exp = config.expressionParser.parse(tokens, s, previous, code);
+            Expression value = null;
             if (exp == null) {
-                config.error("Cannot parse expression in " + sl);
+                config.error("Cannot parse amount expression in " + sl);
                 return false;
+            }
+            if (!tokens.isEmpty() && tokens.get(0).equals(",")) {
+                tokens.remove(0);
+                value = config.expressionParser.parse(tokens, s, previous, code);
+                if (value == null) {
+                    config.error("Cannot parse value expression in " + sl);
+                    return false;
+                }
             }
             s.type = CodeStatement.STATEMENT_DEFINE_SPACE;
             // ds (((($-1)/exp)+1)*exp-$)
@@ -480,7 +489,11 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
                               Expression.constantExpression(1, config), config), "(", config), 
                           exp, config),
                         Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, s, code, config), config);
-            s.space_value = Expression.constantExpression(0, config);
+            if (value != null) {
+                s.space_value = value;
+            } else {
+                s.space_value = Expression.constantExpression(0, config);
+            }
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }   
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("module")) {
