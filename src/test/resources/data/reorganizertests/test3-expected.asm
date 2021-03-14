@@ -6,6 +6,7 @@ label2:
 	jr label2
 label4:
 	jr label4
+label6:
     nop
     nop
     nop

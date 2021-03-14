@@ -4,19 +4,18 @@
 _infobar_update_map::
 00173$:
     ret
-    jp _infobar_update_rupees00173
 _infobar_update_rupees::
     push ix
 00102$:
     xor a
-    jp z, _infobar_update_rupees00173
+    jp z, 00173$
   ; 	jr	00104$  ; -mdl
 00104$:
     xor a
-_infobar_update_rupees00173:
+00173$:
     pop ix
     ret
-_infobar_update_rupees00176:
+00176$:
 	ret
 	.area _CODE
 	.area _INITIALIZER

@@ -5,7 +5,7 @@
 
 label2:
 	jr label2
-
+label6:
 	REPT 128
 	nop
 	ENDM

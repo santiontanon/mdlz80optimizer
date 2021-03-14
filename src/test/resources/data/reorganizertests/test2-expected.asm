@@ -1,6 +1,7 @@
 ; Test to make sure moves do not happen if they will break jrs
 	ld a, 1
 	jp label1
+label6:
     nop
     nop
     nop

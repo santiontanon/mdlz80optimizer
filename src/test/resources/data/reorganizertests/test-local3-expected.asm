@@ -2,7 +2,6 @@ s__CODE:
 _infobar_update_map:
 _infobar_update_map00173:
     ret
-    jp _infobar_update_rupees00173
 _infobar_update_rupees:
     push ix
 _infobar_update_rupees00102:

@@ -63,7 +63,7 @@ public class CodeReorganizer implements MDLWorker {
         // hidden "-helpmd" flag:        
         return "- ```-ro```: (task) runs the code reoganizer optimizer.\n" + 
                "- ```-ro-no-inliner```: deactivates the function inliner in the subsequent calls to ```-ro```.\n" +
-               "- ```-rohtml <file>```: generates a visualization of the division of the code before code reoganizer optimization as an html file.\n";
+               "- ```-rohtml <file>```: generates a visualization of the division of the code before code reoganizer optimization as an html file (add this flag *before* the ```-ro``` flag).\n";
     }
 
     
@@ -130,10 +130,13 @@ public class CodeReorganizer implements MDLWorker {
         for(CodeBlock area: areas) {
             if (findSubAreas(area, code) == null) return false;
             for(CodeBlock subarea: area.subBlocks) {
+                protectJumpTables(subarea);
+                
                 // Within each "sub-area", we can now re-organize code at will:                
                 if (subarea.type == CodeBlock.TYPE_CODE) {
                     // find all the blocks:
                     findCodeBlocks(subarea);
+                    detectUnreachableCode(subarea, code, savings);
                     constructFlowGraph(subarea.subBlocks);
                 }
             }
@@ -310,7 +313,7 @@ public class CodeReorganizer implements MDLWorker {
             state = newState;
         }
         
-        if (!block.statements.isEmpty()) {
+        if (block != null && !block.statements.isEmpty()) {
             if (state == CodeBlock.TYPE_CODE) {
                 block.ID = topBlock.ID + "_C" + idx_code;
                 block.type = state;
@@ -326,6 +329,7 @@ public class CodeReorganizer implements MDLWorker {
         for(int i = 0;i<blocks.size()-1;i++) {
             CodeBlock block1 = blocks.get(i);
             CodeBlock block2 = blocks.get(i+1);
+            
             // find the last non empty/comment statement of block1:
             int block1_lastNonEmpty = -1;
             for(int j = block1.statements.size()-1;j>=0;j--) {
@@ -368,7 +372,6 @@ public class CodeReorganizer implements MDLWorker {
 
     // Assumption: all the statements within this subarea contain assembler code, and not data
     private void reorganizeBlock(CodeBlock subarea, CodeBase code, OptimizationResult savings) {
-        protectJumpTables(subarea);
         reorganizeBlockInternal(subarea, code, savings);
         if (runInliner) {
             inlineFunctions(subarea, code, savings);
@@ -887,6 +890,82 @@ public class CodeReorganizer implements MDLWorker {
         }        
         return codeBlocks;
     }    
+    
+    
+    private void detectUnreachableCode(CodeBlock subarea, CodeBase code, OptimizationResult savings)
+    {
+        List<CodeBlock> codeBlocks = subarea.subBlocks;
+        // Detect unreachable code:
+        for(int i = 0;i<codeBlocks.size()-1;i++) {
+            CodeBlock block1 = codeBlocks.get(i);
+            CodeBlock block2 = codeBlocks.get(i+1);
+            
+            // find the last non empty/comment statement of block1:
+            int block1_lastNonEmpty = -1;
+            for(int j = block1.statements.size()-1;j>=0;j--) {
+                if (block1.statements.get(j).type != CodeStatement.STATEMENT_NONE) {
+                    block1_lastNonEmpty = j;
+                    break;
+                }
+            }
+            
+            if (block1_lastNonEmpty >= 0 && block1.statements.get(block1_lastNonEmpty).op != null) {
+                CPUOp op = block1.statements.get(block1_lastNonEmpty).op;
+                if (!op.isJump() || op.isConditional()) {
+                    continue;
+                }
+            } else {
+                continue;
+            }
+            
+            // The previous block ends in an unconditional jump:
+            int block2_firstLabel = -1;
+            int block2_firstOp = -1;
+            for(int j = 0;j<block2.statements.size();j++) {
+                if (block2.statements.get(j).label != null && block2_firstLabel == -1) {
+                    block2_firstLabel = j;
+                }
+                if (block2.statements.get(j).op != null && block2_firstOp == -1) {
+                    block2_firstOp = j;
+                }
+            }        
+            
+            if (block2_firstOp >= 0 && 
+                (block2_firstLabel == -1 || block2_firstLabel > block2_firstOp)) {
+                int endOfUnreachable = block2_firstLabel == -1 ? block2.statements.size()-1 : block2_firstLabel-1;
+                // unreachable code!
+                // print optimization message:
+                List<CodeStatement> toDelete = new ArrayList<>();
+                boolean isProtected = false;
+                int bytesSaved = 0;
+                int timeSaved = 0;
+                for(int j = block2_firstOp;j<=endOfUnreachable;j++) {
+                    if (code.protectedFromOptimization(block2.statements.get(j))) {
+                        isProtected = true;
+                        break;
+                    }
+                    bytesSaved += block2.statements.get(j).sizeInBytes(code, false, true, false);
+                    toDelete.add(block2.statements.get(j));
+                }
+                if (!isProtected) {
+                    config.info("Reorganization optimization",
+                            block2.statements.get(block2_firstOp).sl.fileNameLineString(), 
+                            "delete unreachable code in lines " + 
+                            block2.statements.get(block2_firstOp).sl.lineNumber + " - " + 
+                            block2.statements.get(endOfUnreachable).sl.lineNumber + 
+                            " " + bytesSaved + " bytes saved.");
+                    
+                    for(CodeStatement s:toDelete) {
+                        block2.statements.remove(s);
+                        subarea.statements.remove(s);
+                        s.source.getStatements().remove(s);
+                    }
+                    savings.addSavings(bytesSaved, new int[]{timeSaved});
+                    savings.addOptimizerSpecific(SAVINGS_REORGANIZATIONS_CODE, 1);
+                }
+            }
+        }        
+    }
     
     
     private void constructFlowGraph(List<CodeBlock> codeBlocks)

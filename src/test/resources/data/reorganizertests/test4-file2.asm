@@ -1,3 +1,4 @@
+label6:
 	REPT 128
 	nop
 	ENDM
