@@ -61,6 +61,8 @@ public class LineParser {
 
     // sjasm defines macros like: "macro macroname arg1,...,agn" instead of "macroname: macro arg1,...,argn":
     public int macroDefinitionStyle = MACRO_LABEL_MACRO_ARGS;
+    // Pasmo allows you to call macros with less parameters than defined, just using empty strings as defaults:
+    public boolean emptyStringDefaultArgumentsForMacros = false;
     public boolean allowNumberLabels = false;   // also for sjasm (for "reusable" labels)
     public boolean applyEscapeSequencesToIncludeArguments = true;
 

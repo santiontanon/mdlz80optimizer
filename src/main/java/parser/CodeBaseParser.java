@@ -15,6 +15,7 @@ import code.CodeBase;
 import code.Expression;
 import code.SourceFile;
 import code.CodeStatement;
+import code.SourceConstant;
 import util.Resources;
 
 public class CodeBaseParser {
@@ -35,6 +36,34 @@ public class CodeBaseParser {
 
     public boolean parseMainSourceFile(String fileName, CodeBase code) throws IOException {
         if (config.dialectParser != null) config.dialectParser.performAnyInitialActions(code);
+        
+        // parse the symbol definitions in the flags:
+        for(String definition: config.symbolDefinitions) {
+            List<String> tokens = config.tokenizer.tokenize(definition);
+            String symbolName = tokens.remove(0);
+            if (!config.lineParser.canBeLabel(symbolName)) {
+                config.error("Cannot parse flag -equ " + definition + " (symbol name is not allowed)");
+                return false;
+            }
+            if (tokens.isEmpty() || !tokens.remove(0).equals("=")) {
+                config.error("Cannot parse flag -equ " + definition);
+                return false;
+            }
+            Expression valueExp = config.expressionParser.parse(tokens, null, null, code);
+            System.out.println(valueExp);
+            if (valueExp == null ||
+                !tokens.isEmpty()) {
+                config.error("Cannot parse flag -equ " + definition);
+                return false;
+            }
+            Object value = valueExp.evaluate(null, code, true);
+            if (value == null) {
+                config.error("Cannot parse flag -equ " + definition);
+                return false;
+            }
+            SourceConstant sc = new SourceConstant(symbolName, symbolName, valueExp, null, config);
+            code.addSymbol(symbolName, sc);
+        }
         
         if (parseSourceFile(fileName, code, null, null) == null) {
             return false;

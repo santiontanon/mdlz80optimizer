@@ -57,6 +57,7 @@ public class ExpressionParser {
     // make sure to add functions in lower case into this list:
     public List<String> dialectFunctions = new ArrayList<>();
     public List<String> dialectFunctionsSingleArgumentNoParenthesis = new ArrayList<>();
+    public List<String> dialectFunctionsOptionalSingleArgumentNoParenthesis = new ArrayList<>();
 
     public HashMap<String, String> opSynonyms = new HashMap<>();
     
@@ -551,6 +552,30 @@ public class ExpressionParser {
                     }
                 }
                 return exp;
+            } else if (dialectFunctionsOptionalSingleArgumentNoParenthesis.contains(tokens.get(0).toLowerCase())) {
+                String token = tokens.remove(0);
+                String functionName = token;
+                List<Expression> args = new ArrayList<>();
+                if (!tokens.isEmpty() && !config.tokenizer.isSingleLineComment(tokens.get(0))) {
+                    Expression arg = parse(tokens, s, previous, code);
+                    if (arg == null) {
+                        config.error("Failed to parse argument list of a dialect function.");
+                        return null;
+                    }
+                    args.add(arg);
+                }
+                // Create it as is, then try to translate it:
+                Expression exp = Expression.dialectFunctionExpression(functionName, args, config);
+                Expression translated = config.dialectParser.translateToStandardExpression(functionName, args, s, code);
+                if (translated != null) {
+                    translated.originalDialectExpression = exp;
+                    exp = translated;
+                } else {
+                    if (config.evaluateDialectFunctions) {
+                        config.codeBaseParser.expressionsToReplaceByValueAtTheEnd.add(Pair.of(exp, s));
+                    }
+                }
+                return exp;                
             } else if (config.tokenizer.isSymbol(tokens.get(0))) {
                 String token = tokens.get(0);
                 if (!config.caseSensitiveSymbols) token = token.toLowerCase();

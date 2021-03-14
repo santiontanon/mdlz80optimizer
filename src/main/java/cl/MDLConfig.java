@@ -86,6 +86,9 @@ public class MDLConfig {
     public boolean output_indirectionsWithSquareBrakets = false;
     public boolean output_replaceDsByData = false;
 
+    // Symbols defined via flags:
+    public List<String> symbolDefinitions = new ArrayList<>();
+    
     // code annotations:
     public String PRAGMA_NO_OPTIMIZATION = "mdl:no-opt";
     public String PRAGMA_NO_OPTIMIZATION_START = "mdl:no-opt-start";
@@ -124,6 +127,7 @@ public class MDLConfig {
                     + "(default: mdl, which supports some basic code idioms common to various assemblers).\n"
             + "                   Note that even when selecting a dialect, not all syntax of a given assembler might be supported.\n"
             + "- ```-I <folder>```: adds a folder to the include search path.\n"
+            + "- ```-equ <symbol>=<value>```: defines a symbol that will exist while parsing the assembler code.\n"
             + "- ```-ansion```: turns on color message output usin ANSI codes (default: on in Unix, off in Windows).\n"
             + "- ```-ansioff```: turns off color message output usin ANSI codes.\n"
             + "- ```-quiet```: turns off info messages; only outputs warnings and errors.\n"
@@ -311,6 +315,13 @@ public class MDLConfig {
                         } else {
                             error("Missing path after " + arg);
                             return false;
+                        }
+                        break;
+                        
+                    case "-equ":
+                        if (args.size()>=2) {
+                            args.remove(0);
+                            symbolDefinitions.add(args.remove(0));
                         }
                         break;
 
@@ -531,7 +542,7 @@ public class MDLConfig {
         expressionParser = new ExpressionParser(this);
         opParser = new CPUOpParser(opSpecParser.parseSpecs(), this);
         dialectParser = Dialects.getDialectParser(dialect, this);
-
+        
         return verify();
     }
 

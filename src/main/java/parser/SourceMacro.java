@@ -202,8 +202,12 @@ public class SourceMacro {
                 while(args.size() < argNames.size()) {
                     Expression defaultValue = defaultValues.get(args.size());
                     if (defaultValue == null) {
-                        config.error("Number of parameters in macro call incorrect!");
-                        return null;
+                        if (config.lineParser.emptyStringDefaultArgumentsForMacros) {
+                            args.add(null);
+                        } else {
+                            config.error("Number of parameters in macro call incorrect!");
+                            return null;
+                        }
                     } else {
                         args.add(defaultValue);
                     }
@@ -275,7 +279,11 @@ public class SourceMacro {
                 for(int i = 0;i<names.size();i++) {
                     if (token.equals(names.get(i))) {
                         // we wrap it spaces, to prevent funny interaction of tokens, e.g., two "-" in a row forming a "--":
-                        newToken = " " + args.get(i).toString() + " ";
+                        if (args.get(i) == null) {
+                            newToken = ""; 
+                        } else {
+                            newToken = " " + args.get(i).toString() + " ";
+                        }
                     } else {
                         // special case for Glass when we have something like "?parametername.field":
                         if (names.get(i).startsWith("?") && token.startsWith(names.get(i)) &&

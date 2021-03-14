@@ -66,6 +66,8 @@ public class ExpressionTest {
     @Test public void test27() { Assert.assertEquals(Integer.valueOf(97), evaluate("100 - 5 + 2")); }
     @Test public void test28() { Assert.assertEquals(Integer.valueOf(1), evaluate("#00 & ~1 | 1")); }
     @Test public void test29() { Assert.assertEquals(Integer.valueOf('a'*256+'f'), evaluate("\"af\"")); }
+    @Test public void test30() { Assert.assertEquals(Integer.valueOf(-1), evaluate("nul", "pasmo")); }
+    @Test public void test31() { Assert.assertEquals(Integer.valueOf(0), evaluate("nul 1", "pasmo")); }
     
     // asmsx has a different priority of "<<", hence if thould be parenthesized:
     @Test public void rpTest1() { Assert.assertTrue(reparenthesizeTest("1 << 4 + 1", "(1 << 4) + 1", "asmsx"));}
@@ -86,6 +88,30 @@ public class ExpressionTest {
             return exp.evaluate(null, code, false);
         } else {
             return null;
+        }
+    }
+
+
+    private Object evaluate(String line, String dialect)
+    {
+        try {
+            MDLConfig dialectConfig = new MDLConfig();
+            dialectConfig.parseArgs("dummy", "-dialect", dialect);
+
+            List<String> tokens = dialectConfig.tokenizer.tokenize(line);
+            Expression exp = dialectConfig.expressionParser.parse(tokens, null, null, code);
+            System.out.println(exp);
+
+            if (exp.evaluatesToIntegerConstant()) {
+                return exp.evaluateToInteger(null, code, false);
+            } else if (exp.evaluatesToNumericConstant()) {
+                return exp.evaluate(null, code, false);
+            } else {
+                return null;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
         }
     }
     
