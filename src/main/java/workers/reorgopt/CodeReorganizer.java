@@ -49,7 +49,8 @@ public class CodeReorganizer implements MDLWorker {
     
     String htmlOutputFileName = null;
     boolean trigger = false;
-    boolean runInliner = true;
+    boolean runInliner = true;  // the "inliner" identifies functions that are claled only once and inlines them in the code
+    boolean runMerger = true;  // the "merger" identifies identical blocks and removes the duplicates
     
     public CodeReorganizer(MDLConfig a_config)
     {
@@ -63,6 +64,7 @@ public class CodeReorganizer implements MDLWorker {
         // hidden "-helpmd" flag:        
         return "- ```-ro```: (task) runs the code reoganizer optimizer.\n" + 
                "- ```-ro-no-inliner```: deactivates the function inliner in the subsequent calls to ```-ro```.\n" +
+               "- ```-ro-no-merger```: deactivates the block merger in the subsequent calls to ```-ro```.\n" +
                "- ```-rohtml <file>```: generates a visualization of the division of the code before code reoganizer optimization as an html file (add this flag *before* the ```-ro``` flag).\n";
     }
 
@@ -82,6 +84,10 @@ public class CodeReorganizer implements MDLWorker {
         } else if (flags.get(0).equals("-ro-no-inliner")) {
             flags.remove(0);
             runInliner = false;
+            return true;
+        } else if (flags.get(0).equals("-ro-no-merger")) {
+            flags.remove(0);
+            runMerger = false;
             return true;
         } else if (flags.get(0).equals("-rohtml") && flags.size()>=2) {
             flags.remove(0);
@@ -173,6 +179,7 @@ public class CodeReorganizer implements MDLWorker {
 
         w.htmlOutputFileName = htmlOutputFileName;
         w.runInliner = runInliner;
+        w.runMerger = runMerger;
         
         // reset state:
         trigger = false;
@@ -376,6 +383,9 @@ public class CodeReorganizer implements MDLWorker {
         if (runInliner) {
             inlineFunctions(subarea, code, savings);
         }
+        if (runMerger) {
+            mergeBlocks(subarea, code, savings);
+        }
         fixLocalLabels(subarea, code);
     }
     
@@ -537,9 +547,9 @@ public class CodeReorganizer implements MDLWorker {
                 for(CodeStatement s:block.statements) {
                     subarea.statements.remove(s);
                     Pair<SourceFile, Integer> tmp = Pair.of(s.source, s.source.getStatements().indexOf(s));
-                    deleteTrail.add(tmp);
+                    deleteTrail.add(0, tmp);
                     s.source.getStatements().remove(s);
-                }                
+                }               
                 int insertionPoint = call.source.getStatements().indexOf(call) + 1;
                 int subareaInsertionPoint = subarea.statements.indexOf(call) + 1;
                 int callBlockInsertionPoint = callBlock.statements.indexOf(call) + 1;
@@ -626,6 +636,149 @@ public class CodeReorganizer implements MDLWorker {
                             " to right after " + call.sl.fileNameLineString() + 
                             " to remove a call and a ret statements as "+block.label.originalName+" is only caled once ("+bytesSaved+" bytes, " + timeSaved + " " + config.timeUnit+"s saved)");
                 }
+                code.resetAddresses();
+            }
+        }
+    }
+    
+    
+    // Conditions for the merge:
+    // - the two blocks start with a label.
+    // - they do not contain any other label than the first.
+    // - one of them (to be removed) only has incoming edges via jumps (absolute jumps for now, to prevent breaking relative ones)
+    // - they only contain the label, ops or empty statements.    
+    private void mergeBlocks(CodeBlock subarea, CodeBase code, OptimizationResult savings)
+    {
+        for(int i = 0;i<subarea.subBlocks.size();i++) {            
+            CodeBlock block1 = subarea.subBlocks.get(i);            
+            if (block1.label == null) continue;
+            
+            List<CodeStatement> ops1 = new ArrayList<>();
+            boolean cancel1 = false;
+            boolean block1CanBeDeleted = true;
+            for(CodeStatement s:block1.statements) {
+                if (s.label != null && s.label != block1.label) {
+                    cancel1 = true;
+                    break;
+                }
+                if (s.type == CodeStatement.STATEMENT_CPUOP) {
+                    ops1.add(s);
+                } else if (s.type != CodeStatement.STATEMENT_CPUOP && s.type != CodeStatement.STATEMENT_NONE) {
+                    cancel1 = true;
+                    break;
+                }
+                if (code.protectedFromOptimization(s)) block1CanBeDeleted = false;
+            }
+            if (cancel1) continue;
+
+            if (block1CanBeDeleted) {
+                for(BlockFlowEdge e:block1.incoming) {
+                    if (e.type != BlockFlowEdge.TYPE_UNCONDITIONAL_JP) {
+                        block1CanBeDeleted = false;
+                        break;
+                    }
+                }            
+            }
+            
+            for(int j = i+1;j<subarea.subBlocks.size();j++) {
+                CodeBlock block2 = subarea.subBlocks.get(j);
+                if (block2.label == null) continue;
+                
+                List<CodeStatement> ops2 = new ArrayList<>();
+                boolean cancel2 = false;
+                boolean block2CanBeDeleted = true;
+                for(CodeStatement s:block2.statements) {
+                    if (s.label != null && s.label != block2.label) {
+                        cancel2 = true;
+                        break;
+                    }
+                    if (s.type == CodeStatement.STATEMENT_CPUOP) {
+                        ops2.add(s);
+                    } else if (s.type != CodeStatement.STATEMENT_CPUOP && s.type != CodeStatement.STATEMENT_NONE) {
+                        cancel2 = true;
+                        break;
+                    }
+                    if (code.protectedFromOptimization(s)) block2CanBeDeleted = false;
+                }
+                if (cancel2) continue;
+                if (ops1.size() != ops2.size()) continue;
+                
+                // see if any of the two can be deleted:
+                CodeBlock tokeep = null;
+                CodeBlock todelete = null;
+                if (block2CanBeDeleted) {
+                    for(BlockFlowEdge e:block2.incoming) {
+                        if (e.type != BlockFlowEdge.TYPE_UNCONDITIONAL_JP) {
+                            block2CanBeDeleted = false;
+                            break;
+                        }
+                    }
+                }
+                                
+                if (block2CanBeDeleted) {
+                    tokeep = block1;
+                    todelete = block2;
+                } else if (block1CanBeDeleted) {
+                    tokeep = block2;
+                    todelete = block1;
+                } else {
+                    continue;
+                }
+
+                // check if they contain identical code:
+                boolean match = true;
+                for(int k = 0;k<ops1.size();k++) {
+                    List<Integer> bytes1 = ops1.get(k).op.assembleToBytes(ops1.get(k), code, config);
+                    List<Integer> bytes2 = ops2.get(k).op.assembleToBytes(ops2.get(k), code, config);
+                    if (bytes1.size() != bytes2.size()) {
+                        match = false;
+                        break;
+                    }
+                    for(int l = 0;l<bytes1.size();l++) {
+                        if (!bytes1.get(l).equals(bytes2.get(l))) {
+                            match = false;
+                            break;
+                        }
+                    }
+                    if (!match) break;
+                }
+                
+                if (!match) continue;
+                
+                // Match, one can be deleted!
+                for(CodeStatement s:todelete.statements) {
+                    subarea.statements.remove(s);
+                    s.source.getStatements().remove(s);
+                }
+                subarea.subBlocks.remove(todelete);
+                if (todelete == block1) {
+                    break;
+                } else {
+                    j--;
+                }
+                int insertionPoint1 = tokeep.statements.indexOf(tokeep.label.definingStatement);
+                tokeep.statements.add(insertionPoint1, todelete.label.definingStatement);
+                int insertionPoint2 = subarea.statements.indexOf(tokeep.label.definingStatement);
+                subarea.statements.add(insertionPoint2, todelete.label.definingStatement);
+                int insertionPoint3 = tokeep.label.definingStatement.source.getStatements().indexOf(tokeep.label.definingStatement);
+                tokeep.label.definingStatement.source.getStatements().add(insertionPoint3, todelete.label.definingStatement);
+                todelete.label.definingStatement.source = tokeep.label.definingStatement.source;
+                
+                // print optimization message:
+                int bytesSaved = 0;
+                int timeSaved = 0;
+                for(CodeStatement s:todelete.statements) {
+                    bytesSaved += s.sizeInBytes(code, false, true, false);
+                }
+                
+                savings.addSavings(bytesSaved, new int[]{timeSaved});
+                savings.addOptimizerSpecific(SAVINGS_REORGANIZATIONS_CODE, 1);
+
+                config.info("Reorganization optimization",
+                        todelete.label.definingStatement.sl.fileNameLineString(), 
+                        "detected this code is identical to that in " + tokeep.label.definingStatement.sl.fileNameLineString() + 
+                        " delete lines " + todelete.statements.get(0).sl.fileNameLineString() + " - " + todelete.statements.get(todelete.statements.size()-1).sl.lineNumber + 
+                        " and move label '"+todelete.label.name+"' right after '"+tokeep.label.name+"' ("+bytesSaved+" bytes, " + timeSaved + " " + config.timeUnit+"s saved)");
                 code.resetAddresses();
             }
         }
@@ -962,6 +1115,7 @@ public class CodeReorganizer implements MDLWorker {
                     }
                     savings.addSavings(bytesSaved, new int[]{timeSaved});
                     savings.addOptimizerSpecific(SAVINGS_REORGANIZATIONS_CODE, 1);
+                    code.resetAddresses();
                 }
             }
         }        

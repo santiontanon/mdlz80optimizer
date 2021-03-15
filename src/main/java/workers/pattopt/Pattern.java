@@ -898,6 +898,8 @@ public class Pattern {
                             }
                         }
                     }
+                    // if at any point, there are more pops than push, stop:
+                    if (stackMovements > 0) return false;
                 }
                 if (stackMovements != 0) return false;
                 break;

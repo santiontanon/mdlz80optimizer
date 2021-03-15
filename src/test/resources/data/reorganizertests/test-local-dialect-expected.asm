@@ -11,11 +11,10 @@ global1.local:
 	ld [hl], 2
 loop:
 	jp loop
+global3:
 global2:
 	ret
-global3:
-	ret
-.local:
+global3.local:
 	ld [hl], 2
 	ret
 	org #c000

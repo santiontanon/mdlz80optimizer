@@ -33,6 +33,14 @@
 	pop bc	; should be kept
 	ld (val2),bc
 
+        ld bc,#0505
+        push bc
+        pop iy
+        push de
+        pop bc
+        add iy,bc
+        ld (val2),iy
+
 	ld ix,0
 	push ix	; should be kept
 		ld ixl,1

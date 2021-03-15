@@ -24,21 +24,13 @@ label1:  ; mdl:no-opt (mdl suspects this is a jump table)
     jp jumptarget4  ; mdl:no-opt (mdl suspects this is a jump table)
     jp jumptarget5  ; mdl:no-opt (mdl suspects this is a jump table)
     jp jumptarget6  ; mdl:no-opt (mdl suspects this is a jump table)
+jumptarget3:
+jumptarget4:
+jumptarget5:
+jumptarget6:
 jumptarget2:
 	nop
 	jp skip
-jumptarget3:
-	nop
-	jp skip
-jumptarget4:
-	nop
-	jp skip
-jumptarget5:
-	nop
-	jp skip
-jumptarget6:
-	nop
- 	jp skip
 jumptarget1:
 	nop
 ; 	jp skip  ; -mdl

@@ -11,9 +11,8 @@ global1.local:
 	ld (hl), 2
 loop:
 	jp loop
-global2:
-	ret
 global3:
+global2:
 	ret
 global3.local:
 	ld (hl), 2

@@ -47,7 +47,7 @@ public class SourceCodeGenerator implements MDLWorker {
         // hidden "-helpmd" flag:        
         return "- ```-asm <output file>```: (task) saves the resulting assembler code in a single asm file (if no optimizations are performed, then this will just output the same code read as input (but with all macros and include statements expanded). Use ```"+AUTO_FILENAME+"``` as the output file name to respect the filenames specified in the sourcefiles of some dialects, or to auto generate an output name.\n" +
                "- ```-asm-dialect <output file>```: (task) same as '-asm', but tries to mimic the syntax of the defined dialect in the output (experimental feature, not fully implemented!).  Use ```"+AUTO_FILENAME+"``` as the output file name to respect the filenames specified in the sourcefiles of some dialects, or to auto generate an output name.\n" +
-               "- ```-asm-expand-inbcin```: replaces all incbin commands with their actual data in the output assembler file, effectively, making the output assembler file self-contained.\n";
+               "- ```-asm-expand-incbin```: replaces all incbin commands with their actual data in the output assembler file, effectively, making the output assembler file self-contained.\n";
     }
 
 
@@ -71,7 +71,7 @@ public class SourceCodeGenerator implements MDLWorker {
             mimicTargetDialect = true;
             return true;
         }
-        if (flags.get(0).equals("-asm-expand-inbcin")) {
+        if (flags.get(0).equals("-asm-expand-incbin")) {
             flags.remove(0);
             expandIncbin = true;
             return true;
