@@ -60,6 +60,7 @@ public class ExpressionParser {
     public List<String> dialectFunctionsOptionalSingleArgumentNoParenthesis = new ArrayList<>();
 
     public HashMap<String, String> opSynonyms = new HashMap<>();
+    public HashMap<String, String> registerSynonyms = new HashMap<>();
     
     // dialect-specific variables:
     public List<Integer> sjasmConterVariables = new ArrayList<>();
@@ -114,6 +115,12 @@ public class ExpressionParser {
             return true;
         }
         return false;
+    }
+    
+    
+    public void addRegisterSynonym(String synonym, String reg)
+    {
+        registerSynonyms.put(synonym, reg);
     }
     
 
@@ -419,6 +426,15 @@ public class ExpressionParser {
              tokens.get(0).endsWith("q") || tokens.get(0).endsWith("Q"))) {
             // should be a octal constant:
             String token = tokens.get(0);
+            if (config.tokenizer.isOctal(token)) {
+                tokens.remove(0);
+                return Expression.constantExpression(config.tokenizer.parseOctal(token), Expression.RENDER_AS_OCT, config);
+            }
+        }
+        if (tokens.size() >= 1 &&
+            (tokens.get(0).startsWith("0q") || tokens.get(0).startsWith("0Q"))) {
+            // should be a binary constant:
+            String token = tokens.get(0).substring(2);
             if (config.tokenizer.isOctal(token)) {
                 tokens.remove(0);
                 return Expression.constantExpression(config.tokenizer.parseOctal(token), Expression.RENDER_AS_OCT, config);

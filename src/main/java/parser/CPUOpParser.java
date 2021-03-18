@@ -24,7 +24,7 @@ public class CPUOpParser {
 
     List<CPUOpSpec> opSpecs;
     HashMap<String, List<CPUOpSpec>> opSpecHash = new HashMap<>();
-    
+
     public boolean indirectionsOnlyWithSquareBrackets = false;
     public boolean indirectionsOnlyWithParenthesis = false;
     
@@ -77,8 +77,8 @@ public class CPUOpParser {
         if (l != null) return l;
         return new ArrayList<>();
     }
-
-
+    
+    
     // "previous" is used for label scoping (it should be the statement that will be right before "s", after inserting "s"
     // into the SourceFile, since "s" might not have been yet inserted into it:    
     public List<CPUOp> parseOp(String a_op, List<Expression> a_args, CodeStatement s, CodeStatement previous, CodeBase code)

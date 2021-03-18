@@ -69,12 +69,20 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
         config.warning_jpHlWithParenthesis = true;
         config.lineParser.allowEmptyDB_DW_DD_definitions = true;
         config.lineParser.allowIncludesWithoutQuotes = true;
-        config.lineParser.macroDefinitionStyle = LineParser.MACRO_MACRO_NAME_ARGS;
+        config.lineParser.macroDefinitionStyle = LineParser.MACRO_BOTH;
         config.lineParser.allowNumberLabels = true;
         config.lineParser.allowColonSeparatedInstructions = true;
         
         config.opParser.allowExtendedSjasmplusLDInstructions = true;
         
+        config.expressionParser.addRegisterSynonym("xl", "ixl");
+        config.expressionParser.addRegisterSynonym("lx", "ixl");
+        config.expressionParser.addRegisterSynonym("xh", "ixh");
+        config.expressionParser.addRegisterSynonym("hx", "ixh");
+        config.expressionParser.addRegisterSynonym("yl", "iyl");
+        config.expressionParser.addRegisterSynonym("ly", "iyl");
+        config.expressionParser.addRegisterSynonym("yh", "iyh");
+        config.expressionParser.addRegisterSynonym("hy", "iyh");
         config.expressionParser.dialectFunctionsSingleArgumentNoParenthesis.add("high");
         config.expressionParser.dialectFunctionsSingleArgumentNoParenthesis.add("low");        
         config.expressionParser.sjasmPlusCurlyBracketExpressions = true;
@@ -294,20 +302,20 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
         config.tokenizer.curlyBracesAreComments = false;
         config.lineParser.applyEscapeSequencesToIncludeArguments = false;
         
-        forbiddenLabelNames.add("struct");
-        forbiddenLabelNames.add("ends");
-        forbiddenLabelNames.add("byte");
-        forbiddenLabelNames.add("defb");
-        forbiddenLabelNames.add("word");
-        forbiddenLabelNames.add("defw");
-        forbiddenLabelNames.add("dword");
-        forbiddenLabelNames.add("assert");
-        forbiddenLabelNames.add("output");
-        forbiddenLabelNames.add("align");
-        forbiddenLabelNames.add("module");
-        forbiddenLabelNames.add("endmodule");
-        forbiddenLabelNames.add("device");
-        forbiddenLabelNames.add("savebin");
+//        forbiddenLabelNames.add("struct");
+//        forbiddenLabelNames.add("ends");
+//        forbiddenLabelNames.add("byte");
+//        forbiddenLabelNames.add("defb");
+//        forbiddenLabelNames.add("word");
+//        forbiddenLabelNames.add("defw");
+//        forbiddenLabelNames.add("dword");
+//        forbiddenLabelNames.add("assert");
+//        forbiddenLabelNames.add("output");
+//        forbiddenLabelNames.add("align");
+//        forbiddenLabelNames.add("module");
+//        forbiddenLabelNames.add("endmodule");
+//        forbiddenLabelNames.add("device");
+//        forbiddenLabelNames.add("savebin");
     }
     
     
@@ -329,6 +337,7 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("display")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("define")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("abyte")) return true;
+        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("opt")) return true;
 
         for(SjasmStruct s:structs) {
             if (tokens.get(0).equals(s.name)) return true;
@@ -347,11 +356,6 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
             struct.name = tokens.remove(0);
             struct.file = source;
             config.lineParser.pushLabelPrefix(struct.name + ".");
-            if (!tokens.isEmpty() && tokens.get(0).equalsIgnoreCase("struc")) {
-                // TODO(santi@): investigate what is this syntax, I found it in this file: https://github.com/GuillianSeed/MetalGear/blob/master/constants/structures.asm
-                // But it does not seem to be documented, I think it might be an error that sjasm just happens to swalow
-                tokens.remove(0);
-            }
             struct.file = source;
             struct.start = s;
             s.type = CodeStatement.STATEMENT_CONSTANT;
@@ -386,6 +390,21 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
                     {
                         int size = s2.sizeInBytes(code, true, true, true);
                         offset += size;
+                        if (s2.label != null) {
+                            struct.attributeNames.add(s2.label.name);
+                        } else {
+                            struct.attributeNames.add(null);
+                        }
+                        struct.attributeSizes.add(size);
+                        break;
+                    }
+                    case CodeStatement.STATEMENT_DEFINE_SPACE:
+                    {
+                        Integer size = s2.space.evaluateToInteger(s2, code, true);
+                        if (size == null) {
+                            config.error("Cannot evaluate " + s2.space + " to an integer in " + s2.sl);
+                            return false;
+                        }
                         if (s2.label != null) {
                             struct.attributeNames.add(s2.label.name);
                         } else {
@@ -769,7 +788,24 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
             
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }                
-        
+        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("opt")) {
+            tokens.remove(0);
+            while(!tokens.isEmpty() &&
+                  (tokens.get(0).equalsIgnoreCase("push") ||
+                   tokens.get(0).equalsIgnoreCase("pop") ||
+                   tokens.get(0).equalsIgnoreCase("reset") ||
+                   tokens.get(0).equalsIgnoreCase("listoff") ||
+                   tokens.get(0).equalsIgnoreCase("liston") || 
+                   tokens.get(0).equalsIgnoreCase("listall") ||
+                   tokens.get(0).equalsIgnoreCase("listact") ||
+                   tokens.get(0).equalsIgnoreCase("listmc"))) {
+                tokens.remove(0);
+            }
+            
+            // ignore for now ...            
+            linesToKeepIfGeneratingDialectAsm.add(s);
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
+        }        
         if (parseAbyte(tokens, l, sl, s, previous, source, code)) return true;
         
         return parseLineStruct(tokens, l, sl, s, previous, source, code);

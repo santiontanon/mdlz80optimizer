@@ -1418,6 +1418,9 @@ public class Expression {
     
     
     public static Expression symbolExpressionInternal(String symbol, CodeStatement s, CodeBase code, boolean evaluateEagerSymbols, MDLConfig config) {
+        if (config.expressionParser.registerSynonyms.containsKey(symbol)) {
+            symbol = config.expressionParser.registerSynonyms.get(symbol);
+        }
         if (code.isRegister(symbol) || code.isCondition(symbol)) {
             Expression exp = new Expression(EXPRESSION_REGISTER_OR_FLAG, config);
             exp.registerOrFlagName = symbol;

@@ -330,7 +330,8 @@ public class LineParser {
         if (isKeyword(token)) return false;
         if (config.opParser.isOpName(token, 0)) return false;
         if (config.preProcessor.isMacroName(token, config.preProcessor.MACRO_MACRO)) return false;
-        if (macroDefinitionStyle == MACRO_MACRO_NAME_ARGS && config.preProcessor.isMacro(token)) return false;
+        if ((macroDefinitionStyle == MACRO_MACRO_NAME_ARGS || macroDefinitionStyle == MACRO_BOTH)
+            && config.preProcessor.isMacro(token)) return false;
         if (config.tokenizer.isSymbol(token)) return true;
         if (allowNumberLabels && config.tokenizer.isInteger(token)) return true;
         return false;
@@ -983,6 +984,11 @@ public class LineParser {
                     String macroNameStr = tokens.remove(0);
                     SourceConstant c = new SourceConstant(macroNameStr, macroNameStr, null, s, config);
                     s.label = c;
+                    
+                    // remove an optional comma separating macro name and arguments:
+                    if (tokens.size()>0 && tokens.get(0).equals(",")) {
+                        tokens.remove(0);
+                    }                    
                 }
                 break;
             default:
@@ -996,10 +1002,11 @@ public class LineParser {
         while (!tokens.isEmpty()
                 && !config.tokenizer.isSingleLineComment(tokens.get(0))
                 && !config.tokenizer.isMultiLineCommentStart(tokens.get(0))) {
-            String token = tokens.get(0);
-            tokens.remove(0);
+            String token = tokens.remove(0);
             String argName = token;
-            if (macroArguentPrefixes.contains(token)) {
+            if (macroArguentPrefixes.contains(token) && !tokens.isEmpty()) {
+                argName = token + tokens.remove(0);
+            } else if (!tokens.isEmpty() && macroArguentPrefixes.contains(tokens.get(0))) {
                 argName = token + tokens.remove(0);
             }
             
@@ -1021,7 +1028,7 @@ public class LineParser {
                 tokens.remove(0);
             }
         }
-
+        
         s.type = CodeStatement.STATEMENT_MACRO;
         s.macroDefinitionArgs = args;
         s.macroDefinitionDefaults = defaultValues;
