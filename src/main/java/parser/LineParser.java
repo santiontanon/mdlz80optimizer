@@ -1006,8 +1006,6 @@ public class LineParser {
             String argName = token;
             if (macroArguentPrefixes.contains(token) && !tokens.isEmpty()) {
                 argName = token + tokens.remove(0);
-            } else if (!tokens.isEmpty() && macroArguentPrefixes.contains(tokens.get(0))) {
-                argName = token + tokens.remove(0);
             }
             
             args.add(argName);

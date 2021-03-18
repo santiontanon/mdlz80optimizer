@@ -295,7 +295,7 @@ public class ExpressionParser {
             if (tokens.get(0).equals("?")) {
                 tokens.remove(0);
                 Expression exp2 = parseInternal(tokens, s, previous, code);
-                if (tokens.get(0).equals(":")) {
+                if (!tokens.isEmpty() && tokens.get(0).equals(":")) {
                     tokens.remove(0);
                     Expression exp3 = parse(tokens, s, previous, code);
                     exp = Expression.operatorTernaryExpression(Expression.EXPRESSION_TERNARY_IF, exp, exp2, exp3, config);

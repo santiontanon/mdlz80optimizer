@@ -72,6 +72,7 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
         config.lineParser.macroDefinitionStyle = LineParser.MACRO_BOTH;
         config.lineParser.allowNumberLabels = true;
         config.lineParser.allowColonSeparatedInstructions = true;
+        config.lineParser.applyEscapeSequencesToIncludeArguments = false;
         
         config.opParser.allowExtendedSjasmplusLDInstructions = true;
         
@@ -300,7 +301,7 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
         config.tokenizer.stringEscapeSequences.put("t", "\t");
         config.tokenizer.stringEscapeSequences.put("v", "\u0011");
         config.tokenizer.curlyBracesAreComments = false;
-        config.lineParser.applyEscapeSequencesToIncludeArguments = false;
+        config.tokenizer.allowQuestionMarksInSymbols = true;
         
 //        forbiddenLabelNames.add("struct");
 //        forbiddenLabelNames.add("ends");

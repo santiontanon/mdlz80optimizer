@@ -10,11 +10,19 @@ variable = variable + 1
 	db $
 	endm
 
+    macro s2fn fn?, sprite?, attr?
+    db  fn?
+    db  attr?
+    dw  sprite?
+    endm 
+
 	org #2000
 
 	m1
 
 	m2
+
+	s2fn 1, #ffff, 2
 
 	org #4000
 
