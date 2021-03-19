@@ -30,7 +30,9 @@ public abstract class SjasmDerivativeDialect implements Dialect {
         SourceFile file;
         CodeStatement start;
         List<String> attributeNames = new ArrayList<>();
-        List<Integer> attributeSizes = new ArrayList<>();
+        List<Integer> attributeCodeStatementTypes = new ArrayList<>();
+        List<Expression> attributeDefaults = new ArrayList<>();
+        List<CodeStatement> attributeDefiningStatement = new ArrayList<>();
     }
         
     
@@ -90,6 +92,74 @@ public abstract class SjasmDerivativeDialect implements Dialect {
         config.opParser.addOpSpec(fakeSpec);        
         return true;
     }
+    
+    
+    public boolean endStructDefinition(SourceLine sl, SourceFile source, CodeBase code)
+    {
+        // Transform the struct into equ definitions with local labels:
+        int offset = 0;
+        int start = source.getStatements().indexOf(struct.start) + 1;
+        for (int i = start; i < source.getStatements().size(); i++) {
+            CodeStatement s2 = source.getStatements().get(i);
+            int offset_prev = offset;
+            switch (s2.type) {
+                case CodeStatement.STATEMENT_NONE:
+                    break;
+                case CodeStatement.STATEMENT_DATA_BYTES:
+                case CodeStatement.STATEMENT_DATA_WORDS:
+                case CodeStatement.STATEMENT_DATA_DOUBLE_WORDS:
+                {
+                    if (s2.data.size() != 1) {
+                        config.error("No default value for field in struct (unsupported) in " + s2.sl);
+                        return false;
+                    }
+                    int size = s2.sizeInBytes(code, true, true, true);
+                    offset += size;
+                    if (s2.label != null) {
+                        struct.attributeNames.add(s2.label.name);
+                    } else {
+                        struct.attributeNames.add(null);
+                    }
+                    struct.attributeCodeStatementTypes.add(s2.type);
+                    struct.attributeDefaults.add(s2.data.get(0));
+                    struct.attributeDefiningStatement.add(s2);
+                    break;
+                }
+                case CodeStatement.STATEMENT_DEFINE_SPACE:
+                {
+                    Integer size = s2.space.evaluateToInteger(s2, code, true);
+                    if (size == null) {
+                        config.error("Cannot evaluate " + s2.space + " to an integer in " + s2.sl);
+                        return false;
+                    }
+                    if (s2.label != null) {
+                        struct.attributeNames.add(s2.label.name);
+                    } else {
+                        struct.attributeNames.add(null);
+                    }
+                    struct.attributeCodeStatementTypes.add(s2.type);
+                    struct.attributeDefaults.add(s2.space_value);
+                    struct.attributeDefiningStatement.add(s2);
+                    break;
+                }
+                default:
+                    config.error("Unsupported statement (type="+s2.type+") inside a struct definition in " + sl);
+                    return false;
+            }
+            if (s2.label != null) {
+                s2.type = CodeStatement.STATEMENT_CONSTANT;
+                s2.label.exp = Expression.constantExpression(offset_prev, config);
+            } else {
+                s2.type = CodeStatement.STATEMENT_NONE;
+            }                
+        }
+
+        // Record the struct for later:
+        struct.start.label.exp = Expression.constantExpression(offset, config);
+        structs.add(struct);
+        config.lineParser.keywordsHintingALabel.add(struct.name);
+        return true;
+    }
         
     
     public boolean parseLineStruct(List<String> tokens, List<CodeStatement> l, SourceLine sl,
@@ -102,10 +172,13 @@ public abstract class SjasmDerivativeDialect implements Dialect {
                 // it is a struct definition:
                 boolean done = false;
                 List<Expression> data = new ArrayList<>();
+                
+                if (tokens.isEmpty() || tokens.get(0).equals(":") || config.tokenizer.isSingleLineComment(tokens.get(0))) done = true;
+                
                 while (!done) {
                     Expression exp = config.expressionParser.parse(tokens, s, previous, code);
                     if (exp == null) {
-                        config.error("Cannot parse line " + sl);
+                        config.error("Cannot parse struct instantiation in " + sl);
                         return false;
                     } else {
                         data.add(exp);
@@ -116,32 +189,43 @@ public abstract class SjasmDerivativeDialect implements Dialect {
                         done = true;
                     }
                 }
-                if (data.size() != st.attributeSizes.size()) {
-                    config.error("Struct instantiation has the wrong number of fields ("+data.size()+" vs the expected "+st.attributeSizes.size()+") in " + sl);
+                
+                // fill the rest with defaults:
+                for(int i = data.size();i<st.attributeNames.size();i++) {
+                    data.add(st.attributeDefaults.get(i));
+                }
+                
+                if (data.size() > st.attributeNames.size()) {
+                    config.error("Struct instantiation has too many fields ("+data.size()+" vs the expected "+st.attributeNames.size()+") in " + sl);
                     return false;                    
                 }
                 l.clear();
                 
                 for(int i = 0;i<data.size();i++) {
                     CodeStatement s2;
-                    switch(st.attributeSizes.get(i)) {
-                        case 1:
-                            s2 = new CodeStatement(CodeStatement.STATEMENT_DATA_BYTES, sl, source, config);
+                    switch(st.attributeCodeStatementTypes.get(i)) {
+                        case CodeStatement.STATEMENT_DATA_BYTES:
+                        case CodeStatement.STATEMENT_DATA_WORDS:
+                        case CodeStatement.STATEMENT_DATA_DOUBLE_WORDS:
+                            s2 = new CodeStatement(st.attributeDefiningStatement.get(i).type, sl, source, config);
+                            s2.data = new ArrayList<>();
+                            s2.data.add(data.get(i));
+                            l.add(s2);
                             break;
-                        case 2:
-                            s2 = new CodeStatement(CodeStatement.STATEMENT_DATA_WORDS, sl, source, config);
-                            break;
-                        case 4:
-                            s2 = new CodeStatement(CodeStatement.STATEMENT_DATA_DOUBLE_WORDS, sl, source, config);
+                        case CodeStatement.STATEMENT_DEFINE_SPACE:
+                            s2 = new CodeStatement(CodeStatement.STATEMENT_DEFINE_SPACE, sl, source, config);
+                            s2.space = st.attributeDefiningStatement.get(i).space;
+                            s2.space_value = st.attributeDefiningStatement.get(i).space_value;
+                            l.add(s2);
                             break;
                         default:
-                            config.error("Field " + st.attributeNames.get(i) + " of struct " + st.name + " has an unsupported size in " + sl);
+                            config.error("Field " + st.attributeNames.get(i) + " of struct " + st.name + " has an unsupported type ("+st.attributeCodeStatementTypes.get(i)+") in " + sl);
                             return false;
                     }
-                    if (i == 0) s2.label = s.label;
-                    s2.data = new ArrayList<>();
-                    s2.data.add(data.get(i));
-                    l.add(s2);
+                    if (i == 0) {
+                        s2.label = s.label;
+                        s.label.definingStatement = s2;
+                    }
                 }
                 return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
             }
@@ -164,7 +248,7 @@ public abstract class SjasmDerivativeDialect implements Dialect {
                 name = config.lineParser.getLabelPrefix() + name;
             }
         } else if (config.tokenizer.isInteger(name)) {
-            // it'startStatement a reusable label:
+            // it's a reusable label:
             int count = 1;
             if (reusableLabelCounts.containsKey(name)) {
                 count = reusableLabelCounts.get(name);
@@ -178,7 +262,7 @@ public abstract class SjasmDerivativeDialect implements Dialect {
         if (forbiddenLabelNames.contains(name.toLowerCase())) return null;
         
         if (currentPages.isEmpty()) {
-             config.warn("Defining a symbol, without any page selected, defaulting to 0");
+//            config.warn("Defining a symbol, without any page selected, defaulting to 0");
             symbolPage.put(name, 0);
         } else {
             // set to the first candidate page for not (this will be overwritten later,

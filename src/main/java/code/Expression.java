@@ -205,10 +205,15 @@ public class Expression {
                 }
                 Object value = code.getSymbolValueInternal(symbolName, silent, variableStack);
                 if (value == null) {
-                    if (!silent) {
-                        config.error("Undefined symbol " + symbolName + " in " + s.sl);
+                    if (previous != null && previous.labelPrefix != null && !previous.labelPrefix.isEmpty()) {
+                        value = code.getSymbolValueInternal(previous.labelPrefix + symbolName, silent, variableStack);
                     }
-                    return null;
+                    if (value == null) {
+                            if (!silent) {
+                            config.error("Undefined symbol " + symbolName + " in " + s.sl);
+                        }
+                        return null;
+                    }
                 }
                 return value;
             }
@@ -1429,8 +1434,11 @@ public class Expression {
             Expression exp = new Expression(EXPRESSION_SYMBOL, config);
             exp.symbolName = symbol;
             
-            // check if it's a variable that needs to be evaluated eagerly:            
+            // check if it's a variable that needs to be evaluated eagerly:
             SourceConstant c = code.getSymbol(exp.symbolName);
+            if (c == null && s != null && s.labelPrefix != null && !s.labelPrefix.isEmpty()) {
+                c = code.getSymbol(s.labelPrefix+exp.symbolName);
+            }
             if (c != null && c.resolveEagerly && evaluateEagerSymbols) {
                 Object value = c.getValue(code, false);
                 if (value == null) {

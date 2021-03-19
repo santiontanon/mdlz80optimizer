@@ -64,7 +64,7 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
         config.lineParser.addKeywordSynonym("defs", config.lineParser.KEYWORD_DS);
         config.lineParser.addKeywordSynonym("block", config.lineParser.KEYWORD_DS);
                 
-        config.lineParser.keywordsHintingANonScopedLabel.add("=");
+        config.lineParser.keywordsHintingALabel.add("=");
         
         config.warning_jpHlWithParenthesis = true;
         config.lineParser.allowEmptyDB_DW_DD_definitions = true;
@@ -335,6 +335,7 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("device")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("=")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("savebin")) return true;
+        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("savesna")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("display")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("define")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("abyte")) return true;
@@ -364,7 +365,7 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
             s.label = c;
             if (code.addSymbol(c.name, c) != 1) return false;
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
-        }
+        }        
         if (tokens.size() >= 1 && tokens.get(0).equalsIgnoreCase("ends")) {
             tokens.remove(0);
             if (struct.file == null) {
@@ -375,61 +376,8 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
                 config.error("struct split among multiple files is not supported in " + sl);
                 return false;
             }
+            if (!endStructDefinition(sl, source, code)) return false;
             
-            // Transform the struct into equ definitions with local labels:
-            int offset = 0;
-            int start = source.getStatements().indexOf(struct.start) + 1;
-            for (int i = start; i < source.getStatements().size(); i++) {
-                CodeStatement s2 = source.getStatements().get(i);
-                int offset_prev = offset;
-                switch (s2.type) {
-                    case CodeStatement.STATEMENT_NONE:
-                        break;
-                    case CodeStatement.STATEMENT_DATA_BYTES:
-                    case CodeStatement.STATEMENT_DATA_WORDS:
-                    case CodeStatement.STATEMENT_DATA_DOUBLE_WORDS:
-                    {
-                        int size = s2.sizeInBytes(code, true, true, true);
-                        offset += size;
-                        if (s2.label != null) {
-                            struct.attributeNames.add(s2.label.name);
-                        } else {
-                            struct.attributeNames.add(null);
-                        }
-                        struct.attributeSizes.add(size);
-                        break;
-                    }
-                    case CodeStatement.STATEMENT_DEFINE_SPACE:
-                    {
-                        Integer size = s2.space.evaluateToInteger(s2, code, true);
-                        if (size == null) {
-                            config.error("Cannot evaluate " + s2.space + " to an integer in " + s2.sl);
-                            return false;
-                        }
-                        if (s2.label != null) {
-                            struct.attributeNames.add(s2.label.name);
-                        } else {
-                            struct.attributeNames.add(null);
-                        }
-                        struct.attributeSizes.add(size);
-                        break;
-                    }
-                    default:
-                        config.error("Unsupported statement (type="+s2.type+") inside a struct definition in " + sl);
-                        return false;
-                }
-                if (s2.label != null) {
-                    s2.type = CodeStatement.STATEMENT_CONSTANT;
-                    s2.label.exp = Expression.constantExpression(offset_prev, config);
-                } else {
-                    s2.type = CodeStatement.STATEMENT_NONE;
-                }                
-            }
-
-            // Record the struct for later:
-            struct.start.label.exp = Expression.constantExpression(offset, config);
-            structs.add(struct);
-            config.lineParser.keywordsHintingALabel.add(struct.name);
             config.lineParser.popLabelPrefix();
             struct = null;
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
@@ -710,10 +658,22 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
             s.label.resolveEagerly = true;                        
                         
             tokens.remove(0);
-            if (!config.lineParser.parseEqu(tokens, l, sl, s, previous, source, code)) return false;
-            Integer value = s.label.exp.evaluateToInteger(s, code, false, previous);
+            
+//            if (!config.lineParser.parseEqu(tokens, l, sl, s, previous, source, code)) return false;
+
+            Expression exp = config.expressionParser.parse(tokens, s, previous, code);
+            if (exp == null) {
+                config.error("parse =: Cannot parse line " + sl);
+                return false;
+            }
+            // remove unnecessary parenthesis:
+            while(exp.type == Expression.EXPRESSION_PARENTHESIS) {
+                exp = exp.args.get(0);
+            }
+            s.type = CodeStatement.STATEMENT_CONSTANT;
+            Integer value = exp.evaluateToInteger(s, code, false, previous);
             if (value == null) {
-                config.error("Cannot resolve eager variable in " + sl);
+                config.error("Cannot resolve expression "+ exp+" for eager variable in " + sl);
                 return false;
             }
             s.label.exp = Expression.constantExpression(value, config);
@@ -721,7 +681,8 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
             
             // these variables should not be part of the source code:
             l.clear();
-            return true;
+//            return true;
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }       
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("savebin")) {
             // Just ignore ...
@@ -731,6 +692,20 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
                 tokens.remove(0);
             }
             
+            linesToKeepIfGeneratingDialectAsm.add(s);
+            
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
+        }
+        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("savesna")) {
+            // Just ignore ...
+            while(!tokens.isEmpty()) {
+                if (config.tokenizer.isSingleLineComment(tokens.get(0)) || 
+                    config.tokenizer.isMultiLineCommentStart(tokens.get(0))) break;
+                tokens.remove(0);
+            }
+            
+            linesToKeepIfGeneratingDialectAsm.add(s);
+
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
         if (tokens.size()>=2 && (tokens.get(0).equalsIgnoreCase("display"))) {

@@ -613,45 +613,8 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                 return false;
             }
             
-            // Transform the struct into equ definitions with local labels:
-            int offset = 0;
-            int start = source.getStatements().indexOf(struct.start) + 1;
-            for (int i = start; i < source.getStatements().size(); i++) {
-                CodeStatement s2 = source.getStatements().get(i);
-                int offset_prev = offset;
-                switch (s2.type) {
-                    case CodeStatement.STATEMENT_NONE:
-                        break;
-                    case CodeStatement.STATEMENT_DATA_BYTES:
-                    case CodeStatement.STATEMENT_DATA_WORDS:
-                    case CodeStatement.STATEMENT_DATA_DOUBLE_WORDS:
-                    {
-                        int size = s2.sizeInBytes(code, true, true, true);
-                        offset += size;
-                        if (s2.label != null) {
-                            struct.attributeNames.add(s2.label.name);
-                        } else {
-                            struct.attributeNames.add(null);
-                        }
-                        struct.attributeSizes.add(size);
-                        break;
-                    }
-                    default:
-                        config.error("Unsupported statement (type="+s2.type+") inside a struct definition in " + sl);
-                        return false;
-                }
-                if (s2.label != null) {
-                    s2.type = CodeStatement.STATEMENT_CONSTANT;
-                    s2.label.exp = Expression.constantExpression(offset_prev, config);
-                } else {
-                    s2.type = CodeStatement.STATEMENT_NONE;
-                }                
-            }
+            if (!endStructDefinition(sl, source, code)) return false;
 
-            // Record the struct for later:
-            struct.start.label.exp = Expression.constantExpression(offset, config);
-            structs.add(struct);
-            config.lineParser.keywordsHintingALabel.add(struct.name);
             config.lineParser.popLabelPrefix();
             struct = null;
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
