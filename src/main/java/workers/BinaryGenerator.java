@@ -43,7 +43,7 @@ public class BinaryGenerator implements MDLWorker {
     public String docString() {
         // This string has MD tags, so that I can easily generate the corresponding documentation in github with the 
         // hidden "-helpmd" flag:        
-        return "- ```-bin <output file>```: (task) generates an assembled binary. Use ```"+AUTO_FILENAME+"``` as the output file name to respect the filenames specified in the sourcefiles of some dialects, or to auto generate an output name.\n";
+        return "- ```-bin <output file>```: (task) generates an assembled binary. Use ```"+AUTO_FILENAME+"``` as the output file name to respect the filenames specified in the sourcefiles of some dialects, or to autogenerate an output name.\n";
     }
 
 
@@ -115,134 +115,149 @@ public class BinaryGenerator implements MDLWorker {
     
     public boolean generateStatementBytes(SourceFile sf, CodeBase code, List<Pair<CodeStatement, byte[]>> statementBytes)
     {
-        for (CodeStatement ss:sf.getStatements()) {
-            switch(ss.type) {
-                case CodeStatement.STATEMENT_NONE:
-                case CodeStatement.STATEMENT_ORG:
-                case CodeStatement.STATEMENT_CONSTANT:
-                case CodeStatement.STATEMENT_MACRO:
-                case CodeStatement.STATEMENT_MACROCALL:
-                    break;
-
+        for (CodeStatement s:sf.getStatements()) {
+            switch(s.type) {
                 case CodeStatement.STATEMENT_INCLUDE:
-                    if (!generateStatementBytes(ss.include, code, statementBytes)) return false;
+                    if (!generateStatementBytes(s.include, code, statementBytes)) return false;
                     break;
 
-                case CodeStatement.STATEMENT_INCBIN:
+                default:
                 {
-                    int skip = 0;
-                    int size = 0;
-                    if (ss.incbinSkip != null) skip = ss.incbinSkip.evaluateToInteger(ss, code, false);
-                    if (ss.incbinSize != null) size = ss.incbinSize.evaluateToInteger(ss, code, false);
-                    long flength = ss.incbin.length();
-                    int datalength = Math.max((int)flength - skip, size);
-                    byte data[] = new byte[datalength];
-                    try (InputStream is = new FileInputStream(ss.incbin)) {
-                        if (skip > 0) is.skip(skip);
-                        is.read(data, 0, datalength);
-                    } catch(Exception e) {
-                        config.error("Cannot expand incbin: " + ss.incbin + " (skip: " + skip + ", size: " + size + ", expectedLength: " + datalength + ")");
-                        return false;
+                    byte[] data = generateStatementBytes(s, code);
+                    if (data != null) {
+                        statementBytes.add(Pair.of(s, data));
                     }
-                    statementBytes.add(Pair.of(ss, data));
-                    break;
-                }
-
-                case CodeStatement.STATEMENT_DATA_BYTES:
-                {
-                    List<Integer> data = new ArrayList<>();
-                    for(Expression exp: ss.data) {        
-                        if (!expressionToBytes(exp, ss, code, data)) return false;
-                    }
-                    byte datab[] = new byte[data.size()];
-                    for(int i = 0;i<data.size();i++) {
-                        datab[i] = (byte)(int)data.get(i);
-                    }
-                    statementBytes.add(Pair.of(ss, datab));
-                    break;
-                }
-
-                case CodeStatement.STATEMENT_DATA_WORDS:
-                {
-                    byte data[] = new byte[ss.data.size()*2];
-                    for(int i = 0;i<ss.data.size();i++) {
-                        Expression exp = ss.data.get(i);
-                        if (exp.evaluatesToNumericConstant()) {
-                            Integer v = exp.evaluateToInteger(ss, code, true);
-                            if (v == null) {
-                                config.error("Cannot evaluate expression " + exp + " when generating a binary.");
-                                return false;
-                            }
-                            data[i*2] = (byte)(int)(v&0x00ff);
-                            data[i*2+1] = (byte)(int)((v>>8)&0x00ff);
-                        } else {
-                            config.error("Cannot evaluate expression " + exp + " when generating a binary.");
-                            return false;
-                        }
-                    }
-                    statementBytes.add(Pair.of(ss, data));
-                    break;
-                }
-
-                case CodeStatement.STATEMENT_DATA_DOUBLE_WORDS:
-                {
-                    byte data[] = new byte[ss.data.size()*4];
-                    for(int i = 0;i<ss.data.size();i++) {
-                        Expression exp = ss.data.get(i);
-                        if (exp.evaluatesToNumericConstant()) {
-                            int v = exp.evaluateToInteger(ss, code, true);
-                            data[i*4] = (byte)(int)(v&0x00ff);
-                            data[i*4+1] = (byte)(int)((v>>8)&0x00ff);
-                            data[i*4+2] = (byte)(int)((v>>16)&0x00ff);
-                            data[i*4+3] = (byte)(int)((v>>24)&0x00ff);
-                        } else {
-                            config.error("Cannot evaluate expression " + exp + "when generating a binary.");
-                            return false;
-                        }
-                    }
-                    statementBytes.add(Pair.of(ss, data));
-                    break;
-                }
-
-                case CodeStatement.STATEMENT_DEFINE_SPACE:
-                    if (ss.space_value != null) {
-                        Integer value = ss.space_value.evaluateToInteger(ss, code, true);
-                        Integer amount = ss.space.evaluateToInteger(ss, code, true);
-                        if (value == null) {
-                            config.error("Cannot evaluate " + ss.space_value + " in " + ss.sl);
-                            return false;
-                        }
-                        if (amount == null) {
-                            config.error("Cannot evaluate " + ss.space + " in " + ss.sl);
-                            return false;
-                        }
-                        byte data[] = new byte[amount];
-                        for(int i = 0;i<amount;i++) {
-                            data[i] = (byte)(int)value;
-                        }
-                        statementBytes.add(Pair.of(ss, data));
-                    }
-                    break;
-
-                case CodeStatement.STATEMENT_CPUOP:
-                {
-                    List<Integer> data = ss.op.assembleToBytes(ss, code, config);
-                    if (data == null) {
-                        config.error("Cannot convert op " + ss.op + " to bytes in " + ss.sl);
-                        return false;
-                    }
-                    byte datab[] = new byte[data.size()];
-                    for(int i = 0;i<data.size();i++) {
-                        datab[i] = (byte)(int)data.get(i);
-                    }
-                    statementBytes.add(Pair.of(ss, datab));
-                    break;
                 }
             }
         }
         
         return true;
     }
+    
+    
+    public byte[] generateStatementBytes(CodeStatement s, CodeBase code)
+    {
+        switch(s.type) {
+            case CodeStatement.STATEMENT_NONE:
+            case CodeStatement.STATEMENT_ORG:
+            case CodeStatement.STATEMENT_CONSTANT:
+            case CodeStatement.STATEMENT_MACRO:
+            case CodeStatement.STATEMENT_MACROCALL:
+                break;
+
+            case CodeStatement.STATEMENT_INCLUDE:
+                config.warn("generateStatementBytes called with an include statement!");
+                return null;
+
+            case CodeStatement.STATEMENT_INCBIN:
+            {
+                int skip = 0;
+                int size = 0;
+                if (s.incbinSkip != null) skip = s.incbinSkip.evaluateToInteger(s, code, false);
+                if (s.incbinSize != null) size = s.incbinSize.evaluateToInteger(s, code, false);
+                long flength = s.incbin.length();
+                int datalength = Math.max((int)flength - skip, size);
+                byte data[] = new byte[datalength];
+                try (InputStream is = new FileInputStream(s.incbin)) {
+                    if (skip > 0) is.skip(skip);
+                    is.read(data, 0, datalength);
+                } catch(Exception e) {
+                    config.error("Cannot expand incbin: " + s.incbin + " (skip: " + skip + ", size: " + size + ", expectedLength: " + datalength + ")");
+                    return null;
+                }
+                return data;
+            }
+
+            case CodeStatement.STATEMENT_DATA_BYTES:
+            {
+                List<Integer> data = new ArrayList<>();
+                for(Expression exp: s.data) {        
+                    if (!expressionToBytes(exp, s, code, data)) return null;
+                }
+                byte datab[] = new byte[data.size()];
+                for(int i = 0;i<data.size();i++) {
+                    datab[i] = (byte)(int)data.get(i);
+                }
+                return datab;
+            }
+
+            case CodeStatement.STATEMENT_DATA_WORDS:
+            {
+                byte data[] = new byte[s.data.size()*2];
+                for(int i = 0;i<s.data.size();i++) {
+                    Expression exp = s.data.get(i);
+                    if (exp.evaluatesToNumericConstant()) {
+                        Integer v = exp.evaluateToInteger(s, code, true);
+                        if (v == null) {
+                            config.error("Cannot evaluate expression " + exp + " when generating a binary.");
+                            return null;
+                        }
+                        data[i*2] = (byte)(int)(v&0x00ff);
+                        data[i*2+1] = (byte)(int)((v>>8)&0x00ff);
+                    } else {
+                        config.error("Cannot evaluate expression " + exp + " when generating a binary.");
+                        return null;
+                    }
+                }
+                return data;
+            }
+
+            case CodeStatement.STATEMENT_DATA_DOUBLE_WORDS:
+            {
+                byte data[] = new byte[s.data.size()*4];
+                for(int i = 0;i<s.data.size();i++) {
+                    Expression exp = s.data.get(i);
+                    if (exp.evaluatesToNumericConstant()) {
+                        int v = exp.evaluateToInteger(s, code, true);
+                        data[i*4] = (byte)(int)(v&0x00ff);
+                        data[i*4+1] = (byte)(int)((v>>8)&0x00ff);
+                        data[i*4+2] = (byte)(int)((v>>16)&0x00ff);
+                        data[i*4+3] = (byte)(int)((v>>24)&0x00ff);
+                    } else {
+                        config.error("Cannot evaluate expression " + exp + "when generating a binary.");
+                        return null;
+                    }
+                }
+                return data;
+            }
+
+            case CodeStatement.STATEMENT_DEFINE_SPACE:
+                if (s.space_value != null) {
+                    Integer value = s.space_value.evaluateToInteger(s, code, true);
+                    Integer amount = s.space.evaluateToInteger(s, code, true);
+                    if (value == null) {
+                        config.error("Cannot evaluate " + s.space_value + " in " + s.sl);
+                        return null;
+                    }
+                    if (amount == null) {
+                        config.error("Cannot evaluate " + s.space + " in " + s.sl);
+                        return null;
+                    }
+                    byte data[] = new byte[amount];
+                    for(int i = 0;i<amount;i++) {
+                        data[i] = (byte)(int)value;
+                    }
+                    return data;
+                }
+                break;
+
+            case CodeStatement.STATEMENT_CPUOP:
+            {
+                List<Integer> data = s.op.assembleToBytes(s, code, config);
+                if (data == null) {
+                    config.error("Cannot convert op " + s.op + " to bytes in " + s.sl);
+                    return null;
+                }
+                byte datab[] = new byte[data.size()];
+                for(int i = 0;i<data.size();i++) {
+                    datab[i] = (byte)(int)data.get(i);
+                }
+                return datab;
+            }
+        }
+        
+        return null;
+    }    
     
     
     public boolean expressionToBytes(Expression exp, CodeStatement ss, CodeBase code, List<Integer> data)

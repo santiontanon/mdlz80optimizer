@@ -213,7 +213,7 @@ public abstract class SjasmDerivativeDialect implements Dialect {
                         case CodeStatement.STATEMENT_DATA_BYTES:
                         case CodeStatement.STATEMENT_DATA_WORDS:
                         case CodeStatement.STATEMENT_DATA_DOUBLE_WORDS:
-                            s2 = new CodeStatement(st.attributeDefiningStatement.get(i).type, sl, source, config);
+                            s2 = new CodeStatement(st.attributeCodeStatementTypes.get(i), sl, source, config);
                             s2.data = new ArrayList<>();
                             s2.data.add(data.get(i));
                             l.add(s2);
@@ -232,10 +232,10 @@ public abstract class SjasmDerivativeDialect implements Dialect {
                         SourceConstant c = new SourceConstant(s.label.name + "." + st.rawAttributeNames.get(i),
                                 s.label.name + "." + st.rawAttributeNames.get(i), 
                                 Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, s2, code, config), s2, config);
+                        s2.label = c;
                         int res = code.addSymbol(c.name, c);
                         if (res == -1) return false;
                         if (res == 0) s.redefinedLabel = true; 
-                        s2.label = c;
                     }
                 }
                 return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);

@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import cl.MDLConfig;
+import org.apache.commons.lang3.tuple.Pair;
 
 public class Expression {
 
@@ -1580,6 +1581,43 @@ public class Expression {
         return exp;
     }
 
+    
+    public static Expression dialectFunctionExpressionMaybeTranslated(String functionName, Expression arg, int precedence, CodeStatement s, CodeBase code, MDLConfig config) {
+        Expression exp = new Expression(EXPRESSION_DIALECT_FUNCTION, config);
+        exp.dialectFunction = functionName;
+        exp.args = new ArrayList<>();
+        exp.args.add(arg);
+        
+        // reorganize based on precedence:
+        int arg_precedence = config.expressionParser.OPERATOR_PRECEDENCE[arg.type];
+
+        if (arg.args != null && arg.args.size() == 2 &&
+            arg_precedence >= precedence) {
+            // we need to reorganize!
+            Expression exp2 = dialectFunctionExpressionMaybeTranslated(functionName, arg.args.get(0), precedence, s, code, config);
+
+            List<Expression> arg_args = arg.args;
+            arg.args = new ArrayList<>();
+            arg.args.add(Expression.parenthesisExpression(exp2, config.expressionParser.default_parenthesis, config));
+            arg.args.add(arg_args.get(1));
+            exp = arg;
+        } else {
+            // try to translate it:
+            Expression translated = config.dialectParser.translateToStandardExpression(functionName, exp.args, s, code);
+            if (translated != null) {
+                translated.originalDialectExpression = exp;
+                exp = translated;
+            } else {
+                if (config.evaluateDialectFunctions) {
+                    config.codeBaseParser.expressionsToReplaceByValueAtTheEnd.add(Pair.of(exp, s));
+                }
+            }
+        }
+        
+        return exp;
+    }
+
+    
     public static Expression listExpression(List<? extends Object> a_args, MDLConfig config) {
         Expression exp = new Expression(EXPRESSION_LIST, config);
         exp.args = genericListToExpressionList(a_args, config);

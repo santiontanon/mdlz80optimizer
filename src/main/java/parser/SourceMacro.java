@@ -303,11 +303,13 @@ public class SourceMacro {
     public void scopeMacroExpansionLines(String scope, List<SourceLine> lines, CodeBase code, MDLConfig config)
     {
         if (!lines.isEmpty()) {
-            lines.get(0).labelPrefixToPush = scope + ".";
-            
             SourceLine l2 = new SourceLine("", lines.get(0).source, lines.get(0).lineNumber);
-            l2.labelPrefixToPop = scope + ".";            
-            lines.add(l2);
+            l2.labelPrefixToPush = scope + ".";
+            lines.add(0, l2);
+            
+            SourceLine l3 = new SourceLine("", lines.get(lines.size()-1).source, lines.get(lines.size()-1).lineNumber);
+            l3.labelPrefixToPop = scope + ".";            
+            lines.add(l3);
         }
     }
 }

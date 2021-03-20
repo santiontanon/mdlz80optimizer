@@ -377,27 +377,6 @@ public class CPUOp {
                             return null;
                         }
                         nn = arg.evaluateToInteger(s, code, true);
-                        
-                        if (nn == 9887) {
-                            System.out.println(arg + "  -->  " + nn);
-                            List<Expression> l = new ArrayList<>();
-                            List<Expression> open = new ArrayList<>();
-                            open.add(arg);
-                            while(!open.isEmpty()) {
-                                Expression e = open.remove(0);
-                                if (!l.contains(e)) {
-                                    l.add(e);
-                                }
-                                if (e.args != null) {
-                                    for(Expression e2:e.args) {
-                                        open.add(e2);
-                                    }
-                                }
-                            }
-                            for(Expression e:l) {
-                                System.out.println("    " + e + "   -->  " + e.evaluateToInteger(s, code, true));
-                            }
-                        }
                     }
                 }
                 if (nn == null) {

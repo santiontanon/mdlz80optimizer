@@ -286,10 +286,14 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
         config.lineParser.macroDefinitionStyle = LineParser.MACRO_MACRO_NAME_ARGS;
         config.lineParser.allowNumberLabels = true;
         
-        config.expressionParser.dialectFunctionsSingleArgumentNoParenthesis.add("high");
-        config.expressionParser.dialectFunctionsSingleArgumentNoParenthesis.add("low");
-        config.expressionParser.dialectFunctionsSingleArgumentNoParenthesis.add(":");
-        config.expressionParser.dialectFunctionsSingleArgumentNoParenthesis.add("::");
+        config.expressionParser.dialectFunctionsSingleArgumentNoParenthesisPrecedence.put(
+                "high", config.expressionParser.OPERATOR_PRECEDENCE[Expression.EXPRESSION_SUM]);
+        config.expressionParser.dialectFunctionsSingleArgumentNoParenthesisPrecedence.put(
+                "low", config.expressionParser.OPERATOR_PRECEDENCE[Expression.EXPRESSION_SUM]);
+        config.expressionParser.dialectFunctionsSingleArgumentNoParenthesisPrecedence.put(
+                ":", config.expressionParser.OPERATOR_PRECEDENCE[Expression.EXPRESSION_BITNEGATION]);
+        config.expressionParser.dialectFunctionsSingleArgumentNoParenthesisPrecedence.put(
+                "::", config.expressionParser.OPERATOR_PRECEDENCE[Expression.EXPRESSION_BITNEGATION]);
         
         // We define it as a dialectMacro instead of as a synonym of "REPT", as it has some special syntax for
         // indicating the current iteration

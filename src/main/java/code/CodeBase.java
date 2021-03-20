@@ -117,7 +117,7 @@ public class CodeBase {
     // 0: redefinition
     // -1: error
     public int addSymbol(String name, SourceConstant sc)
-    {
+    {        
         if (symbols.containsKey(name)) {
             SourceConstant previous = symbols.get(name);
             if (previous.resolveEagerly) {

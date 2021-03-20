@@ -371,6 +371,14 @@ public class CodeStatement {
                 break;
             }
             case STATEMENT_CONSTANT:
+                if (label == null) {
+                    config.error("Trying to write an equ statement without a label in " + sl);
+                    return null;
+                }
+                if (label.exp == null) {
+                    config.error("Empty expression when writing an equ statement in " + sl);
+                    return null;
+                }
                 str += " "+config.lineParser.KEYWORD_STD_EQU+" " + label.exp.toStringInternal(false, false, mimicTargetDialect, null);
                 break;
             case STATEMENT_DATA_BYTES:

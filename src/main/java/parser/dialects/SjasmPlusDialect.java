@@ -12,13 +12,17 @@ import code.Expression;
 import code.SourceConstant;
 import code.SourceFile;
 import code.CodeStatement;
+import code.OutputBinary;
+import java.io.FileOutputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.StringTokenizer;
 import parser.LineParser;
 import parser.MacroExpansion;
 import parser.SourceLine;
 import parser.SourceMacro;
+import workers.BinaryGenerator;
 
 /**
  *
@@ -38,8 +42,17 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
             exp_l = a_exp_l;
         }
     }
+    
+    
+    public static class SaveCommand {
+        CodeStatement s;
+        String command;
+        List<Expression> arguments = new ArrayList<>();
+    }
 
     
+    int RAMSize = 64*1024;
+    String deviceName = null;
     List<Integer> slotSizes = new ArrayList<>();
     List<Integer> pageSizes = new ArrayList<>();
     Integer currentSlot = null;
@@ -47,6 +60,9 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
     // Addresses are not resolved until the very end, so, when printing values, we just queue them up here, and
     // print them all at the very end:
     List<PrintRecord> toPrint = new ArrayList<>();
+    
+    // Record of "savebin", "savesna", etc. commands, to execute them after the code has been loaded:
+    List<SaveCommand> saveCommands = new ArrayList<>();
     
 
     SjasmPlusDialect(MDLConfig a_config) {
@@ -65,6 +81,7 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
         config.lineParser.addKeywordSynonym("block", config.lineParser.KEYWORD_DS);
                 
         config.lineParser.keywordsHintingALabel.add("=");
+        config.lineParser.keywordsHintingALabel.add("defl");
         
         config.warning_jpHlWithParenthesis = true;
         config.lineParser.allowEmptyDB_DW_DD_definitions = true;
@@ -84,8 +101,10 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
         config.expressionParser.addRegisterSynonym("ly", "iyl");
         config.expressionParser.addRegisterSynonym("yh", "iyh");
         config.expressionParser.addRegisterSynonym("hy", "iyh");
-        config.expressionParser.dialectFunctionsSingleArgumentNoParenthesis.add("high");
-        config.expressionParser.dialectFunctionsSingleArgumentNoParenthesis.add("low");        
+        config.expressionParser.dialectFunctionsSingleArgumentNoParenthesisPrecedence.put(
+                "high", config.expressionParser.OPERATOR_PRECEDENCE[Expression.EXPRESSION_SUM]);
+        config.expressionParser.dialectFunctionsSingleArgumentNoParenthesisPrecedence.put(
+                "low", config.expressionParser.OPERATOR_PRECEDENCE[Expression.EXPRESSION_SUM]);
         config.expressionParser.sjasmPlusCurlyBracketExpressions = true;
                         
         config.preProcessor.macroSynonyms.put("dup", config.preProcessor.MACRO_REPT);
@@ -334,6 +353,7 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
         if (tokens.size() >= 1 && tokens.get(0).equalsIgnoreCase("endmodule")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("device")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("=")) return true;
+        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("defl")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("savebin")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("savesna")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("display")) return true;
@@ -506,7 +526,7 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
         }    
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("device")) {
             tokens.remove(0);
-            String deviceName = tokens.remove(0).toLowerCase();
+            deviceName = tokens.remove(0).toLowerCase();
             
             switch(deviceName) {
                 case "none":
@@ -646,7 +666,8 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
             
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
-        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("=")) {
+        if (tokens.size() >= 2 && (tokens.get(0).equalsIgnoreCase("=") ||
+                                   tokens.get(0).equalsIgnoreCase("defl"))) {
             // This is like an equ, but with a variable that changes value throughout parsing.
             // This only makes sense in eager execution, so, we check for that:
             if (!config.eagerMacroEvaluation) {
@@ -659,8 +680,6 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
                         
             tokens.remove(0);
             
-//            if (!config.lineParser.parseEqu(tokens, l, sl, s, previous, source, code)) return false;
-
             Expression exp = config.expressionParser.parse(tokens, s, previous, code);
             if (exp == null) {
                 config.error("parse =: Cannot parse line " + sl);
@@ -681,31 +700,32 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
             
             // these variables should not be part of the source code:
             l.clear();
-//            return true;
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }       
-        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("savebin")) {
-            // Just ignore ...
-            while(!tokens.isEmpty()) {
-                if (config.tokenizer.isSingleLineComment(tokens.get(0)) || 
-                    config.tokenizer.isMultiLineCommentStart(tokens.get(0))) break;
+        if (tokens.size() >= 2 && (tokens.get(0).equalsIgnoreCase("savebin") ||
+                                   tokens.get(0).equalsIgnoreCase("savesna"))) {
+            SaveCommand sc = new SaveCommand();
+            sc.s = s;
+            sc.command = tokens.remove(0);
+            Expression exp = config.expressionParser.parse(tokens, s, previous, code);
+            if (exp == null) {
+                config.error("Cannot parse line " + sl);
+                return false;
+            }
+            sc.arguments.add(exp);
+            while(!tokens.isEmpty() && tokens.get(0).equals(",")) {
                 tokens.remove(0);
+                exp = config.expressionParser.parse(tokens, s, previous, code);
+                if (exp == null) {
+                    config.error("Cannot parse line " + sl);
+                    return false;
+                }
+                sc.arguments.add(exp);
             }
             
             linesToKeepIfGeneratingDialectAsm.add(s);
+            saveCommands.add(sc);
             
-            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
-        }
-        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("savesna")) {
-            // Just ignore ...
-            while(!tokens.isEmpty()) {
-                if (config.tokenizer.isSingleLineComment(tokens.get(0)) || 
-                    config.tokenizer.isMultiLineCommentStart(tokens.get(0))) break;
-                tokens.remove(0);
-            }
-            
-            linesToKeepIfGeneratingDialectAsm.add(s);
-
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
         if (tokens.size()>=2 && (tokens.get(0).equalsIgnoreCase("display"))) {
@@ -992,6 +1012,169 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
             config.info(accum);
         }
         
+        // Saving binaries/snapshots, etc.:
+        for(SaveCommand sc:saveCommands) {
+            code.resetAddresses();
+
+            String fileName = sc.arguments.get(0).evaluateToString(sc.s, code, true);
+            if (fileName == null) {
+                config.error("Cannot evaluate file name in " + sc.s.sl);
+                return false;
+            }
+            
+            switch(sc.command) {
+                case "savebin":
+                {
+                    Integer start = 0;
+                    Integer length = RAMSize;
+                    if (sc.arguments.size() >= 2) {
+                        start = sc.arguments.get(1).evaluateToInteger(sc.s, code, false);
+                        if (start == null) {
+                            config.error("Cannot evaluate start address in " + sc.s.sl);
+                            return false;
+                        }
+                    }
+                    if (sc.arguments.size() >= 3) {
+                        length = sc.arguments.get(2).evaluateToInteger(sc.s, code, false);
+                        if (length == null) {
+                            config.error("Cannot evaluate length in " + sc.s.sl);
+                            return false;
+                        }
+                    }
+                    
+                    byte device[] = reconstructDeviceRAMUntil(sc.s, code);
+                    if (device == null) return false;
+
+                    try (FileOutputStream os = new FileOutputStream(fileName)) {
+                        start = start%RAMSize;
+                        if (start + length > RAMSize) {
+                            length = RAMSize - start;
+                        }
+                        os.write(device, start, length);
+                        os.flush();
+                    } catch (Exception e) {
+                        config.error("Cannot write to file " + fileName + ": " + e);
+                        config.error(Arrays.toString(e.getStackTrace()));
+                        return false;
+                    }
+
+                    break;
+                }
+                case "savesna":
+                {
+                    Integer start = 0;
+                    if (sc.arguments.size() >= 2) {
+                        start = sc.arguments.get(1).evaluateToInteger(sc.s, code, false);
+                        if (start == null) {
+                            config.error("Cannot evaluate start address in " + sc.s.sl);
+                            return false;
+                        }
+                    }
+                    
+                    if (deviceName == null ||
+                        (!deviceName.equalsIgnoreCase("ZXSPECTRUM48") &&
+                         !deviceName.equalsIgnoreCase("ZXSPECTRUM128"))) {
+                        config.error("savesna can only be used on ZXSPECTRUM48 or ZXSPECTRUM128 devices in " + sc.s.sl);
+                        return false;                        
+                    }
+                    
+                    byte device[] = reconstructDeviceRAMUntil(sc.s, code);
+                    if (device == null) return false;
+                    
+                    // Values/procedure from the sourcecode of sjasmplus: https://github.com/z00m128/sjasmplus/blob/master/sjasm/io_snapshots.cpp
+                    // For more information on the .sna format: https://sinclair.wiki.zxnet.co.uk/wiki/SNA_format
+                    byte []snaHeader = {0x3f, 0x58, 0x27, (byte)0x9b, 0x36, 0x00, 0x00, 0x44,
+                                        0x00, 0x2b, 0x2d, (byte)0xdc, 0x5c, (byte)(start & 0xff), (byte)((start>>8)&0xff), 0x3a,
+                                        0x5c, 0x3c, (byte)0xff, 0x00, 0x00, 0x54, 0x00,
+                                        0x00, 0x00, // these will be modified below (stackAdr)
+                                        0x01, 0x07
+                            };
+                    int ZX_STACK_DATA_size = 4;
+                    int ZX_RAMTOP_DEFAULT = 0x5d5b;
+                    int stackAdr = ZX_RAMTOP_DEFAULT + 1 - ZX_STACK_DATA_size;
+                    boolean is48kSnap = deviceName.equalsIgnoreCase("ZXSPECTRUM48");
+
+                    // Assuming we have a "defaultStack":
+                    if (is48kSnap) stackAdr -= 2;
+                    snaHeader[23] = (byte)(stackAdr & 0xff);
+                    snaHeader[24] = (byte)((stackAdr>>8) & 0xff);
+                    if (is48kSnap) {
+                        // inject PC under default stack
+                        device[stackAdr] = (byte)(start & 0xff);
+                        device[stackAdr+1] = (byte)((start>>8) & 0xff);
+                    }
+                    
+                    try (FileOutputStream os = new FileOutputStream(fileName)) {
+                        os.write(snaHeader, 0, snaHeader.length);
+                        start = 16*1024;
+                        os.write(device, start, 48*1024);
+                        os.flush();
+                    } catch (Exception e) {
+                        config.error("Cannot write to file " + fileName + ": " + e);
+                        config.error(Arrays.toString(e.getStackTrace()));
+                        return false;
+                    }                    
+                    break;
+                }
+                default:
+                    config.error("Unsupported save command " + sc.command);
+                    return false;
+            }
+        }
+        
         return true;     
+    }
+    
+    
+    public byte[] reconstructDeviceRAMUntil(CodeStatement limit, CodeBase code)
+    {
+        byte memory[] = new byte[RAMSize];
+        BinaryGenerator bingen = new BinaryGenerator(config);
+        
+        // iterate over all the code statements, generating binary data, and overwritting the memory
+        for(OutputBinary output:code.outputs) {
+            if (output.main == null) continue;
+            
+            Boolean ret = reconstructDeviceRAMUntil(output.main, limit, code, memory, bingen);
+            if (ret == null) return null;
+            if (ret) {
+                // we found the limit:
+                return memory;
+            }
+        }
+        
+        return memory;
+    }
+
+
+    // true: limit found
+    // false: limit not found
+    // null: error
+    public Boolean reconstructDeviceRAMUntil(SourceFile f, CodeStatement limit, CodeBase code, byte memory[], BinaryGenerator bingen)
+    {
+        for(CodeStatement s:f.getStatements()) {
+            if (s == limit) return true;
+            Integer address = s.getAddress(code);
+            if (address == null) {
+                config.error("Cannot assess the address of statement in " + s);
+                return null;
+            }
+            if (address < 0 || address >= RAMSize) {
+                config.warn("Address ("+address+") ouside of device RAM range ("+RAMSize+") in " + s);
+            }
+            if (s.type == CodeStatement.STATEMENT_INCLUDE) {
+                Boolean ret = reconstructDeviceRAMUntil(s.include, limit, code, memory, bingen);
+                if (ret == null || ret) return ret;
+            } else {
+                byte data[] = bingen.generateStatementBytes(s, code);
+                if (data != null) {
+                    for(int i = 0;i<data.length;i++) {
+                        memory[(address+i)%RAMSize] = data[i];
+                    }
+                }
+            }
+        }
+        
+        return false;
     }
 }

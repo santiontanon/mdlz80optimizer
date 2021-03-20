@@ -59,8 +59,10 @@ public class Macro80Dialect implements Dialect {
         config.expressionParser.OP_GEQTHAN = "ge";
         config.expressionParser.OP_DIFF = "ne";
         config.expressionParser.OP_MOD = "mod";
-        config.expressionParser.dialectFunctionsSingleArgumentNoParenthesis.add("high");
-        config.expressionParser.dialectFunctionsSingleArgumentNoParenthesis.add("low");
+        config.expressionParser.dialectFunctionsSingleArgumentNoParenthesisPrecedence.put(
+                "high", config.expressionParser.OPERATOR_PRECEDENCE[Expression.EXPRESSION_SUM]);
+        config.expressionParser.dialectFunctionsSingleArgumentNoParenthesisPrecedence.put(
+                "low", config.expressionParser.OPERATOR_PRECEDENCE[Expression.EXPRESSION_SUM]);
         config.expressionParser.doubleHashToMarkExternalSymbols = true;
         
         config.lineParser.keywordsHintingANonScopedLabel.add("set");

@@ -106,6 +106,12 @@ public class PreProcessor {
         return currentState.currentMacro;
 
     }
+    
+    
+    public int getCurrentMacroStateNExpansions()
+    {
+        return currentState.macroExpansions.size();
+    }
 
     
     // Checks if "token" corresponds to the macro "macro":
@@ -306,7 +312,7 @@ public class PreProcessor {
             CodeStatement s, SourceFile source, CodeBase code, boolean expandMacroCalls)
     {
         List<CodeStatement> l = new ArrayList<>();
-        
+                
         if (s.type == CodeStatement.STATEMENT_MACROCALL) {
             if (s.macroCallMacro != null) {                
                 if (!expandMacroCalls) return null;
@@ -392,7 +398,7 @@ public class PreProcessor {
                         auxiliar.labelPrefix = s.labelPrefix;
                         auxiliar.label.definingStatement = auxiliar;
                         l.add(auxiliar);
-                    }                    
+                    }           
                     currentState.macroExpansions.add(0, expandedMacro);
                     return l;
                 } else {

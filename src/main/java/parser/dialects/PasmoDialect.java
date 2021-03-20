@@ -48,9 +48,12 @@ public class PasmoDialect implements Dialect {
         config.tokenizer.allowAndpersandHex = true;
         
         config.expressionParser.OP_BIT_XOR = "xor";
-        config.expressionParser.dialectFunctionsSingleArgumentNoParenthesis.add("high");
-        config.expressionParser.dialectFunctionsSingleArgumentNoParenthesis.add("low");
-        config.expressionParser.dialectFunctionsSingleArgumentNoParenthesis.add("defined");
+        config.expressionParser.dialectFunctionsSingleArgumentNoParenthesisPrecedence.put(
+                "high", config.expressionParser.OPERATOR_PRECEDENCE[Expression.EXPRESSION_SUM]);
+        config.expressionParser.dialectFunctionsSingleArgumentNoParenthesisPrecedence.put(
+                "low", config.expressionParser.OPERATOR_PRECEDENCE[Expression.EXPRESSION_SUM]);
+        config.expressionParser.dialectFunctionsSingleArgumentNoParenthesisPrecedence.put(
+                "defined", config.expressionParser.OPERATOR_PRECEDENCE[Expression.EXPRESSION_SUM]);        
         config.expressionParser.dialectFunctionsOptionalSingleArgumentNoParenthesis.add("nul");
         
         // PASMO has a different operator precedence than the standard C/C++:
