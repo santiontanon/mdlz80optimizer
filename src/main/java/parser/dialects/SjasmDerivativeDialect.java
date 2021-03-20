@@ -29,6 +29,7 @@ public abstract class SjasmDerivativeDialect implements Dialect {
         String name;
         SourceFile file;
         CodeStatement start;
+        List<String> rawAttributeNames = new ArrayList<>();
         List<String> attributeNames = new ArrayList<>();
         List<Integer> attributeCodeStatementTypes = new ArrayList<>();
         List<Expression> attributeDefaults = new ArrayList<>();
@@ -117,8 +118,10 @@ public abstract class SjasmDerivativeDialect implements Dialect {
                     int size = s2.sizeInBytes(code, true, true, true);
                     offset += size;
                     if (s2.label != null) {
+                        struct.rawAttributeNames.add(s2.label.originalName);
                         struct.attributeNames.add(s2.label.name);
                     } else {
+                        struct.rawAttributeNames.add(null);
                         struct.attributeNames.add(null);
                     }
                     struct.attributeCodeStatementTypes.add(s2.type);
@@ -134,8 +137,10 @@ public abstract class SjasmDerivativeDialect implements Dialect {
                         return false;
                     }
                     if (s2.label != null) {
+                        struct.rawAttributeNames.add(s2.label.originalName);
                         struct.attributeNames.add(s2.label.name);
                     } else {
+                        struct.rawAttributeNames.add(null);
                         struct.attributeNames.add(null);
                     }
                     struct.attributeCodeStatementTypes.add(s2.type);
@@ -170,6 +175,7 @@ public abstract class SjasmDerivativeDialect implements Dialect {
         for(SjasmStruct st:structs) {
             if (tokens.get(0).equals(st.name)) {
                 tokens.remove(0);
+                
                 // it is a struct definition:
                 boolean done = false;
                 List<Expression> data = new ArrayList<>();
@@ -200,7 +206,6 @@ public abstract class SjasmDerivativeDialect implements Dialect {
                     config.error("Struct instantiation has too many fields ("+data.size()+" vs the expected "+st.attributeNames.size()+") in " + sl);
                     return false;                    
                 }
-                l.clear();
                 
                 for(int i = 0;i<data.size();i++) {
                     CodeStatement s2;
@@ -223,9 +228,14 @@ public abstract class SjasmDerivativeDialect implements Dialect {
                             config.error("Field " + st.attributeNames.get(i) + " of struct " + st.name + " has an unsupported type ("+st.attributeCodeStatementTypes.get(i)+") in " + sl);
                             return false;
                     }
-                    if (i == 0) {
-                        s2.label = s.label;
-                        s.label.definingStatement = s2;
+                    if (s.label != null) {
+                        SourceConstant c = new SourceConstant(s.label.name + "." + st.rawAttributeNames.get(i),
+                                s.label.name + "." + st.rawAttributeNames.get(i), 
+                                Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, s2, code, config), s2, config);
+                        int res = code.addSymbol(c.name, c);
+                        if (res == -1) return false;
+                        if (res == 0) s.redefinedLabel = true; 
+                        s2.label = c;
                     }
                 }
                 return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
