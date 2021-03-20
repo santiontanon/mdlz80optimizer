@@ -45,6 +45,7 @@ public abstract class SjasmDerivativeDialect implements Dialect {
     
     List<String> modules = new ArrayList<>();
     
+    boolean allowReusableLabels = false;
     HashMap<String, Integer> reusableLabelCounts = new HashMap<>();
 
     List<Integer> currentPages = new ArrayList<>();
@@ -247,7 +248,7 @@ public abstract class SjasmDerivativeDialect implements Dialect {
             } else {
                 name = config.lineParser.getLabelPrefix() + name;
             }
-        } else if (config.tokenizer.isInteger(name)) {
+        } else if (allowReusableLabels && config.tokenizer.isInteger(name)) {
             // it's a reusable label:
             int count = 1;
             if (reusableLabelCounts.containsKey(name)) {
@@ -284,7 +285,7 @@ public abstract class SjasmDerivativeDialect implements Dialect {
             } else {
                 return Pair.of(name, null);
             }
-        } else if ((name.endsWith("f") || name.endsWith("F")) && config.tokenizer.isInteger(name.substring(0, name.length()-1))) {
+        } else if (allowReusableLabels && (name.endsWith("f") || name.endsWith("F")) && config.tokenizer.isInteger(name.substring(0, name.length()-1))) {
             // it'startStatement a reusable label:
             name = name.substring(0, name.length()-1);
             int count = 1;
@@ -292,7 +293,7 @@ public abstract class SjasmDerivativeDialect implements Dialect {
                 count = reusableLabelCounts.get(name);
             }
             return Pair.of("_sjasm_reusable_" + name + "_" + count, null);
-        } else if ((name.endsWith("b") || name.endsWith("B")) && config.tokenizer.isInteger(name.substring(0, name.length()-1))) {
+        } else if (allowReusableLabels && (name.endsWith("b") || name.endsWith("B")) && config.tokenizer.isInteger(name.substring(0, name.length()-1))) {
             // it'startStatement a reusable label:
             name = name.substring(0, name.length()-1);
             int count = reusableLabelCounts.get(name);

@@ -259,6 +259,8 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
     public SjasmDialect(MDLConfig a_config) {
         config = a_config;
 
+        allowReusableLabels = true;
+        
         config.lineParser.tokensPreventingTextMacroExpansion.add("define");
         config.lineParser.tokensPreventingTextMacroExpansion.add("xdefine");
         config.lineParser.tokensPreventingTextMacroExpansion.add("assign");
@@ -1569,6 +1571,15 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
     {
         if (reusableLabelCounts.size() > 0 && config.warning_ambiguous) {
             config.warn("Use of sjasm reusable labels, which are conductive to human error.");
+        }
+        
+        // Make sure all reusable labels are replaced by the MDL-generated names (since after
+        // optimizations, they could have moved around, and their original order might be lost):
+        for(String s:code.getSymbols()) {
+            SourceConstant c = code.getSymbol(s);
+            if (config.tokenizer.isInteger(c.originalName)) {
+                c.originalName = c.name;
+            }
         }
                 
         // set the starting statement of the first default block:
