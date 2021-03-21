@@ -15,7 +15,7 @@ import workers.SymbolTableGenerator;
 
 public class Main {
     
-    public static String VERSION_STRING = "v1.9dev";
+    public static String VERSION_STRING = "v1.8.1";
 
     public static void main(String args[]) throws Exception {
         // Set up the MDL configuration:
