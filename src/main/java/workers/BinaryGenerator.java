@@ -113,6 +113,7 @@ public class BinaryGenerator implements MDLWorker {
         }
         while(size < minimumSize) {
             os.write(0);
+            size ++;
         }
         return true;
     }

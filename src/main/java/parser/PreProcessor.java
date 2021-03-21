@@ -459,7 +459,7 @@ public class PreProcessor {
 
     public boolean addTextMacro(TextMacro m)
     {
-        config.debug("adding text macro: " + m.name);
+        config.debug("adding text macro: " + m.name + "/" + m.argNames.size() + "  as  " + m.tokens);
         List<TextMacro> l = textMacros.get(m.name);
         if (l == null) {
             l = new ArrayList<>();

@@ -206,7 +206,9 @@ public class Expression {
                 }
                 Object value = code.getSymbolValueInternal(symbolName, silent, variableStack);
                 if (value == null) {
-                    if (previous != null && previous.labelPrefix != null && !previous.labelPrefix.isEmpty()) {
+                    if (s != null && s.labelPrefix != null && !s.labelPrefix.isEmpty()) {
+                        value = code.getSymbolValueInternal(s.labelPrefix + symbolName, silent, variableStack);
+                    } else if (previous != null && previous.labelPrefix != null && !previous.labelPrefix.isEmpty()) {
                         value = code.getSymbolValueInternal(previous.labelPrefix + symbolName, silent, variableStack);
                     }
                     if (value == null) {

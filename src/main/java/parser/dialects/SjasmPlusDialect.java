@@ -51,12 +51,19 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
         List<Expression> arguments = new ArrayList<>();
     }
 
+    public static final String PHASE_PRE_LABEL_PREFIX = "__sjasmplus_phase_pre_";
+    public static final String PHASE_POST_LABEL_PREFIX = "__sjasmplus_phase_post_";
+    public static final String DEPHASE_LABEL_PREFIX = "__sjasmplus_dephase_";
+    
     
     int RAMSize = 64*1024;
     String deviceName = null;
     List<Integer> slotSizes = new ArrayList<>();
     List<Integer> pageSizes = new ArrayList<>();
     Integer currentSlot = null;
+    
+    List<CodeStatement> phaseStatements = new ArrayList<>();
+    List<CodeStatement> dephaseStatements = new ArrayList<>();
     
     // Addresses are not resolved until the very end, so, when printing values, we just queue them up here, and
     // print them all at the very end:
@@ -77,6 +84,8 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
         
         config.lineParser.tokensPreventingTextMacroExpansion.add("ifdef");
         config.lineParser.tokensPreventingTextMacroExpansion.add("ifndef");
+        config.lineParser.tokensPreventingTextMacroExpansion.add("define");
+        config.lineParser.tokensPreventingTextMacroExpansion.add("define+");
         config.lineParser.tokensPreventingTextMacroExpansion.add("undefine");
         
         config.lineParser.addKeywordSynonym("byte", config.lineParser.KEYWORD_DB);
@@ -339,6 +348,7 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
         if (tokens.size() >= 1 && tokens.get(0).equalsIgnoreCase("end")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("assert")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("output")) return true;
+        if (tokens.size() >= 1 && tokens.get(0).equalsIgnoreCase("outend")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("size")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("page")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("dz")) return true;
@@ -356,6 +366,10 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("undefine")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("abyte")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("opt")) return true;
+        if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("phase")) return true;
+        if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("dephase")) return true;
+        if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("disp")) return true;
+        if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("ent")) return true;
 
         for(SjasmStruct s:structs) {
             if (tokens.get(0).equals(s.name)) return true;
@@ -746,54 +760,12 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
                 exp = config.expressionParser.parse(tokens, s, previous, code);
                 exp_l.add(exp);
             }
-                        
+            
             toPrint.add(new PrintRecord("printtext", 
                     source.getStatements().get(source.getStatements().size()-1), exp_l));
             
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
-        /*
-        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("define")) {
-            tokens.remove(0);
-
-            // read variable name:
-            String token = tokens.remove(0);
-            if (!config.caseSensitiveSymbols) token = token.toLowerCase();
-            
-            // optionally read the expression:
-            Expression exp = null;
-            if (!tokens.isEmpty() && !config.tokenizer.isSingleLineComment(tokens.get(0))) {                    
-                exp = config.expressionParser.parse(tokens, s, previous, code);
-                if (exp == null) {
-                    config.error("parseEqu: Cannot parse line " + sl);
-                    return false;
-                }
-                // remove unnecessary parenthesis:
-                while(exp.type == Expression.EXPRESSION_PARENTHESIS) {
-                    exp = exp.args.get(0);
-                }                
-            } else {
-                exp = Expression.constantExpression(0, config);
-            }
-
-            // parse as a :=:      
-            SourceConstant c = config.lineParser.newSourceConstant(token, exp, s, previous);
-            if (c == null) {
-                config.error("Problem defining symbol " + config.lineParser.getLabelPrefix() + token + " in " + sl);
-                return false;
-            }
-            s.label = c;
-            int res = code.addSymbol(c.name, c);
-            if (res == -1) return false;
-            if (res == 0) s.redefinedLabel = true;
-            s.label.resolveEagerly = true;
-            
-            // these variables should not be part of the source code:
-            l.clear();
-            
-            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
-        }    
-        */
         if (tokens.size() >= 2 && 
                 (tokens.get(0).equalsIgnoreCase("define") ||
                  tokens.get(0).equalsIgnoreCase("define+"))) {
@@ -835,7 +807,87 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
                 config.preProcessor.removeTextMacro(macroName, 0);
             }
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
+        }      
+        if (tokens.size() >= 1 && (tokens.get(0).equalsIgnoreCase("disp") || tokens.get(0).equalsIgnoreCase("phase"))) {
+            tokens.remove(0);
+            
+            if (s.label != null) {
+                // if there was a label in the "phase" line, create a new one:
+                s = new CodeStatement(CodeStatement.STATEMENT_ORG, new SourceLine(sl), source, config);
+                l.add(s);
+            }
+            
+            // parse as an "org":
+            Expression exp = config.expressionParser.parse(tokens, s, previous, code);
+            if (exp == null) {
+                config.error("Cannot parse phase address in " + sl);
+                return false;
+            } 
+            phaseStatements.add(s);
+            linesToKeepIfGeneratingDialectAsm.add(s);
+            
+            // Add the label before the org:
+            String phase_pre_label_name = PHASE_PRE_LABEL_PREFIX + phaseStatements.size();
+            s.type = CodeStatement.STATEMENT_ORG;
+            s.org = exp;
+            s.label = new SourceConstant(phase_pre_label_name, phase_pre_label_name, 
+                                         Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, s, code, config),
+                                         s, config);
+            code.addSymbol(phase_pre_label_name, s.label);
+            auxiliaryStatementsToRemoveIfGeneratingDialectasm.add(s);
+            
+            // Add the label after the org:
+            s = new CodeStatement(CodeStatement.STATEMENT_NONE, new SourceLine(sl), source, config);
+            l.add(s);
+            String phase_post_label_name = PHASE_POST_LABEL_PREFIX + phaseStatements.size();
+            s.label = new SourceConstant(phase_post_label_name, phase_post_label_name, 
+                                         Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, s, code, config),
+                                         s, config);
+            code.addSymbol(phase_post_label_name, s.label);
+            auxiliaryStatementsToRemoveIfGeneratingDialectasm.add(s);
+            
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
+        }
+        if (tokens.size() >= 1 && (tokens.get(0).equalsIgnoreCase("ent") || tokens.get(0).equalsIgnoreCase("dephase"))) {
+            tokens.remove(0);
+            
+            if (s.label != null) {
+                // if there was a label in the "phase" line, create a new one:
+                s = new CodeStatement(CodeStatement.STATEMENT_ORG, sl, source, config);
+                l.add(s);
+                auxiliaryStatementsToRemoveIfGeneratingDialectasm.add(s);
+            }            
+
+            // restore normal mode addressing:
+            String phase_pre_label_name = PHASE_PRE_LABEL_PREFIX + phaseStatements.size();
+            String phase_post_label_name = PHASE_POST_LABEL_PREFIX + phaseStatements.size();
+            String dephase_label_name = DEPHASE_LABEL_PREFIX + phaseStatements.size();
+
+            // __asmsx_phase_pre_* + (__asmsx_dephase_* - __asmsx_phase_post_*)
+            Expression exp = Expression.operatorExpression(Expression.EXPRESSION_SUM, 
+                    Expression.symbolExpression(phase_pre_label_name, s, code, config),
+                    Expression.parenthesisExpression(
+                            Expression.operatorExpression(Expression.EXPRESSION_SUB,
+                                    Expression.symbolExpression(dephase_label_name, s, code, config),
+                                    Expression.symbolExpression(phase_post_label_name, s, code, config), config), 
+                            "(", config), config);
+            
+            s.type = CodeStatement.STATEMENT_ORG;
+            s.org = exp;
+            s.label = new SourceConstant(dephase_label_name, dephase_label_name, 
+                                         Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, s, code, config),
+                                         s, config);
+            code.addSymbol(dephase_label_name, s.label);
+            dephaseStatements.add(s);
+            linesToKeepIfGeneratingDialectAsm.add(s);
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }        
+        if (tokens.size() >= 1 && tokens.get(0).equalsIgnoreCase("outend")) {
+            tokens.remove(0);
+            // ignore for now ...            
+            linesToKeepIfGeneratingDialectAsm.add(s);
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
+        }
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("opt")) {
             tokens.remove(0);
             while(!tokens.isEmpty() &&
@@ -908,6 +960,47 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
                 return true;
             }
         }
+        
+        // multiargument instructions:
+        if (tokens.size()>=4 && tokens.get(0).equalsIgnoreCase("cp")) {
+            // instructions of the style: cp d,8, which translate to "cp d", "cp 8" (useless, but still, I've found it in some projects...)
+            boolean process = true;
+            List<Expression> args = new ArrayList<>();
+            List<String> tokens2 = new ArrayList<>();
+            tokens2.addAll(tokens);
+            tokens2.remove(0);
+            int tokenstoRemoveStart = -1;
+            while(true) {
+                Expression exp = config.expressionParser.parse(tokens2, s, previous, code);
+                if (exp == null) {
+                    process = false;
+                    break;
+                }
+                args.add(exp);
+                if (tokens2.isEmpty() || !tokens2.get(0).equals(",")) break;
+                if (tokenstoRemoveStart == -1) {
+                    tokenstoRemoveStart = tokens.size() - tokens2.size();
+                }
+                tokens2.remove(0);
+            }
+            if (process && args.size() >= 2) {
+                int tokensToRemoveEnd = tokens.size() - tokens2.size();
+                for(int i = 0;i < tokensToRemoveEnd-tokenstoRemoveStart;i++) {
+                    tokens.remove(tokenstoRemoveStart);
+                }
+                args.remove(0); // the first arg will be processed later by the regular MDL parser
+                for(Expression arg:args) {
+                    CodeStatement auxiliaryS = new CodeStatement(CodeStatement.STATEMENT_CPUOP, sl, source, config);
+                    List<Expression> auxiliaryArguments = new ArrayList<>();
+                    auxiliaryArguments.add(arg);
+                    List<CPUOp> op_l = config.opParser.parseOp("cp", auxiliaryArguments, s, previous, code);
+                    if (op_l == null || op_l.size() != 1) return false;
+                    auxiliaryS.op = op_l.get(0);
+                    l.add(auxiliaryS);
+                }
+                return true;
+            }
+        } 
         
         // see if there is a pre/post increment of a registerpair:
         for (int i = 0; i < tokens.size(); i++) {

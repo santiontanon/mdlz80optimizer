@@ -288,7 +288,9 @@ public abstract class SjasmDerivativeDialect implements Dialect {
     @Override
     public Pair<String, SourceConstant> symbolName(String name, CodeStatement previous) {
         SourceConstant lastAbsoluteLabel = null;
-        if (name.startsWith(".")) {
+        if (name.startsWith("@")) {
+            return Pair.of(name.substring(1), null);
+        } else if (name.startsWith(".")) {
             lastAbsoluteLabel = getLastAbsoluteLabel(previous);
             if (lastAbsoluteLabel != null) {
                 return Pair.of(lastAbsoluteLabel.name + name, lastAbsoluteLabel);
