@@ -910,15 +910,19 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                 return false;
             }
             tokens.remove(0);
-            int number = numberExp.evaluateToInteger(s, code, false);
+            Integer number = numberExp.evaluateToInteger(s, code, false);
+            if (number == null) {
+                config.error("Cannot evaluate " + numberExp + " to an integer in " + sl);
+                return false;
+            }
             l.clear();
             for(int i = 0;i<number;i++) {
                 List<String> tokensCopy = new ArrayList<>();
                 tokensCopy.addAll(tokens);
                 // we need to parse it every time, to create multiple different copies of the statements:
-                config.expressionParser.sjasmConterVariables.add(i);
+                config.expressionParser.sjasmCounterVariables.add(i);
                 List<CodeStatement> l2 = config.lineParser.parse(tokensCopy, sl, source, previous, code, config);
-                config.expressionParser.sjasmConterVariables.remove(config.expressionParser.sjasmConterVariables.size()-1);
+                config.expressionParser.sjasmCounterVariables.remove(config.expressionParser.sjasmCounterVariables.size()-1);
                 if (l2 == null) {
                     config.error("Cannot parse line in " + sl);
                     return false;

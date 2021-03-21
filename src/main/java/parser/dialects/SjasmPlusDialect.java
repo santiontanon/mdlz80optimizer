@@ -338,6 +338,7 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
         config.tokenizer.stringEscapeSequences.put("v", "\u0011");
         config.tokenizer.curlyBracesAreComments = false;
         config.tokenizer.allowQuestionMarksInSymbols = true;
+        config.tokenizer.allowDotFollowedByNumberLabels = false;
     }
     
     
@@ -370,6 +371,11 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("dephase")) return true;
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("disp")) return true;
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("ent")) return true;
+        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase(".") &&
+                (tokens.get(1).equalsIgnoreCase("(") || config.tokenizer.isInteger(tokens.get(1)))) {
+            return true;
+        }
+        
 
         for(SjasmStruct s:structs) {
             if (tokens.get(0).equals(s.name)) return true;
@@ -905,7 +911,31 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
             // ignore for now ...            
             linesToKeepIfGeneratingDialectAsm.add(s);
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
-        }        
+        }
+        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase(".") &&
+                (tokens.get(1).equalsIgnoreCase("(") || config.tokenizer.isInteger(tokens.get(1)))) {
+            tokens.remove(0);
+            Expression numberExp = config.expressionParser.parse(tokens, s, previous, code);
+            Integer number = numberExp.evaluateToInteger(s, code, false);
+            if (number == null) {
+                config.error("Cannot evaluate " + numberExp + " to an integer in " + sl);
+                return false;
+            }
+            l.clear();
+            for(int i = 0;i<number;i++) {
+                List<String> tokensCopy = new ArrayList<>();
+                tokensCopy.addAll(tokens);
+                // we need to parse it every time, to create multiple different copies of the statements:
+                List<CodeStatement> l2 = config.lineParser.parse(tokensCopy, sl, source, previous, code, config);
+                if (l2 == null) {
+                    config.error("Cannot parse line in " + sl);
+                    return false;
+                }
+                l.addAll(l2);
+            }
+            return true;
+        }
+        
         if (parseAbyte(tokens, l, sl, s, previous, source, code)) return true;
         
         return parseLineStruct(tokens, l, sl, s, previous, source, code);

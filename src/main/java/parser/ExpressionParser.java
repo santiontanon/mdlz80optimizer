@@ -63,7 +63,7 @@ public class ExpressionParser {
     public HashMap<String, String> registerSynonyms = new HashMap<>();
     
     // dialect-specific variables:
-    public List<Integer> sjasmConterVariables = new ArrayList<>();
+    public List<Integer> sjasmCounterVariables = new ArrayList<>();
     public boolean sdccStyleHashMarksForConstants = false;
     public boolean sjasmPlusCurlyBracketExpressions = false;
     
@@ -608,7 +608,7 @@ public class ExpressionParser {
             }
         }
         // Check if it's a "%", "%%", "%%%", etc. sjasm counter variable:
-        if (tokens.size() >= 1 && !sjasmConterVariables.isEmpty()) {
+        if (tokens.size() >= 1 && !sjasmCounterVariables.isEmpty()) {
             String token = tokens.get(0);
             boolean allPercent = true;
             for(int i = 0;i<token.length();i++) {
@@ -621,7 +621,7 @@ public class ExpressionParser {
                 // Make sure it's not a binary constant:
                 int counterVariableIdx = token.length()-1;
                 boolean canBeCounterVariable = true;
-                if (sjasmConterVariables.size() <= counterVariableIdx) {
+                if (sjasmCounterVariables.size() <= counterVariableIdx) {
                     canBeCounterVariable = false;
                 }
                 if (canBeCounterVariable && tokens.size() >= 2) {
@@ -630,7 +630,7 @@ public class ExpressionParser {
                     }
                 }
                 if (canBeCounterVariable) {
-                    int value = sjasmConterVariables.get(counterVariableIdx);
+                    int value = sjasmCounterVariables.get(counterVariableIdx);
                     tokens.remove(0);
                     return Expression.constantExpression(value, config);
                 }

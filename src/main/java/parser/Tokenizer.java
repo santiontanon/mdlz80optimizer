@@ -13,6 +13,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Tokenizer {
+    // MSX BASIC files have this character to indicate end of file (remove it while parsing):
+    public static final int BASIC_EOF = 0x1a;
+    
 //    public List<String> doubleTokens = new ArrayList<>();
     public HashSet<String> doubleTokens = new HashSet<>();
     
@@ -24,6 +27,7 @@ public class Tokenizer {
     public boolean sdccStyleDollarInLabels = false;
     public boolean curlyBracesAreComments = true;
     public boolean allowQuestionMarksInSymbols = false;
+    public boolean allowDotFollowedByNumberLabels = true;
     
     
     Matcher doubleMatcher = Pattern.compile("[\\x00-\\x20]*[+-]?(((((\\p{Digit}+)(\\.)?((\\p{Digit}+)?)([eE][+-]?(\\p{Digit}+))?)|(\\.((\\p{Digit}+))([eE][+-]?(\\p{Digit}+))?)|(((0[xX](\\p{XDigit}+)(\\.)?)|(0[xX](\\p{XDigit}+)?(\\.)(\\p{XDigit}+)))[pP][+-]?(\\p{Digit}+)))[fFdD]?))[\\x00-\\x20]*")
@@ -169,7 +173,16 @@ public class Tokenizer {
                 tokens.add(token);
             } else {
                 if (!next.equals(" ") && !next.equals("\r") && !next.equals("\n") && !next.equals("\t")) {
-                    tokens.add(next);
+                    if (!allowDotFollowedByNumberLabels && next.charAt(0)=='.') {
+                        if (isInteger(next.substring(1))) {
+                            tokens.add(".");
+                            next = next.substring(1);
+                        }
+                    }
+                    // Ignore the BASIC EOF character:
+                    if (next.length() != 1 || (int)(next.charAt(0)) != BASIC_EOF) {
+                        tokens.add(next);
+                    }
                 } else {
                     if (includeBlanks) {
                         tokens.add(next);
@@ -202,7 +215,16 @@ public class Tokenizer {
         
         int c = token.charAt(0);
         if ((c>='a' && c<='z') || (c>='A' && c<='Z') || c=='_' ||
-            c=='.' || c == '@') return true;
+            c == '@') return true;
+        
+        if (c == '.') {
+            if (allowDotFollowedByNumberLabels) {
+                return true;
+            } else {
+                if (isInteger(token.substring(1))) return false;
+                return true;
+            }
+        }
         
         if (sdccStyleDollarInLabels && token.charAt(token.length()-1) == '$' &&
             c>='0' && c<='9') {
