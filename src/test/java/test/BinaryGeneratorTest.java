@@ -71,7 +71,7 @@ public class BinaryGeneratorTest {
 
         BinaryGenerator bg = new BinaryGenerator(config);
         ListOutputStream out = new ListOutputStream();
-        bg.writeBytes(code.outputs.get(0).main, code, out);        
+        bg.writeBytes(code.outputs.get(0).main, code, out, 0);        
         List<Integer> actualBytes = out.getData();
         
         List<Integer> expectedBytes = new ArrayList<>();        

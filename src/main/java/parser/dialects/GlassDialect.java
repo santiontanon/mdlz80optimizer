@@ -59,6 +59,8 @@ public class GlassDialect implements Dialect {
     public GlassDialect(MDLConfig a_config)
     {
         config = a_config;
+        
+        config.considerLinesEndingInCommaAsUnfinished = true;
 
         config.eagerMacroEvaluation = false;  // Glass expects lazy evaluation of macros
         

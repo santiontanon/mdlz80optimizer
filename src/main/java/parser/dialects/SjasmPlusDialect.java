@@ -22,6 +22,7 @@ import parser.LineParser;
 import parser.MacroExpansion;
 import parser.SourceLine;
 import parser.SourceMacro;
+import parser.TextMacro;
 import workers.BinaryGenerator;
 
 /**
@@ -64,6 +65,8 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
     // Record of "savebin", "savesna", etc. commands, to execute them after the code has been loaded:
     List<SaveCommand> saveCommands = new ArrayList<>();
     
+    Expression minimumOutputSize = null;
+    CodeStatement minimumOutputSize_statement = null;
 
     SjasmPlusDialect(MDLConfig a_config) {
         config = a_config;
@@ -72,6 +75,10 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
         config.macrosToEvaluateEagerly.add(config.preProcessor.MACRO_IFDEF);
         config.macrosToEvaluateEagerly.add(config.preProcessor.MACRO_IFNDEF);
         
+        config.lineParser.tokensPreventingTextMacroExpansion.add("ifdef");
+        config.lineParser.tokensPreventingTextMacroExpansion.add("ifndef");
+        config.lineParser.tokensPreventingTextMacroExpansion.add("undefine");
+        
         config.lineParser.addKeywordSynonym("byte", config.lineParser.KEYWORD_DB);
         config.lineParser.addKeywordSynonym("defb", config.lineParser.KEYWORD_DB);
         config.lineParser.addKeywordSynonym("word", config.lineParser.KEYWORD_DW);
@@ -79,6 +86,7 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
         config.lineParser.addKeywordSynonym("dword", config.lineParser.KEYWORD_DD);
         config.lineParser.addKeywordSynonym("defs", config.lineParser.KEYWORD_DS);
         config.lineParser.addKeywordSynonym("block", config.lineParser.KEYWORD_DS);
+        config.lineParser.addKeywordSynonym("::", config.lineParser.KEYWORD_COLON);
                 
         config.lineParser.keywordsHintingALabel.add("=");
         config.lineParser.keywordsHintingALabel.add("defl");
@@ -321,21 +329,6 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
         config.tokenizer.stringEscapeSequences.put("v", "\u0011");
         config.tokenizer.curlyBracesAreComments = false;
         config.tokenizer.allowQuestionMarksInSymbols = true;
-        
-//        forbiddenLabelNames.add("struct");
-//        forbiddenLabelNames.add("ends");
-//        forbiddenLabelNames.add("byte");
-//        forbiddenLabelNames.add("defb");
-//        forbiddenLabelNames.add("word");
-//        forbiddenLabelNames.add("defw");
-//        forbiddenLabelNames.add("dword");
-//        forbiddenLabelNames.add("assert");
-//        forbiddenLabelNames.add("output");
-//        forbiddenLabelNames.add("align");
-//        forbiddenLabelNames.add("module");
-//        forbiddenLabelNames.add("endmodule");
-//        forbiddenLabelNames.add("device");
-//        forbiddenLabelNames.add("savebin");
     }
     
     
@@ -346,6 +339,7 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
         if (tokens.size() >= 1 && tokens.get(0).equalsIgnoreCase("end")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("assert")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("output")) return true;
+        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("size")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("page")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("dz")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("align")) return true;
@@ -358,6 +352,8 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("savesna")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("display")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("define")) return true;
+        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("define+")) return true;
+        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("undefine")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("abyte")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("opt")) return true;
 
@@ -424,7 +420,7 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
         }
 
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("output")) {
-            // Just ignore ...
+            // ignore for now ...
             while(!tokens.isEmpty()) {
                 if (config.tokenizer.isSingleLineComment(tokens.get(0)) || 
                     config.tokenizer.isMultiLineCommentStart(tokens.get(0))) break;
@@ -433,7 +429,19 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
 
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
+        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("size")) {
+            tokens.remove(0);
+            Expression exp = config.expressionParser.parse(tokens, s, previous, code);
+            if (exp == null) {
+                config.error("Cannot parse size argument in " + sl);
+                return false;
+            }
+            minimumOutputSize = exp;
+            minimumOutputSize_statement = s;
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
+        }
 
+        
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("dz")) {
             tokens.remove(0);
             if (!config.lineParser.parseData(tokens, "db", l, sl, s, previous, source, code)) return false;
@@ -744,6 +752,7 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
             
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
+        /*
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("define")) {
             tokens.remove(0);
 
@@ -783,7 +792,50 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
             l.clear();
             
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
-        }                
+        }    
+        */
+        if (tokens.size() >= 2 && 
+                (tokens.get(0).equalsIgnoreCase("define") ||
+                 tokens.get(0).equalsIgnoreCase("define+"))) {
+            String keyword = tokens.remove(0);
+
+            // Text macros:
+
+            // read variable name:
+            String macroName = tokens.remove(0);
+            if (!config.caseSensitiveSymbols) macroName = macroName.toLowerCase();
+            
+            List<String> macroTokens = new ArrayList<>();
+                    
+            // parameters parsed, parse the body:
+            for(String token:tokens) {
+                if (config.tokenizer.isSingleLineComment(token)) break;
+                macroTokens.add(token);
+            }
+            tokens.clear();
+
+            TextMacro macro = new TextMacro(macroName, new ArrayList<>(), macroTokens, s);
+            if (keyword.equalsIgnoreCase("define")) {
+                // check if it's a duplicate, and complain:
+                if (config.preProcessor.getTextMacro(macroName, 0) != null) {
+                    config.error("Redefining " + macroName + " in " + sl);
+                    config.error("Use 'define+' if you want to change its value half way through assembling.");
+                    return false;
+                }
+            }
+            config.preProcessor.addTextMacro(macro);
+            
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
+        }        
+        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("undefine")) {
+            tokens.remove(0);
+            String macroName = tokens.remove(0);
+            TextMacro macro = config.preProcessor.getTextMacro(macroName, 0);
+            if (macro != null) {
+                config.preProcessor.removeTextMacro(macroName, 0);
+            }
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
+        }        
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("opt")) {
             tokens.remove(0);
             while(!tokens.isEmpty() &&
@@ -1004,6 +1056,19 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
     @Override
     public boolean postParseActions(CodeBase code)
     {
+        if (minimumOutputSize != null) {
+            if (!minimumOutputSize.evaluatesToIntegerConstant()) {
+                config.error("Cannot evaluate output binary size expression to integer: " + minimumOutputSize);
+                return false;
+            }
+            Integer size = minimumOutputSize.evaluateToInteger(minimumOutputSize_statement, code, true);
+            if (size == null) {
+                config.error("Cannot evaluate output binary size expression to integer: " + minimumOutputSize);
+                return false;
+            }
+            code.outputs.get(0).minimumSize = size;
+        }
+        
         for(PrintRecord pr:toPrint) {
             String accum = "";
             for(Expression exp:pr.exp_l) {

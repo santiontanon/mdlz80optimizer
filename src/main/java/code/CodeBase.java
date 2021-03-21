@@ -201,9 +201,9 @@ public class CodeBase {
     }
 
     
-    public void addOutput(String binaryName, SourceFile main)
+    public void addOutput(String binaryName, SourceFile main, int minimumSize)
     {
-        OutputBinary output = new OutputBinary(binaryName, main);
+        OutputBinary output = new OutputBinary(binaryName, main, minimumSize);
         outputs.add(output);
     }
 

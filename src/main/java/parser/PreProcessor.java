@@ -478,6 +478,38 @@ public class PreProcessor {
         l.add(m);
         return true;
     }
+    
+    
+    public TextMacro getTextMacro(String name, int nargs)
+    {
+        List<TextMacro> l = textMacros.get(name);
+        if (l == null) return null;
+        for(TextMacro m:l) {
+            if (m.argNames.size() == nargs) return m;
+        }
+        return null;
+    }
+    
+    
+    public boolean removeTextMacro(String name, int nargs)
+    {
+        List<TextMacro> l = textMacros.get(name);
+        if (l == null) return false;
+        TextMacro found = null;
+        for(TextMacro m:l) {
+            if (m.argNames.size() == nargs) {
+                found = m;
+                break;
+            }
+        }
+        if (found == null) return false;
+        l.remove(found);
+        if (l.isEmpty()) {
+            textMacros.remove(name);
+        }
+        return true;
+        
+    }
 
 
     public String nextMacroExpansionContextName(String labelPrefix)

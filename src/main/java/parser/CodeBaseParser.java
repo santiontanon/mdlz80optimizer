@@ -51,9 +51,11 @@ public class CodeBaseParser {
             }
             Expression valueExp = config.expressionParser.parse(tokens, null, null, code);
             if (valueExp == null ||
-                !tokens.isEmpty()) {
-                config.error("Cannot parse flag -equ " + definition);
-                return false;
+                !tokens.isEmpty() ||
+                !valueExp.isConstant()) {
+                // assume it's a string:
+                String stringValue = definition.substring(definition.indexOf("="));
+                valueExp = Expression.constantExpression(stringValue, config);
             }
             Object value = valueExp.evaluate(null, code, true);
             if (value == null) {
@@ -131,17 +133,34 @@ public class CodeBaseParser {
         return true;
     }
     
+    public String renameDuplicatedSourceFile(String fileName, CodeBase code)
+    {
+        int idx = fileName.lastIndexOf(".");
+        String extension = "";
+        if (idx > 0) {
+            extension = fileName.substring(idx);
+            fileName = fileName.substring(0, idx);            
+        }
+        for(int i = 2;;i++) {
+            String newName = fileName + "-" + i + extension;
+            if (code.getSourceFile(newName) == null) return newName;
+        }
+    }
+    
+    
 
     public SourceFile parseSourceFile(String fileName, CodeBase code, SourceFile parent,
             CodeStatement parentInclude) {
+        String codeBaseFileName = fileName;
         if (code.getSourceFile(fileName) != null) {
-            config.warn("Re-entering into "+fileName+" ignored...");
-            return null;
+            codeBaseFileName = renameDuplicatedSourceFile(fileName, code);
+            config.warn("Re-entering into "+fileName+" (internally renaming to " +codeBaseFileName+ ")");
         }
 
         SourceFile f = new SourceFile(fileName, parent, parentInclude, code, config);
+        f.fileName = codeBaseFileName;
         if (parent == null) {
-            code.addOutput(null, f);
+            code.addOutput(null, f, 0);
         }
         code.addSourceFile(f);
         config.preProcessor.pushState();
@@ -178,7 +197,8 @@ public class CodeBaseParser {
         }
 
         config.tokenizer.tokenize(sl.line, unfilteredTokens);
-        if (!unfilteredTokens.isEmpty() && unfilteredTokens.get(unfilteredTokens.size()-1).equals(",")) {
+        if (config.considerLinesEndingInCommaAsUnfinished &&
+            !unfilteredTokens.isEmpty() && unfilteredTokens.get(unfilteredTokens.size()-1).equals(",")) {
             // unfinished line, get the next one!
             List<String> tokens2 = new ArrayList<>();
             Pair<SourceLine, Integer> tmp = getNextLine(br, sl.source, file_linenumber, tokens2);
@@ -210,7 +230,7 @@ public class CodeBaseParser {
 
     boolean parseSourceFileInternal(SourceFile f, CodeBase code, MDLConfig config) throws IOException
     {
-        try (BufferedReader br = Resources.asReader(f.fileName)) {
+        try (BufferedReader br = Resources.asReader(f.originalFileName)) {
             int file_lineNumber = 0;
             while(true) {
                 List<String> tokens = new ArrayList<>();

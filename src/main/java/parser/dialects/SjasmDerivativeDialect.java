@@ -46,7 +46,7 @@ public abstract class SjasmDerivativeDialect implements Dialect {
     
     List<String> modules = new ArrayList<>();
     
-    boolean allowReusableLabels = false;
+    boolean allowReusableLabels = true;
     HashMap<String, Integer> reusableLabelCounts = new HashMap<>();
 
     List<Integer> currentPages = new ArrayList<>();

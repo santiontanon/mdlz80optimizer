@@ -258,13 +258,12 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
     
     public SjasmDialect(MDLConfig a_config) {
         config = a_config;
-
-        allowReusableLabels = true;
         
         config.lineParser.tokensPreventingTextMacroExpansion.add("define");
         config.lineParser.tokensPreventingTextMacroExpansion.add("xdefine");
         config.lineParser.tokensPreventingTextMacroExpansion.add("assign");
         config.lineParser.tokensPreventingTextMacroExpansion.add("ifdef");
+        config.lineParser.tokensPreventingTextMacroExpansion.add("ifndef");
 
         config.lineParser.addKeywordSynonym("byte", config.lineParser.KEYWORD_DB);
         config.lineParser.addKeywordSynonym("defb", config.lineParser.KEYWORD_DB);
@@ -1151,7 +1150,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             config.preProcessor.addTextMacro(macro);
             
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
-        }      
+        }
         
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("phase")) {
             tokens.remove(0);
@@ -1585,7 +1584,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                 c.originalName = c.name;
             }
         }
-                
+       
         // set the starting statement of the first default block:
         SourceFile oldMain = code.outputs.get(0).main;
         SJasmOutput defaultOutput = outputFiles.get(0);
@@ -1600,7 +1599,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             String fileName = oldMain.getPath() + output.fileName + ".asm";
             output.reconstructedFile = new SourceFile(fileName, null, null, code, config);
             code.addSourceFile(output.reconstructedFile);
-            code.addOutput(output.fileName, output.reconstructedFile);
+            code.addOutput(output.fileName, output.reconstructedFile, 0);
             if (!reconstructOutputFile(output, code)) {
                 return false;
             }

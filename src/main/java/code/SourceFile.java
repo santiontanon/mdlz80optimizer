@@ -15,6 +15,7 @@ public class SourceFile {
     MDLConfig config;
 
     public String fileName = null;
+    public String originalFileName = null;
     List<CodeStatement> statements = new ArrayList<>();
     public SourceFile parent = null;
     public CodeStatement parentInclude = null;
@@ -22,6 +23,7 @@ public class SourceFile {
 
     public SourceFile(String a_fileName, SourceFile a_parent, CodeStatement a_parentInclude, CodeBase a_code, MDLConfig a_config) {
         fileName = a_fileName;
+        originalFileName = a_fileName;
         parent = a_parent;
         parentInclude = a_parentInclude;
         code = a_code;

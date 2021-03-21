@@ -89,7 +89,7 @@ public class BinaryGenerator implements MDLWorker {
                 }            
             
                 try (FileOutputStream os = new FileOutputStream(finalOutputFileName)) {
-                    if (!writeBytes(output.main, code, os)) return false;
+                    if (!writeBytes(output.main, code, os, output.minimumSize)) return false;
                     os.flush();
                 } catch (Exception e) {
                     config.error("Cannot write to file " + finalOutputFileName + ": " + e);
@@ -102,12 +102,17 @@ public class BinaryGenerator implements MDLWorker {
     }
     
 
-    public boolean writeBytes(SourceFile sf, CodeBase code, OutputStream os) throws Exception
+    public boolean writeBytes(SourceFile sf, CodeBase code, OutputStream os, int minimumSize) throws Exception
     {
+        int size = 0;
         List<Pair<CodeStatement, byte[]>> statementBytes = new ArrayList<>();
         if (!generateStatementBytes(sf, code, statementBytes)) return false;
         for(Pair<CodeStatement, byte[]> pair:statementBytes) {
             os.write(pair.getRight());
+            size += pair.getRight().length;
+        }
+        while(size < minimumSize) {
+            os.write(0);
         }
         return true;
     }

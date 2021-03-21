@@ -60,7 +60,8 @@ public class MDLConfig {
                                                  // the value MDL calculates for labels. This is useful, for example,
                                                  // for the SDCC dialect, where we don't know the base address ahead
                                                  // of time.
-
+    public boolean considerLinesEndingInCommaAsUnfinished = false;
+    
     public List<String> ignorePatternsWithTags = new ArrayList<>();
     
     // warning messages:
