@@ -14,6 +14,7 @@ import code.SourceFile;
 import code.CodeStatement;
 import code.OutputBinary;
 import java.io.FileOutputStream;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -1365,4 +1366,16 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
         
         return false;
     }
+    
+    
+    @Override
+    public String statementToString(CodeStatement s, CodeBase code, boolean useOriginalNames, Path rootPath) {
+        if (linesToKeepIfGeneratingDialectAsm.contains(s)) {
+            return s.sl.line;
+        }
+
+        if (auxiliaryStatementsToRemoveIfGeneratingDialectasm.contains(s)) return "";
+        
+        return s.toStringUsingRootPath(rootPath, useOriginalNames, true);
+    }        
 }

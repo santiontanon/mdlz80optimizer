@@ -473,8 +473,12 @@ public class CodeStatement {
         }
         
         if (comment != null) {
-            if (str.isEmpty()) str = comment;
-                          else str += "  " + comment; 
+            String actualComment = comment;
+            if (!comment.startsWith(";") && !mimicTargetDialect) {
+                actualComment = "; " + comment;
+            }
+            if (str.isEmpty()) str = actualComment;
+                          else str += "  " + actualComment; 
         }
         
         return str;
