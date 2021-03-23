@@ -35,6 +35,8 @@ public class GenerationTest {
                                                                           "data/generationtests/mdl-include-expected.asm")); }
     @Test public void test2() throws IOException { Assert.assertTrue(test("data/generationtests/mdl-circular.asm",
                                                                           "data/generationtests/mdl-circular-expected.asm")); }
+    @Test public void test3() throws IOException { Assert.assertTrue(test("data/generationtests/mdl-safetylabels.asm",
+                                                                          "data/generationtests/mdl-safetylabels-expected.asm")); }
 
     private boolean test(String inputFile, String expectedOutputFile) throws IOException
     {
