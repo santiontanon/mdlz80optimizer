@@ -62,16 +62,16 @@ public class CodeReorganizer implements MDLWorker {
     public String docString() {
         // This string has MD tags, so that I can easily generate the corresponding documentation in github with the 
         // hidden "-helpmd" flag:        
-        return "- ```-ro```: (task) runs the code reoganizer optimizer.\n" + 
-               "- ```-ro-no-inliner```: deactivates the function inliner in the subsequent calls to ```-ro```.\n" +
-               "- ```-ro-no-merger```: deactivates the block merger in the subsequent calls to ```-ro```.\n" +
-               "- ```-rohtml <file>```: generates a visualization of the division of the code before code reoganizer optimization as an html file (add this flag *before* the ```-ro``` flag).\n";
+        return "- ```-ro```: runs the code reoganizer optimizer.\n" + 
+               "- ```-ro-no-inliner```: deactivates the function inliner.\n" +
+               "- ```-ro-no-merger```: deactivates the block merger.\n" +
+               "- ```-rohtml <file>```: generates a visualization of the division of the code before code reoganizer optimization as an html file.\n";
     }
 
     
     @Override
     public String simpleDocString() {
-        return "- ```-ro```: (task) Runs the code reoganizer optimizer.\n";
+        return "- ```-ro```: Runs the code reoganizer optimizer.\n";
     }
 
     
@@ -170,21 +170,6 @@ public class CodeReorganizer implements MDLWorker {
         
         if (config.dialectParser != null) return config.dialectParser.postCodeModificationActions(code);
         return true;
-    }
-
-    
-    @Override
-    public MDLWorker cloneForExecutionQueue() {
-        CodeReorganizer w = new CodeReorganizer(config);
-
-        w.htmlOutputFileName = htmlOutputFileName;
-        w.runInliner = runInliner;
-        w.runMerger = runMerger;
-        
-        // reset state:
-        trigger = false;
-        
-        return w;
     }
     
 

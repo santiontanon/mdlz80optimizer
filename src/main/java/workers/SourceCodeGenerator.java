@@ -45,15 +45,15 @@ public class SourceCodeGenerator implements MDLWorker {
     public String docString() {
         // This string has MD tags, so that I can easily generate the corresponding documentation in github with the 
         // hidden "-helpmd" flag:        
-        return "- ```-asm <output file>```: (task) saves the resulting assembler code in a single asm file (if no optimizations are performed, then this will just output the same code read as input (but with all macros and include statements expanded). Use ```"+AUTO_FILENAME+"``` as the output file name to respect the filenames specified in the sourcefiles of some dialects, or to auto generate an output name.\n" +
-               "- ```-asm-dialect <output file>```: (task) same as '-asm', but tries to mimic the syntax of the defined dialect in the output (experimental feature, not fully implemented!).  Use ```"+AUTO_FILENAME+"``` as the output file name to respect the filenames specified in the sourcefiles of some dialects, or to auto generate an output name.\n" +
+        return "- ```-asm <output file>```: saves the resulting assembler code in a single asm file (if no optimizations are performed, then this will just output the same code read as input (but with all macros and include statements expanded). Use ```"+AUTO_FILENAME+"``` as the output file name to respect the filenames specified in the sourcefiles of some dialects, or to auto generate an output name.\n" +
+               "- ```-asm-dialect <output file>```: same as '-asm', but tries to mimic the syntax of the defined dialect in the output (experimental feature, not fully implemented!).  Use ```"+AUTO_FILENAME+"``` as the output file name to respect the filenames specified in the sourcefiles of some dialects, or to auto generate an output name.\n" +
                "- ```-asm-expand-incbin```: replaces all incbin commands with their actual data in the output assembler file, effectively, making the output assembler file self-contained.\n";
     }
 
 
     @Override
     public String simpleDocString() {
-        return "- ```-asm <output file>```: (task) saves the resulting assembler code in a single asm file.\n";
+        return "- ```-asm <output file>```: saves the resulting assembler code in a single asm file.\n";
     }
 
     
@@ -225,20 +225,5 @@ public class SourceCodeGenerator implements MDLWorker {
     @Override
     public boolean triggered() {
         return outputFileName != null;
-    }
-
-    
-    @Override
-    public MDLWorker cloneForExecutionQueue() {
-        SourceCodeGenerator w = new SourceCodeGenerator(config);
-        w.outputFileName = outputFileName;
-        w.expandIncbin = expandIncbin;
-        w.incbinBytesPerLine = incbinBytesPerLine;
-        w.mimicTargetDialect = mimicTargetDialect;
-        
-        // reset state:
-        outputFileName = null;
-        
-        return w;
-    }    
+    }   
 }

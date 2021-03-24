@@ -21,9 +21,9 @@ public class Main {
         // Set up the MDL configuration:
         MDLConfig config = new MDLConfig();
 
-        // Add the available workers:
-        config.registerWorker(new PatternBasedOptimizer(config));
+        // Add the available workers (in the order in which they will be executed):
         config.registerWorker(new CodeReorganizer(config));
+        config.registerWorker(new PatternBasedOptimizer(config));
         
         config.registerWorker(new DotGenerator(config));
         config.registerWorker(new SymbolTableGenerator(config));

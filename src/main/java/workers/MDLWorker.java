@@ -31,12 +31,4 @@ public interface MDLWorker {
     public boolean triggered();
     
     public boolean work(CodeBase code);
-
-    /*
-    Returns an instance of this worker to be placed on the execution queue. It also should
-    reset the internal state to be ready to be triggered again, in case
-    the command line triggers this worker more than once.
-    */
-    public MDLWorker cloneForExecutionQueue();
-
 }

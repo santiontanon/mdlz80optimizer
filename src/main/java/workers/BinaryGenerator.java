@@ -43,13 +43,13 @@ public class BinaryGenerator implements MDLWorker {
     public String docString() {
         // This string has MD tags, so that I can easily generate the corresponding documentation in github with the 
         // hidden "-helpmd" flag:        
-        return "- ```-bin <output file>```: (task) generates an assembled binary. Use ```"+AUTO_FILENAME+"``` as the output file name to respect the filenames specified in the sourcefiles of some dialects, or to autogenerate an output name.\n";
+        return "- ```-bin <output file>```: generates an assembled binary. Use ```"+AUTO_FILENAME+"``` as the output file name to respect the filenames specified in the sourcefiles of some dialects, or to autogenerate an output name.\n";
     }
 
 
     @Override
     public String simpleDocString() {
-        return "- ```-bin <output file>```: (task) generates an assembled binary.\n";
+        return "- ```-bin <output file>```: generates an assembled binary.\n";
     }
 
     
@@ -305,17 +305,5 @@ public class BinaryGenerator implements MDLWorker {
     @Override
     public boolean triggered() {
         return outputFileName != null;
-    }
-
-    
-    @Override
-    public MDLWorker cloneForExecutionQueue() {
-        BinaryGenerator w = new BinaryGenerator(config);
-        w.outputFileName = outputFileName;
-        
-        // reset state:
-        outputFileName = null;
-        
-        return w;
-    }    
+    } 
 }

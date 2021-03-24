@@ -107,8 +107,6 @@ public class MDLConfig {
 
     List<MDLWorker> workers = new ArrayList<>();
     
-    List<MDLWorker> executionQueue = new ArrayList<>();
-    
     // Accumulated stats to be reported at the end of execution:
     public OptimizationResult optimizerStats = new OptimizationResult();
 
@@ -118,9 +116,10 @@ public class MDLConfig {
             + "https://github.com/santiontanon/mdlz80optimizer\n"
             + "\n"
             + "Command Line Arguments:\n"
-            + "```java -jar mdl.jar <input assembler file> [options/tasks]```\n"
+            + "```java -jar mdl.jar <input assembler file> [options]```\n"
             + "\n"
-            + "Tasks will be executed in the order in which they are specified in the commandline, and using all the flag specified previously. Tasks can be repeated many times in the same command line.\n"
+            + "Note: notice that all the tasks concerning generting outputs (assembler, binaries, etc.) will be executed after the optimizers are run.\n"
+            + "\n"
             + "- ```-help```: to show this information (this is the only flag that can be used without specifying an input file).\n"
             + "- ```-cpu <type>```: to select a different CPU (z80/z80msx/z80cpc) (default: z80msx).\n"
             + "- ```-dialect <dialect>```: to allow parsing different assembler dialects "
@@ -167,7 +166,7 @@ public class MDLConfig {
             + "https://github.com/santiontanon/mdlz80optimizer\n"
             + "\n"
             + "Command Line Arguments:\n"
-            + "```java -jar mdl.jar <input assembler file> [options/tasks]```\n"
+            + "```java -jar mdl.jar <input assembler file> [options]```\n"
             + "\n"
             + "- ```-help```: for an exhaustive list of flags (just type ```java -jar mdl.jar -help```).\n"
             + "- ```-dialect <dialect>```: selects which assembler dialect to use "
@@ -199,10 +198,12 @@ public class MDLConfig {
     }
 
     public boolean executeWorkers(CodeBase code) {
-        for (MDLWorker w : executionQueue) {
-            if (!w.work(code)) {
-                error("Problem executing worker " + w.getClass().getSimpleName());
-                return false;
+        for (MDLWorker w : workers) {
+            if (w.triggered()) {
+                if (!w.work(code)) {
+                    error("Problem executing worker " + w.getClass().getSimpleName());
+                    return false;
+                }
             }
         }
         return true;
@@ -210,7 +211,12 @@ public class MDLConfig {
 
 
     public boolean somethingToDo() {
-        return !executionQueue.isEmpty();
+        for (MDLWorker w : workers) {
+            if (w.triggered()) {
+                return true;
+            }
+        }
+        return false;
     }
     
     
@@ -511,12 +517,7 @@ public class MDLConfig {
                                 break;
                             }
                         }
-                        if (recognizedBy != null) {
-                            if (recognizedBy.triggered()) {
-                                // add to the execution queue:
-                                executionQueue.add(recognizedBy.cloneForExecutionQueue());
-                            }
-                        } else {
+                        if (recognizedBy == null) {
                             error("Unrecognized argument " + arg);
                             return false;
                         }

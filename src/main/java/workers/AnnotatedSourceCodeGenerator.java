@@ -37,8 +37,8 @@ public class AnnotatedSourceCodeGenerator implements MDLWorker {
     public String docString() {
         // This string has MD tags, so that I can easily generate the corresponding documentation in github with the 
         // hidden "-helpmd" flag:        
-        return "- ```-asm+ <output file>```: (task) generates a single text file containing the original assembler code (with macros expanded), that includes size and time annotations at the beginning of each file to help with manual optimizations beyond what MDL already provides.\n"
-             + "- ```-asm+:html <output file>```: (task) acts like ```-asm+```, except that the output is in html (rendered as a table), allowing it to have some extra information.\n";
+        return "- ```-asm+ <output file>```: generates a single text file containing the original assembler code (with macros expanded), that includes size and time annotations at the beginning of each file to help with manual optimizations beyond what MDL already provides.\n"
+             + "- ```-asm+:html <output file>```: acts like ```-asm+```, except that the output is in html (rendered as a table), allowing it to have some extra information.\n";
     }
 
 
@@ -261,19 +261,5 @@ public class AnnotatedSourceCodeGenerator implements MDLWorker {
     @Override
     public boolean triggered() {
         return outputFileName != null;
-    }
-
-    
-    @Override
-    public MDLWorker cloneForExecutionQueue() {
-        AnnotatedSourceCodeGenerator w = new AnnotatedSourceCodeGenerator(config);
-        w.generateHTML = generateHTML;
-        w.outputFileName = outputFileName;
-        
-        // reset state:
-        generateHTML = false;
-        outputFileName = null;
-        
-        return w;
-    }     
+    }   
 }

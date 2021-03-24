@@ -33,7 +33,7 @@ public class SourceCodeTableGenerator implements MDLWorker {
     public String docString() {
         // This string has MD tags, so that I can easily generate the corresponding documentation in github with the 
         // hidden "-helpmd" flag:        
-        return "- ```-sft <output file>```: (task) generates a tsv file with some statistics about the source files.\n";
+        return "- ```-sft <output file>```: generates a tsv file with some statistics about the source files.\n";
     }
 
     
@@ -107,17 +107,5 @@ public class SourceCodeTableGenerator implements MDLWorker {
     @Override
     public boolean triggered() {
         return outputFileName != null;
-    }
-
-    
-    @Override
-    public MDLWorker cloneForExecutionQueue() {
-        SourceCodeTableGenerator w = new SourceCodeTableGenerator(config);
-        w.outputFileName = outputFileName;
-        
-        // reset state:
-        outputFileName = null;
-        
-        return w;
-    }    
+    }  
 }
