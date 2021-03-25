@@ -1100,13 +1100,33 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
             }
             return page;
         }
-        if (functionName.equalsIgnoreCase("{")) {
-            // TODO:
-            return 0;
+        if (functionName.equalsIgnoreCase("{") && args.size() == 1) {
+            byte []memory = reconstructDeviceRAMUntil(null, code);
+            if (memory == null) {
+                config.error("Cannot reconstruct device memory in " + s.sl);
+                return null;
+            }
+            Integer address = args.get(0).evaluateToInteger(s, code, silent);
+            if (address == null) {
+                config.error("Cannot evaluate " + args.get(0) + " ro an integer in " + s.sl);
+                return null;
+            }
+            int val = memory[address % RAMSize] + 256 * memory[(address+1) % RAMSize];
+            return val;
         }
-        if (functionName.equalsIgnoreCase("{b")) {
-            // TODO:
-            return 0;
+        if (functionName.equalsIgnoreCase("{b") && args.size() == 1) {
+            byte []memory = reconstructDeviceRAMUntil(null, code);
+            if (memory == null) {
+                config.error("Cannot reconstruct device memory in " + s.sl);
+                return null;
+            }
+            Integer address = args.get(0).evaluateToInteger(s, code, silent);
+            if (address == null) {
+                config.error("Cannot evaluate " + args.get(0) + " ro an integer in " + s.sl);
+                return null;
+            }
+            int val = memory[address % RAMSize];
+            return val;
         }
         return null;
     }
@@ -1130,6 +1150,16 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
         }
 
         return null;
+    }
+    
+    
+    @Override
+    public boolean expressionEvaluatesToIntegerConstant(String functionName) {
+        if (functionName.equalsIgnoreCase("{") || 
+            functionName.equalsIgnoreCase("{b")) {
+            return true;
+        }
+        return false;
     }
     
     
@@ -1341,6 +1371,7 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
     // null: error
     public Boolean reconstructDeviceRAMUntil(SourceFile f, CodeStatement limit, CodeBase code, byte memory[], BinaryGenerator bingen)
     {
+        int phaseOffset = 0;
         for(CodeStatement s:f.getStatements()) {
             if (s == limit) return true;
             Integer address = s.getAddress(code);
@@ -1348,6 +1379,20 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
                 config.error("Cannot assess the address of statement in " + s);
                 return null;
             }
+            if (s.type == CodeStatement.STATEMENT_ORG && s.label != null) {
+                if (s.label.name.startsWith(PHASE_PRE_LABEL_PREFIX)) {
+                    // this is a "phase" org, the address after should be ignored!
+                    Integer org = s.org.evaluateToInteger(s, code, true);
+                    if (org == null) {
+                        config.error("Cannot evaluate " +s.org+ " to an integer in " + s);
+                        return null;
+                    }
+                    phaseOffset = address - org;
+                } else if (s.label.name.startsWith(DEPHASE_LABEL_PREFIX)) {
+                    phaseOffset = 0;
+                }                
+            }
+            address += phaseOffset;
             if (address < 0 || address >= RAMSize) {
                 config.warn("Address ("+address+") ouside of device RAM range ("+RAMSize+") in " + s);
             }

@@ -726,7 +726,10 @@ public class ExpressionParser {
             if (exp != null && tokens.size() >= 1 && tokens.get(0).equals("}")) {
                 tokens.remove(0);
                 args.add(exp);
-                return Expression.dialectFunctionExpression((readByte ? "{b":"{"), args, config);
+//                Expression dexp = Expression.dialectFunctionExpression((readByte ? "{b":"{"), args, config);
+                Object val = config.dialectParser.evaluateExpression((readByte ? "{b":"{"), args, s, code, true);
+                if (val == null) return null;
+                return Expression.constantExpression((Integer)val, config);
             }            
         }
 
