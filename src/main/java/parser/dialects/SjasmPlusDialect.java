@@ -56,9 +56,50 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
     public static final String PHASE_POST_LABEL_PREFIX = "__sjasmplus_phase_post_";
     public static final String DEPHASE_LABEL_PREFIX = "__sjasmplus_dephase_";
     
+    // To mimic sjasmplus initialization here: https://github.com/z00m128/sjasmplus/blob/master/sjasm/devices.cpp
+    public static final int ZX_RAMTOP_DEFAULT = 0x5d5b;
+    public static final int ZX_SYSVARS_ADR = 0x5c00;
+    public static final int ZX_UDG_ADR = 0xff58;
     
-    int RAMSize = 64*1024;
+    public static final int ZX_SYSVARS_DATA[] = {
+	0xff, 0x00, 0x00, 0x00, 0xff, 0x00, 0x00, 0x00, 0x00, 0x14, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x01, 0x00, 0x06, 0x00, 0x0b, 0x00, 0x01, 0x00, 0x01, 0x00, 0x06, 0x00, 0x10, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x3c, 0x40, 0x00, 0xff, 0xcc, 0x01, 0x54, 0xff, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x38, 0x00, 0x00, 0xcb, 0x5c, 0x00, 0x00, 0xb6,
+	0x5c, 0xb6, 0x5c, 0xcb, 0x5c, 0x00, 0x00, 0xca, 0x5c, 0xcc, 0x5c, 0xcc, 0x5c, 0xcc, 0x5c, 0x00,
+	0x00, 0xce, 0x5c, 0xce, 0x5c, 0xce, 0x5c, 0x00, 0x92, 0x5c, 0x10, 0x02, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x58, 0xff, 0x00, 0x00, 0x21,
+	0x5b, 0x00, 0x21, 0x17, 0x00, 0x40, 0xe0, 0x50, 0x21, 0x18, 0x21, 0x17, 0x01, 0x38, 0x00, 0x38,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x57, 0xff, 0xff, 0xff, 0xf4, 0x09, 0xa8, 0x10, 0x4b, 0xf4, 0x09, 0xc4, 0x15, 0x53,
+	0x81, 0x0f, 0xc4, 0x15, 0x52, 0xf4, 0x09, 0xc4, 0x15, 0x50, 0x80, 0x80, 0x0d, 0x80, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+
+    public static final int ZX_STACK_DATA[] = {
+	0x03, 0x13, 0x00, 0x3e
+    };
+
+    public static final int ZX_UDG_DATA[] = {
+	0x00, 0x3c, 0x42, 0x42, 0x7e, 0x42, 0x42, 0x00, 0x00, 0x7c, 0x42, 0x7c, 0x42, 0x42, 0x7c, 0x00,
+	0x00, 0x3c, 0x42, 0x40, 0x40, 0x42, 0x3c, 0x00, 0x00, 0x78, 0x44, 0x42, 0x42, 0x44, 0x78, 0x00,
+	0x00, 0x7e, 0x40, 0x7c, 0x40, 0x40, 0x7e, 0x00, 0x00, 0x7e, 0x40, 0x7c, 0x40, 0x40, 0x40, 0x00,
+	0x00, 0x3c, 0x42, 0x40, 0x4e, 0x42, 0x3c, 0x00, 0x00, 0x42, 0x42, 0x7e, 0x42, 0x42, 0x42, 0x00,
+	0x00, 0x3e, 0x08, 0x08, 0x08, 0x08, 0x3e, 0x00, 0x00, 0x02, 0x02, 0x02, 0x42, 0x42, 0x3c, 0x00,
+	0x00, 0x44, 0x48, 0x70, 0x48, 0x44, 0x42, 0x00, 0x00, 0x40, 0x40, 0x40, 0x40, 0x40, 0x7e, 0x00,
+	0x00, 0x42, 0x66, 0x5a, 0x42, 0x42, 0x42, 0x00, 0x00, 0x42, 0x62, 0x52, 0x4a, 0x46, 0x42, 0x00,
+	0x00, 0x3c, 0x42, 0x42, 0x42, 0x42, 0x3c, 0x00, 0x00, 0x7c, 0x42, 0x42, 0x7c, 0x40, 0x40, 0x00,
+	0x00, 0x3c, 0x42, 0x42, 0x52, 0x4a, 0x3c, 0x00, 0x00, 0x7c, 0x42, 0x42, 0x7c, 0x44, 0x42, 0x00,
+	0x00, 0x3c, 0x40, 0x3c, 0x02, 0x42, 0x3c, 0x00, 0x00, 0xfe, 0x10, 0x10, 0x10, 0x10, 0x10, 0x00,
+	0x00, 0x42, 0x42, 0x42, 0x42, 0x42, 0x3c, 0x00
+    };    
+    
     String deviceName = null;
+    int deviceRAMSize = 64*1024;
+    byte deviceRAMInit[] = null;
     List<Integer> slotSizes = new ArrayList<>();
     List<Integer> pageSizes = new ArrayList<>();
     Integer currentSlot = null;
@@ -556,6 +597,7 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("device")) {
             tokens.remove(0);
             deviceName = tokens.remove(0).toLowerCase();
+            int ramtop = 0x5d5b;
             
             switch(deviceName) {
                 case "none":
@@ -572,6 +614,7 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
                     currentSlot = 3;
                     currentPages.clear();
                     currentPages.add(0);
+                    initZXRam(0x4000, 4, ramtop);
                     break;
                 case "zxspectrum128":
                     slotSizes.clear();
@@ -585,6 +628,7 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
                     currentSlot = 3;
                     currentPages.clear();
                     currentPages.add(0);
+                    initZXRam(0x4000, 8, ramtop);
                     break;
                 case "zxspectrum256":
                     slotSizes.clear();
@@ -598,6 +642,7 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
                     currentSlot = 3;
                     currentPages.clear();
                     currentPages.add(0);
+                    initZXRam(0x4000, 16, ramtop);
                     break;
                 case "zxspectrum512":
                     slotSizes.clear();
@@ -611,6 +656,7 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
                     currentSlot = 3;
                     currentPages.clear();
                     currentPages.add(0);
+                    initZXRam(0x4000, 32, ramtop);
                     break;
                 case "zxspectrum1024":
                     slotSizes.clear();
@@ -624,6 +670,7 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
                     currentSlot = 3;
                     currentPages.clear();
                     currentPages.add(0);
+                    initZXRam(0x4000, 64, ramtop);
                     break;
                 case "zxspectrum2048":
                     slotSizes.clear();
@@ -637,6 +684,7 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
                     currentSlot = 3;
                     currentPages.clear();
                     currentPages.add(0);
+                    initZXRam(0x4000, 128, ramtop);
                     break;
                 case "zxspectrum4096":
                     slotSizes.clear();
@@ -650,6 +698,7 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
                     currentSlot = 3;
                     currentPages.clear();
                     currentPages.add(0);
+                    initZXRam(0x4000, 256, ramtop);
                     break;
                 case "zxspectrum8192":
                     slotSizes.clear();
@@ -663,6 +712,7 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
                     currentSlot = 3;
                     currentPages.clear();
                     currentPages.add(0);
+                    initZXRam(0x4000, 512, ramtop);
                     break;
                 case "zxspectrumnext":
                     slotSizes.clear();
@@ -1111,7 +1161,7 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
                 config.error("Cannot evaluate " + args.get(0) + " ro an integer in " + s.sl);
                 return null;
             }
-            int val = memory[address % RAMSize] + 256 * memory[(address+1) % RAMSize];
+            int val = memory[address % deviceRAMSize] + 256 * memory[(address+1) % deviceRAMSize];
             return val;
         }
         if (functionName.equalsIgnoreCase("{b") && args.size() == 1) {
@@ -1125,7 +1175,7 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
                 config.error("Cannot evaluate " + args.get(0) + " ro an integer in " + s.sl);
                 return null;
             }
-            int val = memory[address % RAMSize];
+            int val = memory[address % deviceRAMSize];
             return val;
         }
         return null;
@@ -1245,7 +1295,7 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
                 case "savebin":
                 {
                     Integer start = 0;
-                    Integer length = RAMSize;
+                    Integer length = deviceRAMSize;
                     if (sc.arguments.size() >= 2) {
                         start = sc.arguments.get(1).evaluateToInteger(sc.s, code, false);
                         if (start == null) {
@@ -1265,9 +1315,9 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
                     if (device == null) return false;
 
                     try (FileOutputStream os = new FileOutputStream(fileName)) {
-                        start = start%RAMSize;
-                        if (start + length > RAMSize) {
-                            length = RAMSize - start;
+                        start = start%deviceRAMSize;
+                        if (start + length > deviceRAMSize) {
+                            length = deviceRAMSize - start;
                         }
                         os.write(device, start, length);
                         os.flush();
@@ -1345,10 +1395,52 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
     }
     
     
+    // Code to mimic sjasmplus' behavior here: https://github.com/z00m128/sjasmplus/blob/master/sjasm/devices.cpp
+    void initZXRam(int slotSize, int slotCount, int ramtop)
+    {
+        deviceRAMSize = 64*1024;
+        deviceRAMInit = new byte[deviceRAMSize];
+//	device->ZxRamTop = (0x5D00 <= ramtop && ramtop <= 0xFFFF) ? ramtop : ZX_RAMTOP_DEFAULT;
+
+	// ULA attributes: INK 0 : PAPER 7 : FLASH 0 : BRIGTH 0
+	for (int adr = 0x5800; adr < 0x5B00; adr++) {
+            deviceRAMInit[adr] = 7*8;
+        }
+
+	// set UDG data at ZX_UDG_ADR (0xFF58)
+        for(int i = 0;i<ZX_UDG_DATA.length;i++) {
+            deviceRAMInit[ZX_UDG_ADR+i] = (byte)ZX_UDG_DATA[i];
+        }
+
+	// ZX SYSVARS at 0x5C00
+        for(int i = 0;i<ZX_SYSVARS_DATA.length;i++) {
+            deviceRAMInit[ZX_SYSVARS_ADR+i] = (byte)ZX_SYSVARS_DATA[i];
+        }
+
+	// set RAMTOP sysvar
+        deviceRAMInit[ZX_SYSVARS_ADR+0xb2] = (byte)(ramtop & 0xff);
+        deviceRAMInit[ZX_SYSVARS_ADR+0xb3] = (byte)((ramtop >> 8) & 0xff);
+
+	// set STACK data (without the "start" address)
+	int adr = ramtop + 1 - ZX_STACK_DATA.length;
+	// set ERRSP sysvar to beginning of the fake stack
+        deviceRAMInit[ZX_SYSVARS_ADR+0x3d] = (byte)(adr & 0xff);
+        deviceRAMInit[ZX_SYSVARS_ADR+0x3e] = (byte)((adr >> 8) & 0xff);
+	for (int value : ZX_STACK_DATA) {
+            deviceRAMInit[adr] = (byte)value;
+            adr++;
+        }
+    }
+    
+    
     public byte[] reconstructDeviceRAMUntil(CodeStatement limit, CodeBase code)
     {
-        byte memory[] = new byte[RAMSize];
+        byte memory[] = new byte[deviceRAMSize];
         BinaryGenerator bingen = new BinaryGenerator(config);
+        
+        if (deviceRAMInit != null) {
+            for(int i = 0;i<deviceRAMSize;i++) memory[i] = deviceRAMInit[i];
+        }
         
         // iterate over all the code statements, generating binary data, and overwritting the memory
         for(OutputBinary output:code.outputs) {
@@ -1393,8 +1485,8 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
                 }                
             }
             address += phaseOffset;
-            if (address < 0 || address >= RAMSize) {
-                config.warn("Address ("+address+") ouside of device RAM range ("+RAMSize+") in " + s);
+            if (address < 0 || address >= deviceRAMSize) {
+                config.warn("Address ("+address+") ouside of device RAM range ("+deviceRAMSize+") in " + s);
             }
             if (s.type == CodeStatement.STATEMENT_INCLUDE) {
                 Boolean ret = reconstructDeviceRAMUntil(s.include, limit, code, memory, bingen);
@@ -1403,7 +1495,7 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
                 byte data[] = bingen.generateStatementBytes(s, code);
                 if (data != null) {
                     for(int i = 0;i<data.length;i++) {
-                        memory[(address+i)%RAMSize] = data[i];
+                        memory[(address+i)%deviceRAMSize] = data[i];
                     }
                 }
             }
