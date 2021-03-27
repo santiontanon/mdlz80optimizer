@@ -16,7 +16,6 @@ public class Tokenizer {
     // MSX BASIC files have this character to indicate end of file (remove it while parsing):
     public static final int BASIC_EOF = 0x1a;
     
-//    public List<String> doubleTokens = new ArrayList<>();
     public HashSet<String> doubleTokens = new HashSet<>();
     
     public HashMap<String,String> stringEscapeSequences = new HashMap<>();
@@ -25,9 +24,15 @@ public class Tokenizer {
     public boolean allowAndpersandHex = false;
     public boolean sdccStyleHashMarksForConstants = false;
     public boolean sdccStyleDollarInLabels = false;
-    public boolean curlyBracesAreComments = true;
     public boolean allowQuestionMarksInSymbols = false;
     public boolean allowDotFollowedByNumberLabels = true;
+    
+    public List<String> multilineCommentStartTokens = new ArrayList<>();
+    public List<String> multilineCommentEndTokens = new ArrayList<>();
+    
+    // These are for dialects like Macro80, which can redefine the comment delimiter
+    public List<String> oneTimemultilineCommentStartTokens = new ArrayList<>();
+    public List<String> oneTimemultilineCommentEndTokens = new ArrayList<>();
     
     
     Matcher doubleMatcher = Pattern.compile("[\\x00-\\x20]*[+-]?(((((\\p{Digit}+)(\\.)?((\\p{Digit}+)?)([eE][+-]?(\\p{Digit}+))?)|(\\.((\\p{Digit}+))([eE][+-]?(\\p{Digit}+))?)|(((0[xX](\\p{XDigit}+)(\\.)?)|(0[xX](\\p{XDigit}+)?(\\.)(\\p{XDigit}+)))[pP][+-]?(\\p{Digit}+)))[fFdD]?))[\\x00-\\x20]*")
@@ -53,7 +58,12 @@ public class Tokenizer {
         doubleTokens.add("--");
         doubleTokens.add("::");
         doubleTokens.add("=:");
-        doubleTokens.add("==");        
+        doubleTokens.add("==");    
+        
+        multilineCommentStartTokens.add("/*");
+        multilineCommentEndTokens.add("*/");
+        multilineCommentStartTokens.add("{");
+        multilineCommentEndTokens.add("}");        
     }
     
     public List<String> tokenizeIncludingBlanks(String line) {
@@ -536,15 +546,13 @@ public class Tokenizer {
     
 
     public boolean isMultiLineCommentStart(String token) {
-        if (token.equals("/*")) return true;
-        if (curlyBracesAreComments && token.equals("{")) return true;
-        return false;
+        if (multilineCommentStartTokens.contains(token)) return true;
+        return oneTimemultilineCommentStartTokens.contains(token);
     }
     
 
     public boolean isMultiLineCommentEnd(String token) {
-        if (token.equals("*/")) return true;
-        if (curlyBracesAreComments && token.equals("}")) return true;
-        return false;
+        if (multilineCommentEndTokens.contains(token)) return true;
+        return oneTimemultilineCommentEndTokens.contains(token);
     }
 }

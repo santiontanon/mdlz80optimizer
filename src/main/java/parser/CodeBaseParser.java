@@ -21,8 +21,6 @@ import util.Resources;
 public class CodeBaseParser {
     MDLConfig config;
 
-    boolean withinMultilineComment = false;
-
     // Expressions that we don't want to keep expanded, but want to replace by concrete values
     // once the code is parsed. Examples of this are dialect-specific functions, which we want
     // to resolve before generating asm output to maintain maximum compatibility in the output:
@@ -189,7 +187,7 @@ public class CodeBaseParser {
     Pair<SourceLine, Integer> getNextLine(BufferedReader br, SourceFile f, int file_linenumber, List<String> tokens)
             throws IOException
     {
-        List<String> unfilteredTokens = new ArrayList<>();
+//        List<String> unfilteredTokens = new ArrayList<>();
 
         SourceLine sl = config.preProcessor.expandMacros();
         if (sl == null) {
@@ -200,21 +198,23 @@ public class CodeBaseParser {
             sl = new SourceLine(line, f, file_linenumber);
         }
 
-        config.tokenizer.tokenize(sl.line, unfilteredTokens);
+        config.tokenizer.tokenize(sl.line, tokens);
         if (config.considerLinesEndingInCommaAsUnfinished &&
-            !unfilteredTokens.isEmpty() && unfilteredTokens.get(unfilteredTokens.size()-1).equals(",")) {
+            !tokens.isEmpty() && tokens.get(tokens.size()-1).equals(",")) {
             // unfinished line, get the next one!
             List<String> tokens2 = new ArrayList<>();
             Pair<SourceLine, Integer> tmp = getNextLine(br, sl.source, file_linenumber, tokens2);
             if (tmp != null) {
                 sl.line += "\n" + tmp.getLeft().line;
-                unfilteredTokens.addAll(tokens2);
+                tokens.addAll(tokens2);
                 file_linenumber = tmp.getRight();
             }
         }
 
         // remove multi-line comments
-        for(String token:unfilteredTokens) {
+        List<String> filteredTokens = new ArrayList<>();
+        boolean withinMultilineComment = false;
+        for(String token:tokens) {
             if (withinMultilineComment) {
                 if (config.tokenizer.isMultiLineCommentEnd(token)) {
                     withinMultilineComment = false;
@@ -223,10 +223,22 @@ public class CodeBaseParser {
                 if (config.tokenizer.isMultiLineCommentStart(token)) {
                     withinMultilineComment = true;
                 } else {
-                    tokens.add(token);
+                    filteredTokens.add(token);
                 }
             }
         }
+        // we only want to remove those comments that are within a line, 
+        // if the comment is after a line and spans multiple lines, we filter it out
+        // somewhere else.
+        // Note: this seems overkill, but the probelm is that MDL tries to preserve 
+        // the comments, rather than just filtering out as usually done in pre-processors,
+        // since it needs to be able to re-create source code again, with the comments
+        // as close to what they were as possible.
+        if (!withinMultilineComment && tokens.size() > filteredTokens.size()) {
+            tokens.clear();
+            tokens.addAll(filteredTokens);
+        }
+        
 
         return Pair.of(sl, file_linenumber);
     }

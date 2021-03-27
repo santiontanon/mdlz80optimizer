@@ -33,6 +33,8 @@ public class Macro80Test {
 
     @Test public void test1() throws IOException { Assert.assertTrue(test("data/generationtests/macro80-base.asm",
                                                                           "data/generationtests/macro80-base-expected.asm")); }
+    @Test public void test2() throws IOException { Assert.assertTrue(test("data/generationtests/macro80-base2.asm",
+                                                                          "data/generationtests/macro80-base2-expected.asm")); }
 
     private boolean test(String inputFile, String expectedOutputFile) throws IOException
     {

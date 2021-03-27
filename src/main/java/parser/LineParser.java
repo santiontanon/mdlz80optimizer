@@ -78,6 +78,8 @@ public class LineParser {
     // for local labels:
     String labelPrefix = "";
     List<String> labelPrefixStack = new ArrayList<>();
+    
+    boolean insideMultiLineComment = false;
 
     public LineParser(MDLConfig a_config, CodeBaseParser a_codeBaseParser) {
         config = a_config;
@@ -91,7 +93,7 @@ public class LineParser {
     }
     
     
-    public void resetKeywordsHintingALabel()
+    public final void resetKeywordsHintingALabel()
     {
         keywordsHintingALabel.clear();
         keywordsHintingALabel.add(KEYWORD_EQU);
@@ -228,7 +230,7 @@ public class LineParser {
 
     
     List<CodeStatement> parseInternal(List<String> tokens, SourceLine sl, CodeStatement s, CodeStatement previous, SourceFile source, CodeBase code)
-    {
+    {        
         List<CodeStatement> l = new ArrayList<>();
         l.add(s);        
         if (parseInternal(tokens, l, sl, s, previous, source, code, true)) return l;
@@ -238,6 +240,11 @@ public class LineParser {
     
     boolean parseInternal(List<String> tokens, List<CodeStatement> l, SourceLine sl, CodeStatement s, CodeStatement previous, SourceFile source, CodeBase code, boolean allowLabel) 
     {    
+        if (insideMultiLineComment) {
+            // we are still inside a multiline comment
+            return parseLineInsideMultilineComment(tokens, l, sl, s, previous, source, code);
+        }
+        
         // apply text macros:
         if (!tokens.isEmpty()) {
             if (!tokensPreventingTextMacroExpansion.contains(tokens.get(0).toLowerCase())) {
@@ -478,7 +485,31 @@ public class LineParser {
 
         return true;
     }
+    
+    
+    public boolean parseLineInsideMultilineComment(List<String> tokens,
+            List<CodeStatement> l, 
+            SourceLine sl, CodeStatement s, CodeStatement previous, 
+            SourceFile source, CodeBase code) {
+        if (s.comment == null) s.comment = "";
+        while(!tokens.isEmpty()) {
+            if (config.tokenizer.isMultiLineCommentEnd(tokens.get(0))) {
+                tokens.remove(0);
+                insideMultiLineComment = false;
+                config.tokenizer.oneTimemultilineCommentStartTokens.clear();
+                config.tokenizer.oneTimemultilineCommentEndTokens.clear();
+                break;
+            }
+            s.comment += tokens.remove(0) + " ";
+        }
+        if (insideMultiLineComment) {
+            return true;
+        } else {
+            return parseRestofTheLine(tokens, l, sl, s, previous, source, code);
+        }
+    }
 
+            
     public boolean parseRestofTheLine(List<String> tokens,
             List<CodeStatement> l, 
             SourceLine sl, CodeStatement s, CodeStatement previous, 
@@ -502,7 +533,12 @@ public class LineParser {
             s.comment = tokens.get(0);
             return true;
         }
-
+        if (tokens.size() >= 1 && config.tokenizer.isMultiLineCommentStart(tokens.get(0))) {
+            tokens.remove(0);
+            insideMultiLineComment = true;
+            return parseLineInsideMultilineComment(tokens, l, sl, s, previous, source, code);
+        }
+       
         config.error("parseRestofTheLine: Cannot parse line " + sl + "  left over tokens: " + tokens);
         return false;
     }
@@ -996,7 +1032,7 @@ public class LineParser {
                 return false;                
         }        
         
-        // parseArgs arguments:
+        // Parse arguments:
         List<String> args = new ArrayList<>();
         List<Expression> defaultValues = new ArrayList<>();
         while (!tokens.isEmpty()

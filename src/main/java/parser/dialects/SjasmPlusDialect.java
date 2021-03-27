@@ -378,7 +378,8 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
         config.tokenizer.stringEscapeSequences.put("r", "\r");
         config.tokenizer.stringEscapeSequences.put("t", "\t");
         config.tokenizer.stringEscapeSequences.put("v", "\u0011");
-        config.tokenizer.curlyBracesAreComments = false;
+        config.tokenizer.multilineCommentStartTokens.remove("{");
+        config.tokenizer.multilineCommentEndTokens.remove("}");
         config.tokenizer.allowQuestionMarksInSymbols = true;
         config.tokenizer.allowDotFollowedByNumberLabels = false;
     }

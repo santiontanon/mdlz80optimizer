@@ -692,8 +692,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             tokens.remove(0);
             String folder = "";
             while(!tokens.isEmpty()) {
-                if (config.tokenizer.isSingleLineComment(tokens.get(0)) || 
-                    config.tokenizer.isMultiLineCommentStart(tokens.get(0))) break;
+                if (config.tokenizer.isSingleLineComment(tokens.get(0))) break;
                 folder += tokens.remove(0);
             }
 
@@ -710,8 +709,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             String fileName = "";
 
             while(!tokens.isEmpty()) {
-                if (config.tokenizer.isSingleLineComment(tokens.get(0)) || 
-                    config.tokenizer.isMultiLineCommentStart(tokens.get(0))) break;
+                if (config.tokenizer.isSingleLineComment(tokens.get(0))) break;
                 fileName += tokens.remove(0);
             }
             

@@ -32,6 +32,8 @@ public class Macro80Dialect implements Dialect {
     List<SourceLine> linesToKeepIfGeneratingDialectAsm = new ArrayList<>(); 
     List<CodeStatement> auxiliaryStatementsToRemoveIfGeneratingDialectasm = new ArrayList<>();
     
+    Expression programStartAddress = null;
+    
     List<String> globalLabels = new ArrayList<>();
     
     
@@ -133,9 +135,20 @@ public class Macro80Dialect implements Dialect {
             }
             return true;
         }
-        if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("end")) return true;
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase(".list")) return true;
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase(".xlist")) return true;
+        if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("end")) return true;
+        if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("page")) return true;
+        if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("*") && 
+                                tokens.get(1).equalsIgnoreCase("eject")) return true;
+        if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase(".comment")) return true;
+        if (tokens.size()>=2 && (tokens.get(0).equalsIgnoreCase("ext") ||
+                                 tokens.get(0).equalsIgnoreCase("extrn") ||
+                                 tokens.get(0).equalsIgnoreCase("external"))) return true;
+        if (tokens.size()>=2 && (tokens.get(0).equalsIgnoreCase("entry") ||
+                                 tokens.get(0).equalsIgnoreCase("public") ||
+                                 tokens.get(0).equalsIgnoreCase("global"))) return true;
+        if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase(".printx")) return true;
         
         return false;
     }
@@ -284,11 +297,6 @@ public class Macro80Dialect implements Dialect {
             l.clear();
             return true;
         }
-        if (!tokens.isEmpty() && tokens.get(0).equalsIgnoreCase("end")) {
-            tokens.remove(0);
-            linesToKeepIfGeneratingDialectAsm.add(sl);
-            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
-        }
         if (!tokens.isEmpty() && tokens.get(0).equalsIgnoreCase(".list")) {
             tokens.remove(0);
             linesToKeepIfGeneratingDialectAsm.add(sl);
@@ -299,6 +307,122 @@ public class Macro80Dialect implements Dialect {
             linesToKeepIfGeneratingDialectAsm.add(sl);
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
+        if (!tokens.isEmpty() && tokens.get(0).equalsIgnoreCase("end")) {
+            tokens.remove(0);
+            if (!tokens.isEmpty() && !config.tokenizer.isSingleLineComment(tokens.get(0))) {
+                Expression exp = config.expressionParser.parse(tokens, s, previous, code);
+                if (exp == null) {
+                    config.error("Cannot parse expression in " + sl);
+                    return false;
+                }
+                programStartAddress = exp;
+            }
+            linesToKeepIfGeneratingDialectAsm.add(sl);
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
+        }
+        if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("page")) {
+            // ignore ...
+            tokens.remove(0);
+            if (!tokens.isEmpty() && !config.tokenizer.isSingleLineComment(tokens.get(0))) {
+                Expression exp = config.expressionParser.parse(tokens, s, previous, code);
+                if (exp == null) {
+                    config.error("Cannot parse expression in " + sl);
+                    return false;
+                }
+            }
+            linesToKeepIfGeneratingDialectAsm.add(sl);
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
+        }
+        if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("*") && 
+                                tokens.get(1).equalsIgnoreCase("eject")) {
+            // ignore ...
+            tokens.remove(0);
+            tokens.remove(0);
+            if (!tokens.isEmpty() && !config.tokenizer.isSingleLineComment(tokens.get(0))) {
+                Expression exp = config.expressionParser.parse(tokens, s, previous, code);
+                if (exp == null) {
+                    config.error("Cannot parse expression in " + sl);
+                    return false;
+                }
+            }            
+            linesToKeepIfGeneratingDialectAsm.add(sl);
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
+        }
+        if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase(".comment")) {
+            tokens.remove(0);
+            // convert into a multiline comment
+            String token = tokens.remove(0);
+            String delimiter = token.charAt(0) + "";
+            if (token.length() > 1) {
+                tokens.add(0, token.substring(1));
+            }
+            tokens.add(0, delimiter);
+            
+            config.tokenizer.oneTimemultilineCommentStartTokens.add(delimiter);
+            config.tokenizer.oneTimemultilineCommentEndTokens.add(delimiter);
+            
+            if (!config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code)) {
+                return false;
+            }            
+            return true;
+        }
+        if (tokens.size()>=2 && (tokens.get(0).equalsIgnoreCase("ext") ||
+                                 tokens.get(0).equalsIgnoreCase("extrn") ||
+                                 tokens.get(0).equalsIgnoreCase("external"))) {
+            tokens.remove(0);
+            while(!tokens.isEmpty() && !config.tokenizer.isSingleLineComment(tokens.get(0)) &&
+                    !config.tokenizer.isMultiLineCommentStart(tokens.get(0))) {
+                String token = tokens.remove(0);
+                if (!config.tokenizer.isSymbol(token)) {
+                    config.error("Expected symbol name in " + sl);
+                    return false;
+                }
+                if (!tokens.isEmpty() && tokens.get(0).equals(",")) {
+                    tokens.remove(0);
+                }
+            }
+            
+            linesToKeepIfGeneratingDialectAsm.add(sl);
+            
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
+        }
+        if (tokens.size()>=2 && (tokens.get(0).equalsIgnoreCase("entry") ||
+                                 tokens.get(0).equalsIgnoreCase("public") ||
+                                 tokens.get(0).equalsIgnoreCase("global"))) {
+            tokens.remove(0);
+            while(!tokens.isEmpty() && !config.tokenizer.isSingleLineComment(tokens.get(0)) &&
+                    !config.tokenizer.isMultiLineCommentStart(tokens.get(0))) {
+                String token = tokens.remove(0);
+                if (!config.tokenizer.isSymbol(token)) {
+                    config.error("Expected symbol name in " + sl);
+                    return false;
+                }
+                globalLabels.add(token);
+                if (!tokens.isEmpty() && tokens.get(0).equals(",")) {
+                    tokens.remove(0);
+                }
+            }
+            
+            linesToKeepIfGeneratingDialectAsm.add(sl);
+            
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
+        }
+        if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase(".printx")) {
+            tokens.remove(0);
+            String delimiter = tokens.remove(0);
+            String text = "";
+            while(!tokens.isEmpty() && !tokens.get(0).equals(delimiter)) {
+                text += tokens.remove(0) + " ";
+            }
+            if (!tokens.isEmpty() && tokens.get(0).equals(delimiter)) {
+                tokens.remove(0);
+            }
+            
+            config.info(text);
+            
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
+        }
+        
         
         
         return false;
