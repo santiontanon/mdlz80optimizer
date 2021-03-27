@@ -1514,6 +1514,6 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
 
         if (auxiliaryStatementsToRemoveIfGeneratingDialectasm.contains(s)) return "";
         
-        return s.toStringUsingRootPath(rootPath, useOriginalNames, true);
+        return s.toStringUsingRootPath(rootPath, useOriginalNames, true, code);
     }        
 }

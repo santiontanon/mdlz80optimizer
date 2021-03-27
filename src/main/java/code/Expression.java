@@ -740,9 +740,17 @@ public class Expression {
                     SourceConstant c = code.getSymbol(symbolName);
                     if (c != null) {
                         if (mimicTargetDialect && symbolIsExternal && config.expressionParser.doubleHashToMarkExternalSymbols) {
-                            return c.originalName + "##";
+                            if (config.output_replaceLabelDotsByUnderscores && !c.originalName.startsWith(".")) {
+                                return c.originalName.replace(".", "_") + "##";
+                            } else {
+                                return c.originalName + "##";
+                            }
                         }
-                        return c.originalName;
+                        if (config.output_replaceLabelDotsByUnderscores && !c.originalName.startsWith(".")) {
+                            return c.originalName.replace(".", "_");
+                        } else {
+                            return c.originalName;
+                        }
                     }
                 }
                 if (config.output_replaceLabelDotsByUnderscores) {

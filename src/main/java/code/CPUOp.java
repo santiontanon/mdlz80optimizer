@@ -54,11 +54,11 @@ public class CPUOp {
     @Override
     public String toString()
     {
-        return toStringIntetrnal(false);
+        return toStringInternal(false, false, null);
     }
 
 
-    public String toStringIntetrnal(boolean mimicTargetDialect)
+    public String toStringInternal(boolean useOriginalNames, boolean mimicTargetDialect, CodeBase code)
     {
         String str = spec.opName;
         
@@ -77,12 +77,12 @@ public class CPUOp {
                  spec.args.get(i).wordConstantIndirectionAllowed)) {
                 if (args.get(i).type == Expression.EXPRESSION_PARENTHESIS &&
                     args.get(i).args.size()==1) {
-                    str += "["+args.get(i).args.get(0).toStringInternal(false, false, mimicTargetDialect, null)+"]";
+                    str += "["+args.get(i).args.get(0).toStringInternal(false, useOriginalNames, mimicTargetDialect, code)+"]";
                 } else {
-                    str += args.get(i).toStringInternal(false, false, mimicTargetDialect, null);
+                    str += args.get(i).toStringInternal(false, useOriginalNames, mimicTargetDialect, code);
                 }
             } else {
-                str += args.get(i).toStringInternal(false, false, mimicTargetDialect, null);
+                str += args.get(i).toStringInternal(false, useOriginalNames, mimicTargetDialect, code);
             }
         }
 

@@ -336,6 +336,6 @@ public class PasmoDialect implements Dialect {
     public String statementToString(CodeStatement s, CodeBase code, boolean useOriginalNames, Path rootPath) {
         if (auxiliaryStatementsToRemoveIfGeneratingDialectasm.contains(s)) return "";
         
-        return s.toStringUsingRootPath(rootPath, useOriginalNames, true);
+        return s.toStringUsingRootPath(rootPath, useOriginalNames, true, code);
     }      
 }

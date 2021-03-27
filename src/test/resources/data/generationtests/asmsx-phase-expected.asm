@@ -16,4 +16,4 @@ method3:
 	ret
 method4:
 	ret
-	ds 8164, 0
+	ds #6000 - $, 0

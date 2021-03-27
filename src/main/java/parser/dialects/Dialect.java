@@ -141,7 +141,7 @@ public interface Dialect {
     
     // Translates a statement to string using the syntax of the specific dialect:
     default String statementToString(CodeStatement s, CodeBase code, boolean useOriginalNames, Path rootPath) {
-        return s.toStringUsingRootPath(rootPath, useOriginalNames, true);
+        return s.toStringUsingRootPath(rootPath, useOriginalNames, true, code);
     }
     
     default String getNextTemporaryLabel()

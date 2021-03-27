@@ -79,13 +79,16 @@ public class ASMSXDialect implements Dialect {
     
     // Some lines do not make sense in standard zilog assembler, and MDL removes them,
     // but if we want to generate assembler targetting this dialect, we need those lines.
-    List<SourceLine> linesToKeepIfGeneratingDialectAsm = new ArrayList<>(); 
+    List<CodeStatement> linesToKeepIfGeneratingDialectAsm = new ArrayList<>(); 
     List<CodeStatement> auxiliaryStatementsToRemoveIfGeneratingDialectasm = new ArrayList<>();
     
 
     public ASMSXDialect(MDLConfig a_config, boolean a_zilogMode)
     {
         config = a_config;
+        
+        config.output_equsWithoutColon = true;
+        config.output_replaceLabelDotsByUnderscores = true;
 
         config.lineParser.addKeywordSynonym(".org", config.lineParser.KEYWORD_ORG);
         config.lineParser.addKeywordSynonym(".include", config.lineParser.KEYWORD_INCLUDE);
@@ -340,7 +343,7 @@ public class ASMSXDialect implements Dialect {
                 l.addAll(l2);
                 auxiliaryStatementsToRemoveIfGeneratingDialectasm.addAll(l2);
             }
-            linesToKeepIfGeneratingDialectAsm.add(sl);
+            linesToKeepIfGeneratingDialectAsm.add(s);
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
         if (tokens.size()>=1 && (tokens.get(0).equalsIgnoreCase(".search") || tokens.get(0).equalsIgnoreCase("search"))) {
@@ -371,7 +374,7 @@ public class ASMSXDialect implements Dialect {
                 return false;
             }
             code.outputs.get(0).fileName = filename;
-            linesToKeepIfGeneratingDialectAsm.add(sl);
+            linesToKeepIfGeneratingDialectAsm.add(s);
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
         if (tokens.size()>=1 && (tokens.get(0).equalsIgnoreCase(".size") || tokens.get(0).equalsIgnoreCase("size"))) {
@@ -382,7 +385,7 @@ public class ASMSXDialect implements Dialect {
                 return false;
             }
             targetSizeInKB = size_exp.evaluateToInteger(s, code, true);
-            linesToKeepIfGeneratingDialectAsm.add(sl);
+            linesToKeepIfGeneratingDialectAsm.add(s);
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
         if (tokens.size()>=1 && (tokens.get(0).equalsIgnoreCase(".page") || tokens.get(0).equalsIgnoreCase("page"))) {
@@ -396,7 +399,7 @@ public class ASMSXDialect implements Dialect {
             s.org = Expression.operatorExpression(Expression.EXPRESSION_MUL,
                     Expression.parenthesisExpression(page_exp, "(", config),
                     Expression.constantExpression(16*1024, Expression.RENDER_AS_16BITHEX, config), config);
-            linesToKeepIfGeneratingDialectAsm.add(sl);
+            linesToKeepIfGeneratingDialectAsm.add(s);
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
         if (tokens.size()>=2 && (tokens.get(0).equalsIgnoreCase(".printtext") || tokens.get(0).equalsIgnoreCase("printtext"))) {
@@ -405,7 +408,7 @@ public class ASMSXDialect implements Dialect {
                     Expression.constantExpression(tokens.get(1), config)));
             tokens.remove(0);
             tokens.remove(0);
-            linesToKeepIfGeneratingDialectAsm.add(sl);
+            linesToKeepIfGeneratingDialectAsm.add(s);
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
         if (tokens.size()>=2 && (tokens.get(0).equalsIgnoreCase(".printdec") || tokens.get(0).equalsIgnoreCase(".print") ||
@@ -416,7 +419,7 @@ public class ASMSXDialect implements Dialect {
                     source.getStatements().get(source.getStatements().size()-1), 
                     exp));
             
-            linesToKeepIfGeneratingDialectAsm.add(sl);
+            linesToKeepIfGeneratingDialectAsm.add(s);
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
         if (tokens.size()>=2 && (tokens.get(0).equalsIgnoreCase(".printhex") || tokens.get(0).equalsIgnoreCase("printhex"))) {
@@ -426,7 +429,7 @@ public class ASMSXDialect implements Dialect {
                     source.getStatements().get(source.getStatements().size()-1), 
                     exp));
             
-            linesToKeepIfGeneratingDialectAsm.add(sl);            
+            linesToKeepIfGeneratingDialectAsm.add(s);            
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
         if (tokens.size()>=1 && (tokens.get(0).equalsIgnoreCase(".byte") || tokens.get(0).equalsIgnoreCase("byte"))) {
@@ -512,7 +515,7 @@ public class ASMSXDialect implements Dialect {
                         Expression.constantExpression(256, config), config)); 
             }
             for(int i = 0;i<12;i++) data.add(Expression.constantExpression(0, config));
-            linesToKeepIfGeneratingDialectAsm.add(sl);            
+            linesToKeepIfGeneratingDialectAsm.add(s);            
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
         
@@ -538,7 +541,7 @@ public class ASMSXDialect implements Dialect {
                         startAddressLabel, 
                         Expression.constantExpression(256, config), config)); 
             }
-            linesToKeepIfGeneratingDialectAsm.add(sl);                        
+            linesToKeepIfGeneratingDialectAsm.add(s);                        
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }        
         if (tokens.size()>=2 && (tokens.get(0).equalsIgnoreCase(".start") || tokens.get(0).equalsIgnoreCase("start"))) {
@@ -565,7 +568,7 @@ public class ASMSXDialect implements Dialect {
                         startAddressLabel, 
                         Expression.constantExpression(256, config), config)); 
             }
-            linesToKeepIfGeneratingDialectAsm.add(sl);            
+            linesToKeepIfGeneratingDialectAsm.add(s);            
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("=")) {
@@ -602,13 +605,13 @@ public class ASMSXDialect implements Dialect {
         if (tokens.size() >= 2 && (tokens.get(0).equalsIgnoreCase(".wav") || tokens.get(0).equalsIgnoreCase("wav"))) {
             tokens.remove(0);
             // just ignore
-            linesToKeepIfGeneratingDialectAsm.add(sl);            
+            linesToKeepIfGeneratingDialectAsm.add(s);            
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }        
         if (tokens.size() >= 2 && (tokens.get(0).equalsIgnoreCase(".cas") || tokens.get(0).equalsIgnoreCase("cas"))) {
             tokens.remove(0);
             // just ignore
-            linesToKeepIfGeneratingDialectAsm.add(sl);            
+            linesToKeepIfGeneratingDialectAsm.add(s);            
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
         if (tokens.size()>=1 && (tokens.get(0).equalsIgnoreCase(".select") || tokens.get(0).equalsIgnoreCase("select"))) {
@@ -772,7 +775,7 @@ public class ASMSXDialect implements Dialect {
             
             // update "currentPageEnd":
             currentPageEnd += pageSize;
-            linesToKeepIfGeneratingDialectAsm.add(sl);
+            linesToKeepIfGeneratingDialectAsm.add(s);
             
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
@@ -799,7 +802,7 @@ public class ASMSXDialect implements Dialect {
                 return false;
             } 
             phaseStatements.add(s);
-            linesToKeepIfGeneratingDialectAsm.add(sl);
+            linesToKeepIfGeneratingDialectAsm.add(s);
             
             // Add the label before the org:
             String phase_pre_label_name = PHASE_PRE_LABEL_PREFIX + phaseStatements.size();
@@ -854,7 +857,7 @@ public class ASMSXDialect implements Dialect {
                                          s, config);
             code.addSymbol(dephase_label_name, s.label);
             dephaseStatements.add(s);
-            linesToKeepIfGeneratingDialectAsm.add(sl);
+            linesToKeepIfGeneratingDialectAsm.add(s);
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
 
@@ -1084,15 +1087,20 @@ public class ASMSXDialect implements Dialect {
                     int end_address = lastGeneratingBytes.getAddress(code) + lastGeneratingBytes.sizeInBytes(code, false, true, false);
                     int size = end_address - start_address;
                     int target_size = targetSizeInKB > 0 ? targetSizeInKB * 1024 : (((size + 8191) / 8192) * 8192);
+                    int target_end_address = start_address + target_size;
                     int pad = target_size - size;
                     if (pad > 0) {
                         config.debug("asMSX: start_address: " + start_address);
                         config.debug("asMSX: end_address: " + end_address);
                         config.debug("asMSX: size: " + size);
                         config.debug("asMSX: target_size: " + target_size);
-                        config.debug("asMSX: pad: " + pad);
+                        config.debug("asMSX: target_end_address: " + target_end_address);
                         CodeStatement padStatement = new CodeStatement(CodeStatement.STATEMENT_DEFINE_SPACE, null, lastGeneratingBytes.source, config);
-                        padStatement.space = Expression.constantExpression(pad, config);
+//                        padStatement.space = Expression.constantExpression(pad, config);
+                        padStatement.space = Expression.operatorExpression(Expression.EXPRESSION_SUB, 
+                                Expression.constantExpression(target_end_address, Expression.RENDER_AS_16BITHEX, config),
+                                Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, padStatement, code, config),
+                                config);
                         padStatement.space_value = Expression.constantExpression(0, config);
                         lastGeneratingBytes.source.addStatement(lastGeneratingBytes.source.getStatements().indexOf(lastGeneratingBytes)+1, padStatement);
                         auxiliaryStatementsToRemoveIfGeneratingDialectasm.add(padStatement);
@@ -1167,25 +1175,25 @@ public class ASMSXDialect implements Dialect {
 
     @Override
     public String statementToString(CodeStatement s, CodeBase code, boolean useOriginalNames, Path rootPath) {
-        if (linesToKeepIfGeneratingDialectAsm.contains(s.sl)) {
+        if (linesToKeepIfGeneratingDialectAsm.contains(s)) {
             return s.sl.line;
         }
 
-        if (auxiliaryStatementsToRemoveIfGeneratingDialectasm.contains(s)) return "";
+        if (auxiliaryStatementsToRemoveIfGeneratingDialectasm.contains(s)) return null;
         
-        switch(s.type) {            
+        switch(s.type) {
             case CodeStatement.STATEMENT_CPUOP:
             {
                 String str = s.toStringLabel(useOriginalNames, false);              
                 boolean tmp = config.output_indirectionsWithSquareBrakets;
                 config.output_indirectionsWithSquareBrakets = !zilogMode;
-                str += "    " + s.op.toString();
+                str += "    " + s.op.toStringInternal(useOriginalNames, true, code);
                 config.output_indirectionsWithSquareBrakets = tmp;
                 return str;
             }
             
             default:
-                return s.toStringUsingRootPath(rootPath, useOriginalNames, true);
+                return s.toStringUsingRootPath(rootPath, useOriginalNames, true, code);
         }
     }    
         

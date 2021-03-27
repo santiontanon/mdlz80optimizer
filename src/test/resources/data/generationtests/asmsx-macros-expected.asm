@@ -16,4 +16,4 @@ loop:
 	jr loop
 FUNC:
 	ret
-	ds 8151, 0
+	ds #6000 - $, 0

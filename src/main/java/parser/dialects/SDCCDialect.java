@@ -485,7 +485,7 @@ public class SDCCDialect implements Dialect {
             }
             
             default:
-                return s.toStringUsingRootPath(rootPath, useOriginalNames, true);
+                return s.toStringUsingRootPath(rootPath, useOriginalNames, true, code);
         }
     }    
     

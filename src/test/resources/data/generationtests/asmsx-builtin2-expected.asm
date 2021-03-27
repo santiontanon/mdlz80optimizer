@@ -18,4 +18,4 @@ loop:
 	ld a, b
 	ld (#8000), a
 	pop af	
-	ds 8169, 0
+	ds #8000 - $, 0

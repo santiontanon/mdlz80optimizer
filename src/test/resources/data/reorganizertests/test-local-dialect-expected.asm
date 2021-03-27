@@ -3,10 +3,10 @@
 global1:
 	ld hl, variable
 ; 	jp global2.local  ; -mdl
-global2.local:
+global2_local:
 	ld [hl], 1
 ; 	jp global1.local  ; -mdl
-global1.local:
+global1_local:
 	inc hl
 	ld [hl], 2
 loop:
@@ -14,7 +14,7 @@ loop:
 global3:
 global2:
 	ret
-global3.local:
+global3_local:
 	ld [hl], 2
 	ret
 	org #c000

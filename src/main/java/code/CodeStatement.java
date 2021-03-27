@@ -282,7 +282,7 @@ public class CodeStatement {
     @Override
     public String toString()
     {
-        return toStringUsingRootPath(null, false, false);
+        return toStringUsingRootPath(null, false, false, null);
     }
 
     
@@ -291,7 +291,11 @@ public class CodeStatement {
         String str = "";
         if (label != null) {
             if (useOriginalName) {
-                str = label.originalName;
+                if (config.output_replaceLabelDotsByUnderscores && !label.originalName.startsWith(".")) {
+                    str = label.originalName.replace(".", "_");
+                } else {
+                    str = label.originalName;
+                }
             } else {
                 if (config.output_replaceLabelDotsByUnderscores) {
                     str = label.name.replace(".", "_");
@@ -329,7 +333,7 @@ public class CodeStatement {
     }
     
 
-    public String toStringUsingRootPath(Path rootPath, boolean useOriginalNames, boolean mimicTargetDialect)
+    public String toStringUsingRootPath(Path rootPath, boolean useOriginalNames, boolean mimicTargetDialect, CodeBase code)
     {
         String str = toStringLabel(useOriginalNames, false);
         
@@ -446,7 +450,7 @@ public class CodeStatement {
                 break;
                 
             case STATEMENT_CPUOP:
-                str += "    " + op.toString();
+                str += "    " + op.toStringInternal(useOriginalNames, mimicTargetDialect, code);
                 break;
                 
             case STATEMENT_MACRO:

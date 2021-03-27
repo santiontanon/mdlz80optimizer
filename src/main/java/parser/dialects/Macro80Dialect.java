@@ -531,7 +531,7 @@ public class Macro80Dialect implements Dialect {
             return "";
         }
         
-        return s.toStringUsingRootPath(rootPath, useOriginalNames, true);
+        return s.toStringUsingRootPath(rootPath, useOriginalNames, true, code);
     }    
            
     
