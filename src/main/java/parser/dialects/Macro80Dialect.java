@@ -22,6 +22,9 @@ import parser.SourceMacro;
 /**
  *
  * @author santi
+ * 
+ * Macro80 documentation: http://www.msxarchive.nl/pub/msx/programming/asm/m80l80.txt
+ * 
  */
 public class Macro80Dialect implements Dialect {
 
@@ -115,6 +118,7 @@ public class Macro80Dialect implements Dialect {
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("subttl")) return true;
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase(".8080")) return true;
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase(".z80")) return true;
+        if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("common")) return true;
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("aseg")) return true;
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("cseg")) return true;
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("dseg")) return true;
@@ -186,6 +190,17 @@ public class Macro80Dialect implements Dialect {
         }
         if (!tokens.isEmpty() && tokens.get(0).equalsIgnoreCase(".z80")) {
             tokens.remove(0);
+            linesToKeepIfGeneratingDialectAsm.add(sl);
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
+        }
+        if (!tokens.isEmpty() && tokens.get(0).equalsIgnoreCase("common")) {
+            tokens.remove(0);
+            String blockName = "";
+            while(!tokens.isEmpty() && !config.tokenizer.isSingleLineComment(tokens.get(0)) &&
+                    !config.tokenizer.isMultiLineCommentStart(tokens.get(0))) {
+                blockName += tokens.remove(0);
+            }
+            // for now, ignore ...
             linesToKeepIfGeneratingDialectAsm.add(sl);
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
