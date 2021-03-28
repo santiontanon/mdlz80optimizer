@@ -61,6 +61,7 @@ public class MDLConfig {
                                                  // for the SDCC dialect, where we don't know the base address ahead
                                                  // of time.
     public boolean considerLinesEndingInCommaAsUnfinished = false;
+    public boolean useOriginalLabelNamesOnDialectAsm = true;
     
     public List<String> ignorePatternsWithTags = new ArrayList<>();
     

@@ -157,7 +157,7 @@ public class CodeReorganizer implements MDLWorker {
             for(CodeBlock subarea: area.subBlocks) {
                 // Within each "sub-area", we can now re-organize code at will:                
                 if (subarea.type == CodeBlock.TYPE_CODE) {
-                    reorganizeBlock(subarea, code, savings);
+                    reorganizeBlock(subarea, code, savings);                    
                 }
             }
         }
@@ -167,6 +167,12 @@ public class CodeReorganizer implements MDLWorker {
             savings.timeSavingsString() + " " +config.timeUnit+"s saved.");
 
         config.optimizerStats.addSavings(savings);
+        
+        code.resetAddresses();
+        if (!code.checkLocalLabelsInRange()) {
+            config.error("Some local labels got out of range after the execution of the code reorganizer!");
+            return false;
+        }
         
         if (config.dialectParser != null) return config.dialectParser.postCodeModificationActions(code);
         return true;
@@ -365,13 +371,34 @@ public class CodeReorganizer implements MDLWorker {
     // Assumption: all the statements within this subarea contain assembler code, and not data
     private void reorganizeBlock(CodeBlock subarea, CodeBase code, OptimizationResult savings) {
         reorganizeBlockInternal(subarea, code, savings);
+        
+//        code.resetAddresses();
+//        if (!code.checkLocalLabelsInRange()) {
+//            config.error("after reorganizeBlockInternal: Some local labels got out of range after the execution of the code reorganizer!");
+//        }
+        
         if (runInliner) {
             inlineFunctions(subarea, code, savings);
+
+//            code.resetAddresses();
+//            if (!code.checkLocalLabelsInRange()) {
+//                config.error("after inlineFunctions: Some local labels got out of range after the execution of the code reorganizer!");
+//            }
         }
         if (runMerger) {
             mergeBlocks(subarea, code, savings);
+
+//            code.resetAddresses();
+//            if (!code.checkLocalLabelsInRange()) {
+//                config.error("after mergeBlocks: Some local labels got out of range after the execution of the code reorganizer!");
+//            }
         }
         fixLocalLabels(subarea, code);
+        
+//        code.resetAddresses();
+//        if (!code.checkLocalLabelsInRange()) {
+//            config.error("after fixLocalLabels: Some local labels got out of range after the execution of the code reorganizer!");
+//        }        
     }
     
     
@@ -630,7 +657,7 @@ public class CodeReorganizer implements MDLWorker {
     // Conditions for the merge:
     // - the two blocks start with a label.
     // - they do not contain any other label than the first.
-    // - one of them (to be removed) only has incoming edges via jumps (absolute jumps for now, to prevent breaking relative ones)
+    // - one of them (to be removed) only has incoming edges via unconditional jumps
     // - they only contain the label, ops or empty statements.    
     private void mergeBlocks(CodeBlock subarea, CodeBase code, OptimizationResult savings)
     {
@@ -658,7 +685,8 @@ public class CodeReorganizer implements MDLWorker {
 
             if (block1CanBeDeleted) {
                 for(BlockFlowEdge e:block1.incoming) {
-                    if (e.type != BlockFlowEdge.TYPE_UNCONDITIONAL_JP) {
+                    if (e.type != BlockFlowEdge.TYPE_UNCONDITIONAL_JP &&
+                        e.type != BlockFlowEdge.TYPE_UNCONDITIONAL_JR) {
                         block1CanBeDeleted = false;
                         break;
                     }
@@ -693,7 +721,8 @@ public class CodeReorganizer implements MDLWorker {
                 CodeBlock todelete = null;
                 if (block2CanBeDeleted) {
                     for(BlockFlowEdge e:block2.incoming) {
-                        if (e.type != BlockFlowEdge.TYPE_UNCONDITIONAL_JP) {
+                        if (e.type != BlockFlowEdge.TYPE_UNCONDITIONAL_JP &&
+                            e.type != BlockFlowEdge.TYPE_UNCONDITIONAL_JR) {
                             block2CanBeDeleted = false;
                             break;
                         }
@@ -730,13 +759,42 @@ public class CodeReorganizer implements MDLWorker {
                 
                 if (!match) continue;
                 
-                // Match, one can be deleted!
+                // Match, one can be deleted! We will create an "undo record" just in case
+                // we break any relative jumps:
+                int undoSubBlockIdx = -1;
+                List<Pair<CodeStatement, Integer>> undoTrailSubarea = new ArrayList<>();
+                List<Pair<CodeStatement, Pair<SourceFile, Integer>>> undoTrail = new ArrayList<>();
+                
                 for(CodeStatement s:todelete.statements) {
-                    subarea.statements.remove(s);
-                    s.source.getStatements().remove(s);
+                    int idx = s.source.getStatements().indexOf(s);
+                    if (idx >= 0) {
+                        undoTrail.add(0,Pair.of(s, Pair.of(s.source, idx)));
+                        s.source.getStatements().remove(idx);                        
+                    }
+                    idx = subarea.statements.indexOf(s);     
+                    if (idx >= 0) {
+                        undoTrailSubarea.add(0,Pair.of(s, idx));
+                        subarea.statements.remove(idx);
+                    }
                 }
-                subarea.subBlocks.remove(todelete);
+                undoSubBlockIdx = subarea.subBlocks.indexOf(todelete);
+                if (undoSubBlockIdx >= 0) {
+                    subarea.subBlocks.remove(undoSubBlockIdx);
+                }
                 if (todelete == block1) {
+                    code.resetAddresses();
+                    if (!code.checkLocalLabelsInRange()) {
+                        config.debug("Undoing merge (case 1)!");
+                        
+                        for(Pair<CodeStatement, Integer> tmp:undoTrailSubarea) {
+                            subarea.statements.add(tmp.getRight(), tmp.getLeft());
+                        }
+                        for(Pair<CodeStatement, Pair<SourceFile, Integer>> tmp:undoTrail) {
+                            SourceFile f = tmp.getRight().getLeft();
+                            int idx = tmp.getRight().getRight();
+                            f.getStatements().add(idx, tmp.getLeft());
+                        }
+                    }
                     break;
                 } else {
                     j--;
@@ -747,24 +805,48 @@ public class CodeReorganizer implements MDLWorker {
                 subarea.statements.add(insertionPoint2, todelete.label.definingStatement);
                 int insertionPoint3 = tokeep.label.definingStatement.source.getStatements().indexOf(tokeep.label.definingStatement);
                 tokeep.label.definingStatement.source.getStatements().add(insertionPoint3, todelete.label.definingStatement);
+
+                SourceFile undoTodeleteLabelSource = todelete.label.definingStatement.source;
                 todelete.label.definingStatement.source = tokeep.label.definingStatement.source;
                 
-                // print optimization message:
-                int bytesSaved = 0;
-                int timeSaved = 0;
-                for(CodeStatement s:todelete.statements) {
-                    bytesSaved += s.sizeInBytes(code, false, true, false);
-                }
-                
-                savings.addSavings(bytesSaved, new int[]{timeSaved});
-                savings.addOptimizerSpecific(SAVINGS_REORGANIZATIONS_CODE, 1);
-
-                config.info("Reorganization optimization",
-                        todelete.label.definingStatement.sl.fileNameLineString(), 
-                        "detected this code is identical to that in " + tokeep.label.definingStatement.sl.fileNameLineString() + 
-                        " delete lines " + todelete.statements.get(0).sl.fileNameLineString() + " - " + todelete.statements.get(todelete.statements.size()-1).sl.lineNumber + 
-                        " and move label '"+todelete.label.name+"' right after '"+tokeep.label.name+"' ("+bytesSaved+" bytes, " + timeSaved + " " + config.timeUnit+"s saved)");
+                // Check if we have broken any relative jumps and in that case, undo:
                 code.resetAddresses();
+                if (!code.checkLocalLabelsInRange()) {
+                    config.debug("Undoing merge (case 2)!");
+                    // undo!
+                    todelete.label.definingStatement.source = undoTodeleteLabelSource;
+                    tokeep.label.definingStatement.source.getStatements().remove(todelete.label.definingStatement);
+                    subarea.statements.remove(todelete.label.definingStatement);            
+                    tokeep.statements.remove(todelete.label.definingStatement);
+                    subarea.subBlocks.add(undoSubBlockIdx, todelete);
+                    
+                    for(Pair<CodeStatement, Integer> tmp:undoTrailSubarea) {
+                        subarea.statements.add(tmp.getRight(), tmp.getLeft());
+                    }
+                    for(Pair<CodeStatement, Pair<SourceFile, Integer>> tmp:undoTrail) {
+                        SourceFile f = tmp.getRight().getLeft();
+                        int idx = tmp.getRight().getRight();
+                        f.getStatements().add(idx, tmp.getLeft());
+                    }
+                    j++;
+                } else {
+                    // print optimization message:
+                    int bytesSaved = 0;
+                    int timeSaved = 0;
+                    for(CodeStatement s:todelete.statements) {
+                        bytesSaved += s.sizeInBytes(code, false, true, false);
+                    }
+
+                    savings.addSavings(bytesSaved, new int[]{timeSaved});
+                    savings.addOptimizerSpecific(SAVINGS_REORGANIZATIONS_CODE, 1);
+
+                    config.info("Reorganization optimization",
+                            todelete.label.definingStatement.sl.fileNameLineString(), 
+                            "detected this code is identical to that in " + tokeep.label.definingStatement.sl.fileNameLineString() + 
+                            " delete lines " + todelete.statements.get(0).sl.fileNameLineString() + " - " + todelete.statements.get(todelete.statements.size()-1).sl.lineNumber + 
+                            " and move label '"+todelete.label.name+"' right after '"+tokeep.label.name+"' ("+bytesSaved+" bytes, " + timeSaved + " " + config.timeUnit+"s saved)");
+                    code.resetAddresses();
+                }
             }
         }
     }

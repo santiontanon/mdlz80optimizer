@@ -61,6 +61,7 @@ public class GlassDialect implements Dialect {
         config = a_config;
         
         config.considerLinesEndingInCommaAsUnfinished = true;
+        config.useOriginalLabelNamesOnDialectAsm = false;
 
         config.eagerMacroEvaluation = false;  // Glass expects lazy evaluation of macros
         
@@ -475,20 +476,22 @@ public class GlassDialect implements Dialect {
             // Add all the new symbols to the source:
             for(CodeStatement s:f.getStatements()) {
                 if (s.label != null &&
-                    !s.label.name.startsWith(config.preProcessor.unnamedMacroPrefix)) {
+                    !s.label.name.startsWith(config.preProcessor.unnamedMacroPrefix)) {                    
+                    // Check if the macro was fully assembled:
                     Object value = s.label.getValue(code, true);
                     if (value != null && value instanceof Integer) {
                         CodeStatement label_s = new CodeStatement(CodeStatement.STATEMENT_CONSTANT, macro.definingStatement.sl, macro.definingStatement.source, config);
                         label_s.label = s.label;
                         label_s.label.exp = Expression.constantExpression((Integer)value, config);
                         SourceFile label_f = macro.definingStatement.source;
-                        label_f.addStatement(0, label_s);
+                        label_f.addStatement(0, label_s);                        
                     }
                 }
             }                        
         } else {
             config.debug("Glass: failed to assemble macro " + macro.name);
         }
+        
 
         return true;
     }    

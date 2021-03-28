@@ -32,22 +32,39 @@ public class GlassTest {
     }
 
     @Test public void test1() throws IOException { Assert.assertTrue(test("data/generationtests/glass-irp.asm",
-                                                                          "data/generationtests/glass-irp-expected.asm")); }
+                                                                          "data/generationtests/glass-irp-expected.asm", null)); }
     @Test public void test2() throws IOException { Assert.assertTrue(test("data/generationtests/glass-proc.asm",
-                                                                          "data/generationtests/glass-proc-expected.asm")); }
+                                                                          "data/generationtests/glass-proc-expected.asm", null)); }
     @Test public void test3() throws IOException { Assert.assertTrue(test("data/generationtests/glass-macroproc.asm",
-                                                                          "data/generationtests/glass-macroproc-expected.asm")); }
+                                                                          "data/generationtests/glass-macroproc-expected.asm",
+                                                                          "data/generationtests/glass-macroproc-dialect-expected.asm")); }
 
-    private boolean test(String inputFile, String expectedOutputFile) throws IOException
+    private boolean test(String inputFile, String expectedOutputFile, String expectedDialectOutputFile) throws IOException
     {
         Assert.assertTrue(config.parseArgs(inputFile,"-dialect","glass"));
         Assert.assertTrue(
                 "Could not parse file " + inputFile,
                 config.codeBaseParser.parseMainSourceFile(config.inputFile, code));
 
+        // Compare standard assembler generation:
         SourceCodeGenerator scg = new SourceCodeGenerator(config);
-
         String result = scg.outputFileString(code.outputs.get(0), code);
+        if (!compareOutputs(result, expectedOutputFile)) return false;
+
+        // Compare dialect assembler generation:
+        if (expectedDialectOutputFile != null) {
+            SourceCodeGenerator scg_dialect = new SourceCodeGenerator(config);
+            scg_dialect.mimicTargetDialect = true;
+            String resultDialect = scg_dialect.outputFileString(code.outputs.get(0), code);
+            if (!compareOutputs(resultDialect, expectedDialectOutputFile)) return false;
+        }
+        
+        return true;
+    }    
+    
+    
+    private boolean compareOutputs(String result, String expectedOutputFile) throws IOException
+    {
         List<String> lines = new ArrayList<>();
         StringTokenizer st = new StringTokenizer(result, "\n");
         while(st.hasMoreTokens()) {
@@ -59,7 +76,10 @@ public class GlassTest {
         while(true) {
             String line = br.readLine();
             if (line == null) break;
-            expectedLines.add(line.trim());
+            line = line.trim();
+            if (line.length() > 0) {
+                expectedLines.add(line);
+            }
         }
         System.out.println("\n--------------------------------------");
         System.out.println(result);
@@ -75,5 +95,5 @@ public class GlassTest {
         }
         
         return true;
-    }    
+    }      
 }
