@@ -12,6 +12,7 @@ import code.CodeBase;
 import code.Expression;
 import code.SourceFile;
 import code.CodeStatement;
+import java.util.HashMap;
 import parser.SourceLine;
 
 /**
@@ -50,6 +51,37 @@ public class CPUOpPattern {
         return opName.equals(WILDCARD);
     }
     
+    
+    public Expression instantiateExpression(Expression exp, HashMap<String, Expression> variables)
+    {
+        if (exp.type == Expression.EXPRESSION_SYMBOL) {
+            if (variables.containsKey(exp.symbolName)) {
+                return variables.get(exp.symbolName).clone();
+            } else {
+                return exp;
+            }
+        } else if (exp.args != null) {
+            List<Expression> newArgs = new ArrayList<>();
+            boolean replacement = false;
+            for(Expression arg:exp.args) {
+                Expression newArg = instantiateExpression(arg, variables);
+                if (newArg != arg) {
+                    replacement = true;
+                }
+                newArgs.add(newArg);
+            }
+            if (replacement) {
+                exp = exp.clone();
+                exp.args = newArgs;
+                return exp;
+            } else {
+                return exp;
+            }
+        } else {
+            return exp;        
+        }
+    }
+    
 
     public CPUOp instantiate(PatternMatch match, Pattern pattern, MDLConfig config)
     {
@@ -59,20 +91,8 @@ public class CPUOpPattern {
         CodeStatement s = new CodeStatement(CodeStatement.STATEMENT_CPUOP, new SourceLine("", f, 0), f, config);
         List<Expression> instantiatedArgs = new ArrayList<>();
         for(Expression arg:args) {
-            String originalArgStr = arg.toString();
-            String argStr = originalArgStr;
-            for(String variable:match.variables.keySet()) {
-                argStr = argStr.replace(variable, match.variables.get(variable).toString());
-            }
-            Expression exp = config.expressionParser.parse(config.tokenizer.tokenize(argStr), null, null, code);
-            if (exp == null) {
-                config.error("Cannot parse argument '" + argStr + "' when instantiating pattern " + pattern.message);
-                return null;
-            }
-            // When expressions had variables, simplify them if possible, to
-            // minimize problems with some assemblers that do not like complex
-            // expressions in arguments:
-            if (!originalArgStr.equals(argStr)) {
+            Expression exp = instantiateExpression(arg, match.variables);
+            if (exp != arg) {
                 if (exp.type != Expression.EXPRESSION_INTEGER_CONSTANT && 
                     exp.evaluatesToIntegerConstant()) {
                     Integer value = exp.evaluateToInteger(s, code, true);

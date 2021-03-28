@@ -727,11 +727,6 @@ public class Expression {
                     if (insideQuotes) tmp += "\"";
                     return tmp;
                 } else {
-//                    String tmp = stringConstant.replace("\n", "\\n");
-//                    tmp = tmp.replace("\\", "\\\\");
-//                    tmp = tmp.replace("\r", "\\r");
-//                    tmp = tmp.replace("\t", "\\t");
-//                    tmp = tmp.replace("\"", "\\\"");
                     return "\"" + stringConstant + "\"";                    
                 }
             }

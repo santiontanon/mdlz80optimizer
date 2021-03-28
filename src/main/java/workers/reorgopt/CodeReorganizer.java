@@ -878,6 +878,7 @@ public class CodeReorganizer implements MDLWorker {
                 }
                 if (label != null) {
                     boolean found = false;
+                    String previousLabel = null;
                     CodeStatement s2 = s;
                     while(s2 != null) {
                         if (s2.label != null && s2.label.relativeTo == null) {
@@ -885,13 +886,14 @@ public class CodeReorganizer implements MDLWorker {
                             if (label.relativeTo == s2.label) {
                                 found = true;
                             }
+                            previousLabel = s2.label.name;
                             break;
                         }
                         s2 = s2.source.getPreviousStatementTo(s2, code);
                     }
                     if (!found) {
                         // we found a local label out of context!
-                        config.debug("CodeReorganizer: local label out of context! " + label.originalName + " should in the context of " + label.relativeTo.originalName + " but isn't!");
+                        config.debug("CodeReorganizer: local label out of context! " + label.originalName + " should in the context of " + label.relativeTo.originalName + " but isn't (previous absolute label was: "+previousLabel+")!");
 
                         // turn the local label into an absolute label:
                         label.relativeTo = null;

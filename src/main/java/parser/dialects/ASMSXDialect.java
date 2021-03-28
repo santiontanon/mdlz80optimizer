@@ -36,6 +36,7 @@ public class ASMSXDialect implements Dialect {
     public static final String PHASE_PRE_LABEL_PREFIX = "__asmsx_phase_pre_";
     public static final String PHASE_POST_LABEL_PREFIX = "__asmsx_phase_post_";
     public static final String DEPHASE_LABEL_PREFIX = "__asmsx_dephase_";
+    public static final String BASIC_END_ADDRESS_LABEL = "__asmsx_basic_end_address";
 
     public static class PrintRecord {
         String keyword;
@@ -1109,12 +1110,27 @@ public class ASMSXDialect implements Dialect {
             } else if (basicHeaderStatement != null) {
                 // set the end address:
                 if (lastGeneratingBytes != null) {
-                    int end_address = lastGeneratingBytes.getAddress(code) + lastGeneratingBytes.sizeInBytes(code, false, true, false);
+//                    int end_address = lastGeneratingBytes.getAddress(code) + lastGeneratingBytes.sizeInBytes(code, false, true, false);
+                    CodeStatement endAddressStatement = new CodeStatement(CodeStatement.STATEMENT_NONE, null, lastGeneratingBytes.source, config);
+                    endAddressStatement.label = new SourceConstant(BASIC_END_ADDRESS_LABEL, BASIC_END_ADDRESS_LABEL,
+                                         Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, endAddressStatement, code, config),
+                                         endAddressStatement, config);
+                    code.addSymbol(BASIC_END_ADDRESS_LABEL, endAddressStatement.label);
+                    lastGeneratingBytes.source.addStatement(lastGeneratingBytes.source.getStatements().indexOf(lastGeneratingBytes)+1, endAddressStatement);
+                    auxiliaryStatementsToRemoveIfGeneratingDialectasm.add(endAddressStatement);
                     basicHeaderStatement.data.set(3,Expression.operatorExpression(Expression.EXPRESSION_MOD, 
-                            Expression.constantExpression(end_address-1, Expression.RENDER_AS_16BITHEX, config), 
+                            Expression.parenthesisExpression(
+                                Expression.operatorExpression(Expression.EXPRESSION_SUB, 
+                                        Expression.symbolExpression(BASIC_END_ADDRESS_LABEL, basicHeaderStatement, code, config),
+                                        Expression.constantExpression(1, config), config),
+                                config.expressionParser.default_parenthesis, config),
                             Expression.constantExpression(256, config), config)); 
                     basicHeaderStatement.data.set(4,Expression.operatorExpression(Expression.EXPRESSION_DIV, 
-                            Expression.constantExpression(end_address-1, Expression.RENDER_AS_16BITHEX, config), 
+                            Expression.parenthesisExpression(
+                                Expression.operatorExpression(Expression.EXPRESSION_SUB, 
+                                        Expression.symbolExpression(BASIC_END_ADDRESS_LABEL, basicHeaderStatement, code, config),
+                                        Expression.constantExpression(1, config), config),
+                                config.expressionParser.default_parenthesis, config),
                             Expression.constantExpression(256, config), config)); 
                 }
             } 
@@ -1157,8 +1173,7 @@ public class ASMSXDialect implements Dialect {
         }
         
         // set this back to normal setting, so the optimizer patterns are properly parsed:
-        config.opParser.indirectionsOnlyWithSquareBrackets = false;
-        
+        config.opParser.indirectionsOnlyWithSquareBrackets = false;        
         return true;
     }
 
