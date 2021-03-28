@@ -62,6 +62,8 @@ public class MDLConfig {
                                                  // of time.
     public boolean considerLinesEndingInCommaAsUnfinished = false;
     public boolean useOriginalLabelNamesOnDialectAsm = true;
+    public boolean relativizeIncbinPaths = true;
+    public boolean useSingleQotesForsingleCharStrings = false;
     
     public List<String> ignorePatternsWithTags = new ArrayList<>();
     

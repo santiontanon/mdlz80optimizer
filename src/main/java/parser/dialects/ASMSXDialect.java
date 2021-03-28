@@ -90,6 +90,8 @@ public class ASMSXDialect implements Dialect {
         
         config.output_equsWithoutColon = true;
         config.output_replaceLabelDotsByUnderscores = true;
+        config.relativizeIncbinPaths = false;
+        config.useSingleQotesForsingleCharStrings = true;
 
         config.lineParser.addKeywordSynonym(".org", config.lineParser.KEYWORD_ORG);
         config.lineParser.addKeywordSynonym(".include", config.lineParser.KEYWORD_INCLUDE);
@@ -1206,7 +1208,74 @@ public class ASMSXDialect implements Dialect {
                 config.output_indirectionsWithSquareBrakets = tmp;
                 return str;
             }
-            
+            case CodeStatement.STATEMENT_DATA_BYTES:
+            {
+                String str = s.toStringLabel(useOriginalNames, false);
+                str += "    "+config.lineParser.KEYWORD_STD_DB+" ";
+                for(int i = 0;i<s.data.size();i++) {
+                    str += s.data.get(i).toStringInternal(false, useOriginalNames, true, code);
+                    if (i != s.data.size()-1) {
+                        str += ", ";
+                    }
+                }
+                return str;
+            }
+            case CodeStatement.STATEMENT_DATA_WORDS:
+            {
+                String str = s.toStringLabel(useOriginalNames, false);
+                str += "    "+config.lineParser.KEYWORD_STD_DW+" ";
+                for(int i = 0;i<s.data.size();i++) {
+                    str += s.data.get(i).toStringInternal(false, useOriginalNames, true, code);
+                    if (i != s.data.size()-1) {
+                        str += ", ";
+                    }
+                }
+                return str;
+            }
+            case CodeStatement.STATEMENT_DATA_DOUBLE_WORDS:
+            {
+                String str = s.toStringLabel(useOriginalNames, false);
+                for(int i = 0;i<s.data.size();i++) {
+                    str += s.data.get(i).toStringInternal(false, useOriginalNames, true, code);
+                    if (i != s.data.size()-1) {
+                        str += ", ";
+                    }
+                }
+                return str;
+            }
+            case CodeStatement.STATEMENT_DEFINE_SPACE:
+            {
+                String str = s.toStringLabel(useOriginalNames, false);
+                if (s.space_value == null) {
+                    if (config.output_allowDSVirtual) {
+                        str += "    "+config.lineParser.KEYWORD_STD_DS+" virtual " + s.space.toStringInternal(false, useOriginalNames, true, code);
+                    } else {
+                        str += "\n    "+config.lineParser.KEYWORD_STD_ORG+" $ + " + s.space.toStringInternal(false, useOriginalNames, true, code);
+                    }
+                } else {
+                    if (config.output_replaceDsByData) {
+                        int break_each = 16;
+                        int space_as_int = s.space.evaluateToInteger(s, code, true);
+                        String space_str = s.space_value.toStringInternal(false, useOriginalNames, true, code);
+                        str += "    "+config.lineParser.KEYWORD_STD_DB+" ";
+                        {
+                            for(int i = 0;i<space_as_int;i++) {
+                                str += space_str;
+                                if (i != space_as_int-1) {
+                                    if (((i+1)%break_each) == 0) {
+                                        str += "\n    "+config.lineParser.KEYWORD_STD_DB+" ";
+                                    } else {
+                                        str += ", ";
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        str += "    "+config.lineParser.KEYWORD_STD_DS+" " + s.space + ", " + s.space_value;
+                    }
+                }
+                return str;
+            }
             default:
                 return s.toStringUsingRootPath(rootPath, useOriginalNames, true, code);
         }

@@ -356,7 +356,7 @@ public class CodeStatement {
             case STATEMENT_INCBIN:
             {
                 String path = incbinOriginalStr;
-                if (rootPath != null) {
+                if (rootPath != null && config.relativizeIncbinPaths) {
                     path = rootPath.toAbsolutePath().normalize().relativize(incbin.toPath().toAbsolutePath().normalize()).toString();                    
                 }
                 // Make sure we don't have a windows/Unix path separator problem:

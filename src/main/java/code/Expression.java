@@ -702,6 +702,10 @@ public class Expression {
                 return "" + doubleConstant;
             case EXPRESSION_STRING_CONSTANT:
             {
+                char quoteChar = '\"';
+                // We switch to ' in strings of length one, since some assemblers do not
+                // like expressions like: 1 + "A"
+                if (config.useSingleQotesForsingleCharStrings && stringConstant.length() == 1) quoteChar = '\'';
                 if (splitSpecialCharactersInStrings) {
                     String tmp = "";
                     boolean first = true;
@@ -710,7 +714,7 @@ public class Expression {
                         int c = stringConstant.charAt(i);
                         if (c<32 || c=='\\' || c=='\"') {
                             if (insideQuotes) {
-                                tmp += "\"";
+                                tmp += quoteChar;
                                 insideQuotes = false;
                             }
                             tmp += (first ? "":", ") + c;
@@ -724,10 +728,10 @@ public class Expression {
                         }
                         first = false;
                     }
-                    if (insideQuotes) tmp += "\"";
+                    if (insideQuotes) tmp += quoteChar;
                     return tmp;
                 } else {
-                    return "\"" + stringConstant + "\"";                    
+                    return quoteChar + stringConstant + quoteChar;
                 }
             }
             case EXPRESSION_SYMBOL:
