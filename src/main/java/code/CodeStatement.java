@@ -563,6 +563,23 @@ public class CodeStatement {
     }
     
     
+    public List<Expression> getAllExpressions()
+    {
+        List<Expression> l = new ArrayList<>();
+        
+        if (org != null) l.add(org);
+        if (incbinSize != null) l.add(incbinSize);
+        if (incbinSkip != null) l.add(incbinSkip);
+        if (space != null) l.add(space);
+        if (space_value != null) l.add(space_value);
+        if (data != null) l.addAll(data);
+        if (op != null) l.addAll(op.args);
+        if (macroCallArguments != null) l.addAll(macroCallArguments);
+        
+        return l;
+    }
+    
+    
     // Each MDLConfig encapsulates a given dialect. Since the optimization patterns are
     // written in some default dialect, we might neeed to switch the config from one to
     // the other at some point:

@@ -854,53 +854,99 @@ public class CodeReorganizer implements MDLWorker {
     
     private void fixLocalLabels(CodeBlock subarea, CodeBase code)
     {
-        // check if any local labels or "jumps to a local label" have been moved
-        // out of their contexts, and fix them:
-        boolean repeat = true;
-        while(repeat) {
-            repeat = false;
-            for(int i = 0;i<subarea.statements.size();i++) {
-                CodeStatement s = subarea.statements.get(i);
-                SourceConstant label = null;
-                if (s.label != null && s.label.relativeTo != null) {
-                    // relative label!
-                    label = s.label;
-                } else if (s.op != null && s.op.isJump()) {
-                    Expression labelExp = s.op.getTargetJumpExpression();
-                    if (labelExp.type == Expression.EXPRESSION_SYMBOL) {
-                        String name = labelExp.symbolName;
-                        SourceConstant sc = code.getSymbol(name);
-                        if (sc != null && sc.relativeTo != null) {
-                            // jumping to a relative label!
-                            label = sc;
+        // We also need to check statements after the subarea, whch might
+        // contain local labels relative  to a label in this subarea:
+        List<CodeStatement> additional = new ArrayList<>();
+        if (!subarea.statements.isEmpty()) {
+            boolean anyLocal = false;
+            CodeStatement s = subarea.statements.get(subarea.statements.size()-1);
+            s = s.source.getNextStatementTo(s, code);
+            while(s != null) {
+                if (s.label != null) {
+                    if (s.label.relativeTo == null) {
+                        // absolute label, we are done
+                        break;
+                    } else {
+                        // local label!
+                        anyLocal = true;
+                    }
+                }
+                if (!anyLocal) {
+                    List<Expression> exps = s.getAllExpressions();
+                    for(Expression exp:exps) {
+                        List<String> symbols = exp.getAllSymbols();
+                        for(String symbol:symbols) {
+                            SourceConstant sc = code.getSymbol(symbol);
+                            if (sc != null && sc.relativeTo != null) {
+                                anyLocal = true;
+                            }
                         }
                     }
                 }
-                if (label != null) {
-                    boolean found = false;
-                    String previousLabel = null;
-                    CodeStatement s2 = s;
-                    while(s2 != null) {
-                        if (s2.label != null && s2.label.relativeTo == null) {
-                            // absolute label:
-                            if (label.relativeTo == s2.label) {
-                                found = true;
+                additional.add(s);
+                s = s.source.getNextStatementTo(s, code);
+            }
+            if (!anyLocal) additional.clear();
+        }
+        
+        // check if any local labels or "jumps to a local label" have been moved
+        // out of their contexts, and fix them:
+        List<SourceConstant> localLabels = new ArrayList<>();
+        boolean repeat = true;
+        while(repeat) {
+            repeat = false;
+            for(int i = 0;i<subarea.statements.size() + additional.size();i++) {
+                CodeStatement s;
+                if (i < subarea.statements.size()) {
+                     s = subarea.statements.get(i);
+                } else {
+                    s = additional.get(i - subarea.statements.size());
+                }
+                localLabels.clear();
+                if (s.label != null && s.label.relativeTo != null) {
+                    // relative label!
+                    localLabels.add(s.label);
+                } else {
+                    List<Expression> exps = s.getAllExpressions();
+                    for(Expression exp:exps) {
+                        List<String> symbols = exp.getAllSymbols();
+                        for(String symbol:symbols) {
+                            SourceConstant sc = code.getSymbol(symbol);
+                            if (sc != null && sc.relativeTo != null) {
+                                // jumping to a relative label!
+                                localLabels.add(sc);
                             }
-                            previousLabel = s2.label.name;
-                            break;
                         }
-                        s2 = s2.source.getPreviousStatementTo(s2, code);
                     }
-                    if (!found) {
-                        // we found a local label out of context!
-                        config.debug("CodeReorganizer: local label out of context! " + label.originalName + " should in the context of " + label.relativeTo.originalName + " but isn't (previous absolute label was: "+previousLabel+")!");
+                }
+                for(SourceConstant label:localLabels) {
+                    if (label != null) {
+                        boolean found = false;
+                        String previousLabel = null;
+                        CodeStatement s2 = s;
+                        while(s2 != null) {
+                            if (s2.label != null && s2.label.relativeTo == null) {
+                                // absolute label:
+                                if (label.relativeTo == s2.label) {
+                                    found = true;
+                                }
+                                previousLabel = s2.label.name;
+                                break;
+                            }
+                            s2 = s2.source.getPreviousStatementTo(s2, code);
+                        }
+                        if (!found) {
+                            // we found a local label out of context!
+                            config.debug("CodeReorganizer: local label out of context! " + label.originalName + " should in the context of " + label.relativeTo.originalName + " but isn't (previous absolute label was: "+previousLabel+")!");
 
-                        // turn the local label into an absolute label:
-                        label.relativeTo = null;
-                        label.originalName = label.name;
+                            // turn the local label into an absolute label:
+                            label.relativeTo = null;
+                            label.originalName = label.name;
 
-                        // reset the loop:
-                        repeat = true;
+                            // reset the loop:
+                            repeat = true;
+                            break;  // only change one at a time
+                        }
                     }
                 }
             }

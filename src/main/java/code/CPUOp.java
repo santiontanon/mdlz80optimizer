@@ -56,6 +56,18 @@ public class CPUOp {
     {
         return toStringInternal(false, false, null);
     }
+    
+    
+    String argString(Expression arg, boolean useOriginalNames, boolean mimicTargetDialect, CodeBase code)
+    {
+        String argStr = arg.toStringInternal(false, useOriginalNames, mimicTargetDialect, code);
+        if (config.fix_tniasm_parenthesisExpressionBug && 
+            argStr.startsWith("(") &&
+            arg.type != Expression.EXPRESSION_PARENTHESIS) {
+            return "0 + (" + argStr + ")";
+        }
+        return argStr;
+    }
 
 
     public String toStringInternal(boolean useOriginalNames, boolean mimicTargetDialect, CodeBase code)
@@ -77,12 +89,12 @@ public class CPUOp {
                  spec.args.get(i).wordConstantIndirectionAllowed)) {
                 if (args.get(i).type == Expression.EXPRESSION_PARENTHESIS &&
                     args.get(i).args.size()==1) {
-                    str += "["+args.get(i).args.get(0).toStringInternal(false, useOriginalNames, mimicTargetDialect, code)+"]";
+                    str += "["+argString(args.get(i).args.get(0), useOriginalNames, mimicTargetDialect, code)+"]";
                 } else {
-                    str += args.get(i).toStringInternal(false, useOriginalNames, mimicTargetDialect, code);
+                    str += argString(args.get(i), useOriginalNames, mimicTargetDialect, code);
                 }
             } else {
-                str += args.get(i).toStringInternal(false, useOriginalNames, mimicTargetDialect, code);
+                str += argString(args.get(i), useOriginalNames, mimicTargetDialect, code);
             }
         }
 

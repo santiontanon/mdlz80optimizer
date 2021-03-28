@@ -32,7 +32,12 @@ public class TniAsmDialect implements Dialect {
 
         config = a_config;
         
+        if (!config.hexStyleChanged) {
+            config.hexStyle = MDLConfig.HEX_STYLE_0X;
+        }
+        
         config.warning_jpHlWithParenthesis = false;  // I don't think tniasm supports "jp hl"
+        config.fix_tniasm_parenthesisExpressionBug = true;
 
         config.preProcessor.macroSynonyms.put("ifexist", config.preProcessor.MACRO_IFDEF);
 

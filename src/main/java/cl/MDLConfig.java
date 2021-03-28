@@ -64,6 +64,13 @@ public class MDLConfig {
     public boolean useOriginalLabelNamesOnDialectAsm = true;
     public boolean relativizeIncbinPaths = true;
     public boolean useSingleQotesForsingleCharStrings = false;
+    public boolean fix_tniasm_parenthesisExpressionBug = false;  // tniasm has a curious bug, when a line looks like this:
+                                                                 //   ld hl, (1+2) + 3
+                                                                 // since the expression starts with a "(", it believes it
+                                                                 // is an indirection and cannot parse the expression (due
+                                                                 // to the extra "+ 3". To fix it, when an expression
+                                                                 // happens to start with a parenthesis, but it's not an 
+                                                                 // indirection, we just do: 0 + (<exp>), which fixes the issue.
     
     public List<String> ignorePatternsWithTags = new ArrayList<>();
     
