@@ -491,7 +491,7 @@ public class LineParser {
             List<CodeStatement> l, 
             SourceLine sl, CodeStatement s, CodeStatement previous, 
             SourceFile source, CodeBase code) {
-        if (s.comment == null) s.comment = "";
+        if (s.comment == null) s.comment = "; ";
         while(!tokens.isEmpty()) {
             if (config.tokenizer.isMultiLineCommentEnd(tokens.get(0))) {
                 tokens.remove(0);
