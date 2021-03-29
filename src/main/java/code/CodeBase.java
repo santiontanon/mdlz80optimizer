@@ -252,4 +252,57 @@ public class CodeBase {
         
         return true;
     }    
+    
+    
+    // If a local label has gotten out of the scope of its associated absolute label,
+    // it must be turned into an absolute label:
+    // Returns true if any label was fixed (only fixes one at a time):
+    public boolean fixLocalLabels(CodeStatement s)
+    {
+        List<SourceConstant> localLabels = new ArrayList<>();
+        if (s.label != null && s.label.relativeTo != null) {
+            // relative label!
+            localLabels.add(s.label);
+        } else {
+            List<Expression> exps = s.getAllExpressions();
+            for(Expression exp:exps) {
+                for(String symbol:exp.getAllSymbols()) {
+                    SourceConstant sc = this.getSymbol(symbol);
+                    if (sc != null && sc.relativeTo != null) {
+                        // jumping to a relative label!
+                        localLabels.add(sc);
+                    }
+                }
+            }
+        }
+        for(SourceConstant label:localLabels) {
+            if (label != null) {
+                boolean found = false;
+                String previousLabel = null;
+                CodeStatement s2 = s;
+                while(s2 != null) {
+                    if (s2.label != null && s2.label.relativeTo == null) {
+                        // absolute label:
+                        if (label.relativeTo == s2.label) {
+                            found = true;
+                        }
+                        previousLabel = s2.label.name;
+                        break;
+                    }
+                    s2 = s2.source.getPreviousStatementTo(s2, this);
+                }
+                if (!found) {
+                    // we found a local label out of context!
+                    config.debug("CodeReorganizer: local label out of context! " + label.originalName + " should in the context of " + label.relativeTo.originalName + " but isn't (previous absolute label was: "+previousLabel+")!");
+
+                    // turn the local label into an absolute label:
+                    label.relativeTo = null;
+                    label.originalName = label.name;
+
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 }

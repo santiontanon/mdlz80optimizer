@@ -1073,7 +1073,11 @@ public class Expression {
                 }
             case EXPRESSION_DIALECT_FUNCTION:
             {
-                String str = dialectFunction + "(";
+                boolean parentheses = true;
+                if (config.expressionParser.dialectFunctionsSingleArgumentNoParenthesisPrecedence.containsKey(dialectFunction)) {
+                    parentheses = false;
+                }
+                String str = dialectFunction + (parentheses ? "(":" ");
                 for(int i = 0;i<args.size();i++) {
                     if (i == 0) {
                         str += args.get(i).toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, code);
@@ -1081,7 +1085,7 @@ public class Expression {
                         str += ", " + args.get(i).toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, code);
                     }
                 }
-                return str += ")";
+                return str += (parentheses ? ")":"");
             }
             case EXPRESSION_PLUS_SIGN:
             {

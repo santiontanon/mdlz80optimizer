@@ -61,7 +61,6 @@ public abstract class SjasmDerivativeDialect implements Dialect {
     
     private SourceConstant getLastAbsoluteLabel(CodeStatement s) 
     {
-        
         while(s != null) {
             // sjasm considers any label as an absolute label, even if it's associated with an equ,
             // so, no need to check if s.label.isLabel() (as in asMSX):
@@ -120,6 +119,8 @@ public abstract class SjasmDerivativeDialect implements Dialect {
                     if (s2.label != null) {
                         struct.rawAttributeNames.add(s2.label.originalName);
                         struct.attributeNames.add(s2.label.name);
+                        // update the original name of the struct field:
+                        s2.label.originalName = s2.label.name;
                     } else {
                         struct.rawAttributeNames.add(null);
                         struct.attributeNames.add(null);
@@ -139,6 +140,8 @@ public abstract class SjasmDerivativeDialect implements Dialect {
                     if (s2.label != null) {
                         struct.rawAttributeNames.add(s2.label.originalName);
                         struct.attributeNames.add(s2.label.name);
+                        // update the original name of the struct field:
+                        s2.label.originalName = s2.label.name;
                     } else {
                         struct.rawAttributeNames.add(null);
                         struct.attributeNames.add(null);

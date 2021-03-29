@@ -85,7 +85,9 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
         }
         
         
-        public boolean addBlock(SJasmCodeBlock block, CodeBase code, MDLConfig config)
+        // No block can be added before a blocn in initialBlocks
+        public boolean addBlock(SJasmCodeBlock block, CodeBase code, MDLConfig config,
+                                List<SJasmCodeBlock> initialBlocks)
         {
             int spot = -1;
             int alignment = 1;
@@ -101,6 +103,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                 // check if it fits:
                 int blockAddress = block.address.evaluateToInteger(block.startStatement, code, true);
                 for(SJasmCodeBlock b2:blocks) {
+                    if (initialBlocks.contains(b2)) continue;
                     if (b2.actualAddress < blockAddress + block.size(code) &&
                         blockAddress < b2.actualAddress + b2.size(code)) {
                         // overlap!
@@ -134,7 +137,8 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                     return false;
                 }
                 
-                for(SJasmCodeBlock b2:blocks) {                    
+                for(SJasmCodeBlock b2:blocks) {  
+                    if (initialBlocks.contains(b2)) continue;
                     if (b2.actualAddress-alignedAddress >= blockSize) {
                         // found a spot!
                         spot = blocks.indexOf(b2);
@@ -521,28 +525,6 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
         // default output:
         currentOutput = new SJasmOutput("", null, null);
         outputFiles.add(currentOutput);
-//        currentCodeBlock = currentOutput.defaultBlock;
-        
-        /*
-        forbiddenLabelNames.add("struct");
-        forbiddenLabelNames.add("ends");
-        forbiddenLabelNames.add("byte");
-        forbiddenLabelNames.add("defb");
-        forbiddenLabelNames.add("word");
-        forbiddenLabelNames.add("defw");
-        forbiddenLabelNames.add("dword");
-        forbiddenLabelNames.add("map");
-        forbiddenLabelNames.add("endmap");
-        forbiddenLabelNames.add("field");
-        forbiddenLabelNames.add("assert");
-        forbiddenLabelNames.add("incdir");
-        forbiddenLabelNames.add("output");
-        forbiddenLabelNames.add("defpage");
-        forbiddenLabelNames.add("code");
-        forbiddenLabelNames.add("align");
-        forbiddenLabelNames.add("module");
-        forbiddenLabelNames.add("endmodule");
-        */
     }
         
     
@@ -701,6 +683,8 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             
             File path = new File(config.lineParser.pathConcat(source.getPath(), folder));
             config.includeDirectories.add(path);
+            
+            linesToKeepIfGeneratingDialectAsm.add(s);
             
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
@@ -1684,7 +1668,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                 boolean added = false;
                 for(Integer pageIdx:b.candidatePages) {
                     CodePage page = output.pages.get(pageIdx);
-                    if (page.addBlock(b, code, config)) {
+                    if (page.addBlock(b, code, config, initialBlocks)) {
                         // assign all the symbols in this block to this page:
                         for(CodeStatement bs:b.statements) {
                             if (bs.label != null) {
@@ -1719,7 +1703,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
         });
 
         blocksToAssign.addAll(0, initialBlocks);
-
+        
         for(SJasmCodeBlock b:blocksToAssign) {
             boolean added = false;
             for(Integer pageIdx:b.candidatePages) {
@@ -1730,7 +1714,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                                         Expression.constantExpression(0, config), null);
                     output.pages.put(0, page);
                 }
-                if (page.addBlock(b, code, config)) {
+                if (page.addBlock(b, code, config, initialBlocks)) {
                     // assign all the symbols in this block to this page:
                     for(CodeStatement bs:b.statements) {
                         if (bs.label != null) {
@@ -1838,6 +1822,14 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             }
 
             config.debug("page " + idx + " from " + pageStart + " to " + (pageStart+pageSize));
+        }
+        
+        boolean repeat = true;
+        while(repeat) {
+            repeat = false;
+            for(CodeStatement s:output.reconstructedFile.getStatements()) {
+                if (code.fixLocalLabels(s)) repeat = true;
+            }
         }
         
         code.resetAddresses();
