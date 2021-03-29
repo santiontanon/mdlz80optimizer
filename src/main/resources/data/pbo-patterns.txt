@@ -231,7 +231,7 @@ replacement:
 constraints:
 in(?op,or,and)
 in(?regpair,BC,DE)
-flagsNotUsedAfter(2,S,Z,P/V,N)
+flagsNotUsedAfter(2,S,Z,P/V,N,C)
 
 pattern: Replace neg; add a,?const1 with cpl; add a,?const1+1
 0: neg
