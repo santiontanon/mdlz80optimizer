@@ -836,8 +836,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             
             // ignore (but still add the statement, so we know where the codeblock starts)
             s.type = CodeStatement.STATEMENT_NONE;
-            
-            linesToKeepIfGeneratingDialectAsm.add(s);
+//            linesToKeepIfGeneratingDialectAsm.add(s);
             
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
@@ -1748,7 +1747,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
         Collections.sort(pageIndexes);
 
         for(int idx:pageIndexes) {
-            CodePage page = output.pages.get(idx);
+            CodePage page = output.pages.get(idx);            
             if (!output.reconstructedFile.getStatements().isEmpty() || 
                 page.start.type != Expression.EXPRESSION_INTEGER_CONSTANT ||
                 page.start.integerConstant != 0) {
@@ -1776,7 +1775,16 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             code.addSymbol(pageStartStatement.label.name, pageStartStatement.label);
             auxiliaryStatementsToRemoveIfGeneratingDialectasm.add(pageStartStatement);
 
+            boolean addedAuxiliaryCodeStatement = false;
             for(SJasmCodeBlock block:page.blocks) {
+                if (!addedAuxiliaryCodeStatement && block != output.defaultBlock) {
+                    // Create a single code block in case we generate dialect assembler:
+                    CodeStatement aux = new CodeStatement(CodeStatement.STATEMENT_NONE, 
+                            new SourceLine("    code page " + idx, output.reconstructedFile, output.reconstructedFile.getStatements().size()+1), output.reconstructedFile, config);
+                    output.reconstructedFile.addStatement(aux);
+                    linesToKeepIfGeneratingDialectAsm.add(aux);
+                    addedAuxiliaryCodeStatement = true;
+                }
                 if (block.actualAddress > currentAddress) {
                     // insert space:
                     CodeStatement space = new CodeStatement(CodeStatement.STATEMENT_DEFINE_SPACE, 
