@@ -12,6 +12,7 @@ import code.Expression;
 import code.SourceConstant;
 import code.SourceFile;
 import code.CodeStatement;
+import java.nio.file.Path;
 import java.util.HashMap;
 import org.apache.commons.lang3.tuple.Pair;
 import parser.MacroExpansion;
@@ -61,7 +62,6 @@ public class GlassDialect implements Dialect {
         config = a_config;
         
         config.considerLinesEndingInCommaAsUnfinished = true;
-        config.useOriginalLabelNamesOnDialectAsm = false;
 
         config.eagerMacroEvaluation = false;  // Glass expects lazy evaluation of macros
         
@@ -383,6 +383,13 @@ public class GlassDialect implements Dialect {
             
         return true;
     }    
+    
+    
+    @Override
+    public String statementToString(CodeStatement s, CodeBase code, Path rootPath) {
+        boolean useOriginalNames = false;
+        return s.toStringUsingRootPath(rootPath, useOriginalNames, true, code);
+    }       
     
     
     public boolean assembleMacro(SourceMacro macro, CodeBase code)

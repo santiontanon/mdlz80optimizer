@@ -875,7 +875,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                 // parse it as an "org"
                 s.type = CodeStatement.STATEMENT_NONE;
                 
-                linesToKeepIfGeneratingDialectAsm.add(s);
+//                linesToKeepIfGeneratingDialectAsm.add(s);
                 
                 return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
             } else {
@@ -982,7 +982,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             modules.add(0, moduleName);
             config.lineParser.pushLabelPrefix(moduleName + ".");
             
-            linesToKeepIfGeneratingDialectAsm.add(s);
+//            linesToKeepIfGeneratingDialectAsm.add(s);
             
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
@@ -1015,7 +1015,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                 }
             }
             
-            linesToKeepIfGeneratingDialectAsm.add(s);
+//            linesToKeepIfGeneratingDialectAsm.add(s);
             
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
@@ -1621,6 +1621,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                     if (s.label != null) {
                         CodeStatement labelS = new CodeStatement(CodeStatement.STATEMENT_NONE, s.sl, s.source, config);
                         labelS.label = s.label;
+                        labelS.label.definingStatement = labelS;
                         currentBlock.statements.add(labelS);
                     }
                     s = s.include.getStatements().get(0);
@@ -2074,7 +2075,8 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
     
     
     @Override
-    public String statementToString(CodeStatement s, CodeBase code, boolean useOriginalNames, Path rootPath) {
+    public String statementToString(CodeStatement s, CodeBase code, Path rootPath) {
+        boolean useOriginalNames = false;
         if (linesToKeepIfGeneratingDialectAsm.contains(s)) {
             return s.sl.line;
         }

@@ -61,7 +61,6 @@ public class MDLConfig {
                                                  // for the SDCC dialect, where we don't know the base address ahead
                                                  // of time.
     public boolean considerLinesEndingInCommaAsUnfinished = false;
-    public boolean useOriginalLabelNamesOnDialectAsm = true;
     public boolean relativizeIncbinPaths = true;
     public boolean useSingleQotesForsingleCharStrings = false;
     public boolean fix_tniasm_parenthesisExpressionBug = false;  // tniasm has a curious bug, when a line looks like this:

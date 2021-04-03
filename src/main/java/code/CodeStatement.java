@@ -128,7 +128,6 @@ public class CodeStatement {
     */
     public Integer getAddressInternal(CodeBase code, boolean recurse, CodeStatement previous, List<String> variableStack)
     {
-
         if (recurse) {
             if (address != null) return address;
             
@@ -383,13 +382,13 @@ public class CodeStatement {
                     config.error("Empty expression when writing an equ statement in " + sl);
                     return null;
                 }
-                str += " "+config.lineParser.KEYWORD_STD_EQU+" " + label.exp.toStringInternal(false, false, mimicTargetDialect, null);
+                str += " "+config.lineParser.KEYWORD_STD_EQU+" " + label.exp.toStringInternal(false, false, mimicTargetDialect, this, code);
                 break;
             case STATEMENT_DATA_BYTES:
                 str += "    "+config.lineParser.KEYWORD_STD_DB+" ";
                 {
                     for(int i = 0;i<data.size();i++) {
-                        str += data.get(i).toStringInternal(true, false, mimicTargetDialect, null);
+                        str += data.get(i).toStringInternal(true, false, mimicTargetDialect, this, code);
                         if (i != data.size()-1) {
                             str += ", ";
                         }
@@ -400,7 +399,7 @@ public class CodeStatement {
                 str += "    "+config.lineParser.KEYWORD_STD_DW+" ";
                 {
                     for(int i = 0;i<data.size();i++) {
-                        str += data.get(i).toStringInternal(false, false, mimicTargetDialect, null);
+                        str += data.get(i).toStringInternal(false, false, mimicTargetDialect, this, code);
                         if (i != data.size()-1) {
                             str += ", ";
                         }
@@ -411,7 +410,7 @@ public class CodeStatement {
                 str += "    "+config.lineParser.KEYWORD_STD_DD+" ";
                 {
                     for(int i = 0;i<data.size();i++) {
-                        str += data.get(i).toStringInternal(false, false, mimicTargetDialect, null);
+                        str += data.get(i).toStringInternal(false, false, mimicTargetDialect, this, code);
                         if (i != data.size()-1) {
                             str += ", ";
                         }
@@ -421,15 +420,15 @@ public class CodeStatement {
             case STATEMENT_DEFINE_SPACE:
                 if (space_value == null) {
                     if (config.output_allowDSVirtual) {
-                        str += "    "+config.lineParser.KEYWORD_STD_DS+" virtual " + space.toStringInternal(false, false, mimicTargetDialect, null);;
+                        str += "    "+config.lineParser.KEYWORD_STD_DS+" virtual " + space.toStringInternal(false, false, mimicTargetDialect, this, code);
                     } else {
-                        str += "\n    "+config.lineParser.KEYWORD_STD_ORG+" $ + " + space.toStringInternal(false, false, mimicTargetDialect, null);;
+                        str += "\n    "+config.lineParser.KEYWORD_STD_ORG+" $ + " + space.toStringInternal(false, false, mimicTargetDialect, this, code);
                     }
                 } else {
                     if (config.output_replaceDsByData) {
                         int break_each = 16;
                         int space_as_int = space.evaluateToInteger(this, this.source.code, true);
-                        String space_str = space_value.toStringInternal(false, false, mimicTargetDialect, null);
+                        String space_str = space_value.toStringInternal(false, false, mimicTargetDialect, this, code);
                         str += "    "+config.lineParser.KEYWORD_STD_DB+" ";
                         {
                             for(int i = 0;i<space_as_int;i++) {
@@ -450,7 +449,7 @@ public class CodeStatement {
                 break;
                 
             case STATEMENT_CPUOP:
-                str += "    " + op.toStringInternal(useOriginalNames, mimicTargetDialect, code);
+                str += "    " + op.toStringInternal(useOriginalNames, mimicTargetDialect, this, code);
                 break;
                 
             case STATEMENT_MACRO:
@@ -465,9 +464,9 @@ public class CodeStatement {
                 }
                 for(int i = 0;i<macroCallArguments.size();i++) {
                     if (i==0) {
-                        str += macroCallArguments.get(i).toStringInternal(false, false, mimicTargetDialect, null);
+                        str += macroCallArguments.get(i).toStringInternal(false, false, mimicTargetDialect, this, code);
                     } else {
-                        str += ", " + macroCallArguments.get(i).toStringInternal(false, false, mimicTargetDialect, null);
+                        str += ", " + macroCallArguments.get(i).toStringInternal(false, false, mimicTargetDialect, this, code);
                     }
                 }
                 return str;
@@ -577,6 +576,21 @@ public class CodeStatement {
         if (macroCallArguments != null) l.addAll(macroCallArguments);
         
         return l;
+    }
+    
+    
+    public SourceConstant getLastAbsoluteLabel() 
+    {
+        CodeStatement s = this;
+        while(s != null) {
+            if (s.label != null && s.label.isLabel() && 
+                s.label.relativeTo == null) {
+                return s.label;
+            } else {
+                s = s.source.getPreviousStatementTo(s, s.source.code);
+            }
+        }
+        return null;        
     }
     
     

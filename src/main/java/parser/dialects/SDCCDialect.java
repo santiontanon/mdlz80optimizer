@@ -271,18 +271,18 @@ public class SDCCDialect implements Dialect {
     }
     
     
-    String renderExpressionWithConstantMark(Expression exp, boolean useOriginalNames, CodeBase code)
+    String renderExpressionWithConstantMark(Expression exp, boolean useOriginalNames, CodeStatement s, CodeBase code)
     {
         // mark the value as a constant:
         if (exp.evaluatesToStringConstant()) {
-            return exp.toStringInternal(true, useOriginalNames, true, code);
+            return exp.toStringInternal(true, useOriginalNames, true, null, code);
         } else if (exp.type == Expression.EXPRESSION_PARENTHESIS) {
             return "(#" + exp.args.get(0) + ")";
         } else {
             if (exp.args != null && exp.args.size()>1) {
-                return "#(" + exp.toStringInternal(true, useOriginalNames, true, code) + ")";
+                return "#(" + exp.toStringInternal(true, useOriginalNames, true, s, code) + ")";
             } else {
-                return "#" + exp.toStringInternal(true, useOriginalNames, true, code);
+                return "#" + exp.toStringInternal(true, useOriginalNames, true, s, code);
             }
         }
     }
@@ -323,7 +323,8 @@ public class SDCCDialect implements Dialect {
     
     
     @Override
-    public String statementToString(CodeStatement s, CodeBase code, boolean useOriginalNames, Path rootPath) {
+    public String statementToString(CodeStatement s, CodeBase code, Path rootPath) {
+        boolean useOriginalNames = true;
         switch(s.type) {
             case CodeStatement.STATEMENT_NONE:
                 if (linesToKeepIfGeneratingDialectAsm.contains(s.sl)) {
@@ -392,10 +393,10 @@ public class SDCCDialect implements Dialect {
                             !s.op.spec.opName.equalsIgnoreCase("in") &&
                             !s.op.spec.opName.equalsIgnoreCase("out")) {
                             // no mark on left-hand side indirections (except in/out):
-                            str += args.get(i).toStringInternal(true, useOriginalNames, true, code);
+                            str += args.get(i).toStringInternal(true, useOriginalNames, true, s, code);
                         } else {
                             // mark the value as a constant:
-                            str += renderExpressionWithConstantMark(args.get(i), useOriginalNames, code);
+                            str += renderExpressionWithConstantMark(args.get(i), useOriginalNames, s, code);
                         }
                     } else if (s.op.spec.args.get(i).regOffsetIndirection != null) {
                         // write "inc -3 (ix)" instead of "ld (ix + -3), a"
@@ -404,29 +405,29 @@ public class SDCCDialect implements Dialect {
                             switch (exp.type) {
                                 case Expression.EXPRESSION_SUM:
                                     if (exp.args.get(0).type == Expression.EXPRESSION_REGISTER_OR_FLAG) {
-                                        str += exp.args.get(1).toString() + " " + "(" + exp.args.get(0).toStringInternal(true, useOriginalNames, true, code) + ")";
+                                        str += exp.args.get(1).toString() + " " + "(" + exp.args.get(0).toStringInternal(true, useOriginalNames, true, s, code) + ")";
                                     } else {
-                                        str += exp.args.get(0).toString() + " " + "(" + exp.args.get(1).toStringInternal(true, useOriginalNames, true, code) + ")";
+                                        str += exp.args.get(0).toString() + " " + "(" + exp.args.get(1).toStringInternal(true, useOriginalNames, true, s, code) + ")";
                                     }   break;
                                 case Expression.EXPRESSION_SUB:
                                     if (exp.args.get(0).type == Expression.EXPRESSION_REGISTER_OR_FLAG) {
                                         Expression aux = Expression.operatorExpression(Expression.EXPRESSION_SIGN_CHANGE, exp.args.get(1), config);
-                                        str += aux.toString() + " " + "(" + exp.args.get(0).toStringInternal(true, useOriginalNames, true, code) + ")";
+                                        str += aux.toString() + " " + "(" + exp.args.get(0).toStringInternal(true, useOriginalNames, true, s, code) + ")";
                                     } else {
                                         
                                     }   break;
                                 case Expression.EXPRESSION_REGISTER_OR_FLAG:
-                                    str += "0 " + "(" + exp.args.get(0).toStringInternal(true, useOriginalNames, true, code) + ")";
+                                    str += "0 " + "(" + exp.args.get(0).toStringInternal(true, useOriginalNames, true, s, code) + ")";
                                     break;
                                 default:
-                                    str += args.get(i).toStringInternal(true, useOriginalNames, true, code);
+                                    str += args.get(i).toStringInternal(true, useOriginalNames, true, s, code);
                                     break;
                             }
                         } else {
-                            str += args.get(i).toStringInternal(true, useOriginalNames, true, code);
+                            str += args.get(i).toStringInternal(true, useOriginalNames, true, s, code);
                         }
                     } else {
-                        str += args.get(i).toStringInternal(true, useOriginalNames, true, code);
+                        str += args.get(i).toStringInternal(true, useOriginalNames, true, s, code);
                     }
                 }
                 
@@ -455,7 +456,7 @@ public class SDCCDialect implements Dialect {
                     str += ".byte ";
                 }
                 for(int i = 0;i<s.data.size();i++) {
-                    str += renderExpressionWithConstantMark(s.data.get(i), useOriginalNames, code);
+                    str += renderExpressionWithConstantMark(s.data.get(i), useOriginalNames, s, code);
                     if (i != s.data.size()-1) {
                         str += ", ";
                     }
@@ -469,7 +470,7 @@ public class SDCCDialect implements Dialect {
                 String str = toStringLabelWithoutSafetyEqu(s, useOriginalNames) + "    ";
                 str += ".word ";
                 for(int i = 0;i<s.data.size();i++) {
-                    str += renderExpressionWithConstantMark(s.data.get(i), useOriginalNames, code);
+                    str += renderExpressionWithConstantMark(s.data.get(i), useOriginalNames, s, code);
                     if (i != s.data.size()-1) {
                         str += ", ";
                     }

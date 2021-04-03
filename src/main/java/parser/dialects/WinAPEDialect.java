@@ -128,7 +128,8 @@ public class WinAPEDialect implements Dialect {
     
     
     @Override
-    public String statementToString(CodeStatement s, CodeBase code, boolean useOriginalNames, Path rootPath) {
+    public String statementToString(CodeStatement s, CodeBase code , Path rootPath) {
+        boolean useOriginalNames = true;
         if (linesToKeepIfGeneratingDialectAsm.contains(s.sl)) {
             return s.sl.line;
         }

@@ -87,7 +87,7 @@ public class ASMSXDialect implements Dialect {
     public ASMSXDialect(MDLConfig a_config, boolean a_zilogMode)
     {
         config = a_config;
-        
+                
         config.output_equsWithoutColon = true;
         config.output_replaceLabelDotsByUnderscores = true;
         config.relativizeIncbinPaths = false;
@@ -224,8 +224,7 @@ public class ASMSXDialect implements Dialect {
         return false;
     }
 
-    
-    private SourceConstant getLastAbsoluteLabel(CodeStatement s) 
+    private SourceConstant getLastAbsoluteLabelASMSX(CodeStatement s) 
     {
         while(s != null) {
             if (s.label != null && s.label.isLabel() && 
@@ -284,12 +283,12 @@ public class ASMSXDialect implements Dialect {
         
         // A relative label
         if (name.startsWith("@@")) {
-            SourceConstant lastAbsoluteLabel = getLastAbsoluteLabel(s);        
+            SourceConstant lastAbsoluteLabel = getLastAbsoluteLabelASMSX(s);
             if (lastAbsoluteLabel != null) {
                 return Pair.of(lastAbsoluteLabel.originalName + "." + name.substring(2), lastAbsoluteLabel);
             }
         } else if (name.startsWith(".")) {
-            SourceConstant lastAbsoluteLabel = getLastAbsoluteLabel(s);        
+            SourceConstant lastAbsoluteLabel = getLastAbsoluteLabelASMSX(s);
             if (lastAbsoluteLabel != null) {
                 return Pair.of(lastAbsoluteLabel.originalName + name, lastAbsoluteLabel);
             }
@@ -301,12 +300,12 @@ public class ASMSXDialect implements Dialect {
     @Override
     public Pair<String, SourceConstant> symbolName(String name, CodeStatement s) {
         if (name.startsWith("@@")) {
-            SourceConstant lastAbsoluteLabel = getLastAbsoluteLabel(s);        
+            SourceConstant lastAbsoluteLabel = getLastAbsoluteLabelASMSX(s);
             if (lastAbsoluteLabel != null) {
                 return Pair.of(lastAbsoluteLabel.originalName + "." + name.substring(2), lastAbsoluteLabel);
             }
         } else if (name.startsWith(".")) {
-            SourceConstant lastAbsoluteLabel = getLastAbsoluteLabel(s);        
+            SourceConstant lastAbsoluteLabel = getLastAbsoluteLabelASMSX(s);
             if (lastAbsoluteLabel != null) {
                 return Pair.of(lastAbsoluteLabel.originalName + name, lastAbsoluteLabel);
             }
@@ -1191,7 +1190,8 @@ public class ASMSXDialect implements Dialect {
     
 
     @Override
-    public String statementToString(CodeStatement s, CodeBase code, boolean useOriginalNames, Path rootPath) {
+    public String statementToString(CodeStatement s, CodeBase code, Path rootPath) {
+        boolean useOriginalNames = true;
         if (linesToKeepIfGeneratingDialectAsm.contains(s)) {
             return s.sl.line;
         }
@@ -1204,7 +1204,7 @@ public class ASMSXDialect implements Dialect {
                 String str = s.toStringLabel(useOriginalNames, false);              
                 boolean tmp = config.output_indirectionsWithSquareBrakets;
                 config.output_indirectionsWithSquareBrakets = !zilogMode;
-                str += "    " + s.op.toStringInternal(useOriginalNames, true, code);
+                str += "    " + s.op.toStringInternal(useOriginalNames, true, s, code);
                 config.output_indirectionsWithSquareBrakets = tmp;
                 return str;
             }
@@ -1213,7 +1213,7 @@ public class ASMSXDialect implements Dialect {
                 String str = s.toStringLabel(useOriginalNames, false);
                 str += "    "+config.lineParser.KEYWORD_STD_DB+" ";
                 for(int i = 0;i<s.data.size();i++) {
-                    str += s.data.get(i).toStringInternal(false, useOriginalNames, true, code);
+                    str += s.data.get(i).toStringInternal(false, useOriginalNames, true, s, code);
                     if (i != s.data.size()-1) {
                         str += ", ";
                     }
@@ -1225,7 +1225,7 @@ public class ASMSXDialect implements Dialect {
                 String str = s.toStringLabel(useOriginalNames, false);
                 str += "    "+config.lineParser.KEYWORD_STD_DW+" ";
                 for(int i = 0;i<s.data.size();i++) {
-                    str += s.data.get(i).toStringInternal(false, useOriginalNames, true, code);
+                    str += s.data.get(i).toStringInternal(false, useOriginalNames, true, s, code);
                     if (i != s.data.size()-1) {
                         str += ", ";
                     }
@@ -1236,7 +1236,7 @@ public class ASMSXDialect implements Dialect {
             {
                 String str = s.toStringLabel(useOriginalNames, false);
                 for(int i = 0;i<s.data.size();i++) {
-                    str += s.data.get(i).toStringInternal(false, useOriginalNames, true, code);
+                    str += s.data.get(i).toStringInternal(false, useOriginalNames, true, s, code);
                     if (i != s.data.size()-1) {
                         str += ", ";
                     }
@@ -1248,15 +1248,15 @@ public class ASMSXDialect implements Dialect {
                 String str = s.toStringLabel(useOriginalNames, false);
                 if (s.space_value == null) {
                     if (config.output_allowDSVirtual) {
-                        str += "    "+config.lineParser.KEYWORD_STD_DS+" virtual " + s.space.toStringInternal(false, useOriginalNames, true, code);
+                        str += "    "+config.lineParser.KEYWORD_STD_DS+" virtual " + s.space.toStringInternal(false, useOriginalNames, true, s, code);
                     } else {
-                        str += "\n    "+config.lineParser.KEYWORD_STD_ORG+" $ + " + s.space.toStringInternal(false, useOriginalNames, true, code);
+                        str += "\n    "+config.lineParser.KEYWORD_STD_ORG+" $ + " + s.space.toStringInternal(false, useOriginalNames, true, s, code);
                     }
                 } else {
                     if (config.output_replaceDsByData) {
                         int break_each = 16;
                         int space_as_int = s.space.evaluateToInteger(s, code, true);
-                        String space_str = s.space_value.toStringInternal(false, useOriginalNames, true, code);
+                        String space_str = s.space_value.toStringInternal(false, useOriginalNames, true, s, code);
                         str += "    "+config.lineParser.KEYWORD_STD_DB+" ";
                         {
                             for(int i = 0;i<space_as_int;i++) {

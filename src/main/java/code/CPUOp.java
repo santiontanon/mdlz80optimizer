@@ -54,13 +54,13 @@ public class CPUOp {
     @Override
     public String toString()
     {
-        return toStringInternal(false, false, null);
+        return toStringInternal(false, false, null, null);
     }
     
     
-    String argString(Expression arg, boolean useOriginalNames, boolean mimicTargetDialect, CodeBase code)
+    String argString(Expression arg, boolean useOriginalNames, boolean mimicTargetDialect, CodeStatement s, CodeBase code)
     {
-        String argStr = arg.toStringInternal(false, useOriginalNames, mimicTargetDialect, code);
+        String argStr = arg.toStringInternal(false, useOriginalNames, mimicTargetDialect, s, code);
         if (config.fix_tniasm_parenthesisExpressionBug && 
             argStr.startsWith("(") &&
             arg.type != Expression.EXPRESSION_PARENTHESIS) {
@@ -70,7 +70,7 @@ public class CPUOp {
     }
 
 
-    public String toStringInternal(boolean useOriginalNames, boolean mimicTargetDialect, CodeBase code)
+    public String toStringInternal(boolean useOriginalNames, boolean mimicTargetDialect, CodeStatement s, CodeBase code)
     {
         String str = spec.opName;
         
@@ -89,12 +89,12 @@ public class CPUOp {
                  spec.args.get(i).wordConstantIndirectionAllowed)) {
                 if (args.get(i).type == Expression.EXPRESSION_PARENTHESIS &&
                     args.get(i).args.size()==1) {
-                    str += "["+argString(args.get(i).args.get(0), useOriginalNames, mimicTargetDialect, code)+"]";
+                    str += "["+argString(args.get(i).args.get(0), useOriginalNames, mimicTargetDialect, s, code)+"]";
                 } else {
-                    str += argString(args.get(i), useOriginalNames, mimicTargetDialect, code);
+                    str += argString(args.get(i), useOriginalNames, mimicTargetDialect, s, code);
                 }
             } else {
-                str += argString(args.get(i), useOriginalNames, mimicTargetDialect, code);
+                str += argString(args.get(i), useOriginalNames, mimicTargetDialect, s, code);
             }
         }
 
@@ -498,11 +498,17 @@ public class CPUOp {
         if (spec.args.get(idx).relativeLabelAllowed) {
             Expression target = args.get(idx);
             Integer endAddress = target.evaluateToInteger(s, code, true);
-            if (endAddress == null) return false;
+            if (endAddress == null) {
+                return false;
+            }
             Integer startAddress = s.getAddressAfter(code);
-            if (startAddress == null) return false;
+            if (startAddress == null) {
+                return false;
+            }
             int diff = endAddress - startAddress;
-            if (!offsetWithinJrRange(diff)) return false;   
+            if (!offsetWithinJrRange(diff)) {
+                return false;
+            }   
         }
         return true;
     }

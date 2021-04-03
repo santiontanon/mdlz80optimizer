@@ -236,21 +236,21 @@ public class CodeBase {
     }
 
 
-    public boolean checkLocalLabelsInRange()
+    public CodeStatement checkLocalLabelsInRange()
     {
         for(SourceFile f:getSourceFiles()) {
             for(CodeStatement s:f.getStatements()) {
                 if (s.type == CodeStatement.STATEMENT_CPUOP) {
                     if (s.op.isJump()) {
                         if (!s.op.labelInRange(s, this)) {
-                            return false;
+                            return s;
                         }
                     }
                 }
             }
         }
         
-        return true;
+        return null;
     }    
     
     

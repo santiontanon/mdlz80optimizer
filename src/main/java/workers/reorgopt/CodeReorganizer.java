@@ -108,8 +108,10 @@ public class CodeReorganizer implements MDLWorker {
         savings.addOptimizerSpecific(SAVINGS_REORGANIZATIONS_CODE, 0);
         
         code.resetAddresses();
-        if (!code.checkLocalLabelsInRange()) {
+        CodeStatement toBlame = code.checkLocalLabelsInRange();
+        if (toBlame != null) {
             config.error("Code Reorganizer: Some local labels are out of range to begin with, canceling execution...");
+            config.error("Problematic statement: " + toBlame.sl);
             return false;
         }
 
@@ -169,7 +171,7 @@ public class CodeReorganizer implements MDLWorker {
         config.optimizerStats.addSavings(savings);
         
         code.resetAddresses();
-        if (!code.checkLocalLabelsInRange()) {
+        if (code.checkLocalLabelsInRange() != null) {
             config.error("Some local labels got out of range after the execution of the code reorganizer!");
             return false;
         }
@@ -605,7 +607,7 @@ public class CodeReorganizer implements MDLWorker {
                     code.resetAddresses();
                     // unfortunately we need to check the whole code base, as jump statements might be
                     // outside of the current area, but jumping to a label inside of the current area:
-                    if (!code.checkLocalLabelsInRange()) cancelOptimization = true;                
+                    if (code.checkLocalLabelsInRange() != null) cancelOptimization = true;                
                 }
                 
                 if (cancelOptimization) {
@@ -783,7 +785,7 @@ public class CodeReorganizer implements MDLWorker {
                 }
                 if (todelete == block1) {
                     code.resetAddresses();
-                    if (!code.checkLocalLabelsInRange()) {
+                    if (code.checkLocalLabelsInRange() != null) {
                         config.debug("Undoing merge (case 1)!");
                         
                         for(Pair<CodeStatement, Integer> tmp:undoTrailSubarea) {
@@ -811,7 +813,7 @@ public class CodeReorganizer implements MDLWorker {
                 
                 // Check if we have broken any relative jumps and in that case, undo:
                 code.resetAddresses();
-                if (!code.checkLocalLabelsInRange()) {
+                if (code.checkLocalLabelsInRange() != null) {
                     config.debug("Undoing merge (case 2)!");
                     // undo!
                     todelete.label.definingStatement.source = undoTodeleteLabelSource;
@@ -1022,7 +1024,7 @@ public class CodeReorganizer implements MDLWorker {
         code.resetAddresses();
         // unfortunately we need to check the whole code base, as jump statements might be
         // outside of the current area, but jumping to a label inside of the current area:
-        if (!code.checkLocalLabelsInRange()) cancelOptimization = true;
+        if (code.checkLocalLabelsInRange() != null) cancelOptimization = true;
         
         // Get the jump we should remove:
         CodeStatement jump;

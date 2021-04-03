@@ -1507,7 +1507,8 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
     
     
     @Override
-    public String statementToString(CodeStatement s, CodeBase code, boolean useOriginalNames, Path rootPath) {
+    public String statementToString(CodeStatement s, CodeBase code, Path rootPath) {
+        boolean useOriginalNames = false;
         if (linesToKeepIfGeneratingDialectAsm.contains(s)) {
             return s.sl.line;
         }
