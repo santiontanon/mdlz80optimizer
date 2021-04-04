@@ -236,7 +236,7 @@ public class CodeBase {
     }
 
 
-    public CodeStatement checkLocalLabelsInRange()
+    public CodeStatement checkRelativeJumpsInRange()
     {
         for(SourceFile f:getSourceFiles()) {
             for(CodeStatement s:f.getStatements()) {

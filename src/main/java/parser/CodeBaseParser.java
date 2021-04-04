@@ -480,70 +480,109 @@ public class CodeBaseParser {
     
     public boolean improveCodeSafety(CodeBase code)
     {
-        String labelPrefix = "___MDL_SAFETY_LABEL_";
         int idx = 1;
         for(SourceFile f : code.getSourceFiles()) {
             for(CodeStatement s: f.getStatements()) {
                 if (s.type == CodeStatement.STATEMENT_CPUOP && s.op.isJump()) {
                     Expression destination = s.op.getTargetJumpExpression();
                     if (destination.containsCurrentAddress()) {
-                        config.debug("Creating a label to replace expression in " + s.sl);
-                        
-                        CodeStatement current = s;
-                        Integer targetAddress = destination.evaluateToInteger(s, code, true);
-                        
-                        Integer currentAddress = current.getAddress(code);
-                        Integer currentSize = current.sizeInBytes(code, true, true, true);
-                        do {
-                            if (targetAddress < currentAddress) {
-                                // go backwards:
-                                current = current.source.getPreviousStatementTo(current, code);
-                            } else {
-                                // go forward:
-                                current = current.source.getNextStatementTo(current, code);
-                            }
-                            if (current == null || current.type == CodeStatement.STATEMENT_INCLUDE) {
-                                // we are in trouble, just abort
-                                config.warn("Unable to complete 'improveCodeSafety' operation in " + s.sl);
-                                config.warn("Optimizations can potentially break this codebase.");
-                                return false;
-                            }
-                            currentAddress = current.getAddress(code);
-                            currentSize = current.sizeInBytes(code, true, true, true);
-                            if (targetAddress == null) {
-                                config.warn("Could not evaluate expression " + destination + " to integer in " + s.sl);
-                                return false;
-                            }
-                            if (currentAddress == null || currentSize == null) {
-                                config.warn("Could not assess the address of instruction in " + s.sl);
-                                return false;
-                            }
-                        } while (targetAddress < currentAddress || targetAddress >= currentAddress + currentSize);
-                        
-                        // Create a new label:
-                        if (current.label == null) {
-                            String labelName = labelPrefix + idx;
-                            idx++;
-                            current.label = new SourceConstant(labelName, labelName, 
-                                    Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, current, code, config), 
-                                    current, config);
-                            code.addSymbol(labelName, current.label);
+                        if (replaceJumpExpressionWithLabelForSafety(s, idx, code)) {
+                            idx ++;
                         }
-                        int offset = targetAddress - currentAddress;
-                        Expression newDestination = null;
-                        if (offset == 0) {
-                            newDestination = Expression.symbolExpression(current.label.name, s, code, config);
-                        } else {
-                            newDestination = Expression.operatorExpression(Expression.EXPRESSION_SUM, 
-                                    Expression.symbolExpression(current.label.name, s, code, config),
-                                    Expression.constantExpression(offset, config), config);
+                    } else if (destination.type == Expression.EXPRESSION_INTEGER_CONSTANT) {
+                        // this is just a constant expression, replace with a label for safety!
+                        if (replaceJumpExpressionWithLabelForSafety(s, idx, code)) {
+                            idx ++;
                         }
-                        // replace the jump destination:
-                        s.op.args.set(s.op.spec.jumpLabelArgument(), newDestination);
                     }
                 }
             }
         }
+        return true;
+    }
+    
+    
+    public boolean replaceJumpExpressionWithLabelForSafety(CodeStatement s, int idx, CodeBase code)
+    {
+        String labelPrefix = "___MDL_SAFETY_LABEL_";
+        config.warn("Safety: creating an auxiliary label for the jump in " + s.sl);
+
+        Expression destination = s.op.getTargetJumpExpression();
+        CodeStatement current = s;
+        Integer targetAddress = destination.evaluateToInteger(s, code, true);
+
+        Integer currentAddress = current.getAddress(code);
+        Integer currentSize;
+        int direction = 0;
+        do {
+            if (targetAddress < currentAddress) {
+                if (direction <= 0) {
+                    direction = -1;
+                } else {
+                    config.warn("Could not find the target address within the source in " + s.sl);
+                    config.warn("Optimizations can potentially break this codebase.");
+                    return false;
+                }
+                // go backwards:
+                current = current.source.getPreviousStatementTo(current, code);
+                if (current.type == CodeStatement.STATEMENT_INCLUDE &&
+                    !current.include.getStatements().isEmpty()) {
+                    current = current.include.getStatements().get(current.include.getStatements().size()-1);
+                }
+            } else {
+                if (direction >= 0) {
+                    direction = 1;
+                } else {
+                    config.warn("Could not find the target address within the source in " + s.sl);
+                    config.warn("Optimizations can potentially break this codebase.");
+                    return false;
+                }
+                // go forward:
+                current = current.source.getNextStatementTo(current, code);
+                if (current.type == CodeStatement.STATEMENT_INCLUDE &&
+                    !current.include.getStatements().isEmpty()) {
+                    current = current.include.getStatements().get(0);
+                }
+            }
+            if (current == null || current.type == CodeStatement.STATEMENT_INCLUDE) {
+                // we are in trouble, just abort
+                config.warn("Unable to complete 'replaceJumpExpressionWithLabelForSafety' operation in " + s.sl);
+                config.warn("Optimizations can potentially break this codebase.");
+                return false;
+            }
+            currentAddress = current.getAddress(code);
+            currentSize = current.sizeInBytes(code, true, true, true);
+            if (targetAddress == null) {
+                config.warn("Could not evaluate expression " + destination + " to integer in " + s.sl);
+                config.warn("Optimizations can potentially break this codebase.");
+                return false;
+            }
+            if (currentAddress == null || currentSize == null) {
+                config.warn("Could not assess the address of instruction in " + s.sl);
+                config.warn("Optimizations can potentially break this codebase.");
+                return false;
+            }
+        } while (targetAddress < currentAddress || targetAddress >= currentAddress + currentSize);
+
+        // Create a new label:
+        if (current.label == null) {
+            String labelName = labelPrefix + idx;
+            current.label = new SourceConstant(labelName, labelName, 
+                    Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, current, code, config), 
+                    current, config);
+            code.addSymbol(labelName, current.label);
+        }
+        int offset = targetAddress - currentAddress;
+        Expression newDestination;
+        if (offset == 0) {
+            newDestination = Expression.symbolExpression(current.label.name, s, code, config);
+        } else {
+            newDestination = Expression.operatorExpression(Expression.EXPRESSION_SUM, 
+                    Expression.symbolExpression(current.label.name, s, code, config),
+                    Expression.constantExpression(offset, config), config);
+        }
+        // replace the jump destination:
+        s.op.args.set(s.op.spec.jumpLabelArgument(), newDestination);        
         return true;
     }
 }

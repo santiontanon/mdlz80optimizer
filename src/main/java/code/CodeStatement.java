@@ -443,7 +443,7 @@ public class CodeStatement {
                             }
                         }
                     } else {
-                        str += "    "+config.lineParser.KEYWORD_STD_DS+" " + space + ", " + space_value;
+                        str += "    "+config.lineParser.KEYWORD_STD_DS+" " + space.toStringInternal(false, false, mimicTargetDialect, this, code) + ", " + space_value;
                     }
                 }
                 break;

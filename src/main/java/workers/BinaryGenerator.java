@@ -68,7 +68,7 @@ public class BinaryGenerator implements MDLWorker {
     public boolean work(CodeBase code) {
         if (outputFileName != null) {
             config.debug("Executing "+this.getClass().getSimpleName()+" worker...");
-            
+                        
             for(OutputBinary output:code.outputs) {
                 String finalOutputFileName = outputFileName;
                 boolean addSufix = true;

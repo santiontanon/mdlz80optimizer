@@ -1125,11 +1125,11 @@ public class Pattern {
         if (!undoOptimization && getSpaceSaving(match, code) < 0) {
             // Check all relative jumps are still within reach:
             code.resetAddresses();
-            if (code.checkLocalLabelsInRange() != null) {
+            if (code.checkRelativeJumpsInRange() != null) {
                 undoOptimization = true;
             }                
         }
-
+        
         if (undoOptimization) {
             // undo the optimization:
             for(int i = undo.size()-1; i>=0; i--) {

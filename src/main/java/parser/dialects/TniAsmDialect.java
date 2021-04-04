@@ -10,6 +10,7 @@ import code.Expression;
 import code.SourceConstant;
 import code.SourceFile;
 import code.CodeStatement;
+import java.nio.file.Path;
 import java.util.List;
 import org.apache.commons.lang3.tuple.Pair;
 import parser.SourceLine;
@@ -38,6 +39,7 @@ public class TniAsmDialect implements Dialect {
         
         config.warning_jpHlWithParenthesis = false;  // I don't think tniasm supports "jp hl"
         config.fix_tniasm_parenthesisExpressionBug = true;
+        config.relativizeIncbinPaths = false;
 
         config.preProcessor.macroSynonyms.put("ifexist", config.preProcessor.MACRO_IFDEF);
 
@@ -50,6 +52,8 @@ public class TniAsmDialect implements Dialect {
         config.expressionParser.OP_BIT_OR = "or";
         config.expressionParser.OP_BIT_AND = "and";
         config.expressionParser.OP_BIT_XOR = "xor";
+        config.expressionParser.OP_LOGICAL_OR = "or";
+        config.expressionParser.OP_LOGICAL_AND = "and";
         config.expressionParser.OP_MOD = "mod";
     }
 
@@ -141,4 +145,11 @@ public class TniAsmDialect implements Dialect {
         
         return false;
     }
+    
+    
+    @Override
+    public String statementToString(CodeStatement s, CodeBase code, Path rootPath) {
+        boolean useOriginalNames = false;
+        return s.toStringUsingRootPath(rootPath, useOriginalNames, true, code);
+    }      
 }
