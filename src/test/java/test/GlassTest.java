@@ -38,6 +38,8 @@ public class GlassTest {
     @Test public void test3() throws IOException { Assert.assertTrue(test("data/generationtests/glass-macroproc.asm",
                                                                           "data/generationtests/glass-macroproc-expected.asm",
                                                                           "data/generationtests/glass-macroproc-dialect-expected.asm")); }
+    @Test public void test4() throws IOException { Assert.assertTrue(test("data/generationtests/glass-proc2.asm",
+                                                                          "data/generationtests/glass-proc2-expected.asm", null)); }
 
     private boolean test(String inputFile, String expectedOutputFile, String expectedDialectOutputFile) throws IOException
     {

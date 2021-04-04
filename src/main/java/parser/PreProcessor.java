@@ -197,6 +197,7 @@ public class PreProcessor {
                     s.macroCallMacro = m;
                     s.macroCallArguments = m.preDefinedMacroArgs;
                     s.label = macroCallLabel(m.definingStatement, code);
+                    s.labelPrefix = m.definingStatement.labelPrefix;
                     m.definingStatement = s;
                     newStatements.add(s);
                     currentState.currentMacro = null;
@@ -231,6 +232,7 @@ public class PreProcessor {
                     s.macroCallMacro = m;
                     s.macroCallArguments = m.preDefinedMacroArgs;
                     s.label = macroCallLabel(m.definingStatement, code);
+                    s.labelPrefix = m.definingStatement.labelPrefix;
                     m.definingStatement = s;
                     newStatements.add(s);
                     currentState.currentMacro = null;

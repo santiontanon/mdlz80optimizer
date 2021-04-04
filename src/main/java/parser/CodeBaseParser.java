@@ -187,8 +187,6 @@ public class CodeBaseParser {
     Pair<SourceLine, Integer> getNextLine(BufferedReader br, SourceFile f, int file_linenumber, List<String> tokens)
             throws IOException
     {
-//        List<String> unfilteredTokens = new ArrayList<>();
-
         SourceLine sl = config.preProcessor.expandMacros();
         if (sl == null) {
             String line = null;
@@ -525,7 +523,7 @@ public class CodeBaseParser {
                 }
                 // go backwards:
                 current = current.source.getPreviousStatementTo(current, code);
-                if (current.type == CodeStatement.STATEMENT_INCLUDE &&
+                if (current != null && current.type == CodeStatement.STATEMENT_INCLUDE &&
                     !current.include.getStatements().isEmpty()) {
                     current = current.include.getStatements().get(current.include.getStatements().size()-1);
                 }
@@ -539,7 +537,7 @@ public class CodeBaseParser {
                 }
                 // go forward:
                 current = current.source.getNextStatementTo(current, code);
-                if (current.type == CodeStatement.STATEMENT_INCLUDE &&
+                if (current != null && current.type == CodeStatement.STATEMENT_INCLUDE &&
                     !current.include.getStatements().isEmpty()) {
                     current = current.include.getStatements().get(0);
                 }

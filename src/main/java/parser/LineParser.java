@@ -1115,7 +1115,7 @@ public class LineParser {
                 break;
             }
         }
-
+        
         s.macroCallName = macroName;
         s.macroCallArguments = arguments;
         s.type = CodeStatement.STATEMENT_MACROCALL;
