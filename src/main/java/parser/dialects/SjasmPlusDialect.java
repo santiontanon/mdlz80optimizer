@@ -490,6 +490,7 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
                 tokens.remove(0);
             }
 
+            linesToKeepIfGeneratingDialectAsm.add(s);
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("size")) {
@@ -501,6 +502,7 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
             }
             minimumOutputSize = exp;
             minimumOutputSize_statement = s;
+            linesToKeepIfGeneratingDialectAsm.add(s);
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
 
@@ -744,6 +746,7 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
                     break;
             }
             
+            linesToKeepIfGeneratingDialectAsm.add(s);
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
         if (tokens.size() >= 2 && (tokens.get(0).equalsIgnoreCase("=") ||

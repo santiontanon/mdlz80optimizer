@@ -1288,42 +1288,47 @@ public class Expression {
         return true;
     }
     
-    /*
-    public Expression resolveEagerSymbols(CodeBase code)
+    
+    public void resolveEagerSymbols(CodeBase code)
     {
         switch(type) {
             case EXPRESSION_SYMBOL:
                 {
                     SourceConstant c = code.getSymbol(symbolName);
-                    if (c.resolveEagerly && c.exp != null) {
+                    if (c != null && c.resolveEagerly && c.exp != null) {
                         Object value = c.exp.evaluate(c.definingStatement, code, true);
                         if (value != null) {
                             if (value instanceof Integer) {
-                                return Expression.constantExpression((Integer)value, config);
+                                this.type = EXPRESSION_INTEGER_CONSTANT;
+                                this.integerConstant = (Integer)value;
+                                this.symbolName = null;
                             } else if (value instanceof Double) {
-                                return Expression.constantExpression((Double)value, config);
+                                this.type = EXPRESSION_DOUBLE_CONSTANT;
+                                this.doubleConstant = (Double)value;
+                                this.symbolName = null;
                             } else if (value instanceof String) {
-                                return Expression.constantExpression((String)value, config);
+                                this.type = EXPRESSION_STRING_CONSTANT;
+                                this.stringConstant = (String)value;
+                                this.symbolName = null;
                             } else if (value instanceof List) {
-                                return Expression.listExpression((List<Object>)value, config);
+                                this.type = EXPRESSION_LIST;
+                                this.args = (List<Expression>)value;
+                                this.symbolName = null;
                             } else {
-                                config.error("Unsupported expression evaluation type: " + value);
-                                return null;
+                                config.warn("resolveEagerSymbols: Unsupported expression evaluation type: " + value);
                             }
                         }
                     }
                 }
-                return this;
             default:
                 if (args != null) {
                     for(int i = 0;i<args.size();i++) {
-                        args.set(i, args.get(i).resolveEagerSymbols(code));
+                        args.get(i).resolveEagerSymbols(code);
                     }
                 }
-                return this;
         }
     }
-    */
+    
     
     public boolean containsLabel(CodeBase code)
     {

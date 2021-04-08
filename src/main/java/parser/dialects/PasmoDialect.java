@@ -44,6 +44,7 @@ public class PasmoDialect implements Dialect {
         config.lineParser.addKeywordSynonym("defw", config.lineParser.KEYWORD_DW);
 
         config.warning_jpHlWithParenthesis = false;  // I don't think Pasmo supports "jp hl"
+        config.fix_tniasm_parenthesisExpressionBug = true;  // Pasmo has the same bug as tniasm
 
         config.tokenizer.allowAndpersandHex = true;
         

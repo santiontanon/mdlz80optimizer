@@ -32,7 +32,7 @@ public class PatternBasedOptimizer implements MDLWorker {
     public static String defaultInputPatternsSpeedFileName = "data/pbo-patterns-speed.txt";
     
     public boolean logPotentialOptimizations = false;    
-    public boolean generateFilesWithAppliedOptimizations = false;
+//    public boolean generateFilesWithAppliedOptimizations = false;
     public boolean onlyOnePotentialOptimizationPerLine = true;
     public boolean preventLabelDependentOptimizations = false;
     
@@ -68,7 +68,7 @@ public class PatternBasedOptimizer implements MDLWorker {
         return "- ```-po```: Runs the pattern-based optimizer using the latest settings. Notice that the ```-posilent```, ```-poapply```, etc. flags need to be passed *before* the call to ```-po``` that they which to affect and which is the one that triggers the optimizer. You can pass an optional parameter, like ````-po size``` or ```-po speed```, which are shortcuts for '-po -popatterns data/pbo-patterns-size.txt' and '-po -popatterns data/pbo-patterns-speed.txt' (some dialects might change the defaults of these two)\n" +
                "- ```-po1```/```-po2```/```-po3```: The same as ```-po```, but specify whether to do 1, 2 or 3 passes of optimization (```-po``` is equivalent to ```-po2```). The more passes, the slower the optimization. Usually 1 pass is enough, but often 2 passes finds a few additional optimizations. 3 passes rarely finds any additional optimization.\n"+
                "- ```-posilent```: Supresses the pattern-based-optimizer output\n" +
-               "- ```-poapply```: "+MDLLogger.ANSI_RED+"(deprecated) "+MDLLogger.ANSI_RESET+"For each assembler ```<file>``` parsed by MDL, a corresponding ```<file>.mdl.asm``` is generated with the optimizations applied to it.\n" + 
+//               "- ```-poapply```: "+MDLLogger.ANSI_RED+"(deprecated) "+MDLLogger.ANSI_RESET+"For each assembler ```<file>``` parsed by MDL, a corresponding ```<file>.mdl.asm``` is generated with the optimizations applied to it.\n" + 
                "- ```-popotential```: Reports lines where a potential optimization was not applied for safety, but could maybe be done manually (at most one potential optimization per line is shown).\n" +
                "- ```-popotential-all```: Same as above, but without the one-per-line constraint.\n" +
                "- ```-popatterns <file>```: specifies the file to load optimization patterns from (default 'data/pbo-patterns.txt', " +
@@ -117,11 +117,11 @@ public class PatternBasedOptimizer implements MDLWorker {
             silent = true;
             return true;
         }
-        if (flags.get(0).equals("-poapply")) {
-            flags.remove(0);
-            generateFilesWithAppliedOptimizations = true;
-            return true;
-        }
+//        if (flags.get(0).equals("-poapply")) {
+//            flags.remove(0);
+//            generateFilesWithAppliedOptimizations = true;
+//            return true;
+//        }
         if (flags.get(0).equals("-popotential")) {
             flags.remove(0);
             logPotentialOptimizations = true;
@@ -260,9 +260,9 @@ public class PatternBasedOptimizer implements MDLWorker {
         if (trigger) {            
             OptimizationResult r = optimize(code);
             config.optimizerStats.addSavings(r);
-            if (generateFilesWithAppliedOptimizations) {
-                applyOptimizationsToOriginalFiles(code);
-            }
+//            if (generateFilesWithAppliedOptimizations) {
+//                applyOptimizationsToOriginalFiles(code);
+//            }
             if (config.dialectParser != null) return config.dialectParser.postCodeModificationActions(code);
         }
         return true;
@@ -324,23 +324,23 @@ public class PatternBasedOptimizer implements MDLWorker {
                 match = null;
             }
             if (match != null) {
-                if (generateFilesWithAppliedOptimizations) {
-                    // prevent matches to lines on which there is already an optimization:
-                    boolean overlapsWithPreviousOptimization = false;
-                    for(PatternMatch previous:appliedOptimizations) {
-                        if (machesLinesGeneratedByPreviousPattern(match, previous)) {
-                            overlapsWithPreviousOptimization = true;
-                            break;
-                        }
-                    }
-                    if (!overlapsWithPreviousOptimization) {
-                        matches.add(Pair.of(patt,match));
-                    } else {
-                        config.debug("Prevented an optimization!");
-                    }
-                } else {
+//                if (generateFilesWithAppliedOptimizations) {
+//                    // prevent matches to lines on which there is already an optimization:
+//                    boolean overlapsWithPreviousOptimization = false;
+//                    for(PatternMatch previous:appliedOptimizations) {
+//                        if (machesLinesGeneratedByPreviousPattern(match, previous)) {
+//                            overlapsWithPreviousOptimization = true;
+//                            break;
+//                        }
+//                    }
+//                    if (!overlapsWithPreviousOptimization) {
+//                        matches.add(Pair.of(patt,match));
+//                    } else {
+//                        config.debug("Prevented an optimization!");
+//                    }
+//                } else {
                     matches.add(Pair.of(patt,match));
-                }
+//                }
             }
         }
 
@@ -457,7 +457,7 @@ public class PatternBasedOptimizer implements MDLWorker {
         return false;
     }
     
-    
+    /*
     public boolean applyOptimizationsToOriginalFiles(CodeBase code)
     {
         for(SourceFile f:code.getSourceFiles()) {
@@ -597,6 +597,7 @@ public class PatternBasedOptimizer implements MDLWorker {
         }
         return true;
     }
+    */
     
     
     @Override

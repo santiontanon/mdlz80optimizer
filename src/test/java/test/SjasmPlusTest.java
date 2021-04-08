@@ -47,6 +47,8 @@ public class SjasmPlusTest {
                                                                           "data/generationtests/sjasmplus-test7-expected.asm")); }
     @Test public void test8() throws IOException { Assert.assertTrue(test("data/generationtests/sjasmplus-test8.asm",
                                                                           "data/generationtests/sjasmplus-test8-expected.asm")); }
+    @Test public void test9() throws IOException { Assert.assertTrue(test("data/generationtests/sjasmplus-test9.asm",
+                                                                          "data/generationtests/sjasmplus-test9-expected.asm")); }
 
     private boolean test(String inputFile, String expectedOutputFile) throws IOException
     {

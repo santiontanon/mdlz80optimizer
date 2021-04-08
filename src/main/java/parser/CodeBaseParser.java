@@ -90,6 +90,11 @@ public class CodeBaseParser {
             return false;
         }
         
+        // Replace eager variables (those that will not be defined in the 
+        // assembler output if we save the result of optimization back to assembler),
+        // by their values:
+        resolveUnresolvedEagerSymbols(code);
+        
         // Improve code safety for potential optimizations 
         // (for example, replace things like "jr $+5" with proper labels, so the code can be optimized safely):
         improveCodeSafety(code);
@@ -471,6 +476,18 @@ public class CodeBaseParser {
             }
             if (currentStart != null) {
                 config.warn(config.PRAGMA_NO_OPTIMIZATION_START + " annotation in line " + currentStart.fileNameLineString() + " does not have a matching " + config.PRAGMA_NO_OPTIMIZATION_END);
+            }
+        }
+    }
+    
+    
+    public void resolveUnresolvedEagerSymbols(CodeBase code)
+    {
+        for(SourceFile f : code.getSourceFiles()) {
+            for(CodeStatement s: f.getStatements()) {
+                for(Expression exp: s.getAllExpressions()) {
+                    exp.resolveEagerSymbols(code);
+                }
             }
         }
     }
