@@ -166,7 +166,7 @@ constraints:
 regsNotUsedAfter(3,A,BC)
 
 ; thanks to pgimeno for suggesting this permutation
-pattern: Replace ld a,(hl); inc hl; lde (de),a; inc de with ldi
+pattern: Replace ld a,(hl); inc hl; ld (de),a; inc de with ldi
 0: ld a,(hl)
 2: inc hl
 1: ld (de),a
@@ -198,7 +198,7 @@ constraints:
 regsNotUsedAfter(3,A)
 
 ; thanks to pgimeno for suggesting this permutation
-pattern: Replace ld a,(hl); inc hl; lde (de),a; inc de with ldi; inc bc
+pattern: Replace ld a,(hl); inc hl; ld (de),a; inc de with ldi; inc bc
 0: ld a,(hl)
 2: inc hl
 1: ld (de),a
@@ -1263,13 +1263,13 @@ in(?reg,HL,IX,IY)
 regsNotUsedAfter(0,?reg)
 flagsNotUsedAfter(0,S,Z,H,P/V,N,C)
 
-pattern: ld hl,?any; ld ?regpairl,(hl); inc hl; ld ?regpairh,(hl) -> ld ?regpair,(?any)
-0: ld hl,?any
+pattern: ld hl,?const1; ld ?regpairl,(hl); inc hl; ld ?regpairh,(hl) -> ld ?regpair,(?const1)
+0: ld hl,?const1
 1: ld ?regpairl,(hl)
 2: inc hl
 3: ld ?regpairh,(hl)
 replacement:
-0: ld ?regpair,(?any)
+0: ld ?regpair,(?const1)
 constraints:
 regpair(?regpair,?regpairh,?regpairl)
 regsNotUsedAfter(3,HL)

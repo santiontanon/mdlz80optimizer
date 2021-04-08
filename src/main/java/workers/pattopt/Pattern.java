@@ -289,7 +289,7 @@ public class Pattern {
                     return false;
                 }
             } else if (pattern.symbolName.startsWith("?const")) {
-                // We expluce matches with "parenthesis" expressions, as those might be indirections
+                // We exclude matches with "parenthesis" expressions, as those might be indirections
                 if (arg2.evaluatesToIntegerConstant() &&
                     arg2.type != Expression.EXPRESSION_PARENTHESIS) {
                     return match.addVariableMatch(pattern.symbolName, arg2);
