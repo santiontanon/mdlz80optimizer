@@ -127,7 +127,7 @@ public class MDLConfig {
             + "Command Line Arguments:\n"
             + "```java -jar mdl.jar <input assembler file> [options]```\n"
             + "\n"
-            + "Note: notice that all the tasks concerning generting outputs (assembler, binaries, etc.) will be executed after the optimizers are run.\n"
+            + "Note: notice that all the tasks concerning generating outputs (assembler, binaries, etc.) will be executed after the optimizers are run.\n"
             + "\n"
             + "- ```-help```: to show this information (this is the only flag that can be used without specifying an input file).\n"
             + "- ```-cpu <type>```: to select a different CPU (z80/z80msx/z80cpc) (default: z80msx).\n"
