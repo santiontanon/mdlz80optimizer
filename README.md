@@ -21,12 +21,14 @@ I also recorded a series of videos explaining how does MDL work:
 
 ```java -jar mdl.jar <input assembler file> [options/tasks]```
 
-Tasks will be executed in the order in which they are specified in the commandline, and using all the flag specified previously. Tasks can be repeated many times in the same command line.
+Note: notice that all the tasks concerning generating outputs (assembler, binaries, etc.) will be executed after the optimizers are run.
+
 - ```-help```: to show this information (this is the only flag that can be used without specifying an input file).
 - ```-cpu <type>```: to select a different CPU (z80/z80msx/z80cpc) (default: z80msx).
 - ```-dialect <dialect>```: to allow parsing different assembler dialects (mdl/asmsx/asmsx-zilog/glass/sjasm/sjasmplus/tniasm/winape/pasmo/sdcc/sdasz80/macro80) (default: mdl, which supports some basic code idioms common to various assemblers).
                    Note that even when selecting a dialect, not all syntax of a given assembler might be supported.
 - ```-I <folder>```: adds a folder to the include search path.
+- ```-equ <symbol>=<value>```: defines a symbol that will exist while parsing the assembler code.
 - ```-ansion```: turns on color message output usin ANSI codes (default: on in Unix, off in Windows).
 - ```-ansioff```: turns off color message output usin ANSI codes.
 - ```-quiet```: turns off info messages; only outputs warnings and errors.
@@ -57,27 +59,27 @@ Tasks will be executed in the order in which they are specified in the commandli
 - ```-out-data-instead-of-ds```: will replace statements like ```ds 4, 0``` by ```db 0, 0, 0, 0```.
 - ```-out-do-not-evaluate-dialect-functions```: some assembler dialects define functions like random/sin/cos that can be used to form expressions. By default, MDL replaces them by the result of their execution before generating assembler output (as those might not be defined in other assemblers, and thus this keeps the assembler output as compatible as possible). Use this flag if you don't want this to happen.
 - ```-out-evaluate-all-expressions```: this flag makes MDL resolve all expressions down to their ultimate numeric or string value when generating assembler code.
-- ```-po```: (task) Runs the pattern-based optimizer using the latest settings. Notice that the ```-posilent```, ```-poapply```, etc. flags need to be passed *before* the call to ```-po``` that they which to affect and which is the one that triggers the optimizer. You can pass an optional parameter, like ````-po size``` or ```-po speed```, which are shortcuts for '-po -popatterns data/pbo-patterns-size.txt' and '-po -popatterns data/pbo-patterns-speed.txt' (some dialects might change the defaults of these two)
-- ```-po1```/```-po2```/```-po3```: (task) The same as ```-po```, but specify whether to do 1, 2 or 3 passes of optimization (```-po``` is equivalent to ```-po2```). The more passes, the slower the optimization. Usually 1 pass is enough, but often 2 passes finds a few additional optimizations. 3 passes rarely finds any additional optimization.
+- ```-ro```: runs the code reoganizer optimizer.
+- ```-ro-no-inliner```: deactivates the function inliner.
+- ```-ro-no-merger```: deactivates the block merger.
+- ```-rohtml <file>```: generates a visualization of the division of the code before code reoganizer optimization as an html file.
+- ```-po```: Runs the pattern-based optimizer using the latest settings. Notice that the ```-posilent```, etc. flags need to be passed *before* the call to ```-po``` that they which to affect and which is the one that triggers the optimizer. You can pass an optional parameter, like ````-po size``` or ```-po speed```, which are shortcuts for '-po -popatterns data/pbo-patterns-size.txt' and '-po -popatterns data/pbo-patterns-speed.txt' (some dialects might change the defaults of these two)
+- ```-po1```/```-po2```/```-po3```: The same as ```-po```, but specify whether to do 1, 2 or 3 passes of optimization (```-po``` is equivalent to ```-po2```). The more passes, the slower the optimization. Usually 1 pass is enough, but often 2 passes finds a few additional optimizations. 3 passes rarely finds any additional optimization.
 - ```-posilent```: Supresses the pattern-based-optimizer output
-- ```-poapply```: (deprecated) For each assembler ```<file>``` parsed by MDL, a corresponding ```<file>.mdl.asm``` is generated with the optimizations applied to it.
 - ```-popotential```: Reports lines where a potential optimization was not applied for safety, but could maybe be done manually (at most one potential optimization per line is shown).
 - ```-popotential-all```: Same as above, but without the one-per-line constraint.
 - ```-popatterns <file>```: specifies the file to load optimization patterns from (default 'data/pbo-patterns.txt', which contains patterns that optimize both size and speed). For targetting size optimizations, use 'data/pbo-patterns-size.txt'. Notice that some dialects might change the default, for example, the sdcc dialect sets the default to 'data/pbo-patterns-sdcc-speed.txt'
-- ```-po-ldo```: some pattern-based optimizations depend on the specific value that some labels take ('label-dependent optimizations', ldo). These might be dangerous for code that is still in development. This flag disables those optimizations for al subsequence calls to ```-po```.
-- ```-ro```: (task) runs the code reoganizer optimizer.
-- ```-ro-no-inliner```: deactivates the function inliner in the subsequent calls to ```-ro```.
-- ```-rohtml <file>```: generates a visualization of the division of the code before code reoganizer optimization as an html file.
-- ```-dot <output file>```: (task) generates a dot file with a graph representing the whole source code. Convert it to a png using 'dot' like this: ```dot -Tpng <output file>.dot -o <output file>.png```
-- ```-st <output file>```: (task) to output the symbol table.
+- ```-po-ldo```: some pattern-based optimizations depend on the specific value that some labels take ('label-dependent optimizations', ldo). These might be dangerous for code that is still in development.
+- ```-dot <output file>```: generates a dot file with a graph representing the whole source code. Convert it to a png using 'dot' like this: ```dot -Tpng <output file>.dot -o <output file>.png```
+- ```-st <output file>```: to output the symbol table.
 - ```-st-constants```: includes constants, in addition to labels, in the output symbol table.
-- ```-sft <output file>```: (task) generates a tsv file with some statistics about the source files.
-- ```-asm <output file>```: (task) saves the resulting assembler code in a single asm file (if no optimizations are performed, then this will just output the same code read as input (but with all macros and include statements expanded). Use ```auto``` as the output file name to respect the filenames specified in the sourcefiles of some dialects, or to auto generate an output name.
-- ```-asm-dialect <output file>```: (task) same as '-asm', but tries to mimic the syntax of the defined dialect in the output (experimental feature, not fully implemented!).  Use ```auto``` as the output file name to respect the filenames specified in the sourcefiles of some dialects, or to auto generate an output name.
-- ```-asm-expand-inbcin```: replaces all incbin commands with their actual data in the output assembler file, effectively, making the output assembler file self-contained.
-- ```-asm+ <output file>```: (task) generates a single text file containing the original assembler code (with macros expanded), that includes size and time annotations at the beginning of each file to help with manual optimizations beyond what MDL already provides.
-- ```-asm+:html <output file>```: (task) acts like ```-asm+```, except that the output is in html (rendered as a table), allowing it to have some extra information.
-- ```-bin <output file>```: (task) generates an assembled binary. Use ```auto``` as the output file name to respect the filenames specified in the sourcefiles of some dialects, or to auto generate an output name.
+- ```-sft <output file>```: generates a tsv file with some statistics about the source files.
+- ```-asm <output file>```: saves the resulting assembler code in a single asm file (if no optimizations are performed, then this will just output the same code read as input (but with all macros and include statements expanded). Use ```auto``` as the output file name to respect the filenames specified in the sourcefiles of some dialects, or to auto generate an output name.
+- ```-asm-dialect <output file>```: same as '-asm', but tries to mimic the syntax of the defined dialect in the output (experimental feature, not fully implemented!).  Use ```auto``` as the output file name to respect the filenames specified in the sourcefiles of some dialects, or to auto generate an output name.
+- ```-asm-expand-incbin```: replaces all incbin commands with their actual data in the output assembler file, effectively, making the output assembler file self-contained.
+- ```-asm+ <output file>```: generates a single text file containing the original assembler code (with macros expanded), that includes size and time annotations at the beginning of each file to help with manual optimizations beyond what MDL already provides.
+- ```-asm+:html <output file>```: acts like ```-asm+```, except that the output is in html (rendered as a table), allowing it to have some extra information.
+- ```-bin <output file>```: generates an assembled binary. Use ```auto``` as the output file name to respect the filenames specified in the sourcefiles of some dialects, or to autogenerate an output name.
 
 
 ## How to use MDL
