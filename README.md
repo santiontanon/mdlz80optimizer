@@ -63,7 +63,7 @@ Note: notice that all the tasks concerning generating outputs (assembler, binari
 - ```-ro-no-inliner```: deactivates the function inliner.
 - ```-ro-no-merger```: deactivates the block merger.
 - ```-rohtml <file>```: generates a visualization of the division of the code before code reoganizer optimization as an html file.
-- ```-po```: Runs the pattern-based optimizer using the latest settings. Notice that the ```-posilent```, etc. flags need to be passed *before* the call to ```-po``` that they which to affect and which is the one that triggers the optimizer. You can pass an optional parameter, like ````-po size``` or ```-po speed```, which are shortcuts for '-po -popatterns data/pbo-patterns-size.txt' and '-po -popatterns data/pbo-patterns-speed.txt' (some dialects might change the defaults of these two)
+- ```-po```: Runs the pattern-based optimizer using the latest settings. You can pass an optional parameter, like ````-po size``` or ```-po speed```, which are shortcuts for '-po -popatterns data/pbo-patterns-size.txt' and '-po -popatterns data/pbo-patterns-speed.txt' (some dialects might change the defaults of these two)
 - ```-po1```/```-po2```/```-po3```: The same as ```-po```, but specify whether to do 1, 2 or 3 passes of optimization (```-po``` is equivalent to ```-po2```). The more passes, the slower the optimization. Usually 1 pass is enough, but often 2 passes finds a few additional optimizations. 3 passes rarely finds any additional optimization.
 - ```-posilent```: Supresses the pattern-based-optimizer output
 - ```-popotential```: Reports lines where a potential optimization was not applied for safety, but could maybe be done manually (at most one potential optimization per line is shown).
