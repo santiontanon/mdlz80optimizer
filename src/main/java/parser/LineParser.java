@@ -333,9 +333,9 @@ public class LineParser {
         return false;
     }
 
-    public boolean canBeLabel(String token) {
+    public boolean canBeLabel(String token, boolean indented) {
         if (isKeyword(token)) return false;
-        if (config.opParser.isOpName(token, 0)) return false;
+        if (config.opParser.isOpName(token, 0) && !config.considerCpuOpSymbolsWithoutIndentationToBeLabels) return false;
         if (config.preProcessor.isMacroName(token, config.preProcessor.MACRO_MACRO)) return false;
         if ((macroDefinitionStyle == MACRO_MACRO_NAME_ARGS || macroDefinitionStyle == MACRO_BOTH)
             && config.preProcessor.isMacro(token)) return false;
@@ -350,9 +350,10 @@ public class LineParser {
         }
 
         String token = tokens.get(0);
+        boolean indented = !sl.line.startsWith(token);
 
         if (tokens.size() >= 2
-                && canBeLabel(token)
+                && canBeLabel(token, indented)
                 && isKeyword(tokens.get(1),KEYWORD_COLON)) {
             Expression exp = Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, s, code, config);
 
@@ -398,8 +399,8 @@ public class LineParser {
                 }
                 return parseRestofTheLine(tokens, l, sl, s, previous, source, code);
             }
-        } else if (canBeLabel(token) && !config.preProcessor.isMacroIncludingEnds(token)) {
-            if (sl.line.startsWith(token) && (tokens.size() == 1 || config.tokenizer.isSingleLineComment(tokens.get(1)))) {
+        } else if (canBeLabel(token, indented) && !config.preProcessor.isMacroIncludingEnds(token)) {
+            if (!indented && (tokens.size() == 1 || config.tokenizer.isSingleLineComment(tokens.get(1)))) {
                 if (!config.opParser.getOpSpecs(tokens.get(0)).isEmpty()) return true;
                 
                 if (config.dialectParser != null &&
@@ -431,11 +432,11 @@ public class LineParser {
             } else if (tokens.size() >= 2) {
                 boolean isLabel = false;
                 boolean scope = true;
-                if (sl.line.startsWith(token)) isLabel = true;
+                if (!indented) isLabel = true;
                 if (config.dialectParser != null && isLabel) {
                     if (config.dialectParser.recognizeIdiom(tokens, s.label, code)) isLabel = false;
                 }
-                if (isLabel) {
+                if (isLabel && (indented || !config.considerCpuOpSymbolsWithoutIndentationToBeLabels)) {
                     if (!config.opParser.getOpSpecs(tokens.get(0)).isEmpty()) isLabel = false;
                 }
                 for (String keyword : keywordsHintingALabel) {

@@ -67,6 +67,7 @@ public class GlassDialect implements Dialect {
         
         config.preProcessor.dialectMacros.put("irp", "endm");
         config.preProcessor.addScopeLabelsToRept = true;
+        config.considerCpuOpSymbolsWithoutIndentationToBeLabels = true;
         
         // recognized escape sequences by Glass:
         config.tokenizer.stringEscapeSequences.put("0", "\u0000");

@@ -37,10 +37,12 @@ public class GenerationTest {
                                                                           "data/generationtests/mdl-circular-expected.asm")); }
     @Test public void test3() throws IOException { Assert.assertTrue(test("data/generationtests/mdl-safetylabels.asm",
                                                                           "data/generationtests/mdl-safetylabels-expected.asm")); }
+    @Test public void test4() throws IOException { Assert.assertTrue(test("data/generationtests/mdl-safetylabels2.asm",
+                                                                          "data/generationtests/mdl-safetylabels2-expected.asm")); }
 
     private boolean test(String inputFile, String expectedOutputFile) throws IOException
     {
-        Assert.assertTrue(config.parseArgs(inputFile));
+        Assert.assertTrue(config.parseArgs(inputFile, "-safety-labels-for-jumps-to-constants"));
         Assert.assertTrue(
                 "Could not parse file " + inputFile,
                 config.codeBaseParser.parseMainSourceFile(config.inputFile, code));

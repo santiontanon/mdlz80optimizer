@@ -39,7 +39,7 @@ public class CodeBaseParser {
         for(String definition: config.symbolDefinitions) {
             List<String> tokens = config.tokenizer.tokenize(definition);
             String symbolName = tokens.remove(0);
-            if (!config.lineParser.canBeLabel(symbolName)) {
+            if (!config.lineParser.canBeLabel(symbolName, false)) {
                 config.error("Cannot parse flag -equ " + definition + " (symbol name is not allowed)");
                 return false;
             }
@@ -498,13 +498,15 @@ public class CodeBaseParser {
         int idx = 1;
         for(SourceFile f : code.getSourceFiles()) {
             for(CodeStatement s: f.getStatements()) {
-                if (s.type == CodeStatement.STATEMENT_CPUOP && s.op.isJump()) {
+                if (s.type == CodeStatement.STATEMENT_CPUOP && 
+                    (s.op.isJump() || s.op.isCall())) {
                     Expression destination = s.op.getTargetJumpExpression();
                     if (destination.containsCurrentAddress()) {
                         if (replaceJumpExpressionWithLabelForSafety(s, idx, code)) {
                             idx ++;
                         }
-                    } else if (destination.type == Expression.EXPRESSION_INTEGER_CONSTANT) {
+                    } else if (destination.type == Expression.EXPRESSION_INTEGER_CONSTANT &&
+                               config.safetyLabelsForJumpsToConstants) {
                         // this is just a constant expression, replace with a label for safety!
                         if (replaceJumpExpressionWithLabelForSafety(s, idx, code)) {
                             idx ++;
@@ -527,9 +529,9 @@ public class CodeBaseParser {
         Integer targetAddress = destination.evaluateToInteger(s, code, true);
 
         Integer currentAddress = current.getAddress(code);
-        Integer currentSize;
+        Integer currentSize = current.sizeInBytes(code, true, true, true);
         int direction = 0;
-        do {
+        while (targetAddress < currentAddress || targetAddress >= currentAddress + currentSize) {
             if (targetAddress < currentAddress) {
                 if (direction <= 0) {
                     direction = -1;
@@ -577,7 +579,7 @@ public class CodeBaseParser {
                 config.warn("Optimizations can potentially break this codebase.");
                 return false;
             }
-        } while (targetAddress < currentAddress || targetAddress >= currentAddress + currentSize);
+        }
 
         // Create a new label:
         if (current.label == null) {

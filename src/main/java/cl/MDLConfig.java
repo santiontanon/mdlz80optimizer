@@ -84,6 +84,8 @@ public class MDLConfig {
     public boolean evaluateDialectFunctions = true;
     public boolean caseSensitiveSymbols = true;
     public boolean convertSymbolstoUpperCase = false;
+    public boolean safetyLabelsForJumpsToConstants = false;
+    public boolean considerCpuOpSymbolsWithoutIndentationToBeLabels = false;
 
     // Two variables, as if they are both false, no conversion is done
     public boolean output_opsInLowerCase = true;
@@ -169,7 +171,8 @@ public class MDLConfig {
             + "- ```-out-squarebracket-ind```: use [] for indirections in the output, rather than ().\n"
             + "- ```-out-data-instead-of-ds```: will replace statements like ```ds 4, 0``` by ```db 0, 0, 0, 0```.\n"
             + "- ```-out-do-not-evaluate-dialect-functions```: some assembler dialects define functions like random/sin/cos that can be used to form expressions. By default, MDL replaces them by the result of their execution before generating assembler output (as those might not be defined in other assemblers, and thus this keeps the assembler output as compatible as possible). Use this flag if you don't want this to happen.\n"
-            + "- ```-out-evaluate-all-expressions```: this flag makes MDL resolve all expressions down to their ultimate numeric or string value when generating assembler code.\n";
+            + "- ```-out-evaluate-all-expressions```: this flag makes MDL resolve all expressions down to their ultimate numeric or string value when generating assembler code.\n"
+            + "- ```-safety-labels-for-jumps-to-constants```: makes MDL replace the destination of a jump/call to a constant (e.g. ```jp #3c4a```) by a label. MDL does not do this by default since calls to constants are often used for BIOS calls (although replacing those constants by labels is recommended). Jumpts to constants are unsafe for optimization as the code at the target address (```#3c4a``` in the example) might move as a result of optimization. Hence, it's safer to add a safety label at the target address and use it for the jump.\n";
 
     public String simpleDocString = "MDL "+Main.VERSION_STRING+" (A Z80 assembler optimizer) by Santiago Ontañón (Brain Games, 2020-2021)\n"
             + "https://github.com/santiontanon/mdlz80optimizer\n"
@@ -514,6 +517,11 @@ public class MDLConfig {
                         
                     case "-out-evaluate-all-expressions":
                         evaluateAllExpressions = true;
+                        args.remove(0);
+                        break;
+                        
+                    case "-safety-labels-for-jumps-to-constants":
+                        safetyLabelsForJumpsToConstants = true;
                         args.remove(0);
                         break;
 
