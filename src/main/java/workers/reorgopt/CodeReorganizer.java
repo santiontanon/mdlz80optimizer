@@ -746,7 +746,8 @@ public class CodeReorganizer implements MDLWorker {
                 for(int k = 0;k<ops1.size();k++) {
                     List<Integer> bytes1 = ops1.get(k).op.assembleToBytes(ops1.get(k), code, config);
                     List<Integer> bytes2 = ops2.get(k).op.assembleToBytes(ops2.get(k), code, config);
-                    if (bytes1.size() != bytes2.size()) {
+                    if (bytes1 == null || bytes2 == null ||
+                        bytes1.size() != bytes2.size()) {
                         match = false;
                         break;
                     }
