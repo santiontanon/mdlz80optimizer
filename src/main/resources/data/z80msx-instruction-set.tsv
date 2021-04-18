@@ -87,14 +87,14 @@ PUSH BC	12	C5	1	BC,SP				SP			[SP-2:SP-1]	true
 PUSH DE	12	D5	1	DE,SP				SP			[SP-2:SP-1]	true
 PUSH HL	12	E5	1	HL,SP				SP			[SP-2:SP-1]	true
 RET	11	C9	1	SP			[SP:SP+1]	SP,PC				true
-RET C	6/12	D8	1	SP	C		[SP:SP+1]	SP,PC				true
-RET M	6/12	F8	1	SP	S		[SP:SP+1]	SP,PC				true
-RET NC	6/12	D0	1	SP	C		[SP:SP+1]	SP,PC				true
-RET NZ	6/12	C0	1	SP	Z		[SP:SP+1]	SP,PC				true
-RET P	6/12	F0	1	SP	S		[SP:SP+1]	SP,PC				true
-RET PE	6/12	E8	1	SP	P		[SP:SP+1]	SP,PC				true
-RET PO	6/12	E0	1	SP	P		[SP:SP+1]	SP,PC				true
-RET Z	6/12	C8	1	SP	Z		[SP:SP+1]	SP,PC				true
+RET C	12/6	D8	1	SP	C		[SP:SP+1]	SP,PC				true
+RET M	12/6	F8	1	SP	S		[SP:SP+1]	SP,PC				true
+RET NC	12/6	D0	1	SP	C		[SP:SP+1]	SP,PC				true
+RET NZ	12/6	C0	1	SP	Z		[SP:SP+1]	SP,PC				true
+RET P	12/6	F0	1	SP	S		[SP:SP+1]	SP,PC				true
+RET PE	12/6	E8	1	SP	P		[SP:SP+1]	SP,PC				true
+RET PO	12/6	E0	1	SP	P		[SP:SP+1]	SP,PC				true
+RET Z	12/6	C8	1	SP	Z		[SP:SP+1]	SP,PC				true
 RLA	5	17	1	A	C			A	H,N,C			true
 RLCA	5	7	1	A				A	H,N,C			true
 RRA	5	1F	1	A	C			A	H,N,C			true

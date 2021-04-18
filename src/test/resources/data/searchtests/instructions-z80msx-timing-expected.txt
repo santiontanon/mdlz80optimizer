@@ -8,3 +8,36 @@
 5   ;    add a,a
 8   ;    ld (hl),a
 9   ;    djnz label (second time)
+18  ;    call f1
+11  ;    jp label2
+5   ;    xor a
+11  ;    jp nz,label3 (no jump)
+11  ;    jp z,label3 (jump)
+5   ;    xor a
+6   ;    ret nz (no ret)
+12  ;    ret z (ret)
+5   ;    xor a
+11  ;    call nz,f2 (no call)
+18  ;    call z,f2 (call)
+11  ;    ld hl,#4000
+11  ;    ld de,#4001
+11  ;    ld bc,10
+225 ;    ldir
+11  ;    ld bc,4
+5   ;    inc a
+23  ;    cpdr
+23  ;    cpdr
+23  ;    cpdr
+18  ;    cpdr
+8   ;    ld b,4
+23  ;    inir
+23  ;    inir
+23  ;    inir
+18  ;    inir
+8   ;    ld b,4
+23  ;    otir
+23  ;    otir
+23  ;    otir
+18  ;    otir
+11  ;    ret
+12  ;    rst 0

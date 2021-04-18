@@ -86,14 +86,14 @@ PUSH BC	11	C5	1	BC,SP				SP			[SP-2:SP-1]	true
 PUSH DE	11	D5	1	DE,SP				SP			[SP-2:SP-1]	true
 PUSH HL	11	E5	1	HL,SP				SP			[SP-2:SP-1]	true
 RET	10	C9	1	SP			[SP:SP+1]	SP,PC				true
-RET C	5/11	D8	1	SP	C		[SP:SP+1]	SP,PC				true
-RET M	5/11	F8	1	SP	S		[SP:SP+1]	SP,PC				true
-RET NC	5/11	D0	1	SP	C		[SP:SP+1]	SP,PC				true
-RET NZ	5/11	C0	1	SP	Z		[SP:SP+1]	SP,PC				true
-RET P	5/11	F0	1	SP	S		[SP:SP+1]	SP,PC				true
-RET PE	5/11	E8	1	SP	P		[SP:SP+1]	SP,PC				true
-RET PO	5/11	E0	1	SP	P		[SP:SP+1]	SP,PC				true
-RET Z	5/11	C8	1	SP	Z		[SP:SP+1]	SP,PC				true
+RET C	11/5	D8	1	SP	C		[SP:SP+1]	SP,PC				true
+RET M	11/5	F8	1	SP	S		[SP:SP+1]	SP,PC				true
+RET NC	11/5	D0	1	SP	C		[SP:SP+1]	SP,PC				true
+RET NZ	11/5	C0	1	SP	Z		[SP:SP+1]	SP,PC				true
+RET P	11/5	F0	1	SP	S		[SP:SP+1]	SP,PC				true
+RET PE	11/5	E8	1	SP	P		[SP:SP+1]	SP,PC				true
+RET PO	11/5	E0	1	SP	P		[SP:SP+1]	SP,PC				true
+RET Z	11/5	C8	1	SP	Z		[SP:SP+1]	SP,PC				true
 RLA	4	17	1	A	C			A	H,N,C			true
 RLCA	4	7	1	A				A	H,N,C			true
 RRA	4	1F	1	A	C			A	H,N,C			true
@@ -192,10 +192,10 @@ JP IX	8	DD E9	2	IX				PC				true
 JP (IX)	8	DD E9	2	IX				PC				true
 JP IY	8	FD E9	2	IY				PC				true
 JP (IY)	8	FD E9	2	IY				PC				true
-JR C,o	7/12	38 o	2		C			PC				true
-JR NC,o	7/12	30 o	2		C			PC				true
-JR NZ,o	7/12	20 o	2		Z			PC				true
-JR Z,o	7/12	28 o	2		Z			PC				true
+JR C,o	12/7	38 o	2		C			PC				true
+JR NC,o	12/7	30 o	2		C			PC				true
+JR NZ,o	12/7	20 o	2		Z			PC				true
+JR Z,o	12/7	28 o	2		Z			PC				true
 JR o	12	18 o	2					PC				true
 LD (HL),n	10	36 n	2	HL							HL	true
 LD A,I	9	ED 57	2	I				A				true

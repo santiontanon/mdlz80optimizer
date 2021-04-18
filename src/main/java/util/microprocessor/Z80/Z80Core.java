@@ -30,13 +30,12 @@ import static util.microprocessor.Z80.CPUConstants.*;
  */
 public class Z80Core implements ICPUData {
 
-    //
     // maximum address size
     private final static int MAX_ADDRESS = 65535;
     private final IMemory ram;
     private final IBaseDevice io;
     private final CPUConfig config;
-    //
+
     private int instruction;
     private boolean halt;
     private long tStates;
@@ -1018,7 +1017,7 @@ public class Z80Core implements ICPUData {
             }
     
             case 0xC0: {
-                ret(!getZ());
+                ret(!getZ(), 0xC0);
                 break;
             }
             case 0xC1: {
@@ -1035,7 +1034,7 @@ public class Z80Core implements ICPUData {
                 break;
             }
             case 0xC4: {
-                call(!getZ());
+                call(!getZ(), 0xC4);
                 break;
             }
             case 0xC5: {
@@ -1053,7 +1052,7 @@ public class Z80Core implements ICPUData {
                 break;
             }
             case 0xC8: {
-                ret(getZ());
+                ret(getZ(), 0xC8);
                 break;
             }
             case 0xC9: {
@@ -1069,7 +1068,7 @@ public class Z80Core implements ICPUData {
                 break;
             }
             case 0xCC: {
-                call(getZ());
+                call(getZ(), 0xCC);
                 break;
             }
             case 0xCD: {
@@ -1087,7 +1086,7 @@ public class Z80Core implements ICPUData {
             }
     
             case 0xD0: {
-                ret(!getC());
+                ret(!getC(), 0xD0);
                 break;
             }
             case 0xD1: {
@@ -1104,7 +1103,7 @@ public class Z80Core implements ICPUData {
                 break;
             }
             case 0xD4: {
-                call(!getC());
+                call(!getC(), 0xD4);
                 break;
             }
             case 0xD5: {
@@ -1122,7 +1121,7 @@ public class Z80Core implements ICPUData {
                 break;
             }
             case 0xD8: {
-                ret(getC());
+                ret(getC(), 0xD8);
                 break;
             }
             case 0xD9: {
@@ -1138,7 +1137,7 @@ public class Z80Core implements ICPUData {
                 break;
             }
             case 0xDC: {
-                call(getC());
+                call(getC(), 0xDC);
                 break;
             }
             case 0xDD: {
@@ -1156,7 +1155,7 @@ public class Z80Core implements ICPUData {
             }
     
             case 0xE0: {
-                ret(!getPV());
+                ret(!getPV(), 0xE0);
                 break;
             }
             case 0xE1: {
@@ -1173,7 +1172,7 @@ public class Z80Core implements ICPUData {
                 break;
             }
             case 0xE4: {
-                call(!getPV());
+                call(!getPV(), 0xE4);
                 break;
             }
             case 0xE5: {
@@ -1191,7 +1190,7 @@ public class Z80Core implements ICPUData {
                 break;
             }
             case 0xE8: {
-                ret(getPV());
+                ret(getPV(), 0xE8);
                 break;
             }
             case 0xE9: {
@@ -1207,7 +1206,7 @@ public class Z80Core implements ICPUData {
                 break;
             }
             case 0xEC: {
-                call(getPV());
+                call(getPV(), 0xEC);
                 break;
             }
             case 0xED: {
@@ -1225,7 +1224,7 @@ public class Z80Core implements ICPUData {
             }
     
             case 0xF0: {
-                ret(!getS());
+                ret(!getS(), 0xF0);
                 break;
             }
             case 0xF1: {
@@ -1244,7 +1243,7 @@ public class Z80Core implements ICPUData {
                 break;
             }
             case 0xF4: {
-                call(!getS());
+                call(!getS(), 0xF4);
                 break;
             }
             case 0xF5: {
@@ -1262,7 +1261,7 @@ public class Z80Core implements ICPUData {
                 break;
             }
             case 0xF8: {
-                ret(getS());
+                ret(getS(), 0xF8);
                 break;
             }
             case 0xF9: {
@@ -1278,7 +1277,7 @@ public class Z80Core implements ICPUData {
                 break;
             }
             case 0xFC: {
-                call(getS());
+                call(getS(), 0xFC);
                 break;
             }
             case 0xFD: {
@@ -5999,7 +5998,6 @@ public class Z80Core implements ICPUData {
     }
 
     private void jp(boolean cc) {
-        tStates = tStates + 10;
         if (cc)
             reg_PC = ram.readWord(reg_PC);
         else
@@ -6007,22 +6005,18 @@ public class Z80Core implements ICPUData {
     }
 
     private void jp() {
-        tStates = tStates + 10;
         reg_PC = ram.readWord(reg_PC);
     }
 
-    private void ret(boolean cc) {
+    private void ret(boolean cc, int instruction) {
         if (cc) {
             reg_PC = ram.readWord(reg_SP);
             inc2SP();
-            tStates = tStates + 11;
-        } else {
-            tStates = tStates + 5;
+            tStates = tStates + config.OPCODE_T_STATES2[instruction];
         }
     }
 
     private void ret() {
-        tStates = tStates + 10;
         reg_PC = ram.readWord(reg_SP);
         inc2SP();
     }
@@ -6038,17 +6032,16 @@ public class Z80Core implements ICPUData {
         inc2SP();
     }
 
-    private void call(boolean cc) {
+    private void call(boolean cc, int instruction) {
         if (cc) {
             call();
+            tStates = tStates + config.OPCODE_T_STATES2[instruction];
         } else {
-            tStates = tStates + 10;
             inc2PC();
         }
     }
 
     private void call() {
-        tStates = tStates + 17;
         int destination = ram.readWord(reg_PC);
         inc2PC();
         dec2SP();
@@ -6057,7 +6050,6 @@ public class Z80Core implements ICPUData {
     }
 
     private void rst(int code) {
-        tStates = tStates + 11;
         dec2SP();
         ram.writeWord(reg_SP, reg_PC);
         switch (code) {
@@ -6315,9 +6307,9 @@ public class Z80Core implements ICPUData {
     private void LDIR() {
         blockMove = true;
         while (blockMove) {
-            tStates = tStates + 21;
             LDI();
             blockMove = getBC() != 0;
+            if (blockMove) tStates = tStates + config.OPCODE_ED_STATES[0xB0] + config.OPCODE_ED_STATES2[0xB0];
         }
     }
 
@@ -6346,9 +6338,9 @@ public class Z80Core implements ICPUData {
     private void LDDR() {
         blockMove = true;
         while (blockMove) {
-            tStates = tStates + 21;
             LDD();
             blockMove = getBC() != 0;
+            if (blockMove) tStates = tStates + config.OPCODE_ED_STATES[0xB8] + config.OPCODE_ED_STATES2[0xB8];
         }
     }
 
@@ -6387,10 +6379,11 @@ public class Z80Core implements ICPUData {
     }
 
     private void CPIR() {
-        tStates = tStates + 21;
         CPI();
-        if (!getZ() && (getBC() != 0))
+        if (!getZ() && (getBC() != 0)) {
             dec2PC();
+            tStates = tStates + config.OPCODE_ED_STATES2[0xB1];        
+        }
     }
 
     private void CPD() {
@@ -6425,10 +6418,11 @@ public class Z80Core implements ICPUData {
     }
 
     private void CPDR() {
-        tStates = tStates + 21;
         CPD();
-        if (!getZ() && (getBC() != 0))
+        if (!getZ() && (getBC() != 0)) {
             dec2PC();
+            tStates = tStates + config.OPCODE_ED_STATES2[0xB9];
+        }
     }
 
     /* block IO */
@@ -6441,10 +6435,11 @@ public class Z80Core implements ICPUData {
     }
 
     private void INIR() {
-        tStates = tStates + 21;
         INI();
-        if (!getZ())
+        if (!getZ()) {
             dec2PC();
+            tStates = tStates + config.OPCODE_ED_STATES2[0xB2];
+        }
     }
 
     private void IND() {
@@ -6456,10 +6451,11 @@ public class Z80Core implements ICPUData {
     }
 
     private void INDR() {
-        tStates = tStates + 21;
         IND();
-        if (!getZ())
+        if (!getZ()) {
             dec2PC();
+            tStates = tStates + config.OPCODE_ED_STATES2[0xBA];
+        }
     }
 
     private void OUTI() {
@@ -6472,10 +6468,11 @@ public class Z80Core implements ICPUData {
     }
 
     private void OTIR() {
-        tStates = tStates + 21;
         OUTI();
-        if (!getZ())
+        if (!getZ()) {
             dec2PC();
+            tStates = tStates + config.OPCODE_ED_STATES2[0xB3];
+        }
     }
 
     private void OUTD() {
@@ -6488,10 +6485,11 @@ public class Z80Core implements ICPUData {
     }
 
     private void OTDR() {
-        tStates = tStates + 21;
         OUTD();
-        if (!getZ())
+        if (!getZ()) {
             dec2PC();
+            tStates = tStates + config.OPCODE_ED_STATES2[0xBB];
+        }
     }
 
     /*

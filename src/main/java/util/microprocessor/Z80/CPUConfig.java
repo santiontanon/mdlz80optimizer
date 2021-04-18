@@ -74,8 +74,8 @@ public class CPUConfig {
                         OPCODE_T_STATES[buffer[0]] = 0;
                         OPCODE_ED_STATES[buffer[1]] = (byte)spec.times[0];
                         if (spec.times.length > 1) {
-                            OPCODE_ED_STATES[buffer[0]] = (byte)(spec.times[1]);
-                            OPCODE_ED_STATES2[buffer[0]] = (byte)(spec.times[0] - OPCODE_ED_STATES[buffer[0]]);
+                            OPCODE_ED_STATES[buffer[1]] = (byte)(spec.times[1]);
+                            OPCODE_ED_STATES2[buffer[1]] = (byte)(spec.times[0] - OPCODE_ED_STATES[buffer[1]]);
                         }
                     }
                     break;

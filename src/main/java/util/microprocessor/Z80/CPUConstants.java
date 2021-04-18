@@ -23,7 +23,6 @@ package util.microprocessor.Z80;
 public class CPUConstants {
     // Pre-calculate parity table
     static final boolean[] PARITY_TABLE = new boolean[256];
-    //
 
     // register bit codes
     final static int regCodeB = 0x0000;

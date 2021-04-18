@@ -1,10 +1,43 @@
-3  ;    ld hl,#4000
+3   ;    ld hl,#4000
 2   ;    ld b,2
 2   ;    ld a,(hl)
 1   ;    add a,a
 2   ;    ld (hl),a
-4  ;    djnz label (first time)
+4   ;    djnz label (first time)
 2   ;    ld a,(hl)
 1   ;    add a,a
 2   ;    ld (hl),a
 3   ;    djnz label (second time)
+5   ;    call f1
+3   ;    jp label2
+1   ;    xor a
+3   ;    jp nz,label3 (no jump)
+3   ;    jp z,label3 (jump)
+1   ;    xor a
+2   ;    ret nz (no ret)
+4   ;    ret z (ret)
+1   ;    xor a
+3   ;    call nz,f2 (no call)
+5   ;    call z,f2 (call)
+3   ;    ld hl,#4000
+3   ;    ld de,#4001
+3   ;    ld bc,10
+59  ;    ldir
+3   ;    ld bc,4
+1   ;    inc a
+6   ;    cpdr
+6   ;    cpdr
+6   ;    cpdr
+5   ;    cpdr
+2   ;    ld b,4
+6   ;    inir
+6   ;    inir
+6   ;    inir
+5   ;    inir
+2   ;    ld b,4
+6   ;    otir
+6   ;    otir
+6   ;    otir
+5   ;    otir
+3   ;    ret
+4   ;    rst 0
