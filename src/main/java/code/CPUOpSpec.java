@@ -13,10 +13,10 @@ public class CPUOpSpec {
     public String opName;
     public Expression opNameExp;
     public List<CPUOpSpecArg> args = new ArrayList<>();
-    int sizeInBytes;
-    int times[];
-    String byteRepresentationRaw = null;    // this is useful to check if two instructions are the same
-    List<String[]> bytesRepresentation; // each element is a byte, and the array has 2 elements: the byte, and the modifier
+    public int sizeInBytes;
+    public int times[];
+    public String byteRepresentationRaw = null;    // this is useful to check if two instructions are the same
+    public List<String[]> bytesRepresentation; // each element is a byte, and the array has 2 elements: the byte, and the modifier
     
     public boolean official;
     public CPUOpSpec officialEquivalent = null;
@@ -53,6 +53,13 @@ public class CPUOpSpec {
             }
         }
         assert(sizeInBytes == bytesRepresentation.size());
+    }
+    
+    
+    @Override
+    public String toString()
+    {
+        return opName + " " + args;
     }
     
     
@@ -304,5 +311,5 @@ public class CPUOpSpec {
         if (jumpLabelArgument() != -1) return true;
         return false;
     }
-    
+        
 }

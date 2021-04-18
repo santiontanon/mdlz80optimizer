@@ -71,6 +71,12 @@ public class CPUOpParser {
     }
     
 
+    public List<CPUOpSpec> getOpSpecs()
+    {
+        return opSpecs;
+    }
+    
+    
     public List<CPUOpSpec> getOpSpecs(String name)
     {
         List<CPUOpSpec> l = opSpecHash.get(name.toLowerCase());

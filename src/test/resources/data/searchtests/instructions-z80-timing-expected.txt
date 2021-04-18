@@ -1,0 +1,10 @@
+10  ;    ld hl,#4000
+7   ;    ld b,2
+7   ;    ld a,(hl)
+4   ;    add a,a
+7   ;    ld (hl),a
+13  ;    djnz label (first time)
+7   ;    ld a,(hl)
+4   ;    add a,a
+7   ;    ld (hl),a
+8   ;    djnz label (second time)
