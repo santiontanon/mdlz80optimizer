@@ -11,11 +11,25 @@ import code.CPUOpSpec;
 /**
  *
  * @author santi
+ * 
+ * In the original Z80Processor project ( https://github.com/codesqueak/Z80Processor ),
+ * timings for CPU instructions were hardcoded. However ,MDL needs to simulate the Z80 
+ * setup used in different machines (Spectrum, MSX, Amstrad, etc.), which have different
+ * timings. So, I have separated these variables into this class, which gets them initialized
+ * from the CPU op specs used by MDL (so that all the info is centralized in one single place).
+ * If you want to separate this Z80 simulator out of MDL for your own uses, you can simply
+ * specify the value of the OPCODE_T_STATES, OPCODE_T_STATES2, etc. arrays by hand, like
+ * done in the original Z80Processor project. 
+ * 
+ * Note, however, that I have added a couple more arrays (OPCODE_T_STATES2 and
+ * OPCODE_ED_STATES2), to handle the instructions with variable times, which were
+ * previously hardcoded in the code.
+ * 
  */
 public class CPUConfig {
     MDLConfig config = null;
     
-    // T States for all instructions (Where fixed) - If variable, handled locally
+    // Timing for all instructions:
     byte[] OPCODE_T_STATES;
     byte[] OPCODE_T_STATES2;    // for instructions that take different time when jumping    
     byte[] OPCODE_DD_FD_STATES;
