@@ -1,0 +1,3 @@
+initial_state:
+goal_state:
+    A = 0
