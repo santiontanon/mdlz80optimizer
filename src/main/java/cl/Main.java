@@ -12,6 +12,7 @@ import workers.pattopt.PatternBasedOptimizer;
 import workers.SourceCodeGenerator;
 import workers.SourceCodeTableGenerator;
 import workers.SymbolTableGenerator;
+import workers.searchopt.SearchBasedOptimizer;
 
 public class Main {
     
@@ -22,6 +23,7 @@ public class Main {
         MDLConfig config = new MDLConfig();
 
         // Add the available workers (in the order in which they will be executed):
+        config.registerWorker(new SearchBasedOptimizer(config));
         config.registerWorker(new CodeReorganizer(config));
         config.registerWorker(new PatternBasedOptimizer(config));
         
@@ -46,13 +48,23 @@ public class Main {
 
         // Parse the code base:
         CodeBase code = new CodeBase(config);
-        if (!config.codeBaseParser.parseMainSourceFile(config.inputFile, code)) {
-            if (config.dialectParser != null) {
-                config.error("Could not fully parse the code (error code 2).");
-            } else {
-                config.error("Could not fully parse the code (error code 2). Maybe missing `-dialect <dialect>` flag?");
-            }
-            System.exit(2);
+        switch(config.codeSource) {
+            case MDLConfig.CODE_FROM_INPUT_FILE:
+                if (!config.codeBaseParser.parseMainSourceFile(config.inputFile, code)) {
+                    if (config.dialectParser != null) {
+                        config.error("Could not fully parse the code (error code 2).");
+                    } else {
+                        config.error("Could not fully parse the code (error code 2). Maybe missing `-dialect <dialect>` flag?");
+                    }
+                    System.exit(2);
+                }
+                break;
+            case MDLConfig.CODE_FROM_SEARCHBASEDOPTIMIZER:
+                // Code will be generated automatically when the worker is called
+                break;
+            default:
+                config.error("Unknown source code source: " + config.codeSource);
+                System.exit(4);
         }
         
         // Execute all the requested workers according to the command-line arguments:

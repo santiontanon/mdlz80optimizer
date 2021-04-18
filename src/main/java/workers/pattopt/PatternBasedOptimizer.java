@@ -8,13 +8,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 import cl.MDLConfig;
-import cl.MDLLogger;
 import cl.OptimizationResult;
 import code.CodeBase;
 import code.SourceFile;
 import code.CodeStatement;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.tuple.Pair;

@@ -35,6 +35,11 @@ public class MDLConfig {
     public static final String SDCC_UNSAFE_TAG = "sdcc-unsafe";
     public static final String TSTATEZ80_TAG = "tstatez80";
 
+    public static final int CODE_FROM_INPUT_FILE = 0;
+    public static final int CODE_FROM_SEARCHBASEDOPTIMIZER = 1;
+    
+    public int codeSource = CODE_FROM_INPUT_FILE;
+    
     // arguments:
     public String inputFile = null;
     public String symbolTableOutputFile = null;
@@ -115,7 +120,7 @@ public class MDLConfig {
     public CodeBaseParser codeBaseParser;
     public CPUOpSpecParser opSpecParser;
     public CPUOpParser opParser;
-
+    
     List<MDLWorker> workers = new ArrayList<>();
     
     // Accumulated stats to be reported at the end of execution:
@@ -256,7 +261,6 @@ public class MDLConfig {
      */
     public boolean parseArgs(String... argsArray) throws IOException {
         if (argsArray.length == 0) {
-            
             info(MDtoHelpString(simpleDocString));
             return true;
         }
@@ -269,7 +273,6 @@ public class MDLConfig {
             String arg = args.get(0);
             if (arg.startsWith("-")) {
                 switch (arg) {
-                    
                     case "-help":
                         info(MDtoHelpString(docString));
                         return true;
@@ -552,7 +555,6 @@ public class MDLConfig {
                 }
             }
         }
-
 
         opSpecParser = new CPUOpSpecParser(this);
         preProcessor = new PreProcessor(this);
