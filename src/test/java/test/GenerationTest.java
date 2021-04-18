@@ -50,6 +50,14 @@ public class GenerationTest {
         SourceCodeGenerator scg = new SourceCodeGenerator(config);
 
         String result = scg.outputFileString(code.outputs.get(0), code);
+        if (!compareOutputs(result, expectedOutputFile)) return false;
+                
+        return true;
+    }    
+    
+
+    public static boolean compareOutputs(String result, String expectedOutputFile) throws IOException
+    {
         List<String> lines = new ArrayList<>();
         StringTokenizer st = new StringTokenizer(result, "\n");
         while(st.hasMoreTokens()) {
@@ -61,7 +69,10 @@ public class GenerationTest {
         while(true) {
             String line = br.readLine();
             if (line == null) break;
-            expectedLines.add(line.trim());
+            line = line.trim();
+            if (line.length() > 0) {
+                expectedLines.add(line);
+            }
         }
         System.out.println("\n--------------------------------------");
         System.out.println(result);
@@ -77,5 +88,6 @@ public class GenerationTest {
         }
         
         return true;
-    }    
+    }      
+    
 }

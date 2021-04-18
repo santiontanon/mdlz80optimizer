@@ -53,51 +53,17 @@ public class GlassTest {
         // Compare standard assembler generation:
         SourceCodeGenerator scg = new SourceCodeGenerator(config);
         String result = scg.outputFileString(code.outputs.get(0), code);
-        if (!compareOutputs(result, expectedOutputFile)) return false;
+        if (!GenerationTest.compareOutputs(result, expectedOutputFile)) return false;
 
         // Compare dialect assembler generation:
         if (expectedDialectOutputFile != null) {
             SourceCodeGenerator scg_dialect = new SourceCodeGenerator(config);
             scg_dialect.mimicTargetDialect = true;
             String resultDialect = scg_dialect.outputFileString(code.outputs.get(0), code);
-            if (!compareOutputs(resultDialect, expectedDialectOutputFile)) return false;
+            if (!GenerationTest.compareOutputs(resultDialect, expectedDialectOutputFile)) return false;
         }
         
         return true;
     }    
-    
-    
-    private boolean compareOutputs(String result, String expectedOutputFile) throws IOException
-    {
-        List<String> lines = new ArrayList<>();
-        StringTokenizer st = new StringTokenizer(result, "\n");
-        while(st.hasMoreTokens()) {
-            lines.add(st.nextToken().trim());
-        }
-        
-        List<String> expectedLines = new ArrayList<>();
-        BufferedReader br = Resources.asReader(expectedOutputFile);
-        while(true) {
-            String line = br.readLine();
-            if (line == null) break;
-            line = line.trim();
-            if (line.length() > 0) {
-                expectedLines.add(line);
-            }
-        }
-        System.out.println("\n--------------------------------------");
-        System.out.println(result);
-        System.out.println("--------------------------------------\n");
-        
-        for(int i = 0;i<Math.max(lines.size(), expectedLines.size());i++) {
-            String line = lines.size() > i ? lines.get(i):"";
-            String expectedLine = expectedLines.size() > i ? expectedLines.get(i):"";
-            if (!line.equals(expectedLine)) {
-                System.out.println("Line " + i + " was expected to be:\n" + expectedLine + "\nbut was:\n" + line);
-                return false;
-            }
-        }
-        
-        return true;
-    }      
+   
 }

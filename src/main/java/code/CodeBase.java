@@ -201,10 +201,11 @@ public class CodeBase {
     }
 
     
-    public void addOutput(String binaryName, SourceFile main, int minimumSize)
+    public OutputBinary addOutput(String binaryName, SourceFile main, int minimumSize)
     {
         OutputBinary output = new OutputBinary(binaryName, main, minimumSize);
         outputs.add(output);
+        return output;
     }
 
 
