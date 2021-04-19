@@ -38,7 +38,7 @@ public class SearchBasedOptimizerTest {
         Assert.assertTrue(
                 "Could not parse file " + inputFile,
                 sbo.work(code));
-        
+                
         // Compare standard assembler generation:
         SourceCodeGenerator scg = new SourceCodeGenerator(config);
         Assert.assertFalse(code.outputs.isEmpty());

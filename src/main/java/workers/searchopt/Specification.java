@@ -25,19 +25,39 @@ public class Specification {
             name = a_name;
             minValue = a_minValue;
             maxValue = a_maxValue;
-        }
+        }        
     }
     
     
     public static class SpecificationExpression {
-        CPUConstants.RegisterNames leftRegister;
-        Expression right;
+        public CPUConstants.RegisterNames leftRegister;
+        public Expression right;
+
+        public String leftRegisterName; // just for the "toString" method
         
+        @Override
+        public String toString() {
+            return leftRegisterName + " = " + right;
+        }
     }
+    
+    
+    @Override
+    public String toString() {
+        String tmp = "start_state:\n";
+        for(SpecificationExpression exp:startState) {
+            tmp += exp + "\n";
+        }
+        tmp += "goal_state:\n";
+        for(SpecificationExpression exp:goalState) {
+            tmp += exp + "\n";
+        }
+        return tmp;
+    }        
     
     
     // initial state:
     List<InputParameter> parameters = new ArrayList<>();
-    List<SpecificationExpression> initialState = new ArrayList<>();
-    List<SpecificationExpression> goalState = new ArrayList<>();    
+    List<SpecificationExpression> startState = new ArrayList<>();
+    List<SpecificationExpression> goalState = new ArrayList<>();        
 }

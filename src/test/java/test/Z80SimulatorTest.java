@@ -6,12 +6,8 @@
 package test;
 
 import cl.MDLConfig;
-import code.CPUOpSpec;
 import code.CodeBase;
-import code.CodeStatement;
-import code.SourceFile;
 import java.io.BufferedReader;
-import java.util.List;
 import java.util.StringTokenizer;
 import org.junit.Assert;
 import org.junit.Test;

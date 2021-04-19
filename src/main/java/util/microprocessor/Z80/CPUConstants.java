@@ -165,7 +165,25 @@ public class CPUConstants {
         /**
          * 7 bit refresh register
          */
-        R
+        R,
+        
+        // Additional register definitions useful for MDL (individual bytes of the registers above):
+        B,
+        C,
+        D,
+        E,
+        H,
+        L,
+        B_ALT,
+        C_ALT,
+        D_ALT,
+        E_ALT,
+        H_ALT,
+        L_ALT,
+        IXH,
+        IXL,
+        IYH,
+        IYL,
     }
     // final static int msw = 0xFFFF0000;
 
