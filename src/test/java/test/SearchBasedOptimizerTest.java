@@ -36,7 +36,7 @@ public class SearchBasedOptimizerTest {
     {
         Assert.assertTrue(config.parseArgs(inputFile, "-so"));
         Assert.assertTrue(
-                "Could not parse file " + inputFile,
+                "Could not generate code for specification file: " + inputFile,
                 sbo.work(code));
                 
         // Compare standard assembler generation:

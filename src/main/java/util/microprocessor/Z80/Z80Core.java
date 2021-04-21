@@ -196,17 +196,17 @@ public class Z80Core implements ICPUData {
                 
             // Additional register parts, useful for MDL:
             case B:
-                return getBC() >> 8;
+                return reg_B;
             case C:
-                return getBC() & 0xff;
+                return reg_C;
             case D:
-                return getDE() >> 8;
+                return reg_D;
             case E:
-                return getDE() & 0xff;
+                return reg_E;
             case H:
-                return getHL() >> 8;
+                return reg_H;
             case L:
-                return getHL() & 0xff;
+                return reg_L;
             case IXH:
                 return reg_IX >> 8;
             case IXL:
@@ -218,6 +218,96 @@ public class Z80Core implements ICPUData {
                 return reg_IY & 0xff;
         }
     }
+    
+    
+    /**
+     * Sets a register value via a register name
+     *
+     * @param name Register name
+     * @return The register value
+     */
+    public void setRegisterValue(RegisterNames name, int value) {
+        switch (name) {
+            case BC:
+                setBC(value & 0xffff);
+                break;
+            case DE:
+                setDE(value & 0xffff);
+                break;
+            case HL:
+                setHL(value & 0xffff);
+                break;
+            case BC_ALT:
+                setBC_ALT(value & 0xffff);
+                break;
+            case DE_ALT:
+                setDE_ALT(value & 0xffff);
+                break;
+            case HL_ALT:
+                setHL_ALT(value & 0xffff);
+                break;
+            case IX:
+                reg_IX = value & 0xffff;
+                break;
+            case IY:
+                reg_IY = value & 0xffff;
+                break;
+            case SP:
+                reg_SP = value & 0xffff;
+                break;
+            case PC:
+                reg_PC = value & 0xffff;
+                break;
+            case A:
+                reg_A = value & 0xff;
+                break;
+            case F:
+                reg_F = value & 0xff;
+                break;
+            case A_ALT:
+                reg_A_ALT = value & 0xff;
+                break;
+            case F_ALT:
+                reg_F_ALT = value & 0xff;
+                break;
+            case I:
+                reg_I = value & 0xff;
+                break;
+            case R:
+                reg_R = value & 0xff;
+                break;                
+            case B:
+                reg_B = value & 0xff;
+            case C:
+                reg_C = value & 0xff;
+                break;
+            case D:
+                reg_D = value & 0xff;
+                break;
+            case E:
+                reg_E = value & 0xff;
+                break;
+            case H:
+                reg_H = value & 0xff;
+                break;
+            case L:
+                reg_L = value & 0xff;
+                break;
+            case IXH:
+                reg_IX = ((value & 0xff) << 8) + (reg_IX & 0xff);
+                break;
+            case IXL:
+                reg_IX = (value & 0xff) + (reg_IX & 0xff00);
+                break;
+            case IYH:
+                reg_IY = ((value & 0xff) << 8) + (reg_IY & 0xff);
+                break;
+//            case IYL:
+            default:
+                reg_IY = (value & 0xff) + (reg_IY & 0xff00);
+                break;
+        }
+    }    
 
     /**
      * Get the present Stack Pointer value
