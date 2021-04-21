@@ -211,7 +211,8 @@ public class SearchBasedOptimizer implements MDLWorker {
     {
         String opNames[] = {"inc", "dec"};
         String regNames[] = {"a", "b", "c", "d", "e", "h", "l",
-                             "bc", "de", "hl", "ix", "iy",
+                             "bc", "de", "hl", 
+                             "ix", "iy",
                              "ixh", "ixl", "iyh", "iyl"};
         for(String opName : opNames) {
             // register argument:
