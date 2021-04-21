@@ -20,58 +20,88 @@ public class SpecificationParser {
     {
         try (BufferedReader br = Resources.asReader(inputFile)) {
             Specification spec = new Specification();
-            int state = 0;
+            int state = 0;  // 0: start, 1: "allowed_ops", 2: "initial_state", 3: "goal_state"
             
             String line = br.readLine().trim();
             while(line != null) {
                 List<String> tokens = config.tokenizer.tokenize(line);
-                switch(state) {
-                    case 0:
-                        // waiting for "initial_state:":
-                        if (tokens.size()>=2 && tokens.get(0).equals("initial_state") && tokens.get(1).equals(":")) {
-                            tokens.remove(0);
-                            tokens.remove(0);
-                            if (tokens.isEmpty() || config.tokenizer.isSingleLineComment(tokens.get(0))) {
-                                state = 1;
-                            } else {
-                                config.error("Unexpected token " + tokens.get(0) + " after 'initial_state:'");
-                                return null;
-                            }
-                        } else {
+
+                if (tokens.size()>=2 && tokens.get(0).equals("allowed_ops") && tokens.get(1).equals(":")) {
+                    tokens.remove(0);
+                    tokens.remove(0);
+                    if (tokens.isEmpty() || config.tokenizer.isSingleLineComment(tokens.get(0))) {
+                        state = 1;
+                        spec.clearOpGroups();
+                    } else {
+                        config.error("Unexpected token " + tokens.get(0) + " after 'allowed_ops:'");
+                        return null;
+                    }
+                } else if (tokens.size()>=2 && tokens.get(0).equals("initial_state") && tokens.get(1).equals(":")) {
+                    tokens.remove(0);
+                    tokens.remove(0);
+                    if (tokens.isEmpty() || config.tokenizer.isSingleLineComment(tokens.get(0))) {
+                        state = 2;
+                    } else {
+                        config.error("Unexpected token " + tokens.get(0) + " after 'initial_state:'");
+                        return null;
+                    }
+                } if (tokens.size()>=2 && tokens.get(0).equals("goal_state") && tokens.get(1).equals(":")) {
+                    tokens.remove(0);
+                    tokens.remove(0);
+                    if (tokens.isEmpty() || config.tokenizer.isSingleLineComment(tokens.get(0))) {
+                        state = 3;
+                    } else {
+                        config.error("Unexpected token " + tokens.get(0) + " after 'goal_state:'");
+                        return null;
+                    }
+                } else {
+                    switch(state) {
+                        case 0:
+                            // start:
                             if (!tokens.isEmpty() && !config.tokenizer.isSingleLineComment(tokens.get(0))) {
-                                config.error("Expecting 'initial_state:', but found " + tokens.get(0) + " ");
+                                config.error("Expecting 'allowed_ops:', 'initial_state:', or 'goal_state:', but found " + tokens.get(0));
                                 return null;
                             }
-                        }
-                        break;
-                    
-                    case 1:
-                        // parsing the initial state, until "goal_state:" is found:
-                        if (tokens.size()>=2 && tokens.get(0).equals("goal_state") && tokens.get(1).equals(":")) {
-                            tokens.remove(0);
-                            tokens.remove(0);
-                            if (tokens.isEmpty() || config.tokenizer.isSingleLineComment(tokens.get(0))) {
-                                state = 2;
-                            } else {
-                                config.error("Unexpected token " + tokens.get(0) + " after 'goal_state:'");
-                                return null;
+                            break;
+
+                        case 1:
+                            // parse initial state statements:
+                            if (!tokens.isEmpty()) {
+                                String opGroup = tokens.remove(0);
+                                switch(opGroup) {
+                                    case "andorxor":
+                                        spec.allowAndOrXorOps = true;
+                                        break;
+                                    case "incdec":
+                                        spec.allowIncDecOps = true;
+                                        break;
+                                    default:
+                                        config.error("Unrecognized op group " + opGroup);
+                                        return null;                                        
+                                }
+                                if (!tokens.isEmpty() && !config.tokenizer.isSingleLineComment(tokens.get(0))) {
+                                    config.error("Unexpected token " + tokens.get(0));
+                                    return null;
+                                }
                             }
-                        } else {
+                            break;
+
+                        case 2:
                             // parse initial state statements:
                             if (!parseSpecificationExpression(tokens, true, line, spec, config)) return null;
-                        }
-                        break;
-                    case 2:
-                        // parsing the goal state:
-                        if (!parseSpecificationExpression(tokens, false, line, spec, config)) return null;
-                        break;
+                            break;
+                        case 3:
+                            // parsing the goal state:
+                            if (!parseSpecificationExpression(tokens, false, line, spec, config)) return null;
+                            break;
+                    }
                 }
                 line = br.readLine();
             }
             
             return spec;
         } catch (Exception e) {
-            config.error("Exception while tryint to parse specificaiton file '"+inputFile+"'");
+            config.error("Exception while trying to parse specificaiton file '"+inputFile+"'");
             config.error("Exception message: " + e.getMessage());
             return null;
         }

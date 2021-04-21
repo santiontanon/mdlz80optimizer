@@ -30,19 +30,26 @@ public class SearchBasedOptimizerTest {
     }
 
     @Test public void test1() throws IOException { test("data/searchtests/test1.txt", "data/searchtests/test1-expected.asm"); }
+    @Test public void test2() throws IOException { test("data/searchtests/test2.txt", "data/searchtests/test2-expected.asm"); }
+    @Test public void test2b() throws IOException { test("data/searchtests/test2b.txt", null); }
 
     
     private void test(String inputFile, String expectedOutput) throws IOException
     {
         Assert.assertTrue(config.parseArgs(inputFile, "-so"));
-        Assert.assertTrue(
-                "Could not generate code for specification file: " + inputFile,
-                sbo.work(code));
-                
-        // Compare standard assembler generation:
-        SourceCodeGenerator scg = new SourceCodeGenerator(config);
-        Assert.assertFalse(code.outputs.isEmpty());
-        String result = scg.outputFileString(code.outputs.get(0), code);
-        Assert.assertTrue(GenerationTest.compareOutputs(result, expectedOutput));
+        if (expectedOutput == null) {
+            Assert.assertFalse(
+                    "Could not generate code for specification file: " + inputFile,
+                    sbo.work(code));
+        } else {
+            Assert.assertTrue(
+                    "Solution found, when there should not have been one for specification file: " + inputFile,
+                    sbo.work(code));
+            // Compare standard assembler generation:
+            SourceCodeGenerator scg = new SourceCodeGenerator(config);
+            Assert.assertFalse(code.outputs.isEmpty());
+            String result = scg.outputFileString(code.outputs.get(0), code);
+            Assert.assertTrue(GenerationTest.compareOutputs(result, expectedOutput));
+        }
     }    
 }

@@ -57,10 +57,20 @@ public class Specification {
     int codeStartAddress = 0x4000;
     int maxSimulationTime = 256;
     
+    // instruction set:
+    boolean allowAndOrXorOps = true;
+    boolean allowIncDecOps = true;
+    
     List<InputParameter> parameters = new ArrayList<>();
     List<SpecificationExpression> startState = new ArrayList<>();
     List<SpecificationExpression> goalState = new ArrayList<>();
     
+    
+    public void clearOpGroups()
+    {
+        allowAndOrXorOps = false;
+        allowIncDecOps = false;
+    }
     
     public boolean checkGoalState(Z80Core z80, IMemory z80memory, CodeBase code)
     {

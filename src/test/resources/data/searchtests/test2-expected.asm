@@ -1,0 +1,2 @@
+    xor a
+    inc a

@@ -3,4 +3,4 @@ allowed_ops:
     incdec
 initial_state:
 goal_state:
-    A = 0
+    A = 1

@@ -1,6 +1,5 @@
 allowed_ops: 
     andorxor
-    incdec
 initial_state:
 goal_state:
-    A = 0
+    A = 1

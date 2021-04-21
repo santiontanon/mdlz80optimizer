@@ -108,6 +108,8 @@ public class SearchBasedOptimizer implements MDLWorker {
             }
         }
 
+        if (sr.bestOps == null) return false;
+        
         int lineNumber = 1;
         for(CPUOp op:sr.bestOps) {
             SourceLine sl = new SourceLine("    " + op.toString(), sf, lineNumber);
@@ -129,7 +131,7 @@ public class SearchBasedOptimizer implements MDLWorker {
         OK - AND/OR/XOR
         - ADD/ADC/SUB/SBC
         - LD
-        - INC/DEC
+        OK - INC/DEC
         - PUSH/POP
         - EX/EXX
         - LDI/LDD/LDIR/LDDR
@@ -150,7 +152,12 @@ public class SearchBasedOptimizer implements MDLWorker {
         - NOP
         */
         
-        if (!precomputeAndOrXor(candidates, spec, code)) return null;
+        if (spec.allowAndOrXorOps) {
+            if (!precomputeAndOrXor(candidates, spec, code)) return null;
+        }
+        if (spec.allowIncDecOps) {
+            if (!precomputeIncDec(candidates, spec, code)) return null;
+        }
         
         return candidates;
     }
@@ -198,6 +205,33 @@ public class SearchBasedOptimizer implements MDLWorker {
         return true;
     }
     
+
+    boolean precomputeIncDec(List<SBOCandidate> candidates, Specification spec, 
+                               CodeBase code)
+    {
+        String opNames[] = {"inc", "dec"};
+        String regNames[] = {"a", "b", "c", "d", "e", "h", "l",
+                             "bc", "de", "hl", "ix", "iy",
+                             "ixh", "ixl", "iyh", "iyl"};
+        for(String opName : opNames) {
+            // register argument:
+            for(String regName : regNames) {
+                String line = opName + " " + regName;
+                if (!precomputeOp(line, candidates, code)) return false;
+            }
+            
+            // (hl):
+            {
+                String line = opName + " (hl)";
+                if (!precomputeOp(line, candidates, code)) return false;            
+            }
+            
+            // (ix+d) / (iy+d):
+            // ...
+        }
+        return true;
+    }
+        
     
     boolean depthFirstSearch(int depth, List<SBOCandidate> candidateOps, 
                              Specification spec, CodeBase code,
