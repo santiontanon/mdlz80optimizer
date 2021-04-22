@@ -74,6 +74,7 @@ public class Specification {
     boolean allowAndOrXorOps = true;
     boolean allowIncDecOps = true;
     boolean allowAddAdcSubSbc = true;
+    boolean allowLd = true;
     
     public List<InputParameter> parameters = new ArrayList<>();
     public List<SpecificationExpression> startState = new ArrayList<>();
@@ -85,6 +86,7 @@ public class Specification {
         allowAndOrXorOps = false;
         allowIncDecOps = false;
         allowAddAdcSubSbc = false;
+        allowLd = false;
     }
     
     

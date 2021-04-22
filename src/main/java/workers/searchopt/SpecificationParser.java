@@ -82,6 +82,9 @@ public class SpecificationParser {
                                     case "addadcsubsbc":
                                         spec.allowAddAdcSubSbc = true;
                                         break;
+                                    case "ld":
+                                        spec.allowLd = true;
+                                        break;
                                     default:
                                         config.error("Unrecognized op group " + opGroup);
                                         return null;                                        

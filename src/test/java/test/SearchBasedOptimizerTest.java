@@ -33,6 +33,7 @@ public class SearchBasedOptimizerTest {
     @Test public void test2() throws IOException { test("data/searchtests/test2.txt", "data/searchtests/test2-expected.asm"); }
     @Test public void test2b() throws IOException { test("data/searchtests/test2b.txt", null); }
     @Test public void test3() throws IOException { test("data/searchtests/test3.txt", "data/searchtests/test3-expected.asm"); }
+    @Test public void test4() throws IOException { test("data/searchtests/test4.txt", "data/searchtests/test4-expected.asm"); }
 
     
     private void test(String inputFile, String expectedOutput) throws IOException

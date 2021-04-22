@@ -1,0 +1,6 @@
+allowed_ops: 
+    ld
+initial_state:
+    c = ?v
+goal_state:
+    b = ?v
