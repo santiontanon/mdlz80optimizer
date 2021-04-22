@@ -9,6 +9,7 @@ import cl.MDLConfig;
 import code.CPUOp;
 import code.CodeBase;
 import code.CodeStatement;
+import code.Expression;
 import code.SourceFile;
 import java.util.ArrayList;
 import java.util.List;
@@ -37,6 +38,7 @@ public class SearchBasedOptimizer implements MDLWorker {
         List<CPUOp> ops = new ArrayList<>();
         List<CPUOp> bestOps = null;
         int bestSize = 0;
+        int bestTime = 0;
     }
     
     
@@ -79,7 +81,7 @@ public class SearchBasedOptimizer implements MDLWorker {
     @Override
     public boolean work(CodeBase code) {
         // Parse specification file:
-        Specification spec = SpecificationParser.parse(config.inputFile, config);
+        Specification spec = SpecificationParser.parse(config.inputFile, code, config);
         if (spec == null) {
             config.error("Cannot parse the input specification file '"+config.inputFile+"'");
             return false;
@@ -129,9 +131,10 @@ public class SearchBasedOptimizer implements MDLWorker {
         
         /*
         OK - AND/OR/XOR
-        - ADD/ADC/SUB/SBC
-        - LD
         OK - INC/DEC
+        OK - ADD/ADC/SUB/SBC
+        ***- LD
+        ***- RLCA/RLA/RRCA/RRA/RLC/RL/RRC/RR/SLA/SRA/SRL
         - PUSH/POP
         - EX/EXX
         - LDI/LDD/LDIR/LDDR
@@ -141,7 +144,6 @@ public class SearchBasedOptimizer implements MDLWorker {
         - CPL/NEG
         - CCF/SCF
         - HALT/DI/EI/IM
-        - RLCA/RLA/RRCA/RRA/RLC/RL/RRC/RR/SLA/SRA/SRL
         - RLD/RRD
         - BIT/SET/RES
         - JP/JR/DJNZ
@@ -157,6 +159,9 @@ public class SearchBasedOptimizer implements MDLWorker {
         }
         if (spec.allowIncDecOps) {
             if (!precomputeIncDec(candidates, spec, code)) return null;
+        }
+        if (spec.allowAddAdcSubSbc) {
+            if (!precomputeAddAdcSubSbc(candidates, spec, code)) return null;
         }
         
         return candidates;
@@ -197,7 +202,10 @@ public class SearchBasedOptimizer implements MDLWorker {
             // ...
             
             // (hl):
-            // ...
+            {
+                String line = opName + " (hl)";
+                if (!precomputeOp(line, candidates, code)) return false;            
+            }
             
             // (ix+d) / (iy+d):
             // ...
@@ -232,6 +240,45 @@ public class SearchBasedOptimizer implements MDLWorker {
         }
         return true;
     }
+    
+    
+    boolean precomputeAddAdcSubSbc(List<SBOCandidate> candidates, Specification spec, 
+                               CodeBase code)
+    {
+        String opNames[] = {"add", "adc", "sub", "sbc"};
+        String regNames[] = {"a", "b", "c", "d", "e", "h", "l", "ixh", "ixl", "iyh", "iyl"};
+        for(String opName : opNames) {
+            // register argument:
+            for(String regName : regNames) {
+                String line = opName + " a," + regName;
+                if (opName.equals("sub") && regName.startsWith("i")) continue;
+                if (!precomputeOp(line, candidates, code)) return false;
+            }
+            
+            // constant argument:
+            // ...
+            
+            // (hl):
+            {
+                String line = opName + " a,(hl)";
+                if (!precomputeOp(line, candidates, code)) return false;            
+            }
+            
+            // (ix+d) / (iy+d):
+            // ...
+        }
+        
+        String ops16bit[] = {"add hl,bc", "add hl,de", "add hl,hl", "add hl,sp",
+                             "add ix,bc", "add ix,de", "add ix,ix", "add ix,sp",
+                             "add iy,bc", "add iy,de", "add iy,iy", "add iy,sp",
+        
+                             "adc hl,bc", "adc hl,de", "adc hl,hl", "adc hl,sp",
+                             "sbc hl,bc", "sbc hl,de", "sbc hl,hl", "sbc hl,sp"};
+        for(String line:ops16bit) {
+            if (!precomputeOp(line, candidates, code)) return false;            
+        }
+        return true;
+    }    
         
     
     boolean depthFirstSearch(int depth, List<SBOCandidate> candidateOps, 
@@ -241,17 +288,22 @@ public class SearchBasedOptimizer implements MDLWorker {
     {
         if (depth == 0) {
             try {
+                int time = 0;
                 for(int i = 0; i < numberOfRandomSolutionChecks; i++) {
-                    if (!evaluateSolution(codeAddress, z80Memory, spec, code)) return false;
+                    time = evaluateSolution(codeAddress, z80Memory, spec, code);
+                    if (time < 0) return false;
                 }
                 int size = codeAddress - spec.codeStartAddress;
-                if (sr.bestOps == null || size < sr.bestSize) {
+                if (sr.bestOps == null || 
+                    size < sr.bestSize ||
+                    (size == sr.bestSize && time < sr.bestTime)) {
                     sr.bestOps = new ArrayList<>();
                     sr.bestOps.addAll(sr.ops);
                     sr.bestSize = size;
+                    sr.bestTime = time;
                     
                     if (showNewBestDuringSearch) {
-                        config.info("New solution found (size: "+size+" bytes):");
+                        config.info("New solution found (size: "+size+", time: " + time + "):");
                         for(CPUOp op:sr.bestOps) {
                             config.info("    " + op);
                         }
@@ -263,6 +315,7 @@ public class SearchBasedOptimizer implements MDLWorker {
                 return false;
             }
         } else {
+            boolean found = false;
             for(SBOCandidate candidate : candidateOps) {
                 int nextAddress = codeAddress;
                 for(int i = 0; i < candidate.bytes.length; i++) {
@@ -271,17 +324,20 @@ public class SearchBasedOptimizer implements MDLWorker {
                 }
                 sr.ops.add(candidate.op);
                 if (depthFirstSearch(depth-1, candidateOps, spec, code, nextAddress, z80Memory, sr)) {
-                    return true;
+                    found = true;
+                    // we keep going, in case we find a solution of the same size, but faster
                 }
                 sr.ops.remove(sr.ops.size()-1);
             }
-            return false;
+            return found;
         }
     }
     
     
-    boolean evaluateSolution(int breakPoint, IMemory z80Memory, 
-                             Specification spec, CodeBase code) throws Exception
+    // return -1 is solution fails
+    // return time it takes if solution succeeds
+    int evaluateSolution(int breakPoint, IMemory z80Memory, 
+                         Specification spec, CodeBase code) throws Exception
     {
         // evaluate solution:
         Random rand = new Random();
@@ -306,16 +362,32 @@ public class SearchBasedOptimizer implements MDLWorker {
             z80.setRegisterValue(register, rand.nextInt(256));
         }
         z80.setProgramCounter(spec.codeStartAddress);
-                            
+                         
+        // randomize constants:
+        for(InputParameter parameter:spec.parameters) {
+            int value = parameter.minValue + rand.nextInt((parameter.maxValue - parameter.minValue)+1);
+            parameter.symbol.exp = Expression.constantExpression(value, config);
+            parameter.symbol.clearCache();            
+        }
+        
         // randomize the memory contents:
         // ...
         
-        while(z80.getProgramCounter() <= breakPoint && 
+        // execute initial state:
+        if (!spec.initCPU(z80, code)) {
+            return -1;
+        }
+        
+        while(z80.getProgramCounter() < breakPoint && 
               z80.getTStates() < spec.maxSimulationTime) {
             z80.executeOneInstruction();
         }
         
         // check if the solution worked:
-        return spec.checkGoalState(z80, z80Memory, code);
+        if (spec.checkGoalState(z80, z80Memory, code)) {
+            return (int)z80.getTStates();
+        } else {
+            return -1;
+        }
     }
 }

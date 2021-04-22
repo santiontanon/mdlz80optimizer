@@ -1,0 +1,6 @@
+allowed_ops: 
+    addadcsubsbc
+initial_state:
+    A = ?v
+goal_state:
+    A = ?v*2

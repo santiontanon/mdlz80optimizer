@@ -6,7 +6,11 @@
 package workers.searchopt;
 
 import cl.MDLConfig;
+import code.CodeBase;
+import code.Expression;
+import code.SourceConstant;
 import java.io.BufferedReader;
+import java.util.Arrays;
 import java.util.List;
 import util.Resources;
 import util.microprocessor.Z80.CPUConstants;
@@ -16,7 +20,7 @@ import util.microprocessor.Z80.CPUConstants;
  * @author santi
  */
 public class SpecificationParser {
-    public static Specification parse(String inputFile, MDLConfig config)
+    public static Specification parse(String inputFile, CodeBase code, MDLConfig config)
     {
         try (BufferedReader br = Resources.asReader(inputFile)) {
             Specification spec = new Specification();
@@ -75,6 +79,9 @@ public class SpecificationParser {
                                     case "incdec":
                                         spec.allowIncDecOps = true;
                                         break;
+                                    case "addadcsubsbc":
+                                        spec.allowAddAdcSubSbc = true;
+                                        break;
                                     default:
                                         config.error("Unrecognized op group " + opGroup);
                                         return null;                                        
@@ -88,27 +95,48 @@ public class SpecificationParser {
 
                         case 2:
                             // parse initial state statements:
-                            if (!parseSpecificationExpression(tokens, true, line, spec, config)) return null;
+                            if (!parseSpecificationExpression(tokens, true, line, spec, code, config)) return null;
                             break;
                         case 3:
                             // parsing the goal state:
-                            if (!parseSpecificationExpression(tokens, false, line, spec, config)) return null;
+                            if (!parseSpecificationExpression(tokens, false, line, spec, code, config)) return null;
                             break;
                     }
                 }
                 line = br.readLine();
             }
             
+            // Find constants, and make sure all constants in the goal are defined:
+            for(Specification.SpecificationExpression sexp: spec.startState) {
+                Expression exp = sexp.right;
+                for(String symbolName: exp.getAllSymbols()) {
+                    SourceConstant symbol = new SourceConstant(symbolName, symbolName, exp, null, config);
+                    code.addSymbol(symbolName, symbol);
+                    spec.addParameter(symbol);
+                }
+            }
+            for(Specification.SpecificationExpression sexp: spec.goalState) {
+                Expression exp = sexp.right;
+                for(String symbol: exp.getAllSymbols()) {
+                    if (spec.getParameter(symbol) == null) {
+                        config.error("Constant " + symbol + " used in goal state is not defined.");
+                        return null;
+                    }
+                }
+            }
+            
             return spec;
         } catch (Exception e) {
             config.error("Exception while trying to parse specificaiton file '"+inputFile+"'");
-            config.error("Exception message: " + e.getMessage());
+            config.error("Exception message: " + Arrays.toString(e.getStackTrace()));
             return null;
         }
     }
     
     
-    public static boolean parseSpecificationExpression(List<String> tokens, boolean isStartState, String line, Specification spec, MDLConfig config)
+    public static boolean parseSpecificationExpression(
+            List<String> tokens, boolean isStartState, String line, 
+            Specification spec, CodeBase code, MDLConfig config)
     {
         if (tokens.isEmpty() || config.tokenizer.isSingleLineComment(tokens.get(0))) {
             return true;
@@ -250,7 +278,7 @@ public class SpecificationParser {
         }
         tokens.remove(0); // =
         
-        specExp.right = config.expressionParser.parse(tokens, null, null, null);
+        specExp.right = config.expressionParser.parse(tokens, null, null, code);
         if (specExp.right == null) {
             config.error("Cannot parse left-hand-side of expression in line: " + line);
             return false;
