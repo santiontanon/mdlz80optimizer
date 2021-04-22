@@ -85,6 +85,12 @@ public class SpecificationParser {
                                     case "ld":
                                         spec.allowLd = true;
                                         break;
+                                    case "rotations":
+                                        spec.allowRotations = true;
+                                        break;
+                                    case "shifts":
+                                        spec.allowShifts = true;
+                                        break;
                                     default:
                                         config.error("Unrecognized op group " + opGroup);
                                         return null;                                        

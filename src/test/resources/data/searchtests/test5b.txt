@@ -1,0 +1,9 @@
+allowed_ops: 
+    addadcsubsbc
+    rotations
+    shifts
+initial_state:
+    h = ?vh
+    l = ?vl
+goal_state:
+    hl = (?vl + (?vh * 256)) << 1

@@ -32,6 +32,7 @@ public class CPUConfig {
     // Timing for all instructions:
     byte[] OPCODE_T_STATES;
     byte[] OPCODE_T_STATES2;    // for instructions that take different time when jumping    
+    byte[] OPCODE_CB_STATES;
     byte[] OPCODE_DD_FD_STATES;
     byte[] OPCODE_ED_STATES;
     byte[] OPCODE_ED_STATES2;    // for instructions that take different time when jumping    
@@ -43,6 +44,7 @@ public class CPUConfig {
 
         OPCODE_T_STATES = new byte[256];
         OPCODE_T_STATES2 = new byte[256];
+        OPCODE_CB_STATES = new byte[256];
         OPCODE_INDEXED_CB_STATES = new byte[256];
         OPCODE_DD_FD_STATES = new byte[256];
         OPCODE_ED_STATES = new byte[256];
@@ -50,6 +52,7 @@ public class CPUConfig {
         for(int i = 0;i<256;i++) {
             OPCODE_T_STATES[i] = -1;
             OPCODE_T_STATES2[i] = -1;
+            OPCODE_CB_STATES[i] = -1;
             OPCODE_INDEXED_CB_STATES[i] = -1;
             OPCODE_DD_FD_STATES[i] = -1;
             OPCODE_ED_STATES[i] = -1;
@@ -71,16 +74,24 @@ public class CPUConfig {
             // we are done:
             switch (buffer[0]) {
                 case 0xcb:
-                    if (OPCODE_INDEXED_CB_STATES[buffer[1]] == -1) {
+                    if (OPCODE_CB_STATES[buffer[1]] == -1) {
                         OPCODE_T_STATES[buffer[0]] = 0;
-                        OPCODE_INDEXED_CB_STATES[buffer[1]] = (byte)spec.times[0];
+                        OPCODE_CB_STATES[buffer[1]] = (byte)spec.times[0];
                     }
                     break;
                 case 0xdd:
                 case 0xfd:
-                    if (OPCODE_DD_FD_STATES[buffer[1]] == -1) {
-                        OPCODE_T_STATES[buffer[0]] = 0;
-                        OPCODE_DD_FD_STATES[buffer[1]] = (byte)spec.times[0];
+                    if (buffer[1] == 0xcb) {
+                        if (OPCODE_INDEXED_CB_STATES[buffer[3]] == -1) {
+                            OPCODE_T_STATES[buffer[0]] = 0;
+                            OPCODE_DD_FD_STATES[buffer[1]] = 0;
+                            OPCODE_INDEXED_CB_STATES[buffer[3]] = (byte)spec.times[0];
+                        }
+                    } else {
+                        if (OPCODE_DD_FD_STATES[buffer[1]] == -1) {
+                            OPCODE_T_STATES[buffer[0]] = 0;
+                            OPCODE_DD_FD_STATES[buffer[1]] = (byte)spec.times[0];
+                        }
                     }
                     break;
                 case 0xed:

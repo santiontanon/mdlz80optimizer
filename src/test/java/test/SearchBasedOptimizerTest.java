@@ -34,6 +34,8 @@ public class SearchBasedOptimizerTest {
     @Test public void test2b() throws IOException { test("data/searchtests/test2b.txt", null); }
     @Test public void test3() throws IOException { test("data/searchtests/test3.txt", "data/searchtests/test3-expected.asm"); }
     @Test public void test4() throws IOException { test("data/searchtests/test4.txt", "data/searchtests/test4-expected.asm"); }
+    @Test public void test5() throws IOException { test("data/searchtests/test5.txt", "data/searchtests/test5-expected.asm"); }
+    @Test public void test5b() throws IOException { test("data/searchtests/test5b.txt", "data/searchtests/test5b-expected.asm"); }
 
     
     private void test(String inputFile, String expectedOutput) throws IOException

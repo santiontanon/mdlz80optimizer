@@ -134,7 +134,8 @@ public class SearchBasedOptimizer implements MDLWorker {
         OK - INC/DEC
         OK - ADD/ADC/SUB/SBC
         OK - LD
-        ***- RLCA/RLA/RRCA/RRA/RLC/RL/RRC/RR/SLA/SRA/SRL
+        OK - RLCA/RLA/RRCA/RRA/RLC/RL/RRC/RR
+        OK - SLA/SRA/SRL/SLI
         - CPL/NEG
         - CCF/SCF
         - PUSH/POP
@@ -165,6 +166,12 @@ public class SearchBasedOptimizer implements MDLWorker {
         }
         if (spec.allowLd) {
             if (!precomputeLd(candidates, spec, code)) return null;
+        }
+        if (spec.allowRotations) {
+            if (!precomputeRotations(candidates, spec, code)) return null;
+        }
+        if (spec.allowShifts) {
+            if (!precomputeShifts(candidates, spec, code)) return null;
         }
         
         return candidates;
@@ -349,7 +356,56 @@ public class SearchBasedOptimizer implements MDLWorker {
             if (!precomputeOp(line, candidates, code)) return false;            
         }
         return true;
-    }      
+    }
+    
+    
+    boolean precomputeRotations(List<SBOCandidate> candidates, Specification spec, 
+                                CodeBase code)
+    {
+        String opNames[] = {"rlc", "rl", "rrc", "rr"};
+        String regNames[] = {"a", "b", "c", "d", "e", "h", "l"};
+        for(String op : opNames) {
+            for(String reg : regNames) {
+                String line = op + " " + reg;
+                if (!precomputeOp(line, candidates, code)) return false;
+            }
+            {
+                String line = op + " (hl)";
+                if (!precomputeOp(line, candidates, code)) return false;
+            }
+            
+            // (ix+o)/(iy+o):
+            // ...
+        }        
+        String otherOps[] = {"rlca", "rla", "rrca", "rra"};
+        for(String line:otherOps) {
+            if (!precomputeOp(line, candidates, code)) return false;            
+        }
+        return true;
+    }
+
+
+    boolean precomputeShifts(List<SBOCandidate> candidates, Specification spec, 
+                             CodeBase code)
+    {
+        String opNames[] = {"sla", "sra", "srl", "sli"};
+        String regNames[] = {"a", "b", "c", "d", "e", "h", "l"};
+        for(String op : opNames) {
+            for(String reg : regNames) {
+                String line = op + " " + reg;
+                if (!precomputeOp(line, candidates, code)) return false;
+            }
+            {
+                String line = op + " (hl)";
+                if (!precomputeOp(line, candidates, code)) return false;
+            }
+            
+            // (ix+o)/(iy+o):
+            // ...
+        }        
+        return true;
+    }
+    
     
     boolean depthFirstSearch(int depth, List<SBOCandidate> candidateOps, 
                              Specification spec, CodeBase code,

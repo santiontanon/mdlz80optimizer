@@ -1426,7 +1426,7 @@ public class Z80Core implements ICPUData {
     private void extendedCB() {
         instruction = ram.readByte(reg_PC);
         incPC();
-//        tStates = tStates + config.OPCODE_CB_STATES[instruction];
+        tStates = tStates + config.OPCODE_CB_STATES[instruction];
         // decode stage
         switch (instruction) {
             case 0x00: {

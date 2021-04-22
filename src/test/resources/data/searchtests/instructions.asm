@@ -9,6 +9,8 @@ label:
     xor a
     call nz,f2
     call z,f2
+    srl h
+    rr l
     rst 0
 
 f1:

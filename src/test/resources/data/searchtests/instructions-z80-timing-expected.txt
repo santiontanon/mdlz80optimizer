@@ -40,4 +40,6 @@
 21  ;    otir
 16  ;    otir
 10  ;    ret
+8   ;    srl h
+8   ;    rr l
 11  ;    rst 0

@@ -40,4 +40,6 @@
 6   ;    otir
 5   ;    otir
 3   ;    ret
+2   ;    srl h
+2   ;    rr l
 4   ;    rst 0

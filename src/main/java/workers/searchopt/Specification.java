@@ -56,7 +56,7 @@ public class Specification {
                 case IYL:
                     return leftValue == (rightValue & 0xff);
                 default:
-                    return leftValue == rightValue;
+                    return leftValue == (rightValue & 0xffff);
             }
         }
         
@@ -75,6 +75,8 @@ public class Specification {
     boolean allowIncDecOps = true;
     boolean allowAddAdcSubSbc = true;
     boolean allowLd = true;
+    boolean allowRotations = true;
+    boolean allowShifts = true;
     
     public List<InputParameter> parameters = new ArrayList<>();
     public List<SpecificationExpression> startState = new ArrayList<>();
@@ -87,6 +89,8 @@ public class Specification {
         allowIncDecOps = false;
         allowAddAdcSubSbc = false;
         allowLd = false;
+        allowRotations = false;
+        allowShifts = false;
     }
     
     
