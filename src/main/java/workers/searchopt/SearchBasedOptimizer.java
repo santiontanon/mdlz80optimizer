@@ -184,8 +184,8 @@ public class SearchBasedOptimizer implements MDLWorker {
         SourceFile sf = new SourceFile("dummy", null, null, code, config);
         SourceLine sl = new SourceLine(line, sf, 0);
         List<CodeStatement> l = config.lineParser.parse(tokens, sl, sf, null, code, config);
-        if (l.size() != 1) {
-            config.error("Parsing candidate op in the search-based optimizer resulted in more than one op!");
+        if (l == null || l.size() != 1) {
+            config.error("Parsing candidate op in the search-based optimizer resulted in none, or more than one op! " + line);
             return false;
         }
         CodeStatement s = l.get(0);
@@ -209,7 +209,10 @@ public class SearchBasedOptimizer implements MDLWorker {
             }
             
             // constant argument:
-            // ...
+            for(Integer constant:spec.allowed8bitConstants) {
+                String line = opName + " " + constant;
+                if (!precomputeOp(line, candidates, code)) return false;                
+            }
             
             // (hl):
             {
@@ -218,7 +221,17 @@ public class SearchBasedOptimizer implements MDLWorker {
             }
             
             // (ix+d) / (iy+d):
-            // ...
+            for(String reg:new String[]{"ix","iy"}) {
+                for(Integer constant:spec.allowedOffsetConstants) {
+                    if (constant >= 0) {
+                        String line = opName + " ("+reg+"+"+constant+")";
+                        if (!precomputeOp(line, candidates, code)) return false;            
+                    } else {
+                        String line = opName + " ("+reg+constant+")";
+                        if (!precomputeOp(line, candidates, code)) return false;            
+                    }
+                }
+            }
         }
         return true;
     }
@@ -246,7 +259,17 @@ public class SearchBasedOptimizer implements MDLWorker {
             }
             
             // (ix+d) / (iy+d):
-            // ...
+            for(String reg:new String[]{"ix","iy"}) {
+                for(Integer constant:spec.allowedOffsetConstants) {
+                    if (constant >= 0) {
+                        String line = opName + " ("+reg+"+"+constant+")";
+                        if (!precomputeOp(line, candidates, code)) return false;            
+                    } else {
+                        String line = opName + " ("+reg+constant+")";
+                        if (!precomputeOp(line, candidates, code)) return false;            
+                    }
+                }
+            }        
         }
         return true;
     }
@@ -266,7 +289,10 @@ public class SearchBasedOptimizer implements MDLWorker {
             }
             
             // constant argument:
-            // ...
+            for(Integer constant:spec.allowed8bitConstants) {
+                String line = opName + " a," + constant;
+                if (!precomputeOp(line, candidates, code)) return false;                
+            }
             
             // (hl):
             {
@@ -275,7 +301,17 @@ public class SearchBasedOptimizer implements MDLWorker {
             }
             
             // (ix+d) / (iy+d):
-            // ...
+            for(String reg:new String[]{"ix","iy"}) {
+                for(Integer constant:spec.allowedOffsetConstants) {
+                    if (constant >= 0) {
+                        String line = opName + " a,("+reg+"+"+constant+")";
+                        if (!precomputeOp(line, candidates, code)) return false;            
+                    } else {
+                        String line = opName + " a,("+reg+constant+")";
+                        if (!precomputeOp(line, candidates, code)) return false;            
+                    }
+                }
+            }        
         }
         
         String ops16bit[] = {"add hl,bc", "add hl,de", "add hl,hl", "add hl,sp",
@@ -309,10 +345,27 @@ public class SearchBasedOptimizer implements MDLWorker {
             }
             
             // constant argument:
-            // ...
+            for(Integer constant:spec.allowed8bitConstants) {
+                String line = "ld " + arg1 + "," + constant;
+                if (!precomputeOp(line, candidates, code)) return false;                
+            }
             
             // (ix+d) / (iy+d):
-            // ...
+            for(String reg:new String[]{"ix","iy"}) {
+                for(Integer constant:spec.allowedOffsetConstants) {
+                    if (constant >= 0) {
+                        String line = "ld " + arg1 + ",("+reg+"+"+constant+")";
+                        if (!precomputeOp(line, candidates, code)) return false;            
+                        line = "ld ("+reg+"+"+constant+")," + arg1;
+                        if (!precomputeOp(line, candidates, code)) return false;            
+                    } else {
+                        String line = "ld " + arg1 + ",("+reg+constant+")";
+                        if (!precomputeOp(line, candidates, code)) return false;
+                        line = "ld ("+reg+constant+")," + arg1;
+                        if (!precomputeOp(line, candidates, code)) return false;
+                    }
+                }
+            }
         }
         
         String regNames2[] = {"a", "b", "c", "d", "e"};
@@ -331,7 +384,15 @@ public class SearchBasedOptimizer implements MDLWorker {
         }
         
         // ld (hl)/ixh/ixl/iyh/iyl,n:
-        // ...
+        {
+            String args[] = {"(hl)", "ixh", "ixl", "iyh", "iyl"};
+            for(String  arg1:args) {
+                for(Integer constant:spec.allowed8bitConstants) {
+                    String line = "ld " + arg1 + "," + constant;
+                    if (!precomputeOp(line, candidates, code)) return false;                
+                }
+            }
+        }
         
         // ld (nn),a/bc/de/hl/ix/iy/sp
         // ...
@@ -340,10 +401,30 @@ public class SearchBasedOptimizer implements MDLWorker {
         // ...
 
         // ld (ix+o)/(iy+o),n
-        // ...
+        for(Integer constant:spec.allowed8bitConstants) {
+            for(String reg:new String[]{"ix","iy"}) {
+                for(Integer offset:spec.allowedOffsetConstants) {
+                    if (constant >= 0) {
+                        String line = "ld ("+reg+"+"+offset+")," + constant;
+                        if (!precomputeOp(line, candidates, code)) return false;            
+                    } else {
+                        String line = "ld ("+reg+offset+")," + constant;
+                        if (!precomputeOp(line, candidates, code)) return false;            
+                    }
+                }
+            }
+        }
 
         // ld bc/de/hl/sp/ix/iy,nn
-        // ...
+        {
+            String args[] = {"bc", "de", "hl", "sp", "ix", "iy"};
+            for(String  arg1:args) {
+                for(Integer constant:spec.allowed16bitConstants) {
+                    String line = "ld " + arg1 + "," + constant;
+                    if (!precomputeOp(line, candidates, code)) return false;                
+                }
+            }
+        }
         
         String otherOps[] = {"ld a,i", "ld a,r", "ld i,a", "ld r,a",
                              "ld (bc),a", "ld (de),a",
@@ -375,7 +456,17 @@ public class SearchBasedOptimizer implements MDLWorker {
             }
             
             // (ix+o)/(iy+o):
-            // ...
+            for(String reg:new String[]{"ix","iy"}) {
+                for(Integer constant:spec.allowedOffsetConstants) {
+                    if (constant >= 0) {
+                        String line = op + " ("+reg+"+"+constant+")";
+                        if (!precomputeOp(line, candidates, code)) return false;            
+                    } else {
+                        String line = op + " ("+reg+constant+")";
+                        if (!precomputeOp(line, candidates, code)) return false;            
+                    }
+                }
+            }        
         }        
         String otherOps[] = {"rlca", "rla", "rrca", "rra"};
         for(String line:otherOps) {
@@ -401,7 +492,17 @@ public class SearchBasedOptimizer implements MDLWorker {
             }
             
             // (ix+o)/(iy+o):
-            // ...
+            for(String reg:new String[]{"ix","iy"}) {
+                for(Integer constant:spec.allowedOffsetConstants) {
+                    if (constant >= 0) {
+                        String line = op + " ("+reg+"+"+constant+")";
+                        if (!precomputeOp(line, candidates, code)) return false;            
+                    } else {
+                        String line = op + " ("+reg+constant+")";
+                        if (!precomputeOp(line, candidates, code)) return false;            
+                    }
+                }
+            }   
         }        
         return true;
     }
@@ -422,7 +523,8 @@ public class SearchBasedOptimizer implements MDLWorker {
                 int size = codeAddress - spec.codeStartAddress;
                 if (sr.bestOps == null || 
                     size < sr.bestSize ||
-                    (size == sr.bestSize && time < sr.bestTime)) {
+                    (size == sr.bestSize && time < sr.bestTime) ||
+                    (size == sr.bestSize && time == sr.bestTime && sr.ops.size() < sr.bestOps.size())) {
                     sr.bestOps = new ArrayList<>();
                     sr.bestOps.addAll(sr.ops);
                     sr.bestSize = size;

@@ -24,7 +24,8 @@ public class SpecificationParser {
     {
         try (BufferedReader br = Resources.asReader(inputFile)) {
             Specification spec = new Specification();
-            int state = 0;  // 0: start, 1: "allowed_ops", 2: "initial_state", 3: "goal_state"
+            int state = 0;  // 0: start, 1: "allowed_ops", 2: "initial_state", 3: "goal_state", 
+                            // 4: 8bit_constants, 5: 16bit_constants, 6: offset_constants
             
             String line = br.readLine().trim();
             while(line != null) {
@@ -49,13 +50,43 @@ public class SpecificationParser {
                         config.error("Unexpected token " + tokens.get(0) + " after 'initial_state:'");
                         return null;
                     }
-                } if (tokens.size()>=2 && tokens.get(0).equals("goal_state") && tokens.get(1).equals(":")) {
+                } else if (tokens.size()>=2 && tokens.get(0).equals("goal_state") && tokens.get(1).equals(":")) {
                     tokens.remove(0);
                     tokens.remove(0);
                     if (tokens.isEmpty() || config.tokenizer.isSingleLineComment(tokens.get(0))) {
                         state = 3;
                     } else {
                         config.error("Unexpected token " + tokens.get(0) + " after 'goal_state:'");
+                        return null;
+                    }
+                } else if (tokens.size()>=2 && tokens.get(0).equals("8bit_constants") && tokens.get(1).equals(":")) {
+                    tokens.remove(0);
+                    tokens.remove(0);
+                    if (tokens.isEmpty() || config.tokenizer.isSingleLineComment(tokens.get(0))) {
+                        state = 4;
+                        spec.allowed8bitConstants.clear();
+                    } else {
+                        config.error("Unexpected token " + tokens.get(0) + " after '8bit_constants:'");
+                        return null;
+                    }
+                } else if (tokens.size()>=2 && tokens.get(0).equals("16bit_constants") && tokens.get(1).equals(":")) {
+                    tokens.remove(0);
+                    tokens.remove(0);
+                    if (tokens.isEmpty() || config.tokenizer.isSingleLineComment(tokens.get(0))) {
+                        state = 5;
+                        spec.allowed16bitConstants.clear();
+                    } else {
+                        config.error("Unexpected token " + tokens.get(0) + " after '16bit_constants:'");
+                        return null;
+                    }
+                } else if (tokens.size()>=2 && tokens.get(0).equals("offset_constants") && tokens.get(1).equals(":")) {
+                    tokens.remove(0);
+                    tokens.remove(0);
+                    if (tokens.isEmpty() || config.tokenizer.isSingleLineComment(tokens.get(0))) {
+                        state = 6;
+                        spec.allowedOffsetConstants.clear();
+                    } else {
+                        config.error("Unexpected token " + tokens.get(0) + " after 'offset_constants:'");
                         return null;
                     }
                 } else {
@@ -110,13 +141,67 @@ public class SpecificationParser {
                             // parsing the goal state:
                             if (!parseSpecificationExpression(tokens, false, line, spec, code, config)) return null;
                             break;
+                        case 4:
+                        {
+                            // parsing 8 bit constants:
+                            Expression exp = config.expressionParser.parse(tokens, null, null, code);
+                            if (exp.type == Expression.EXPRESSION_INTEGER_CONSTANT) {
+                                spec.allowed8bitConstants.add(exp.integerConstant);
+                            } else if (exp.type == Expression.EXPRESSION_SUB &&
+                                       exp.args.size() == 2 &&
+                                       exp.args.get(0).type == Expression.EXPRESSION_INTEGER_CONSTANT &&
+                                       exp.args.get(1).type == Expression.EXPRESSION_INTEGER_CONSTANT) {
+                                for(int i = exp.args.get(0).integerConstant; i<=exp.args.get(1).integerConstant; i++) {
+                                    spec.allowed8bitConstants.add(i);
+                                }
+                            } else {
+                                config.error("Cannot parse constant definition in line " + line);
+                                return null;
+                            }
+                        }   break;
+                        case 5:
+                        {
+                            // parsing 16 bit constants:
+                            Expression exp = config.expressionParser.parse(tokens, null, null, code);
+                            if (exp.type == Expression.EXPRESSION_INTEGER_CONSTANT) {
+                                spec.allowed16bitConstants.add(exp.integerConstant);
+                            } else if (exp.type == Expression.EXPRESSION_SUB &&
+                                       exp.args.size() == 2 &&
+                                       exp.args.get(0).type == Expression.EXPRESSION_INTEGER_CONSTANT &&
+                                       exp.args.get(1).type == Expression.EXPRESSION_INTEGER_CONSTANT) {
+                                for(int i = exp.args.get(0).integerConstant; i<=exp.args.get(1).integerConstant; i++) {
+                                    spec.allowed16bitConstants.add(i);
+                                }
+                            } else {
+                                config.error("Cannot parse constant definition in line " + line);
+                                return null;
+                            }
+                        }   break;
+                        case 6:
+                        {
+                            // parsing offset bit constants:
+                            Expression exp = config.expressionParser.parse(tokens, null, null, code);
+                            if (exp.type == Expression.EXPRESSION_INTEGER_CONSTANT) {
+                                spec.allowedOffsetConstants.add(exp.integerConstant);
+                            } else if (exp.type == Expression.EXPRESSION_SUB &&
+                                       exp.args.size() == 2 &&
+                                       exp.args.get(0).type == Expression.EXPRESSION_INTEGER_CONSTANT &&
+                                       exp.args.get(1).type == Expression.EXPRESSION_INTEGER_CONSTANT) {
+                                for(int i = exp.args.get(0).integerConstant; i<=exp.args.get(1).integerConstant; i++) {
+                                    spec.allowedOffsetConstants.add(i);
+                                }
+                            } else {
+                                config.error("Cannot parse constant definition in line " + line);
+                                return null;
+                            }
+                        }   break;
                     }
                 }
                 line = br.readLine();
             }
             
             // Find constants, and make sure all constants in the goal are defined:
-            for(Specification.SpecificationExpression sexp: spec.startState) {
+            for(SpecificationExpression sexp: spec.startState) {
                 Expression exp = sexp.right;
                 for(String symbolName: exp.getAllSymbols()) {
                     SourceConstant symbol = new SourceConstant(symbolName, symbolName, exp, null, config);
@@ -124,7 +209,7 @@ public class SpecificationParser {
                     spec.addParameter(symbol);
                 }
             }
-            for(Specification.SpecificationExpression sexp: spec.goalState) {
+            for(SpecificationExpression sexp: spec.goalState) {
                 Expression exp = sexp.right;
                 for(String symbol: exp.getAllSymbols()) {
                     if (spec.getParameter(symbol) == null) {
@@ -151,7 +236,7 @@ public class SpecificationParser {
             return true;
         }
         
-        Specification.SpecificationExpression specExp = new Specification.SpecificationExpression();
+        SpecificationExpression specExp = new SpecificationExpression();
         
         specExp.leftRegisterName = tokens.remove(0);
         switch(specExp.leftRegisterName) {

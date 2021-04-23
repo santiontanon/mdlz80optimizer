@@ -1,0 +1,11 @@
+allowed_ops: 
+    andorxor
+    incdec
+    ld
+16bit_constants:
+    0 - 2
+    4
+initial_state:
+goal_state:
+    HL = 2
+    BC = 4

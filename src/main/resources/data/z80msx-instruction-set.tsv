@@ -385,6 +385,8 @@ SLA (IX+o)	25	DD CB o 26	4	IX			IX+o		S,Z,H,P/V,N,C		IX+o	true
 SLA (IY+o)	25	FD CB o 26	4	IY			IY+o		S,Z,H,P/V,N,C		IY+o	true
 SLA (IX+o)	25	DD CB o 36	4	IX			IX+o		S,Z,H,P/V,N,C		IX+o	true
 SLA (IY+o)	25	FD CB o 36	4	IY			IY+o		S,Z,H,P/V,N,C		IY+o	true
+SLI (IX+o)	25	DD CB o 36	4	IX			IX+o		S,Z,H,P/V,N,C		IX+o	true
+SLI (IY+o)	25	FD CB o 36	4	IY			IY+o		S,Z,H,P/V,N,C		IY+o	true
 SRA (IX+o)	25	DD CB o 2E	4	IX			IX+o		S,Z,H,P/V,N,C		IX+o	true
 SRA (IY+o)	25	FD CB o 2E	4	IY			IY+o		S,Z,H,P/V,N,C		IY+o	true
 SRL (IX+o)	25	DD CB o 3E	4	IX			IX+o		S,Z,H,P/V,N,C		IX+o	true
