@@ -1,0 +1,7 @@
+allowed_ops: 
+    shifts
+    ld
+initial_state:
+    HL = ?val
+goal_state:
+    HL = ?val << 9

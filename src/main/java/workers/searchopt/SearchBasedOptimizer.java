@@ -12,6 +12,7 @@ import code.CodeStatement;
 import code.Expression;
 import code.SourceFile;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import parser.SourceLine;
@@ -98,9 +99,8 @@ public class SearchBasedOptimizer implements MDLWorker {
         PlainZ80Memory z80Memory = new PlainZ80Memory();
         
         // Search via iterative deepening:
-        int maxDepth = 2;
         SolutionRecord sr = new SolutionRecord();
-        for(int depth = 1; depth<=maxDepth; depth++) {
+        for(int depth = 1; depth<=spec.maxDepth; depth++) {
             if (depthFirstSearch(depth, candidateOps, 
                                  spec, code, 
                                  spec.codeStartAddress, z80Memory,
@@ -539,7 +539,14 @@ public class SearchBasedOptimizer implements MDLWorker {
                 }
                 return true;
             }catch(Exception e) {
-                config.error("Something went wrong during solution execution in the z80 simulator.");
+                // This could happen if the program self-modifies itself and garbles the codebase,
+                // resulting in an inexisting opcode!
+//                config.error("Something went wrong during solution execution in the z80 simulator: " + e.getMessage());
+//                config.error("StackTrace: " + Arrays.toString(e.getStackTrace()));
+//                config.error("program: " + sr.ops);
+//                for(int i = spec.codeStartAddress;i<codeAddress;i++) {
+//                    config.error(config.tokenizer.toHex(z80Memory.readByte(i), 2));
+//                }
                 return false;
             }
         } else {

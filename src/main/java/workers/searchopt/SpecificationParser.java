@@ -89,6 +89,20 @@ public class SpecificationParser {
                         config.error("Unexpected token " + tokens.get(0) + " after 'offset_constants:'");
                         return null;
                     }
+                } else if (tokens.size()>=3 && tokens.get(0).equals("max_ops") && tokens.get(1).equals("=")) {
+                    if (config.tokenizer.isInteger(tokens.get(2))) {
+                        spec.maxDepth = Integer.parseInt(tokens.get(2));
+                        tokens.remove(0);
+                        tokens.remove(0);
+                        tokens.remove(0);
+                        if (!tokens.isEmpty() && config.tokenizer.isSingleLineComment(tokens.get(0))) {
+                            config.error("Unexpected token " + tokens.get(0) + " ine line " + line);
+                            return null;
+                        }
+                    } else {
+                        config.error("Cannot parse line " + line);
+                        return null;
+                    }
                 } else {
                     switch(state) {
                         case 0:

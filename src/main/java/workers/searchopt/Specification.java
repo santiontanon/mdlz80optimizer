@@ -21,6 +21,7 @@ import util.microprocessor.Z80.Z80Core;
 public class Specification {
     int codeStartAddress = 0x4000;
     int maxSimulationTime = 256;
+    int maxDepth = 4;
     
     // instruction set:
     boolean allowAndOrXorOps = true;

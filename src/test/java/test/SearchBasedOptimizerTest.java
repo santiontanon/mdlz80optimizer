@@ -21,6 +21,10 @@ public class SearchBasedOptimizerTest {
     private final MDLConfig config;
     private final CodeBase code;
     private final SearchBasedOptimizer sbo;
+    
+    // Change this to "true" to run the larger tests (that are slow, and thus
+    // are deactivated by default for quick building):
+    private final boolean runLargerTests = false;
 
     public SearchBasedOptimizerTest() {
         config = new MDLConfig();
@@ -38,6 +42,8 @@ public class SearchBasedOptimizerTest {
     @Test public void test5() throws IOException { test("data/searchtests/test5.txt", "data/searchtests/test5-expected.asm"); }
     @Test public void test5b() throws IOException { test("data/searchtests/test5b.txt", "data/searchtests/test5b-expected.asm"); }
 
+    // Currently takes: 202.308 seconds
+    @Test public void testLarge1() throws IOException { if (runLargerTests) test("data/searchtests/test-large1.txt", "data/searchtests/test-large1-expected.asm"); }
     
     private void test(String inputFile, String expectedOutput) throws IOException
     {
