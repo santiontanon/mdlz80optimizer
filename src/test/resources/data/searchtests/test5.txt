@@ -1,9 +1,7 @@
 allowed_ops: 
-    addadcsubsbc
-    rotations
-    shifts
+    addition
+    rotation, shift
 initial_state:
-    h = ?vh
-    l = ?vl
+    hl = ?v
 goal_state:
-    hl = (?vl + (?vh * 256)) >> 1
+    hl = ?v >> 1

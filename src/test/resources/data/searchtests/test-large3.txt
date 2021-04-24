@@ -1,6 +1,6 @@
 allowed_ops: 
-    addadcsubsbc
-    shifts
+    addition
+    shift
     ld
 allow_ram_use = false
 max_ops = 5

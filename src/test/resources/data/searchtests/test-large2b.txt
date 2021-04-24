@@ -1,5 +1,5 @@
 allowed_ops: 
-    addadcsubsbc
+    addition
     ld
 allow_ram_use = false
 initial_state:

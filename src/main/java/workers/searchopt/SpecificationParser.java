@@ -34,13 +34,9 @@ public class SpecificationParser {
                 if (tokens.size()>=2 && tokens.get(0).equals("allowed_ops") && tokens.get(1).equals(":")) {
                     tokens.remove(0);
                     tokens.remove(0);
-                    if (tokens.isEmpty() || config.tokenizer.isSingleLineComment(tokens.get(0))) {
-                        state = 1;
-                        spec.clearOpGroups();
-                    } else {
-                        config.error("Unexpected token " + tokens.get(0) + " after 'allowed_ops:'");
-                        return null;
-                    }
+                    spec.clearOpGroups();
+                    state = 1;
+                    if (!parseOpGroups(tokens, spec, config)) return  null;
                 } else if (tokens.size()>=2 && tokens.get(0).equals("initial_state") && tokens.get(1).equals(":")) {
                     tokens.remove(0);
                     tokens.remove(0);
@@ -128,37 +124,7 @@ public class SpecificationParser {
                             break;
 
                         case 1:
-                            // parse initial state statements:
-                            if (!tokens.isEmpty()) {
-                                String opGroup = tokens.remove(0);
-                                switch(opGroup) {
-                                    case "andorxor":
-                                        spec.allowAndOrXorOps = true;
-                                        break;
-                                    case "incdec":
-                                        spec.allowIncDecOps = true;
-                                        break;
-                                    case "addadcsubsbc":
-                                        spec.allowAddAdcSubSbc = true;
-                                        break;
-                                    case "ld":
-                                        spec.allowLd = true;
-                                        break;
-                                    case "rotations":
-                                        spec.allowRotations = true;
-                                        break;
-                                    case "shifts":
-                                        spec.allowShifts = true;
-                                        break;
-                                    default:
-                                        config.error("Unrecognized op group " + opGroup);
-                                        return null;                                        
-                                }
-                                if (!tokens.isEmpty() && !config.tokenizer.isSingleLineComment(tokens.get(0))) {
-                                    config.error("Unexpected token " + tokens.get(0));
-                                    return null;
-                                }
-                            }
+                            if (!parseOpGroups(tokens, spec, config)) return null;
                             break;
 
                         case 2:
@@ -253,6 +219,49 @@ public class SpecificationParser {
             config.error("Exception message: " + Arrays.toString(e.getStackTrace()));
             return null;
         }
+    }
+    
+    
+    static boolean parseOpGroups(List<String> tokens, Specification spec, MDLConfig config)
+    {
+        // parse initial state statements:
+        while(!tokens.isEmpty()) {
+            String opGroup = tokens.remove(0);
+            switch(opGroup) {
+                case "logic":
+                    spec.allowAndOrXorOps = true;
+                    break;
+                case "increment":
+                    spec.allowIncDecOps = true;
+                    break;
+                case "addition":
+                    spec.allowAddAdcSubSbc = true;
+                    break;
+                case "ld":
+                    spec.allowLd = true;
+                    break;
+                case "rotation":
+                    spec.allowRotations = true;
+                    break;
+                case "shift":
+                    spec.allowShifts = true;
+                    break;
+                default:
+                    config.error("Unrecognized op group " + opGroup);
+                    return false;                                        
+            }
+            if (!tokens.isEmpty()) {
+                if (tokens.get(0).equals(",")) {
+                    tokens.remove(0);
+                } else if (config.tokenizer.isSingleLineComment(tokens.get(0))) {
+                    return true;
+                } else {
+                    config.error("Unexpected token " + tokens.get(0));
+                    return false;
+                }
+            }
+        }
+        return true;
     }
     
     

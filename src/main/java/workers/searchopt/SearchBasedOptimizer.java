@@ -249,8 +249,9 @@ public class SearchBasedOptimizer implements MDLWorker {
         OK - RLCA/RLA/RRCA/RRA/RLC/RL/RRC/RR
         OK - SLA/SRA/SRL/SLI
         - CPL/NEG
-        - CCF/SCF
+        - BIT/SET/RES
         - PUSH/POP
+        - CCF/SCF
         - EX/EXX
         - LDI/LDD/LDIR/LDDR
         - CPI/CPD/CPIR/CPDR
@@ -258,7 +259,6 @@ public class SearchBasedOptimizer implements MDLWorker {
         - DAA
         - HALT/DI/EI/IM
         - RLD/RRD
-        - BIT/SET/RES
         - JP/JR/DJNZ
         - CALL/RET/RETI/RETN
         - RST

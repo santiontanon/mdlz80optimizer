@@ -1,6 +1,6 @@
 max_ops = 2
 allowed_ops: 
-    andorxor
+    logic
 initial_state:
 goal_state:
     A = 1

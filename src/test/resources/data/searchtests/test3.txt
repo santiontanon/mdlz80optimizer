@@ -1,5 +1,5 @@
 allowed_ops: 
-    addadcsubsbc
+    addition
 initial_state:
     A = ?v
 goal_state:

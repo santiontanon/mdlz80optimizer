@@ -1,6 +1,6 @@
 allowed_ops: 
-    andorxor
-    incdec
+    logic
+    increment
     ld
 16bit_constants:
     0 - 2
