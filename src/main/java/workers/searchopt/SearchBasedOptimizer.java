@@ -122,19 +122,14 @@ public class SearchBasedOptimizer implements MDLWorker {
         config.debug("candidateOps: " + candidateOps.size());
         
         // Precalculate which instructions can contribute to the solution:
-        List<SBOCandidate> candidateOpsForGoal = new ArrayList<>();
         {
             boolean goalDependencies[] = spec.getGoalDependencies(allDependencies);
             for(SBOCandidate op:candidateOps) {
-                boolean contributesToGoal = false;
                 for(int i = 0;i<allDependencies.size();i++) {
                     if (goalDependencies[i] && op.outputDependencies[i]) {
-                        contributesToGoal = true;
+                        op.directContributionToGoal = true;
                         break;
                     }
-                }
-                if (contributesToGoal) {
-                    candidateOpsForGoal.add(op);
                 }
             }
         }
@@ -151,7 +146,6 @@ public class SearchBasedOptimizer implements MDLWorker {
             for(int depth = 0; depth<=spec.maxDepth; depth++) {
                 if (depthFirstSearch(depth, 0x10000,
                                      candidateOps, 
-                                     candidateOpsForGoal,
                                      spec, code, 
                                      spec.codeStartAddress, z80Memory,
                                      sr)) {
@@ -163,10 +157,8 @@ public class SearchBasedOptimizer implements MDLWorker {
 
         } else if (searchType == SEARCH_ID_BYTES) {
             for(int size = 0; size<=spec.maxSizeInBytes; size++) {
-                System.out.println(size);
                 if (depthFirstSearch(0x10000, spec.codeStartAddress + size,
                                      candidateOps, 
-                                     candidateOpsForGoal,
                                      spec, code, 
                                      spec.codeStartAddress, z80Memory,
                                      sr)) {
@@ -607,13 +599,22 @@ public class SearchBasedOptimizer implements MDLWorker {
     
     boolean depthFirstSearch(int depth, int codeMaxAddress, 
                              List<SBOCandidate> candidateOps, 
-                             List<SBOCandidate> candidateOpsForGoal,
                              Specification spec, CodeBase code,
                              int codeAddress, IMemory z80Memory,
                              SolutionRecord sr)
     {
         if (depth == 0 || codeAddress >= codeMaxAddress) {
             try {
+                int size = codeAddress - spec.codeStartAddress;
+
+                // Check to ensure the solution has a chance to be better than the current one,
+                // otherwise, don't even bother evaluating:
+                if (sr.bestOps != null &&
+                    (size > sr.bestSize ||
+                     (size == sr.bestSize && sr.ops.size() > sr.bestOps.size()))) {
+                    return false;
+                }
+                
                 sr.solutionsEvaluated++;
                 
 //                if (sr.ops.size() == 1) {
@@ -625,11 +626,10 @@ public class SearchBasedOptimizer implements MDLWorker {
                     time = evaluateSolution(codeAddress, z80Memory, spec, code);
                     if (time < 0) return false;
                 }
-                int size = codeAddress - spec.codeStartAddress;
                 if (sr.bestOps == null || 
                     size < sr.bestSize ||
-                    (size == sr.bestSize && time < sr.bestTime) ||
-                    (size == sr.bestSize && time == sr.bestTime && sr.ops.size() < sr.bestOps.size())) {
+                    (size == sr.bestSize && sr.ops.size() < sr.bestOps.size()) ||
+                    (size == sr.bestSize && sr.ops.size() == sr.bestOps.size() && time < sr.bestTime)) {
                     sr.bestOps = new ArrayList<>();
                     sr.bestOps.addAll(sr.ops);
                     sr.bestSize = size;
@@ -657,8 +657,10 @@ public class SearchBasedOptimizer implements MDLWorker {
         } else {
             boolean found = false;
             // the very last op must contribute to the goal:
-            if (depth == 1) candidateOps = candidateOpsForGoal;
             for(SBOCandidate candidate : candidateOps) {
+                if (depth == 1 && !candidate.directContributionToGoal) continue;
+                if (codeMaxAddress == codeAddress + candidate.bytes.length &&
+                    !candidate.directContributionToGoal) continue;
                 boolean dependenciesSatisfied = true;
                 for(int i = 0;i<sr.dependencies.length;i++) {
                     if (candidate.inputDependencies[i] && !sr.dependencies[i]) {
@@ -681,7 +683,7 @@ public class SearchBasedOptimizer implements MDLWorker {
                         if (candidate.outputDependencies[i]) sr.dependencies[i] = true;
                     }                    
                     if (depthFirstSearch(depth-1, codeMaxAddress, 
-                                         candidateOps, candidateOpsForGoal,
+                                         candidateOps, 
                                          spec, code, nextAddress, z80Memory, sr)) {
                         found = true;
                         // we keep going, in case we find a solution of the same size, but faster

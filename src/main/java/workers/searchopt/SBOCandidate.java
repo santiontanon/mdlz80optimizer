@@ -22,6 +22,7 @@ public class SBOCandidate {
     // cached dependencies (which registers/flags do these ops depend on, and which do they set):
     public boolean inputDependencies[] = null;
     public boolean outputDependencies[] = null;
+    public boolean directContributionToGoal = false;
     
     public SBOCandidate(CPUOp a_op, List<CPUOpDependency> allDependencies, CodeBase code, MDLConfig config)
     {

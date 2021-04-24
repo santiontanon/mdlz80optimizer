@@ -43,9 +43,9 @@ public class SearchBasedOptimizerTest {
     @Test public void test5() throws IOException { test("data/searchtests/test5.txt", "data/searchtests/test5-expected.asm"); }
     @Test public void test5b() throws IOException { test("data/searchtests/test5b.txt", "data/searchtests/test5b-expected.asm"); }
 
-    // Current version: 1.02 sec (26050 solutions)
+    // Current version: 0.707 sec (16011 solutions)
     @Test public void testLarge1() throws IOException { if (runLargerTests) test("data/searchtests/test-large1.txt", "data/searchtests/test-large1-expected.asm"); }
-    // Current version: 42.567 sec (1514929 solutions)
+    // Current version: 28.197 sec (998063 solutions)
     @Test public void testLarge2() throws IOException { if (runLargerTests) test("data/searchtests/test-large2.txt", "data/searchtests/test-large2-expected.asm"); }
     
     private void test(String inputFile, String expectedOutput) throws IOException
