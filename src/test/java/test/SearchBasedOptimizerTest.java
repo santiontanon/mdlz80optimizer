@@ -22,10 +22,6 @@ public class SearchBasedOptimizerTest {
     private final CodeBase code;
     private final SearchBasedOptimizer sbo;
     
-    // Change this to "true" to run the larger tests (that are slow, and thus
-    // are deactivated by default for quick building):
-    private final boolean runLargerTests = false;
-
     public SearchBasedOptimizerTest() {
         config = new MDLConfig();
         sbo = new SearchBasedOptimizer(config);
@@ -43,10 +39,14 @@ public class SearchBasedOptimizerTest {
     @Test public void test5() throws IOException { test("data/searchtests/test5.txt", "data/searchtests/test5-expected.asm"); }
     @Test public void test5b() throws IOException { test("data/searchtests/test5b.txt", "data/searchtests/test5b-expected.asm"); }
 
-    // Current version: 0.707 sec (16011 solutions)
-    @Test public void testLarge1() throws IOException { if (runLargerTests) test("data/searchtests/test-large1.txt", "data/searchtests/test-large1-expected.asm"); }
-    // Current version: 28.197 sec (998063 solutions)
-    @Test public void testLarge2() throws IOException { if (runLargerTests) test("data/searchtests/test-large2.txt", "data/searchtests/test-large2-expected.asm"); }
+    // These are larger tests (that are slow, and thus
+    // are deactivated by default for quick building):
+    // Current version: 0.68 sec (13878 solutions)
+//    @Test public void testLShift9() throws IOException { test("data/searchtests/test-large1.txt", "data/searchtests/test-large1-expected.asm"); }
+    // Current version: 23.349 sec (811603 solutions)
+//    @Test public void testLShift10() throws IOException { test("data/searchtests/test-large2.txt", "data/searchtests/test-large2-expected.asm"); }
+    // Current version: 6.029 sec (200958 solutions)
+//    @Test public void testLShift10b() throws IOException { test("data/searchtests/test-large2b.txt", "data/searchtests/test-large2b-expected.asm"); }
     
     private void test(String inputFile, String expectedOutput) throws IOException
     {

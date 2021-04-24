@@ -89,7 +89,11 @@ public class CPUOpDependency {
             return false;
         }
         if (flag != null) return flag.equals(dep.flag);
-        if (port != null) return port.equals(dep.port);
+        if (port != null) {
+            // for now always match port dependencies:
+            // ...
+            return dep.port != null;
+        }
         if (memoryStart != null) {
             // for now always match memory dependencies:
             // ...

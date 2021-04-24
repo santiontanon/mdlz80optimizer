@@ -19,10 +19,14 @@ public class SBOCandidate {
     public int bytes[] = null;
     public CPUOp op;
 
-    // cached dependencies (which registers/flags do these ops depend on, and which do they set):
+    // Cached dependencies (which registers/flags do these ops depend on, and which do they set):
     public boolean inputDependencies[] = null;
     public boolean outputDependencies[] = null;
     public boolean directContributionToGoal = false;
+    
+    // Not all ops make sense after a certain op, (e.g. "ld a,b; ld b,a"). Hence,
+    // the set of ops that make sense after another op are precalculated, and stored here:
+    public List<SBOCandidate> potentialFollowUps = null;
     
     public SBOCandidate(CPUOp a_op, List<CPUOpDependency> allDependencies, CodeBase code, MDLConfig config)
     {

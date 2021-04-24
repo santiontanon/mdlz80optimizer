@@ -108,13 +108,13 @@ public class SearchBasedOptimizer implements MDLWorker {
         List<CPUOpDependency> allDependencies = new ArrayList<>();
         for(String regName: new String[]{"A", "F", "B", "C", "D", "E", "H", "L", 
                                          "IXH", "IXL", "IYH", "IYL"}) {
-            CPUOpDependency dep = new CPUOpDependency(regName, null, null, null, null);
-            allDependencies.add(dep);
+            allDependencies.add(new CPUOpDependency(regName, null, null, null, null));
         }
         for(String flagName: new String[]{"S" ,"Z" ,"H" , "P/V" ,"N" , "C"}) {
-            CPUOpDependency dep = new CPUOpDependency(null, flagName, null, null, null);
-            allDependencies.add(dep);
+            allDependencies.add(new CPUOpDependency(null, flagName, null, null, null));
         }
+        allDependencies.add(new CPUOpDependency(null, null, "C", null, null));
+        allDependencies.add(new CPUOpDependency(null, null, null, "0", "0x10000"));
         config.debug("allDependencies: " + allDependencies.size());
         
         List<SBOCandidate> candidateOps = precomputeCandidateOps(spec, allDependencies, code);
@@ -130,6 +130,16 @@ public class SearchBasedOptimizer implements MDLWorker {
                         op.directContributionToGoal = true;
                         break;
                     }
+                }
+            }
+        }
+        
+        // Precalculate potential followups to each op:
+        for(SBOCandidate op:candidateOps) {
+            op.potentialFollowUps = new ArrayList<>();
+            for(SBOCandidate op2:candidateOps) {
+                if (sequenceMakesSense(op, op2, code)) {
+                    op.potentialFollowUps.add(op2);
                 }
             }
         }
@@ -276,6 +286,9 @@ public class SearchBasedOptimizer implements MDLWorker {
             // constant argument:
             for(Integer constant:spec.allowed8bitConstants) {
                 String line = opName + " " + constant;
+                if (constant == 0) {
+                    if (opName.equals("add") || opName.equals("sub")) continue;
+                }                
                 if (!precomputeOp(line, candidates, allDependencies, code)) return false;                
             }
             
@@ -360,7 +373,10 @@ public class SearchBasedOptimizer implements MDLWorker {
             // constant argument:
             for(Integer constant:spec.allowed8bitConstants) {
                 String line = opName + " a," + constant;
-                if (!precomputeOp(line, candidates, allDependencies, code)) return false;                
+                if (constant == 0) {
+                    if (opName.equals("add") || opName.equals("sub")) continue;
+                }
+                if (!precomputeOp(line, candidates, allDependencies, code)) return false;
             }
             
             // (hl):
@@ -597,6 +613,46 @@ public class SearchBasedOptimizer implements MDLWorker {
     }
     
     
+    boolean sequenceMakesSense(SBOCandidate op1, SBOCandidate op2, CodeBase code)
+    {
+        if (op1.op.spec.getName().equals("ld") &&
+            op2.op.spec.getName().equals("ld")) {
+            if (op1.op.args.get(0).isRegister(code) &&
+                op1.op.args.get(1).isRegister(code) &&
+                op2.op.args.get(0).isRegister(code) &&
+                op2.op.args.get(1).isRegister(code) && 
+                op1.op.args.get(0).registerOrFlagName.equals(op2.op.args.get(1).registerOrFlagName) &&
+                op2.op.args.get(0).registerOrFlagName.equals(op1.op.args.get(1).registerOrFlagName)) {
+                return false;
+            }
+            // This is already captured in the more general pattern below, so I commented it out:
+//            if (op1.op.args.get(0).isRegister(code) &&
+//                op2.op.args.get(0).isRegister(code) &&
+//                op2.op.args.get(0).registerOrFlagName.equals(op1.op.args.get(0).registerOrFlagName)) {
+//                return false;
+//            }
+            // op1, op2 is useless if op2's output is a superseteq of op1's, but op2 does not take any input dependency from op1
+            {
+                boolean op2outputIsSuperset = true;
+                boolean op2dependsOnOp1 = false;
+                for(int i = 0;i<op1.outputDependencies.length;i++) {
+                    if (op1.outputDependencies[i] && !op2.outputDependencies[i]) {
+                        op2outputIsSuperset = false;
+                        break;
+                    }
+                    if (op1.outputDependencies[i] && op2.inputDependencies[i]) {
+                        op2dependsOnOp1 = true;
+                        break;
+                    }
+                }
+                if (op2outputIsSuperset && !op2dependsOnOp1) return false;
+            }
+        }
+        
+        return true;
+    }
+    
+    
     boolean depthFirstSearch(int depth, int codeMaxAddress, 
                              List<SBOCandidate> candidateOps, 
                              Specification spec, CodeBase code,
@@ -617,8 +673,8 @@ public class SearchBasedOptimizer implements MDLWorker {
                 
                 sr.solutionsEvaluated++;
                 
-//                if (sr.ops.size() == 1) {
-//                    config.debug("" + sr.ops);
+//                if (sr.ops.size() == 2) {
+//                    System.out.println("" + sr.ops);
 //                }
                 
                 int time = 0;
@@ -683,7 +739,7 @@ public class SearchBasedOptimizer implements MDLWorker {
                         if (candidate.outputDependencies[i]) sr.dependencies[i] = true;
                     }                    
                     if (depthFirstSearch(depth-1, codeMaxAddress, 
-                                         candidateOps, 
+                                         candidate.potentialFollowUps, 
                                          spec, code, nextAddress, z80Memory, sr)) {
                         found = true;
                         // we keep going, in case we find a solution of the same size, but faster

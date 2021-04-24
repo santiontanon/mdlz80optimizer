@@ -1,0 +1,8 @@
+allowed_ops: 
+    addadcsubsbc
+    ld
+allow_ram_use = false
+initial_state:
+    HL = ?val
+goal_state:
+    HL = ?val << 10
