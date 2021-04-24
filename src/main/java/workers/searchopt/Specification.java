@@ -5,6 +5,7 @@
  */
 package workers.searchopt;
 
+import code.CPUOpDependency;
 import code.CodeBase;
 import code.Expression;
 import code.SourceConstant;
@@ -22,6 +23,7 @@ public class Specification {
     int codeStartAddress = 0x4000;
     int maxSimulationTime = 256;
     int maxDepth = 4;
+    int maxSizeInBytes = 8;
     
     // instruction set:
     boolean allowAndOrXorOps = true;
@@ -30,6 +32,8 @@ public class Specification {
     boolean allowLd = true;
     boolean allowRotations = true;
     boolean allowShifts = true;
+    
+    boolean allowRamUse = true;
     
     public List<Integer> allowed8bitConstants = new ArrayList<>();
     public List<Integer> allowed16bitConstants = new ArrayList<>();
@@ -75,6 +79,22 @@ public class Specification {
             if (p.symbol.name.equals(name)) return p;
         }
         return null;
+    }
+    
+    
+    public boolean[] getInitialDependencies(List<CPUOpDependency> allDependencies)
+    {
+        boolean dependencies[] = new boolean[allDependencies.size()];
+        for(int i = 0;i<dependencies.length;i++) dependencies[i] = false;
+        
+        for(SpecificationExpression exp:startState) {
+            CPUOpDependency dep = new CPUOpDependency(exp.leftRegisterName.toUpperCase(), null, null, null, null);
+            for(int i = 0;i<dependencies.length;i++) {
+                if (dep.match(allDependencies.get(i))) dependencies[i] = true;
+            }
+        }
+        
+        return dependencies;
     }
     
     

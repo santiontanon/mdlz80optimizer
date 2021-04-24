@@ -103,6 +103,20 @@ public class SpecificationParser {
                         config.error("Cannot parse line " + line);
                         return null;
                     }
+                } else if (tokens.size()>=3 && tokens.get(0).equals("allow_ram_use") && tokens.get(1).equals("=")) {
+                    if (tokens.get(2).equals("true") || tokens.get(2).equals("false")) {
+                        spec.allowRamUse = Boolean.parseBoolean(tokens.get(2));
+                        tokens.remove(0);
+                        tokens.remove(0);
+                        tokens.remove(0);
+                        if (!tokens.isEmpty() && config.tokenizer.isSingleLineComment(tokens.get(0))) {
+                            config.error("Unexpected token " + tokens.get(0) + " ine line " + line);
+                            return null;
+                        }
+                    } else {
+                        config.error("Cannot parse line " + line);
+                        return null;
+                    }
                 } else {
                     switch(state) {
                         case 0:

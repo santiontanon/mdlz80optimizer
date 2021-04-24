@@ -7,6 +7,7 @@ package workers.searchopt;
 
 import cl.MDLConfig;
 import code.CPUOp;
+import code.CPUOpDependency;
 import code.CodeBase;
 import java.util.List;
 
@@ -17,8 +18,12 @@ import java.util.List;
 public class SBOCandidate {
     public int bytes[] = null;
     public CPUOp op;
+
+    // cached dependencies (which registers/flags do these ops depend on, and which do they set):
+    public boolean inputDependencies[] = null;
+    public boolean outputDependencies[] = null;
     
-    public SBOCandidate(CPUOp a_op, CodeBase code, MDLConfig config)
+    public SBOCandidate(CPUOp a_op, List<CPUOpDependency> allDependencies, CodeBase code, MDLConfig config)
     {
         op = a_op;
         
@@ -30,6 +35,28 @@ public class SBOCandidate {
             bytes = new int[tmp.size()];
             for(int i = 0;i<tmp.size();i++) {
                 bytes[i] = tmp.get(i);
+            }
+        }
+        
+        // precompute the dependencies:
+        inputDependencies = new boolean[allDependencies.size()];
+        outputDependencies = new boolean[allDependencies.size()];
+        for(int i = 0;i<allDependencies.size();i++) {
+            inputDependencies[i] = false;
+            outputDependencies[i] = false;
+        }
+        for(CPUOpDependency dep:op.getInputDependencies()) {
+            for(int i = 0;i<allDependencies.size();i++) {
+                if (dep.match(allDependencies.get(i))) {
+                    inputDependencies[i] = true;
+                }
+            }
+        }
+        for(CPUOpDependency dep:op.getOutputDependencies()) {
+            for(int i = 0;i<allDependencies.size();i++) {
+                if (dep.match(allDependencies.get(i))) {
+                    outputDependencies[i] = true;
+                }
             }
         }
     }

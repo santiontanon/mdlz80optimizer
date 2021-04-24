@@ -5,4 +5,4 @@ allow_ram_use = false
 initial_state:
     HL = ?val
 goal_state:
-    HL = ?val << 9
+    HL = ?val << 10
