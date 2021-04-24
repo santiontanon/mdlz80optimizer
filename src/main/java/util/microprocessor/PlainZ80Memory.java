@@ -16,23 +16,23 @@ public class PlainZ80Memory implements IMemory {
     }
 
     @Override
-    public int readByte(int address) {
+    final public int readByte(int address) {
         return memory[address];
     }
 
     @Override
-    public int readWord(int address) {
+    final public int readWord(int address) {
         return readByte(address) + readByte(address + 1) * 256;
     }
 
     @Override
-    public void writeByte(int address, int data) {
+    final public void writeByte(int address, int data) {
 
         memory[address] = data;
     }
 
     @Override
-    public void writeWord(int address, int data) {
+    final public void writeWord(int address, int data) {
         writeByte(address, (data & 0x00ff));
         address = (address + 1) & 0xffff;
         data = (data >>> 8);

@@ -91,7 +91,7 @@ public class SpecificationParser {
                     }
                 } else if (tokens.size()>=3 && tokens.get(0).equals("max_ops") && tokens.get(1).equals("=")) {
                     if (config.tokenizer.isInteger(tokens.get(2))) {
-                        spec.maxDepth = Integer.parseInt(tokens.get(2));
+                        spec.maxOps = Integer.parseInt(tokens.get(2));
                         tokens.remove(0);
                         tokens.remove(0);
                         tokens.remove(0);

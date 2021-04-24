@@ -7,12 +7,10 @@ package workers.searchopt;
 
 import code.CPUOpDependency;
 import code.CodeBase;
-import code.Expression;
 import code.SourceConstant;
 import java.util.ArrayList;
 import java.util.List;
 import util.microprocessor.IMemory;
-import util.microprocessor.Z80.CPUConstants;
 import util.microprocessor.Z80.Z80Core;
 
 /**
@@ -22,7 +20,7 @@ import util.microprocessor.Z80.Z80Core;
 public class Specification {
     int codeStartAddress = 0x4000;
     int maxSimulationTime = 256;
-    int maxDepth = 4;
+    int maxOps = 4;
     int maxSizeInBytes = 8;
     
     // instruction set:
@@ -33,7 +31,7 @@ public class Specification {
     boolean allowRotations = true;
     boolean allowShifts = true;
     
-    boolean allowRamUse = true;
+    boolean allowRamUse = false;
     
     public List<Integer> allowed8bitConstants = new ArrayList<>();
     public List<Integer> allowed16bitConstants = new ArrayList<>();

@@ -20,6 +20,7 @@ import parser.SourceLine;
 import util.microprocessor.IMemory;
 import util.microprocessor.PlainZ80IO;
 import util.microprocessor.PlainZ80Memory;
+import util.microprocessor.ProcessorException;
 import util.microprocessor.Z80.CPUConfig;
 import util.microprocessor.Z80.CPUConstants.RegisterNames;
 import util.microprocessor.Z80.Z80Core;
@@ -33,27 +34,46 @@ public class SearchBasedOptimizer implements MDLWorker {
     public static final int SEARCH_ID_OPS = 0;
     public static final int SEARCH_ID_BYTES = 1;
     
+    // randomize the register contents:
+    public static final RegisterNames eightBitRegisters[] = {
+        RegisterNames.A, RegisterNames.F,
+        RegisterNames.B, RegisterNames.C,
+        RegisterNames.D, RegisterNames.E,
+        RegisterNames.H, RegisterNames.L,
+        RegisterNames.A_ALT, RegisterNames.F_ALT,
+        RegisterNames.B_ALT, RegisterNames.C_ALT,
+        RegisterNames.D_ALT, RegisterNames.E_ALT,
+        RegisterNames.H_ALT, RegisterNames.L_ALT,
+        RegisterNames.IXH, RegisterNames.IXL,
+        RegisterNames.IYH, RegisterNames.IYL,
+        RegisterNames.R
+    };
+
     MDLConfig config;
     boolean trigger = false;
     boolean showNewBestDuringSearch = true;
     
     int numberOfRandomSolutionChecks = 1000;
     int searchType = SEARCH_ID_OPS;
-        
-    public static class SolutionRecord {
-        // current search state:
-        List<CPUOp> ops = new ArrayList<>();
-        // The "dependencies" array, contains the set of dependencies (Registers/flags) that
-        // have already been set by previous instructions:
-        boolean dependencies[] = null;
-        
-        long solutionsEvaluated = 0;
-        
-        // best solution:
-        List<CPUOp> bestOps = null;
-        int bestSize = 0;
-        int bestTime = 0;
-    }
+    
+    // Global search state (so we don't need to pass it throughout recursive calls):
+    Random rand = new Random();
+    Z80Core z80 = null;
+    IMemory z80Memory = null;
+    int codeMaxAddress;
+    int codeMaxOps;
+    Specification spec = null;
+    CodeBase code = null;
+    List<CPUOp> currentOps = null;
+    // The "dependencies" array, contains the set of dependencies (Registers/flags) that
+    // have already been set by previous instructions:
+    int nDependencies = 0;
+    boolean currentDependencies[][] = null;
+    long solutionsEvaluated = 0;        
+    // best solution:
+    List<CPUOp> bestOps = null;
+    int bestSize = 0;
+    int bestTime = 0;
     
     
     public SearchBasedOptimizer(MDLConfig a_config)
@@ -93,9 +113,10 @@ public class SearchBasedOptimizer implements MDLWorker {
 
     
     @Override
-    public boolean work(CodeBase code) {
+    public boolean work(CodeBase a_code) {
         // Parse specification file:
-        Specification spec = SpecificationParser.parse(config.inputFile, code, config);
+        this.code = a_code;
+        spec = SpecificationParser.parse(config.inputFile, code, config);
         if (spec == null) {
             config.error("Cannot parse the input specification file '"+config.inputFile+"'");
             return false;
@@ -115,7 +136,8 @@ public class SearchBasedOptimizer implements MDLWorker {
         }
         allDependencies.add(new CPUOpDependency(null, null, "C", null, null));
         allDependencies.add(new CPUOpDependency(null, null, null, "0", "0x10000"));
-        config.debug("allDependencies: " + allDependencies.size());
+        nDependencies = allDependencies.size();
+        config.debug("nDependencies: " + nDependencies);
         
         List<SBOCandidate> candidateOps = precomputeCandidateOps(spec, allDependencies, code);
         if (candidateOps == null) return false;
@@ -125,7 +147,7 @@ public class SearchBasedOptimizer implements MDLWorker {
         {
             boolean goalDependencies[] = spec.getGoalDependencies(allDependencies);
             for(SBOCandidate op:candidateOps) {
-                for(int i = 0;i<allDependencies.size();i++) {
+                for(int i = 0;i<nDependencies;i++) {
                     if (goalDependencies[i] && op.outputDependencies[i]) {
                         op.directContributionToGoal = true;
                         break;
@@ -145,48 +167,63 @@ public class SearchBasedOptimizer implements MDLWorker {
         }
         
         // Create a simulator:
-        PlainZ80Memory z80Memory = new PlainZ80Memory();
+        z80Memory = new PlainZ80Memory();
+        z80 = new Z80Core(z80Memory, new PlainZ80IO(), new CPUConfig(config));
         
         // Run the search process to generate code:
         // Search via iterative deepening:
-        SolutionRecord sr = new SolutionRecord();
-        sr.dependencies = spec.getInitialDependencies(allDependencies);
-        config.debug("Initial dependency set: " + Arrays.toString(sr.dependencies));
-        if (searchType == SEARCH_ID_OPS) {
-            for(int depth = 0; depth<=spec.maxDepth; depth++) {
-                if (depthFirstSearch(depth, 0x10000,
-                                     candidateOps, 
-                                     spec, code, 
-                                     spec.codeStartAddress, z80Memory,
-                                     sr)) {
-                    // solution found!
-                    break;
-                }
-                config.info("SearchBasedOptimizer: depth "+depth+" complete ("+sr.solutionsEvaluated+" solutions tested)");
+        currentOps = new ArrayList<>();
+        
+//        currentDependencies = 
+        currentDependencies = new boolean[spec.maxOps+1][nDependencies];
+        {
+            boolean initialDependencies[] = spec.getInitialDependencies(allDependencies);
+            for(int i = 0;i<nDependencies;i++) {
+                currentDependencies[0][i] = initialDependencies[i];
             }
-
-        } else if (searchType == SEARCH_ID_BYTES) {
-            for(int size = 0; size<=spec.maxSizeInBytes; size++) {
-                if (depthFirstSearch(0x10000, spec.codeStartAddress + size,
-                                     candidateOps, 
-                                     spec, code, 
-                                     spec.codeStartAddress, z80Memory,
-                                     sr)) {
-                    // solution found!
-                    break;
+        }
+        solutionsEvaluated = 0;        
+        bestOps = null;
+        bestSize = 0;
+        bestTime = 0;        
+        config.debug("Initial dependency set: " + Arrays.toString(currentDependencies[0]));
+        try {
+            if (searchType == SEARCH_ID_OPS) {
+                codeMaxAddress = 0x10000;
+                for(int depth = 0; depth<=spec.maxOps; depth++) {
+                    codeMaxOps = depth;
+                    if (depthFirstSearch(0, spec.codeStartAddress, candidateOps)) {
+                        // solution found!
+                        break;
+                    }
+                    config.info("SearchBasedOptimizer: depth "+depth+" complete ("+solutionsEvaluated+" solutions tested)");
                 }
-                config.info("SearchBasedOptimizer: size "+size+" complete ("+sr.solutionsEvaluated+" solutions tested)");
-            }
 
-        } else {
-            config.error("Unsupported search type " + searchType);
+            } else if (searchType == SEARCH_ID_BYTES) {
+                codeMaxOps = spec.maxOps;
+                for(int size = 0; size<=spec.maxSizeInBytes; size++) {
+                    codeMaxAddress = spec.codeStartAddress + size;
+                    if (depthFirstSearch(0, spec.codeStartAddress, candidateOps)) {
+                        // solution found!
+                        break;
+                    }
+                    config.info("SearchBasedOptimizer: size "+size+" complete ("+solutionsEvaluated+" solutions tested)");
+                }
+
+            } else {
+                config.error("Unsupported search type " + searchType);
+                return false;
+            }
+        } catch (Exception e) {
+            config.error("Exception while executing the search-based optimizer: " + e.getLocalizedMessage());
+            config.error("Exception while executing the search-based optimizer: " + Arrays.toString(e.getStackTrace()));
             return false;
         }
-
-        if (sr.bestOps == null) return false;
+            
+        if (bestOps == null) return false;
         
         int lineNumber = 1;
-        for(CPUOp op:sr.bestOps) {
+        for(CPUOp op:bestOps) {
             SourceLine sl = new SourceLine("    " + op.toString(), sf, lineNumber);
             CodeStatement s = new CodeStatement(CodeStatement.STATEMENT_CPUOP, sl, sf, config);
             s.op = op;
@@ -194,7 +231,7 @@ public class SearchBasedOptimizer implements MDLWorker {
             lineNumber++;
         }
         
-        config.info("SearchBasedOptimizer: search ended ("+sr.solutionsEvaluated+" solutions tested)");
+        config.info("SearchBasedOptimizer: search ended ("+solutionsEvaluated+" solutions tested)");
                 
         return true;
     }
@@ -653,101 +690,84 @@ public class SearchBasedOptimizer implements MDLWorker {
     }
     
     
-    boolean depthFirstSearch(int depth, int codeMaxAddress, 
-                             List<SBOCandidate> candidateOps, 
-                             Specification spec, CodeBase code,
-                             int codeAddress, IMemory z80Memory,
-                             SolutionRecord sr)
+    boolean depthFirstSearch(int depth, int codeAddress,
+                             List<SBOCandidate> candidateOps) throws Exception
     {
-        if (depth == 0 || codeAddress >= codeMaxAddress) {
+        if (depth >= codeMaxOps || codeAddress >= codeMaxAddress) {
             try {
                 int size = codeAddress - spec.codeStartAddress;
 
                 // Check to ensure the solution has a chance to be better than the current one,
                 // otherwise, don't even bother evaluating:
-                if (sr.bestOps != null &&
-                    (size > sr.bestSize ||
-                     (size == sr.bestSize && sr.ops.size() > sr.bestOps.size()))) {
+                if (bestOps != null &&
+                    (size > bestSize ||
+                     (size == bestSize && currentOps.size() > bestOps.size()))) {
                     return false;
                 }
                 
-                sr.solutionsEvaluated++;
+                solutionsEvaluated++;
                 
-//                if (sr.ops.size() == 2) {
-//                    System.out.println("" + sr.ops);
+//                if (currentOps.size() == 2) {
+//                    System.out.println("" + currentOps);
 //                }
                 
                 int time = 0;
                 for(int i = 0; i < numberOfRandomSolutionChecks; i++) {
-                    time = evaluateSolution(codeAddress, z80Memory, spec, code);
+                    time = evaluateSolution(codeAddress);
                     if (time < 0) return false;
                 }
-                if (sr.bestOps == null || 
-                    size < sr.bestSize ||
-                    (size == sr.bestSize && sr.ops.size() < sr.bestOps.size()) ||
-                    (size == sr.bestSize && sr.ops.size() == sr.bestOps.size() && time < sr.bestTime)) {
-                    sr.bestOps = new ArrayList<>();
-                    sr.bestOps.addAll(sr.ops);
-                    sr.bestSize = size;
-                    sr.bestTime = time;
+                if (bestOps == null || 
+                    size < bestSize ||
+                    (size == bestSize && currentOps.size() < bestOps.size()) ||
+                    (size == bestSize && currentOps.size() == bestOps.size() && time < bestTime)) {
+                    bestOps = new ArrayList<>();
+                    bestOps.addAll(currentOps);
+                    bestSize = size;
+                    bestTime = time;
                     
                     if (showNewBestDuringSearch) {
-                        config.info("New solution found after "+sr.solutionsEvaluated+" solutions tested (size: "+size+", time: " + time + "):");
-                        for(CPUOp op:sr.bestOps) {
+                        config.info("New solution found after "+solutionsEvaluated+" solutions tested (size: "+size+", time: " + time + "):");
+                        for(CPUOp op:bestOps) {
                             config.info("    " + op);
                         }
                     }
                 }
                 return true;
-            } catch(Exception e) {
+            } catch(ProcessorException e) {
                 // This could happen if the program self-modifies itself and garbles the codebase,
-                // resulting in an inexisting opcode!
-//                config.error("Something went wrong during solution execution in the z80 simulator: " + e.getMessage());
-//                config.error("StackTrace: " + Arrays.toString(e.getStackTrace()));
-//                config.error("program: " + sr.ops);
-//                for(int i = spec.codeStartAddress;i<codeAddress;i++) {
-//                    config.error(config.tokenizer.toHex(z80Memory.readByte(i), 2));
-//                }
+                // resulting in an inexisting opcode.
                 return false;
             }
         } else {
             boolean found = false;
             // the very last op must contribute to the goal:
             for(SBOCandidate candidate : candidateOps) {
-                if (depth == 1 && !candidate.directContributionToGoal) continue;
-                if (codeMaxAddress == codeAddress + candidate.bytes.length &&
-                    !candidate.directContributionToGoal) continue;
-                boolean dependenciesSatisfied = true;
-                for(int i = 0;i<sr.dependencies.length;i++) {
-                    if (candidate.inputDependencies[i] && !sr.dependencies[i]) {
-                        dependenciesSatisfied = false;
-                        break;
-                    }
+                if (!candidate.directContributionToGoal &&
+                    (depth == codeMaxOps-1 || codeMaxAddress == codeAddress + candidate.bytes.length)) {
+                    continue;
                 }
-                if (codeAddress + candidate.bytes.length <= codeMaxAddress &&
-                    dependenciesSatisfied) {                
+                boolean dependenciesSatisfied = true;
+                for(int i = 0;i<nDependencies;i++) {
+                    if (candidate.inputDependencies[i] && !currentDependencies[depth][i]) {
+                        dependenciesSatisfied = false;
+                    }
+                    currentDependencies[depth+1][i] = currentDependencies[depth][i] || candidate.outputDependencies[i];
+                }
+                if (dependenciesSatisfied && 
+                    codeAddress + candidate.bytes.length <= codeMaxAddress) {                
+                    
                     int nextAddress = codeAddress;
                     for(int i = 0; i < candidate.bytes.length; i++) {
                         z80Memory.writeByte(nextAddress, candidate.bytes[i]);
                         nextAddress++;
                     }
-                    sr.ops.add(candidate.op);
+                    currentOps.add(candidate.op);
                     
-                    boolean previousDependencies[] = new boolean[sr.dependencies.length];
-                    for(int i = 0;i<sr.dependencies.length;i++) {
-                        previousDependencies[i] = sr.dependencies[i];
-                        if (candidate.outputDependencies[i]) sr.dependencies[i] = true;
-                    }                    
-                    if (depthFirstSearch(depth-1, codeMaxAddress, 
-                                         candidate.potentialFollowUps, 
-                                         spec, code, nextAddress, z80Memory, sr)) {
+                    if (depthFirstSearch(depth+1, nextAddress, candidate.potentialFollowUps)) {
                         found = true;
                         // we keep going, in case we find a solution of the same size, but faster
                     }
-                    for(int i = 0;i<sr.dependencies.length;i++) {
-                        sr.dependencies[i] = previousDependencies[i];
-                    }
-                    sr.ops.remove(sr.ops.size()-1);
+                    currentOps.remove(currentOps.size()-1);
                 }
             }
             return found;
@@ -757,28 +777,11 @@ public class SearchBasedOptimizer implements MDLWorker {
     
     // return -1 is solution fails
     // return time it takes if solution succeeds
-    int evaluateSolution(int breakPoint, IMemory z80Memory, 
-                         Specification spec, CodeBase code) throws Exception
+    int evaluateSolution(int breakPoint) throws Exception
     {
         // evaluate solution:
-        Random rand = new Random();
-        Z80Core z80 = new Z80Core(z80Memory, new PlainZ80IO(), new CPUConfig(config));
         z80.reset();
 
-        // randomize the register contents:
-        RegisterNames eightBitRegisters[] = {
-            RegisterNames.A, RegisterNames.F,
-            RegisterNames.B, RegisterNames.C,
-            RegisterNames.D, RegisterNames.E,
-            RegisterNames.H, RegisterNames.L,
-            RegisterNames.A_ALT, RegisterNames.F_ALT,
-            RegisterNames.B_ALT, RegisterNames.C_ALT,
-            RegisterNames.D_ALT, RegisterNames.E_ALT,
-            RegisterNames.H_ALT, RegisterNames.L_ALT,
-            RegisterNames.IXH, RegisterNames.IXL,
-            RegisterNames.IYH, RegisterNames.IYL,
-            RegisterNames.R
-        };
         for(RegisterNames register: eightBitRegisters) {
             z80.setRegisterValue(register, rand.nextInt(256));
         }

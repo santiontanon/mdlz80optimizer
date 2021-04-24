@@ -1,0 +1,10 @@
+allowed_ops: 
+    addadcsubsbc
+    shifts
+    ld
+allow_ram_use = false
+max_ops = 5
+initial_state:
+    HL = ?val
+goal_state:
+    HL = ?val << 11
