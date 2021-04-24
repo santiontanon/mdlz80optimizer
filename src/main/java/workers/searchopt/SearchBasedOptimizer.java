@@ -111,29 +111,47 @@ public class SearchBasedOptimizer implements MDLWorker {
             CPUOpDependency dep = new CPUOpDependency(regName, null, null, null, null);
             allDependencies.add(dep);
         }
-//        for(String flagName: new String[]{"S" ,"Z" ,"H" , "P/V" ,"N" , "C"}) {
-        for(String flagName: new String[]{"S" ,"Z", "C"}) {
+        for(String flagName: new String[]{"S" ,"Z" ,"H" , "P/V" ,"N" , "C"}) {
             CPUOpDependency dep = new CPUOpDependency(null, flagName, null, null, null);
             allDependencies.add(dep);
         }
         config.debug("allDependencies: " + allDependencies.size());
         
-        // Run the search process to generate code:
         List<SBOCandidate> candidateOps = precomputeCandidateOps(spec, allDependencies, code);
         if (candidateOps == null) return false;
         config.debug("candidateOps: " + candidateOps.size());
         
+        // Precalculate which instructions can contribute to the solution:
+        List<SBOCandidate> candidateOpsForGoal = new ArrayList<>();
+        {
+            boolean goalDependencies[] = spec.getGoalDependencies(allDependencies);
+            for(SBOCandidate op:candidateOps) {
+                boolean contributesToGoal = false;
+                for(int i = 0;i<allDependencies.size();i++) {
+                    if (goalDependencies[i] && op.outputDependencies[i]) {
+                        contributesToGoal = true;
+                        break;
+                    }
+                }
+                if (contributesToGoal) {
+                    candidateOpsForGoal.add(op);
+                }
+            }
+        }
+        
         // Create a simulator:
         PlainZ80Memory z80Memory = new PlainZ80Memory();
         
+        // Run the search process to generate code:
         // Search via iterative deepening:
         SolutionRecord sr = new SolutionRecord();
         sr.dependencies = spec.getInitialDependencies(allDependencies);
         config.debug("Initial dependency set: " + Arrays.toString(sr.dependencies));
         if (searchType == SEARCH_ID_OPS) {
-            for(int depth = 1; depth<=spec.maxDepth; depth++) {
+            for(int depth = 0; depth<=spec.maxDepth; depth++) {
                 if (depthFirstSearch(depth, 0x10000,
                                      candidateOps, 
+                                     candidateOpsForGoal,
                                      spec, code, 
                                      spec.codeStartAddress, z80Memory,
                                      sr)) {
@@ -144,10 +162,11 @@ public class SearchBasedOptimizer implements MDLWorker {
             }
 
         } else if (searchType == SEARCH_ID_BYTES) {
-            for(int size = 1; size<=spec.maxSizeInBytes; size++) {
+            for(int size = 0; size<=spec.maxSizeInBytes; size++) {
                 System.out.println(size);
                 if (depthFirstSearch(0x10000, spec.codeStartAddress + size,
                                      candidateOps, 
+                                     candidateOpsForGoal,
                                      spec, code, 
                                      spec.codeStartAddress, z80Memory,
                                      sr)) {
@@ -588,6 +607,7 @@ public class SearchBasedOptimizer implements MDLWorker {
     
     boolean depthFirstSearch(int depth, int codeMaxAddress, 
                              List<SBOCandidate> candidateOps, 
+                             List<SBOCandidate> candidateOpsForGoal,
                              Specification spec, CodeBase code,
                              int codeAddress, IMemory z80Memory,
                              SolutionRecord sr)
@@ -636,6 +656,8 @@ public class SearchBasedOptimizer implements MDLWorker {
             }
         } else {
             boolean found = false;
+            // the very last op must contribute to the goal:
+            if (depth == 1) candidateOps = candidateOpsForGoal;
             for(SBOCandidate candidate : candidateOps) {
                 boolean dependenciesSatisfied = true;
                 for(int i = 0;i<sr.dependencies.length;i++) {
@@ -659,7 +681,8 @@ public class SearchBasedOptimizer implements MDLWorker {
                         if (candidate.outputDependencies[i]) sr.dependencies[i] = true;
                     }                    
                     if (depthFirstSearch(depth-1, codeMaxAddress, 
-                                         candidateOps, spec, code, nextAddress, z80Memory, sr)) {
+                                         candidateOps, candidateOpsForGoal,
+                                         spec, code, nextAddress, z80Memory, sr)) {
                         found = true;
                         // we keep going, in case we find a solution of the same size, but faster
                     }

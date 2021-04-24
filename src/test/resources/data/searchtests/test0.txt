@@ -1,0 +1,7 @@
+allowed_ops: 
+    andorxor
+    incdec
+initial_state:
+    A = 0
+goal_state:
+    A = 0

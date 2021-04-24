@@ -255,14 +255,14 @@ RES b,r	2	CB 80+8*b+r	2	r				r				true
 RETI	4	ED 4D	2				[SP:SP+1]	SP,PC				true
 RETN	4	ED 45	2				[SP:SP+1]	SP,PC				true
 RL (HL)	4	CB 16	2	HL	C			HL	S,Z,H,P/V,N,C		HL	true
-RL r	2	CB 10+r	2	r	C				S,Z,H,P/V,N,C			true
+RL r	2	CB 10+r	2	r	C			r	S,Z,H,P/V,N,C			true
 RLC (HL)	4	CB 06	2	HL				HL	S,Z,H,P/V,N,C		HL	true
-RLC r	2	CB 00+r	2	r					S,Z,H,P/V,N,C			true
+RLC r	2	CB 00+r	2	r				r	S,Z,H,P/V,N,C			true
 RLD	5	ED 6F	2	A,HL			HL		S,Z,H,P/V,N			true
 RR (HL)	4	CB 1E	2	HL	C			HL	S,Z,H,P/V,N,C		HL	true
-RR r	2	CB 18+r	2	r	C				S,Z,H,P/V,N,C			true
+RR r	2	CB 18+r	2	r	C			r	S,Z,H,P/V,N,C			true
 RRC (HL)	4	CB 0E	2	HL				HL	S,Z,H,P/V,N,C		HL	true
-RRC r	2	CB 08+r	2	r					S,Z,H,P/V,N,C			true
+RRC r	2	CB 08+r	2	r				r	S,Z,H,P/V,N,C			true
 RRD	5	ED 67	2	A,HL			HL		S,Z,H,P/V,N			true
 SBC A,IXp	2	DD 98+p	2	A,IXp	C			A	S,Z,H,P/V,N,C			true
 SBC A,IYq	2	FD 98+q	2	A,IYq	C			A	S,Z,H,P/V,N,C			true

@@ -96,6 +96,22 @@ public class Specification {
         
         return dependencies;
     }
+
+
+    public boolean[] getGoalDependencies(List<CPUOpDependency> allDependencies)
+    {
+        boolean dependencies[] = new boolean[allDependencies.size()];
+        for(int i = 0;i<dependencies.length;i++) dependencies[i] = false;
+        
+        for(SpecificationExpression exp:goalState) {
+            CPUOpDependency dep = new CPUOpDependency(exp.leftRegisterName.toUpperCase(), null, null, null, null);
+            for(int i = 0;i<dependencies.length;i++) {
+                if (dep.match(allDependencies.get(i))) dependencies[i] = true;
+            }
+        }
+        
+        return dependencies;
+    }
     
     
     public boolean initCPU(Z80Core z80, CodeBase code)

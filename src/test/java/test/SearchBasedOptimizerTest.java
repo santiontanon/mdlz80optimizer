@@ -24,7 +24,7 @@ public class SearchBasedOptimizerTest {
     
     // Change this to "true" to run the larger tests (that are slow, and thus
     // are deactivated by default for quick building):
-    private final boolean runLargerTests = false;
+    private final boolean runLargerTests = true;
 
     public SearchBasedOptimizerTest() {
         config = new MDLConfig();
@@ -33,19 +33,20 @@ public class SearchBasedOptimizerTest {
         code = new CodeBase(config);
     }
 
-    @Test public void test1() throws IOException { test("data/searchtests/test1.txt", "data/searchtests/test1-expected.asm"); }
-    @Test public void test1b() throws IOException { test("data/searchtests/test1b.txt", "data/searchtests/test1b-expected.asm"); }
-    @Test public void test2() throws IOException { test("data/searchtests/test2.txt", "data/searchtests/test2-expected.asm"); }
-    @Test public void test2b() throws IOException { test("data/searchtests/test2b.txt", null); }
-    @Test public void test3() throws IOException { test("data/searchtests/test3.txt", "data/searchtests/test3-expected.asm"); }
-    @Test public void test4() throws IOException { test("data/searchtests/test4.txt", "data/searchtests/test4-expected.asm"); }
-    @Test public void test5() throws IOException { test("data/searchtests/test5.txt", "data/searchtests/test5-expected.asm"); }
-    @Test public void test5b() throws IOException { test("data/searchtests/test5b.txt", "data/searchtests/test5b-expected.asm"); }
+//    @Test public void test0() throws IOException { test("data/searchtests/test0.txt", "data/searchtests/test0-expected.asm"); }
+//    @Test public void test1() throws IOException { test("data/searchtests/test1.txt", "data/searchtests/test1-expected.asm"); }
+//    @Test public void test1b() throws IOException { test("data/searchtests/test1b.txt", "data/searchtests/test1b-expected.asm"); }
+//    @Test public void test2() throws IOException { test("data/searchtests/test2.txt", "data/searchtests/test2-expected.asm"); }
+//    @Test public void test2b() throws IOException { test("data/searchtests/test2b.txt", null); }
+//    @Test public void test3() throws IOException { test("data/searchtests/test3.txt", "data/searchtests/test3-expected.asm"); }
+//    @Test public void test4() throws IOException { test("data/searchtests/test4.txt", "data/searchtests/test4-expected.asm"); }
+//    @Test public void test5() throws IOException { test("data/searchtests/test5.txt", "data/searchtests/test5-expected.asm"); }
+//    @Test public void test5b() throws IOException { test("data/searchtests/test5b.txt", "data/searchtests/test5b-expected.asm"); }
 
-    // Current version: 2.963 sec (94241 solutions) (previous: 94 sec (3397650), 220 sec (???))
+    // Current version: 1.02 sec (26050 solutions)
     @Test public void testLarge1() throws IOException { if (runLargerTests) test("data/searchtests/test-large1.txt", "data/searchtests/test-large1-expected.asm"); }
-    // Current version: 166.478 sec (5952172 solutions)
-    @Test public void testLarge2() throws IOException { if (runLargerTests) test("data/searchtests/test-large2.txt", "data/searchtests/test-large2-expected.asm"); }
+    // Current version: 42.567 sec (1514929 solutions)
+//    @Test public void testLarge2() throws IOException { if (runLargerTests) test("data/searchtests/test-large2.txt", "data/searchtests/test-large2-expected.asm"); }
     
     private void test(String inputFile, String expectedOutput) throws IOException
     {
