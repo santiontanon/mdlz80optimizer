@@ -2,6 +2,7 @@ allowed_ops:
     addition
     ld
 allow_ram_use = false
+allowed_registers: hl, a
 initial_state:
     HL = ?val
 goal_state:

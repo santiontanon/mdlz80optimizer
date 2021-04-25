@@ -24,13 +24,8 @@ public class Specification {
     int maxSizeInBytes = 8;
     
     // instruction set:
-    boolean allowAndOrXorOps = true;
-    boolean allowIncDecOps = true;
-    boolean allowAddAdcSubSbc = true;
-    boolean allowLd = true;
-    boolean allowRotations = true;
-    boolean allowShifts = true;
-    
+    List<String> allowedOps = new ArrayList<>();
+    List<String> allowedRegisters = new ArrayList<>();
     boolean allowRamUse = false;
     
     public List<Integer> allowed8bitConstants = new ArrayList<>();
@@ -48,17 +43,64 @@ public class Specification {
         allowed8bitConstants.add(0);
         allowed16bitConstants.add(0);
         allowedOffsetConstants.add(0);
+        
+        allowedOps.add("and");
+        allowedOps.add("or");
+        allowedOps.add("xor");
+        
+        allowedOps.add("inc");
+        allowedOps.add("dec");
+        
+        allowedOps.add("add");
+        allowedOps.add("adc");
+        allowedOps.add("sub");
+        allowedOps.add("sbc");
+        
+        allowedOps.add("ld");
+        
+        allowedOps.add("rlc");
+        allowedOps.add("rl");
+        allowedOps.add("rrc");
+        allowedOps.add("rr");
+        allowedOps.add("rlca");
+        allowedOps.add("rla");
+        allowedOps.add("rrca");
+        allowedOps.add("rra");
+        
+        allowedOps.add("sla");
+        allowedOps.add("sra");
+        allowedOps.add("srl");
+        allowedOps.add("sli");
+        
+        allowedRegisters.add("a");
+        allowedRegisters.add("af");
+        allowedRegisters.add("b");
+        allowedRegisters.add("c");
+        allowedRegisters.add("bc");
+        allowedRegisters.add("d");
+        allowedRegisters.add("e");
+        allowedRegisters.add("de");
+        allowedRegisters.add("h");
+        allowedRegisters.add("l");
+        allowedRegisters.add("hl");
+        allowedRegisters.add("ixh");
+        allowedRegisters.add("ixl");
+        allowedRegisters.add("ix");
+        allowedRegisters.add("iyh");
+        allowedRegisters.add("iyl");
+        allowedRegisters.add("iy");
     }
     
     
     public void clearOpGroups()
     {
-        allowAndOrXorOps = false;
-        allowIncDecOps = false;
-        allowAddAdcSubSbc = false;
-        allowLd = false;
-        allowRotations = false;
-        allowShifts = false;
+        allowedOps.clear();
+    }
+
+
+    public void clearAllowedRegisters()
+    {
+        allowedRegisters.clear();
     }
     
     

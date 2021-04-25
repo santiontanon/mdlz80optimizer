@@ -1,0 +1,4 @@
+allowed_ops: xor, INC
+initial_state:
+goal_state:
+    A = 1

@@ -3,6 +3,7 @@ allowed_ops:
     shift
     ld
 allow_ram_use = false
+allowed_registers: hl, a
 max_ops = 5
 initial_state:
     HL = ?val

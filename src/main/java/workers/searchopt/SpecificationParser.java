@@ -25,7 +25,7 @@ public class SpecificationParser {
         try (BufferedReader br = Resources.asReader(inputFile)) {
             Specification spec = new Specification();
             int state = 0;  // 0: start, 1: "allowed_ops", 2: "initial_state", 3: "goal_state", 
-                            // 4: 8bit_constants, 5: 16bit_constants, 6: offset_constants
+                            // 4: 8bit_constants, 5: 16bit_constants, 6: offset_constants, 7: allowed_registers
             
             String line = br.readLine().trim();
             while(line != null) {
@@ -37,6 +37,12 @@ public class SpecificationParser {
                     spec.clearOpGroups();
                     state = 1;
                     if (!parseOpGroups(tokens, spec, config)) return  null;
+                } else if (tokens.size()>=2 && tokens.get(0).equals("allowed_registers") && tokens.get(1).equals(":")) {
+                    tokens.remove(0);
+                    tokens.remove(0);
+                    spec.clearAllowedRegisters();
+                    state = 7;
+                    if (!parseAllowedRegisters(tokens, spec, config)) return  null;
                 } else if (tokens.size()>=2 && tokens.get(0).equals("initial_state") && tokens.get(1).equals(":")) {
                     tokens.remove(0);
                     tokens.remove(0);
@@ -125,6 +131,10 @@ public class SpecificationParser {
 
                         case 1:
                             if (!parseOpGroups(tokens, spec, config)) return null;
+                            break;
+
+                        case 7:
+                            if (!parseAllowedRegisters(tokens, spec, config)) return null;
                             break;
 
                         case 2:
@@ -227,28 +237,136 @@ public class SpecificationParser {
         // parse initial state statements:
         while(!tokens.isEmpty()) {
             String opGroup = tokens.remove(0);
-            switch(opGroup) {
+            switch(opGroup.toLowerCase()) {
                 case "logic":
-                    spec.allowAndOrXorOps = true;
+                    spec.allowedOps.add("and");
+                    spec.allowedOps.add("or");
+                    spec.allowedOps.add("xor");
                     break;
                 case "increment":
-                    spec.allowIncDecOps = true;
+                    spec.allowedOps.add("inc");
+                    spec.allowedOps.add("dec");
                     break;
                 case "addition":
-                    spec.allowAddAdcSubSbc = true;
+                    spec.allowedOps.add("add");
+                    spec.allowedOps.add("adc");
+                    spec.allowedOps.add("sub");
+                    spec.allowedOps.add("sbc");
                     break;
                 case "ld":
-                    spec.allowLd = true;
+                    spec.allowedOps.add("ld");
                     break;
                 case "rotation":
-                    spec.allowRotations = true;
+                    spec.allowedOps.add("rlc");
+                    spec.allowedOps.add("rl");
+                    spec.allowedOps.add("rrc");
+                    spec.allowedOps.add("rr");
+                    spec.allowedOps.add("rlca");
+                    spec.allowedOps.add("rla");
+                    spec.allowedOps.add("rrca");
+                    spec.allowedOps.add("rra");
                     break;
                 case "shift":
-                    spec.allowShifts = true;
+                    spec.allowedOps.add("sla");
+                    spec.allowedOps.add("sra");
+                    spec.allowedOps.add("srl");
+                    spec.allowedOps.add("sli");
                     break;
                 default:
-                    config.error("Unrecognized op group " + opGroup);
-                    return false;                                        
+                    spec.allowedOps.add(opGroup.toLowerCase());
+            }
+            if (!tokens.isEmpty()) {
+                if (tokens.get(0).equals(",")) {
+                    tokens.remove(0);
+                } else if (config.tokenizer.isSingleLineComment(tokens.get(0))) {
+                    return true;
+                } else {
+                    config.error("Unexpected token " + tokens.get(0));
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+    
+    
+    
+    static boolean parseAllowedRegisters(List<String> tokens, Specification spec, MDLConfig config)
+    {
+        // parse initial state statements:
+        while(!tokens.isEmpty()) {
+            String register = tokens.remove(0);
+            switch(register.toLowerCase()) {
+                case "a":
+                    spec.allowedRegisters.add("a");
+                    break;
+                case "b":
+                    spec.allowedRegisters.add("b");
+                    break;
+                case "c":
+                    spec.allowedRegisters.add("c");
+                    break;
+                case "bc":
+                    spec.allowedRegisters.add("b");
+                    spec.allowedRegisters.add("c");
+                    spec.allowedRegisters.add("bc");
+                    break;
+                case "d":
+                    spec.allowedRegisters.add("d");
+                    break;
+                case "e":
+                    spec.allowedRegisters.add("e");
+                    break;
+                case "de":
+                    spec.allowedRegisters.add("d");
+                    spec.allowedRegisters.add("e");
+                    spec.allowedRegisters.add("de");
+                    break;
+                case "h":
+                    spec.allowedRegisters.add("h");
+                    break;
+                case "l":
+                    spec.allowedRegisters.add("l");
+                    break;
+                case "hl":
+                    spec.allowedRegisters.add("h");
+                    spec.allowedRegisters.add("l");
+                    spec.allowedRegisters.add("hl");
+                    break;
+                case "ixh":
+                    spec.allowedRegisters.add("ixh");
+                    break;
+                case "ixl":
+                    spec.allowedRegisters.add("ixl");
+                    break;
+                case "ix":
+                    spec.allowedRegisters.add("ixh");
+                    spec.allowedRegisters.add("ixl");
+                    spec.allowedRegisters.add("ix");
+                    break;
+                case "iyh":
+                    spec.allowedRegisters.add("iyh");
+                    break;
+                case "iyl":
+                    spec.allowedRegisters.add("iyl");
+                    break;
+                case "iy":
+                    spec.allowedRegisters.add("iyh");
+                    spec.allowedRegisters.add("iyl");
+                    spec.allowedRegisters.add("iy");
+                    break;
+                case "sp":
+                    spec.allowedRegisters.add("sp");
+                    break;
+                case "r":
+                    spec.allowedRegisters.add("r");
+                    break;
+                case "i":
+                    spec.allowedRegisters.add("i");
+                    break;
+                default:
+                    config.error("Unrecognized register:" + register);
+                    return false;
             }
             if (!tokens.isEmpty()) {
                 if (tokens.get(0).equals(",")) {

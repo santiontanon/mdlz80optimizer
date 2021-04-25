@@ -1,9 +1,11 @@
 allowed_ops: 
+    addition
     shift
     ld
-allowed_registers: hl, a
 allow_ram_use = false
+allowed_registers: hl, a
+max_ops = 6
 initial_state:
     HL = ?val
 goal_state:
-    HL = ?val << 9
+    HL = ?val << 12
