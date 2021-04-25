@@ -6,6 +6,7 @@
 package workers.searchopt;
 
 import cl.MDLConfig;
+import code.CPUOpSpec;
 import code.CodeBase;
 import code.Expression;
 import code.SourceConstant;
@@ -31,19 +32,19 @@ public class SpecificationParser {
             while(line != null) {
                 List<String> tokens = config.tokenizer.tokenize(line);
 
-                if (tokens.size()>=2 && tokens.get(0).equals("allowed_ops") && tokens.get(1).equals(":")) {
+                if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("allowed_ops") && tokens.get(1).equals(":")) {
                     tokens.remove(0);
                     tokens.remove(0);
                     spec.clearOpGroups();
                     state = 1;
                     if (!parseOpGroups(tokens, spec, config)) return  null;
-                } else if (tokens.size()>=2 && tokens.get(0).equals("allowed_registers") && tokens.get(1).equals(":")) {
+                } else if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("allowed_registers") && tokens.get(1).equals(":")) {
                     tokens.remove(0);
                     tokens.remove(0);
                     spec.clearAllowedRegisters();
                     state = 7;
                     if (!parseAllowedRegisters(tokens, spec, config)) return  null;
-                } else if (tokens.size()>=2 && tokens.get(0).equals("initial_state") && tokens.get(1).equals(":")) {
+                } else if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("initial_state") && tokens.get(1).equals(":")) {
                     tokens.remove(0);
                     tokens.remove(0);
                     if (tokens.isEmpty() || config.tokenizer.isSingleLineComment(tokens.get(0))) {
@@ -52,7 +53,7 @@ public class SpecificationParser {
                         config.error("Unexpected token " + tokens.get(0) + " after 'initial_state:'");
                         return null;
                     }
-                } else if (tokens.size()>=2 && tokens.get(0).equals("goal_state") && tokens.get(1).equals(":")) {
+                } else if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("goal_state") && tokens.get(1).equals(":")) {
                     tokens.remove(0);
                     tokens.remove(0);
                     if (tokens.isEmpty() || config.tokenizer.isSingleLineComment(tokens.get(0))) {
@@ -61,7 +62,7 @@ public class SpecificationParser {
                         config.error("Unexpected token " + tokens.get(0) + " after 'goal_state:'");
                         return null;
                     }
-                } else if (tokens.size()>=2 && tokens.get(0).equals("8bit_constants") && tokens.get(1).equals(":")) {
+                } else if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("8bit_constants") && tokens.get(1).equals(":")) {
                     tokens.remove(0);
                     tokens.remove(0);
                     if (tokens.isEmpty() || config.tokenizer.isSingleLineComment(tokens.get(0))) {
@@ -71,7 +72,7 @@ public class SpecificationParser {
                         config.error("Unexpected token " + tokens.get(0) + " after '8bit_constants:'");
                         return null;
                     }
-                } else if (tokens.size()>=2 && tokens.get(0).equals("16bit_constants") && tokens.get(1).equals(":")) {
+                } else if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("16bit_constants") && tokens.get(1).equals(":")) {
                     tokens.remove(0);
                     tokens.remove(0);
                     if (tokens.isEmpty() || config.tokenizer.isSingleLineComment(tokens.get(0))) {
@@ -81,7 +82,7 @@ public class SpecificationParser {
                         config.error("Unexpected token " + tokens.get(0) + " after '16bit_constants:'");
                         return null;
                     }
-                } else if (tokens.size()>=2 && tokens.get(0).equals("offset_constants") && tokens.get(1).equals(":")) {
+                } else if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("offset_constants") && tokens.get(1).equals(":")) {
                     tokens.remove(0);
                     tokens.remove(0);
                     if (tokens.isEmpty() || config.tokenizer.isSingleLineComment(tokens.get(0))) {
@@ -91,7 +92,7 @@ public class SpecificationParser {
                         config.error("Unexpected token " + tokens.get(0) + " after 'offset_constants:'");
                         return null;
                     }
-                } else if (tokens.size()>=3 && tokens.get(0).equals("max_ops") && tokens.get(1).equals("=")) {
+                } else if (tokens.size()>=3 && tokens.get(0).equalsIgnoreCase("max_ops") && tokens.get(1).equals("=")) {
                     if (config.tokenizer.isInteger(tokens.get(2))) {
                         spec.maxOps = Integer.parseInt(tokens.get(2));
                         tokens.remove(0);
@@ -105,7 +106,7 @@ public class SpecificationParser {
                         config.error("Cannot parse line " + line);
                         return null;
                     }
-                } else if (tokens.size()>=3 && tokens.get(0).equals("max_size") && tokens.get(1).equals("=")) {
+                } else if (tokens.size()>=3 && tokens.get(0).equalsIgnoreCase("max_size") && tokens.get(1).equals("=")) {
                     if (config.tokenizer.isInteger(tokens.get(2))) {
                         spec.maxSimulationTime = Integer.parseInt(tokens.get(2));
                         tokens.remove(0);
@@ -119,7 +120,7 @@ public class SpecificationParser {
                         config.error("Cannot parse line " + line);
                         return null;
                     }
-                } else if (tokens.size()>=3 && tokens.get(0).equals("max_time") && tokens.get(1).equals("=")) {
+                } else if (tokens.size()>=3 && tokens.get(0).equalsIgnoreCase("max_time") && tokens.get(1).equals("=")) {
                     if (config.tokenizer.isInteger(tokens.get(2))) {
                         spec.maxSimulationTime = Integer.parseInt(tokens.get(2));
                         tokens.remove(0);
@@ -133,8 +134,8 @@ public class SpecificationParser {
                         config.error("Cannot parse line " + line);
                         return null;
                     }
-                } else if (tokens.size()>=3 && tokens.get(0).equals("allow_ram_use") && tokens.get(1).equals("=")) {
-                    if (tokens.get(2).equals("true") || tokens.get(2).equals("false")) {
+                } else if (tokens.size()>=3 && tokens.get(0).equalsIgnoreCase("allow_ram_use") && tokens.get(1).equals("=")) {
+                    if (tokens.get(2).equalsIgnoreCase("true") || tokens.get(2).equalsIgnoreCase("false")) {
                         spec.allowRamUse = Boolean.parseBoolean(tokens.get(2));
                         tokens.remove(0);
                         tokens.remove(0);
@@ -143,6 +144,26 @@ public class SpecificationParser {
                             config.error("Unexpected token " + tokens.get(0) + " ine line " + line);
                             return null;
                         }
+                    } else {
+                        config.error("Cannot parse line " + line);
+                        return null;
+                    }
+                } else if (tokens.size()>=3 && tokens.get(0).equalsIgnoreCase("goal") && tokens.get(1).equals("=")) {
+                    if (tokens.get(2).equalsIgnoreCase("ops")) {
+                        spec.searchType = SearchBasedOptimizer.SEARCH_ID_OPS;
+                        tokens.remove(0);
+                        tokens.remove(0);
+                        tokens.remove(0);
+                    } else if (tokens.get(2).equalsIgnoreCase("size")) {
+                        spec.searchType = SearchBasedOptimizer.SEARCH_ID_BYTES;
+                        tokens.remove(0);
+                        tokens.remove(0);
+                        tokens.remove(0);
+                    } else if (tokens.get(2).equalsIgnoreCase("time")) {
+                        spec.searchType = SearchBasedOptimizer.SEARCH_ID_CYCLES;
+                        tokens.remove(0);
+                        tokens.remove(0);
+                        tokens.remove(0);
                     } else {
                         config.error("Cannot parse line " + line);
                         return null;
@@ -310,7 +331,15 @@ public class SpecificationParser {
                     spec.allowedOps.add("res");
                     break;
                 default:
-                    spec.allowedOps.add(opGroup.toLowerCase());
+                {
+                    List<CPUOpSpec> l = config.opParser.getOpSpecs(opGroup.toLowerCase());
+                    if (l == null || l.isEmpty()) {
+                        config.error("Unrecognized CPU op, or op group: " + opGroup);
+                        return false;
+                    } else {
+                        spec.allowedOps.add(opGroup.toLowerCase());
+                    }
+                }
             }
             if (!tokens.isEmpty()) {
                 if (tokens.get(0).equals(",")) {

@@ -4,7 +4,7 @@ allowed_ops:
     ld
 16bit_constants:
     0 - 2
-    4
+    0x04
 initial_state:
 goal_state:
     HL = 2

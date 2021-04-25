@@ -1,3 +1,4 @@
+goal = ops
 allowed_ops: 
     logic
     increment

@@ -744,8 +744,8 @@ public class CodeReorganizer implements MDLWorker {
                 // check if they contain identical code:
                 boolean match = true;
                 for(int k = 0;k<ops1.size();k++) {
-                    List<Integer> bytes1 = ops1.get(k).op.assembleToBytes(ops1.get(k), code, config);
-                    List<Integer> bytes2 = ops2.get(k).op.assembleToBytes(ops2.get(k), code, config);
+                    List<Integer> bytes1 = ops1.get(k).op.assembleToBytes(ops1.get(k), code, true, config);
+                    List<Integer> bytes2 = ops2.get(k).op.assembleToBytes(ops2.get(k), code, true, config);
                     if (bytes1 == null || bytes2 == null ||
                         bytes1.size() != bytes2.size()) {
                         match = false;

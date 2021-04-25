@@ -279,9 +279,14 @@ public class CPUOp {
         if (diff < -128 || diff > 127) return false;
         return true;
     }
-    
-    
+
+
     public List<Integer> assembleToBytes(CodeStatement s, CodeBase code, MDLConfig config)
+    {
+        return assembleToBytes(s, code, false, config);
+    }    
+    
+    public List<Integer> assembleToBytes(CodeStatement s, CodeBase code, boolean silent, MDLConfig config)
     {
         List<Integer> data = new ArrayList<>();
         int nn_state = 0;
@@ -296,12 +301,12 @@ public class CPUOp {
                 if (spec.isJump()) {
                     int base = s.getAddress(code) + spec.sizeInBytes;
                     if (args == null || args.isEmpty() || args.get(args.size()-1) == null) {
-                        config.error("Unable to convert " + this + " to bytes! Could not find the target label for the jump");
+                        if (!silent) config.error("Unable to convert " + this + " to bytes! Could not find the target label for the jump");
                         return null;                        
                     }
                     Integer target = args.get(args.size()-1).evaluateToInteger(s, code, true);
                     if (target == null) {
-                        config.error("Unable to resolve '" + args.get(args.size()-1) + "' in " + s.sl);
+                        if (!silent) config.error("Unable to resolve '" + args.get(args.size()-1) + "' in " + s.sl);
                         return null;                        
                     }
 
@@ -309,7 +314,7 @@ public class CPUOp {
                     
                     // check if it's within jr range!:
                     if (!offsetWithinJrRange(offset)) {
-                        config.error("Jump offset out of range: " + offset + " in " + s.sl);
+                        if (!silent) config.error("Jump offset out of range: " + offset + " in " + s.sl);
                         return null;
                     }
                     
@@ -323,7 +328,7 @@ public class CPUOp {
                         }
                     }
                     if (arg_idx == -1) {
-                        config.error("Unable to convert " + this + " to bytes! Could not find argument with an indirection with offset");
+                        if (!silent) config.error("Unable to convert " + this + " to bytes! Could not find argument with an indirection with offset");
                         return null;
                     }
                     Integer o = null;
@@ -345,7 +350,7 @@ public class CPUOp {
                         }
                     }
                     if (o == null) {
-                        config.error("Unable to convert " + this + " to bytes! Could not find the offset");
+                        if (!silent) config.error("Unable to convert " + this + " to bytes! Could not find the offset");
                         return null;
                     }
                     data.add(o);
@@ -357,19 +362,19 @@ public class CPUOp {
                 for(Expression arg:args) {
                     String undefined = arg.findUndefinedSymbol(code);
                     if (undefined != null) {
-                        config.error("Undefined symbol \"" + undefined + "\" in " + s.sl.fileNameLineString());
+                        if (!silent) config.error("Undefined symbol \"" + undefined + "\" in " + s.sl.fileNameLineString());
                         return null;
                     }
                     if (arg.evaluatesToIntegerConstant()) {
                         if (n != null) {
-                            config.error("Unable to convert " + this + " to bytes! two numeric constants in one op!");
+                            if (!silent) config.error("Unable to convert " + this + " to bytes! two numeric constants in one op!");
                             return null;
                         }
                         n = arg.evaluateToInteger(s, code, true);
                     }
                 }
                 if (n == null) {
-                    config.error("Unable to convert " + this + " to bytes! no numeric constants in the op!");
+                    if (!silent) config.error("Unable to convert " + this + " to bytes! no numeric constants in the op!");
                     return null;
                 }
                 data.add(n & 0xff);
@@ -380,19 +385,19 @@ public class CPUOp {
                 for(Expression arg:args) {
                     String undefined = arg.findUndefinedSymbol(code);
                     if (undefined != null) {
-                        config.error("Undefined symbol \"" + undefined + "\" in " + s.sl.fileNameLineString());
+                        if (!silent) config.error("Undefined symbol \"" + undefined + "\" in " + s.sl.fileNameLineString());
                         return null;
                     }
                     if (arg.evaluatesToIntegerConstant()) {
                         if (nn != null) {
-                            config.error("Unable to convert " + this + " to bytes! two numeric constants in one op!");
+                            if (!silent) config.error("Unable to convert " + this + " to bytes! two numeric constants in one op!");
                             return null;
                         }
                         nn = arg.evaluateToInteger(s, code, true);
                     }
                 }
                 if (nn == null) {
-                    config.error("Unable to convert " + this + " to bytes! no numeric constants in the op!");
+                    if (!silent) config.error("Unable to convert " + this + " to bytes! no numeric constants in the op!");
                     return null;
                 }
                 if (nn_state == 0) {
@@ -425,7 +430,7 @@ public class CPUOp {
                 // register (which is the last argument of the op):
                 Integer r = registerValueForByte(args.get(args.size()-1).registerOrFlagName);
                 if (r == null) {
-                    config.error("Unable to convert register name to value " + this);
+                    if (!silent) config.error("Unable to convert register name to value " + this);
                     return null;
                 }
                 data.add(baseByte+r);
@@ -435,7 +440,7 @@ public class CPUOp {
                 // register (which is the last argument of the op):
                 Integer r = registerValueForByte(args.get(args.size()-1).registerOrFlagName);
                 if (r == null) {
-                    config.error("Unable to convert register name to value " + this);
+                    if (!silent) config.error("Unable to convert register name to value " + this);
                     return null;
                 }
                 data.add(baseByte+8*r);
@@ -443,7 +448,7 @@ public class CPUOp {
             } else if (v[1].equals("+8*b")) {
                 Integer b = args.get(0).evaluateToInteger(s, code, true);
                 if (b == null) {
-                    config.error("Unable to convert bit to value " + this);
+                    if (!silent) config.error("Unable to convert bit to value " + this);
                 }
                 data.add(baseByte+8*(b&0x07));
                 
@@ -451,12 +456,12 @@ public class CPUOp {
                 Integer b = args.get(0).evaluateToInteger(s, code, true);
                 Integer r = registerValueForByte(args.get(1).registerOrFlagName);
                 if (b == null || r == null) {
-                    config.error("Unable to convert bit or register name to value " + this);
+                    if (!silent) config.error("Unable to convert bit or register name to value " + this);
                 }
                 data.add(baseByte+8*(b&0x07)+r);
                 
             } else {
-                config.error("Unable to convert " + this + " to bytes! Unsupported byte modifier " + v[1]);
+                if (!silent) config.error("Unable to convert " + this + " to bytes! Unsupported byte modifier " + v[1]);
                 return null;
             }
         }
