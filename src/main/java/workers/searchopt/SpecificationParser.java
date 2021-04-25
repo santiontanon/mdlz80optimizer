@@ -272,6 +272,15 @@ public class SpecificationParser {
                     spec.allowedOps.add("srl");
                     spec.allowedOps.add("sli");
                     break;
+                case "negation":
+                    spec.allowedOps.add("cpl");
+                    spec.allowedOps.add("neg");
+                    break;
+                case "bits":
+                    spec.allowedOps.add("bit");
+                    spec.allowedOps.add("set");
+                    spec.allowedOps.add("res");
+                    break;
                 default:
                     spec.allowedOps.add(opGroup.toLowerCase());
             }

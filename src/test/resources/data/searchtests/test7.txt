@@ -1,0 +1,6 @@
+allowed_ops: 
+    bits
+initial_state:
+    a = ?v
+goal_state:
+    a = ?v | 0x80

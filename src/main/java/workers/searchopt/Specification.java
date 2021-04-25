@@ -71,6 +71,13 @@ public class Specification {
         allowedOps.add("sra");
         allowedOps.add("srl");
         allowedOps.add("sli");
+
+        allowedOps.add("cpl");
+        allowedOps.add("neg");
+
+        allowedOps.add("bit");
+        allowedOps.add("set");
+        allowedOps.add("res");
         
         allowedRegisters.add("a");
         allowedRegisters.add("af");

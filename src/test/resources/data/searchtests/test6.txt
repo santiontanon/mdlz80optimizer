@@ -1,0 +1,6 @@
+allowed_ops: 
+    negation
+initial_state:
+    a = ?v
+goal_state:
+    a = -?v

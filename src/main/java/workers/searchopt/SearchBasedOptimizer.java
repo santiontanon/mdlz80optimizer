@@ -249,10 +249,10 @@ public class SearchBasedOptimizer implements MDLWorker {
         OK - LD
         OK - RLCA/RLA/RRCA/RRA/RLC/RL/RRC/RR
         OK - SLA/SRA/SRL/SLI
-        - CPL/NEG
-        - BIT/SET/RES
-        - PUSH/POP
+        OK - CPL/NEG
+        OK - BIT/SET/RES
         - CCF/SCF
+        - PUSH/POP
         - EX/EXX
         - LDI/LDD/LDIR/LDDR
         - CPI/CPD/CPIR/CPDR
@@ -301,6 +301,15 @@ public class SearchBasedOptimizer implements MDLWorker {
             spec.allowedOps.contains("srl") ||
             spec.allowedOps.contains("sli")) {
             if (!precomputeShifts(candidates, spec, allDependencies, code)) return null;
+        }
+        if (spec.allowedOps.contains("cpl") ||
+            spec.allowedOps.contains("neg")) {
+            if (!precomputeNegations(candidates, spec, allDependencies, code)) return null;
+        }
+        if (spec.allowedOps.contains("bit") ||
+            spec.allowedOps.contains("set") ||
+            spec.allowedOps.contains("res")) {
+            if (!precomputeBits(candidates, spec, allDependencies, code)) return null;
         }
         
         return candidates;
@@ -652,18 +661,20 @@ public class SearchBasedOptimizer implements MDLWorker {
             }
             
             // (ix+o)/(iy+o):
-            for(String reg:new String[]{"ix","iy"}) {
-                if (!spec.allowedRegisters.contains(reg)) continue;
-                for(Integer constant:spec.allowedOffsetConstants) {
-                    if (constant >= 0) {
-                        String line = op + " ("+reg+"+"+constant+")";
-                        if (!precomputeOp(line, candidates, allDependencies, code)) return false;            
-                    } else {
-                        String line = op + " ("+reg+constant+")";
-                        if (!precomputeOp(line, candidates, allDependencies, code)) return false;            
+            if (spec.allowRamUse) {
+                for(String reg:new String[]{"ix","iy"}) {
+                    if (!spec.allowedRegisters.contains(reg)) continue;
+                    for(Integer constant:spec.allowedOffsetConstants) {
+                        if (constant >= 0) {
+                            String line = op + " ("+reg+"+"+constant+")";
+                            if (!precomputeOp(line, candidates, allDependencies, code)) return false;            
+                        } else {
+                            String line = op + " ("+reg+constant+")";
+                            if (!precomputeOp(line, candidates, allDependencies, code)) return false;            
+                        }
                     }
-                }
-            }        
+                }        
+            }
         }        
         if (spec.allowedRegisters.contains("a")) {
             String otherOps[] = {"rlca", "rla", "rrca", "rra"};
@@ -694,21 +705,77 @@ public class SearchBasedOptimizer implements MDLWorker {
             }
             
             // (ix+o)/(iy+o):
-            for(String reg:new String[]{"ix","iy"}) {
-                if (!spec.allowedRegisters.contains(reg)) continue;
-                for(Integer constant:spec.allowedOffsetConstants) {
-                    if (constant >= 0) {
-                        String line = op + " ("+reg+"+"+constant+")";
-                        if (!precomputeOp(line, candidates, allDependencies, code)) return false;            
-                    } else {
-                        String line = op + " ("+reg+constant+")";
-                        if (!precomputeOp(line, candidates, allDependencies, code)) return false;            
+            if (spec.allowRamUse) {
+                for(String reg:new String[]{"ix","iy"}) {
+                    if (!spec.allowedRegisters.contains(reg)) continue;
+                    for(Integer constant:spec.allowedOffsetConstants) {
+                        if (constant >= 0) {
+                            String line = op + " ("+reg+"+"+constant+")";
+                            if (!precomputeOp(line, candidates, allDependencies, code)) return false;            
+                        } else {
+                            String line = op + " ("+reg+constant+")";
+                            if (!precomputeOp(line, candidates, allDependencies, code)) return false;            
+                        }
                     }
-                }
-            }   
+                }   
+            }
         }        
         return true;
     }
+    
+    
+    boolean precomputeNegations(List<SBOCandidate> candidates, Specification spec, 
+                             List<CPUOpDependency> allDependencies, CodeBase code)
+    {
+        if (!spec.allowedRegisters.contains("a")) return true;
+
+        String opNames[] = {"cpl", "neg"};
+        for(String op: opNames) {
+            if (!spec.allowedOps.contains(op)) continue;
+            if (!precomputeOp(op, candidates, allDependencies, code)) return false;
+        }        
+        return true;
+    }    
+    
+    
+    boolean precomputeBits(List<SBOCandidate> candidates, Specification spec, 
+                             List<CPUOpDependency> allDependencies, CodeBase code)
+    {
+        String opNames[] = {"bit", "set", "res"};
+        String registers[] = {"a", "b", "c", "d", "e", "h", "l"};
+        String bits[] = {"0", "1", "2", "3", "4", "5", "6", "7"};
+        for(String op: opNames) {
+            if (!spec.allowedOps.contains(op)) continue;
+            for(String bit: bits) {
+                for(String reg: registers) {
+                    if (!spec.allowedRegisters.contains(reg)) continue;
+                    String line = op + " " + bit + ","+reg;
+                    if (!precomputeOp(line, candidates, allDependencies, code)) return false;
+                }
+                // (hl)
+                if (spec.allowRamUse && spec.allowedRegisters.contains("hl")) {
+                    String line = op + " " + bit + ",(hl)";
+                    if (!precomputeOp(line, candidates, allDependencies, code)) return false;
+                }
+                // (ix+o)/(iy+o):
+                if (spec.allowRamUse) {
+                    for(String reg:new String[]{"ix","iy"}) {
+                        if (!spec.allowedRegisters.contains(reg)) continue;
+                        for(Integer constant:spec.allowedOffsetConstants) {
+                            if (constant >= 0) {
+                                String line = op + " " + bit +",("+reg+"+"+constant+")";
+                                if (!precomputeOp(line, candidates, allDependencies, code)) return false;            
+                            } else {
+                                String line = op + " " + bit +", ("+reg+constant+")";
+                                if (!precomputeOp(line, candidates, allDependencies, code)) return false;            
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return true;
+    }   
     
     
     boolean sequenceMakesSense(SBOCandidate op1, SBOCandidate op2, CodeBase code)
