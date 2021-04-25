@@ -20,8 +20,9 @@ import util.microprocessor.Z80.Z80Core;
 public class Specification {
     int codeStartAddress = 0x4000;
     int maxSimulationTime = 256;
+    int maxSizeInBytes = 256;
     int maxOps = 4;
-    int maxSizeInBytes = 8;
+    int searchType = SearchBasedOptimizer.SEARCH_ID_OPS;
     
     // instruction set:
     List<String> allowedOps = new ArrayList<>();

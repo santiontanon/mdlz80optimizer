@@ -98,7 +98,35 @@ public class SpecificationParser {
                         tokens.remove(0);
                         tokens.remove(0);
                         if (!tokens.isEmpty() && config.tokenizer.isSingleLineComment(tokens.get(0))) {
-                            config.error("Unexpected token " + tokens.get(0) + " ine line " + line);
+                            config.error("Unexpected token " + tokens.get(0) + " in line " + line);
+                            return null;
+                        }
+                    } else {
+                        config.error("Cannot parse line " + line);
+                        return null;
+                    }
+                } else if (tokens.size()>=3 && tokens.get(0).equals("max_size") && tokens.get(1).equals("=")) {
+                    if (config.tokenizer.isInteger(tokens.get(2))) {
+                        spec.maxSimulationTime = Integer.parseInt(tokens.get(2));
+                        tokens.remove(0);
+                        tokens.remove(0);
+                        tokens.remove(0);
+                        if (!tokens.isEmpty() && config.tokenizer.isSingleLineComment(tokens.get(0))) {
+                            config.error("Unexpected token " + tokens.get(0) + " in line " + line);
+                            return null;
+                        }
+                    } else {
+                        config.error("Cannot parse line " + line);
+                        return null;
+                    }
+                } else if (tokens.size()>=3 && tokens.get(0).equals("max_time") && tokens.get(1).equals("=")) {
+                    if (config.tokenizer.isInteger(tokens.get(2))) {
+                        spec.maxSimulationTime = Integer.parseInt(tokens.get(2));
+                        tokens.remove(0);
+                        tokens.remove(0);
+                        tokens.remove(0);
+                        if (!tokens.isEmpty() && config.tokenizer.isSingleLineComment(tokens.get(0))) {
+                            config.error("Unexpected token " + tokens.get(0) + " in line " + line);
                             return null;
                         }
                     } else {

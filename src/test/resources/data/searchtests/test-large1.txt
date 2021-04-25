@@ -1,5 +1,6 @@
 allowed_ops: 
     shift
+    addition
     ld
 allowed_registers: hl, a
 allow_ram_use = false
