@@ -110,6 +110,15 @@ public class Z80Core implements ICPUData {
     }
 
     /**
+     * Quick reset when the status of the registers does not matter.
+     */
+    public final void shallowReset() {
+        halt = false;
+        reg_PC = resetAddress;
+        tStates = 0;
+    }    
+    
+    /**
      * Initiate an NMI request
      */
     public void setNMI() {

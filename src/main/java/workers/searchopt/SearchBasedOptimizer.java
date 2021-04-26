@@ -1053,7 +1053,7 @@ public class SearchBasedOptimizer implements MDLWorker {
     int evaluateSolutionInternal(int breakPoint) throws ProcessorException
     {
         // evaluate solution:
-        z80.reset();
+        z80.shallowReset();
 
         for(RegisterNames register: eightBitRegisters) {
             z80.setRegisterValue(register, rand.nextInt(256));
