@@ -18,11 +18,11 @@ import java.util.List;
 import java.util.Random;
 import java.util.StringTokenizer;
 import parser.SourceLine;
-import util.microprocessor.IMemory;
 import util.microprocessor.PlainZ80IO;
 import util.microprocessor.PlainZ80Memory;
 import util.microprocessor.ProcessorException;
 import util.microprocessor.Z80.CPUConfig;
+import util.microprocessor.Z80.CPUConstants;
 import util.microprocessor.Z80.CPUConstants.RegisterNames;
 import util.microprocessor.Z80.Z80Core;
 import workers.MDLWorker;
@@ -51,6 +51,7 @@ public class SearchBasedOptimizer implements MDLWorker {
         RegisterNames.IYH, RegisterNames.IYL,
         RegisterNames.R
     };
+    public static RegisterNames eightBitRegistersToRandomize[] = null;
 
     MDLConfig config;
     boolean trigger = false;
@@ -236,6 +237,36 @@ public class SearchBasedOptimizer implements MDLWorker {
                 if (sequenceMakesSense(op, op2, code)) {
                     op.potentialFollowUps.add(op2);
                 }
+            }
+        }
+        
+        // Precalculate which registers to randomize:
+        {
+            List<RegisterNames> toRandomize = new ArrayList<>();
+            // Add all the registers in the goal (to prevent spurious matches):
+            for(SpecificationExpression exp:spec.goalState) {
+                for(RegisterNames reg:CPUConstants.primitive8BitRegistersOf(exp.leftRegister)) {
+                    if (!toRandomize.contains(reg)) {
+                        toRandomize.add(reg);
+                    }
+                }
+                if (spec.allowGhostRegisters) {
+                    for(RegisterNames reg:CPUConstants.ghost8BitRegistersOf(exp.leftRegister)) {
+                        if (!toRandomize.contains(reg)) {
+                            toRandomize.add(reg);
+                        }
+                    }
+                }
+            }
+            // Remove the ones that will be initialized already in the start state:
+            for(SpecificationExpression exp:spec.startState) {
+                for(RegisterNames reg:CPUConstants.primitive8BitRegistersOf(exp.leftRegister)) {
+                    toRandomize.remove(reg);
+                }
+            }
+            eightBitRegistersToRandomize = new RegisterNames[toRandomize.size()];
+            for(int i = 0;i<toRandomize.size();i++) {
+                eightBitRegistersToRandomize[i] = toRandomize.get(i);
             }
         }
         
@@ -1045,7 +1076,7 @@ public class SearchBasedOptimizer implements MDLWorker {
         // evaluate solution:
         z80.shallowReset();
 
-        for(RegisterNames register: eightBitRegisters) {
+        for(RegisterNames register: eightBitRegistersToRandomize) {
             z80.setRegisterValue(register, rand.nextInt(256));
         }
         z80.setProgramCounter(spec.codeStartAddress);

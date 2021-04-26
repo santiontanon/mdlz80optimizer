@@ -204,6 +204,10 @@ public class Z80Core implements ICPUData {
                 return reg_R;
                 
             // Additional register parts, useful for MDL:
+            case AF:
+                return (reg_A << 8) | reg_F;
+            case AF_ALT:
+                return (reg_A_ALT << 8) | reg_F_ALT;
             case B:
                 return reg_B;
             case C:

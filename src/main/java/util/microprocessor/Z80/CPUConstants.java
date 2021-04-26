@@ -168,6 +168,8 @@ public class CPUConstants {
         R,
         
         // Additional register definitions useful for MDL (individual bytes of the registers above):
+        AF,
+        AF_ALT,
         B,
         C,
         D,
@@ -186,5 +188,94 @@ public class CPUConstants {
         IYL,
     }
     // final static int msw = 0xFFFF0000;
+
+    
+    // If you pass in an 8 bit register, it will be returned as is, but if
+    // you pass in a 16 bit register, you will get the two 8 bit registers that make
+    // up the 16 bit one as a result:
+    public static RegisterNames[] primitive8BitRegistersOf(RegisterNames reg)
+    {
+        switch(reg) {
+            case AF:
+                return new RegisterNames[]{RegisterNames.A, RegisterNames.F};
+            case BC:
+                return new RegisterNames[]{RegisterNames.B, RegisterNames.C};
+            case DE:
+                return new RegisterNames[]{RegisterNames.D, RegisterNames.E};
+            case HL:
+                return new RegisterNames[]{RegisterNames.H, RegisterNames.L};
+            case AF_ALT:
+                return new RegisterNames[]{RegisterNames.A_ALT, RegisterNames.F_ALT};
+            case BC_ALT:
+                return new RegisterNames[]{RegisterNames.B_ALT, RegisterNames.C_ALT};
+            case DE_ALT:
+                return new RegisterNames[]{RegisterNames.D_ALT, RegisterNames.E_ALT};
+            case HL_ALT:
+                return new RegisterNames[]{RegisterNames.H_ALT, RegisterNames.L_ALT};
+            case IX:
+                return new RegisterNames[]{RegisterNames.IXH, RegisterNames.IXL};
+            case IY:
+                return new RegisterNames[]{RegisterNames.IYH, RegisterNames.IYL};
+            default:
+                return new RegisterNames[]{reg};
+        }
+    }
+
+    
+    public static RegisterNames[] ghost8BitRegistersOf(RegisterNames reg)
+    {
+        switch(reg) {
+            case AF_ALT:
+                return new RegisterNames[]{RegisterNames.A, RegisterNames.F};
+            case BC_ALT:
+                return new RegisterNames[]{RegisterNames.B, RegisterNames.C};
+            case DE_ALT:
+                return new RegisterNames[]{RegisterNames.D, RegisterNames.E};
+            case HL_ALT:
+                return new RegisterNames[]{RegisterNames.H, RegisterNames.L};
+            case AF:
+                return new RegisterNames[]{RegisterNames.A_ALT, RegisterNames.F_ALT};
+            case BC:
+                return new RegisterNames[]{RegisterNames.B_ALT, RegisterNames.C_ALT};
+            case DE:
+                return new RegisterNames[]{RegisterNames.D_ALT, RegisterNames.E_ALT};
+            case HL:
+                return new RegisterNames[]{RegisterNames.H_ALT, RegisterNames.L_ALT};
+            case A:
+                return new RegisterNames[]{RegisterNames.A_ALT};
+            case F:
+                return new RegisterNames[]{RegisterNames.F_ALT};
+            case B:
+                return new RegisterNames[]{RegisterNames.B_ALT};
+            case C:
+                return new RegisterNames[]{RegisterNames.C_ALT};
+            case D:
+                return new RegisterNames[]{RegisterNames.D_ALT};
+            case E:
+                return new RegisterNames[]{RegisterNames.E_ALT};
+            case H:
+                return new RegisterNames[]{RegisterNames.H_ALT};
+            case L:
+                return new RegisterNames[]{RegisterNames.L_ALT};
+            case A_ALT:
+                return new RegisterNames[]{RegisterNames.A};
+            case F_ALT:
+                return new RegisterNames[]{RegisterNames.F};
+            case B_ALT:
+                return new RegisterNames[]{RegisterNames.B};
+            case C_ALT:
+                return new RegisterNames[]{RegisterNames.C};
+            case D_ALT:
+                return new RegisterNames[]{RegisterNames.D};
+            case E_ALT:
+                return new RegisterNames[]{RegisterNames.E};
+            case H_ALT:
+                return new RegisterNames[]{RegisterNames.H};
+            case L_ALT:
+                return new RegisterNames[]{RegisterNames.L};
+            default:
+                return new RegisterNames[]{};
+        }
+    }
 
 }
