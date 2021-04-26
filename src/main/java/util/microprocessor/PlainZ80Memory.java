@@ -10,7 +10,7 @@ package util.microprocessor;
  * @author santi
  */
 public class PlainZ80Memory implements IMemory {
-    private final int[] memory = new int[0x10000];
+    public final int[] memory = new int[0x10000];
 
     public PlainZ80Memory() {
     }

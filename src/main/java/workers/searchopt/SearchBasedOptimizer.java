@@ -69,7 +69,7 @@ public class SearchBasedOptimizer implements MDLWorker {
     // Global search state (so we don't need to pass it throughout recursive calls):
     Random rand = new Random();
     Z80Core z80 = null;
-    IMemory z80Memory = null;
+    PlainZ80Memory z80Memory = null;
     int codeMaxOps;
     int codeMaxAddress;
     int maxSimulationTime;
@@ -908,46 +908,40 @@ public class SearchBasedOptimizer implements MDLWorker {
                              List<SBOCandidate> candidateOps) throws Exception
     {
         if (depth >= codeMaxOps || codeAddress >= codeMaxAddress) {
-            int size = codeAddress - spec.codeStartAddress;
-            // Check to ensure the solution has a chance to be better than the current one,
-            // otherwise, don't even bother evaluating:
-            if (bestOps != null &&
-                (size > bestSize ||
-                 (size == bestSize && currentOps.size() > bestOps.size()))) {
-                return false;
-            }
-            return evaluateSolution(codeAddress, size);                
+            return evaluateSolution(codeAddress);
         } else {
             boolean found = false;
             // the very last op must contribute to the goal:
             for(SBOCandidate candidate : candidateOps) {
+                int nextAddress = codeAddress + candidate.bytes.length;
                 if (!candidate.directContributionToGoal &&
-                    (depth == codeMaxOps-1 || codeMaxAddress == codeAddress + candidate.bytes.length)) {
+                    (depth == codeMaxOps-1 || codeMaxAddress == nextAddress)) {
                     continue;
                 }
                 boolean dependenciesSatisfied = true;
                 for(int i = 0;i<nDependencies;i++) {
                     if (candidate.inputDependencies[i] && !currentDependencies[depth][i]) {
                         dependenciesSatisfied = false;
+                        break;
                     }
                     currentDependencies[depth+1][i] = currentDependencies[depth][i] || candidate.outputDependencies[i];
                 }
-                if (dependenciesSatisfied && 
-                    codeAddress + candidate.bytes.length <= codeMaxAddress) {                
+                if (!dependenciesSatisfied || nextAddress > codeMaxAddress) continue;
                     
-                    int nextAddress = codeAddress;
-                    for(int i = 0; i < candidate.bytes.length; i++) {
-                        z80Memory.writeByte(nextAddress, candidate.bytes[i]);
-                        nextAddress++;
-                    }
-                    currentOps.add(candidate.op);
-                    
-                    if (depthFirstSearch(depth+1, nextAddress, candidate.potentialFollowUps)) {
-                        found = true;
-                        // we keep going, in case we find a solution of the same size, but faster
-                    }
-                    currentOps.remove(currentOps.size()-1);
+                int size = nextAddress - spec.codeStartAddress;
+                if (bestOps != null &&
+                    (size > bestSize ||
+                     (size == bestSize && currentOps.size()+1 > bestOps.size()))) {
+                    continue;
                 }
+                
+                System.arraycopy(candidate.bytes, 0, z80Memory.memory, codeAddress, candidate.bytes.length);
+                currentOps.add(candidate.op);
+                if (depthFirstSearch(depth+1, nextAddress, candidate.potentialFollowUps)) {
+                    found = true;
+                    // we keep going, in case we find a solution of the same size, but faster
+                }
+                currentOps.remove(currentOps.size()-1);
             }
             return found;
         }
@@ -958,58 +952,53 @@ public class SearchBasedOptimizer implements MDLWorker {
                                          List<SBOCandidate> candidateOps) throws Exception
     {
         if (depth >= codeMaxOps || codeAddress >= codeMaxAddress || currentTime >= maxSimulationTime) {
-            int size = codeAddress - spec.codeStartAddress;
-            // Check to ensure the solution has a chance to be better than the current one,
-            // otherwise, don't even bother evaluating:
-            if (bestOps != null &&
-                (size > bestSize ||
-                 (size == bestSize && currentOps.size() > bestOps.size()))) {
-                return false;
-            }
-            return evaluateSolution(codeAddress, size);                
+            return evaluateSolution(codeAddress);
         } else {
             boolean found = false;
             // the very last op must contribute to the goal:
             for(SBOCandidate candidate : candidateOps) {
+                int nextAddress = codeAddress + candidate.bytes.length;
                 if (!candidate.directContributionToGoal &&
-                    (depth == codeMaxOps-1 || codeMaxAddress == codeAddress + candidate.bytes.length)) {
+                    (depth == codeMaxOps-1 || codeMaxAddress == nextAddress)) {
                     continue;
                 }
                 boolean dependenciesSatisfied = true;
                 for(int i = 0;i<nDependencies;i++) {
                     if (candidate.inputDependencies[i] && !currentDependencies[depth][i]) {
                         dependenciesSatisfied = false;
+                        break;
                     }
                     currentDependencies[depth+1][i] = currentDependencies[depth][i] || candidate.outputDependencies[i];
                 }
                 int nextTime = currentTime + candidate.op.spec.times[candidate.op.spec.times.length-1];
-                if (dependenciesSatisfied && 
-                    codeAddress + candidate.bytes.length <= codeMaxAddress &&
-                    nextTime <= maxSimulationTime) {                
-                    
-                    int nextAddress = codeAddress;
-                    for(int i = 0; i < candidate.bytes.length; i++) {
-                        z80Memory.writeByte(nextAddress, candidate.bytes[i]);
-                        nextAddress++;
-                    }
-                    currentOps.add(candidate.op);
-                    
-                    if (depthFirstSearch_timeBounded(depth+1, 
-                                                     nextTime, 
-                                                     nextAddress,
-                                                     candidate.potentialFollowUps)) {
-                        found = true;
-                        // we keep going, in case we find a solution of the same size, but faster
-                    }
-                    currentOps.remove(currentOps.size()-1);
+                if (!dependenciesSatisfied ||
+                    nextAddress > codeMaxAddress ||
+                    nextTime > maxSimulationTime) continue;
+
+                int size = codeAddress - spec.codeStartAddress;
+                if (bestOps != null &&
+                    (size > bestSize ||
+                     (size == bestSize && currentOps.size()+1 > bestOps.size()))) {
+                    return false;
                 }
+                
+                System.arraycopy(candidate.bytes, 0, z80Memory.memory, codeAddress, candidate.bytes.length);
+                currentOps.add(candidate.op);
+                if (depthFirstSearch_timeBounded(depth+1, 
+                                                 nextTime, 
+                                                 nextAddress,
+                                                 candidate.potentialFollowUps)) {
+                    found = true;
+                    // we keep going, in case we find a solution of the same speed, but smaller
+                }
+                currentOps.remove(currentOps.size()-1);
             }
             return found;
         }
     }    
     
     
-    final boolean evaluateSolution(int breakPoint, int size)
+    final boolean evaluateSolution(int breakPoint)
     {
         try {
             solutionsEvaluated++;
@@ -1018,6 +1007,7 @@ public class SearchBasedOptimizer implements MDLWorker {
     //            System.out.println("" + currentOps);
     //        }
 
+            int size = breakPoint - spec.codeStartAddress;
             int time = 0;
             for(int i = 0; i < numberOfRandomSolutionChecks; i++) {
                 time = evaluateSolutionInternal(breakPoint);
