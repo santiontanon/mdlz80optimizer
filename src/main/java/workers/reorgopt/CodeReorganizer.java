@@ -455,6 +455,9 @@ public class CodeReorganizer implements MDLWorker {
         // - all the incoming edges to A and B are jumps
         // If any of these are found, B can be moved to before A, saving a jump
         boolean anyMove;
+        
+//        subarea.sanityCheck("reorganizeBlockInternal: start", config);
+        
         do{
             anyMove = false;    // if we need to do another iteration, set anyMove to true
             for(int i = 0;i<subarea.subBlocks.size();i++) {
@@ -469,7 +472,7 @@ public class CodeReorganizer implements MDLWorker {
                         target = edge.target;
                     }
                 }
-                if (target != null && target != block) {                
+                if (target != null && target != block && subarea.subBlocks.contains(target)) {                
                     for(BlockFlowEdge edge:block.incoming) {
                         if (edge.type == BlockFlowEdge.TYPE_NONE) {
                             safeToMoveBlock = false;  // the block before "block" expects block to be there, so we cannot move it
@@ -491,14 +494,18 @@ public class CodeReorganizer implements MDLWorker {
                     }
                     if (safeToMoveBlock && block != subarea.subBlocks.get(0)) {
                         config.debug("Potential optimization: move " + block.ID + " to just before " + target.ID);
+//                        subarea.sanityCheck("reorganizeBlockInternal: before just before", config);
                         if (attemptBlockMove(block, target, true, subarea, code, savings)) {
                             anyMove = true;
+//                            subarea.sanityCheck("reorganizeBlockInternal: after just before", config);
                         }
                     }
                     if (!anyMove && safeToMoveTarget && target != subarea.subBlocks.get(0)) {
                         config.debug("Potential optimization: move " + target.ID + " to just after " + block.ID);
+//                        subarea.sanityCheck("reorganizeBlockInternal: before just before", config);
                         if (attemptBlockMove(target, block, false, subarea, code, savings)) {
                             anyMove = true;
+//                            subarea.sanityCheck("reorganizeBlockInternal: after just after", config);
                         }
                     }
                 }
@@ -796,6 +803,7 @@ public class CodeReorganizer implements MDLWorker {
                             SourceFile f = tmp.getRight().getLeft();
                             int idx = tmp.getRight().getRight();
                             f.getStatements().add(idx, tmp.getLeft());
+                            tmp.getLeft().source = f;
                         }
                     }
                     break;
@@ -830,6 +838,7 @@ public class CodeReorganizer implements MDLWorker {
                         SourceFile f = tmp.getRight().getLeft();
                         int idx = tmp.getRight().getRight();
                         f.getStatements().add(idx, tmp.getLeft());
+                        tmp.getLeft().source = f;
                     }
                     j++;
                 } else {
@@ -1096,6 +1105,7 @@ public class CodeReorganizer implements MDLWorker {
                 List<BlockFlowEdge> toDelete = new ArrayList<>();
                 for(BlockFlowEdge e:block.outgoing) {
                     if (e.target == destination) toDelete.add(e);
+                    if (e.target == toMove) e.target = destination;
                 }
                 for(BlockFlowEdge e:toDelete) {
                     block.outgoing.remove(e);
@@ -1111,6 +1121,7 @@ public class CodeReorganizer implements MDLWorker {
             
             // merge blocks:
             destination.ID = destination.ID + "+" + toMove.ID;
+            
             destination.statements.addAll(toMove.statements);
             destination.outgoing = toMove.outgoing;
             subarea.subBlocks.remove(toMove);

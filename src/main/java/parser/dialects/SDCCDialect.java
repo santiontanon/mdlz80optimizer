@@ -49,6 +49,8 @@ public class SDCCDialect implements Dialect {
         // We ignore the distinction between ":" and "::" for now:
         config.lineParser.addKeywordSynonym("::", config.lineParser.KEYWORD_COLON);
 
+        config.lineParser.addKeywordSynonym(".include", config.lineParser.KEYWORD_INCLUDE);
+        
         config.lineParser.KEYWORD_EQU = ".equ";
         config.lineParser.addKeywordSynonym(".gblequ", config.lineParser.KEYWORD_EQU);
         config.lineParser.addKeywordSynonym(".lclequ", config.lineParser.KEYWORD_EQU);

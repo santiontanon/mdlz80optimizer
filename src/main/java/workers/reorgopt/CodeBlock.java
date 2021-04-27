@@ -5,6 +5,7 @@
  */
 package workers.reorgopt;
 
+import cl.MDLConfig;
 import code.CodeBase;
 import code.SourceConstant;
 import code.CodeStatement;
@@ -63,7 +64,9 @@ public class CodeBlock {
         while(s != end) {
             if (s == null) return false;
             if (s.include != null) {
-                if (addStatementsFromTo(s.include.getStatements().get(0), end, code)) return true;
+                if (!s.include.getStatements().isEmpty()) {
+                    if (addStatementsFromTo(s.include.getStatements().get(0), end, code)) return true;
+                }
             } else {
                 statements.add(s);
             }
@@ -114,6 +117,24 @@ public class CodeBlock {
         for(CodeStatement s:statements) {
             s.resetAddress();;
         }
+    }
+    
+    
+    public boolean sanityCheck(String errorID, MDLConfig config)
+    {
+        for(CodeBlock b1:subBlocks) {
+            for(CodeBlock b2:subBlocks) {
+                if (b1 != b2) {
+                    for(CodeStatement s:b1.statements) {
+                        if (b2.statements.contains(s)) {
+                            config.error("CodeBlock.sanityCheck fail: " + errorID);
+                            return false;
+                        }
+                    }
+                }
+            }
+        }
+        return true;
     }
     
     
