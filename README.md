@@ -125,6 +125,8 @@ This will just output to the terminal all the suggested optimizations, and you c
 
 For documentation on how to define your own optimization patterns, see: https://github.com/santiontanon/mdlz80optimizer/blob/master/doc/pattern-definition.md
 
+And for documentation on how to use the new search-based optimizer (new in v2.0), see: https://github.com/santiontanon/mdlz80optimizer/blob/master/doc/so-specification.md
+
 ### Other MDL Functionalities
 
 MDL includes several other functionalities, aimed at helping optimizing Z80 assembler code. For example, it can generate "annotated assembler" to help you see how much space each assembler statement uses and make decisions about how to optimize. You can generate this annotated assembler output by calling MDL like this:
