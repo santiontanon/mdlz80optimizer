@@ -5,12 +5,16 @@
  */
 package workers.searchopt;
 
+import cl.MDLConfig;
 import code.CPUOpDependency;
 import code.CodeBase;
+import code.Expression;
 import code.SourceConstant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import util.microprocessor.IMemory;
+import util.microprocessor.Z80.CPUConstants;
 import util.microprocessor.Z80.Z80Core;
 
 /**
@@ -18,6 +22,30 @@ import util.microprocessor.Z80.Z80Core;
  * @author santi
  */
 public class Specification {
+    
+    public static class PrecomputedTestCase {
+        CPUConstants.RegisterNames startRegisters[] = null;
+        int startRegisterValues[] = null;
+        CPUConstants.RegisterNames goalRegisters[] = null;
+        int goalRegisterValues[] = null;
+
+        public void initCPU(Z80Core z80)
+        {
+            for(int i = 0;i<startRegisters.length;i++) {
+                z80.setRegisterValue(startRegisters[i], startRegisterValues[i]);
+            }
+        }
+
+
+        public boolean checkGoalState(Z80Core z80)
+        {
+            for(int i = 0;i<goalRegisters.length;i++) {
+                if (z80.getRegisterValue(goalRegisters[i]) != goalRegisterValues[i]) return false;
+            }
+            return true;
+        }        
+    }
+    
     int codeStartAddress = 0x4000;
     int maxSimulationTime = 256;
     int maxSizeInBytes = 256;
@@ -38,6 +66,9 @@ public class Specification {
     public List<SpecificationExpression> startState = new ArrayList<>();
     public List<SpecificationExpression> goalState = new ArrayList<>();
     
+    // precomputed, so that we don't waste time during search evaluating
+    // expressions:
+    public PrecomputedTestCase precomputedTestCases[] = null;
     
     public Specification()
     {
@@ -162,7 +193,7 @@ public class Specification {
         return dependencies;
     }
     
-    
+    /*
     public boolean initCPU(Z80Core z80, CodeBase code)
     {
         for(SpecificationExpression exp:startState) {
@@ -173,10 +204,78 @@ public class Specification {
         return true;
     }
     
+    
     public boolean checkGoalState(Z80Core z80, IMemory z80memory, CodeBase code)
     {
         for(SpecificationExpression exp:goalState) {
             if (!exp.check(z80, z80memory, code)) return false;
+        }
+        return true;
+    }
+    */
+    
+    
+    public boolean precomputeTestCases(int n, CodeBase code, MDLConfig config)
+    {
+        Random rand = new Random();
+        precomputedTestCases = new PrecomputedTestCase[n];
+        
+        for(int i = 0;i<n;i++) {
+            PrecomputedTestCase testCase = new PrecomputedTestCase();
+            
+            // randomize constants:
+            for(InputParameter parameter:parameters) {
+                int value = parameter.minValue + rand.nextInt((parameter.maxValue - parameter.minValue)+1);
+                parameter.symbol.exp = Expression.constantExpression(value, config);
+                parameter.symbol.clearCache();            
+            }
+            
+            testCase.startRegisters = new CPUConstants.RegisterNames[startState.size()];
+            testCase.startRegisterValues = new int[startState.size()];
+            for(int j = 0;j<startState.size();j++) {
+                SpecificationExpression exp = startState.get(j);
+                Integer value = exp.right.evaluateToInteger(null, code, true);
+                if (value == null) return false;
+                testCase.startRegisters[j] = exp.leftRegister;
+                testCase.startRegisterValues[j] = value;
+            }
+            testCase.goalRegisters = new CPUConstants.RegisterNames[goalState.size()];
+            testCase.goalRegisterValues = new int[goalState.size()];
+            for(int j = 0;j<goalState.size();j++) {
+                SpecificationExpression exp = goalState.get(j);
+                Integer value = exp.right.evaluateToInteger(null, code, true);
+                if (value == null) return false;
+                testCase.goalRegisters[j] = exp.leftRegister;
+                switch(exp.leftRegister) {
+                    case A:
+                    case F:
+                    case A_ALT:
+                    case F_ALT:
+                    case I:
+                    case R:
+                    case B:
+                    case C:
+                    case D:
+                    case E:
+                    case H:
+                    case L:
+                    case B_ALT:
+                    case C_ALT:
+                    case D_ALT:
+                    case E_ALT:
+                    case H_ALT:
+                    case L_ALT:
+                    case IXH:
+                    case IXL:
+                    case IYH:
+                    case IYL:
+                        testCase.goalRegisterValues[j] = (value & 0xff);
+                        break;
+                    default:
+                        testCase.goalRegisterValues[j] = (value & 0xffff);
+                }                
+            }
+            precomputedTestCases[i] = testCase;
         }
         return true;
     }

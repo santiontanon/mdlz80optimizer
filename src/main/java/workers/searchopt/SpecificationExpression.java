@@ -21,7 +21,7 @@ public class SpecificationExpression {
 
     public String leftRegisterName; // just for the "toString" method
 
-
+    /*
     public boolean check(Z80Core z80, IMemory z80memory, CodeBase code)
     {
         int leftValue = z80.getRegisterValue(leftRegister);
@@ -55,7 +55,7 @@ public class SpecificationExpression {
                 return leftValue == (rightValue & 0xffff);
         }
     }
-
+    */
 
     @Override
     public String toString() {

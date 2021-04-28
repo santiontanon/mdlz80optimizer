@@ -26,6 +26,7 @@ import util.microprocessor.Z80.CPUConstants;
 import util.microprocessor.Z80.CPUConstants.RegisterNames;
 import util.microprocessor.Z80.Z80Core;
 import workers.MDLWorker;
+import workers.searchopt.Specification.PrecomputedTestCase;
 
 /**
  *
@@ -269,6 +270,8 @@ public class SearchBasedOptimizer implements MDLWorker {
                 eightBitRegistersToRandomize[i] = toRandomize.get(i);
             }
         }
+        
+        spec.precomputeTestCases(numberOfRandomSolutionChecks, code, config);
         
         // Create a simulator:
         z80Memory = new PlainZ80Memory();
@@ -1041,7 +1044,7 @@ public class SearchBasedOptimizer implements MDLWorker {
             int size = breakPoint - spec.codeStartAddress;
             int time = 0;
             for(int i = 0; i < numberOfRandomSolutionChecks; i++) {
-                time = evaluateSolutionInternal(breakPoint);
+                time = evaluateSolutionInternal(breakPoint, spec.precomputedTestCases[i]);
                 if (time < 0) return false;
             }
             if (bestOps == null || 
@@ -1071,7 +1074,8 @@ public class SearchBasedOptimizer implements MDLWorker {
     
     // return -1 is solution fails
     // return time it takes if solution succeeds
-    int evaluateSolutionInternal(int breakPoint) throws ProcessorException
+    // "i" is the index of the 
+    int evaluateSolutionInternal(int breakPoint, PrecomputedTestCase testCase) throws ProcessorException
     {
         // evaluate solution:
         z80.shallowReset();
@@ -1080,21 +1084,12 @@ public class SearchBasedOptimizer implements MDLWorker {
             z80.setRegisterValue(register, rand.nextInt(256));
         }
         z80.setProgramCounter(spec.codeStartAddress);
-                         
-        // randomize constants:
-        for(InputParameter parameter:spec.parameters) {
-            int value = parameter.minValue + rand.nextInt((parameter.maxValue - parameter.minValue)+1);
-            parameter.symbol.exp = Expression.constantExpression(value, config);
-            parameter.symbol.clearCache();            
-        }
-        
+                                 
         // randomize the memory contents:
         // ...
         
         // execute initial state:
-        if (!spec.initCPU(z80, code)) {
-            return -1;
-        }
+        testCase.initCPU(z80);
         
         while(z80.getProgramCounter() < breakPoint && 
               z80.getTStates() < spec.maxSimulationTime) {
@@ -1102,7 +1097,7 @@ public class SearchBasedOptimizer implements MDLWorker {
         }
         
         // check if the solution worked:
-        if (spec.checkGoalState(z80, z80Memory, code)) {
+        if (testCase.checkGoalState(z80)) {
             return (int)z80.getTStates();
         } else {
             return -1;
