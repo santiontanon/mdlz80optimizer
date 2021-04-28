@@ -10,7 +10,6 @@ import code.CPUOp;
 import code.CPUOpDependency;
 import code.CodeBase;
 import code.CodeStatement;
-import code.Expression;
 import code.SourceFile;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -948,8 +947,15 @@ public class SearchBasedOptimizer implements MDLWorker {
             // the very last op must contribute to the goal:
             for(SBOCandidate candidate : candidateOps) {
                 int nextAddress = codeAddress + candidate.bytes.length;
+                if (nextAddress > codeMaxAddress) continue;
                 if (!candidate.directContributionToGoal &&
                     (depth == codeMaxOps-1 || codeMaxAddress == nextAddress)) {
+                    continue;
+                }
+                int size = nextAddress - spec.codeStartAddress;
+                if (bestOps != null &&
+                    (size > bestSize ||
+                     (size == bestSize && depth+1 > bestOps.size()))) {
                     continue;
                 }
                 boolean dependenciesSatisfied = true;
@@ -960,15 +966,8 @@ public class SearchBasedOptimizer implements MDLWorker {
                     }
                     currentDependencies[depth+1][i] = currentDependencies[depth][i] || candidate.outputDependencies[i];
                 }
-                if (!dependenciesSatisfied || nextAddress > codeMaxAddress) continue;
-                    
-                int size = nextAddress - spec.codeStartAddress;
-                if (bestOps != null &&
-                    (size > bestSize ||
-                     (size == bestSize && currentOps.size()+1 > bestOps.size()))) {
-                    continue;
-                }
-                
+                if (!dependenciesSatisfied) continue;
+                                    
                 System.arraycopy(candidate.bytes, 0, z80Memory.memory, codeAddress, candidate.bytes.length);
                 currentOps.add(candidate.op);
                 if (depthFirstSearch(depth+1, nextAddress, candidate.potentialFollowUps)) {
@@ -992,9 +991,18 @@ public class SearchBasedOptimizer implements MDLWorker {
             // the very last op must contribute to the goal:
             for(SBOCandidate candidate : candidateOps) {
                 int nextAddress = codeAddress + candidate.bytes.length;
+                if (nextAddress > codeMaxAddress) continue;
                 if (!candidate.directContributionToGoal &&
                     (depth == codeMaxOps-1 || codeMaxAddress == nextAddress)) {
                     continue;
+                }
+                int nextTime = currentTime + candidate.op.spec.times[candidate.op.spec.times.length-1];
+                if (nextTime > maxSimulationTime) continue;
+                int size = codeAddress - spec.codeStartAddress;
+                if (bestOps != null &&
+                    (size > bestSize ||
+                     (size == bestSize && depth+1 > bestOps.size()))) {
+                    return false;
                 }
                 boolean dependenciesSatisfied = true;
                 for(int i = 0;i<nDependencies;i++) {
@@ -1004,18 +1012,8 @@ public class SearchBasedOptimizer implements MDLWorker {
                     }
                     currentDependencies[depth+1][i] = currentDependencies[depth][i] || candidate.outputDependencies[i];
                 }
-                int nextTime = currentTime + candidate.op.spec.times[candidate.op.spec.times.length-1];
-                if (!dependenciesSatisfied ||
-                    nextAddress > codeMaxAddress ||
-                    nextTime > maxSimulationTime) continue;
-
-                int size = codeAddress - spec.codeStartAddress;
-                if (bestOps != null &&
-                    (size > bestSize ||
-                     (size == bestSize && currentOps.size()+1 > bestOps.size()))) {
-                    return false;
-                }
-                
+                if (!dependenciesSatisfied) continue;
+                               
                 System.arraycopy(candidate.bytes, 0, z80Memory.memory, codeAddress, candidate.bytes.length);
                 currentOps.add(candidate.op);
                 if (depthFirstSearch_timeBounded(depth+1, 

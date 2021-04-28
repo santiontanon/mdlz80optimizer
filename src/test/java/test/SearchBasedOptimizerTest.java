@@ -55,7 +55,7 @@ public class SearchBasedOptimizerTest {
 //    @Test public void testLShift10c() throws IOException { test("data/searchtests/test-large2c.txt", "data/searchtests/test-large2c-expected.asm"); }
     // Current version: 0.446 sec (1546805 solutions tested)
 //    @Test public void testLShift11() throws IOException { test("data/searchtests/test-large3.txt", "data/searchtests/test-large3-expected.asm"); }
-    // Current version: 6.806 sec (51859338 solutions tested)
+    // Current version: 5.642 sec (51859338 solutions tested)
 //    @Test public void testLShift12() throws IOException { test("data/searchtests/test-large4.txt", "data/searchtests/test-large4-expected.asm"); }
     
     
