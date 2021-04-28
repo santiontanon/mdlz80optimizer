@@ -340,7 +340,10 @@ public class SearchBasedOptimizer implements MDLWorker {
             return false;
         }
             
-        if (bestOps == null) return false;
+        if (bestOps == null) {
+            config.error("No program that satisfied the specification was found.");
+            return false;
+        }
         
         int lineNumber = 1;
         for(CPUOp op:bestOps) {
