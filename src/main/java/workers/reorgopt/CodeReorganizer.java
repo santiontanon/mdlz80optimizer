@@ -765,6 +765,14 @@ public class CodeReorganizer implements MDLWorker {
                         }
                     }
                     if (!match) break;
+                    if (ops1.get(k).op.isRelativeJump()) {
+                        SourceConstant sc = ops1.get(k).op.getTargetJumpLabel(code);
+                        if (!block1.statements.contains(sc.definingStatement)) {
+                            // the instructions contain a relative jump to OUTSIDE of
+                            // the block, hence we cannot merge them.
+                            match = false;
+                        }
+                    }
                 }
                 
                 if (!match) continue;

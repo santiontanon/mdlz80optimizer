@@ -81,6 +81,9 @@ public class ReorganizerTest {
                                                                          "data/reorganizertests/test-inlining-expected.asm", null, null)); }
     @Test public void test16() throws Exception { Assert.assertTrue(test("data/reorganizertests/test-inlining-global.asm", "sdcc",
                                                                          "data/reorganizertests/test-inlining-global-expected.asm", null, null)); }
+    @Test public void test17() throws Exception { Assert.assertTrue(test("data/reorganizertests/test-merging.asm", null,
+                                                                         "data/reorganizertests/test-merging-expected.asm", null,
+                                                                         null)); }
 
     private boolean test(String inputFile, String dialect,
                          String expectedOutputFile, String expectedOutputFileDialect,

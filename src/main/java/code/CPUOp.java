@@ -208,6 +208,12 @@ public class CPUOp {
         return spec.isJump();
     }
     
+
+    public boolean isRelativeJump()
+    {
+        return spec.isRelativeJump();
+    }
+
     
     public boolean isPush()
     {
