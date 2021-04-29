@@ -28,7 +28,7 @@ public class SpecificationParser {
             int state = 0;  // 0: start, 1: "allowed_ops", 2: "initial_state", 3: "goal_state", 
                             // 4: 8bit_constants, 5: 16bit_constants, 6: offset_constants, 7: allowed_registers
             
-            String line = br.readLine().trim();
+            String line = readNextLine(br);
             while(line != null) {
                 List<String> tokens = config.tokenizer.tokenize(line);
 
@@ -250,7 +250,7 @@ public class SpecificationParser {
                         }   break;
                     }
                 }
-                line = br.readLine();
+                line = readNextLine(br);
             }
             
             // Find constants, and make sure all constants in the goal are defined:
@@ -278,6 +278,23 @@ public class SpecificationParser {
             config.error("Exception message: " + Arrays.toString(e.getStackTrace()));
             return null;
         }
+    }
+    
+    
+    static String readNextLine(BufferedReader br) throws Exception
+    {
+        String line = br.readLine();
+        if (line != null) line = line.trim();
+        // The backslash character can be used to break a line:
+        while(line!=null && line.endsWith("\\")) {
+            String line2 = br.readLine().trim();
+            if (line2 != null) {
+                line = line.substring(0, line.length()-1).trim() + " " + line2;
+            } else {
+                break;
+            }
+        }
+        return line;
     }
     
     

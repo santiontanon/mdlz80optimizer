@@ -1,0 +1,15 @@
+  allowed_ops:
+      add
+      sub
+      sbc
+      and
+      ld
+  allow_ram_use = false
+  allowed_registers: a, b, c, h, l
+  max_ops = 5
+  initial_state:
+      A = ?val1
+      H = ?val2
+  goal_state:
+      A = (?val1 & 0xff) < (?val2 & 0xff) ? \ 
+          ?val1 : ?val2
