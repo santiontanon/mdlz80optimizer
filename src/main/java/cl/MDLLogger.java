@@ -50,10 +50,12 @@ public class MDLLogger {
             ANSI_RESET = "\u001B[0m";
             ANSI_RED = "\u001B[31m";
             ANSI_YELLOW = "\u001B[33m";
+            ANSI_WHITE = "\u001b[37;1m";
         } else {
             ANSI_RESET = "";
             ANSI_RED = "";
             ANSI_YELLOW = "";
+            ANSI_WHITE = "";
         }
     }
     

@@ -7,6 +7,7 @@ import workers.DotGenerator;
 import code.CodeBase;
 import workers.AnnotatedSourceCodeGenerator;
 import workers.BinaryGenerator;
+import workers.Help;
 import workers.reorgopt.CodeReorganizer;
 import workers.pattopt.PatternBasedOptimizer;
 import workers.SourceCodeGenerator;
@@ -23,6 +24,7 @@ public class Main {
         MDLConfig config = new MDLConfig();
 
         // Add the available workers (in the order in which they will be executed):
+        config.registerWorker(new Help(config));
         config.registerWorker(new SearchBasedOptimizer(config));
         config.registerWorker(new CodeReorganizer(config));
         config.registerWorker(new PatternBasedOptimizer(config));
@@ -45,12 +47,13 @@ public class Main {
             config.warn("Nothing to do. Please specify some task for MDL to do.");
             return;
         }
-
+        
         // Parse the code base:
         CodeBase code = new CodeBase(config);
         switch(config.codeSource) {
             case MDLConfig.CODE_FROM_INPUT_FILE:
-                if (!config.codeBaseParser.parseMainSourceFile(config.inputFile, code)) {
+                if (config.inputFile != null && 
+                    !config.codeBaseParser.parseMainSourceFile(config.inputFile, code)) {
                     if (config.dialectParser != null) {
                         config.error("Could not fully parse the code (error code 2).");
                     } else {

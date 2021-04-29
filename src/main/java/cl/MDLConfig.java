@@ -20,6 +20,7 @@ import parser.PreProcessor;
 import parser.Tokenizer;
 import parser.dialects.Dialect;
 import parser.dialects.Dialects;
+import workers.Help;
 import workers.MDLWorker;
 
 public class MDLConfig {
@@ -102,6 +103,8 @@ public class MDLConfig {
     public boolean output_replaceLabelDotsByUnderscores = false;
     public boolean output_indirectionsWithSquareBrakets = false;
     public boolean output_replaceDsByData = false;
+    
+    public boolean help_triggered = false;
 
     // Symbols defined via flags:
     public List<String> symbolDefinitions = new ArrayList<>();
@@ -237,31 +240,17 @@ public class MDLConfig {
     }
     
     
-    // Removes .md annotations (used for the GitHub documentation), for printing on the console:
-    private String MDtoHelpString(String text)
-    {
-        String lines[] = text.split("\n");
-        for(int i = 0;i<lines.length;i++) {
-            String line = lines[i];
-            if (line.startsWith("- ```")) {
-                line = "- " + MDLLogger.ANSI_WHITE + line.substring(5);
-                int idx = line.indexOf("```");
-                if (idx >= 0) {
-                    line = line.substring(0, idx) + MDLLogger.ANSI_RESET + line.substring(idx+3);
-                }
-                lines[i] = line;
-            }
-        }
-        text = String.join("\n", lines);
-        return text.replace("- ```-", "  -").replace("```", "");
-    }
-
     /*
      * Returns null if everything is fine, and an error string otherwise.
      */
     public boolean parseArgs(String... argsArray) throws IOException {
         if (argsArray.length == 0) {
-            info(MDtoHelpString(simpleDocString));
+            for(MDLWorker worker:workers) {
+                if (worker instanceof Help) {
+                    ((Help)worker).triggered = true;
+                    ((Help)worker).simple = true;
+                }
+            }
             return true;
         }
 
@@ -273,16 +262,6 @@ public class MDLConfig {
             String arg = args.get(0);
             if (arg.startsWith("-")) {
                 switch (arg) {
-                    case "-help":
-                        info(MDtoHelpString(docString));
-                        return true;
-                        
-                    // This is a hidden flag, as it has no utility for the user, and is only used
-                    // to generate the documentation for GitHub:
-                    case "-helpmd":
-                        info(docString);
-                        return true;
-                        
                     case "-cpu":
                         if (args.size()>=2) {
                             args.remove(0);
@@ -572,7 +551,7 @@ public class MDLConfig {
         Returns null if everything is fine, and an error string otherwise.
      */
     public boolean verify() {
-        if (inputFile == null) {
+        if (inputFile == null && !help_triggered) {
             error("Missing inputFile");
             return false;
         }
