@@ -14,7 +14,7 @@ import code.SourceConstant;
 public class InputParameter {
     SourceConstant symbol;
     int minValue = 0;
-    int maxValue = 0xffff;
+    int maxValue = 0xff;
 
 
     public InputParameter(SourceConstant a_symbol)

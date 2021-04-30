@@ -13,7 +13,6 @@ import code.SourceConstant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import util.microprocessor.IMemory;
 import util.microprocessor.Z80.CPUConstants;
 import util.microprocessor.Z80.Z80Core;
 
@@ -144,12 +143,16 @@ public class Specification {
     }
     
     
-    public void addParameter(SourceConstant symbol)
+    public void addParameter(SourceConstant symbol, int minRange, int maxRange)
     {
         for(InputParameter p:parameters) {
-            if (p.symbol.name.equals(symbol.name)) return;
+            if (p.symbol.name.equals(symbol.name)) {
+                p.minValue = Math.min(p.minValue, minRange);
+                p.maxValue = Math.max(p.maxValue, maxRange);
+                return;
+            }
         }
-        parameters.add(new InputParameter(symbol));
+        parameters.add(new InputParameter(symbol, minRange, maxRange));
     }
     
     
@@ -246,33 +249,10 @@ public class Specification {
                 Integer value = exp.right.evaluateToInteger(null, code, true);
                 if (value == null) return false;
                 testCase.goalRegisters[j] = exp.leftRegister;
-                switch(exp.leftRegister) {
-                    case A:
-                    case F:
-                    case A_ALT:
-                    case F_ALT:
-                    case I:
-                    case R:
-                    case B:
-                    case C:
-                    case D:
-                    case E:
-                    case H:
-                    case L:
-                    case B_ALT:
-                    case C_ALT:
-                    case D_ALT:
-                    case E_ALT:
-                    case H_ALT:
-                    case L_ALT:
-                    case IXH:
-                    case IXL:
-                    case IYH:
-                    case IYL:
-                        testCase.goalRegisterValues[j] = (value & 0xff);
-                        break;
-                    default:
-                        testCase.goalRegisterValues[j] = (value & 0xffff);
+                if (CPUConstants.is8bitRegister(exp.leftRegister)) {
+                    testCase.goalRegisterValues[j] = (value & 0xff);
+                } else {
+                    testCase.goalRegisterValues[j] = (value & 0xffff);
                 }                
             }
             precomputedTestCases[i] = testCase;

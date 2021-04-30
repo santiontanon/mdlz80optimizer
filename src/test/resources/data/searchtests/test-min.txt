@@ -11,5 +11,5 @@
       A = ?val1
       H = ?val2
   goal_state:
-      A = (?val1 & 0xff) < (?val2 & 0xff) ? \ 
+      A = (?val1 < ?val2) ? \ 
           ?val1 : ?val2

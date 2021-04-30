@@ -259,7 +259,11 @@ public class SpecificationParser {
                 for(String symbolName: exp.getAllSymbols()) {
                     SourceConstant symbol = new SourceConstant(symbolName, symbolName, exp, null, config);
                     code.addSymbol(symbolName, symbol);
-                    spec.addParameter(symbol);
+                    if (CPUConstants.is8bitRegister(sexp.leftRegister)) {
+                        spec.addParameter(symbol, 0, 0xff);
+                    } else {
+                        spec.addParameter(symbol, 0, 0xffff);
+                    }
                 }
             }
             for(SpecificationExpression sexp: spec.goalState) {
@@ -346,6 +350,10 @@ public class SpecificationParser {
                     spec.allowedOps.add("bit");
                     spec.allowedOps.add("set");
                     spec.allowedOps.add("res");
+                    break;
+                case "carry":
+                    spec.allowedOps.add("ccf");
+                    spec.allowedOps.add("scf");
                     break;
                 default:
                 {

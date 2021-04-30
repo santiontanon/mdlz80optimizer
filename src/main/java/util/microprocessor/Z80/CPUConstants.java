@@ -277,5 +277,36 @@ public class CPUConstants {
                 return new RegisterNames[]{};
         }
     }
+    
+    
+    public static boolean is8bitRegister(RegisterNames reg)
+    {
+        switch(reg) {
+            case A:
+            case B:
+            case C:
+            case D:
+            case E:
+            case F:
+            case H:
+            case L:
+            case I:
+            case R:
+            case A_ALT:
+            case B_ALT:
+            case C_ALT:
+            case D_ALT:
+            case E_ALT:
+            case F_ALT:
+            case H_ALT:
+            case L_ALT:
+            case IXH:
+            case IXL:
+            case IYH:
+            case IYL:
+                return true;
+        }
+        return false;
+    }
 
 }

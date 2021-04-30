@@ -373,16 +373,16 @@ public class SearchBasedOptimizer implements MDLWorker {
         OK - SLA/SRA/SRL/SLI
         OK - CPL/NEG
         OK - BIT/SET/RES
-        - CCF/SCF
+        OK - CCF/SCF
+        OK - CP
+        ***- JP/JR/DJNZ
         - PUSH/POP
         - EX/EXX
         - LDI/LDD/LDIR/LDDR
         - CPI/CPD/CPIR/CPDR
-        - CP
         - DAA
         - HALT/DI/EI/IM
         - RLD/RRD
-        - JP/JR/DJNZ
         - CALL/RET/RETI/RETN
         - RST
         - IN/INI/IND/INIR/INDR
@@ -392,8 +392,9 @@ public class SearchBasedOptimizer implements MDLWorker {
         
         if (spec.allowedOps.contains("and") ||
             spec.allowedOps.contains("or") ||
-            spec.allowedOps.contains("xor")) {
-            if (!precomputeAndOrXor(candidates, spec, allDependencies, code)) return null;
+            spec.allowedOps.contains("xor") ||
+            spec.allowedOps.contains("cp")) {
+            if (!precomputeAndOrXorCp(candidates, spec, allDependencies, code)) return null;
         }
         if (spec.allowedOps.contains("inc") ||
             spec.allowedOps.contains("dec")) {
@@ -433,6 +434,10 @@ public class SearchBasedOptimizer implements MDLWorker {
             spec.allowedOps.contains("res")) {
             if (!precomputeBits(candidates, spec, allDependencies, code)) return null;
         }
+        if (spec.allowedOps.contains("ccf") ||
+            spec.allowedOps.contains("sfc")) {
+            if (!precomputeCarry(candidates, spec, allDependencies, code)) return null;
+        }
         
         return candidates;
     }
@@ -456,12 +461,12 @@ public class SearchBasedOptimizer implements MDLWorker {
     }
     
     
-    boolean precomputeAndOrXor(List<SBOCandidate> candidates, Specification spec, 
-                               List<CPUOpDependency> allDependencies, CodeBase code)
+    boolean precomputeAndOrXorCp(List<SBOCandidate> candidates, Specification spec, 
+                                 List<CPUOpDependency> allDependencies, CodeBase code)
     {
         if (!spec.allowedRegisters.contains("a")) return true;
         
-        String opNames[] = {"and", "or", "xor"};
+        String opNames[] = {"and", "or", "xor", "cp"};
         String regNames[] = {"a", "b", "c", "d", "e", "h", "l"};
         for(String opName : opNames) {
             if (!spec.allowedOps.contains(opName)) continue;
@@ -899,6 +904,18 @@ public class SearchBasedOptimizer implements MDLWorker {
         return true;
     }   
     
+    
+    boolean precomputeCarry(List<SBOCandidate> candidates, Specification spec, 
+                            List<CPUOpDependency> allDependencies, CodeBase code)
+    {
+        String opNames[] = {"ccf", "scf"};
+        for(String op: opNames) {
+            if (!spec.allowedOps.contains(op)) continue;
+            if (!precomputeOp(op, candidates, allDependencies, code)) return false;
+        }
+        return true;
+    }   
+            
     
     boolean sequenceMakesSense(SBOCandidate op1, SBOCandidate op2, CodeBase code)
     {
