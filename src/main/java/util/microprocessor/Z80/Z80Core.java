@@ -220,6 +220,18 @@ public class Z80Core implements ICPUData {
                 return reg_H;
             case L:
                 return reg_L;
+            case B_ALT:
+                return reg_B_ALT;
+            case C_ALT:
+                return reg_C_ALT;
+            case D_ALT:
+                return reg_D_ALT;
+            case E_ALT:
+                return reg_E_ALT;
+            case H_ALT:
+                return reg_H_ALT;
+            case L_ALT:
+                return reg_L_ALT;
             case IXH:
                 return reg_IX >> 8;
             case IXL:

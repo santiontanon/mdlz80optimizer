@@ -46,7 +46,7 @@ replacement:
 1: ?op1 c,?const2
 constraints:
 in(?op1,jp,jr)
-notEqual(?const1,255)
+notEqual(?const1 & 0xff,255)
 
 pattern: Replace cp 0 with or a
 name: cp02ora
@@ -1587,4 +1587,7 @@ replacement:
 3: ld (?const1), hl
 constraints:
 in(?regixiy,IX,IY)
+equal(?const3h,?const3h&0xff)
+equal(?const3l,?const3l&0xff)
 regsNotUsedAfter(8,A,HL,DE,?regixiy)
+flagsNotUsedAfter(8,S,Z,H,P/V,C)

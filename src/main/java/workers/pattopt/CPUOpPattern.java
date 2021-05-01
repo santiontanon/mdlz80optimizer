@@ -74,7 +74,14 @@ public class CPUOpPattern {
         if (opName != null && opName.equals(name)) {
             opName = replacement;
         }
-        Expression exp = null;
+        List<String> tokens = config.tokenizer.tokenize(replacement);
+        Expression exp = config.expressionParser.parse(tokens, null, null, code);
+        HashMap<String, Expression> variables = new HashMap<>();
+        variables.put(name, exp);
+        for(int i = 0;i<args.size();i++) {
+            args.set(i, instantiateExpression(args.get(i), variables));
+        }
+        /*
         if (code.isRegister(replacement) || code.isCondition(replacement)) {
             exp = Expression.symbolExpression(replacement, null, code, config);
         
@@ -84,6 +91,7 @@ public class CPUOpPattern {
                 args.set(i, instantiateExpression(args.get(i), variables));
             }
         }
+        */
     }
     
     
@@ -132,7 +140,11 @@ public class CPUOpPattern {
                     exp.evaluatesToIntegerConstant()) {
                     Integer value = exp.evaluateToInteger(s, code, true);
                     if (value != null) {
-                        exp = Expression.constantExpression(value, config);
+                        if (exp.type == Expression.EXPRESSION_PARENTHESIS) {
+                            exp = Expression.parenthesisExpression(Expression.constantExpression(value, config), "(", config);
+                        } else {
+                            exp = Expression.constantExpression(value, config);
+                        }
                     }
                 }
             }

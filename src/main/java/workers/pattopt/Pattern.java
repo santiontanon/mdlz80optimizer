@@ -48,6 +48,13 @@ public class Pattern {
             }
             triggerAfterID = c.triggerAfterID;
         }
+        
+        
+        @Override
+        public String toString()
+        {
+            return name + Arrays.toString(args);
+        }
     }
     
     MDLConfig config;

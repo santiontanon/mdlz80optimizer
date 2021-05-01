@@ -5,12 +5,17 @@
  */
 package util.microprocessor;
 
+import java.util.ArrayList;
+import java.util.List;
+import org.apache.commons.lang3.tuple.Pair;
+
 /**
  *
  * @author santi
  */
 public class PlainZ80Memory implements IMemory {
     public final int[] memory = new int[0x10000];
+    public List<Pair<Integer, Integer>> writeProtections = new ArrayList<>();
 
     public PlainZ80Memory() {
     }
@@ -26,8 +31,11 @@ public class PlainZ80Memory implements IMemory {
     }
 
     @Override
-    final public void writeByte(int address, int data) {
-
+    final public void writeByte(int address, int data) 
+    {
+        for(Pair<Integer, Integer> p:writeProtections) {
+            if (address >= p.getLeft() && address < p.getRight()) return;
+        }
         memory[address] = data;
     }
 
@@ -37,5 +45,17 @@ public class PlainZ80Memory implements IMemory {
         address = (address + 1) & 0xffff;
         data = (data >>> 8);
         writeByte(address, data);
+    }
+    
+    
+    public void writeProtect(int start, int end)
+    {
+        writeProtections.add(Pair.of(start, end));
+    }
+    
+    
+    public void clearWriteProtections()
+    {
+        writeProtections.clear();
     }
 }
