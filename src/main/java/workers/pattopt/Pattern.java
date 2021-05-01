@@ -38,16 +38,26 @@ public class Pattern {
             args = a_args;
             triggerAfterID = a_triggerAfterID;
         }
+        
+        public Constraint(Constraint c)
+        {
+            name = c.name;
+            args = new String[c.args.length];
+            for(int i = 0;i<args.length;i++) {
+                args[i] = c.args[i];
+            }
+            triggerAfterID = c.triggerAfterID;
+        }
     }
     
     MDLConfig config;
 
-    String name = null;
-    String message = null;
-    List<String> tags = new ArrayList<>();    
-    List<CPUOpPattern> pattern = new ArrayList<>();
-    List<CPUOpPattern> replacement = new ArrayList<>();
-    List<Constraint> constraints = new ArrayList<>();
+    public String name = null;
+    public String message = null;
+    public List<String> tags = new ArrayList<>();    
+    public List<CPUOpPattern> pattern = new ArrayList<>();
+    public List<CPUOpPattern> replacement = new ArrayList<>();
+    public List<Constraint> constraints = new ArrayList<>();
     
     
     static class DepCheckNode {
@@ -78,8 +88,8 @@ public class Pattern {
             return true;
         }
     }
+        
     
-
     public Pattern(String patternString, MDLConfig a_config)
     {
         config = a_config;
@@ -178,6 +188,27 @@ public class Pattern {
 
         // config.trace("parsed pattern: " + message);
     }
+    
+    
+    public Pattern(Pattern p)
+    {
+        config = p.config;
+        name = p.name;
+        message = p.message;
+        tags = p.tags;
+        pattern = new ArrayList<>();
+        for(CPUOpPattern opp:p.pattern) {
+            pattern.add(new CPUOpPattern(opp));
+        }
+        replacement = new ArrayList<>();
+        for(CPUOpPattern opp:p.replacement) {
+            replacement.add(new CPUOpPattern(opp));
+        }
+        constraints = new ArrayList<>();
+        for(Constraint c:p.constraints) {
+            constraints.add(new Constraint(c));
+        }
+    }    
 
 
     public String getName()
@@ -193,6 +224,34 @@ public class Pattern {
             tmp = tmp.replace(variable, match.variables.get(variable).toString());
         }
         return tmp;
+    }
+    
+    
+    public Pattern assignVariable(String name, String replacement, CodeBase code)
+    {
+        Pattern p = new Pattern(this);
+        
+        for(CPUOpPattern opp:p.pattern) {
+            opp.assignVariable(name, replacement, code, config);
+        }
+        for(CPUOpPattern opp:p.replacement) {
+            opp.assignVariable(name, replacement, code, config);
+        }
+        List<Constraint> todelete = new ArrayList<>();
+        for(Constraint c:p.constraints) {
+            if (c.name.equals("in") && c.args[0].equals(name)) {
+                // remove this constraint:
+                todelete.add(c);
+            } else {
+                for(int i = 0;i<c.args.length;i++) {
+                    if (c.args[i].equals(name)) {
+                        c.args[i] = replacement;
+                    }
+                }
+            }
+        }
+        p.constraints.removeAll(todelete);
+        return p;
     }
 
 
@@ -509,6 +568,81 @@ public class Pattern {
 
         return match;
     }
+    
+    
+    public boolean regpairConstraint(String args[], String expected[])
+    {
+        if (!args[0].startsWith("?")) {
+            // we need to construct the value from the second part:
+            if (args[0].equalsIgnoreCase("bc")) {
+                expected[0] = "bc"; expected[1] = "b"; expected[2] = "c";
+                return true;
+            }
+            if (args[0].equalsIgnoreCase("de")) {
+                expected[0] = "de"; expected[1] = "d"; expected[2] = "e";
+                return true;
+            }
+            if (args[0].equalsIgnoreCase("hl")) {
+                expected[0] = "hl"; expected[1] = "h"; expected[2] = "l";
+                return true;
+            }
+            if (args[0].equalsIgnoreCase("ix")) {
+                expected[0] = "ix"; expected[1] = "ixh"; expected[2] = "ixl";
+                return true;
+            }
+            if (args[0].equalsIgnoreCase("iy")) {
+                expected[0] = "iy"; expected[1] = "iyh"; expected[2] = "iyl";
+                return true;
+            }
+        }
+        if (!args[1].startsWith("?")) {
+            // we need to construct the value from the second part:
+            if (args[1].equalsIgnoreCase("b")) {
+                expected[0] = "bc"; expected[1] = "b"; expected[2] = "c";
+                return true;
+            }
+            if (args[1].equalsIgnoreCase("d")) {
+                expected[0] = "de"; expected[1] = "d"; expected[2] = "e";
+                return true;
+            }
+            if (args[1].equalsIgnoreCase("h")) {
+                expected[0] = "hl"; expected[1] = "h"; expected[2] = "l";
+                return true;
+            }
+            if (args[1].equalsIgnoreCase("ixh")) {
+                expected[0] = "ix"; expected[1] = "ixh"; expected[2] = "ixl";
+                return true;
+            }
+            if (args[1].equalsIgnoreCase("iyh")) {
+                expected[0] = "iy"; expected[1] = "iyh"; expected[2] = "iyl";
+                return true;
+            }
+        }
+        if (!args[2].startsWith("?")) {
+            // we need to construct the value from the second part:
+            if (args[2].equalsIgnoreCase("c")) {
+                expected[0] = "bc"; expected[1] = "b"; expected[2] = "c";
+                return true;
+            }
+            if (args[2].equalsIgnoreCase("e")) {
+                expected[0] = "de"; expected[1] = "d"; expected[2] = "e";
+                return true;
+            }
+            if (args[2].equalsIgnoreCase("l")) {
+                expected[0] = "hl"; expected[1] = "h"; expected[2] = "l";
+                return true;
+            }
+            if (args[2].equalsIgnoreCase("ixl")) {
+                expected[0] = "ix"; expected[1] = "ixh"; expected[2] = "ixl";
+                return true;
+            }
+            if (args[2].equalsIgnoreCase("iyl")) {
+                expected[0] = "iy"; expected[1] = "iyh"; expected[2] = "iyl";
+                return true;
+            }
+        }
+        return false;
+    }
 
     
     public boolean checkConstraint(Constraint raw_constraint, PatternMatch match,
@@ -664,90 +798,32 @@ public class Pattern {
             }
             case "regpair":
             {
-                String expected1 = null;
-                String expected2 = null;
-                String expected3 = null;
-                if (!constraint.args[0].startsWith("?")) {
-                    // we need to construct the value from the second part:
-                    if (constraint.args[0].equalsIgnoreCase("bc")) {
-                        expected1 = "bc"; expected2 = "b"; expected3 = "c";
-                    }
-                    if (constraint.args[0].equalsIgnoreCase("de")) {
-                        expected1 = "de"; expected2 = "d"; expected3 = "e";
-                    }
-                    if (constraint.args[0].equalsIgnoreCase("hl")) {
-                        expected1 = "hl"; expected2 = "h"; expected3 = "l";
-                    }
-                    if (constraint.args[0].equalsIgnoreCase("ix")) {
-                        expected1 = "ix"; expected2 = "ixh"; expected3 = "ixl";
-                    }
-                    if (constraint.args[0].equalsIgnoreCase("iy")) {
-                        expected1 = "iy"; expected2 = "iyh"; expected3 = "iyl";
-                    }
-                }
-                if (!constraint.args[1].startsWith("?")) {
-                    // we need to construct the value from the second part:
-                    if (constraint.args[1].equalsIgnoreCase("b")) {
-                        expected1 = "bc"; expected2 = "b"; expected3 = "c";
-                    }
-                    if (constraint.args[1].equalsIgnoreCase("d")) {
-                        expected1 = "de"; expected2 = "d"; expected3 = "e";
-                    }
-                    if (constraint.args[1].equalsIgnoreCase("h")) {
-                        expected1 = "hl"; expected2 = "h"; expected3 = "l";
-                    }
-                    if (constraint.args[1].equalsIgnoreCase("ixh")) {
-                        expected1 = "ix"; expected2 = "ixh"; expected3 = "ixl";
-                    }
-                    if (constraint.args[1].equalsIgnoreCase("iyh")) {
-                        expected1 = "iy"; expected2 = "iyh"; expected3 = "iyl";
-                    }
-                }
-                if (!constraint.args[2].startsWith("?")) {
-                    // we need to construct the value from the second part:
-                    if (constraint.args[2].equalsIgnoreCase("c")) {
-                        expected1 = "bc"; expected2 = "b"; expected3 = "c";
-                    }
-                    if (constraint.args[2].equalsIgnoreCase("e")) {
-                        expected1 = "de"; expected2 = "d"; expected3 = "e";
-                    }
-                    if (constraint.args[2].equalsIgnoreCase("l")) {
-                        expected1 = "hl"; expected2 = "h"; expected3 = "l";
-                    }
-                    if (constraint.args[2].equalsIgnoreCase("ixl")) {
-                        expected1 = "ix"; expected2 = "ixh"; expected3 = "ixl";
-                    }
-                    if (constraint.args[2].equalsIgnoreCase("iyl")) {
-                        expected1 = "iy"; expected2 = "iyh"; expected3 = "iyl";
-                    }
-                }
-                if (expected1 == null || expected2 == null || expected3 == null) {
-                    return false;
-                }
+                String expected[] = {null, null, null};
+                if (!regpairConstraint(constraint.args, expected)) return false;
                 if (constraint.args[0].startsWith("?")) {
-                    if (!match.addVariableMatch(constraint.args[0], Expression.symbolExpression(expected1, null, code, config))) {
+                    if (!match.addVariableMatch(constraint.args[0], Expression.symbolExpression(expected[0], null, code, config))) {
                         return false;
                     }
                 } else {
-                    if (!constraint.args[0].equalsIgnoreCase(expected1)) {
+                    if (!constraint.args[0].equalsIgnoreCase(expected[0])) {
                         return false;
                     }
                 }
                 if (constraint.args[1].startsWith("?")) {
-                    if (!match.addVariableMatch(constraint.args[1], Expression.symbolExpression(expected2, null, code, config))) {
+                    if (!match.addVariableMatch(constraint.args[1], Expression.symbolExpression(expected[1], null, code, config))) {
                         return false;
                     }
                 } else {
-                    if (!constraint.args[1].equalsIgnoreCase(expected2)) {
+                    if (!constraint.args[1].equalsIgnoreCase(expected[1])) {
                         return false;
                     }
                 }
                 if (constraint.args[2].startsWith("?")) {
-                    if (!match.addVariableMatch(constraint.args[2], Expression.symbolExpression(expected3, null, code, config))) {
+                    if (!match.addVariableMatch(constraint.args[2], Expression.symbolExpression(expected[2], null, code, config))) {
                         return false;
                     }
                 } else {
-                    if (!constraint.args[2].equalsIgnoreCase(expected3)) {
+                    if (!constraint.args[2].equalsIgnoreCase(expected[2])) {
                         return false;
                     }
                 }

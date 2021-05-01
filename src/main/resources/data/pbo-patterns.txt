@@ -37,6 +37,7 @@
 
 ; thanks to pgimeno for noticing the needed constraint
 pattern: Replace cp ?const1; ?op1 c,?const2; ?op1 z,?const2 with cp ?const1+1; ?op1 c,?const2
+name: czjump2c
 0: cp ?const1
 1: ?op1 c,?const2
 2: ?op1 z,?const2
@@ -48,6 +49,7 @@ in(?op1,jp,jr)
 notEqual(?const1,255)
 
 pattern: Replace cp 0 with or a
+name: cp02ora
 0: cp 0
 replacement:
 0: or a
@@ -1561,3 +1563,24 @@ pattern: Remove unused ld ?reg1,?reg2;ld ?reg2,?reg1
 replacement:
 constraints:
 regsNotUsedAfter(1,?reg1)
+
+; SDCC-specific pattern
+pattern: Replace ld hl, ?const1; ld ?regixiy, ?const2; ld a, (iy); add a, ?const3l; ld (hl), a; ld a, (iy+1); adc a, ?const3h; inc hl; ld (hl), a by ld de, ?const3h * 256 + ?const3l; ld hl, (?const2); add hl, de; ld (?const1), hl
+name: sdcc16bitadd
+0: ld hl, ?const1
+1: ld ?regixiy, ?const2
+2: ld a, (?regixiy)
+3: add a, ?const3l
+4: ld (hl), a
+5: ld a, (?regixiy+1)
+6: adc a, ?const3h
+7: inc hl
+8: ld (hl), a
+replacement:
+0: ld de, ?const3h * 256 + ?const3l
+1: ld hl, (?const2)
+2: add hl, de
+3: ld (?const1), hl
+constraints:
+in(?regixiy,IX,IY)
+regsNotUsedAfter(8,A,HL,DE,?regixiy)

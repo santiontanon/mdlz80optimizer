@@ -144,7 +144,7 @@ public class PatternBasedOptimizer implements MDLWorker {
     }
 
 
-    void initPatterns()
+    public void initPatterns()
     {
         if (inputPatternsFileName == null) {
             inputPatternsFileName = defaultInputPatternsFileName;
@@ -165,7 +165,13 @@ public class PatternBasedOptimizer implements MDLWorker {
     }
     
     
-    Pattern getPattern(String name)
+    public List<Pattern> getPatterns()
+    {
+        return patterns;
+    }
+    
+    
+    public Pattern getPattern(String name)
     {
         for(Pattern p: patterns) {
             if (p.name != null && p.name.equals(name)) return p;

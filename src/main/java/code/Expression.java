@@ -1382,7 +1382,7 @@ public class Expression {
     public void getAllSymbols(List<String> l)
     {
         if (type == EXPRESSION_SYMBOL) {
-            l.add(symbolName);
+            if (!l.contains(symbolName)) l.add(symbolName);
         } else if (args != null) {
             for(Expression arg:args) {
                 arg.getAllSymbols(l);

@@ -22,12 +22,29 @@ import parser.SourceLine;
 public class CPUOpPattern {
     public static final String WILDCARD = "*";
     
-    int ID;
-    boolean wildcard = false;   // if this is true, "opName" and "args" will be "*" and empty.
-    String repetitionVariable = null;   // if this is not null, it means we can match this line many times in a row (its number will be matched to "repetitionVariable")
-    String opName;
-    List<Expression> args = new ArrayList<>();
+    public int ID;
+    public boolean wildcard = false;   // if this is true, "opName" and "args" will be "*" and empty.
+    public String repetitionVariable = null;   // if this is not null, it means we can match this line many times in a row (its number will be matched to "repetitionVariable")
+    public String opName;
+    public List<Expression> args = new ArrayList<>();
 
+    public CPUOpPattern()
+    {
+    }
+    
+    
+    public CPUOpPattern(CPUOpPattern opp)
+    {
+        ID = opp.ID;
+        wildcard = opp.wildcard;
+        repetitionVariable = opp.repetitionVariable;
+        opName = opp.opName;
+        args = new ArrayList<>();
+        for(Expression exp:opp.args) {
+            args.add(exp.clone());
+        }
+    }
+    
 
     @Override
     public String toString()
@@ -49,6 +66,24 @@ public class CPUOpPattern {
     public boolean isWildcard()
     {
         return opName.equals(WILDCARD);
+    }
+    
+    
+    public void assignVariable(String name, String replacement, CodeBase code, MDLConfig config)
+    {
+        if (opName != null && opName.equals(name)) {
+            opName = replacement;
+        }
+        Expression exp = null;
+        if (code.isRegister(replacement) || code.isCondition(replacement)) {
+            exp = Expression.symbolExpression(replacement, null, code, config);
+        
+            HashMap<String, Expression> variables = new HashMap<>();
+            variables.put(name, exp);
+            for(int i = 0;i<args.size();i++) {
+                args.set(i, instantiateExpression(args.get(i), variables));
+            }
+        }
     }
     
     

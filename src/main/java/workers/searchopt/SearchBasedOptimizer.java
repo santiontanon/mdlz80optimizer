@@ -38,19 +38,6 @@ public class SearchBasedOptimizer implements MDLWorker {
     public static final int SEARCH_ID_CYCLES = 2;  // Iterative deepning by # cycles
     
     // randomize the register contents:
-    public static final RegisterNames eightBitRegisters[] = {
-        RegisterNames.A, RegisterNames.F,
-        RegisterNames.B, RegisterNames.C,
-        RegisterNames.D, RegisterNames.E,
-        RegisterNames.H, RegisterNames.L,
-        RegisterNames.A_ALT, RegisterNames.F_ALT,
-        RegisterNames.B_ALT, RegisterNames.C_ALT,
-        RegisterNames.D_ALT, RegisterNames.E_ALT,
-        RegisterNames.H_ALT, RegisterNames.L_ALT,
-        RegisterNames.IXH, RegisterNames.IXL,
-        RegisterNames.IYH, RegisterNames.IYL,
-        RegisterNames.R
-    };
     public static RegisterNames eightBitRegistersToRandomize[] = null;
 
     MDLConfig config;

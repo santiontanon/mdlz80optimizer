@@ -80,6 +80,20 @@ public class CPUConstants {
     final static int lsb = 0x00FF;
     final static int msb = 0xFF00;
     final static int lsw = 0x0000FFFF;
+    
+    public static final RegisterNames eightBitRegisters[] = {
+        RegisterNames.A, RegisterNames.F,
+        RegisterNames.B, RegisterNames.C,
+        RegisterNames.D, RegisterNames.E,
+        RegisterNames.H, RegisterNames.L,
+        RegisterNames.A_ALT, RegisterNames.F_ALT,
+        RegisterNames.B_ALT, RegisterNames.C_ALT,
+        RegisterNames.D_ALT, RegisterNames.E_ALT,
+        RegisterNames.H_ALT, RegisterNames.L_ALT,
+        RegisterNames.IXH, RegisterNames.IXL,
+        RegisterNames.IYH, RegisterNames.IYL,
+        RegisterNames.R
+    };        
 
     static {
         PARITY_TABLE[0] = true; // even PARITY_TABLE seed value
@@ -307,6 +321,50 @@ public class CPUConstants {
                 return true;
         }
         return false;
+    }
+    
+    
+    public static String registerName(RegisterNames reg)
+    {
+        switch(reg) {
+            case BC: return "bc";
+            case DE: return "de";
+            case HL: return "hl";
+            case BC_ALT: return "bc'";
+            case DE_ALT: return "de'";
+            case HL_ALT: return "hl'";
+            case IX: return "ix";
+            case IY: return "iy";
+            case SP: return "sp";
+            case PC: return "pc";
+            case A: return "a";
+            case F: return "f";
+            case A_ALT: return "a'";
+            case F_ALT: return "f'";
+            case I: return "i";
+            case R: return "r";
+
+            case AF: return "af";
+            case AF_ALT: return "af;";
+            case B: return "b";
+            case C: return "c";
+            case D: return "d";
+            case E: return "e";
+            case H: return "h";
+            case L: return "l";
+            case B_ALT: return "b'";
+            case C_ALT: return "c'";
+            case D_ALT: return "d'";
+            case E_ALT: return "e'";
+            case H_ALT: return "h'";
+            case L_ALT: return "l'";
+            case IXH: return "ixh";
+            case IXL: return "ixl";
+            case IYH: return "iyh";
+            case IYL: return "iyl";
+            default:
+                return "<unknown>";
+        }
     }
 
 }

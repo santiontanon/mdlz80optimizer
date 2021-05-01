@@ -6,6 +6,7 @@
 include "pbo-patterns.txt"
 
 pattern: Replace push ?regpair2; pop ?regpair1 with ld ?reg1l,?reg2l; ld ?reg1h,?reg2h
+name: push2ld
 0: push ?regpair2
 1: pop ?regpair1
 replacement:
