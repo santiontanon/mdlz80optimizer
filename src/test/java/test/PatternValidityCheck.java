@@ -41,7 +41,10 @@ public class PatternValidityCheck {
     }
 
 //    @Test public void test1() throws Exception { test("data/pbo-patterns.txt", "czjump2c", false); }
-//    @Test public void test2() throws Exception { test("data/pbo-patterns.txt", "cp02ora", false); }
+    @Test public void test2() throws Exception { test("data/pbo-patterns.txt", "cp02ora", false); }
+    @Test public void test3() throws Exception { test("data/pbo-patterns.txt", "cp12deca", false); }
+
+//    @Test public void test100() throws Exception { test("data/pbo-patterns.txt", "sdcc16bitadd", false); }
     
 //    @Test public void testSize1() throws Exception { test("data/pbo-patterns-size.txt", "jp2jr", false); }
     @Test public void testSpeed1() throws Exception { test("data/pbo-patterns-speed.txt", "push2ld", false); }
@@ -62,14 +65,25 @@ public class PatternValidityCheck {
         for(Pattern p:instantiated) {
             // Extract the parameters:
             List<String> parameters = getParameters(p);
-//            System.out.println("parameters: " + parameters);
+            Assert.assertNotNull("parameters is null", parameters);
+            List<Integer> flagsToIgnore = getFlagsToIgnore(p);
+            Assert.assertNotNull("flagsToIgnore is null", flagsToIgnore);
+//            System.out.println("flagsToIgnore: " + flagsToIgnore);
+            List<CPUConstants.RegisterNames> registersToIgnore = getRegistersToIgnore(p);
+            Assert.assertNotNull("registersToIgnore is null", registersToIgnore);
+            System.out.println("registersToIgnore: " + registersToIgnore);
             
-            Assert.assertTrue(evaluatePattern(p, parameters, code, checkMemory, 1000));
+            Assert.assertTrue(evaluatePattern(p, parameters, 
+                                              flagsToIgnore, registersToIgnore,
+                                              code, checkMemory, 1000));
         }
     }
     
     
-    private boolean evaluatePattern(Pattern p, List<String> parameters, CodeBase code, 
+    private boolean evaluatePattern(Pattern p, List<String> parameters, 
+                                    List<Integer> flagsToIgnore, 
+                                    List<CPUConstants.RegisterNames> registersToIgnore,
+                                    CodeBase code, 
                                     boolean checkMemory, int repetitions) throws Exception
     {
         PlainZ80Memory z80Memory1 = new PlainZ80Memory();
@@ -78,7 +92,8 @@ public class PatternValidityCheck {
         Z80Core z802 = new Z80Core(z80Memory2, new PlainZ80IO(), new CPUConfig(config));
         
         for(int i = 0;i<repetitions;i++) {
-            if (!evaluatePattern(p, parameters, code, 
+            if (!evaluatePattern(p, parameters, flagsToIgnore, registersToIgnore, 
+                    code, 
                     z80Memory1, z801, z80Memory2, z802,
                     checkMemory)) return false;
         }
@@ -86,7 +101,10 @@ public class PatternValidityCheck {
     }
     
     
-    private boolean evaluatePattern(Pattern p, List<String> parameters, CodeBase code,
+    private boolean evaluatePattern(Pattern p, List<String> parameters, 
+                                    List<Integer> flagsToIgnore,
+                                    List<CPUConstants.RegisterNames> registersToIgnore,
+                                    CodeBase code,
                                     PlainZ80Memory z80Memory1, Z80Core z801,
                                     PlainZ80Memory z80Memory2, Z80Core z802,
                                     boolean checkMemory) throws Exception
@@ -140,7 +158,28 @@ public class PatternValidityCheck {
                 
         // Compare the output state of the simulator:
         for(CPUConstants.RegisterNames register: CPUConstants.eightBitRegisters) {
-            if (z801.getRegisterValue(register) != z802.getRegisterValue(register)) {
+            if (registersToIgnore.contains(register)) continue;
+            int v1 = z801.getRegisterValue(register);
+            int v2 = z802.getRegisterValue(register);
+            if (register == CPUConstants.RegisterNames.F || register == CPUConstants.RegisterNames.F_ALT) {
+                // Reset flags 3 and 5 (unused):
+                v1 = v1 & (CPUConstants.flag_3_N & CPUConstants.flag_5_N);
+                v2 = v2 & (CPUConstants.flag_3_N & CPUConstants.flag_5_N);
+                
+                // Ignore the flags that we know are not important:
+                for(int flag:flagsToIgnore) {
+                    v1 = v1 | flag;
+                    v2 = v2 | flag;
+                }
+            }
+            if (v1 != v2) {
+                if (register == CPUConstants.RegisterNames.F || register == CPUConstants.RegisterNames.F_ALT) {
+                    for(int flag = 0;flag<8;flag++) {
+                        if ((v1 & CPUConstants.flags[flag]) != (v2 & CPUConstants.flags[flag])) {
+                            System.out.println("Difference in flag: " + CPUConstants.flagNames[flag]);
+                        }
+                    }
+                }
                 System.out.println("Simulations differ in register " + CPUConstants.registerName(register) + ": " + 
                         config.tokenizer.toHex(z801.getRegisterValue(register), 2) + " != " +
                         config.tokenizer.toHex(z802.getRegisterValue(register), 2));
@@ -222,6 +261,73 @@ public class PatternValidityCheck {
     }
     
     
+    private List<Integer> getFlagsToIgnore(Pattern pattern)
+    {
+        List<Integer> flags = new ArrayList<>();
+        
+        for(Pattern.Constraint c:pattern.constraints) {
+            switch(c.name) {
+                case "flagsNotUsedAfter":
+                    for(int i = 1;i<c.args.length;i++) {
+                        String flag = c.args[i].replace(" ", "");
+                        int found = -1;
+                        for(int j = 0;j<CPUConstants.flagNames.length;j++) {
+                            if (CPUConstants.flagNames[j].equalsIgnoreCase(flag)) {
+                                found = j;
+                                break;
+                            }
+                        }
+                        if (found == -1) {
+                            System.out.println("Unknown flag " + flag);
+                            return null;
+                        }
+                        flags.add(CPUConstants.flags[found]);
+                    }
+                    break;
+            }
+        }
+
+        return flags;
+    }
+    
+    
+    private List<CPUConstants.RegisterNames> getRegistersToIgnore(Pattern pattern)
+    {
+        List<CPUConstants.RegisterNames> registers = new ArrayList<>();
+        
+        for(Pattern.Constraint c:pattern.constraints) {
+            switch(c.name) {
+                case "regsNotUsedAfter":
+                    for(int i = 1;i<c.args.length;i++) {
+                        boolean found = false;
+                        for(CPUConstants.RegisterNames reg:CPUConstants.allRegisters) {
+                            if (CPUConstants.registerName(reg).equalsIgnoreCase(c.args[i])) {
+                                if (CPUConstants.is8bitRegister(reg) ||
+                                    reg == CPUConstants.RegisterNames.SP ||
+                                    reg == CPUConstants.RegisterNames.PC) { 
+                                    registers.add(reg);
+                                } else {
+                                    for(CPUConstants.RegisterNames reg2:CPUConstants.ghost8BitRegistersOf(reg)) {
+                                        registers.add(reg2);
+                                    }
+                                }
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (!found) {
+                            System.out.println("Unknown register " + c.args[i]);
+                            return null;
+                        }
+                    }
+                    break;
+            }
+        }
+
+        return registers;
+    }
+    
+    
     private List<Pattern> allPatternInstantiations(Pattern pattern, CodeBase code)
     {
         List<Pattern> instantiated = new ArrayList<>();
@@ -269,10 +375,20 @@ public class PatternValidityCheck {
         for(Pattern p:instantiated) {
             for(Pattern.Constraint c:p.constraints) {
                 switch(c.name) {
+                        case "flagsNotUsedAfter":
                         case "regsNotUsedAfter":
+                        {
+                            int ID = Integer.parseInt(c.args[0]);
+                            if (ID == p.pattern.get(p.pattern.size()-1).ID) {
+                                // Flags/registers not used after the last instruction in the pattern, are fine
+                                continue;
+                            }
+                            System.out.println("Remaining constraint: " + c.name + " not associated with the last instruction of the pattern, not yet supported");
+                            return null;
+                        }
+                    
                         case "regsNotModified":
                         case "regsNotUsed":
-                        case "flagsNotUsedAfter":
                         case "flagsNotModified":
                         case "flagsNotUsed":
                         case "equal":

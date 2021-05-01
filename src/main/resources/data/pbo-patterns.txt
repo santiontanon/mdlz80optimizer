@@ -53,13 +53,17 @@ name: cp02ora
 0: cp 0
 replacement:
 0: or a
+constraints:
+flagsNotUsedAfter(0,N,P/V)
 
 pattern: Replace cp 1 with dec a
+name: cp12deca
 0: cp 1
 replacement:
 0: dec a
 constraints:
 regsNotUsedAfter(0,A)
+flagsNotUsedAfter(0,C)
 
 pattern: Replace cp 255 with inc a
 0: cp 255

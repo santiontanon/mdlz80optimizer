@@ -70,9 +70,9 @@ public class CPUConstants {
     // for resetting
     final static int flag_S_N = 0x007F;
     final static int flag_Z_N = 0x00BF;
-    final static int flag_5_N = 0x00DF;
+    public final static int flag_5_N = 0x00DF;
     final static int flag_H_N = 0x00EF;
-    final static int flag_3_N = 0x00F7;
+    public final static int flag_3_N = 0x00F7;
     final static int flag_PV_N = 0x00FB;
     final static int flag_N_N = 0x00FD;
     final static int flag_C_N = 0x00FE;
@@ -80,6 +80,29 @@ public class CPUConstants {
     final static int lsb = 0x00FF;
     final static int msb = 0xFF00;
     final static int lsw = 0x0000FFFF;
+    
+    public static int flags[] = {flag_C, flag_N, flag_PV, flag_3, flag_H, flag_5, flag_Z, flag_S};
+    
+    public static String flagNames[] = {"C", "N", "P/V", "<unused3>", "H", "<unused5>", "Z", "S"};
+    
+    public static final RegisterNames allRegisters[] = {
+        RegisterNames.BC, RegisterNames.DE, RegisterNames.HL,
+        RegisterNames.BC_ALT, RegisterNames.DE_ALT, RegisterNames.HL_ALT,
+        RegisterNames.IX, RegisterNames.IY,
+        RegisterNames.SP, RegisterNames.PC,        
+        RegisterNames.A, RegisterNames.F,
+        RegisterNames.B, RegisterNames.C,
+        RegisterNames.D, RegisterNames.E,
+        RegisterNames.H, RegisterNames.L,
+        RegisterNames.A_ALT, RegisterNames.F_ALT,
+        RegisterNames.B_ALT, RegisterNames.C_ALT,
+        RegisterNames.D_ALT, RegisterNames.E_ALT,
+        RegisterNames.H_ALT, RegisterNames.L_ALT,
+        RegisterNames.IXH, RegisterNames.IXL,
+        RegisterNames.IYH, RegisterNames.IYL,
+        RegisterNames.R
+    };        
+
     
     public static final RegisterNames eightBitRegisters[] = {
         RegisterNames.A, RegisterNames.F,

@@ -6,6 +6,7 @@ EXTERNAL: equ #0000
 	ld a,(value)
 	cp 1			; should be optimized to "dec a"
 	ld b,1			; should be optimized
+        scf
 	call z,function1
 	ld a,2
 	ld (value),a
