@@ -20,6 +20,10 @@
     inc hl
     ld (hl), a
 
+    ld b, 0
+    ld a, 0
+    ld (bc), a
+
 loop:
     jr loop
 

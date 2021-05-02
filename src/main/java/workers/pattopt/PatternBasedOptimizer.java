@@ -13,6 +13,7 @@ import code.CodeBase;
 import code.SourceFile;
 import code.CodeStatement;
 import java.io.IOException;
+import java.util.Collections;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import util.Resources;
@@ -29,7 +30,6 @@ public class PatternBasedOptimizer implements MDLWorker {
     public static String defaultInputPatternsSpeedFileName = "data/pbo-patterns-speed.txt";
     
     public boolean logPotentialOptimizations = false;    
-//    public boolean generateFilesWithAppliedOptimizations = false;
     public boolean onlyOnePotentialOptimizationPerLine = true;
     public boolean preventLabelDependentOptimizations = false;
     
@@ -65,7 +65,6 @@ public class PatternBasedOptimizer implements MDLWorker {
         return "- ```-po```: Runs the pattern-based optimizer using the latest settings. You can pass an optional parameter, like ````-po size``` or ```-po speed```, which are shortcuts for '-po -popatterns data/pbo-patterns-size.txt' and '-po -popatterns data/pbo-patterns-speed.txt' (some dialects might change the defaults of these two)\n" +
                "- ```-po1```/```-po2```/```-po3```: The same as ```-po```, but specify whether to do 1, 2 or 3 passes of optimization (```-po``` is equivalent to ```-po2```). The more passes, the slower the optimization. Usually 1 pass is enough, but often 2 passes finds a few additional optimizations. 3 passes rarely finds any additional optimization.\n"+
                "- ```-posilent```: Supresses the pattern-based-optimizer output\n" +
-//               "- ```-poapply```: "+MDLLogger.ANSI_RED+"(deprecated) "+MDLLogger.ANSI_RESET+"For each assembler ```<file>``` parsed by MDL, a corresponding ```<file>.mdl.asm``` is generated with the optimizations applied to it.\n" + 
                "- ```-popotential```: Reports lines where a potential optimization was not applied for safety, but could maybe be done manually (at most one potential optimization per line is shown).\n" +
                "- ```-popotential-all```: Same as above, but without the one-per-line constraint.\n" +
                "- ```-popatterns <file>```: specifies the file to load optimization patterns from (default 'data/pbo-patterns.txt', " +
@@ -114,11 +113,6 @@ public class PatternBasedOptimizer implements MDLWorker {
             silent = true;
             return true;
         }
-//        if (flags.get(0).equals("-poapply")) {
-//            flags.remove(0);
-//            generateFilesWithAppliedOptimizations = true;
-//            return true;
-//        }
         if (flags.get(0).equals("-popotential")) {
             flags.remove(0);
             logPotentialOptimizations = true;
@@ -263,9 +257,6 @@ public class PatternBasedOptimizer implements MDLWorker {
         if (trigger) {            
             OptimizationResult r = optimize(code);
             config.optimizerStats.addSavings(r);
-//            if (generateFilesWithAppliedOptimizations) {
-//                applyOptimizationsToOriginalFiles(code);
-//            }
             if (config.dialectParser != null) return config.dialectParser.postCodeModificationActions(code);
         }
         return true;
@@ -304,17 +295,9 @@ public class PatternBasedOptimizer implements MDLWorker {
     }
     
     
-    // Returns whether any optimization was done:
-    public boolean optimizeStartingFromLine(SourceFile f, int i, CodeBase code, OptimizationResult r, boolean lastPass)
+    public void getMatchesStartingFromLine(SourceFile f, int i, List<PatternMatch> matches, boolean lastPass, CodeBase code)
     {
-        List<Pair<Pattern,PatternMatch>> matches = new ArrayList<>();
-        alreadyShownAPotentialOptimization = false;
-        // we only print potential optimizations in the last pass:
-        if (!lastPass) alreadyShownAPotentialOptimization = true;
         for(Pattern patt: patterns) {
-            // in the last pass, we only consider patterns that could lead to an equality constraint:
-//            if (lastPass && !patt.hasPotentialEqualityConstraints()) continue;
-            
             PatternMatch match = patt.match(i, f, code, this);
             if (match != null &&
                 preventLabelDependentOptimizations &&
@@ -326,26 +309,44 @@ public class PatternBasedOptimizer implements MDLWorker {
             if (!lastPass && match != null && !match.newEqualities.isEmpty()) {
                 match = null;
             }
-            if (match != null) {
-//                if (generateFilesWithAppliedOptimizations) {
-//                    // prevent matches to lines on which there is already an optimization:
-//                    boolean overlapsWithPreviousOptimization = false;
-//                    for(PatternMatch previous:appliedOptimizations) {
-//                        if (machesLinesGeneratedByPreviousPattern(match, previous)) {
-//                            overlapsWithPreviousOptimization = true;
-//                            break;
-//                        }
-//                    }
-//                    if (!overlapsWithPreviousOptimization) {
-//                        matches.add(Pair.of(patt,match));
-//                    } else {
-//                        config.debug("Prevented an optimization!");
-//                    }
-//                } else {
-                    matches.add(Pair.of(patt,match));
-//                }
+            if (match != null) matches.add(match);
+        }        
+    }
+    
+    
+    // Returns whether any optimization was done:
+    public boolean optimizeStartingFromLine(SourceFile f, int i, CodeBase code, OptimizationResult r, boolean lastPass)
+    {
+        int maximumLookAhead = 16;  // maximum number of lines to look ahead for a better pattern
+        
+        alreadyShownAPotentialOptimization = false;
+        // we only print potential optimizations in the last pass:
+        if (!lastPass) alreadyShownAPotentialOptimization = true;
+
+        List<PatternMatch> matches = new ArrayList<>();
+        getMatchesStartingFromLine(f, i, matches, lastPass, code);
+        
+        if (!matches.isEmpty()) {
+            // Look for patterns that match in the lines that will be modified beyon line "i",
+            // to reduce the probability of applying a pattern that prevents a better one
+            // to be applied later on:
+            int lastMatchedLine = i;
+            for(PatternMatch match: matches) {
+                for(CPUOpPattern opp:match.pattern.pattern) {
+                    List<CodeStatement> l = match.map.get(opp.ID);
+                    if (l == null) break;
+                    for(CodeStatement s:l) {
+                        int idx = f.getStatements().indexOf(s);
+                        if (idx > lastMatchedLine) lastMatchedLine = idx;
+                    }
+                }
+            }
+            lastMatchedLine = Math.min(i+maximumLookAhead, lastMatchedLine);
+            for(int ii = i+1; ii<=lastMatchedLine;ii++) {
+                getMatchesStartingFromLine(f, ii, matches, lastPass, code);
             }
         }
+        
 
         if (!matches.isEmpty()) {
             // there was at least a match, pick the best!
@@ -356,17 +357,21 @@ public class PatternBasedOptimizer implements MDLWorker {
             int bestSizeSavings = 0;    
             int bestTimeSavings = 0;
             int bestNumConstraints = 0;
-            for(Pair<Pattern,PatternMatch> p:matches) {
-                config.debug("optimization option: " + p.getLeft().getInstantiatedName(p.getRight()));
-                int sizeSavings = p.getLeft().getSpaceSaving(p.getRight(), code);
-                int timeSavings = p.getLeft().getTimeSaving(p.getRight(), code)[0];
-                int numConstraints = p.getRight().newEqualities.size();
+            for(PatternMatch match:matches) {
+                int sizeSavings = match.pattern.getSpaceSaving(match, code);
+                int timeSavings = match.pattern.getTimeSaving(match, code)[0];
+                int numConstraints = match.newEqualities.size();
+                int numLinesInvolved = match.map.size();
+                config.debug("optimization option: " + match.pattern.getInstantiatedName(match) + " --> " + sizeSavings + ", " + timeSavings + ", " + numConstraints + ", " + match.map.size());
+                // Prefer patterns that save the most bytes, otherwise, the ones that save the most time, 
+                // otherwise those with less constraints, and otherwise, those that involve less lines of code.
                 if (bestPatt == null ||
                     sizeSavings > bestSizeSavings ||
                     (sizeSavings == bestSizeSavings && timeSavings > bestTimeSavings) ||
-                    (sizeSavings == bestSizeSavings && timeSavings == bestTimeSavings && numConstraints < bestNumConstraints)) {
-                    bestPatt = p.getLeft();
-                    bestMatch = p.getRight();
+                    (sizeSavings == bestSizeSavings && timeSavings == bestTimeSavings && numConstraints < bestNumConstraints) ||
+                    (sizeSavings == bestSizeSavings && timeSavings == bestTimeSavings && numConstraints == bestNumConstraints && numLinesInvolved < bestMatch.map.size())) {
+                    bestPatt = match.pattern;
+                    bestMatch = match;
                     bestSizeSavings = sizeSavings;
                     bestTimeSavings = timeSavings;
                     bestNumConstraints = numConstraints;
@@ -459,148 +464,6 @@ public class PatternBasedOptimizer implements MDLWorker {
         }
         return false;
     }
-    
-    /*
-    public boolean applyOptimizationsToOriginalFiles(CodeBase code)
-    {
-        for(SourceFile f:code.getSourceFiles()) {
-            String newFileName = f.fileName + ".mdl.asm";
-            config.info("Generating optimized file " + newFileName);
-            
-            // 1) Read lines:
-            // - indexed by original line number, and contains as many lines as that
-            //   original turned into
-            List<List<String>> lines = new ArrayList<>();
-            try {
-                BufferedReader br = new BufferedReader(new FileReader(f.fileName));
-                while(true) {
-                    String line = br.readLine();
-                    if (line == null) break;
-                    List<String> l = new ArrayList<>();
-                    l.add(line);
-                    lines.add(l);
-                }
-            } catch (Exception e) {
-                config.error("Error loading " + f.fileName + " when trying to generate a file with optimizations applied to it.");
-                return false;
-            }
-            
-            // 2) Apply optimizations:
-            for(PatternMatch match: appliedOptimizations) {
-                if (match.f == f) {
-                    // check that the optimization is not on a macro (do not apply optimizations to macros!):
-                    boolean fromMacro = false;
-                    for(CodeStatement s: match.removed) {
-                        if (s.sl.expandedFrom != null) {
-                            // this was expanded from a macro:
-                            fromMacro = true;
-                            break;
-                        }
-                    }
-                    for(CodeStatement s: match.added) {
-                        if (s.sl.expandedFrom != null) {
-                            // this was expanded from a macro:
-                            fromMacro = true;
-                            break;
-                        }
-                    }
-
-                    if (fromMacro) {
-                        config.warn("Optimization '" + match.pattern.getInstantiatedName(match) + "' cannot be applied to the source code (for safety reasons) as it is associated with a macro (MDL cannot guarantee that the resulting optimized file is sound after this point).");
-                        continue;
-                    }
-                    
-                    for(CodeStatement s: match.removed) {
-                        List<String> updatedLines = lines.get(s.sl.lineNumber-1);
-                        if (updatedLines.size() == 1) {
-                            updatedLines.add("; " + updatedLines.remove(0) + "  ; -mdl");
-                        } else {
-                            boolean onlyLastNotCommentedOut = true;
-                            for(int i = 0;i<updatedLines.size();i++) {
-                                if (i == updatedLines.size()-1) {
-                                    if (updatedLines.get(i).startsWith(";")) {
-                                        onlyLastNotCommentedOut = false;
-                                        break;
-                                    }
-                                } else {
-                                    if (!updatedLines.get(i).startsWith(";")) {
-                                        onlyLastNotCommentedOut = false;
-                                        break;
-                                    }
-                                }
-                            }
-                            if (onlyLastNotCommentedOut) {
-                                updatedLines.add("; " + updatedLines.remove(updatedLines.size()-1) + "  ; -mdl");                                
-                            } else {
-                                // We need to look for which one in particular to remove:
-                                config.error("More than one optimization applied to the same line, not yet supported at: " + s.sl);
-                                config.error("Lines that had to be removed were:");
-                                for(String line:updatedLines) {
-                                    config.error(line);
-                                }
-                                return false;
-                            }
-                        }
-                    }
-                    for(CodeStatement s: match.added) {
-                        List<String> updatedLines = lines.get(s.sl.lineNumber-1);
-                        if (config.dialectParser != null) {
-                            String sString = config.dialectParser.statementToString(s, code, null);
-                            if (sString != null) {
-                                updatedLines.add(sString + "  ; +mdl");
-                            } else {
-                                updatedLines.add("");
-                            }
-                        } else {
-                            updatedLines.add(s + "  ; +mdl");
-                        }
-                    }
-                }
-            }
-            
-            // 3) Update includes:
-            for(CodeStatement s : f.getStatements()) {
-                if (s.type == CodeStatement.STATEMENT_INCLUDE) {
-                    CodeStatement s2 = new CodeStatement(s.type, s.sl, s.source, config);
-                    s2.rawInclude = s.rawInclude + ".mdl.asm";
-                    List<String> updatedLines = lines.get(s.sl.lineNumber-1);
-                    if (updatedLines.size() == 1) {
-                        updatedLines.add("; " + updatedLines.remove(0) + "  ; -mdl");
-                        if (config.dialectParser != null) {
-                            String s2String = config.dialectParser.statementToString(s2, code, null);
-                            if (s2String != null) {
-                                updatedLines.add(s2String + "  ; +mdl");
-                            } else {
-                                updatedLines.add("");
-                            }
-                        } else {
-                            updatedLines.add(s2 + "  ; +mdl");
-                        }
-                    } else {
-                        config.error("Optimization applied to an include statement in applyOptimizationsToOriginalFiles");
-                        return false;                        
-                    }
-                }
-            }
-            
-            // 4) Save lines:
-            try {
-                FileWriter fw = new FileWriter(newFileName);
-                for(List<String> l:lines) {
-                    for(String line:l) {
-                        fw.write(line + "\n");
-                    }
-                }
-                fw.flush();
-                fw.close();
-            } catch (Exception e) {
-                config.error("Error writing to " + newFileName + " when trying to generate a file with optimizations applied to it.");
-                return false;
-            }
-        }
-        return true;
-    }
-    */
     
     
     @Override
