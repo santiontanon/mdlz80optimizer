@@ -41,9 +41,12 @@ public class SearchBasedOptimizerTest {
     @Test public void test5b() throws IOException { test("data/searchtests/test5b.txt", "data/searchtests/test5b-expected.asm"); }
     @Test public void test6() throws IOException { test("data/searchtests/test6.txt", "data/searchtests/test6-expected.asm"); }
     @Test public void test7() throws IOException { test("data/searchtests/test7.txt", "data/searchtests/test7-expected.asm"); }
-    @Test public void testLShift9() throws IOException { test("data/searchtests/test-large1.txt", "data/searchtests/test-large1-expected.asm"); }
-    @Test public void testLShift9size() throws IOException { test("data/searchtests/test-large1.txt", "data/searchtests/test-large1-size-expected.asm", "-so-size"); }
-    @Test public void testLShift9time() throws IOException { test("data/searchtests/test-large1.txt", "data/searchtests/test-large1-time-expected.asm", "-so-time"); }
+    
+    @Test public void testFlags1() throws IOException { test("data/searchtests/test-flags1.txt", "data/searchtests/test-flags1-expected.asm"); }
+    
+//    @Test public void testLShift9() throws IOException { test("data/searchtests/test-large1.txt", "data/searchtests/test-large1-expected.asm"); }
+//    @Test public void testLShift9size() throws IOException { test("data/searchtests/test-large1.txt", "data/searchtests/test-large1-size-expected.asm", "-so-size"); }
+//    @Test public void testLShift9time() throws IOException { test("data/searchtests/test-large1.txt", "data/searchtests/test-large1-time-expected.asm", "-so-time"); }
 
     // These are larger tests (that are a bit slow, and thus
     // are deactivated by default for quick building):

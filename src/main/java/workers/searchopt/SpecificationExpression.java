@@ -5,21 +5,19 @@
  */
 package workers.searchopt;
 
-import code.CodeBase;
 import code.Expression;
-import util.microprocessor.IMemory;
 import util.microprocessor.Z80.CPUConstants;
-import util.microprocessor.Z80.Z80Core;
 
 /**
  *
  * @author santi
  */
 public class SpecificationExpression {
-    public CPUConstants.RegisterNames leftRegister;
+    public CPUConstants.RegisterNames leftRegister  = null;
+    public Integer leftFlag = null;
     public Expression right;
 
-    public String leftRegisterName; // just for the "toString" method
+    public String leftRegisterOrFlagName; // just for the "toString" method
 
     /*
     public boolean check(Z80Core z80, IMemory z80memory, CodeBase code)
@@ -59,6 +57,6 @@ public class SpecificationExpression {
 
     @Override
     public String toString() {
-        return leftRegisterName + " = " + right;
+        return leftRegisterOrFlagName + " = " + right;
     }    
 }

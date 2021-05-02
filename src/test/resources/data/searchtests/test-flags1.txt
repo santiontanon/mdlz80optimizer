@@ -1,0 +1,10 @@
+allowed_ops: 
+    logic
+    addition
+    increment
+8bit_constants: 0, 1
+initial_state:
+    a = ?v1
+    h = ?v2
+goal_state:
+    c_flag = (?v1 == ?v2)

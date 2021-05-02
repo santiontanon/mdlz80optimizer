@@ -27,6 +27,8 @@ public class Specification {
         int startRegisterValues[] = null;
         CPUConstants.RegisterNames goalRegisters[] = null;
         int goalRegisterValues[] = null;
+        int goalFlags[] = null;
+        boolean goalFlagValues[] = null;
 
         public void initCPU(Z80Core z80)
         {
@@ -40,6 +42,9 @@ public class Specification {
         {
             for(int i = 0;i<goalRegisters.length;i++) {
                 if (z80.getRegisterValue(goalRegisters[i]) != goalRegisterValues[i]) return false;
+            }
+            for(int i = 0;i<goalFlags.length;i++) {
+                 if (z80.getFlagValue(goalFlags[i]) != goalFlagValues[i]) return false;
             }
             return true;
         }        
@@ -171,7 +176,14 @@ public class Specification {
         for(int i = 0;i<dependencies.length;i++) dependencies[i] = false;
         
         for(SpecificationExpression exp:startState) {
-            CPUOpDependency dep = new CPUOpDependency(exp.leftRegisterName.toUpperCase(), null, null, null, null);
+            CPUOpDependency dep = null;
+            if (exp.leftRegister != null) {
+                dep = new CPUOpDependency(exp.leftRegisterOrFlagName.toUpperCase(), null, null, null, null);
+            } else if (exp.leftFlag != null) {
+                dep = new CPUOpDependency(null, CPUConstants.flagNames[exp.leftFlag], null, null, null);
+            } else {
+                return null;
+            }
             for(int i = 0;i<dependencies.length;i++) {
                 if (dep.match(allDependencies.get(i))) dependencies[i] = true;
             }
@@ -187,7 +199,14 @@ public class Specification {
         for(int i = 0;i<dependencies.length;i++) dependencies[i] = false;
         
         for(SpecificationExpression exp:goalState) {
-            CPUOpDependency dep = new CPUOpDependency(exp.leftRegisterName.toUpperCase(), null, null, null, null);
+            CPUOpDependency dep = null;
+            if (exp.leftRegister != null) {
+                dep = new CPUOpDependency(exp.leftRegisterOrFlagName.toUpperCase(), null, null, null, null);
+            } else if (exp.leftFlag != null) {
+                dep = new CPUOpDependency(null, CPUConstants.flagNames[exp.leftFlag], null, null, null);
+            } else {
+                return null;
+            }
             for(int i = 0;i<dependencies.length;i++) {
                 if (dep.match(allDependencies.get(i))) dependencies[i] = true;
             }
@@ -238,22 +257,45 @@ public class Specification {
             for(int j = 0;j<startState.size();j++) {
                 SpecificationExpression exp = startState.get(j);
                 Integer value = exp.right.evaluateToInteger(null, code, true);
-                if (value == null) return false;
+                if (value == null) {
+                    config.error("Cannot evaluate expression " + exp);
+                    return false;
+                }
                 testCase.startRegisters[j] = exp.leftRegister;
                 testCase.startRegisterValues[j] = value;
             }
-            testCase.goalRegisters = new CPUConstants.RegisterNames[goalState.size()];
-            testCase.goalRegisterValues = new int[goalState.size()];
-            for(int j = 0;j<goalState.size();j++) {
+            int n_goalRegisters = 0;
+            int n_goalFlags = 0;
+            for(SpecificationExpression exp : goalState) {
+                if (exp.leftRegister != null) n_goalRegisters ++;
+                if (exp.leftFlag != null) n_goalFlags ++;
+            }
+            testCase.goalRegisters = new CPUConstants.RegisterNames[n_goalRegisters];
+            testCase.goalRegisterValues = new int[n_goalRegisters];
+            testCase.goalFlags = new int[n_goalFlags];
+            testCase.goalFlagValues = new boolean[n_goalFlags];
+            for(int j = 0, kreg = 0, kflag = 0;j<goalState.size();j++) {
                 SpecificationExpression exp = goalState.get(j);
                 Integer value = exp.right.evaluateToInteger(null, code, true);
-                if (value == null) return false;
-                testCase.goalRegisters[j] = exp.leftRegister;
-                if (CPUConstants.is8bitRegister(exp.leftRegister)) {
-                    testCase.goalRegisterValues[j] = (value & 0xff);
+                if (value == null) {
+                    config.error("Cannot evaluate expression " + exp);
+                    return false;
+                }
+                if (exp.leftRegister != null) {
+                    // It's a register condition:
+                    testCase.goalRegisters[j] = exp.leftRegister;
+                    if (CPUConstants.is8bitRegister(exp.leftRegister)) {
+                        testCase.goalRegisterValues[kreg] = (value & 0xff);
+                    } else {
+                        testCase.goalRegisterValues[kreg] = (value & 0xffff);
+                    }                
+                    kreg++;
                 } else {
-                    testCase.goalRegisterValues[j] = (value & 0xffff);
-                }                
+                    // it's a flag condition:
+                    testCase.goalFlags[j] = exp.leftFlag;
+                    testCase.goalFlagValues[kflag] = value != Expression.FALSE;
+                    kflag++;
+                }
             }
             precomputedTestCases[i] = testCase;
         }

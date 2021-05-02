@@ -43,7 +43,7 @@ public class SpecificationParser {
                     tokens.remove(0);
                     spec.clearAllowedRegisters();
                     state = 7;
-                    if (!parseAllowedRegisters(tokens, spec, config)) return  null;
+                    if (!parseAllowedRegisters(tokens, spec, config)) return null;
                 } else if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("initial_state") && tokens.get(1).equals(":")) {
                     tokens.remove(0);
                     tokens.remove(0);
@@ -65,23 +65,15 @@ public class SpecificationParser {
                 } else if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("8bit_constants") && tokens.get(1).equals(":")) {
                     tokens.remove(0);
                     tokens.remove(0);
-                    if (tokens.isEmpty() || config.tokenizer.isSingleLineComment(tokens.get(0))) {
-                        state = 4;
-                        spec.allowed8bitConstants.clear();
-                    } else {
-                        config.error("Unexpected token " + tokens.get(0) + " after '8bit_constants:'");
-                        return null;
-                    }
+                    state = 4;
+                    spec.allowed8bitConstants.clear();
+                    if (!parse8BitConstants(tokens, line, spec, code, config)) return null;
                 } else if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("16bit_constants") && tokens.get(1).equals(":")) {
                     tokens.remove(0);
                     tokens.remove(0);
-                    if (tokens.isEmpty() || config.tokenizer.isSingleLineComment(tokens.get(0))) {
-                        state = 5;
-                        spec.allowed16bitConstants.clear();
-                    } else {
-                        config.error("Unexpected token " + tokens.get(0) + " after '16bit_constants:'");
-                        return null;
-                    }
+                    state = 5;
+                    spec.allowed16bitConstants.clear();
+                    if (!parse16BitConstants(tokens, line, spec, code, config)) return null;
                 } else if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("offset_constants") && tokens.get(1).equals(":")) {
                     tokens.remove(0);
                     tokens.remove(0);
@@ -195,41 +187,11 @@ public class SpecificationParser {
                             if (!parseSpecificationExpression(tokens, false, line, spec, code, config)) return null;
                             break;
                         case 4:
-                        {
-                            // parsing 8 bit constants:
-                            Expression exp = config.expressionParser.parse(tokens, null, null, code);
-                            if (exp.type == Expression.EXPRESSION_INTEGER_CONSTANT) {
-                                spec.allowed8bitConstants.add(exp.integerConstant);
-                            } else if (exp.type == Expression.EXPRESSION_SUB &&
-                                       exp.args.size() == 2 &&
-                                       exp.args.get(0).type == Expression.EXPRESSION_INTEGER_CONSTANT &&
-                                       exp.args.get(1).type == Expression.EXPRESSION_INTEGER_CONSTANT) {
-                                for(int i = exp.args.get(0).integerConstant; i<=exp.args.get(1).integerConstant; i++) {
-                                    spec.allowed8bitConstants.add(i);
-                                }
-                            } else {
-                                config.error("Cannot parse constant definition in line " + line);
-                                return null;
-                            }
-                        }   break;
+                            if (!parse8BitConstants(tokens, line, spec, code, config)) return null;
+                            break;
                         case 5:
-                        {
-                            // parsing 16 bit constants:
-                            Expression exp = config.expressionParser.parse(tokens, null, null, code);
-                            if (exp.type == Expression.EXPRESSION_INTEGER_CONSTANT) {
-                                spec.allowed16bitConstants.add(exp.integerConstant);
-                            } else if (exp.type == Expression.EXPRESSION_SUB &&
-                                       exp.args.size() == 2 &&
-                                       exp.args.get(0).type == Expression.EXPRESSION_INTEGER_CONSTANT &&
-                                       exp.args.get(1).type == Expression.EXPRESSION_INTEGER_CONSTANT) {
-                                for(int i = exp.args.get(0).integerConstant; i<=exp.args.get(1).integerConstant; i++) {
-                                    spec.allowed16bitConstants.add(i);
-                                }
-                            } else {
-                                config.error("Cannot parse constant definition in line " + line);
-                                return null;
-                            }
-                        }   break;
+                            if (!parse16BitConstants(tokens, line, spec, code, config)) return null;
+                            break;
                         case 6:
                         {
                             // parsing offset bit constants:
@@ -299,6 +261,77 @@ public class SpecificationParser {
             }
         }
         return line;
+    }
+    
+    
+    static boolean parse8BitConstants(List<String> tokens, String line, Specification spec, CodeBase code, MDLConfig config)
+    {
+        if (tokens.isEmpty() || config.tokenizer.isSingleLineComment(tokens.get(0))) {
+            return true;
+        }
+        
+        // parsing 8 bit constants:
+        Expression exp = config.expressionParser.parse(tokens, null, null, code);
+        if (exp.type == Expression.EXPRESSION_INTEGER_CONSTANT) {
+            spec.allowed8bitConstants.add(exp.integerConstant);
+        } else if (exp.type == Expression.EXPRESSION_SUB &&
+                   exp.args.size() == 2 &&
+                   exp.args.get(0).type == Expression.EXPRESSION_INTEGER_CONSTANT &&
+                   exp.args.get(1).type == Expression.EXPRESSION_INTEGER_CONSTANT) {
+            for(int i = exp.args.get(0).integerConstant; i<=exp.args.get(1).integerConstant; i++) {
+                spec.allowed8bitConstants.add(i);
+            }
+        } else {
+            config.error("Cannot parse constant definition in line " + line);
+            return false;
+        }
+        
+        if (tokens.isEmpty() || config.tokenizer.isSingleLineComment(tokens.get(0))) {
+            return true;
+        }
+
+        if (!tokens.get(0).equals(",")) {
+            return false;
+        }
+        tokens.remove(0);
+        
+        return parse8BitConstants(tokens, line, spec, code, config);
+    }
+    
+    
+    
+    static boolean parse16BitConstants(List<String> tokens, String line, Specification spec, CodeBase code, MDLConfig config)
+    {
+        if (tokens.isEmpty() || config.tokenizer.isSingleLineComment(tokens.get(0))) {
+            return true;
+        }
+        
+        // parsing 8 bit constants:
+        Expression exp = config.expressionParser.parse(tokens, null, null, code);
+        if (exp.type == Expression.EXPRESSION_INTEGER_CONSTANT) {
+            spec.allowed16bitConstants.add(exp.integerConstant);
+        } else if (exp.type == Expression.EXPRESSION_SUB &&
+                   exp.args.size() == 2 &&
+                   exp.args.get(0).type == Expression.EXPRESSION_INTEGER_CONSTANT &&
+                   exp.args.get(1).type == Expression.EXPRESSION_INTEGER_CONSTANT) {
+            for(int i = exp.args.get(0).integerConstant; i<=exp.args.get(1).integerConstant; i++) {
+                spec.allowed16bitConstants.add(i);
+            }
+        } else {
+            config.error("Cannot parse constant definition in line " + line);
+            return false;
+        }
+        
+        if (tokens.isEmpty() || config.tokenizer.isSingleLineComment(tokens.get(0))) {
+            return true;
+        }
+
+        if (!tokens.get(0).equals(",")) {
+            return false;
+        }
+        tokens.remove(0);
+        
+        return parse16BitConstants(tokens, line, spec, code, config);
     }
     
     
@@ -484,132 +517,126 @@ public class SpecificationParser {
         
         SpecificationExpression specExp = new SpecificationExpression();
         
-        specExp.leftRegisterName = tokens.remove(0);
-        switch(specExp.leftRegisterName) {
+        specExp.leftRegisterOrFlagName = tokens.remove(0);
+        switch(specExp.leftRegisterOrFlagName.toLowerCase()) {
             case "a":
-            case "A":
                 specExp.leftRegister = CPUConstants.RegisterNames.A;
                 break;
             case "a'":
-            case "A'":
                 specExp.leftRegister = CPUConstants.RegisterNames.A_ALT;
                 break;
             case "f":
-            case "F":
                 specExp.leftRegister = CPUConstants.RegisterNames.F;
                 break;
             case "f'":
-            case "F'":
                 specExp.leftRegister = CPUConstants.RegisterNames.F_ALT;
                 break;
             case "bc":
-            case "BC":
                 specExp.leftRegister = CPUConstants.RegisterNames.BC;
                 break;
             case "b":
-            case "B":
                 specExp.leftRegister = CPUConstants.RegisterNames.B;
                 break;
             case "c":
-            case "C":
                 specExp.leftRegister = CPUConstants.RegisterNames.C;
                 break;
             case "de":
-            case "DE":
                 specExp.leftRegister = CPUConstants.RegisterNames.DE;
                 break;
             case "d":
-            case "D":
                 specExp.leftRegister = CPUConstants.RegisterNames.E;
                 break;
             case "e":
-            case "E":
                 specExp.leftRegister = CPUConstants.RegisterNames.E;
                 break;
             case "hl":
-            case "HL":
                 specExp.leftRegister = CPUConstants.RegisterNames.HL;
                 break;
             case "h":
-            case "H":
                 specExp.leftRegister = CPUConstants.RegisterNames.H;
                 break;
             case "l":
-            case "L":
                 specExp.leftRegister = CPUConstants.RegisterNames.L;
                 break;
                 
             case "bc'":
-            case "BC'":
                 specExp.leftRegister = CPUConstants.RegisterNames.BC_ALT;
                 break;
             case "b'":
-            case "B'":
                 specExp.leftRegister = CPUConstants.RegisterNames.B_ALT;
                 break;
             case "c'":
-            case "C'":
                 specExp.leftRegister = CPUConstants.RegisterNames.C_ALT;
                 break;
             case "de'":
-            case "DE'":
                 specExp.leftRegister = CPUConstants.RegisterNames.DE_ALT;
                 break;
             case "d'":
-            case "D'":
                 specExp.leftRegister = CPUConstants.RegisterNames.E_ALT;
                 break;
             case "e'":
-            case "E'":
                 specExp.leftRegister = CPUConstants.RegisterNames.E_ALT;
                 break;
             case "hl'":
-            case "HL'":
                 specExp.leftRegister = CPUConstants.RegisterNames.HL_ALT;
                 break;
             case "h'":
-            case "H'":
                 specExp.leftRegister = CPUConstants.RegisterNames.H_ALT;
                 break;
             case "l'":
-            case "L'":
                 specExp.leftRegister = CPUConstants.RegisterNames.L_ALT;
                 break;                
 
             case "ix":
-            case "IX":
                 specExp.leftRegister = CPUConstants.RegisterNames.IX;
                 break;
             case "ixh":
-            case "IXH":
                 specExp.leftRegister = CPUConstants.RegisterNames.IXH;
                 break;
             case "ixl":
-            case "IXL":
                 specExp.leftRegister = CPUConstants.RegisterNames.IXL;
                 break;                
 
             case "iy":
-            case "IY":
                 specExp.leftRegister = CPUConstants.RegisterNames.IY;
                 break;
             case "iyh":
-            case "IYH":
                 specExp.leftRegister = CPUConstants.RegisterNames.IYH;
                 break;
             case "iyl":
-            case "IYL":
                 specExp.leftRegister = CPUConstants.RegisterNames.IYL;
                 break;                
 
             case "sp":
-            case "SP":
                 specExp.leftRegister = CPUConstants.RegisterNames.SP;
                 break;
             case "pc":
-            case "PC":
                 specExp.leftRegister = CPUConstants.RegisterNames.PC;
                 break;
+                
+            // flag_C, flag_N, flag_PV, flag_3, flag_H, flag_5, flag_Z, flag_S
+            case "c_flag":
+                specExp.leftFlag = 0;
+                break;
+            case "n_flag":
+                specExp.leftFlag = 1;
+                break;
+            case "pv_flag":
+                specExp.leftFlag = 2;
+                break;
+            case "h_flag":
+                specExp.leftFlag = 4;
+                break;
+            case "z_flag":
+                specExp.leftFlag = 6;
+                break;
+            case "s_flag":
+                specExp.leftFlag = 7;
+                break;
+                
+            default:
+                config.error("Unknown register/flag " + specExp.leftRegisterOrFlagName);
+                return false;
         }
         
         if (tokens.isEmpty() || (!tokens.get(0).equals("=") && !tokens.get(0).equals("=="))) {

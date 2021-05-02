@@ -232,23 +232,27 @@ public class SearchBasedOptimizer implements MDLWorker {
             List<RegisterNames> toRandomize = new ArrayList<>();
             // Add all the registers in the goal (to prevent spurious matches):
             for(SpecificationExpression exp:spec.goalState) {
-                for(RegisterNames reg:CPUConstants.primitive8BitRegistersOf(exp.leftRegister)) {
-                    if (!toRandomize.contains(reg)) {
-                        toRandomize.add(reg);
-                    }
-                }
-                if (spec.allowGhostRegisters) {
-                    for(RegisterNames reg:CPUConstants.ghost8BitRegistersOf(exp.leftRegister)) {
+                if (exp.leftRegister != null) {
+                    for(RegisterNames reg:CPUConstants.primitive8BitRegistersOf(exp.leftRegister)) {
                         if (!toRandomize.contains(reg)) {
                             toRandomize.add(reg);
+                        }
+                    }
+                    if (spec.allowGhostRegisters) {
+                        for(RegisterNames reg:CPUConstants.ghost8BitRegistersOf(exp.leftRegister)) {
+                            if (!toRandomize.contains(reg)) {
+                                toRandomize.add(reg);
+                            }
                         }
                     }
                 }
             }
             // Remove the ones that will be initialized already in the start state:
             for(SpecificationExpression exp:spec.startState) {
-                for(RegisterNames reg:CPUConstants.primitive8BitRegistersOf(exp.leftRegister)) {
-                    toRandomize.remove(reg);
+                if (exp.leftRegister != null) {
+                    for(RegisterNames reg:CPUConstants.primitive8BitRegistersOf(exp.leftRegister)) {
+                        toRandomize.remove(reg);
+                    }
                 }
             }
             eightBitRegistersToRandomize = new RegisterNames[toRandomize.size()];
@@ -257,7 +261,10 @@ public class SearchBasedOptimizer implements MDLWorker {
             }
         }
         
-        spec.precomputeTestCases(numberOfRandomSolutionChecks, code, config);
+        if (!spec.precomputeTestCases(numberOfRandomSolutionChecks, code, config)) {
+            config.error("Unable to precompute test cases");
+            return false;
+        }
         
         // Create a simulator:
         z80Memory = new PlainZ80Memory();

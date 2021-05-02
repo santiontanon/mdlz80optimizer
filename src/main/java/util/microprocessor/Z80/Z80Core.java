@@ -245,6 +245,25 @@ public class Z80Core implements ICPUData {
     }
     
     
+    public boolean getFlagValue(int flag) {
+        // flag_C, flag_N, flag_PV, flag_3, flag_H, flag_5, flag_Z, flag_S
+        switch(flag) {
+            case 0:
+                return getC();
+            case 1:
+                return getN();
+            case 2:
+                return getPV();
+            case 4:
+                return getH();
+            case 6:
+                return getZ();
+            default:
+                return getS();
+        }
+    }
+    
+    
     /**
      * Sets a register value via a register name
      *
