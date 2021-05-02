@@ -17,9 +17,8 @@ import java.util.List;
 public class Help implements MDLWorker {
     
     MDLConfig config = null;
-    public boolean triggered = false;
     public boolean showMDTags = false;
-    public boolean simple = false;
+//    public boolean simple = false;
     
     
     public Help(MDLConfig a_config) {
@@ -46,14 +45,12 @@ public class Help implements MDLWorker {
     public boolean parseFlag(List<String> flags) {
         if (flags.get(0).equals("-help")) {
             flags.remove(0);
-            triggered = true;
             config.help_triggered = true;
             return true;
         } else if (flags.get(0).equals("-helpmd")) {
             flags.remove(0);
             // This is a hidden flag, as it has no utility for the user, and is only used
             // to generate the documentation for GitHub:
-            triggered = true;
             showMDTags = true;
             config.help_triggered = true;
             return true;
@@ -64,14 +61,14 @@ public class Help implements MDLWorker {
 
     @Override
     public boolean triggered() {
-        return triggered;
+        return config.help_triggered;
     }
     
 
     @Override
     public boolean work(CodeBase code) {
         String docString = config.docString;
-        if (simple) docString = config.simpleDocString;
+        if (config.display_simple_help) docString = config.simpleDocString;
         if (showMDTags) {
             config.info(docString);
         } else {

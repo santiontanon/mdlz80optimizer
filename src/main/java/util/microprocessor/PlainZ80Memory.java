@@ -27,7 +27,7 @@ public class PlainZ80Memory implements IMemory {
 
     @Override
     final public int readWord(int address) {
-        return readByte(address) + readByte(address + 1) * 256;
+        return readByte(address) + readByte((address + 1) & 0xffff) * 256;
     }
 
     @Override

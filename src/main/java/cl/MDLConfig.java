@@ -105,6 +105,7 @@ public class MDLConfig {
     public boolean output_replaceDsByData = false;
     
     public boolean help_triggered = false;
+    public boolean display_simple_help = false;
 
     // Symbols defined via flags:
     public List<String> symbolDefinitions = new ArrayList<>();
@@ -244,16 +245,6 @@ public class MDLConfig {
      * Returns null if everything is fine, and an error string otherwise.
      */
     public boolean parseArgs(String... argsArray) throws IOException {
-        if (argsArray.length == 0) {
-            for(MDLWorker worker:workers) {
-                if (worker instanceof Help) {
-                    ((Help)worker).triggered = true;
-                    ((Help)worker).simple = true;
-                }
-            }
-            return true;
-        }
-
         List<String> args = new ArrayList<>();
         for(String arg:argsArray) args.add(arg);
 
@@ -543,6 +534,11 @@ public class MDLConfig {
         opParser = new CPUOpParser(opSpecParser.parseSpecs(), this);
         dialectParser = Dialects.getDialectParser(dialect, this);
         
+        if (!somethingToDo()) {
+            help_triggered = true;
+            display_simple_help = true;
+        }
+                
         return verify();
     }
 

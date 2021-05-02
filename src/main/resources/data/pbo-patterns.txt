@@ -1591,3 +1591,22 @@ equal(?const3h,?const3h&0xff)
 equal(?const3l,?const3l&0xff)
 regsNotUsedAfter(8,A,HL,DE,?regixiy)
 flagsNotUsedAfter(8,S,Z,H,P/V,C)
+
+; SDCC-specific pattern
+pattern: Replace 0: ld hl, ?const1; ld ?regixiy, ?const2; ld a, (?regixiy); sub a, (hl); ld a, (?regixiy+1); inc hl; sbc a, (hl) with ld de, (?const1); ld hl, (?const2); sbc hl, de
+name: sdcc16bitcp
+0: ld hl, ?const1
+1: ld ?regixiy, ?const2
+2: ld a, (?regixiy)
+3: sub a, (hl)
+4: ld a, (?regixiy+1)
+5: inc hl
+6: sbc a, (hl)
+replacement:
+0: ld de, (?const1)
+1: ld hl, (?const2)
+2: sbc hl, de
+constraints:
+in(?regixiy,IX,IY)
+regsNotUsedAfter(6,A,DE,HL,?regixiy)
+flagsNotUsedAfter(6,S,Z,H)

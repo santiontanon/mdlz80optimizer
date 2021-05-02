@@ -41,13 +41,14 @@ public class PatternValidityCheck {
         r = new Random();        
     }
 
-    @Test public void test2() throws Exception { test("data/pbo-patterns.txt", "cp02ora", false); }
-    @Test public void test3() throws Exception { test("data/pbo-patterns.txt", "cp12deca", false); }
+//    @Test public void test2() throws Exception { test("data/pbo-patterns.txt", "cp02ora", false); }
+//    @Test public void test3() throws Exception { test("data/pbo-patterns.txt", "cp12deca", false); }
 
-    // This one is commented out by default as tests with "checkMemory = true" are slow 
+    // These ones are commented out by default as tests with "checkMemory = true" are slow 
 //    @Test public void test100() throws Exception { test("data/pbo-patterns.txt", "sdcc16bitadd", true); }
+//    @Test public void test101() throws Exception { test("data/pbo-patterns.txt", "sdcc16bitcp", true); }
     
-    @Test public void testSpeed1() throws Exception { test("data/pbo-patterns-speed.txt", "push2ld", false); }
+//    @Test public void testSpeed1() throws Exception { test("data/pbo-patterns-speed.txt", "push2ld", false); }
 
     private void test(String patternsFile, String patternName, boolean checkMemory) throws Exception
     {
@@ -179,6 +180,10 @@ public class PatternValidityCheck {
                 System.out.println("Simulations differ in register " + CPUConstants.registerName(register) + ": " + 
                         config.tokenizer.toHex(z801.getRegisterValue(register), 2) + " != " +
                         config.tokenizer.toHex(z802.getRegisterValue(register), 2));
+                System.out.println("Pattern addresses: " + config.tokenizer.toHex(startAddress, 4) + " - " + config.tokenizer.toHex(patternLastAddress, 4));
+                System.out.println("Replacement addresses: " + config.tokenizer.toHex(startAddress, 4) + " - " + config.tokenizer.toHex(replacementLastAddress, 4));
+                showInstantiatedProgram("pattern:", p.pattern, match);
+                showInstantiatedProgram("replacement:", p.replacement, match);
                 return false;
             }
         }
@@ -191,12 +196,26 @@ public class PatternValidityCheck {
                     System.out.println("Simulations differ in memory address " + config.tokenizer.toHex(i, 4));
                     System.out.println("Pattern addresses: " + config.tokenizer.toHex(startAddress, 4) + " - " + config.tokenizer.toHex(patternLastAddress, 4));
                     System.out.println("Replacement addresses: " + config.tokenizer.toHex(startAddress, 4) + " - " + config.tokenizer.toHex(replacementLastAddress, 4));
+                    showInstantiatedProgram("pattern:", p.pattern, match);
+                    showInstantiatedProgram("replacement:", p.replacement, match);
                     return false;
                 }
             }
         }
                 
         return true;
+    }
+    
+    
+    private void showInstantiatedProgram(String name, List<CPUOpPattern> l, 
+                                PatternMatch match) {
+        System.out.println(name);
+        for(CPUOpPattern opp:l) {
+            if (!opp.wildcard) {
+                CPUOp op = opp.instantiate(match, null, config);
+                System.out.println("    " + op);
+            }
+        }
     }
     
     
