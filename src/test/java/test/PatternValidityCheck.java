@@ -17,6 +17,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import util.microprocessor.PlainZ80IO;
 import util.microprocessor.PlainZ80Memory;
+import util.microprocessor.ProcessorException;
 import util.microprocessor.Z80.CPUConfig;
 import util.microprocessor.Z80.CPUConstants;
 import util.microprocessor.Z80.Z80Core;
@@ -41,14 +42,15 @@ public class PatternValidityCheck {
         r = new Random();        
     }
 
-//    @Test public void test2() throws Exception { test("data/pbo-patterns.txt", "cp02ora", false); }
-//    @Test public void test3() throws Exception { test("data/pbo-patterns.txt", "cp12deca", false); }
+    @Test public void test2() throws Exception { test("data/pbo-patterns.txt", "cp02ora", false); }
+    @Test public void test3() throws Exception { test("data/pbo-patterns.txt", "cp12deca", false); }
 
     // These ones are commented out by default as tests with "checkMemory = true" are slow 
 //    @Test public void test100() throws Exception { test("data/pbo-patterns.txt", "sdcc16bitadd", true); }
 //    @Test public void test101() throws Exception { test("data/pbo-patterns.txt", "sdcc16bitcp", true); }
+//    @Test public void test102() throws Exception { test("data/pbo-patterns.txt", "sdccshiftr2", true); }
     
-//    @Test public void testSpeed1() throws Exception { test("data/pbo-patterns-speed.txt", "push2ld", false); }
+    @Test public void testSpeed1() throws Exception { test("data/pbo-patterns-speed.txt", "push2ld", false); }
 
     private void test(String patternsFile, String patternName, boolean checkMemory) throws Exception
     {
@@ -112,7 +114,7 @@ public class PatternValidityCheck {
     {
         // randomize the start address from a range:
         int minStartAddress = 0x0000;
-        int maxStartAddress = 0xF000;
+        int maxStartAddress = 0x0f00;
         int maxStackSize = 0x0100;
         
         int startAddress = minStartAddress + r.nextInt(maxStartAddress - minStartAddress);
@@ -121,7 +123,7 @@ public class PatternValidityCheck {
         PatternMatch match = new PatternMatch(p, null);
         for(String parameter:parameters) {            
             // give it a random value:
-            int v = r.nextInt(0x10000);
+            int v = r.nextInt(0xf000)+0x1000;   // prevent constants from having the same range as where the code is, just in case
             match.addVariableMatch(parameter, Expression.constantExpression(v, config));            
 //            System.out.println("parameter " + parameter + " = " + v);
         }
@@ -224,7 +226,7 @@ public class PatternValidityCheck {
                                 int startAddress,
                                 Z80Core z80,
                                 PlainZ80Memory memory,
-                                CodeBase code) throws Exception {
+                                CodeBase code) throws ProcessorException {
         List<Integer> opAddresses = new ArrayList<>();
         int currentAddress = startAddress;
 //        System.out.println("--------");

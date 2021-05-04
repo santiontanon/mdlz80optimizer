@@ -19,7 +19,13 @@ AND (HL)	8	A6	1	A,HL			HL	A	S,Z,H,P/V,N,C			true
 AND r	5	A0+r	1	A,r				A	S,Z,H,P/V,N,C			true
 CCF	5	3F	1		C				C,N,H			true
 CP (HL)	8	BE	1	A,HL			HL		S,Z,H,P/V,N,C			true
-CP r	5	B8+r	1	A,r					S,Z,H,P/V,N,C			true
+CP A	5	B8+7	1						S,Z,H,P/V,N,C			true
+CP B	5	B8+0	1	A,B					S,Z,H,P/V,N,C			true
+CP C	5	B8+1	1	A,C					S,Z,H,P/V,N,C			true
+CP D	5	B8+2	1	A,D					S,Z,H,P/V,N,C			true
+CP E	5	B8+3	1	A,E					S,Z,H,P/V,N,C			true
+CP H	5	B8+4	1	A,H					S,Z,H,P/V,N,C			true
+CP L	5	B8+5	1	A,L					S,Z,H,P/V,N,C			true
 CPL	5	2F	1	A				A	H,N			true
 DAA	5	27	1	A	H,N,C				S,Z,H,P/V,C			true
 DEC (HL)	12	35	1	HL			HL		S,Z,H,P/V,N		HL	true
@@ -443,7 +449,13 @@ EX AF,AF	5	8	1	AF				AF				false
 SBC (IX+o)	21	DD 9E o	3	A,IX	C		IX+o	A	S,Z,H,P/V,N,C			false
 SBC (IY+o)	21	FD 9E o	3	A,IY	C		IY+o	A	S,Z,H,P/V,N,C			false
 CP A, (HL)	8	BE	1	A,HL			HL		S,Z,H,P/V,N,C			false
-CP A, r	5	B8+r	1	A,r					S,Z,H,P/V,N,C			false
+CP A, A	5	B8+7	1						S,Z,H,P/V,N,C			false
+CP A, B	5	B8+0	1	A,B					S,Z,H,P/V,N,C			false
+CP A, C	5	B8+1	1	A,C					S,Z,H,P/V,N,C			false
+CP A, D	5	B8+2	1	A,D					S,Z,H,P/V,N,C			false
+CP A, E	5	B8+3	1	A,E					S,Z,H,P/V,N,C			false
+CP A, H	5	B8+4	1	A,H					S,Z,H,P/V,N,C			false
+CP A, L	5	B8+5	1	A,L					S,Z,H,P/V,N,C			false
 XOR A, (HL)	8	AE	1	A,HL			HL	A	S,Z,H,P/V,N,C			false
 XOR A, A	5	A8+7	1					A	S,Z,H,P/V,N,C			false
 XOR A, B	5	A8+0	1	A,B				A	S,Z,H,P/V,N,C			false

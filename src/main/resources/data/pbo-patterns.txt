@@ -1593,7 +1593,7 @@ regsNotUsedAfter(8,A,HL,DE,?regixiy)
 flagsNotUsedAfter(8,S,Z,H,P/V,C)
 
 ; SDCC-specific pattern
-pattern: Replace 0: ld hl, ?const1; ld ?regixiy, ?const2; ld a, (?regixiy); sub a, (hl); ld a, (?regixiy+1); inc hl; sbc a, (hl) with ld de, (?const1); ld hl, (?const2); sbc hl, de
+pattern: Replace ld hl, ?const1; ld ?regixiy, ?const2; ld a, (?regixiy); sub a, (hl); ld a, (?regixiy+1); inc hl; sbc a, (hl) with ld de, (?const1); ld hl, (?const2); sbc hl, de
 name: sdcc16bitcp
 0: ld hl, ?const1
 1: ld ?regixiy, ?const2
@@ -1610,3 +1610,57 @@ constraints:
 in(?regixiy,IX,IY)
 regsNotUsedAfter(6,A,DE,HL,?regixiy)
 flagsNotUsedAfter(6,S,Z,H)
+
+; SDCC-specific pattern
+pattern: Replace ld a,(?const1); ld (?const2),a; ld a,(?const3); ld ?regixiy,?const2; ld (?regixiy+1),a; sra (?regixiy+1); rr (?regixiy); sra (?regixiy+1); rr (?regixiy); sra (?regixiy+1); rr (?regixiy) with ld hl,(?const1); sra h; rr l; sra h; rr l; sra h; rr l; ld (?const2),hl
+name: sdccshiftr2
+pattern:
+0: ld a,(?const1)
+1: ld (?const2),a
+2: ld a,(?const3)
+3: ld ?regixiy,?const2
+4: ld (?regixiy+1),a
+5: sra (?regixiy+1)
+6: rr (?regixiy)
+7: sra (?regixiy+1)
+8: rr (?regixiy)
+replacement:
+0: ld hl,(?const1)
+1: sra h
+2: rr l
+3: sra h
+4: rr l
+5: ld (?const2),hl
+constraints:
+equal(?const3,?const1+1)
+in(?regixiy,IX,IY)
+regsNotUsedAfter(8,?regixiy,HL,A)
+
+; SDCC-specific pattern
+pattern: Replace ld a,(?const1); ld (?const2),a; ld a,(?const3); ld ?regixiy,?const2; ld (?regixiy+1),a; sra (?regixiy+1); rr (?regixiy); sra (?regixiy+1); rr (?regixiy); sra (?regixiy+1); rr (?regixiy) with ld hl,(?const1); sra h; rr l; sra h; rr l; sra h; rr l; ld (?const2),hl
+name: sdccshiftr3
+pattern:
+0: ld a,(?const1)
+1: ld (?const2),a
+2: ld a,(?const3)
+3: ld ?regixiy,?const2
+4: ld (?regixiy+1),a
+5: sra (?regixiy+1)
+6: rr (?regixiy)
+7: sra (?regixiy+1)
+8: rr (?regixiy)
+9: sra (?regixiy+1)
+10: rr (?regixiy)
+replacement:
+0: ld hl,(?const1)
+1: sra h
+2: rr l
+3: sra h
+4: rr l
+5: sra h
+6: rr l
+7: ld (?const2),hl
+constraints:
+equal(?const3,?const1+1)
+in(?regixiy,IX,IY)
+regsNotUsedAfter(10,?regixiy,HL,A)

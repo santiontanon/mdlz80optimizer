@@ -13,7 +13,7 @@ import org.apache.commons.lang3.tuple.Pair;
  *
  * @author santi
  */
-public class PlainZ80Memory implements IMemory {
+public class PlainZ80Memory implements IMemory {    
     public final int[] memory = new int[0x10000];
     public List<Pair<Integer, Integer>> writeProtections = new ArrayList<>();
 
@@ -57,5 +57,5 @@ public class PlainZ80Memory implements IMemory {
     public void clearWriteProtections()
     {
         writeProtections.clear();
-    }
+    }    
 }
