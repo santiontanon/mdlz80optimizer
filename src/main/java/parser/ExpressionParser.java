@@ -68,6 +68,7 @@ public class ExpressionParser {
     public boolean sjasmPlusCurlyBracketExpressions = false;
     
     public boolean allowFloatingPointNumbers = false;
+    public boolean binaryDigitsCanContainSpaces = false;
 
     // This is used by the macro80 dialect:
     public boolean doubleHashToMarkExternalSymbols = false;
@@ -361,8 +362,35 @@ public class ExpressionParser {
         
         if (tokens.size() >= 1 &&
             config.tokenizer.isInteger(tokens.get(0))) {
-            // integer constant:
             String token = tokens.remove(0);
+            if (binaryDigitsCanContainSpaces) {
+                if (config.tokenizer.isBinary(token)) {
+                    String token2 = token;
+                    int i = 0;
+                    while(tokens.size()>i && config.tokenizer.isBinary(tokens.get(i))) {
+                        token2 += tokens.get(i);
+                        i++;
+                    }
+                    if (token2.toLowerCase().endsWith("b") ||
+                        (tokens.size()>i && tokens.get(i).toLowerCase().endsWith("b"))) {
+                        if (!token2.toLowerCase().endsWith("b")) {
+                            token2 += tokens.get(i);
+                            i++;
+                        }
+                        // binary token:
+                        while(i>0) {
+                            tokens.remove(0);
+                            i--;
+                        }
+                        if (token2.length()<=9) {
+                            return Expression.constantExpression(config.tokenizer.parseBinary(token2), Expression.RENDER_AS_8BITBIN, config);
+                        } else {
+                            return Expression.constantExpression(config.tokenizer.parseBinary(token2), Expression.RENDER_AS_16BITBIN, config);
+                        }                        
+                    }
+                }
+            }
+            // integer constant:
             return Expression.constantExpression(Integer.parseInt(token), config);
         }
         if (allowFloatingPointNumbers && tokens.size() >= 1 &&
@@ -644,7 +672,16 @@ public class ExpressionParser {
             if (config.tokenizer.isBinary(token)) {
                 tokens.remove(0);
                 tokens.remove(0);
-                return Expression.constantExpression(config.tokenizer.parseBinary(token), config);
+                if (binaryDigitsCanContainSpaces) {
+                    while(!tokens.isEmpty() && config.tokenizer.isBinary(tokens.get(0))) {
+                        token += tokens.remove(0);
+                    }
+                }
+                if (token.length()<=9) {
+                    return Expression.constantExpression(config.tokenizer.parseBinary(token), Expression.RENDER_AS_8BITBIN, config);
+                } else {
+                    return Expression.constantExpression(config.tokenizer.parseBinary(token), Expression.RENDER_AS_16BITBIN, config);
+                }                
             }
         }
         if (tokens.size() >= 2 &&

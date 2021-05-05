@@ -42,12 +42,14 @@ public class TniAsmDialect implements Dialect {
         config.relativizeIncbinPaths = false;
 
         config.preProcessor.macroSynonyms.put("ifexist", config.preProcessor.MACRO_IFDEF);
-
+        
         config.lineParser.addKeywordSynonym("rb", config.lineParser.KEYWORD_DS);
         
         config.lineParser.defineSpaceVirtualByDefault = true;
+        config.lineParser.allowtniASMMultipleInstructionsPerLine = true;
         config.caseSensitiveSymbols = false;
         
+        config.expressionParser.binaryDigitsCanContainSpaces = true;
         config.expressionParser.OP_BIT_NEGATION = "not";
         config.expressionParser.OP_BIT_OR = "or";
         config.expressionParser.OP_BIT_AND = "and";

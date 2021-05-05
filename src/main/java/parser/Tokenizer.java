@@ -409,13 +409,13 @@ public class Tokenizer {
     {
         int value = 0;
         String allowed = "01";
-        
+                
         for(int i = 0;i<token.length();i++) {
             char c = (char)token.charAt(i);
             c = Character.toLowerCase(c);
             int idx = allowed.indexOf(c);
             if (idx == -1) {
-                if (i == token.length()-1 && c == 'b') return value;
+                if (i>0 && i == token.length()-1 && c == 'b') return value;
                 return null;
             }
             value = value * 2 + idx;

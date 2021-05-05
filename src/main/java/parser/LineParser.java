@@ -69,6 +69,7 @@ public class LineParser {
     public boolean sdccStyleOffsets = false;
     
     public boolean allowColonSeparatedInstructions = false;
+    public boolean allowtniASMMultipleInstructionsPerLine = false;
     
     public List<String> tokensPreventingTextMacroExpansion = new ArrayList<>();
     
@@ -326,7 +327,7 @@ public class LineParser {
                 }
             }
         } else {
-            if (parseRestofTheLine(tokens, l, sl, s, previous, source, code)) {
+            if (parseRestofTheLineInternal(tokens, l, sl, s, previous, false, source, code)) {
                 return true;
             }
         }
@@ -515,6 +516,15 @@ public class LineParser {
             List<CodeStatement> l, 
             SourceLine sl, CodeStatement s, CodeStatement previous, 
             SourceFile source, CodeBase code) {
+        return parseRestofTheLineInternal(tokens, l, sl, s, previous, true, source, code);
+    }
+    
+    
+    public boolean parseRestofTheLineInternal(List<String> tokens,
+            List<CodeStatement> l, 
+            SourceLine sl, CodeStatement s, CodeStatement previous, 
+            boolean allowMoreInstructions,
+            SourceFile source, CodeBase code) {
         
         if (allowColonSeparatedInstructions) {
             if (!tokens.isEmpty() && tokens.get(0).equals(":")) {
@@ -525,7 +535,14 @@ public class LineParser {
                 return parseInternal(tokens, l, sl, s2, null, source, code, false);
             }
         }
-        
+        if (allowtniASMMultipleInstructionsPerLine && allowMoreInstructions) {
+            if (!tokens.isEmpty() && !config.tokenizer.isSingleLineComment(tokens.get(0))) {
+                CodeStatement s2 = new CodeStatement(CodeStatement.STATEMENT_NONE, sl, source, config);
+                if (labelPrefix != null) s2.labelPrefix = labelPrefix;
+                l.add(s2);
+                return parseInternal(tokens, l, sl, s2, null, source, code, true);
+            }
+        }        
         
         if (tokens.isEmpty()) {
             return true;
@@ -543,6 +560,7 @@ public class LineParser {
         config.error("parseRestofTheLine: Cannot parse line " + sl + "  left over tokens: " + tokens);
         return false;
     }
+    
 
     public boolean parseOrg(List<String> tokens, List<CodeStatement> l, 
             SourceLine sl,
@@ -897,7 +915,14 @@ public class LineParser {
         
         opName = tokens.remove(0);
         List<Expression> arguments = new ArrayList<>();
-
+        
+        List<String> tokensBacktrack = null;
+        if (allowtniASMMultipleInstructionsPerLine &&
+            config.opParser.isOpName(opName, 0)) {
+            tokensBacktrack = new ArrayList<>();
+            tokensBacktrack.addAll(tokens);
+        }
+        
         while (!tokens.isEmpty()) {
             if (config.tokenizer.isSingleLineComment(tokens.get(0)) ||
                 (allowColonSeparatedInstructions && tokens.get(0).equals(":"))) {
@@ -927,6 +952,14 @@ public class LineParser {
                 exp = config.expressionParser.parse(tokens, s, previous, code);
             }
             if (exp == null) {
+                if (tokensBacktrack != null) {
+                    // Try to see if it's an instruction without arguments, followed by another:
+                    arguments.clear();
+                    tokens.clear();
+                    tokens.addAll(tokensBacktrack);
+                    tokensBacktrack = null;
+                    break;
+                }
                 config.error("parseCPUOp: Cannot parse line " + sl);
                 return false;
             }
@@ -957,8 +990,22 @@ public class LineParser {
 
         List<CPUOp> op_l = config.opParser.parseOp(opName, arguments, s, previous, code);
         if (op_l == null) {
-            config.error("No op spec matches with operator in line " + sl + ", arguments: " + arguments);
-            return false;
+            
+            if (tokensBacktrack != null) {
+                // Try to see if it's an instruction without arguments, followed by another:
+                arguments.clear();
+                tokens.clear();
+                tokens.addAll(tokensBacktrack);
+                tokensBacktrack = null;
+                op_l = config.opParser.parseOp(opName, arguments, s, previous, code);
+                if (op_l == null) {
+                    config.error("No op spec matches with operator in line " + sl + ", arguments: " + arguments);
+                    return false;
+                }
+            } else {            
+                config.error("No op spec matches with operator in line " + sl + ", arguments: " + arguments);
+                return false;
+            }
         }
 
         

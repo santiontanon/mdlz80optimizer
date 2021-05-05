@@ -8,7 +8,7 @@ MainLoop:
    add a, a
    call z, ReloadByte
    jr nc, CASE10
-   ld bc, 224
+   ld bc, 11100000b
    add a, a
    call z, ReloadByte
    jr nc, CASE110

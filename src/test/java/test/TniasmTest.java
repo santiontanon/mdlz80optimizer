@@ -33,6 +33,10 @@ public class TniasmTest {
 
     @Test public void test1() throws IOException { Assert.assertTrue(test("data/generationtests/tniasm-ifdef.asm",
                                                                           "data/generationtests/tniasm-ifdef-expected.asm")); }
+    @Test public void test2() throws IOException { Assert.assertTrue(test("data/generationtests/tniasm-constants.asm",
+                                                                          "data/generationtests/tniasm-constants-expected.asm")); }
+    @Test public void test3() throws IOException { Assert.assertTrue(test("data/generationtests/tniasm-multiple.asm",
+                                                                          "data/generationtests/tniasm-multiple-expected.asm")); }
 
     private boolean test(String inputFile, String expectedOutputFile) throws IOException
     {
