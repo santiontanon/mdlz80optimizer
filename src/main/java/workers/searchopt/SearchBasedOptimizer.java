@@ -10,6 +10,7 @@ import code.CPUOp;
 import code.CPUOpDependency;
 import code.CodeBase;
 import code.CodeStatement;
+import code.Expression;
 import code.SourceFile;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -63,7 +64,15 @@ public class SearchBasedOptimizer implements MDLWorker {
     int maxSimulationTime;
     Specification spec = null;
     CodeBase code = null;
-    List<CPUOp> currentOps = null;
+    
+    // Store the current program, and additional info to create jumps afterwards:
+    CPUOp currentOps[] = null;
+    int currentOpsAddresses[] = null;
+    int currentAbsoluteJumps_n = 0;
+    int currentAbsoluteJumps[] = null;  // stores the indexes of "jp"s
+    int currentRelativeJumps_n = 0;
+    int currentRelativeJumps[] = null;  // stores the indexes of "jr"s or "djnz"s
+    
     // The "dependencies" array, contains the set of dependencies (Registers/flags) that
     // have already been set by previous instructions:
     int nDependencies = 0;
@@ -272,7 +281,12 @@ public class SearchBasedOptimizer implements MDLWorker {
         
         // Run the search process to generate code:
         // Search via iterative deepening:
-        currentOps = new ArrayList<>();
+        currentOps = new CPUOp[spec.maxOps];
+        currentOpsAddresses = new int[spec.maxOps+1];
+        currentAbsoluteJumps_n = 0;
+        currentAbsoluteJumps = new int[spec.maxOps];
+        currentRelativeJumps_n = 0;
+        currentRelativeJumps = new int[spec.maxOps];
         
 //        currentDependencies = 
         currentDependencies = new boolean[spec.maxOps+1][nDependencies];
@@ -432,6 +446,11 @@ public class SearchBasedOptimizer implements MDLWorker {
             spec.allowedOps.contains("sfc")) {
             if (!precomputeCarry(candidates, spec, allDependencies, code)) return null;
         }
+        if (spec.allowedOps.contains("jp") ||
+            spec.allowedOps.contains("jr") ||
+            spec.allowedOps.contains("djnz")) {
+            if (!precomputeJumps(candidates, spec, allDependencies, code)) return null;
+        }
         
         return candidates;
     }
@@ -448,7 +467,7 @@ public class SearchBasedOptimizer implements MDLWorker {
             return false;
         }
         CodeStatement s = l.get(0);
-        SBOCandidate candidate = new SBOCandidate(s.op, allDependencies, code, config);
+        SBOCandidate candidate = new SBOCandidate(s, allDependencies, code, config);
         if (candidate.bytes == null) return false;
         candidates.add(candidate);
         return true;
@@ -909,6 +928,31 @@ public class SearchBasedOptimizer implements MDLWorker {
         }
         return true;
     }   
+    
+    
+    boolean precomputeJumps(List<SBOCandidate> candidates, Specification spec, 
+                            List<CPUOpDependency> allDependencies, CodeBase code)
+    {
+        if (spec.allowedOps.contains("jp")) {
+            for(String flag:new String[]{"", "z,", "po,", "pe,", "p,", "nz,", "nc,", "m,", "c,"}) {
+                String line = "jp " + flag + "$";
+                if (!precomputeOp(line, candidates, allDependencies, code)) return false;
+            }
+            if (!precomputeOp("jp hl", candidates, allDependencies, code)) return false;
+            if (!precomputeOp("jp ix", candidates, allDependencies, code)) return false;
+            if (!precomputeOp("jp iy", candidates, allDependencies, code)) return false;
+        }
+        if (spec.allowedOps.contains("jr")) {
+            for(String flag:new String[]{"", "z,", "nz,", "nc,", "c,"}) {
+                String line = "jr " + flag + "$";
+                if (!precomputeOp(line, candidates, allDependencies, code)) return false;
+            }
+        }
+        if (spec.allowedOps.contains("djnz")) {
+            if (!precomputeOp("djnz $", candidates, allDependencies, code)) return false;
+        }
+        return true;
+    }
             
     
     boolean sequenceMakesSense(SBOCandidate op1, SBOCandidate op2, CodeBase code)
@@ -955,7 +999,7 @@ public class SearchBasedOptimizer implements MDLWorker {
                              List<SBOCandidate> candidateOps) throws Exception
     {
         if (depth >= codeMaxOps || codeAddress >= codeMaxAddress) {
-            return evaluateSolution(codeAddress);
+            return evaluateSolution(depth, 0, 0, codeAddress);
         } else {
             boolean found = false;
             // the very last op must contribute to the goal:
@@ -983,12 +1027,30 @@ public class SearchBasedOptimizer implements MDLWorker {
                 if (!dependenciesSatisfied) continue;
                                     
                 System.arraycopy(candidate.bytes, 0, z80Memory.memory, codeAddress, candidate.bytes.length);
-                currentOps.add(candidate.op);
-                if (depthFirstSearch(depth+1, nextAddress, candidate.potentialFollowUps)) {
-                    found = true;
-                    // we keep going, in case we find a solution of the same size, but faster
+                currentOps[depth] = candidate.op;
+                currentOpsAddresses[depth] = codeAddress;
+                if (candidate.isAbsoluteJump) {
+                    currentAbsoluteJumps[currentAbsoluteJumps_n] = depth;
+                    currentAbsoluteJumps_n++;
+                    if (depthFirstSearch(depth+1, nextAddress, candidate.potentialFollowUps)) {
+                        found = true;
+                        // we keep going, in case we find a solution of the same size, but faster
+                    }
+                    currentAbsoluteJumps_n--;
+                } else if (candidate.isRelativeJump) {
+                    currentRelativeJumps[currentRelativeJumps_n] = depth;
+                    currentRelativeJumps_n++;
+                    if (depthFirstSearch(depth+1, nextAddress, candidate.potentialFollowUps)) {
+                        found = true;
+                        // we keep going, in case we find a solution of the same size, but faster
+                    }
+                    currentRelativeJumps_n--;
+                } else {
+                    if (depthFirstSearch(depth+1, nextAddress, candidate.potentialFollowUps)) {
+                        found = true;
+                        // we keep going, in case we find a solution of the same size, but faster
+                    }
                 }
-                currentOps.remove(currentOps.size()-1);
             }
             return found;
         }
@@ -999,7 +1061,7 @@ public class SearchBasedOptimizer implements MDLWorker {
                                          List<SBOCandidate> candidateOps) throws Exception
     {
         if (depth >= codeMaxOps || codeAddress >= codeMaxAddress || currentTime >= maxSimulationTime) {
-            return evaluateSolution(codeAddress);
+            return evaluateSolution(depth, 0, 0, codeAddress);
         } else {
             boolean found = false;
             // the very last op must contribute to the goal:
@@ -1029,29 +1091,91 @@ public class SearchBasedOptimizer implements MDLWorker {
                 if (!dependenciesSatisfied) continue;
                                
                 System.arraycopy(candidate.bytes, 0, z80Memory.memory, codeAddress, candidate.bytes.length);
-                currentOps.add(candidate.op);
-                if (depthFirstSearch_timeBounded(depth+1, 
-                                                 nextTime, 
-                                                 nextAddress,
-                                                 candidate.potentialFollowUps)) {
-                    found = true;
-                    // we keep going, in case we find a solution of the same speed, but smaller
+                currentOps[depth] = candidate.op;
+                currentOpsAddresses[depth] = codeAddress;
+                if (candidate.isAbsoluteJump) {
+                    currentAbsoluteJumps[currentAbsoluteJumps_n] = depth;
+                    currentAbsoluteJumps_n++;
+                    if (depthFirstSearch_timeBounded(depth+1, 
+                                                     nextTime, 
+                                                     nextAddress,
+                                                     candidate.potentialFollowUps)) {
+                        found = true;
+                        // we keep going, in case we find a solution of the same speed, but smaller
+                    }
+                    currentAbsoluteJumps_n--;
+                } else if (candidate.isRelativeJump) {
+                    currentRelativeJumps[currentRelativeJumps_n] = depth;
+                    currentRelativeJumps_n++;
+                    if (depthFirstSearch_timeBounded(depth+1, 
+                                                     nextTime, 
+                                                     nextAddress,
+                                                     candidate.potentialFollowUps)) {
+                        found = true;
+                        // we keep going, in case we find a solution of the same speed, but smaller
+                    }
+                    currentRelativeJumps_n--;
+                } else {
+                    if (depthFirstSearch_timeBounded(depth+1, 
+                                                     nextTime, 
+                                                     nextAddress,
+                                                     candidate.potentialFollowUps)) {
+                        found = true;
+                        // we keep going, in case we find a solution of the same speed, but smaller
+                    }
                 }
-                currentOps.remove(currentOps.size()-1);
             }
             return found;
         }
     }    
     
     
-    final boolean evaluateSolution(int breakPoint)
+    final boolean evaluateSolution(int depth, int nextAbsoluteJump, int nextRelativeJump, int breakPoint)
     {
+        if (currentAbsoluteJumps_n > nextAbsoluteJump) {
+            currentOpsAddresses[depth] = breakPoint;
+            int jumpIndex = currentAbsoluteJumps[nextRelativeJump];
+            int start = 0;
+            if (!spec.allowLoops) {
+                start = jumpIndex+1;
+            }
+            for(int j = start;j<=depth;j++) {
+                if (j == jumpIndex || j == jumpIndex + 1) continue;
+                // set the address (bytes and op):
+                currentOps[jumpIndex].args.set(currentOps[jumpIndex].args.size()-1,
+                        Expression.constantExpression(currentOpsAddresses[j], config));
+                z80Memory.writeWord(currentOpsAddresses[jumpIndex]+1, 
+                                    currentOpsAddresses[j]);
+                if (evaluateSolution(depth, nextAbsoluteJump+1, nextRelativeJump, breakPoint)) {
+                    return true;
+                }
+            }
+            return false;
+        } else if (currentRelativeJumps_n > nextRelativeJump) {
+            currentOpsAddresses[depth] = breakPoint;
+            int jumpIndex = currentRelativeJumps[nextRelativeJump];
+            int start = 0;
+            if (!spec.allowLoops) {
+                start = jumpIndex+1;
+            }
+            for(int j = start;j<=depth;j++) {
+                if (j == jumpIndex || j == jumpIndex + 1) continue;
+                // set the address (bytes and op):
+                currentOps[jumpIndex].args.set(currentOps[jumpIndex].args.size()-1,
+                        Expression.constantExpression(currentOpsAddresses[j], config));
+                z80Memory.writeByte(currentOpsAddresses[jumpIndex]+1, 
+                                    currentOpsAddresses[j] - currentOpsAddresses[jumpIndex+1]);
+//                System.out.println("Relative Jump from " + jumpIndex + " to " + j + " (depth " + depth + ")");
+//                System.out.println("Address " + currentOpsAddresses[jumpIndex] + " to " + currentOpsAddresses[j] + " (offset: "+(currentOpsAddresses[j] - currentOpsAddresses[jumpIndex+1])+", breakPoint: " + breakPoint + ")");
+                if (evaluateSolution(depth, nextAbsoluteJump, nextRelativeJump+1, breakPoint)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        
         try {
             solutionsEvaluated++;
-
-    //        if (currentOps.size() == 2) {
-    //            System.out.println("" + currentOps);
-    //        }
 
             int size = breakPoint - spec.codeStartAddress;
             int time = 0;
@@ -1061,10 +1185,29 @@ public class SearchBasedOptimizer implements MDLWorker {
             }
             if (bestOps == null || 
                 size < bestSize ||
-                (size == bestSize && currentOps.size() < bestOps.size()) ||
-                (size == bestSize && currentOps.size() == bestOps.size() && time < bestTime)) {
+                (size == bestSize && depth < bestOps.size()) ||
+                (size == bestSize && depth == bestOps.size() && time < bestTime)) {
                 bestOps = new ArrayList<>();
-                bestOps.addAll(currentOps);
+                for(int i = 0;i<depth;i++) {
+                    CPUOp op = currentOps[i];
+                    if (op.isJump()) {
+                        // relativize the jump to the current address (we know it must be an integer constant):
+                        int offset = op.args.get(op.args.size()-1).integerConstant -  currentOpsAddresses[i];
+                        op = new CPUOp(op);
+                        if (offset >= 0) {
+                            op.args.set(op.args.size()-1, 
+                                    Expression.operatorExpression(Expression.EXPRESSION_SUM, 
+                                            Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, null, code, config), 
+                                            Expression.constantExpression(offset, config), config));
+                        } else {
+                            op.args.set(op.args.size()-1, 
+                                    Expression.operatorExpression(Expression.EXPRESSION_SUB, 
+                                            Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, null, code, config), 
+                                            Expression.constantExpression(-offset, config), config));
+                        }
+                    }
+                    bestOps.add(op);
+                }
                 bestSize = size;
                 bestTime = time;
 
@@ -1087,7 +1230,7 @@ public class SearchBasedOptimizer implements MDLWorker {
     // return -1 is solution fails
     // return time it takes if solution succeeds
     // "i" is the index of the 
-    int evaluateSolutionInternal(int breakPoint, PrecomputedTestCase testCase) throws ProcessorException
+    final int evaluateSolutionInternal(int breakPoint, PrecomputedTestCase testCase) throws ProcessorException
     {
         // evaluate solution:
         z80.shallowReset();

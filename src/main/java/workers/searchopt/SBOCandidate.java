@@ -9,6 +9,7 @@ import cl.MDLConfig;
 import code.CPUOp;
 import code.CPUOpDependency;
 import code.CodeBase;
+import code.CodeStatement;
 import java.util.List;
 
 /**
@@ -23,17 +24,27 @@ public class SBOCandidate {
     public boolean inputDependencies[] = null;
     public boolean outputDependencies[] = null;
     public boolean directContributionToGoal = false;
+    public boolean isAbsoluteJump = false;
+    public boolean isRelativeJump = false;
     
     // Not all ops make sense after a certain op, (e.g. "ld a,b; ld b,a"). Hence,
     // the set of ops that make sense after another op are precalculated, and stored here:
     public List<SBOCandidate> potentialFollowUps = null;
     
-    public SBOCandidate(CPUOp a_op, List<CPUOpDependency> allDependencies, CodeBase code, MDLConfig config)
+    public SBOCandidate(CodeStatement a_s, List<CPUOpDependency> allDependencies, CodeBase code, MDLConfig config)
     {
-        op = a_op;
+        op = a_s.op;
+        
+        if (op.isJump()) {
+            if (op.isRelativeJump()) {
+                isRelativeJump = true;
+            } else {
+                isAbsoluteJump = true;
+            }
+        }
         
         // precompile it to bytes:
-        List<Integer> tmp = op.assembleToBytes(null, code, config);
+        List<Integer> tmp = op.assembleToBytes(a_s, code, config);
         if (tmp == null) {
             config.error("Cannot assemble CPUOp to bytes: " + op);
         } else {

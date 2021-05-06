@@ -239,6 +239,10 @@ public class BinaryGenerator implements MDLWorker {
                         config.error("Cannot evaluate " + s.space + " in " + s.sl);
                         return null;
                     }
+                    if (amount < 0) {
+                        config.error("Negative space in " + s.sl);
+                        return null;
+                    }
                     byte data[] = new byte[amount];
                     for(int i = 0;i<amount;i++) {
                         data[i] = (byte)(int)value;

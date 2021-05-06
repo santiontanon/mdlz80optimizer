@@ -380,7 +380,7 @@ public class CPUOp {
                     }
                 }
                 if (n == null) {
-                    if (!silent) config.error("Unable to convert " + this + " to bytes! no numeric constants in the op!");
+                    if (!silent) config.error("Unable to convert " + this + " to bytes! no 8bit numeric constants in the op!");
                     return null;
                 }
                 data.add(n & 0xff);
@@ -400,10 +400,14 @@ public class CPUOp {
                             return null;
                         }
                         nn = arg.evaluateToInteger(s, code, true);
+                        if (nn == null) {
+                            if (!silent) config.error("Unable to convert " + this + " to bytes! Cannot evaluate " + arg);
+                            return null;
+                        }
                     }
                 }
                 if (nn == null) {
-                    if (!silent) config.error("Unable to convert " + this + " to bytes! no numeric constants in the op!");
+                    if (!silent) config.error("Unable to convert " + this + " to bytes! no 16bit numeric constants in the op! Arguments: " + args);
                     return null;
                 }
                 if (nn_state == 0) {

@@ -61,6 +61,7 @@ public class Specification {
     List<String> allowedRegisters = new ArrayList<>();
     boolean allowRamUse = false;
     boolean allowGhostRegisters = false;
+    boolean allowLoops = false;
     
     public List<Integer> allowed8bitConstants = new ArrayList<>();
     public List<Integer> allowed16bitConstants = new ArrayList<>();
