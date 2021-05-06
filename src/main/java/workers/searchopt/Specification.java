@@ -48,6 +48,24 @@ public class Specification {
             }
             return true;
         }        
+
+        public boolean checkGoalStateDebug(Z80Core z80, MDLConfig config)
+        {
+            for(int i = 0;i<goalRegisters.length;i++) {
+                if (z80.getRegisterValue(goalRegisters[i]) != goalRegisterValues[i]) {
+                    config.info("Register mismatch: " + CPUConstants.registerName(goalRegisters[i]) + " != " + goalRegisterValues[i]);
+                    return false;
+                }
+            }
+            for(int i = 0;i<goalFlags.length;i++) {
+                 if (z80.getFlagValue(goalFlags[i]) != goalFlagValues[i]) {
+                    config.info("Flag mismatch: " + goalFlags[i] + " != " + goalFlagValues[i]);
+                    return false;
+                 }
+            }
+            return true;
+        }        
+
     }
     
     int codeStartAddress = 0x4000;
@@ -55,6 +73,7 @@ public class Specification {
     int maxSizeInBytes = 256;
     int maxOps = 4;
     int searchType = SearchBasedOptimizer.SEARCH_ID_OPS;
+    int searchTimeCalculation = SearchBasedOptimizer.SEARCH_TIME_AVERAGE;
     
     // instruction set:
     List<String> allowedOps = new ArrayList<>();

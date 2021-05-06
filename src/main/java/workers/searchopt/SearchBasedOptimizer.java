@@ -38,6 +38,10 @@ public class SearchBasedOptimizer implements MDLWorker {
     public static final int SEARCH_ID_BYTES = 1;  // Iterative deepening by # of bytes
     public static final int SEARCH_ID_CYCLES = 2;  // Iterative deepning by # cycles
     
+    public static final int SEARCH_TIME_WORST = 0;
+    public static final int SEARCH_TIME_BEST = 1;
+    public static final int SEARCH_TIME_AVERAGE = 2;
+    
     // randomize the register contents:
     public static RegisterNames eightBitRegistersToRandomize[] = null;
 
@@ -81,7 +85,7 @@ public class SearchBasedOptimizer implements MDLWorker {
     // best solution:
     List<CPUOp> bestOps = null;
     int bestSize = 0;
-    int bestTime = 0;
+    float bestTime = 0;
     
     
     public SearchBasedOptimizer(MDLConfig a_config)
@@ -288,7 +292,6 @@ public class SearchBasedOptimizer implements MDLWorker {
         currentRelativeJumps_n = 0;
         currentRelativeJumps = new int[spec.maxOps];
         
-//        currentDependencies = 
         currentDependencies = new boolean[spec.maxOps+1][nDependencies];
         {
             boolean initialDependencies[] = spec.getInitialDependencies(allDependencies);
@@ -383,7 +386,7 @@ public class SearchBasedOptimizer implements MDLWorker {
         OK - BIT/SET/RES
         OK - CCF/SCF
         OK - CP
-        ***- JP/JR/DJNZ
+        OK - JP/JR/DJNZ
         - PUSH/POP
         - EX/EXX
         - LDI/LDD/LDIR/LDDR
@@ -1165,8 +1168,6 @@ public class SearchBasedOptimizer implements MDLWorker {
                         Expression.constantExpression(currentOpsAddresses[j], config));
                 z80Memory.writeByte(currentOpsAddresses[jumpIndex]+1, 
                                     currentOpsAddresses[j] - currentOpsAddresses[jumpIndex+1]);
-//                System.out.println("Relative Jump from " + jumpIndex + " to " + j + " (depth " + depth + ")");
-//                System.out.println("Address " + currentOpsAddresses[jumpIndex] + " to " + currentOpsAddresses[j] + " (offset: "+(currentOpsAddresses[j] - currentOpsAddresses[jumpIndex+1])+", breakPoint: " + breakPoint + ")");
                 if (evaluateSolution(depth, nextAbsoluteJump, nextRelativeJump+1, breakPoint)) {
                     return true;
                 }
@@ -1178,10 +1179,27 @@ public class SearchBasedOptimizer implements MDLWorker {
             solutionsEvaluated++;
 
             int size = breakPoint - spec.codeStartAddress;
-            int time = 0;
+            float time = -1;
             for(int i = 0; i < numberOfRandomSolutionChecks; i++) {
-                time = evaluateSolutionInternal(breakPoint, spec.precomputedTestCases[i]);
-                if (time < 0) return false;
+                int time2 = evaluateSolutionInternal(breakPoint, spec.precomputedTestCases[i]);
+                if (time2 < 0) {
+                    return false;
+                }
+                switch(spec.searchTimeCalculation) {
+                    case SEARCH_TIME_WORST:
+                        time = Math.max(time, time2);
+                        break;
+                    case SEARCH_TIME_BEST:
+                        if (time == -1 || time2 < time) time = time2;
+                        break;
+//                    case SEARCH_TIME_AVERAGE:
+                    default:
+                        time += time2;
+                        break;
+                }
+            }
+            if (spec.searchTimeCalculation == SEARCH_TIME_AVERAGE) {
+                time /= numberOfRandomSolutionChecks;
             }
             if (bestOps == null || 
                 size < bestSize ||
