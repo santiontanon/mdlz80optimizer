@@ -136,6 +136,12 @@ public class Specification {
         allowedOps.add("bit");
         allowedOps.add("set");
         allowedOps.add("res");
+
+        allowedOps.add("cp");
+        
+        allowedOps.add("jp");
+        allowedOps.add("jr");
+        allowedOps.add("djnz");
         
         allowedRegisters.add("a");
         allowedRegisters.add("af");

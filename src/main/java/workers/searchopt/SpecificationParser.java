@@ -133,7 +133,7 @@ public class SpecificationParser {
                         tokens.remove(0);
                         tokens.remove(0);
                         if (!tokens.isEmpty() && config.tokenizer.isSingleLineComment(tokens.get(0))) {
-                            config.error("Unexpected token " + tokens.get(0) + " ine line " + line);
+                            config.error("Unexpected token " + tokens.get(0) + " in line " + line);
                             return null;
                         }
                     } else {
@@ -147,7 +147,7 @@ public class SpecificationParser {
                         tokens.remove(0);
                         tokens.remove(0);
                         if (!tokens.isEmpty() && config.tokenizer.isSingleLineComment(tokens.get(0))) {
-                            config.error("Unexpected token " + tokens.get(0) + " ine line " + line);
+                            config.error("Unexpected token " + tokens.get(0) + " in line " + line);
                             return null;
                         }
                     } else {
@@ -416,6 +416,11 @@ public class SpecificationParser {
                 case "carry":
                     spec.allowedOps.add("ccf");
                     spec.allowedOps.add("scf");
+                    break;
+                case "jump":
+                    spec.allowedOps.add("jp");
+                    spec.allowedOps.add("jr");
+                    spec.allowedOps.add("djnz");
                     break;
                 default:
                 {
