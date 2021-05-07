@@ -11,9 +11,9 @@ allowed_ops:
 allow_ram_use = false
 allowed_registers: hl, a
 initial_state:
-    HL = ?val
+    HL = ??val
 goal_state:
-    HL = ?val << 10
+    HL = ??val << 10
 ```
 
 And then call MDL like this:
@@ -37,13 +37,13 @@ The code generated acts internally as if you had loaded assembler from an input 
 
 The specification file has two mandatory fields (```initial_state:``` and ```goal_state:```), which define the program you want to generate. The rest of fields are optional and are used to control the way MDL will search for the optimal program to satisfy your specification. You can enter fields in any order you want. The fields currently supported are:
 
-- ```allowed_ops:``` This defines the set of CPU instructions that MDL is allowed to use to generate your program. You can specify them one by one by name (e.g. ```ld, add, adc, xor```), or you can specify them by groups. Currently, the following groups are defined as shortcuts: ```logic``` (```and, or, xor```), ```increment``` (```inc, dec```), ```addition``` (```add, adc, sub, sbc```), ```rotation``` (```rlc, rl, rrc, rr, rlca, rla, rrca, rra```), ```shift``` (```sla, sra, srl, sli```), ```negation``` (```cpl, neg```), and ```bits``` (```bit, set, res```). Not all instructions are supported yet. In addition to the instructions in the groups above, the only other instruction that is supported is ```ld```. The smaller the instruction set, the smaller the search space, and the faster the search. So, try to reduce the instruction set as much as possible. If no ```allowed_ops``` is specified, MDL will try to use all the instructions it knows of.
+- ```allowed_ops:``` This defines the set of CPU instructions that MDL is allowed to use to generate your program. You can specify them one by one by name (e.g. ```ld, add, adc, xor```), or you can specify them by groups. Currently, the following groups are defined as shortcuts: ```logic``` (```and, or, xor```), ```increment``` (```inc, dec```), ```addition``` (```add, adc, sub, sbc```), ```rotation``` (```rlc, rl, rrc, rr, rlca, rla, rrca, rra```), ```shift``` (```sla, sra, srl, sli```), ```negation``` (```cpl, neg```), ```bits``` (```bit, set, res```), ```carry``` (```ccf, scf```) and ```jump``` (```jp, jr, djnz```). Not all instructions are supported yet. In addition to the instructions in the groups above, the only other instructions that are supported are ```ld``` and ```cp```. The smaller the instruction set, the smaller the search space, and the faster the search. So, try to reduce the instruction set as much as possible. If no ```allowed_ops``` is specified, MDL will try to use all the instructions it knows of.
 
 - ```allowed_registers:``` This specifies the set of registers MDL can use when generating your program. Again, try to reduce as much as possible. By default, all registers are used.
 
-- ```initial_state:``` This is a list of CPU registers with the initial values they should take at the beginning of the program. You can use constants, e.g. ```a = #0f```, define parameters, like ```a = ?val```, or combine them into any expressions you want, like ```a = (?val * 2) << 3```. All parameters are assumed to be 16bit.
+- ```initial_state:``` This is a list of CPU registers with the initial values they should take at the beginning of the program. You can use constants, e.g. ```a = #0f```, define parameters, like ```a = ?val```, or combine them into any expressions you want, like ```a = (val * 2) << 3```. Parameters can be 8bit or 16bit, MDL will try to autodetect this (8bit if used to initialize an 8 bit register, and 16bit otherwise). But you can overwrite this by defining variables preceded by a question mark (```?val```) to indicate 8bit, or two question marks (```??val```) to indicate 16bit.
 
-- ```goal_state:``` This is a list of CPU registers with the expected values they should take at the end of the program. You can use constants, parameters or expressions. All the parameters used must have been defined in the ```initial_state```.
+- ```goal_state:``` This is a list of CPU registers or flags with the expected values they should take at the end of the program. You can use constants, parameters or expressions. All the parameters used must have been defined in the ```initial_state```. When specifying output flags, use the following names: ```c_flag```, ```n_flag```, ```pv_flag```, ```h_flag```, ```z_flag```, and ```s_flag```. You can specify a flag condition, for example, like this ```z_flag = (?val1 == ?val2)``` (parentheses are not needed, but added for clarity).
 
 - ```8bit_constants:``` This defines the set of constants that MDL can use when constructing instructions with 8bit values, e.g. ```ld a, 1```. By default, only the constant ```0``` is used to accelerate search. But you can tell MDL to use other constants. You can specify individual values or ranges. For example, like this (which allows MDL to use the constants 1, 2, 8, 9, 10, 11, 12, 13, 14, 15 and 16):
 
@@ -65,7 +65,11 @@ The specification file has two mandatory fields (```initial_state:``` and ```goa
 
 - ```allow_ram_use = [true/false]``` whether MDL can use RAM or not (```false``` by default). If this is ```false```, instructions like ```ld a,(hl)``` will not be used.
 
+- ```allow_loops = [true/false]```  (```false``` by default) if this is set to ```true``` and jump instructions (like ```jp```) are allowed during search, jumps backwards (that might create loops) are allowed, otherwise, they are not considered. If you allow loops, recall that if your program takes more than ```max_time``` time units to execute, it will be considered to fail.
+
 - ```goal = [ops/size/time]``` defines the goal to optimize for. By default it's ```ops``` (number of instructions, which is the easiest optimization goal). This can be overriden via flats to MDL.
+
+- ```n_solution_checks = [integer]``` defines the number of test cases used to determine if a solution is correct or not. The default is 1000. Feel free to increment this to 2000 or even larger, as it shuold not affect execution speed much (most cases fail early anyway).
 
 A complete example using all the fields above could be:
 
@@ -88,10 +92,10 @@ max_time = 80
 allow_ram_use = false
 goal = ops
 initial_state:
-    HL = ?val1
-    A = ?val2
+    HL = val1
+    A = val2
 goal_state:
-    HL = ?val1 + (?val2 & 0xff)
+    HL = val1 + val2
 ```
 
 If you then run: ```java -jar mdl.jar test.txt -so```
