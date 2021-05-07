@@ -49,8 +49,6 @@ public class SearchBasedOptimizer implements MDLWorker {
     boolean trigger = false;
     boolean showNewBestDuringSearch = true;
     
-    int numberOfRandomSolutionChecks = 1000;
-
     // search configuration parameters if specified via flags (will overwrite
     // those in the Specification file):
     int flags_searchType = -1;
@@ -274,7 +272,7 @@ public class SearchBasedOptimizer implements MDLWorker {
             }
         }
         
-        if (!spec.precomputeTestCases(numberOfRandomSolutionChecks, code, config)) {
+        if (!spec.precomputeTestCases(code, config)) {
             config.error("Unable to precompute test cases");
             return false;
         }
@@ -1182,7 +1180,7 @@ public class SearchBasedOptimizer implements MDLWorker {
 
             int size = breakPoint - spec.codeStartAddress;
             float time = -1;
-            for(int i = 0; i < numberOfRandomSolutionChecks; i++) {
+            for(int i = 0; i < spec.numberOfRandomSolutionChecks; i++) {
                 int time2 = evaluateSolutionInternal(breakPoint, spec.precomputedTestCases[i]);
                 if (time2 < 0) {
                     return false;
@@ -1201,7 +1199,7 @@ public class SearchBasedOptimizer implements MDLWorker {
                 }
             }
             if (spec.searchTimeCalculation == SEARCH_TIME_AVERAGE) {
-                time /= numberOfRandomSolutionChecks;
+                time /= spec.numberOfRandomSolutionChecks;
             }
             if (bestOps == null || 
                 size < bestSize ||

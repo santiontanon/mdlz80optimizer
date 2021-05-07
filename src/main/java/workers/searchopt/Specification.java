@@ -68,6 +68,7 @@ public class Specification {
 
     }
     
+    int numberOfRandomSolutionChecks = 1000;
     int codeStartAddress = 0x4000;
     int maxSimulationTime = 256;
     int maxSizeInBytes = 256;
@@ -257,12 +258,12 @@ public class Specification {
     */
     
     
-    public boolean precomputeTestCases(int n, CodeBase code, MDLConfig config)
+    public boolean precomputeTestCases(CodeBase code, MDLConfig config)
     {
         Random rand = new Random();
-        precomputedTestCases = new PrecomputedTestCase[n];
+        precomputedTestCases = new PrecomputedTestCase[numberOfRandomSolutionChecks];
         
-        for(int i = 0;i<n;i++) {
+        for(int i = 0;i<numberOfRandomSolutionChecks;i++) {
             PrecomputedTestCase testCase = new PrecomputedTestCase();
             
             // randomize constants:

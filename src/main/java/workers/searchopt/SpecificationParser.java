@@ -154,6 +154,21 @@ public class SpecificationParser {
                         config.error("Cannot parse line " + line);
                         return null;
                     }
+                } else if (tokens.size()>=3 && tokens.get(0).equalsIgnoreCase("n_solution_checks") && tokens.get(1).equals("=")) {
+                    if (config.tokenizer.isInteger(tokens.get(2))) {
+                        spec.numberOfRandomSolutionChecks = Integer.parseInt(tokens.get(2));
+                        tokens.remove(0);
+                        tokens.remove(0);
+                        tokens.remove(0);
+                        if (!tokens.isEmpty() && config.tokenizer.isSingleLineComment(tokens.get(0))) {
+                            config.error("Unexpected token " + tokens.get(0) + " in line " + line);
+                            return null;
+                        }
+                    } else {
+                        config.error("Cannot parse line " + line);
+                        return null;
+                    }
+                    
                 } else if (tokens.size()>=3 && tokens.get(0).equalsIgnoreCase("goal") && tokens.get(1).equals("=")) {
                     if (tokens.get(2).equalsIgnoreCase("ops")) {
                         spec.searchType = SearchBasedOptimizer.SEARCH_ID_OPS;

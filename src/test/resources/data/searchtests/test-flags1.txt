@@ -3,6 +3,7 @@ allowed_ops:
     addition
     increment
 8bit_constants: 0, 1
+n_solution_checks = 2000
 initial_state:
     a = ?v1
     h = ?v2

@@ -1383,7 +1383,6 @@ equal((?const1) & #00ff, (?const2) & #00ff)
 
 ; Thanks to theNestruo for suggesting the idea for this pattern:
 pattern: Replace ld (?reg2),?const2 with ld (?reg2),?regpairl (as ?regpairl == ?const2 here)
-tags: sdcc-unsafe
 2: ld ?regpair,?const1
 1: *
 0: ld (?reg2),?const2
@@ -1399,7 +1398,6 @@ regsNotModified(1,?regpairl)
 
 ; Thanks to theNestruo for suggesting the idea for this pattern:
 pattern: Replace ld (?reg2),?const2 with ld (?reg2),?regpairh (as ?regpairh == ?const2 here)
-tags: sdcc-unsafe
 2: ld ?regpair,?const1
 1: *
 0: ld (?reg2),?const2
