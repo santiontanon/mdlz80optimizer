@@ -7,6 +7,7 @@
       jr
       cp
   allow_ram_use = false
+  allow_loops = false
   allowed_registers: a, b, c, h, l
   max_ops = 5
   initial_state:

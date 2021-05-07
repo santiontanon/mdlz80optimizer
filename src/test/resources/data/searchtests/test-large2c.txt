@@ -5,6 +5,6 @@ allowed_ops:
 allow_ram_use = false
 allowed_registers: hl, a
 initial_state:
-    HL = ?val
+    HL = val
 goal_state:
-    HL = ?val << 10
+    HL = val << 10

@@ -3,6 +3,6 @@ allowed_ops:
 allowed_registers: a, h, l
 initial_state:
     a = ?v1
-    hl = ?v2
+    hl = ??v2
 goal_state:
-    hl = ?v2 + (?v1 & 0xff)
+    hl = ??v2 + ?v1

@@ -727,9 +727,12 @@ public class ExpressionParser {
         }
         if (tokens.size() >= 2 &&
             tokens.get(0).equals("?")) {
-            tokens.remove(0);
             // variable name symbol:
-            String token = "?" + tokens.remove(0);
+            String token = tokens.remove(0);
+            while(tokens.size() >= 2 && tokens.get(0).equals("?")) {
+                token += tokens.remove(0);
+            }
+            token += tokens.remove(0);
             if (!config.caseSensitiveSymbols) token = token.toLowerCase();
             return Expression.symbolExpression(token, s, code, config);
         }

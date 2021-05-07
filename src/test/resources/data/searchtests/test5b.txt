@@ -1,5 +1,5 @@
 allowed_ops: addition, rotation, shift
 initial_state:
-    hl = ?v
+    hl = v
 goal_state:
-    hl = ?v << 1
+    hl = v << 1

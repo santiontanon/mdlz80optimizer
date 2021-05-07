@@ -1137,6 +1137,7 @@ public class SearchBasedOptimizer implements MDLWorker {
     {
         if (currentAbsoluteJumps_n > nextAbsoluteJump) {
             currentOpsAddresses[depth] = breakPoint;
+            boolean solutionFound = false;
             int jumpIndex = currentAbsoluteJumps[nextRelativeJump];
             int start = 0;
             if (!spec.allowLoops) {
@@ -1150,12 +1151,13 @@ public class SearchBasedOptimizer implements MDLWorker {
                 z80Memory.writeWord(currentOpsAddresses[jumpIndex]+1, 
                                     currentOpsAddresses[j]);
                 if (evaluateSolution(depth, nextAbsoluteJump+1, nextRelativeJump, breakPoint)) {
-                    return true;
+                    solutionFound = true;
                 }
             }
-            return false;
+            return solutionFound;
         } else if (currentRelativeJumps_n > nextRelativeJump) {
             currentOpsAddresses[depth] = breakPoint;
+            boolean solutionFound = false;
             int jumpIndex = currentRelativeJumps[nextRelativeJump];
             int start = 0;
             if (!spec.allowLoops) {
@@ -1169,10 +1171,10 @@ public class SearchBasedOptimizer implements MDLWorker {
                 z80Memory.writeByte(currentOpsAddresses[jumpIndex]+1, 
                                     currentOpsAddresses[j] - currentOpsAddresses[jumpIndex+1]);
                 if (evaluateSolution(depth, nextAbsoluteJump, nextRelativeJump+1, breakPoint)) {
-                    return true;
+                    solutionFound = true;
                 }
             }
-            return false;
+            return solutionFound;
         }
         
         try {
@@ -1268,6 +1270,7 @@ public class SearchBasedOptimizer implements MDLWorker {
               z80.getTStates() < spec.maxSimulationTime) {
             z80.executeOneInstruction();
         }
+        if (z80.getTStates() >= spec.maxSimulationTime) return -1;
         
         // check if the solution worked:
         if (testCase.checkGoalState(z80)) {

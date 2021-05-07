@@ -140,6 +140,20 @@ public class SpecificationParser {
                         config.error("Cannot parse line " + line);
                         return null;
                     }
+                } else if (tokens.size()>=3 && tokens.get(0).equalsIgnoreCase("allow_loops") && tokens.get(1).equals("=")) {
+                    if (tokens.get(2).equalsIgnoreCase("true") || tokens.get(2).equalsIgnoreCase("false")) {
+                        spec.allowLoops = Boolean.parseBoolean(tokens.get(2));
+                        tokens.remove(0);
+                        tokens.remove(0);
+                        tokens.remove(0);
+                        if (!tokens.isEmpty() && config.tokenizer.isSingleLineComment(tokens.get(0))) {
+                            config.error("Unexpected token " + tokens.get(0) + " ine line " + line);
+                            return null;
+                        }
+                    } else {
+                        config.error("Cannot parse line " + line);
+                        return null;
+                    }
                 } else if (tokens.size()>=3 && tokens.get(0).equalsIgnoreCase("goal") && tokens.get(1).equals("=")) {
                     if (tokens.get(2).equalsIgnoreCase("ops")) {
                         spec.searchType = SearchBasedOptimizer.SEARCH_ID_OPS;
