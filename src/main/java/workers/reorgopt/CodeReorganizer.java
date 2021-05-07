@@ -655,7 +655,7 @@ public class CodeReorganizer implements MDLWorker {
                             "move lines " + block.statements.get(0).sl.fileNameLineString() + "-" + 
                                             block.statements.get(block.statements.size()-1).sl.lineNumber + 
                             " to right after " + call.sl.fileNameLineString() + 
-                            " to remove a call and a ret statements as "+block.label.originalName+" is only caled once ("+bytesSaved+" bytes, " + timeSaved + " " + config.timeUnit+"s saved)");
+                            " to remove a call and a ret statement as "+block.label.originalName+" is only caled once ("+bytesSaved+" bytes, " + timeSaved + " " + config.timeUnit+"s saved)");
                 }
                 code.resetAddresses();
             }
