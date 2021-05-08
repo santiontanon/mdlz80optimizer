@@ -968,27 +968,31 @@ public class SearchBasedOptimizer implements MDLWorker {
                 op2.op.args.get(0).registerOrFlagName.equals(op1.op.args.get(1).registerOrFlagName)) {
                 return false;
             }
-            // This is already captured in the more general pattern below, so I commented it out:
-//            if (op1.op.args.get(0).isRegister(code) &&
-//                op2.op.args.get(0).isRegister(code) &&
-//                op2.op.args.get(0).registerOrFlagName.equals(op1.op.args.get(0).registerOrFlagName)) {
-//                return false;
-//            }
+            // These sequences are already captured below, so, no need to check for them:
+            // - ld X, Y; ld X, Z
             // op1, op2 is useless if op2's output is a superseteq of op1's, but op2 does not take any input dependency from op1
-            {
-                boolean op2outputIsSuperset = true;
-                boolean op2dependsOnOp1 = false;
-                for(int i = 0;i<op1.outputDependencies.length;i++) {
-                    if (op1.outputDependencies[i] && !op2.outputDependencies[i]) {
-                        op2outputIsSuperset = false;
-                        break;
-                    }
-                    if (op1.outputDependencies[i] && op2.inputDependencies[i]) {
-                        op2dependsOnOp1 = true;
-                        break;
-                    }
+            boolean op2outputIsSuperset = true;
+            boolean op2dependsOnOp1 = false;
+            for(int i = 0;i<op1.outputDependencies.length;i++) {
+                if (op1.outputDependencies[i] && !op2.outputDependencies[i]) {
+                    op2outputIsSuperset = false;
+                    break;
                 }
-                if (op2outputIsSuperset && !op2dependsOnOp1) return false;
+                if (op1.outputDependencies[i] && op2.inputDependencies[i]) {
+                    op2dependsOnOp1 = true;
+                    break;
+                }
+            }
+            if (op2outputIsSuperset && !op2dependsOnOp1) return false;
+            
+            if (!op2dependsOnOp1 && 
+                op1.op.args.get(0).isRegister(code) &&
+                op2.op.args.get(0).isRegister(code)) {
+                if (op1.op.args.get(1).isRegister(code) &&
+                    op1.op.args.get(1).registerOrFlagName.equals(op2.op.args.get(0).registerOrFlagName)) return true;
+                if (op1.op.args.get(0).registerOrFlagName.compareTo(op2.op.args.get(0).registerOrFlagName) > 0) {
+                    return false;
+                }
             }
         }
         
