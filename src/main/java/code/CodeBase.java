@@ -36,7 +36,7 @@ public class CodeBase {
 
     public boolean isRegister(String name)
     {
-        String registers[] = {"a", "b", "c", "d", "e", "h","l",
+        String registers[] = {"a", "b", "c", "d", "e", "h", "l",
                               "af", "bc", "de", "hl",
                               "sp", "ix", "iy", "pc",
                               "ixl", "ixh", "iyl", "iyh",
@@ -49,6 +49,31 @@ public class CodeBase {
         return false;
     }
 
+    
+    public boolean is8bitRegister(String name)
+    {
+        String registers[] = {"a", "b", "c", "d", "e", "h", "l",
+                              "ixl", "ixh", "iyl", "iyh",
+                              "af'",
+                              "i", "r"};
+        for(String reg:registers) {
+            if (name.equalsIgnoreCase(reg)) return true;
+        }
+
+        return false;
+    }
+
+
+    public boolean isBase8bitRegister(String name)
+    {
+        String registers[] = {"a", "b", "c", "d", "e", "h", "l"};
+        for(String reg:registers) {
+            if (name.equalsIgnoreCase(reg)) return true;
+        }
+
+        return false;
+    }
+    
     
     public boolean isRegisterPair(String name)
     {

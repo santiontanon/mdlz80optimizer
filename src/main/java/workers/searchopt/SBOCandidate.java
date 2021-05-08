@@ -29,6 +29,7 @@ public class SBOCandidate {
     public boolean directContributionToGoal = false;
     public boolean isAbsoluteJump = false;
     public boolean isRelativeJump = false;
+    public boolean isUnconditionalJump = false;
     
     // Not all ops make sense after a certain op, (e.g. "ld a,b; ld b,a"). Hence,
     // the set of ops that make sense after another op are precalculated, and stored here:
@@ -45,6 +46,9 @@ public class SBOCandidate {
                 isRelativeJump = true;
             } else {
                 isAbsoluteJump = true;
+            }
+            if (!op.isConditional()) {
+                isUnconditionalJump = true;
             }
         }
         
@@ -236,8 +240,7 @@ public class SBOCandidate {
             }
         }
        
-//        System.out.println(sequenceString(sequence));
-        
+//        System.out.println(sequenceString(sequence));        
         return true;
     }
     
@@ -324,6 +327,35 @@ public class SBOCandidate {
             if (op1.op.args.get(1).registerOrFlagName.compareTo(op2.op.args.get(1).registerOrFlagName) > 0) {
                 return false;
             }
+        }
+        
+        if (op1.op.spec.getName().equals("ld") &&
+            op1.op.args.get(0).isRegister(code) &&
+            code.isBase8bitRegister(op1.op.args.get(0).registerOrFlagName) &&
+            op1.op.args.get(1).type == Expression.EXPRESSION_INTEGER_CONSTANT &&
+            (op2.op.spec.getName().equals("add") ||
+             op2.op.spec.getName().equals("adc") ||
+             op2.op.spec.getName().equals("sbc")) &&
+            op2.op.args.get(1).type == Expression.EXPRESSION_INTEGER_CONSTANT &&
+            op1.op.args.get(1).integerConstant == op2.op.args.get(1).integerConstant) {
+            // we should just use the register instead!
+//            System.out.println("removed: " + op1.op + "; " + op2.op);
+            return false;
+        }
+
+        if (op1.op.spec.getName().equals("ld") &&
+            op1.op.args.get(0).isRegister(code) &&
+            code.isBase8bitRegister(op1.op.args.get(0).registerOrFlagName) &&
+            op1.op.args.get(1).type == Expression.EXPRESSION_INTEGER_CONSTANT &&
+            (op2.op.spec.getName().equals("sub") ||
+             op2.op.spec.getName().equals("and") ||
+             op2.op.spec.getName().equals("or") ||
+             op2.op.spec.getName().equals("xor")) &&
+            op2.op.args.get(0).type == Expression.EXPRESSION_INTEGER_CONSTANT &&
+            op1.op.args.get(1).integerConstant == op2.op.args.get(0).integerConstant) {
+            // we should just use the register instead!
+//            System.out.println("removed: " + op1.op + "; " + op2.op);
+            return false;
         }
         
         if (!op2dependsOnOp1 && 

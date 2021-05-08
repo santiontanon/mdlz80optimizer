@@ -1003,6 +1003,8 @@ public class SearchBasedOptimizer implements MDLWorker {
                 currentOps[depth] = candidate.op;
                 currentOpsAddresses[depth] = codeAddress;
                 if (candidate.isAbsoluteJump) {
+                    // It does not make sense to have an unconditional jump before a conditional one:
+                    if (candidate.isUnconditionalJump && currentAbsoluteJumps_n == 0 && currentRelativeJumps_n == 0) continue;
                     currentAbsoluteJumps[currentAbsoluteJumps_n] = depth;
                     currentAbsoluteJumps_n++;
                     if (depthFirstSearch(depth+1, nextAddress, candidate.potentialFollowUps)) {
@@ -1011,6 +1013,8 @@ public class SearchBasedOptimizer implements MDLWorker {
                     }
                     currentAbsoluteJumps_n--;
                 } else if (candidate.isRelativeJump) {
+                    // It does not make sense to have an unconditional jump before a conditional one:
+                    if (candidate.isUnconditionalJump && currentAbsoluteJumps_n == 0 && currentRelativeJumps_n == 0) continue;
                     currentRelativeJumps[currentRelativeJumps_n] = depth;
                     currentRelativeJumps_n++;
                     if (depthFirstSearch(depth+1, nextAddress, candidate.potentialFollowUps)) {
@@ -1067,6 +1071,8 @@ public class SearchBasedOptimizer implements MDLWorker {
                 currentOps[depth] = candidate.op;
                 currentOpsAddresses[depth] = codeAddress;
                 if (candidate.isAbsoluteJump) {
+                    // It does not make sense to have an unconditional jump before a conditional one:
+                    if (candidate.isUnconditionalJump && currentAbsoluteJumps_n == 0 && currentRelativeJumps_n == 0) continue;
                     currentAbsoluteJumps[currentAbsoluteJumps_n] = depth;
                     currentAbsoluteJumps_n++;
                     if (depthFirstSearch_timeBounded(depth+1, 
@@ -1078,6 +1084,8 @@ public class SearchBasedOptimizer implements MDLWorker {
                     }
                     currentAbsoluteJumps_n--;
                 } else if (candidate.isRelativeJump) {
+                    // It does not make sense to have an unconditional jump before a conditional one:
+                    if (candidate.isUnconditionalJump && currentAbsoluteJumps_n == 0 && currentRelativeJumps_n == 0) continue;
                     currentRelativeJumps[currentRelativeJumps_n] = depth;
                     currentRelativeJumps_n++;
                     if (depthFirstSearch_timeBounded(depth+1, 

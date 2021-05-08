@@ -60,11 +60,11 @@ public class SearchBasedOptimizerTest {
 //    @Test public void testLShift11() throws IOException { test("data/searchtests/test-large3.txt", "data/searchtests/test-large3-expected.asm"); }
     // Current version: 0.481 sec (1098178 solutions tested)
 //    @Test public void testMin() throws IOException { test("data/searchtests/test-min.txt", "data/searchtests/test-min-expected.asm"); }
-    // Current version: 0.829 sec (4665982 solutions tested)
+    // Current version: 0.829 sec (4483846 solutions tested)
 //    @Test public void testSort() throws IOException { test("data/searchtests/test-sort.txt", "data/searchtests/test-sort-expected.asm"); }
-//     Current version: 3.067 sec (24431654 solutions tested)
+//     Current version: 3.067 sec (24313403 solutions tested)
 //    @Test public void testLShift12() throws IOException { test("data/searchtests/test-large4.txt", "data/searchtests/test-large4-expected.asm"); }
-    // Current version: 86.859 sec (742011495 solutions tested)
+    // Current version: 86.859 sec (736701521 solutions tested)
 //    @Test public void testLShift13() throws IOException { test("data/searchtests/test-large5.txt", "data/searchtests/test-large5-expected.asm"); }
     
     
