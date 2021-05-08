@@ -14,6 +14,7 @@ import code.Expression;
 import code.SourceFile;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
 import java.util.StringTokenizer;
@@ -32,7 +33,7 @@ import workers.searchopt.Specification.PrecomputedTestCase;
  *
  * @author santi
  */
-public class SearchBasedOptimizer implements MDLWorker {
+public class SearchBasedOptimizer implements MDLWorker {    
     // Type of search to be done:
     public static final int SEARCH_ID_OPS = 0;  // Iterative deepening by # of ops
     public static final int SEARCH_ID_BYTES = 1;  // Iterative deepening by # of bytes
@@ -84,7 +85,7 @@ public class SearchBasedOptimizer implements MDLWorker {
     List<CPUOp> bestOps = null;
     int bestSize = 0;
     float bestTime = 0;
-    
+        
     
     public SearchBasedOptimizer(MDLConfig a_config)
     {
@@ -211,33 +212,9 @@ public class SearchBasedOptimizer implements MDLWorker {
         nDependencies = allDependencies.size();
         config.debug("nDependencies: " + nDependencies);
         
-        List<SBOCandidate> candidateOps = precomputeCandidateOps(spec, allDependencies, code);
-        if (candidateOps == null) return false;
-        config.debug("candidateOps: " + candidateOps.size());
-        
-        // Precalculate which instructions can contribute to the solution:
-        {
-            boolean goalDependencies[] = spec.getGoalDependencies(allDependencies);
-            for(SBOCandidate op:candidateOps) {
-                for(int i = 0;i<nDependencies;i++) {
-                    if (goalDependencies[i] && op.outputDependencies[i]) {
-                        op.directContributionToGoal = true;
-                        break;
-                    }
-                }
-            }
-        }
-        
-        // Precalculate potential followups to each op:
-        for(SBOCandidate op:candidateOps) {
-            op.potentialFollowUps = new ArrayList<>();
-            for(SBOCandidate op2:candidateOps) {
-                if (sequenceMakesSense(op, op2, code)) {
-                    op.potentialFollowUps.add(op2);
-                }
-            }
-        }
-        
+        List<SBOCandidate> allCandidateOps = precomputeCandidateOps(spec, allDependencies, code, 2);
+        if (allCandidateOps == null) return false;
+                
         // Precalculate which registers to randomize:
         {
             List<RegisterNames> toRandomize = new ArrayList<>();
@@ -302,13 +279,19 @@ public class SearchBasedOptimizer implements MDLWorker {
         bestSize = 0;
         bestTime = 0;        
         config.debug("Initial dependency set: " + Arrays.toString(currentDependencies[0]));
+        int nopDuration = config.opParser.getOpSpecs("nop").get(0).times[0];
         try {
             if (spec.searchType == SEARCH_ID_OPS) {
                 codeMaxAddress = spec.codeStartAddress + spec.maxSizeInBytes;
                 maxSimulationTime = spec.maxSimulationTime;
                 for(int depth = 0; depth<=spec.maxOps; depth++) {
+                    if (depth == 4) {
+                        // Increase precomputation (not worth it before this point):
+                        allCandidateOps = precomputeCandidateOps(spec, allDependencies, code, 3);
+                        if (allCandidateOps == null) return false;                        
+                    }
                     codeMaxOps = depth;
-                    if (depthFirstSearch(0, spec.codeStartAddress, candidateOps)) {
+                    if (depthFirstSearch(0, spec.codeStartAddress, allCandidateOps)) {
                         // solution found!
                         break;
                     }
@@ -319,8 +302,13 @@ public class SearchBasedOptimizer implements MDLWorker {
                 codeMaxOps = spec.maxOps;
                 maxSimulationTime = spec.maxSimulationTime;
                 for(int size = 0; size<=spec.maxSizeInBytes; size++) {
+                    if (size == 4) {
+                        // Increase precomputation (not worth it before this point):
+                        allCandidateOps = precomputeCandidateOps(spec, allDependencies, code, 3);
+                        if (allCandidateOps == null) return false;                        
+                    }
                     codeMaxAddress = spec.codeStartAddress + size;
-                    if (depthFirstSearch(0, spec.codeStartAddress, candidateOps)) {
+                    if (depthFirstSearch(0, spec.codeStartAddress, allCandidateOps)) {
                         // solution found!
                         break;
                     }
@@ -331,8 +319,13 @@ public class SearchBasedOptimizer implements MDLWorker {
                 codeMaxOps = spec.maxOps;
                 codeMaxAddress = spec.codeStartAddress + spec.maxSizeInBytes;
                 for(int maxTime = 0; maxTime<=spec.maxSimulationTime; maxTime++) {
+                    if (maxTime == nopDuration*4) {
+                        // Increase precomputation (not worth it before this point):
+                        allCandidateOps = precomputeCandidateOps(spec, allDependencies, code, 3);
+                        if (allCandidateOps == null) return false;                        
+                    }
                     maxSimulationTime = maxTime;
-                    if (depthFirstSearch_timeBounded(0, 0, spec.codeStartAddress, candidateOps)) {
+                    if (depthFirstSearch_timeBounded(0, 0, spec.codeStartAddress, allCandidateOps)) {
                         // solution found!
                         break;
                     }
@@ -369,7 +362,8 @@ public class SearchBasedOptimizer implements MDLWorker {
     }
     
     
-    List<SBOCandidate> precomputeCandidateOps(Specification spec, List<CPUOpDependency> allDependencies, CodeBase code)
+    List<SBOCandidate> precomputeCandidateOps(Specification spec, List<CPUOpDependency> allDependencies, CodeBase code,
+            int maxLength)
     {
         List<SBOCandidate> candidates = new ArrayList<>();
         
@@ -452,6 +446,24 @@ public class SearchBasedOptimizer implements MDLWorker {
             spec.allowedOps.contains("djnz")) {
             if (!precomputeJumps(candidates, spec, allDependencies, code)) return null;
         }
+        
+        config.debug("allCandidateOps: " + candidates.size());
+        
+        // Precalculate which instructions can contribute to the solution:
+        boolean goalDependencies[] = spec.getGoalDependencies(allDependencies);
+        for(SBOCandidate op:candidates) {
+            for(int i = 0;i<nDependencies;i++) {
+                if (goalDependencies[i] && op.outputDependencies[i]) {
+                    op.directContributionToGoal = true;
+                    break;
+                }
+            }
+        }
+        
+        // Precompute which ops can follow which other ops:
+        HashMap<String, SBOCandidate> candidateOpsByPrefix = new HashMap<>();
+        SBOCandidate.precomputeCandidates(candidateOpsByPrefix, 
+                candidates, allDependencies, code, maxLength, config);
         
         return candidates;
     }
@@ -954,51 +966,7 @@ public class SearchBasedOptimizer implements MDLWorker {
         }
         return true;
     }
-            
-    
-    boolean sequenceMakesSense(SBOCandidate op1, SBOCandidate op2, CodeBase code)
-    {
-        if (op1.op.spec.getName().equals("ld") &&
-            op2.op.spec.getName().equals("ld")) {
-            if (op1.op.args.get(0).isRegister(code) &&
-                op1.op.args.get(1).isRegister(code) &&
-                op2.op.args.get(0).isRegister(code) &&
-                op2.op.args.get(1).isRegister(code) && 
-                op1.op.args.get(0).registerOrFlagName.equals(op2.op.args.get(1).registerOrFlagName) &&
-                op2.op.args.get(0).registerOrFlagName.equals(op1.op.args.get(1).registerOrFlagName)) {
-                return false;
-            }
-            // These sequences are already captured below, so, no need to check for them:
-            // - ld X, Y; ld X, Z
-            // op1, op2 is useless if op2's output is a superseteq of op1's, but op2 does not take any input dependency from op1
-            boolean op2outputIsSuperset = true;
-            boolean op2dependsOnOp1 = false;
-            for(int i = 0;i<op1.outputDependencies.length;i++) {
-                if (op1.outputDependencies[i] && !op2.outputDependencies[i]) {
-                    op2outputIsSuperset = false;
-                    break;
-                }
-                if (op1.outputDependencies[i] && op2.inputDependencies[i]) {
-                    op2dependsOnOp1 = true;
-                    break;
-                }
-            }
-            if (op2outputIsSuperset && !op2dependsOnOp1) return false;
-            
-            if (!op2dependsOnOp1 && 
-                op1.op.args.get(0).isRegister(code) &&
-                op2.op.args.get(0).isRegister(code)) {
-                if (op1.op.args.get(1).isRegister(code) &&
-                    op1.op.args.get(1).registerOrFlagName.equals(op2.op.args.get(0).registerOrFlagName)) return true;
-                if (op1.op.args.get(0).registerOrFlagName.compareTo(op2.op.args.get(0).registerOrFlagName) > 0) {
-                    return false;
-                }
-            }
-        }
-        
-        return true;
-    }
-    
+
     
     boolean depthFirstSearch(int depth, int codeAddress,
                              List<SBOCandidate> candidateOps) throws Exception
