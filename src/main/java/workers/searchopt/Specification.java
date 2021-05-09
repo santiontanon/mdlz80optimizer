@@ -30,6 +30,7 @@ public class Specification {
         int goalFlags[] = null;
         boolean goalFlagValues[] = null;
 
+
         public void initCPU(Z80Core z80)
         {
             for(int i = 0;i<startRegisters.length;i++) {
@@ -49,6 +50,7 @@ public class Specification {
             return true;
         }        
 
+
         public boolean checkGoalStateDebug(Z80Core z80, MDLConfig config)
         {
             for(int i = 0;i<goalRegisters.length;i++) {
@@ -65,8 +67,8 @@ public class Specification {
             }
             return true;
         }        
-
     }
+
     
     int numberOfRandomSolutionChecks = 1000;
     int codeStartAddress = 0x4000;

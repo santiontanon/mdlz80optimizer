@@ -10,24 +10,16 @@ import code.CPUOp;
 import code.CPUOpDependency;
 import code.CodeBase;
 import code.CodeStatement;
-import code.Expression;
 import code.SourceFile;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Random;
 import java.util.StringTokenizer;
 import parser.SourceLine;
-import util.microprocessor.PlainZ80IO;
-import util.microprocessor.PlainZ80Memory;
-import util.microprocessor.ProcessorException;
-import util.microprocessor.Z80.CPUConfig;
 import util.microprocessor.Z80.CPUConstants;
 import util.microprocessor.Z80.CPUConstants.RegisterNames;
-import util.microprocessor.Z80.Z80Core;
 import workers.MDLWorker;
-import workers.searchopt.Specification.PrecomputedTestCase;
 
 /**
  *
@@ -44,7 +36,7 @@ public class SearchBasedOptimizer implements MDLWorker {
     public static final int SEARCH_TIME_AVERAGE = 2;
     
     // randomize the register contents:
-    public static RegisterNames eightBitRegistersToRandomize[] = null;
+    public RegisterNames eightBitRegistersToRandomize[] = null;
 
     MDLConfig config;
     boolean trigger = false;
@@ -57,34 +49,13 @@ public class SearchBasedOptimizer implements MDLWorker {
     int flags_maxSimulationTime = -1;
     int flags_maxSizeInBytes = -1;
     int flags_maxOps = -1;
+    int flags_nThreads = -1;
     
-    // Global search state (so we don't need to pass it throughout recursive calls):
-    Random rand = new Random();
-    Z80Core z80 = null;
-    PlainZ80Memory z80Memory = null;
-    int codeMaxOps;
-    int codeMaxAddress;
-    int maxSimulationTime;
-    Specification spec = null;
     CodeBase code = null;
-    
-    // Store the current program, and additional info to create jumps afterwards:
-    CPUOp currentOps[] = null;
-    int currentOpsAddresses[] = null;
-    int currentAbsoluteJumps_n = 0;
-    int currentAbsoluteJumps[] = null;  // stores the indexes of "jp"s
-    int currentRelativeJumps_n = 0;
-    int currentRelativeJumps[] = null;  // stores the indexes of "jr"s or "djnz"s
-    
-    // The "dependencies" array, contains the set of dependencies (Registers/flags) that
-    // have already been set by previous instructions:
+    Specification spec = null;
     int nDependencies = 0;
-    boolean currentDependencies[][] = null;
-    long solutionsEvaluated = 0;        
-    // best solution:
-    List<CPUOp> bestOps = null;
-    int bestSize = 0;
-    float bestTime = 0;
+
+    SBOGlobalSearchState state = null;
         
     
     public SearchBasedOptimizer(MDLConfig a_config)
@@ -99,7 +70,8 @@ public class SearchBasedOptimizer implements MDLWorker {
                "- ```-so-ops```/```-so-size```/```-so-time```: Runs the optimizer with a specific optimization goal (minimize the number of CPU ops, number of bytes, or execution time). This will overwrite whatever is specified in the specificaiton file (default is to optimize by number of ops).\n" +
                "- ```-so-maxops <n>```: Sets the upper limit of how many CPU ops the resulting program can have.\n" +
                "- ```-so-maxsize <n>```: Sets the maximum number of bytes the resulting program can occupy.\n" +
-               "- ```-so-maxtime <n>```: Sets the maximum time (in whichever units the target CPU uses) that the resulting program can take to execute.\n";
+               "- ```-so-maxtime <n>```: Sets the maximum time (in whichever units the target CPU uses) that the resulting program can take to execute.\n" +
+               "- ```-so-threads <n>```: Sets the number of threads to use during search (default value is the number of cores of the CPU).\n";
     }
 
     
@@ -166,6 +138,19 @@ public class SearchBasedOptimizer implements MDLWorker {
                 return false;
             }
             flags_maxSimulationTime = Integer.parseInt(tmp);
+            return true;
+        }
+        if (flags.get(0).equals("-so-threads") && flags.size()>=2) {
+            flags.remove(0);
+            String tmp = flags.remove(0);
+            if (!config.tokenizer.isInteger(tmp)) {
+                config.error("Invalid argument to -so-threads: " + tmp);
+                return false;
+            }
+            flags_nThreads = Integer.parseInt(tmp);
+            if (flags_nThreads <= 0) {
+                config.error("Invalid argument to -so-threads: " + tmp + " (number of threads must be a positive integer)");
+            }
             return true;
         }
         return false;    
@@ -254,82 +239,74 @@ public class SearchBasedOptimizer implements MDLWorker {
             return false;
         }
         
-        // Create a simulator:
-        z80Memory = new PlainZ80Memory();
-        z80 = new Z80Core(z80Memory, new PlainZ80IO(), new CPUConfig(config));
-        
-        // Run the search process to generate code:
-        // Search via iterative deepening:
-        currentOps = new CPUOp[spec.maxOps];
-        currentOpsAddresses = new int[spec.maxOps+1];
-        currentAbsoluteJumps_n = 0;
-        currentAbsoluteJumps = new int[spec.maxOps];
-        currentRelativeJumps_n = 0;
-        currentRelativeJumps = new int[spec.maxOps];
-        
-        currentDependencies = new boolean[spec.maxOps+1][nDependencies];
-        {
-            boolean initialDependencies[] = spec.getInitialDependencies(allDependencies);
-            for(int i = 0;i<nDependencies;i++) {
-                currentDependencies[0][i] = initialDependencies[i];
-            }
-        }
-        solutionsEvaluated = 0;        
-        bestOps = null;
-        bestSize = 0;
-        bestTime = 0;        
-        config.debug("Initial dependency set: " + Arrays.toString(currentDependencies[0]));
+        state = new SBOGlobalSearchState();
         int nopDuration = config.opParser.getOpSpecs("nop").get(0).times[0];
+        int nThreads = Runtime.getRuntime().availableProcessors();
+        if (flags_nThreads != -1) nThreads = flags_nThreads;
+        SBOExecutionThread threads[] = new SBOExecutionThread[nThreads];
         try {
             if (spec.searchType == SEARCH_ID_OPS) {
-                codeMaxAddress = spec.codeStartAddress + spec.maxSizeInBytes;
-                maxSimulationTime = spec.maxSimulationTime;
+                int codeMaxAddress = spec.codeStartAddress + spec.maxSizeInBytes;
                 for(int depth = 0; depth<=spec.maxOps; depth++) {
                     if (depth == 4) {
                         // Increase precomputation (not worth it before this point):
                         allCandidateOps = precomputeCandidateOps(spec, allDependencies, code, 3);
                         if (allCandidateOps == null) return false;                        
                     }
-                    codeMaxOps = depth;
-                    if (depthFirstSearch(0, spec.codeStartAddress, allCandidateOps)) {
-                        // solution found!
-                        break;
+                    state.init(allCandidateOps, depth==0);
+                    for(int i = 0;i<nThreads;i++) {
+                        threads[i] = new SBOExecutionThread("thread-" + i, 
+                                            spec, allDependencies, 
+                                            state, eightBitRegistersToRandomize,
+                                            showNewBestDuringSearch, code, config,
+                                            spec.searchType, depth, codeMaxAddress, spec.maxSimulationTime);
+                        threads[i].start();
                     }
-                    config.info("SearchBasedOptimizer: depth "+depth+" complete ("+solutionsEvaluated+" solutions tested)");
+                    for(int i = 0;i<nThreads;i++) threads[i].join();
+                    if (state.bestOps != null) break;
+                    config.info("SearchBasedOptimizer: depth "+depth+" complete ("+state.solutionsEvaluated+" solutions tested)");
                 }
 
             } else if (spec.searchType == SEARCH_ID_BYTES) {
-                codeMaxOps = spec.maxOps;
-                maxSimulationTime = spec.maxSimulationTime;
                 for(int size = 0; size<=spec.maxSizeInBytes; size++) {
                     if (size == 4) {
                         // Increase precomputation (not worth it before this point):
                         allCandidateOps = precomputeCandidateOps(spec, allDependencies, code, 3);
                         if (allCandidateOps == null) return false;                        
                     }
-                    codeMaxAddress = spec.codeStartAddress + size;
-                    if (depthFirstSearch(0, spec.codeStartAddress, allCandidateOps)) {
-                        // solution found!
-                        break;
+                    state.init(allCandidateOps, size==0);
+                    for(int i = 0;i<nThreads;i++) {
+                        threads[i] = new SBOExecutionThread("thread-" + i, 
+                                            spec, allDependencies, 
+                                            state, eightBitRegistersToRandomize,
+                                            showNewBestDuringSearch, code, config,
+                                            spec.searchType, spec.maxOps, spec.codeStartAddress + size, spec.maxSimulationTime);
+                        threads[i].start();
                     }
-                    config.info("SearchBasedOptimizer: size "+size+" complete ("+solutionsEvaluated+" solutions tested)");
+                    for(int i = 0;i<nThreads;i++) threads[i].join();
+                    if (state.bestOps != null) break;
+                    config.info("SearchBasedOptimizer: size "+size+" complete ("+state.solutionsEvaluated+" solutions tested)");
                 }
 
             } else if (spec.searchType == SEARCH_ID_CYCLES) {
-                codeMaxOps = spec.maxOps;
-                codeMaxAddress = spec.codeStartAddress + spec.maxSizeInBytes;
                 for(int maxTime = 0; maxTime<=spec.maxSimulationTime; maxTime++) {
                     if (maxTime == nopDuration*4) {
                         // Increase precomputation (not worth it before this point):
                         allCandidateOps = precomputeCandidateOps(spec, allDependencies, code, 3);
                         if (allCandidateOps == null) return false;                        
                     }
-                    maxSimulationTime = maxTime;
-                    if (depthFirstSearch_timeBounded(0, 0, spec.codeStartAddress, allCandidateOps)) {
-                        // solution found!
-                        break;
+                    state.init(allCandidateOps, maxTime==0);
+                    for(int i = 0;i<nThreads;i++) {
+                        threads[i] = new SBOExecutionThread("thread-" + i, 
+                                            spec, allDependencies, 
+                                            state, eightBitRegistersToRandomize,
+                                            showNewBestDuringSearch, code, config,
+                                            spec.searchType, spec.maxOps, spec.codeStartAddress + spec.maxSizeInBytes, maxTime);
+                        threads[i].start();
                     }
-                    config.info("SearchBasedOptimizer: time "+maxTime+" complete ("+solutionsEvaluated+" solutions tested)");
+                    for(int i = 0;i<nThreads;i++) threads[i].join();
+                    if (state.bestOps != null) break;
+                    config.info("SearchBasedOptimizer: time "+maxTime+" complete ("+state.solutionsEvaluated+" solutions tested)");
                 }
                 
             } else {
@@ -342,13 +319,13 @@ public class SearchBasedOptimizer implements MDLWorker {
             return false;
         }
             
-        if (bestOps == null) {
+        if (state.bestOps == null) {
             config.error("No program that satisfied the specification was found.");
             return false;
         }
         
         int lineNumber = 1;
-        for(CPUOp op:bestOps) {
+        for(CPUOp op:state.bestOps) {
             SourceLine sl = new SourceLine("    " + op.toString(), sf, lineNumber);
             CodeStatement s = new CodeStatement(CodeStatement.STATEMENT_CPUOP, sl, sf, config);
             s.op = op;
@@ -356,7 +333,7 @@ public class SearchBasedOptimizer implements MDLWorker {
             lineNumber++;
         }
         
-        config.info("SearchBasedOptimizer: search ended ("+solutionsEvaluated+" solutions tested)");
+        config.info("SearchBasedOptimizer: search ended ("+state.solutionsEvaluated+" solutions tested)");
                 
         return true;
     }
@@ -967,294 +944,4 @@ public class SearchBasedOptimizer implements MDLWorker {
         return true;
     }
 
-    
-    boolean depthFirstSearch(int depth, int codeAddress,
-                             List<SBOCandidate> candidateOps) throws Exception
-    {
-        if (depth >= codeMaxOps || codeAddress >= codeMaxAddress) {
-            return evaluateSolution(depth, 0, 0, codeAddress);
-        } else {
-            boolean found = false;
-            // the very last op must contribute to the goal:
-            for(SBOCandidate candidate : candidateOps) {
-                int nextAddress = codeAddress + candidate.bytes.length;
-                if (nextAddress > codeMaxAddress) continue;
-                if (!candidate.directContributionToGoal &&
-                    (depth == codeMaxOps-1 || codeMaxAddress == nextAddress)) {
-                    continue;
-                }
-                int size = nextAddress - spec.codeStartAddress;
-                if (bestOps != null &&
-                    (size > bestSize ||
-                     (size == bestSize && depth+1 > bestOps.size()))) {
-                    continue;
-                }
-                boolean dependenciesSatisfied = true;
-                for(int i = 0;i<nDependencies;i++) {
-                    if (candidate.inputDependencies[i] && !currentDependencies[depth][i]) {
-                        dependenciesSatisfied = false;
-                        break;
-                    }
-                    currentDependencies[depth+1][i] = currentDependencies[depth][i] || candidate.outputDependencies[i];
-                }
-                if (!dependenciesSatisfied) continue;
-                                    
-                System.arraycopy(candidate.bytes, 0, z80Memory.memory, codeAddress, candidate.bytes.length);
-                currentOps[depth] = candidate.op;
-                currentOpsAddresses[depth] = codeAddress;
-                if (candidate.isAbsoluteJump) {
-                    // It does not make sense to have an unconditional jump before a conditional one:
-                    if (candidate.isUnconditionalJump && currentAbsoluteJumps_n == 0 && currentRelativeJumps_n == 0) continue;
-                    currentAbsoluteJumps[currentAbsoluteJumps_n] = depth;
-                    currentAbsoluteJumps_n++;
-                    if (depthFirstSearch(depth+1, nextAddress, candidate.potentialFollowUps)) {
-                        found = true;
-                        // we keep going, in case we find a solution of the same size, but faster
-                    }
-                    currentAbsoluteJumps_n--;
-                } else if (candidate.isRelativeJump) {
-                    // It does not make sense to have an unconditional jump before a conditional one:
-                    if (candidate.isUnconditionalJump && currentAbsoluteJumps_n == 0 && currentRelativeJumps_n == 0) continue;
-                    currentRelativeJumps[currentRelativeJumps_n] = depth;
-                    currentRelativeJumps_n++;
-                    if (depthFirstSearch(depth+1, nextAddress, candidate.potentialFollowUps)) {
-                        found = true;
-                        // we keep going, in case we find a solution of the same size, but faster
-                    }
-                    currentRelativeJumps_n--;
-                } else {
-                    if (depthFirstSearch(depth+1, nextAddress, candidate.potentialFollowUps)) {
-                        found = true;
-                        // we keep going, in case we find a solution of the same size, but faster
-                    }
-                }
-            }
-            return found;
-        }
-    }
-    
-    
-    boolean depthFirstSearch_timeBounded(int depth, int currentTime, int codeAddress,
-                                         List<SBOCandidate> candidateOps) throws Exception
-    {
-        if (depth >= codeMaxOps || codeAddress >= codeMaxAddress || currentTime >= maxSimulationTime) {
-            return evaluateSolution(depth, 0, 0, codeAddress);
-        } else {
-            boolean found = false;
-            // the very last op must contribute to the goal:
-            for(SBOCandidate candidate : candidateOps) {
-                int nextAddress = codeAddress + candidate.bytes.length;
-                if (nextAddress > codeMaxAddress) continue;
-                if (!candidate.directContributionToGoal &&
-                    (depth == codeMaxOps-1 || codeMaxAddress == nextAddress)) {
-                    continue;
-                }
-                int nextTime = currentTime + candidate.op.spec.times[candidate.op.spec.times.length-1];
-                if (nextTime > maxSimulationTime) continue;
-                int size = codeAddress - spec.codeStartAddress;
-                if (bestOps != null &&
-                    (size > bestSize ||
-                     (size == bestSize && depth+1 > bestOps.size()))) {
-                    return false;
-                }
-                boolean dependenciesSatisfied = true;
-                for(int i = 0;i<nDependencies;i++) {
-                    if (candidate.inputDependencies[i] && !currentDependencies[depth][i]) {
-                        dependenciesSatisfied = false;
-                        break;
-                    }
-                    currentDependencies[depth+1][i] = currentDependencies[depth][i] || candidate.outputDependencies[i];
-                }
-                if (!dependenciesSatisfied) continue;
-                               
-                System.arraycopy(candidate.bytes, 0, z80Memory.memory, codeAddress, candidate.bytes.length);
-                currentOps[depth] = candidate.op;
-                currentOpsAddresses[depth] = codeAddress;
-                if (candidate.isAbsoluteJump) {
-                    // It does not make sense to have an unconditional jump before a conditional one:
-                    if (candidate.isUnconditionalJump && currentAbsoluteJumps_n == 0 && currentRelativeJumps_n == 0) continue;
-                    currentAbsoluteJumps[currentAbsoluteJumps_n] = depth;
-                    currentAbsoluteJumps_n++;
-                    if (depthFirstSearch_timeBounded(depth+1, 
-                                                     nextTime, 
-                                                     nextAddress,
-                                                     candidate.potentialFollowUps)) {
-                        found = true;
-                        // we keep going, in case we find a solution of the same speed, but smaller
-                    }
-                    currentAbsoluteJumps_n--;
-                } else if (candidate.isRelativeJump) {
-                    // It does not make sense to have an unconditional jump before a conditional one:
-                    if (candidate.isUnconditionalJump && currentAbsoluteJumps_n == 0 && currentRelativeJumps_n == 0) continue;
-                    currentRelativeJumps[currentRelativeJumps_n] = depth;
-                    currentRelativeJumps_n++;
-                    if (depthFirstSearch_timeBounded(depth+1, 
-                                                     nextTime, 
-                                                     nextAddress,
-                                                     candidate.potentialFollowUps)) {
-                        found = true;
-                        // we keep going, in case we find a solution of the same speed, but smaller
-                    }
-                    currentRelativeJumps_n--;
-                } else {
-                    if (depthFirstSearch_timeBounded(depth+1, 
-                                                     nextTime, 
-                                                     nextAddress,
-                                                     candidate.potentialFollowUps)) {
-                        found = true;
-                        // we keep going, in case we find a solution of the same speed, but smaller
-                    }
-                }
-            }
-            return found;
-        }
-    }    
-    
-    
-    final boolean evaluateSolution(int depth, int nextAbsoluteJump, int nextRelativeJump, int breakPoint)
-    {
-        if (currentAbsoluteJumps_n > nextAbsoluteJump) {
-            currentOpsAddresses[depth] = breakPoint;
-            boolean solutionFound = false;
-            int jumpIndex = currentAbsoluteJumps[nextRelativeJump];
-            int start = 0;
-            if (!spec.allowLoops) {
-                start = jumpIndex+1;
-            }
-            for(int j = start;j<=depth;j++) {
-                if (j == jumpIndex || j == jumpIndex + 1) continue;
-                // set the address (bytes and op):
-                currentOps[jumpIndex].args.set(currentOps[jumpIndex].args.size()-1,
-                        Expression.constantExpression(currentOpsAddresses[j], config));
-                z80Memory.writeWord(currentOpsAddresses[jumpIndex]+1, 
-                                    currentOpsAddresses[j]);
-                if (evaluateSolution(depth, nextAbsoluteJump+1, nextRelativeJump, breakPoint)) {
-                    solutionFound = true;
-                }
-            }
-            return solutionFound;
-        } else if (currentRelativeJumps_n > nextRelativeJump) {
-            currentOpsAddresses[depth] = breakPoint;
-            boolean solutionFound = false;
-            int jumpIndex = currentRelativeJumps[nextRelativeJump];
-            int start = 0;
-            if (!spec.allowLoops) {
-                start = jumpIndex+1;
-            }
-            for(int j = start;j<=depth;j++) {
-                if (j == jumpIndex || j == jumpIndex + 1) continue;
-                // set the address (bytes and op):
-                currentOps[jumpIndex].args.set(currentOps[jumpIndex].args.size()-1,
-                        Expression.constantExpression(currentOpsAddresses[j], config));
-                z80Memory.writeByte(currentOpsAddresses[jumpIndex]+1, 
-                                    currentOpsAddresses[j] - currentOpsAddresses[jumpIndex+1]);
-                if (evaluateSolution(depth, nextAbsoluteJump, nextRelativeJump+1, breakPoint)) {
-                    solutionFound = true;
-                }
-            }
-            return solutionFound;
-        }
-        
-        try {
-            solutionsEvaluated++;
-
-            int size = breakPoint - spec.codeStartAddress;
-            float time = -1;
-            for(int i = 0; i < spec.numberOfRandomSolutionChecks; i++) {
-                int time2 = evaluateSolutionInternal(breakPoint, spec.precomputedTestCases[i]);
-                if (time2 < 0) {
-                    return false;
-                }
-                switch(spec.searchTimeCalculation) {
-                    case SEARCH_TIME_WORST:
-                        time = Math.max(time, time2);
-                        break;
-                    case SEARCH_TIME_BEST:
-                        if (time == -1 || time2 < time) time = time2;
-                        break;
-//                    case SEARCH_TIME_AVERAGE:
-                    default:
-                        time += time2;
-                        break;
-                }
-            }
-            if (spec.searchTimeCalculation == SEARCH_TIME_AVERAGE) {
-                time /= spec.numberOfRandomSolutionChecks;
-            }
-            if (bestOps == null || 
-                size < bestSize ||
-                (size == bestSize && depth < bestOps.size()) ||
-                (size == bestSize && depth == bestOps.size() && time < bestTime)) {
-                bestOps = new ArrayList<>();
-                for(int i = 0;i<depth;i++) {
-                    CPUOp op = currentOps[i];
-                    if (op.isJump()) {
-                        // relativize the jump to the current address (we know it must be an integer constant):
-                        int offset = op.args.get(op.args.size()-1).integerConstant -  currentOpsAddresses[i];
-                        op = new CPUOp(op);
-                        if (offset >= 0) {
-                            op.args.set(op.args.size()-1, 
-                                    Expression.operatorExpression(Expression.EXPRESSION_SUM, 
-                                            Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, null, code, config), 
-                                            Expression.constantExpression(offset, config), config));
-                        } else {
-                            op.args.set(op.args.size()-1, 
-                                    Expression.operatorExpression(Expression.EXPRESSION_SUB, 
-                                            Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, null, code, config), 
-                                            Expression.constantExpression(-offset, config), config));
-                        }
-                    }
-                    bestOps.add(op);
-                }
-                bestSize = size;
-                bestTime = time;
-
-                if (showNewBestDuringSearch) {
-                    config.info("New solution found after "+solutionsEvaluated+" solutions tested (size: "+size+", time: " + time + "):");
-                    for(CPUOp op:bestOps) {
-                        config.info("    " + op);
-                    }
-                }
-            }
-            return true;
-        } catch(ProcessorException e) {
-            // This could happen if the program self-modifies itself and garbles the codebase,
-            // resulting in an inexisting opcode.
-            return false;
-        }            
-    }
-    
-    
-    // return -1 is solution fails
-    // return time it takes if solution succeeds
-    // "i" is the index of the 
-    final int evaluateSolutionInternal(int breakPoint, PrecomputedTestCase testCase) throws ProcessorException
-    {
-        // evaluate solution:
-        z80.shallowReset();
-
-        for(RegisterNames register: eightBitRegistersToRandomize) {
-            z80.setRegisterValue(register, rand.nextInt(256));
-        }
-        z80.setProgramCounter(spec.codeStartAddress);
-                                 
-        // randomize the memory contents:
-        // ...
-        
-        // execute initial state:
-        testCase.initCPU(z80);
-        
-        while(z80.getProgramCounter() < breakPoint && 
-              z80.getTStates() < spec.maxSimulationTime) {
-            z80.executeOneInstruction();
-        }
-        if (z80.getTStates() >= spec.maxSimulationTime) return -1;
-        
-        // check if the solution worked:
-        if (testCase.checkGoalState(z80)) {
-            return (int)z80.getTStates();
-        } else {
-            return -1;
-        }
-    }
 }

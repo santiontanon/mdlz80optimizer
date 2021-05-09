@@ -37,6 +37,7 @@ public class SBOCandidate {
     public List<SBOCandidate> prefix = null;    // the ops that "potentialFollowUps" assume (this is not used during search,
                                                 // only used to verify the precalculations are sound)
     
+    
     public SBOCandidate(CodeStatement a_s, List<CPUOpDependency> allDependencies, CodeBase code, MDLConfig config)
     {
         op = a_s.op;

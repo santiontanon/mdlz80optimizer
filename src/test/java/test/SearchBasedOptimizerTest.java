@@ -7,9 +7,14 @@ package test;
 
 import cl.MDLConfig;
 import code.CodeBase;
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.StringTokenizer;
 import org.junit.Assert;
 import org.junit.Test;
+import util.Resources;
 import workers.SourceCodeGenerator;
 import workers.searchopt.SearchBasedOptimizer;
 
@@ -60,7 +65,7 @@ public class SearchBasedOptimizerTest {
 //    @Test public void testLShift11() throws IOException { test("data/searchtests/test-large3.txt", "data/searchtests/test-large3-expected.asm"); }
     // Current version: 0.481 sec (1098178 solutions tested)
 //    @Test public void testMin() throws IOException { test("data/searchtests/test-min.txt", "data/searchtests/test-min-expected.asm"); }
-    // Current version: 0.829 sec (4483846 solutions tested)
+    // Current version: 0.829 sec (4483846 solutions tested 1-thread)
 //    @Test public void testSort() throws IOException { test("data/searchtests/test-sort.txt", "data/searchtests/test-sort-expected.asm"); }
 //     Current version: 3.067 sec (24313403 solutions tested)
 //    @Test public void testLShift12() throws IOException { test("data/searchtests/test-large4.txt", "data/searchtests/test-large4-expected.asm"); }
@@ -93,7 +98,55 @@ public class SearchBasedOptimizerTest {
             SourceCodeGenerator scg = new SourceCodeGenerator(config);
             Assert.assertFalse(code.outputs.isEmpty());
             String result = scg.outputFileString(code.outputs.get(0), code);
-            Assert.assertTrue(GenerationTest.compareOutputs(result, expectedOutput));
+            Assert.assertTrue(compareOutputsWithAlternatives(result, expectedOutput));
         }
     }    
+    
+    
+    public static boolean compareOutputsWithAlternatives(String result, String expectedOutputFile) throws IOException
+    {
+        List<String> lines = new ArrayList<>();
+        StringTokenizer st = new StringTokenizer(result, "\n");
+        while(st.hasMoreTokens()) {
+            lines.add(st.nextToken().trim());
+        }
+        
+        List<List<String>> expectedAlternatives = new ArrayList<>();
+        BufferedReader br = Resources.asReader(expectedOutputFile);
+        List<String> expectedAlternative = new ArrayList<>();
+        while(true) {
+            String line = br.readLine();
+            if (line == null) break;
+            line = line.trim();
+            if (line.length() > 0) {
+                if (line.contains("----")) {
+                    expectedAlternatives.add(expectedAlternative);
+                    expectedAlternative = new ArrayList<>();
+                } else {
+                    expectedAlternative.add(line);
+                }
+            }
+        }
+        if (!expectedAlternative.isEmpty() || expectedAlternatives.isEmpty()) {
+            expectedAlternatives.add(expectedAlternative);
+        }
+        System.out.println("\n--------------------------------------");
+        System.out.println(result);
+        System.out.println("--------------------------------------\n");
+        
+        for(List<String> expected : expectedAlternatives) {
+            boolean match = true;
+            for(int i = 0;i<Math.max(lines.size(), expected.size());i++) {
+                String line = lines.size() > i ? lines.get(i):"";
+                String expectedLine = expected.size() > i ? expected.get(i):"";
+                if (!line.equals(expectedLine)) {
+                    match = false;
+                    break;
+                }
+            }
+            if (match) return true;
+        }
+        
+        return false;
+    }       
 }
