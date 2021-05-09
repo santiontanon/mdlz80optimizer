@@ -71,6 +71,10 @@ public class SearchBasedOptimizerTest {
 //    @Test public void testLShift12() throws IOException { test("data/searchtests/test-large4.txt", "data/searchtests/test-large4-expected.asm"); }
     // Current version: 86.859 sec (736701521 solutions tested)
 //    @Test public void testLShift13() throws IOException { test("data/searchtests/test-large5.txt", "data/searchtests/test-large5-expected.asm"); }
+    // Current version: 238.813 sec (6256071288 solutions tested, 8-threads)
+//    @Test public void testLShift13Hard() throws IOException { test("data/searchtests/test-large6.txt", "data/searchtests/test-large6-expected.asm"); }
+    // Current version: - sec (- solutions tested)
+//    @Test public void testLShift13HardSpeed() throws IOException { test("data/searchtests/test-large6.txt", "data/searchtests/test-large6-expected.asm", "-so-time"); }
     
     
     private void test(String inputFile, String expectedOutput) throws IOException

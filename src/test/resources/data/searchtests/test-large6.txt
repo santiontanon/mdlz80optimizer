@@ -1,0 +1,13 @@
+allowed_ops: 
+    logic
+    ld
+    addition
+    rotation
+allow_ram_use = false
+allowed_registers: a, hl
+8bit_constants: 0, 224
+max_ops = 7
+initial_state:
+    HL = val
+goal_state:
+    HL = val << 13
