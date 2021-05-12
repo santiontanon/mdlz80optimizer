@@ -55,6 +55,7 @@ public class SBOExecutionThread extends Thread {
     // The "dependencies" array, contains the set of dependencies (Registers/flags) that
     // have already been set by previous instructions:
     boolean currentDependencies[][] = null;
+    boolean goalDependencies[] = null;
     
     SBOGlobalSearchState globalState;
     // local state:
@@ -70,6 +71,7 @@ public class SBOExecutionThread extends Thread {
     
     public SBOExecutionThread(String a_threadID,
                               Specification a_spec, List<CPUOpDependency> a_allDependencies, 
+                              boolean a_goalDependencies[],
                               SBOGlobalSearchState a_best, RegisterNames a_eightBitRegistersToRandomize[], 
                               boolean a_showNewBestDuringSearch, CodeBase a_code,
                               MDLConfig a_config,
@@ -80,6 +82,7 @@ public class SBOExecutionThread extends Thread {
         spec = a_spec;
         allDependencies = a_allDependencies;
         nDependencies = allDependencies.size();
+        goalDependencies = a_goalDependencies;
         globalState = a_best;
         eightBitRegistersToRandomize = a_eightBitRegistersToRandomize;
         showNewBestDuringSearch = a_showNewBestDuringSearch;
@@ -148,19 +151,6 @@ public class SBOExecutionThread extends Thread {
         }
     }
     
-    
-    /*
-    boolean depthFirstSearch(int depth, int codeAddress,
-                             List<SBOCandidate> candidateOps,
-                             int a_codeMaxOps, int a_codeMaxAddress, int a_maxSimulationTime) throws Exception
-    {
-        codeMaxOps = a_codeMaxOps;
-        codeMaxAddress = a_codeMaxAddress;
-        maxSimulationTime = a_maxSimulationTime;
-        return depthFirstSearch(depth, codeAddress, candidateOps);
-    }
-    */
-    
         
     boolean depthFirstSearch(int depth, int codeAddress,
                              List<SBOCandidate> candidateOps) throws Exception
@@ -188,7 +178,21 @@ public class SBOExecutionThread extends Thread {
                     currentDependencies[depth+1][i] = currentDependencies[depth][i] || candidate.outputDependencies[i];
                 }
                 if (!dependenciesSatisfied) continue;
-                                    
+//                if (depth == codeMaxOps-1 || codeMaxAddress == nextAddress) {
+//                    System.out.println("----");
+//                    System.out.println(Arrays.toString(currentOps));
+//                    System.out.println(Arrays.toString(currentDependencies[depth+1]));
+                    // this is the last op we can add, so all output dependencies MUST be satisfied:
+//                    boolean goalDependenciesSatisfied = true;
+//                    for(int i = 0;i<nDependencies;i++) {
+//                        if (goalDependencies[i] && !currentDependencies[depth+1][i]) {
+//                            System.out.println("!");
+//                            goalDependenciesSatisfied = false;
+//                            break;
+//                        }
+//                    }
+//                    if (!goalDependenciesSatisfied) continue;
+//                }                                    
                 System.arraycopy(candidate.bytes, 0, z80Memory.memory, codeAddress, candidate.bytes.length);
                 currentOps[depth] = candidate.op;
                 currentOpsAddresses[depth] = codeAddress;
@@ -222,18 +226,7 @@ public class SBOExecutionThread extends Thread {
             return found;
         }
     }
-    
-    /*
-    boolean depthFirstSearch_timeBounded(int depth, int currentTime, int codeAddress,
-                             List<SBOCandidate> candidateOps,
-                             int a_codeMaxOps, int a_codeMaxAddress, int a_maxSimulationTime) throws Exception
-    {
-        codeMaxOps = a_codeMaxOps;
-        codeMaxAddress = a_codeMaxAddress;
-        maxSimulationTime = a_maxSimulationTime;
-        return depthFirstSearch_timeBounded(depth, currentTime, codeAddress, candidateOps);
-    }
-    */
+
     
     boolean depthFirstSearch_timeBounded(int depth, int currentTime, int codeAddress,
                                          List<SBOCandidate> candidateOps) throws Exception

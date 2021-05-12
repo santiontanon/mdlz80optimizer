@@ -66,7 +66,57 @@ public class Specification {
                  }
             }
             return true;
-        }        
+        }
+        
+        
+        public Integer getGoalRegisterValue(CPUConstants.RegisterNames reg)
+        {
+            for(int i = 0;i<goalRegisters.length;i++) {
+                if (goalRegisters[i] == reg) {
+                    return goalRegisterValues[i];
+                } else {
+                    if ((goalRegisters[i] == CPUConstants.RegisterNames.HL &&
+                         reg == CPUConstants.RegisterNames.H) ||
+                        (goalRegisters[i] == CPUConstants.RegisterNames.DE &&
+                         reg == CPUConstants.RegisterNames.D) ||
+                        (goalRegisters[i] == CPUConstants.RegisterNames.BC &&
+                         reg == CPUConstants.RegisterNames.B) ||
+                        (goalRegisters[i] == CPUConstants.RegisterNames.HL_ALT &&
+                         reg == CPUConstants.RegisterNames.H_ALT) ||
+                        (goalRegisters[i] == CPUConstants.RegisterNames.DE_ALT &&
+                         reg == CPUConstants.RegisterNames.D_ALT) ||
+                        (goalRegisters[i] == CPUConstants.RegisterNames.BC_ALT &&
+                         reg == CPUConstants.RegisterNames.B_ALT) ||
+                        (goalRegisters[i] == CPUConstants.RegisterNames.IX &&
+                         reg == CPUConstants.RegisterNames.IXH) ||
+                        (goalRegisters[i] == CPUConstants.RegisterNames.IY &&
+                         reg == CPUConstants.RegisterNames.IYH)
+                        ) {
+                        return (goalRegisterValues[i] >> 8) & 0xff;
+                    }
+                    if ((goalRegisters[i] == CPUConstants.RegisterNames.HL &&
+                         reg == CPUConstants.RegisterNames.L) ||
+                        (goalRegisters[i] == CPUConstants.RegisterNames.DE &&
+                         reg == CPUConstants.RegisterNames.E) ||
+                        (goalRegisters[i] == CPUConstants.RegisterNames.BC &&
+                         reg == CPUConstants.RegisterNames.C) ||
+                        (goalRegisters[i] == CPUConstants.RegisterNames.HL_ALT &&
+                         reg == CPUConstants.RegisterNames.L_ALT) ||
+                        (goalRegisters[i] == CPUConstants.RegisterNames.DE_ALT &&
+                         reg == CPUConstants.RegisterNames.E_ALT) ||
+                        (goalRegisters[i] == CPUConstants.RegisterNames.BC_ALT &&
+                         reg == CPUConstants.RegisterNames.C_ALT) ||
+                        (goalRegisters[i] == CPUConstants.RegisterNames.IX &&
+                         reg == CPUConstants.RegisterNames.IXL) ||
+                        (goalRegisters[i] == CPUConstants.RegisterNames.IY &&
+                         reg == CPUConstants.RegisterNames.IYL)
+                        ) {
+                        return goalRegisterValues[i] & 0xff;
+                    }
+                }
+            }
+            return null;
+        }
     }
 
     

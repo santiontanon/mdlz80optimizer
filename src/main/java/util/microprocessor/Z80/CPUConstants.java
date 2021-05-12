@@ -368,7 +368,7 @@ public class CPUConstants {
             case R: return "r";
 
             case AF: return "af";
-            case AF_ALT: return "af;";
+            case AF_ALT: return "af'";
             case B: return "b";
             case C: return "c";
             case D: return "d";
@@ -388,6 +388,49 @@ public class CPUConstants {
             default:
                 return "<unknown>";
         }
+    }
+    
+    
+    public static RegisterNames registerByName(String reg)
+    {
+        switch(reg.toLowerCase()) {
+            case "bc": return RegisterNames.BC;
+            case "de": return RegisterNames.DE;
+            case "hl": return RegisterNames.HL;
+            case "bc'": return RegisterNames.BC_ALT;
+            case "de'": return RegisterNames.DE_ALT;
+            case "hl'": return RegisterNames.HL_ALT;
+            case "ix": return RegisterNames.IX;
+            case "iy": return RegisterNames.IY;
+            case "sp": return RegisterNames.SP;
+            case "pc": return RegisterNames.PC;
+            case "a": return RegisterNames.A;
+            case "f": return RegisterNames.F;
+            case "a'": return RegisterNames.A_ALT;
+            case "f'": return RegisterNames.F_ALT;
+            case "i": return RegisterNames.I;
+            case "r": return RegisterNames.R;
+            case "af": return RegisterNames.AF;
+            case "af'": return RegisterNames.AF_ALT;
+            case "b": return RegisterNames.B;
+            case "c": return RegisterNames.C;
+            case "d": return RegisterNames.D;
+            case "e": return RegisterNames.E;
+            case "h": return RegisterNames.H;
+            case "l": return RegisterNames.L;
+            case "b'": return RegisterNames.B_ALT;
+            case "c'": return RegisterNames.C_ALT;
+            case "d'": return RegisterNames.D_ALT;
+            case "e'": return RegisterNames.E_ALT;
+            case "h'": return RegisterNames.H_ALT;
+            case "l'": return RegisterNames.L_ALT;
+            case "ixh": return RegisterNames.IXH;
+            case "ixl": return RegisterNames.IXL;
+            case "iyh": return RegisterNames.IYH;
+            case "iyl": return RegisterNames.IYL;
+            default:
+                return null;
+        }    
     }
 
 }

@@ -373,4 +373,10 @@ public class SBOCandidate {
         return true;
     }
         
+    
+    @Override
+    public String toString()
+    {
+        return op.toString();
+    }
 }
