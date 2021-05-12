@@ -256,7 +256,7 @@ public class SBOExecutionThread extends Thread {
                     currentDependencies[depth+1][i] = currentDependencies[depth][i] | candidate.outputDependencies[i];
                 }
                 if (!dependenciesSatisfied) continue;
-                if (depth == codeMaxOps-1 || codeMaxAddress == nextAddress) {
+                if (depth == codeMaxOps-1 || codeMaxAddress == nextAddress || nextTime == maxSimulationTime) {
                     // This is the last op we can add, so all output dependencies MUST be satisfied:
                     boolean goalDependenciesSatisfied = true;
                     for(int i: spec.goalDependencyIndexes) {

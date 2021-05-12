@@ -62,7 +62,7 @@ public class CPUConstants {
     final static int flag_S = 0x0080;
     final static int flag_Z = 0x0040;
     final static int flag_5 = 0x0020;
-    final static int flag_H = 0x0010;
+    public final static int flag_H = 0x0010;
     final static int flag_3 = 0x0008;
     final static int flag_PV = 0x0004;
     final static int flag_N = 0x0002;

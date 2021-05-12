@@ -506,9 +506,16 @@ public class SearchBasedOptimizer implements MDLWorker {
         String regNames[] = {"a", "b", "c", "d", "e", "h", "l"};
         for(String opName : opNames) {
             if (!spec.allowedOps.contains(opName)) continue;
+                        
             // register argument:
             for(String regName : regNames) {
                 if (!spec.allowedRegisters.contains(regName)) continue;
+                
+                if (opName.equals("and") && spec.allowedOps.contains("or") && !spec.allowedOps.contains("daa")) {
+                    // If we don't have "DAA", the "H" flag is useless, and hence, "or a" and "and a" are equivalent
+                    if (regName.equals("a")) continue;
+                }
+                
                 String line = opName + " " + regName;
                 if (!precomputeOp(line, candidates, allDependencies, code)) return false;
             }
