@@ -246,6 +246,7 @@ public class SearchBasedOptimizer implements MDLWorker {
         int nopDuration = config.opParser.getOpSpecs("nop").get(0).times[0];
         int nThreads = Runtime.getRuntime().availableProcessors();
         if (flags_nThreads != -1) nThreads = flags_nThreads;
+//        nThreads = 1;
         SBOExecutionThread threads[] = new SBOExecutionThread[nThreads];
         long start = System.currentTimeMillis();
         try {
@@ -312,7 +313,8 @@ public class SearchBasedOptimizer implements MDLWorker {
                     }
                     for(int i = 0;i<nThreads;i++) threads[i].join();
                     if (state.bestOps != null) break;
-                    config.info("SearchBasedOptimizer: time "+maxTime+" complete ("+state.solutionsEvaluated+" solutions tested)");
+                    String time = String.format("%.02f", (System.currentTimeMillis() - start)/1000.0f) + "s";
+                    config.info("SearchBasedOptimizer: time "+maxTime+" complete ("+state.solutionsEvaluated+" solutions tested, time elapsed: "+time+")");
                 }
                 
             } else {
@@ -435,6 +437,7 @@ public class SearchBasedOptimizer implements MDLWorker {
         
         // Precalculate which instructions can contribute to the solution:
         boolean goalDependencies[] = spec.getGoalDependencies(allDependencies);
+        spec.getGoalDependenciesSatisfiedFromTheStart(allDependencies); // precalculate for later
         for(int i = 0;i<nDependencies;i++) {
             if (!goalDependencies[i]) continue;
             boolean isVariable = false;
@@ -455,7 +458,7 @@ public class SearchBasedOptimizer implements MDLWorker {
                 }
             }
             for(SBOCandidate op:candidates) {
-                if (op.outputDependencies[i]) {
+                if (op.outputDependencies[i] != 0) {
                     if (isVariable &&
                         op.op.spec.getName().equalsIgnoreCase("ld") &&
                         op.op.args.get(1).type == Expression.EXPRESSION_INTEGER_CONSTANT) {

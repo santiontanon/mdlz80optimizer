@@ -69,6 +69,56 @@ public class Specification {
         }
         
         
+        public Integer getStartRegisterValue(CPUConstants.RegisterNames reg)
+        {
+            for(int i = 0;i<startRegisters.length;i++) {
+                if (startRegisters[i] == reg) {
+                    return startRegisterValues[i];
+                } else {
+                    if ((startRegisters[i] == CPUConstants.RegisterNames.HL &&
+                         reg == CPUConstants.RegisterNames.H) ||
+                        (startRegisters[i] == CPUConstants.RegisterNames.DE &&
+                         reg == CPUConstants.RegisterNames.D) ||
+                        (startRegisters[i] == CPUConstants.RegisterNames.BC &&
+                         reg == CPUConstants.RegisterNames.B) ||
+                        (startRegisters[i] == CPUConstants.RegisterNames.HL_ALT &&
+                         reg == CPUConstants.RegisterNames.H_ALT) ||
+                        (startRegisters[i] == CPUConstants.RegisterNames.DE_ALT &&
+                         reg == CPUConstants.RegisterNames.D_ALT) ||
+                        (startRegisters[i] == CPUConstants.RegisterNames.BC_ALT &&
+                         reg == CPUConstants.RegisterNames.B_ALT) ||
+                        (startRegisters[i] == CPUConstants.RegisterNames.IX &&
+                         reg == CPUConstants.RegisterNames.IXH) ||
+                        (startRegisters[i] == CPUConstants.RegisterNames.IY &&
+                         reg == CPUConstants.RegisterNames.IYH)
+                        ) {
+                        return (startRegisterValues[i] >> 8) & 0xff;
+                    }
+                    if ((startRegisters[i] == CPUConstants.RegisterNames.HL &&
+                         reg == CPUConstants.RegisterNames.L) ||
+                        (startRegisters[i] == CPUConstants.RegisterNames.DE &&
+                         reg == CPUConstants.RegisterNames.E) ||
+                        (startRegisters[i] == CPUConstants.RegisterNames.BC &&
+                         reg == CPUConstants.RegisterNames.C) ||
+                        (startRegisters[i] == CPUConstants.RegisterNames.HL_ALT &&
+                         reg == CPUConstants.RegisterNames.L_ALT) ||
+                        (startRegisters[i] == CPUConstants.RegisterNames.DE_ALT &&
+                         reg == CPUConstants.RegisterNames.E_ALT) ||
+                        (startRegisters[i] == CPUConstants.RegisterNames.BC_ALT &&
+                         reg == CPUConstants.RegisterNames.C_ALT) ||
+                        (startRegisters[i] == CPUConstants.RegisterNames.IX &&
+                         reg == CPUConstants.RegisterNames.IXL) ||
+                        (startRegisters[i] == CPUConstants.RegisterNames.IY &&
+                         reg == CPUConstants.RegisterNames.IYL)
+                        ) {
+                        return startRegisterValues[i] & 0xff;
+                    }
+                }
+            }
+            return null;
+        }
+        
+        
         public Integer getGoalRegisterValue(CPUConstants.RegisterNames reg)
         {
             for(int i = 0;i<goalRegisters.length;i++) {
@@ -116,7 +166,7 @@ public class Specification {
                 }
             }
             return null;
-        }
+        }        
     }
 
     
@@ -146,6 +196,12 @@ public class Specification {
     // precomputed, so that we don't waste time during search evaluating
     // expressions:
     public PrecomputedTestCase precomputedTestCases[] = null;
+    
+    
+    boolean goalDependencies[] = null;
+    int goalDependencyIndexes[] = null;
+    boolean goalDependenciesSatisfiedFromTheStart[] = null;
+    
     
     public Specification()
     {
@@ -274,8 +330,9 @@ public class Specification {
 
     public boolean[] getGoalDependencies(List<CPUOpDependency> allDependencies)
     {
-        boolean dependencies[] = new boolean[allDependencies.size()];
-        for(int i = 0;i<dependencies.length;i++) dependencies[i] = false;
+        if (goalDependencies != null) return goalDependencies;
+        goalDependencies = new boolean[allDependencies.size()];
+        for(int i = 0;i<goalDependencies.length;i++) goalDependencies[i] = false;
         
         for(SpecificationExpression exp:goalState) {
             CPUOpDependency dep = null;
@@ -286,12 +343,54 @@ public class Specification {
             } else {
                 return null;
             }
-            for(int i = 0;i<dependencies.length;i++) {
-                if (dep.match(allDependencies.get(i))) dependencies[i] = true;
+            for(int i = 0;i<goalDependencies.length;i++) {
+                if (dep.match(allDependencies.get(i))) goalDependencies[i] = true;
             }
         }
         
-        return dependencies;
+        int nDependencies = 0;
+        for(boolean tmp:goalDependencies) {
+            if (tmp) nDependencies ++;
+        }
+        
+        goalDependencyIndexes = new int[nDependencies];
+        for(int i = 0, j = 0;i<goalDependencies.length;i++) {
+            if (goalDependencies[i]) {
+                goalDependencyIndexes[j] = i;
+                j++;
+            }
+        }
+        
+        return goalDependencies;
+    }
+    
+    
+    public boolean[] getGoalDependenciesSatisfiedFromTheStart(List<CPUOpDependency> allDependencies)
+    {
+        if (goalDependenciesSatisfiedFromTheStart != null) return goalDependenciesSatisfiedFromTheStart;
+        getGoalDependencies(allDependencies);
+        goalDependenciesSatisfiedFromTheStart = new boolean[allDependencies.size()];
+        for(int i = 0;i<goalDependenciesSatisfiedFromTheStart.length;i++) goalDependenciesSatisfiedFromTheStart[i] = false;
+        for(int i = 0;i<allDependencies.size();i++) {
+            if (goalDependencies[i]) {
+                CPUOpDependency dep = allDependencies.get(i);
+                if (dep.register == null) continue;
+                goalDependenciesSatisfiedFromTheStart[i] = true;
+                for(PrecomputedTestCase ptc:precomputedTestCases) {
+                    Integer val1 = ptc.getStartRegisterValue(CPUConstants.registerByName(dep.register));
+                    Integer val2 = ptc.getGoalRegisterValue(CPUConstants.registerByName(dep.register));
+                    if (val1 != null && val2 != null && val1.equals(val2)) {
+                        // satisfied from beginning!
+                    } else {
+                        goalDependenciesSatisfiedFromTheStart[i] = false;
+                        break;
+                    }
+                }
+            } else {
+                goalDependenciesSatisfiedFromTheStart[i] = true;
+            }
+        }
+        return goalDependenciesSatisfiedFromTheStart;
     }
     
     /*

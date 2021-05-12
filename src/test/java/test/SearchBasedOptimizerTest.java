@@ -55,23 +55,23 @@ public class SearchBasedOptimizerTest {
     @Test public void testLShift9time() throws IOException { test("data/searchtests/test-large1.txt", "data/searchtests/test-large1-time-expected.asm", "-so-time"); }
 
     // These are larger tests (that are a bit slow, and thus are deactivated by default for quick building):
-    // Current version: 0.172 sec (19206 solutions tested)
+    // Current version: 0.172 sec (13326 solutions tested)
 //    @Test public void testLShift10() throws IOException { test("data/searchtests/test-large2.txt", "data/searchtests/test-large2-expected.asm"); }
-    // Current version: 0.189 sec (8292 solutions tested)
+    // Current version: 0.189 sec (5676 solutions tested)
 //    @Test public void testLShift10b() throws IOException { test("data/searchtests/test-large2b.txt", "data/searchtests/test-large2b-expected.asm"); }
-    // Current version: 0.263 sec (32948 solutions tested)
+    // Current version: 0.263 sec (20856 solutions tested)
 //    @Test public void testLShift10c() throws IOException { test("data/searchtests/test-large2c.txt", "data/searchtests/test-large2c-expected.asm"); }
-    // Current version: 0.344 sec (851313 solutions tested)
+    // Current version: 0.344 sec (605147 solutions tested)
 //    @Test public void testLShift11() throws IOException { test("data/searchtests/test-large3.txt", "data/searchtests/test-large3-expected.asm"); }
-    // Current version: 0.481 sec (1098178 solutions tested)
+    // Current version: 0.481 sec (1045273 solutions tested)
 //    @Test public void testMin() throws IOException { test("data/searchtests/test-min.txt", "data/searchtests/test-min-expected.asm"); }
-    // Current version: 0.829 sec (4483846 solutions tested 1-thread)
+    // Current version: 0.738 sec (1100248 solutions tested 1-thread)
 //    @Test public void testSort() throws IOException { test("data/searchtests/test-sort.txt", "data/searchtests/test-sort-expected.asm"); }
-//     Current version: 2.99 sec (23530756 solutions tested 1-thread)
+    // Current version: 2.63 sec (18967141 solutions tested 1-thread)
 //    @Test public void testLShift12() throws IOException { test("data/searchtests/test-large4.txt", "data/searchtests/test-large4-expected.asm"); }
-    // Current version: 86.859 sec (712357602 solutions tested 1-thread)
+    // Current version: 77.379 sec (613206638 solutions tested 1-thread)
 //    @Test public void testLShift13() throws IOException { test("data/searchtests/test-large5.txt", "data/searchtests/test-large5-expected.asm"); }
-    // Current version: 238.813 sec (6256071288 solutions tested, 8-threads)
+    // Current version: 186.539 sec (4231914354 solutions tested, 8-threads)
 //    @Test public void testLShift13Hard() throws IOException { test("data/searchtests/test-large6.txt", "data/searchtests/test-large6-expected.asm"); }
     // Current version: - sec (- solutions tested)
 //    @Test public void testLShift13HardSpeed() throws IOException { test("data/searchtests/test-large6.txt", "data/searchtests/test-large6-expected.asm", "-so-time"); }

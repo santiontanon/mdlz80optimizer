@@ -25,7 +25,7 @@ public class SBOCandidate {
 
     // Cached dependencies (which registers/flags do these ops depend on, and which do they set):
     public boolean inputDependencies[] = null;
-    public boolean outputDependencies[] = null;
+    public int outputDependencies[] = null;
     public boolean directContributionToGoal = false;
     public boolean isAbsoluteJump = false;
     public boolean isRelativeJump = false;
@@ -66,10 +66,10 @@ public class SBOCandidate {
         
         // precompute the dependencies:
         inputDependencies = new boolean[allDependencies.size()];
-        outputDependencies = new boolean[allDependencies.size()];
+        outputDependencies = new int[allDependencies.size()];
         for(int i = 0;i<allDependencies.size();i++) {
             inputDependencies[i] = false;
-            outputDependencies[i] = false;
+            outputDependencies[i] = 0;
         }
         for(CPUOpDependency dep:op.getInputDependencies()) {
             for(int i = 0;i<allDependencies.size();i++) {
@@ -81,7 +81,7 @@ public class SBOCandidate {
         for(CPUOpDependency dep:op.getOutputDependencies()) {
             for(int i = 0;i<allDependencies.size();i++) {
                 if (dep.match(allDependencies.get(i))) {
-                    outputDependencies[i] = true;
+                    outputDependencies[i] = 2;
                 }
             }
         }
@@ -216,7 +216,7 @@ public class SBOCandidate {
             int depsRemaining = 0;
             boolean outDeps[] = new boolean[op.outputDependencies.length];
             for(int k = 0;k<op.outputDependencies.length;k++) {
-                outDeps[k] = op.outputDependencies[k];
+                outDeps[k] = (op.outputDependencies[k] != 0);
                 if (outDeps[k]) depsRemaining += 1;
             }
             for(int j = i+1;j<sequence.size();j++) {
@@ -227,7 +227,7 @@ public class SBOCandidate {
                             resultsUsed = true;
                             break;
                         }
-                        if (op2.outputDependencies[k]) {
+                        if (op2.outputDependencies[k] != 0) {
                             outDeps[k] = false;
                             depsRemaining --;
                             if (depsRemaining == 0) break;
@@ -256,16 +256,16 @@ public class SBOCandidate {
         boolean op1WouldDependOnOp2 = false;
         boolean op1op1OutputsDisjoint = true;
         for(int i = 0;i<op1.outputDependencies.length;i++) {
-            if (op1.outputDependencies[i] && !op2.outputDependencies[i]) {
+            if (op1.outputDependencies[i] != 0 && op2.outputDependencies[i] == 0) {
                 op2outputIsSuperset = false;
             }
-            if (op1.outputDependencies[i] && op2.inputDependencies[i]) {
+            if (op1.outputDependencies[i] != 0 && op2.inputDependencies[i]) {
                 op2dependsOnOp1 = true;
             }
-            if (op2.outputDependencies[i] && op1.inputDependencies[i]) {
+            if (op2.outputDependencies[i] != 0 && op1.inputDependencies[i]) {
                 op1WouldDependOnOp2 = true;
             }
-            if (op1.outputDependencies[i] && op2.outputDependencies[i]) {
+            if (op1.outputDependencies[i] != 0 && op2.outputDependencies[i] != 0) {
                 op1op1OutputsDisjoint = false;
             }
         }

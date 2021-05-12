@@ -54,7 +54,10 @@ public class SBOExecutionThread extends Thread {
     
     // The "dependencies" array, contains the set of dependencies (Registers/flags) that
     // have already been set by previous instructions:
-    boolean currentDependencies[][] = null;
+    // - 1 means they are set from the start state
+    // - 2 means they are set by an instruction
+    // - 3 means both
+    int currentDependencies[][] = null;
     boolean goalDependencies[] = null;
     
     SBOGlobalSearchState globalState;
@@ -100,11 +103,11 @@ public class SBOExecutionThread extends Thread {
         currentRelativeJumps_n = 0;
         currentRelativeJumps = new int[spec.maxOps];
         
-        currentDependencies = new boolean[spec.maxOps+1][nDependencies];
+        currentDependencies = new int[spec.maxOps+1][nDependencies];
         {
             boolean initialDependencies[] = spec.getInitialDependencies(allDependencies);
             for(int i = 0;i<nDependencies;i++) {
-                currentDependencies[0][i] = initialDependencies[i];
+                currentDependencies[0][i] = initialDependencies[i] ? 1:0;
             }
         }
         config.debug("Initial dependency set: " + Arrays.toString(currentDependencies[0]));        
@@ -171,28 +174,25 @@ public class SBOExecutionThread extends Thread {
                 if (!canBeBest(depth+1, size)) continue;
                 boolean dependenciesSatisfied = true;
                 for(int i = 0;i<nDependencies;i++) {
-                    if (candidate.inputDependencies[i] && !currentDependencies[depth][i]) {
+                    if (candidate.inputDependencies[i] && currentDependencies[depth][i] == 0) {
                         dependenciesSatisfied = false;
                         break;
                     }
-                    currentDependencies[depth+1][i] = currentDependencies[depth][i] || candidate.outputDependencies[i];
+                    currentDependencies[depth+1][i] = currentDependencies[depth][i] | candidate.outputDependencies[i];
                 }
                 if (!dependenciesSatisfied) continue;
-//                if (depth == codeMaxOps-1 || codeMaxAddress == nextAddress) {
-//                    System.out.println("----");
-//                    System.out.println(Arrays.toString(currentOps));
-//                    System.out.println(Arrays.toString(currentDependencies[depth+1]));
+                if (depth == codeMaxOps-1 || codeMaxAddress == nextAddress) {
                     // this is the last op we can add, so all output dependencies MUST be satisfied:
-//                    boolean goalDependenciesSatisfied = true;
-//                    for(int i = 0;i<nDependencies;i++) {
-//                        if (goalDependencies[i] && !currentDependencies[depth+1][i]) {
-//                            System.out.println("!");
-//                            goalDependenciesSatisfied = false;
-//                            break;
-//                        }
-//                    }
-//                    if (!goalDependenciesSatisfied) continue;
-//                }                                    
+                    boolean goalDependenciesSatisfied = true;
+                    for(int i: spec.goalDependencyIndexes) {
+                          if (!spec.goalDependenciesSatisfiedFromTheStart[i] &&
+                              currentDependencies[depth+1][i] < 2) {
+                            goalDependenciesSatisfied = false;
+                            break;
+                        }
+                    }
+                    if (!goalDependenciesSatisfied) continue;
+                }                                    
                 System.arraycopy(candidate.bytes, 0, z80Memory.memory, codeAddress, candidate.bytes.length);
                 currentOps[depth] = candidate.op;
                 currentOpsAddresses[depth] = codeAddress;
@@ -249,13 +249,25 @@ public class SBOExecutionThread extends Thread {
                 if (!canBeBest(depth+1, size)) continue;
                 boolean dependenciesSatisfied = true;
                 for(int i = 0;i<nDependencies;i++) {
-                    if (candidate.inputDependencies[i] && !currentDependencies[depth][i]) {
+                    if (candidate.inputDependencies[i] && currentDependencies[depth][i] == 0) {
                         dependenciesSatisfied = false;
                         break;
                     }
-                    currentDependencies[depth+1][i] = currentDependencies[depth][i] || candidate.outputDependencies[i];
+                    currentDependencies[depth+1][i] = currentDependencies[depth][i] | candidate.outputDependencies[i];
                 }
                 if (!dependenciesSatisfied) continue;
+                if (depth == codeMaxOps-1 || codeMaxAddress == nextAddress) {
+                    // This is the last op we can add, so all output dependencies MUST be satisfied:
+                    boolean goalDependenciesSatisfied = true;
+                    for(int i: spec.goalDependencyIndexes) {
+                          if (!spec.goalDependenciesSatisfiedFromTheStart[i] &&
+                              currentDependencies[depth+1][i] < 2) {
+                            goalDependenciesSatisfied = false;
+                            break;
+                        }
+                    }
+                    if (!goalDependenciesSatisfied) continue;
+                }                                    
                                
                 System.arraycopy(candidate.bytes, 0, z80Memory.memory, codeAddress, candidate.bytes.length);
                 currentOps[depth] = candidate.op;
