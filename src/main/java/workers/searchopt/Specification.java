@@ -182,6 +182,7 @@ public class Specification {
     List<String> allowedOps = new ArrayList<>();
     List<String> allowedRegisters = new ArrayList<>();
     boolean allowRamUse = false;
+    boolean allowIO = false;
     boolean allowGhostRegisters = false;
     boolean allowLoops = false;
     

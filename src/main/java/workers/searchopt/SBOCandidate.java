@@ -145,6 +145,7 @@ public class SBOCandidate {
             HashMap<String, SBOCandidate> candidateOpsByPrefix,
             List<SBOCandidate> allCandidateOps,
             List<CPUOpDependency> allDependencies,
+            Specification spec,
             CodeBase code,
             int maxLength,
             MDLConfig config)
@@ -174,7 +175,7 @@ public class SBOCandidate {
                     config.error("precomputeCandidates: sequence is longer than maxLength!!");
                     return false;
                 }
-                if (sequenceMakesSense(sequence, code)) {
+                if (sequenceMakesSense(sequence, spec, code)) {
                     String prefixStr = op2.prefixString(op, maxLength);
                     if (candidateOpsByPrefix.containsKey(prefixStr)) {
                         op2 = candidateOpsByPrefix.get(prefixStr);
@@ -201,11 +202,11 @@ public class SBOCandidate {
     }
 
 
-    static boolean sequenceMakesSense(List<SBOCandidate> sequence, CodeBase code)
+    static boolean sequenceMakesSense(List<SBOCandidate> sequence, Specification spec, CodeBase code)
     {
         // pair-wise dependencies:
         for(int i = 0;i<sequence.size()-1;i++) {
-            if (!sequenceMakesSensePair(sequence.get(i), sequence.get(i+1), code)) return false;
+            if (!sequenceMakesSensePair(sequence.get(i), sequence.get(i+1), spec, code)) return false;
         }
         
         // check for instructions that get masked out (all its effects are overwritten by subsequent instructions):
@@ -246,7 +247,7 @@ public class SBOCandidate {
     }
     
     
-    static boolean sequenceMakesSensePair(SBOCandidate op1, SBOCandidate op2, CodeBase code)
+    static boolean sequenceMakesSensePair(SBOCandidate op1, SBOCandidate op2, Specification spec, CodeBase code)
     {
         // These sequences are already captured below, so, no need to check for them:
         // - ld X, Y; ld X, Z
@@ -254,7 +255,7 @@ public class SBOCandidate {
         boolean op2outputIsSuperset = true;
         boolean op2dependsOnOp1 = false;
         boolean op1WouldDependOnOp2 = false;
-        boolean op1op1OutputsDisjoint = true;
+        boolean op1op2OutputsDisjoint = true;
         for(int i = 0;i<op1.outputDependencies.length;i++) {
             if (op1.outputDependencies[i] != 0 && op2.outputDependencies[i] == 0) {
                 op2outputIsSuperset = false;
@@ -266,7 +267,7 @@ public class SBOCandidate {
                 op1WouldDependOnOp2 = true;
             }
             if (op1.outputDependencies[i] != 0 && op2.outputDependencies[i] != 0) {
-                op1op1OutputsDisjoint = false;
+                op1op2OutputsDisjoint = false;
             }
         }
         if (!op1.op.isJump() && op2outputIsSuperset && !op2dependsOnOp1) return false;
@@ -287,7 +288,6 @@ public class SBOCandidate {
                 op2.op.args.get(0).isRegister(code)) {
                 if (op1.op.args.get(1).isRegister(code)) {
                     if (op1.op.args.get(1).registerOrFlagName.equals(op2.op.args.get(0).registerOrFlagName)) return true;
-                    
                 }
                 // cannonical order of "ld":
                 if (op1.op.args.get(0).registerOrFlagName.compareTo(op2.op.args.get(0).registerOrFlagName) > 0) {
@@ -359,9 +359,58 @@ public class SBOCandidate {
             return false;
         }
         
+        // There is no point on zeroing "a", and then add/or/xor/and to it, unless
+        // we are going to use the P/V flag (which is only used for conditional jumps/calls):
+        if (op1.op.toString().equals("sub a") || op1.op.toString().equals("xor a")) {
+            if (!spec.allowedOps.contains("jp") && !spec.allowedOps.contains("jr") && !spec.allowedOps.contains("call") &&
+                (op2.op.spec.getName().equals("add") || op2.op.spec.getName().equals("adc") || 
+                 op2.op.spec.getName().equals("and") ||
+                 op2.op.spec.getName().equals("or") || op2.op.spec.getName().equals("xor")) &&
+                op2.op.args.get(0).type == Expression.EXPRESSION_REGISTER_OR_FLAG &&
+                op2.op.args.get(0).registerOrFlagName.equals("a")) {
+                return false;
+            }
+            // RLCA/RLA/RRCA/RRA/RLC/RL/RRC/RR with "a" after "sub a" or "xor a" is a no-op:
+            // same with SLA/SRA/SRL
+            if (op2.op.toString().equals("rlca") ||
+                op2.op.toString().equals("rla") ||
+                op2.op.toString().equals("rrca") ||
+                op2.op.toString().equals("rra") ||
+                op2.op.toString().equals("rlc a") ||
+                op2.op.toString().equals("rl a") ||
+                op2.op.toString().equals("rrc a") ||
+                op2.op.toString().equals("sla a") ||
+                op2.op.toString().equals("sra a") ||
+                op2.op.toString().equals("srl a")) {
+                return false;
+            }
+        }
+        if (op1.op.toString().equals("sub a") || op1.op.toString().equals("xor a") ||
+            op1.op.toString().equals("and a") || op1.op.toString().equals("or a")) {
+            // carry is cleared here, so sbc is the same as sub:
+            if (spec.allowedOps.contains("sub") &&
+                op2.op.spec.getName().equals("sbc") &&
+                op2.op.args.get(0).type == Expression.EXPRESSION_REGISTER_OR_FLAG &&
+                op2.op.args.get(0).registerOrFlagName.equals("a")) {
+                return false;
+            }
+            // carry is cleared here, so adc is the same as add:
+            if (spec.allowedOps.contains("add") &&
+                op2.op.spec.getName().equals("adc")) {
+                return false;
+            }
+
+            if (spec.allowedOps.contains("sra") &&
+                op2.op.spec.getName().equals("srl") &&
+                op2.op.args.get(0).type == Expression.EXPRESSION_REGISTER_OR_FLAG &&
+                op2.op.args.get(0).registerOrFlagName.equals("a")) {                    
+                return false;
+            }
+        }
+        
         if (!op2dependsOnOp1 && 
             !op1WouldDependOnOp2 && 
-            op1op1OutputsDisjoint &&
+            op1op2OutputsDisjoint &&
             !op1.op.isJump() &&
             !op2.op.isJump()) {
             // general canonical order of instructions that are independent:

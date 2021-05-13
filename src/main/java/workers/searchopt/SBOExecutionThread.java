@@ -367,6 +367,9 @@ public class SBOExecutionThread extends Thread {
                 bestTime = globalState.bestTime;                
             }
             
+            // Print statement to print sequences and visually inspect if there are any prunable ones:
+//            if (depth == 3) System.out.println(Arrays.toString(currentOps));
+            
             solutionsEvaluated++;
 
             int size = breakPoint - spec.codeStartAddress;

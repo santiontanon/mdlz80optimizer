@@ -197,10 +197,16 @@ public class SearchBasedOptimizer implements MDLWorker {
             allDependencies.add(new CPUOpDependency(regName, null, null, null, null));
         }
         for(String flagName: new String[]{"S" ,"Z" ,"H" , "P/V" ,"N" , "C"}) {
+            // "H" is only useful for DAA:
+            if (!spec.allowedOps.contains("daa") && flagName.equals("H")) continue;
             allDependencies.add(new CPUOpDependency(null, flagName, null, null, null));
         }
-        allDependencies.add(new CPUOpDependency(null, null, "C", null, null));
-        allDependencies.add(new CPUOpDependency(null, null, null, "0", "0x10000"));
+        if (spec.allowIO) {
+            allDependencies.add(new CPUOpDependency(null, null, "C", null, null));
+        }
+        if (spec.allowRamUse) {
+            allDependencies.add(new CPUOpDependency(null, null, null, "0", "0x10000"));
+        }
         nDependencies = allDependencies.size();
         config.debug("nDependencies: " + nDependencies);
         
@@ -473,7 +479,7 @@ public class SearchBasedOptimizer implements MDLWorker {
         // Precompute which ops can follow which other ops:
         HashMap<String, SBOCandidate> candidateOpsByPrefix = new HashMap<>();
         SBOCandidate.precomputeCandidates(candidateOpsByPrefix, 
-                candidates, allDependencies, code, maxLength, config);
+                candidates, allDependencies, spec, code, maxLength, config);
         
         return candidates;
     }

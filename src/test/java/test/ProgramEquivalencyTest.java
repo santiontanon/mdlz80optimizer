@@ -9,10 +9,8 @@ import cl.MDLConfig;
 import code.CPUOp;
 import code.CodeBase;
 import code.CodeStatement;
-import code.Expression;
 import code.SourceFile;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import org.junit.Assert;
@@ -33,16 +31,31 @@ public class ProgramEquivalencyTest {
     private final MDLConfig config;
     private final Random r;
     private final List<Integer> halfFlag;
+    private final List<Integer> HPVFlags;
 
     public ProgramEquivalencyTest() {
         config = new MDLConfig();
         r = new Random();     
         halfFlag = new ArrayList<>();
         halfFlag.add(CPUConstants.flag_H);
+        HPVFlags = new ArrayList<>();
+        HPVFlags.add(CPUConstants.flag_H);
+        HPVFlags.add(CPUConstants.flag_PV);
     }
 
     @Test public void test1() throws Exception { test("and a", "and a", false, halfFlag); }
     @Test public void test2() throws Exception { test("and a", "or a", false, halfFlag); }
+    @Test public void test3() throws Exception { test("sub a\nadd a,h", "ld a,h\nor a", false, HPVFlags); }
+    @Test public void test4() throws Exception { test("or a\nadd a,a", "or a\nadc a,a", false, halfFlag); }
+    @Test public void test5() throws Exception { test("sub a\nsub h", "sub a\nsbc h", false, halfFlag); }
+    @Test public void test6() throws Exception { test("xor a\nsrl a", "xor a\nsra a", false, halfFlag); }
+    @Test public void test6a() throws Exception { test("xor a\nsrl a", "xor a", false, halfFlag); }
+
+    // RLCA/RLA/RRCA/RRA/RLC/RL/RRC/RR
+    @Test public void test7() throws Exception { test("xor a", "xor a\nrrc a", false, halfFlag); }
+    @Test public void test7a() throws Exception { test("xor a", "xor a\nrrca", false, halfFlag); }
+    @Test public void test8() throws Exception { test("xor a\nrla", "xor a\nrlc a", false, halfFlag); }
+    @Test public void test8a() throws Exception { test("xor a\nrl a", "xor a\nrlc a", false, halfFlag); }
 
 
     private void test(String program1, String program2, boolean checkMemory, List<Integer> flagsToIgnore) throws Exception
@@ -138,10 +151,12 @@ public class ProgramEquivalencyTest {
         // Reset the CPU:
         z801.reset();
         z802.reset();
+        List<Integer> initialValues = new ArrayList<>();
         for(CPUConstants.RegisterNames register: CPUConstants.eightBitRegisters) {
             int v = r.nextInt(256);
             z801.setRegisterValue(register, v);
             z802.setRegisterValue(register, v);
+            initialValues.add(v);
         }
         z801.setProgramCounter(startAddress);
         z802.setProgramCounter(startAddress);
@@ -151,6 +166,7 @@ public class ProgramEquivalencyTest {
         int replacementLastAddress = simulateProgram(statements2, startAddress, z802, z80Memory2, code);
                 
         // Compare the output state of the simulator:
+        boolean differences = false;
         for(CPUConstants.RegisterNames register: CPUConstants.eightBitRegisters) {
             int v1 = z801.getRegisterValue(register);
             int v2 = z802.getRegisterValue(register);
@@ -170,17 +186,14 @@ public class ProgramEquivalencyTest {
                     for(int flag = 0;flag<8;flag++) {
                         if ((v1 & CPUConstants.flags[flag]) != (v2 & CPUConstants.flags[flag])) {
                             System.out.println("Difference in flag: " + CPUConstants.flagNames[flag]);
+                            differences = true;
                         }
                     }
                 }
                 System.out.println("Simulations differ in register " + CPUConstants.registerName(register) + ": " + 
                         config.tokenizer.toHex(z801.getRegisterValue(register), 2) + " != " +
                         config.tokenizer.toHex(z802.getRegisterValue(register), 2));
-                System.out.println("program 1 addresses: " + config.tokenizer.toHex(startAddress, 4) + " - " + config.tokenizer.toHex(patternLastAddress, 4));
-                System.out.println("program 2 addresses: " + config.tokenizer.toHex(startAddress, 4) + " - " + config.tokenizer.toHex(replacementLastAddress, 4));
-                showInstantiatedProgram("program 1:", statements1);
-                showInstantiatedProgram("program 2:", statements2);
-                return false;
+                differences = true;
             }
         }
         
@@ -190,13 +203,22 @@ public class ProgramEquivalencyTest {
                 if (i>0x10000 - maxStackSize) continue;
                 if (z80Memory1.readByte(i) != z80Memory2.readByte(i)) {
                     System.out.println("Simulations differ in memory address " + config.tokenizer.toHex(i, 4));
-                    System.out.println("Pattern addresses: " + config.tokenizer.toHex(startAddress, 4) + " - " + config.tokenizer.toHex(patternLastAddress, 4));
-                    System.out.println("Replacement addresses: " + config.tokenizer.toHex(startAddress, 4) + " - " + config.tokenizer.toHex(replacementLastAddress, 4));
-                    showInstantiatedProgram("program 1:", statements1);
-                    showInstantiatedProgram("program 2:", statements2);
-                    return false;
+                    differences = true;
                 }
             }
+        }
+        
+        if (differences) {
+            showInstantiatedProgram("program 1:", statements1);
+            showInstantiatedProgram("program 2:", statements2);
+            System.out.println("program 1 addresses: " + config.tokenizer.toHex(startAddress, 4) + " - " + config.tokenizer.toHex(patternLastAddress, 4));
+            System.out.println("program 2 addresses: " + config.tokenizer.toHex(startAddress, 4) + " - " + config.tokenizer.toHex(replacementLastAddress, 4));
+            System.out.println("Initial register values:");
+            for(int i = 0;i<CPUConstants.eightBitRegisters.length;i++) {
+                CPUConstants.RegisterNames register = CPUConstants.eightBitRegisters[i];
+                System.out.println("    " + CPUConstants.registerName(register) + " = " + initialValues.get(i));
+            }
+            return false;
         }
                 
         return true;
@@ -245,9 +267,7 @@ public class ProgramEquivalencyTest {
             steps++;
         }
         memory.clearWriteProtections();
-        
-//        System.out.println("Executed " + steps+ " steps, taking a total time of " + z80.getTStates());
-    
+            
         return currentAddress;
     }
 }
