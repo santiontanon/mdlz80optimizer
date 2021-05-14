@@ -65,7 +65,7 @@ public class CPUConstants {
     public final static int flag_H = 0x0010;
     final static int flag_3 = 0x0008;
     public final static int flag_PV = 0x0004;
-    final static int flag_N = 0x0002;
+    public final static int flag_N = 0x0002;
     final static int flag_C = 0x0001;
     // for resetting
     final static int flag_S_N = 0x007F;

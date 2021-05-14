@@ -8,6 +8,7 @@ package workers.searchopt;
 import cl.MDLConfig;
 import code.CPUOp;
 import code.CPUOpDependency;
+import code.CPUOpSpec;
 import code.CodeBase;
 import code.Expression;
 import java.util.ArrayList;
@@ -51,6 +52,8 @@ public class SBOExecutionThread extends Thread {
     int currentAbsoluteJumps[] = null;  // stores the indexes of "jp"s
     int currentRelativeJumps_n = 0;
     int currentRelativeJumps[] = null;  // stores the indexes of "jr"s or "djnz"s
+    
+    int minimumInstructionTime = 1;
     
     // The "dependencies" array, contains the set of dependencies (Registers/flags) that
     // have already been set by previous instructions:
@@ -116,6 +119,17 @@ public class SBOExecutionThread extends Thread {
         codeMaxOps = a_codeMaxOps;
         codeMaxAddress = a_codeMaxAddress;
         maxSimulationTime = a_maxSimulationTime;
+        
+        minimumInstructionTime = -1;
+        for(CPUOpSpec spec:config.opParser.getOpSpecs()) {
+            int minTime = spec.times[0];
+            if (spec.times.length > 1) {
+                minTime = Math.min(minTime, spec.times[1]);
+            }
+            if (minimumInstructionTime == -1 || minTime < minimumInstructionTime) {
+                minimumInstructionTime = minTime;
+            }
+        }
     }
     
     
@@ -233,6 +247,9 @@ public class SBOExecutionThread extends Thread {
     {
         if (depth >= codeMaxOps || codeAddress >= codeMaxAddress || currentTime >= maxSimulationTime) {
             return evaluateSolution(depth, 0, 0, codeAddress);
+        } else if (currentTime > maxSimulationTime - minimumInstructionTime) {
+            // We cannot fit any instruction in this small amount of time, so just fail
+            return false;
         } else {
             boolean found = false;
             // the very last op must contribute to the goal:
@@ -420,7 +437,7 @@ public class SBOExecutionThread extends Thread {
                 globalState.newBest(bestOps, size, time);
 
                 if (showNewBestDuringSearch) {
-                    config.info("New solution found (size: "+size+" bytes, time: " + time + "):");
+                    config.info("New solution found (size: "+size+" bytes, time: " + time + " " + config.timeUnit + "s):");
                     for(CPUOp op:bestOps) {
                         config.info("    " + op);
                     }

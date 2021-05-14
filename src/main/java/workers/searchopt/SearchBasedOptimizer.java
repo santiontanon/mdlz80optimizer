@@ -197,8 +197,16 @@ public class SearchBasedOptimizer implements MDLWorker {
             allDependencies.add(new CPUOpDependency(regName, null, null, null, null));
         }
         for(String flagName: new String[]{"S" ,"Z" ,"H" , "P/V" ,"N" , "C"}) {
-            // "H" is only useful for DAA:
+            // "H" and "N" are only useful for DAA:
             if (!spec.allowedOps.contains("daa") && flagName.equals("H")) continue;
+            if (!spec.allowedOps.contains("daa") && flagName.equals("N")) continue;
+            if (flagName.equals("P/V")) {
+                if (!spec.allowedOps.contains("jp") &&
+                    !spec.allowedOps.contains("jr") &&
+                    !spec.allowedOps.contains("call")) {
+                    continue;
+                }
+            }
             allDependencies.add(new CPUOpDependency(null, flagName, null, null, null));
         }
         if (spec.allowIO) {
@@ -872,6 +880,9 @@ public class SearchBasedOptimizer implements MDLWorker {
             if (!spec.allowedOps.contains(op)) continue;
             for(String reg : regNames) {
                 if (!spec.allowedRegisters.contains(reg)) continue;
+                
+                // sla a is the same as add a,a, but slower
+                if (op.equals("sla") && reg.equals("a") && spec.allowedOps.contains("add")) continue;
                 String line = op + " " + reg;
                 if (!precomputeOp(line, candidates, allDependencies, code)) return false;
             }

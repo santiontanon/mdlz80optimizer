@@ -188,6 +188,13 @@ public class SBOCandidate {
                 }
             }
         }
+        
+        int count = 0;
+        for(String key:candidateOpsByPrefix.keySet()) {
+            count += candidateOpsByPrefix.get(key).potentialFollowUps.size();
+        }
+        System.out.println("precomputeCandidates (allCandidateOps = "+allCandidateOps.size()+", maxLength = " + maxLength + ") = " + count);
+        
         return true;
     }
     
@@ -241,7 +248,80 @@ public class SBOCandidate {
                 return false;
             }
         }
-       
+        
+        
+        // Canonical order for sequences of length > 2:
+        for(int i = 0;i<sequence.size();i++) {
+            SBOCandidate op1 = sequence.get(i);
+            for(int j = i+1;j<sequence.size()-1;j++) {
+                SBOCandidate op2 = sequence.get(j);
+                
+                // Get all the dependencies that will be masked by subsequence instructions:
+                boolean maskedDeps[] = new boolean[op1.outputDependencies.length];
+                boolean restInputDeps[] = new boolean[op1.outputDependencies.length];
+                for(int d = 0;d<maskedDeps.length;d++) {
+                    maskedDeps[d] = false;
+                    restInputDeps[d] = false;
+                }
+                for(int k = j+1;k<sequence.size();k++) {
+                    SBOCandidate op3 = sequence.get(k);
+                    for(int d = 0;d<maskedDeps.length;d++) {
+                        if (op3.outputDependencies[d] != 0) maskedDeps[d] = true;
+                    }
+                }
+                for(int k = sequence.size()-1;k>=j+1;k--) {
+                    SBOCandidate op3 = sequence.get(k);
+                    for(int d = 0;d<maskedDeps.length;d++) {
+                        if (op3.outputDependencies[d] != 0) restInputDeps[d] = false;
+                    }
+                    for(int d = 0;d<maskedDeps.length;d++) {
+                        if (op3.inputDependencies[d]) restInputDeps[d] = true;
+                    }
+                }
+                
+//                boolean op2outputIsSuperset = true;
+                boolean op2dependsOnOp1 = false;
+                boolean op1WouldDependOnOp2 = false;
+                boolean op1op2NonMaskedOutputsDisjoint = true;
+                boolean restDependsOnLast = false;
+                for(int d = 0;d<op1.outputDependencies.length;d++) {
+//                    if (op1.outputDependencies[d] != 0 && op2.outputDependencies[d] == 0) {
+//                        op2outputIsSuperset = false;
+//                    }
+                    if (op1.outputDependencies[d] != 0 && op2.inputDependencies[d]) {
+                        op2dependsOnOp1 = true;
+                    }
+                    if (op2.outputDependencies[d] != 0 && op1.inputDependencies[d]) {
+                        op1WouldDependOnOp2 = true;
+                    }
+                    if (!maskedDeps[d] && op1.outputDependencies[d] != 0 && op2.outputDependencies[d] != 0) {
+                        op1op2NonMaskedOutputsDisjoint = false;
+                    }
+                }
+                for(int d = 0;d<op1.outputDependencies.length;d++) {
+                    if (restInputDeps[d]) {
+                        if (op1.outputDependencies[d] != 0 &&
+                            op2.outputDependencies[d] != 0) {
+                            restDependsOnLast = true;
+                        }
+                    }
+                }
+                
+                if (!op2dependsOnOp1 && 
+                    !op1WouldDependOnOp2 && 
+                    op1op2NonMaskedOutputsDisjoint &&
+                    !restDependsOnLast &&
+                    !op1.op.isJump() &&
+                    !op2.op.isJump()) {
+                    // general canonical order of instructions that are independent:
+                    if (op1.op.toString().compareTo(op2.op.toString()) > 0) {
+//                        System.out.println(sequenceString(sequence));
+                        return false;
+                    }
+                }
+            }
+        }
+        
 //        System.out.println(sequenceString(sequence));        
         return true;
     }
@@ -270,7 +350,10 @@ public class SBOCandidate {
                 op1op2OutputsDisjoint = false;
             }
         }
-        if (!op1.op.isJump() && op2outputIsSuperset && !op2dependsOnOp1) return false;
+        if (!op1.op.isJump() && op2outputIsSuperset && !op2dependsOnOp1) {
+//            System.out.println("- removed: " + op1.op + "; " + op2.op);
+            return false;
+        }
 
         if (op1.op.spec.getName().equals("ld") &&
             op2.op.spec.getName().equals("ld")) {
@@ -280,6 +363,7 @@ public class SBOCandidate {
                 op2.op.args.get(1).isRegister(code) && 
                 op1.op.args.get(0).registerOrFlagName.equals(op2.op.args.get(1).registerOrFlagName) &&
                 op2.op.args.get(0).registerOrFlagName.equals(op1.op.args.get(1).registerOrFlagName)) {
+//                System.out.println("- removed: " + op1.op + "; " + op2.op);
                 return false;
             }
             
@@ -291,6 +375,7 @@ public class SBOCandidate {
                 }
                 // cannonical order of "ld":
                 if (op1.op.args.get(0).registerOrFlagName.compareTo(op2.op.args.get(0).registerOrFlagName) > 0) {
+//                    System.out.println("- removed: " + op1.op + "; " + op2.op);
                     return false;
                 }
             }
@@ -301,6 +386,7 @@ public class SBOCandidate {
                 op2.op.args.get(1).type == Expression.EXPRESSION_INTEGER_CONSTANT &&
                 op1.op.args.get(0).integerConstant == op1.op.args.get(1).integerConstant) {
                 // we should use the register value instead of the constant!
+//                System.out.println("- removed: " + op1.op + "; " + op2.op);
                 return false;
             }
         }
@@ -314,21 +400,35 @@ public class SBOCandidate {
             op2.op.args.get(0).registerOrFlagName.equalsIgnoreCase("a") &&
             op2.op.args.get(1).isRegister(code)) {
             // These sequence of two should just be replaced by a single "ld"
+//            System.out.println("- removed: " + op1.op + "; " + op2.op);
             return false;
         }
 
-        if (op1.op.spec.getName().equals("add") &&
-            op2.op.spec.getName().equals("add") &&
+        // TODO: this one is actually cutting possible good programs, as the "C" flag might vary depending
+        // on the order... add a flag to allow this?
+        if ((op1.op.spec.getName().equals("add")) &&
+            op2.op.spec.getName().equals(op1.op.spec.getName()) &&
             op1.op.args.get(0).registerOrFlagName.equals(op2.op.args.get(0).registerOrFlagName) &&
-            op1.op.args.get(1).isRegister(code) &&
-            op2.op.args.get(1).isRegister(code) &&
-            !op1.op.args.get(0).registerOrFlagName.equals(op1.op.args.get(1).registerOrFlagName) &&
-            !op2.op.args.get(0).registerOrFlagName.equals(op2.op.args.get(1).registerOrFlagName)) {
+            (!op1.op.args.get(1).isRegister(code) || !op1.op.args.get(0).registerOrFlagName.equals(op1.op.args.get(1).registerOrFlagName)) &&
+            (!op2.op.args.get(1).isRegister(code) || !op2.op.args.get(0).registerOrFlagName.equals(op2.op.args.get(1).registerOrFlagName))) {
             // cannonical order of additions:
-            if (op1.op.args.get(1).registerOrFlagName.compareTo(op2.op.args.get(1).registerOrFlagName) > 0) {
+            if (op1.op.toString().compareTo(op2.op.toString()) > 0) {
+//                System.out.println("- removed: " + op1.op + "; " + op2.op);
                 return false;
             }
         }
+        
+        if ((op1.op.spec.getName().equals("and") ||
+             op1.op.spec.getName().equals("or")) &&
+            op2.op.spec.getName().equals(op1.op.spec.getName()) &&
+            (!op1.op.args.get(0).isRegister(code) || !op1.op.args.get(0).registerOrFlagName.equalsIgnoreCase("a")) &&
+            (!op2.op.args.get(0).isRegister(code) || !op2.op.args.get(0).registerOrFlagName.equalsIgnoreCase("a"))) {
+            // cannonical order of commutative operations:
+            if (op1.op.toString().compareTo(op2.op.toString()) > 0) {
+//                System.out.println("- removed: " + op1.op + "; " + op2.op);
+                return false;
+            }
+        }        
         
         if (op1.op.spec.getName().equals("ld") &&
             op1.op.args.get(0).isRegister(code) &&
@@ -340,7 +440,7 @@ public class SBOCandidate {
             op2.op.args.get(1).type == Expression.EXPRESSION_INTEGER_CONSTANT &&
             op1.op.args.get(1).integerConstant == op2.op.args.get(1).integerConstant) {
             // we should just use the register instead!
-//            System.out.println("removed: " + op1.op + "; " + op2.op);
+//            System.out.println("- removed: " + op1.op + "; " + op2.op);
             return false;
         }
 
@@ -355,7 +455,7 @@ public class SBOCandidate {
             op2.op.args.get(0).type == Expression.EXPRESSION_INTEGER_CONSTANT &&
             op1.op.args.get(1).integerConstant == op2.op.args.get(0).integerConstant) {
             // we should just use the register instead!
-//            System.out.println("removed: " + op1.op + "; " + op2.op);
+//            System.out.println("- removed: " + op1.op + "; " + op2.op);
             return false;
         }
         
@@ -368,6 +468,7 @@ public class SBOCandidate {
                  op2.op.spec.getName().equals("or") || op2.op.spec.getName().equals("xor")) &&
                 op2.op.args.get(0).type == Expression.EXPRESSION_REGISTER_OR_FLAG &&
                 op2.op.args.get(0).registerOrFlagName.equals("a")) {
+//                System.out.println("- removed: " + op1.op + "; " + op2.op);
                 return false;
             }
             // RLCA/RLA/RRCA/RRA/RLC/RL/RRC/RR with "a" after "sub a" or "xor a" is a no-op:
@@ -382,6 +483,7 @@ public class SBOCandidate {
                 op2.op.toString().equals("sla a") ||
                 op2.op.toString().equals("sra a") ||
                 op2.op.toString().equals("srl a")) {
+//                System.out.println("- removed: " + op1.op + "; " + op2.op);
                 return false;
             }
         }
@@ -392,11 +494,13 @@ public class SBOCandidate {
                 op2.op.spec.getName().equals("sbc") &&
                 op2.op.args.get(0).type == Expression.EXPRESSION_REGISTER_OR_FLAG &&
                 op2.op.args.get(0).registerOrFlagName.equals("a")) {
+//                System.out.println("- removed: " + op1.op + "; " + op2.op);
                 return false;
             }
             // carry is cleared here, so adc is the same as add:
             if (spec.allowedOps.contains("add") &&
                 op2.op.spec.getName().equals("adc")) {
+//                System.out.println("- removed: " + op1.op + "; " + op2.op);
                 return false;
             }
 
@@ -404,6 +508,7 @@ public class SBOCandidate {
                 op2.op.spec.getName().equals("srl") &&
                 op2.op.args.get(0).type == Expression.EXPRESSION_REGISTER_OR_FLAG &&
                 op2.op.args.get(0).registerOrFlagName.equals("a")) {                    
+//                System.out.println("- removed: " + op1.op + "; " + op2.op);
                 return false;
             }
         }
@@ -415,6 +520,7 @@ public class SBOCandidate {
             !op2.op.isJump()) {
             // general canonical order of instructions that are independent:
             if (op1.op.toString().compareTo(op2.op.toString()) > 0) {
+//                System.out.println("- removed: " + op1.op + "; " + op2.op);
                 return false;
             }
         }

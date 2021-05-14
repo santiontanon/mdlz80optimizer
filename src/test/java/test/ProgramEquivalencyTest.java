@@ -30,34 +30,37 @@ import util.microprocessor.Z80.Z80Core;
 public class ProgramEquivalencyTest {
     private final MDLConfig config;
     private final Random r;
-    private final List<Integer> halfFlag;
-    private final List<Integer> HPVFlags;
+    private final List<Integer> HNflags;
+    private final List<Integer> HNPVFlags;
 
     public ProgramEquivalencyTest() {
         config = new MDLConfig();
         r = new Random();     
-        halfFlag = new ArrayList<>();
-        halfFlag.add(CPUConstants.flag_H);
-        HPVFlags = new ArrayList<>();
-        HPVFlags.add(CPUConstants.flag_H);
-        HPVFlags.add(CPUConstants.flag_PV);
+        HNflags = new ArrayList<>();
+        HNflags.add(CPUConstants.flag_H);
+        HNflags.add(CPUConstants.flag_N);
+        HNPVFlags = new ArrayList<>();
+        HNPVFlags.add(CPUConstants.flag_H);
+        HNPVFlags.add(CPUConstants.flag_N);
+        HNPVFlags.add(CPUConstants.flag_PV);
     }
 
-    @Test public void test1() throws Exception { test("and a", "and a", false, halfFlag); }
-    @Test public void test2() throws Exception { test("and a", "or a", false, halfFlag); }
-    @Test public void test3() throws Exception { test("sub a\nadd a,h", "ld a,h\nor a", false, HPVFlags); }
-    @Test public void test4() throws Exception { test("or a\nadd a,a", "or a\nadc a,a", false, halfFlag); }
-    @Test public void test5() throws Exception { test("sub a\nsub h", "sub a\nsbc h", false, halfFlag); }
-    @Test public void test6() throws Exception { test("xor a\nsrl a", "xor a\nsra a", false, halfFlag); }
-    @Test public void test6a() throws Exception { test("xor a\nsrl a", "xor a", false, halfFlag); }
+    @Test public void test1() throws Exception { test("and a", "and a", false, HNflags); }
+    @Test public void test2() throws Exception { test("and a", "or a", false, HNflags); }
+    @Test public void test3() throws Exception { test("sub a\nadd a,h", "ld a,h\nor a", false, HNPVFlags); }
+    @Test public void test4() throws Exception { test("or a\nadd a,a", "or a\nadc a,a", false, HNflags); }
+    @Test public void test5() throws Exception { test("sub a\nsub h", "sub a\nsbc h", false, HNflags); }
+    @Test public void test6() throws Exception { test("xor a\nsrl a", "xor a\nsra a", false, HNflags); }
+    @Test public void test6a() throws Exception { test("xor a\nsrl a", "xor a", false, HNflags); }
 
     // RLCA/RLA/RRCA/RRA/RLC/RL/RRC/RR
-    @Test public void test7() throws Exception { test("xor a", "xor a\nrrc a", false, halfFlag); }
-    @Test public void test7a() throws Exception { test("xor a", "xor a\nrrca", false, halfFlag); }
-    @Test public void test8() throws Exception { test("xor a\nrla", "xor a\nrlc a", false, halfFlag); }
-    @Test public void test8a() throws Exception { test("xor a\nrl a", "xor a\nrlc a", false, halfFlag); }
+    @Test public void test7() throws Exception { test("xor a", "xor a\nrrc a", false, HNflags); }
+    @Test public void test7a() throws Exception { test("xor a", "xor a\nrrca", false, HNflags); }
+    @Test public void test8() throws Exception { test("xor a\nrla", "xor a\nrlc a", false, HNflags); }
+    @Test public void test8a() throws Exception { test("xor a\nrl a", "xor a\nrlc a", false, HNflags); }
 
-
+    @Test public void test9() throws Exception { test("add a, a", "sla a", false, HNPVFlags); }
+    
     private void test(String program1, String program2, boolean checkMemory, List<Integer> flagsToIgnore) throws Exception
     {
         Assert.assertTrue(config.parseArgs("dummy"));
