@@ -194,7 +194,10 @@ public class SearchBasedOptimizer implements MDLWorker {
         List<CPUOpDependency> allDependencies = new ArrayList<>();
         for(String regName: new String[]{"A", "F", "B", "C", "D", "E", "H", "L", 
                                          "IXH", "IXL", "IYH", "IYL"}) {
-            allDependencies.add(new CPUOpDependency(regName, null, null, null, null));
+            if (regName.equals("F") ||
+                spec.allowedRegisters.contains(regName.toLowerCase())) {
+                allDependencies.add(new CPUOpDependency(regName, null, null, null, null));
+            }
         }
         for(String flagName: new String[]{"S" ,"Z" ,"H" , "P/V" ,"N" , "C"}) {
             // "H" and "N" are only useful for DAA:
@@ -271,6 +274,10 @@ public class SearchBasedOptimizer implements MDLWorker {
                         // Increase precomputation (not worth it before this point):
                         allCandidateOps = precomputeCandidateOps(spec, allDependencies, code, 3);
                         if (allCandidateOps == null) return false;                        
+//                    } else if (depth == 6) {
+//                        // Increase precomputation (not worth it before this point):
+//                        allCandidateOps = precomputeCandidateOps(spec, allDependencies, code, 4);
+//                        if (allCandidateOps == null) return false;                        
                     }
                     state.init(allCandidateOps, depth==0);
                     for(int i = 0;i<nThreads;i++) {

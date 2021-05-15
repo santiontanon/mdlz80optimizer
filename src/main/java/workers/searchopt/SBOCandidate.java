@@ -153,6 +153,15 @@ public class SBOCandidate {
         List<SBOCandidate> open = new ArrayList<>();
         List<SBOCandidate> sequence = new ArrayList<>();
         
+        int carryFlagDepIdx = -1;
+        for(int i = 0;i<allDependencies.size();i++) {
+            if (allDependencies.get(i).flag != null &&
+                allDependencies.get(i).flag.equals("C")) {
+                carryFlagDepIdx = i;
+                break;
+            }
+        }
+        
         // initial set:
         for(SBOCandidate op:allCandidateOps) {
             String prefixStr = op.prefixString();
@@ -175,7 +184,7 @@ public class SBOCandidate {
                     config.error("precomputeCandidates: sequence is longer than maxLength!!");
                     return false;
                 }
-                if (sequenceMakesSense(sequence, spec, code)) {
+                if (sequenceMakesSense(sequence, spec, carryFlagDepIdx, code)) {
                     String prefixStr = op2.prefixString(op, maxLength);
                     if (candidateOpsByPrefix.containsKey(prefixStr)) {
                         op2 = candidateOpsByPrefix.get(prefixStr);
@@ -209,7 +218,8 @@ public class SBOCandidate {
     }
 
 
-    static boolean sequenceMakesSense(List<SBOCandidate> sequence, Specification spec, CodeBase code)
+    static boolean sequenceMakesSense(List<SBOCandidate> sequence, Specification spec, 
+                                      int carryFlagDepIdx, CodeBase code)
     {
         // pair-wise dependencies:
         for(int i = 0;i<sequence.size()-1;i++) {
@@ -319,10 +329,25 @@ public class SBOCandidate {
                         return false;
                     }
                 }
+                
+                if ((op1.op.spec.getName().equals("add")) &&
+                    op2.op.spec.getName().equals(op1.op.spec.getName()) &&
+                    op1.op.args.get(0).registerOrFlagName.equals(op2.op.args.get(0).registerOrFlagName) &&
+                    (!op1.op.args.get(1).isRegister(code) || !op1.op.args.get(0).registerOrFlagName.equals(op1.op.args.get(1).registerOrFlagName)) &&
+                    (!op2.op.args.get(1).isRegister(code) || !op2.op.args.get(0).registerOrFlagName.equals(op2.op.args.get(1).registerOrFlagName)) &&
+                    maskedDeps[carryFlagDepIdx] &&
+                    !restInputDeps[carryFlagDepIdx]) {
+                    // cannonical order of additions:
+                    if (op1.op.toString().compareTo(op2.op.toString()) > 0) {
+//                        System.out.println("- removed: " + sequenceString(sequence));
+                        return false;
+                    }
+                }
+                
             }
         }
         
-//        System.out.println(sequenceString(sequence));        
+//        System.out.println(sequenceString(sequence));
         return true;
     }
     
@@ -402,20 +427,6 @@ public class SBOCandidate {
             // These sequence of two should just be replaced by a single "ld"
 //            System.out.println("- removed: " + op1.op + "; " + op2.op);
             return false;
-        }
-
-        // TODO: this one is actually cutting possible good programs, as the "C" flag might vary depending
-        // on the order... add a flag to allow this?
-        if ((op1.op.spec.getName().equals("add")) &&
-            op2.op.spec.getName().equals(op1.op.spec.getName()) &&
-            op1.op.args.get(0).registerOrFlagName.equals(op2.op.args.get(0).registerOrFlagName) &&
-            (!op1.op.args.get(1).isRegister(code) || !op1.op.args.get(0).registerOrFlagName.equals(op1.op.args.get(1).registerOrFlagName)) &&
-            (!op2.op.args.get(1).isRegister(code) || !op2.op.args.get(0).registerOrFlagName.equals(op2.op.args.get(1).registerOrFlagName))) {
-            // cannonical order of additions:
-            if (op1.op.toString().compareTo(op2.op.toString()) > 0) {
-//                System.out.println("- removed: " + op1.op + "; " + op2.op);
-                return false;
-            }
         }
         
         if ((op1.op.spec.getName().equals("and") ||
