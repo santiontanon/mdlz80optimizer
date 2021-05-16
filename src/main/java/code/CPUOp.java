@@ -115,6 +115,25 @@ public class CPUOp {
         return false;
     }
 
+    
+    public boolean dependsOnAnyFlag()
+    {
+        for(CPUOpDependency dep:inputDeps) {
+            if (dep.flag != null) return true;
+        }
+        return false;
+    }
+
+
+    public boolean overwritesAllFlags()
+    {
+        int nFlagDeps = 0;
+        for(CPUOpDependency dep:outputDeps) {
+            if (dep.flag != null) nFlagDeps++;
+        }
+        return nFlagDeps >= 6;  // As there are 6 useful flags in the z80
+    }
+    
 
     /*
     Given a dependency "dep" that comes from an earlier instruction,

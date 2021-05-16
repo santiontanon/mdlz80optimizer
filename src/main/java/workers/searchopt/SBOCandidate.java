@@ -202,7 +202,7 @@ public class SBOCandidate {
         for(String key:candidateOpsByPrefix.keySet()) {
             count += candidateOpsByPrefix.get(key).potentialFollowUps.size();
         }
-        System.out.println("precomputeCandidates (allCandidateOps = "+allCandidateOps.size()+", maxLength = " + maxLength + ") = " + count);
+//        System.out.println("precomputeCandidates (allCandidateOps = "+allCandidateOps.size()+", maxLength = " + maxLength + ") = " + count);
         
         return true;
     }
@@ -361,6 +361,9 @@ public class SBOCandidate {
         boolean op2dependsOnOp1 = false;
         boolean op1WouldDependOnOp2 = false;
         boolean op1op2OutputsDisjoint = true;
+        String op1str = op1.toString();
+        String op2str = op2.toString();
+        
         for(int i = 0;i<op1.outputDependencies.length;i++) {
             if (op1.outputDependencies[i] != 0 && op2.outputDependencies[i] == 0) {
                 op2outputIsSuperset = false;
@@ -435,7 +438,7 @@ public class SBOCandidate {
             (!op1.op.args.get(0).isRegister(code) || !op1.op.args.get(0).registerOrFlagName.equalsIgnoreCase("a")) &&
             (!op2.op.args.get(0).isRegister(code) || !op2.op.args.get(0).registerOrFlagName.equalsIgnoreCase("a"))) {
             // cannonical order of commutative operations:
-            if (op1.op.toString().compareTo(op2.op.toString()) > 0) {
+            if (op1str.compareTo(op2str) > 0) {
 //                System.out.println("- removed: " + op1.op + "; " + op2.op);
                 return false;
             }
@@ -472,7 +475,7 @@ public class SBOCandidate {
         
         // There is no point on zeroing "a", and then add/or/xor/and to it, unless
         // we are going to use the P/V flag (which is only used for conditional jumps/calls):
-        if (op1.op.toString().equals("sub a") || op1.op.toString().equals("xor a")) {
+        if (op1str.equals("sub a") || op1str.equals("xor a")) {
             if (!spec.allowedOps.contains("jp") && !spec.allowedOps.contains("jr") && !spec.allowedOps.contains("call") &&
                 (op2.op.spec.getName().equals("add") || op2.op.spec.getName().equals("adc") || 
                  op2.op.spec.getName().equals("and") ||
@@ -484,22 +487,22 @@ public class SBOCandidate {
             }
             // RLCA/RLA/RRCA/RRA/RLC/RL/RRC/RR with "a" after "sub a" or "xor a" is a no-op:
             // same with SLA/SRA/SRL
-            if (op2.op.toString().equals("rlca") ||
-                op2.op.toString().equals("rla") ||
-                op2.op.toString().equals("rrca") ||
-                op2.op.toString().equals("rra") ||
-                op2.op.toString().equals("rlc a") ||
-                op2.op.toString().equals("rl a") ||
-                op2.op.toString().equals("rrc a") ||
-                op2.op.toString().equals("sla a") ||
-                op2.op.toString().equals("sra a") ||
-                op2.op.toString().equals("srl a")) {
+            if (op2str.equals("rlca") ||
+                op2str.equals("rla") ||
+                op2str.equals("rrca") ||
+                op2str.equals("rra") ||
+                op2str.equals("rlc a") ||
+                op2str.equals("rl a") ||
+                op2str.equals("rrc a") ||
+                op2str.equals("sla a") ||
+                op2str.equals("sra a") ||
+                op2str.equals("srl a")) {
 //                System.out.println("- removed: " + op1.op + "; " + op2.op);
                 return false;
             }
         }
-        if (op1.op.toString().equals("sub a") || op1.op.toString().equals("xor a") ||
-            op1.op.toString().equals("and a") || op1.op.toString().equals("or a")) {
+        if (op1str.equals("sub a") || op1str.equals("xor a") ||
+            op1str.equals("and a") || op1str.equals("or a")) {
             // carry is cleared here, so sbc is the same as sub:
             if (spec.allowedOps.contains("sub") &&
                 op2.op.spec.getName().equals("sbc") &&
@@ -530,12 +533,155 @@ public class SBOCandidate {
             !op1.op.isJump() &&
             !op2.op.isJump()) {
             // general canonical order of instructions that are independent:
-            if (op1.op.toString().compareTo(op2.op.toString()) > 0) {
+            if (op1str.compareTo(op2str) > 0) {
 //                System.out.println("- removed: " + op1.op + "; " + op2.op);
                 return false;
             }
         }
-    
+        
+        // other sequences identified to be identical by an automated test:
+        if (spec.allowedOps.contains("add") &&
+            spec.allowedOps.contains("adc")) {
+            if (op1str.equals("adc a, a") &&
+                op2str.equals("sbc a, a")) {
+                // ignore (equivalent to add a, a; sbc a, a)
+                return false;
+            } else if (op1str.equals("sli a") &&
+                       op2str.equals("sbc a, a")) {
+                // ignore (equivalent to add a, a; sbc a, a)
+                return false;
+            }
+        }
+        if ((op1.op.spec.getName().equals("add") || op1.op.spec.getName().equals("adc")) && 
+            op2.op.spec.getName().equals("ld") &&
+            op1.op.args.get(0).isRegister(code) &&
+            op1.op.args.get(0).registerOrFlagName.equalsIgnoreCase("a") &&
+            !op1.op.args.get(0).toString().equals(op1.op.args.get(1).toString()) &&
+            !op2.op.args.get(0).toString().equals(op1.op.args.get(0).toString()) &&
+            op1.op.args.get(1).toString().equals(op2.op.args.get(1).toString())) {
+            if (op2.op.args.get(0).is8bitRegister(code)) {
+                // add a, XXX; ld REG, XXX is equivalent to ld REG, XXX; add a, REG
+//            System.out.println("- removed: " + op1.op + "; " + op2.op);
+                return false;
+            }
+            if (op2.op.args.get(0).isRegister(code) &&
+                op2.op.args.get(1).isConstant() && op2.op.args.get(1).integerConstant == 0) {
+                // add a, 0; ld REG, 0 is equivalent to ld REG, 0; add a, REG (even if REG is a 16 bit one, for the second instruction, we can use an 8 bit subregisters)
+//                System.out.println("- removed: " + op1.op + "; " + op2.op);
+                return false;
+            }
+        }
+        if (op1str.equals("ld a, 0") &&
+            op2.op.spec.getName().equals("sub")) {
+            // ignore (equivalent to sub a; ...)
+//            System.out.println("- removed: " + op1.op + "; " + op2.op);
+            return false;
+        }        
+        if ((op1str.equals("xor a") || op1str.equals("sub a")) &&
+            op2str.equals("ld a, 0")) {
+            return false;
+        }
+        if ((op2str.equals("xor a") || op2str.equals("sub a")) &&
+            op1.op.spec.getName().equals("ld") &&
+            op1.op.args.get(0).is8bitRegister(code) &&
+            op1.op.args.get(1).toString().equals("0")) {
+            // we can just do: sub a; ld REG, a
+            return false;
+        }
+        if (op1str.equals("ld a, 0") &&
+            (spec.allowedOps.contains("sub") || spec.allowedOps.contains("xor")) &&
+            !op2.op.dependsOnAnyFlag() &&
+            op2.op.overwritesAllFlags()) {
+            // we can use xor a or sub a instead
+//            System.out.println("- removed: " + op1.op + "; " + op2.op);
+            return false;
+        }
+        if (op1.op.spec.getName().equals("ld") &&
+            (op2.op.spec.getName().equals("sbc")) &&
+            op1.op.args.get(0).isRegister(code) &&
+            op1.op.args.get(1).isRegister(code) &&
+            op1.op.args.get(0).toString().equals(op2.op.args.get(0).toString()) &&
+            op1.op.args.get(1).toString().equals(op2.op.args.get(1).toString())) {
+            // nonsense
+//            System.out.println("- removed: " + op1.op + "; " + op2.op);
+            return false;
+        }
+        if (op1.op.spec.getName().equals("ld") &&
+            op2.op.spec.getName().equals("sub") &&
+            op1.op.args.get(0).toString().equals("a") &&
+            op1.op.args.get(1).isRegister(code) &&
+            op1.op.args.get(1).toString().equals(op2.op.args.get(0).toString())) {
+            // nonsense
+//            System.out.println("- removed: " + op1.op + "; " + op2.op);
+            return false;
+        }
+        if ((op1str.equals("sbc hl, hl") && op1str.equals("sbc a, a")) ||
+            (op1str.equals("sbc hl, hl") && op1str.equals("ld a, h")) ||
+            (op1str.equals("sbc hl, hl") && op1str.equals("ld a, l"))) {
+            // all equivalent to sbc a, a; sbc hl, hl
+            return false;
+        }
+        if (((op1str.equals("add hl, hl") && op2str.equals("sbc hl, hl")) ||
+             (op1str.equals("adc hl, hl") && op2str.equals("sbc hl, hl")) ||
+             (op1str.equals("sli h") && op2str.equals("sbc hl, hl"))) &&
+            spec.allowedOps.contains("sla")) {
+            // equivalent to: sla h; sbc hl, hl
+            return false;
+        }
+        if (op1str.equals("sbc hl, hl")) {
+            // h = l = 0
+            if (op2str.equals("add a, l") ||
+                op2str.equals("adc a, l") ||
+                op2str.equals("sbc a, l") ||
+                op2str.equals("sub l")) {
+                return false;
+            }
+            if (!spec.allowedOps.contains("daa")) {
+                if (op2str.equals("adc a, h")) {
+                    return false;
+                }
+            }
+        }
+        
+        if (!spec.allowedOps.contains("daa")) {
+            // the "H, N" flags do not matter:
+            if (op1str.equals("sbc a, a") &&
+                (op2str.equals("adc a, a") || op2str.equals("sbc a, a"))) {
+                return false;
+            }
+            if (!spec.allowedOps.contains("jp") &&
+                !spec.allowedOps.contains("ret") &&
+                !spec.allowedOps.contains("call")) {
+                // the "H, N, P/V" flags do not matter:
+                if (op1str.equals("sbc a, a") &&
+                    op2str.equals("sra a")) {
+                    return false;
+                }
+                if (op1str.equals("adc hl, hl") &&
+                    op2str.equals("ld hl, 0") &&
+                    spec.allowedOps.contains("sli")) {
+                    // equivalent to sli h; ld hl, 0    
+//                    System.out.println("- removed: " + op1.op + "; " + op2.op);
+                    return false;
+                }
+            }
+        }
+        
+        if (spec.searchType == SearchBasedOptimizer.SEARCH_ID_BYTES) {
+            // optimize for size:
+            if (op1str.equals("ld hl, 0") && op2str.equals("sub a") &&
+                spec.allowedOps.contains("sbc")) {
+                // we can do "sub a; sbc hl, hl", which is smaller
+                return false;
+            }
+        } else {
+            // optimize for ops/speed:
+            if (op1str.equals("sub a") && op2str.equals("sbc hl, hl") &&
+                spec.allowedOps.contains("sub")) {
+                // we can do "ld hl, 0; sub a", which is faster
+                return false;
+            }            
+        }
         return true;
     }
         

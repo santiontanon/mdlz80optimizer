@@ -205,7 +205,7 @@ public class SearchBasedOptimizer implements MDLWorker {
             if (!spec.allowedOps.contains("daa") && flagName.equals("N")) continue;
             if (flagName.equals("P/V")) {
                 if (!spec.allowedOps.contains("jp") &&
-                    !spec.allowedOps.contains("jr") &&
+                    !spec.allowedOps.contains("ret") &&
                     !spec.allowedOps.contains("call")) {
                     continue;
                 }

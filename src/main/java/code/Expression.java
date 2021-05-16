@@ -1107,6 +1107,7 @@ public class Expression {
         }
     }
 
+    
     public boolean isRegister(CodeBase code) {
         if (type != EXPRESSION_REGISTER_OR_FLAG) {
             return false;
@@ -1114,6 +1115,15 @@ public class Expression {
         return code.isRegister(registerOrFlagName);
     }
 
+    
+    public boolean is8bitRegister(CodeBase code) {
+        if (type != EXPRESSION_REGISTER_OR_FLAG) {
+            return false;
+        }
+        return code.is8bitRegister(registerOrFlagName);
+    }
+    
+    
     public boolean isConstant() {
         return (type == EXPRESSION_INTEGER_CONSTANT)
                 || (type == EXPRESSION_DOUBLE_CONSTANT)

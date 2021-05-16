@@ -32,6 +32,8 @@ public class ProgramEquivalencyTest {
     private final Random r;
     private final List<Integer> HNflags;
     private final List<Integer> HNPVFlags;
+    
+    private final int REPETITIONS = 5000;
 
     public ProgramEquivalencyTest() {
         config = new MDLConfig();
@@ -60,6 +62,9 @@ public class ProgramEquivalencyTest {
     @Test public void test8a() throws Exception { test("xor a\nrl a", "xor a\nrlc a", false, HNflags); }
 
     @Test public void test9() throws Exception { test("add a, a", "sla a", false, HNPVFlags); }
+
+    @Test public void test10() throws Exception { test("add a, a\nsbc a, a", "adc a, a\nsbc a, a", false, HNPVFlags); }
+    
     
     private void test(String program1, String program2, boolean checkMemory, List<Integer> flagsToIgnore) throws Exception
     {
@@ -91,7 +96,7 @@ public class ProgramEquivalencyTest {
 
         Assert.assertTrue(comparePrograms(statements1, statements2,
                                           flagsToIgnore,
-                                          code, checkMemory, 1000));
+                                          code, checkMemory, REPETITIONS));
     }
     
     
