@@ -64,7 +64,7 @@ public class ProgramEquivalencyTest {
     @Test public void test9() throws Exception { test("add a, a", "sla a", false, HNPVFlags); }
 
     @Test public void test10() throws Exception { test("add a, a\nsbc a, a", "adc a, a\nsbc a, a", false, HNPVFlags); }
-    
+    @Test public void test11() throws Exception { test("or h", "or h\ncp 0", false, HNPVFlags); }
     
     private void test(String program1, String program2, boolean checkMemory, List<Integer> flagsToIgnore) throws Exception
     {

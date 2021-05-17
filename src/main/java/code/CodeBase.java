@@ -34,7 +34,7 @@ public class CodeBase {
     }
 
 
-    public boolean isRegister(String name)
+    public static boolean isRegister(String name)
     {
         String registers[] = {"a", "b", "c", "d", "e", "h", "l",
                               "af", "bc", "de", "hl",
@@ -50,7 +50,7 @@ public class CodeBase {
     }
 
     
-    public boolean is8bitRegister(String name)
+    public static boolean is8bitRegister(String name)
     {
         String registers[] = {"a", "b", "c", "d", "e", "h", "l",
                               "ixl", "ixh", "iyl", "iyh",
@@ -64,7 +64,7 @@ public class CodeBase {
     }
 
 
-    public boolean isBase8bitRegister(String name)
+    public static boolean isBase8bitRegister(String name)
     {
         String registers[] = {"a", "b", "c", "d", "e", "h", "l"};
         for(String reg:registers) {
@@ -75,7 +75,7 @@ public class CodeBase {
     }
     
     
-    public boolean isRegisterPair(String name)
+    public static boolean isRegisterPair(String name)
     {
         String registers[] = {"af", "bc", "de", "hl",
                               "sp", "ix", "iy", "pc","af'"};
@@ -87,7 +87,7 @@ public class CodeBase {
     }
     
 
-    public boolean isCondition(String name)
+    public static boolean isCondition(String name)
     {
         String conditions[] = {"c", "m", "nc", "nz", "p", "pe", "po", "z"};
         for(String c:conditions) {

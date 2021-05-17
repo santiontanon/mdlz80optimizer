@@ -20,7 +20,6 @@ import parser.PreProcessor;
 import parser.Tokenizer;
 import parser.dialects.Dialect;
 import parser.dialects.Dialects;
-import workers.Help;
 import workers.MDLWorker;
 
 public class MDLConfig {

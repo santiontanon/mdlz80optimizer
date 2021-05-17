@@ -1,0 +1,2116 @@
+and b	and b; and b;	
+and b	and b; or a;	H,N
+and b	and b; cp 0;	H,N,P/V
+and b	and b; adc a, 0;	H,N,P/V
+and b	and b; sbc a, 0;	H,N,P/V
+and b	or a; and b;	
+and c	and c; and c;	
+and c	and c; or a;	H,N
+and c	and c; cp 0;	H,N,P/V
+and c	and c; adc a, 0;	H,N,P/V
+and c	and c; sbc a, 0;	H,N,P/V
+and c	or a; and c;	
+and d	and d; and d;	
+and d	and d; or a;	H,N
+and d	and d; cp 0;	H,N,P/V
+and d	and d; adc a, 0;	H,N,P/V
+and d	and d; sbc a, 0;	H,N,P/V
+and d	or a; and d;	
+and e	and e; and e;	
+and e	and e; or a;	H,N
+and e	and e; cp 0;	H,N,P/V
+and e	and e; adc a, 0;	H,N,P/V
+and e	and e; sbc a, 0;	H,N,P/V
+and e	or a; and e;	
+and h	and h; and h;	
+and h	and h; or a;	H,N
+and h	and h; cp 0;	H,N,P/V
+and h	and h; adc a, 0;	H,N,P/V
+and h	and h; sbc a, 0;	H,N,P/V
+and h	or a; and h;	
+and l	and l; and l;	
+and l	and l; or a;	H,N
+and l	and l; cp 0;	H,N,P/V
+and l	and l; adc a, 0;	H,N,P/V
+and l	and l; sbc a, 0;	H,N,P/V
+and l	or a; and l;	
+and 1	and 1; and 1;	
+and 1	and 1; or a;	H,N
+and 1	and 1; cp 0;	H,N,P/V
+and 1	and 1; adc a, 0;	H,N,P/V
+and 1	and 1; sbc a, 0;	H,N,P/V
+and 1	and 1; bit 0, a;	
+and 1	and 1; res 1, a;	
+and 1	and 1; res 2, a;	
+and 1	and 1; res 3, a;	
+and 1	and 1; res 4, a;	
+and 1	and 1; res 5, a;	
+and 1	and 1; res 6, a;	
+and 1	and 1; res 7, a;	
+and 1	or a; and 1;	
+and 1	or 2; and 1;	
+and 1	or 224; and 1;	
+and 1	xor 2; and 1;	
+and 1	xor 224; and 1;	
+and 1	add a, 2; and 1;	
+and 1	add a, 224; and 1;	
+and 1	sub 2; and 1;	
+and 1	sub 224; and 1;	
+and 1	neg; and 1;	
+and 1	set 1, a; and 1;	
+and 1	set 2, a; and 1;	
+and 1	set 3, a; and 1;	
+and 1	set 4, a; and 1;	
+and 1	set 5, a; and 1;	
+and 1	set 6, a; and 1;	
+and 1	set 7, a; and 1;	
+and 1	res 1, a; and 1;	
+and 1	res 2, a; and 1;	
+and 1	res 3, a; and 1;	
+and 1	res 4, a; and 1;	
+and 1	res 5, a; and 1;	
+and 1	res 6, a; and 1;	
+and 1	res 7, a; and 1;	
+and 2	and 2; and 2;	
+and 2	and 2; or a;	H,N
+and 2	and 2; cp 0;	H,N,P/V
+and 2	and 2; adc a, 0;	H,N,P/V
+and 2	and 2; sbc a, 0;	H,N,P/V
+and 2	and 2; bit 1, a;	
+and 2	and 2; res 0, a;	
+and 2	and 2; res 2, a;	
+and 2	and 2; res 3, a;	
+and 2	and 2; res 4, a;	
+and 2	and 2; res 5, a;	
+and 2	and 2; res 6, a;	
+and 2	and 2; res 7, a;	
+and 2	or a; and 2;	
+and 2	or 1; and 2;	
+and 2	or 224; and 2;	
+and 2	xor 1; and 2;	
+and 2	xor 224; and 2;	
+and 2	add a, 224; and 2;	
+and 2	sub 224; and 2;	
+and 2	set 0, a; and 2;	
+and 2	set 2, a; and 2;	
+and 2	set 3, a; and 2;	
+and 2	set 4, a; and 2;	
+and 2	set 5, a; and 2;	
+and 2	set 6, a; and 2;	
+and 2	set 7, a; and 2;	
+and 2	res 0, a; and 2;	
+and 2	res 2, a; and 2;	
+and 2	res 3, a; and 2;	
+and 2	res 4, a; and 2;	
+and 2	res 5, a; and 2;	
+and 2	res 6, a; and 2;	
+and 2	res 7, a; and 2;	
+and 224	and 224; and 224;	
+and 224	and 224; or a;	H,N
+and 224	and 224; cp 0;	H,N,P/V
+and 224	and 224; adc a, 0;	H,N,P/V
+and 224	and 224; sbc a, 0;	H,N,P/V
+and 224	and 224; res 0, a;	
+and 224	and 224; res 1, a;	
+and 224	and 224; res 2, a;	
+and 224	and 224; res 3, a;	
+and 224	and 224; res 4, a;	
+and 224	or a; and 224;	
+and 224	or 1; and 224;	
+and 224	or 2; and 224;	
+and 224	xor 1; and 224;	
+and 224	xor 2; and 224;	
+and 224	set 0, a; and 224;	
+and 224	set 1, a; and 224;	
+and 224	set 2, a; and 224;	
+and 224	set 3, a; and 224;	
+and 224	set 4, a; and 224;	
+and 224	res 0, a; and 224;	
+and 224	res 1, a; and 224;	
+and 224	res 2, a; and 224;	
+and 224	res 3, a; and 224;	
+and 224	res 4, a; and 224;	
+or a	or a; or a;	
+or a	or a; cp 0;	H,N,P/V
+or a	or a; adc a, 0;	P/V
+or a	or a; sbc a, 0;	H,N,P/V
+or a	xor b; xor b;	
+or a	xor c; xor c;	
+or a	xor d; xor d;	
+or a	xor e; xor e;	
+or a	xor h; xor h;	
+or a	xor l; xor l;	
+or a	xor 1; xor 1;	
+or a	xor 2; xor 2;	
+or a	xor 224; xor 224;	
+or a	xor 255; xor 255;	
+or a	cp a; adc a, 0;	P/V
+or a	cp a; sbc a, 0;	H,N,P/V
+or a	cp 0; adc a, 0;	P/V
+or a	cp 0; sbc a, 0;	H,N,P/V
+or a	add a, a; rr a;	
+or a	srl a; adc a, a;	H,N,P/V
+or a	srl a; rl a;	
+or a	cpl; xor 255;	
+or b	or a; or b;	
+or b	or b; or a;	
+or b	or b; or b;	
+or b	or b; cp 0;	H,N,P/V
+or b	or b; adc a, 0;	P/V
+or b	or b; sbc a, 0;	H,N,P/V
+or b	xor b; or b;	
+or c	or a; or c;	
+or c	or c; or a;	
+or c	or c; or c;	
+or c	or c; cp 0;	H,N,P/V
+or c	or c; cp 1;	H,N,P/V
+or c	or c; adc a, 0;	P/V
+or c	or c; sbc a, 0;	H,N,P/V
+or c	xor c; or c;	
+or d	or a; or d;	
+or d	or d; or a;	
+or d	or d; or d;	
+or d	or d; cp 0;	H,N,P/V
+or d	or d; adc a, 0;	P/V
+or d	or d; sbc a, 0;	H,N,P/V
+or d	xor d; or d;	
+or e	or a; or e;	
+or e	or e; or a;	
+or e	or e; or e;	
+or e	or e; cp 0;	H,N,P/V
+or e	or e; adc a, 0;	P/V
+or e	or e; sbc a, 0;	H,N,P/V
+or e	xor e; or e;	
+or h	or a; or h;	
+or h	or h; or a;	
+or h	or h; or h;	
+or h	or h; cp 0;	H,N,P/V
+or h	or h; adc a, 0;	P/V
+or h	or h; sbc a, 0;	H,N,P/V
+or h	xor h; or h;	
+or l	or a; or l;	
+or l	or l; or a;	
+or l	or l; or l;	
+or l	or l; cp 0;	H,N,P/V
+or l	or l; adc a, 0;	P/V
+or l	or l; sbc a, 0;	H,N,P/V
+or l	xor l; or l;	
+or 1	or a; or 1;	
+or 1	or 1; or a;	
+or 1	or 1; or 1;	
+or 1	or 1; cp 0;	H,N,P/V
+or 1	or 1; adc a, 0;	P/V
+or 1	or 1; sbc a, 0;	H,N,P/V
+or 1	or 1; set 0, a;	
+or 1	xor 1; or 1;	
+or 1	srl a; sli a;	
+or 1	set 0, a; or a;	
+or 1	set 0, a; or 1;	
+or 1	set 0, a; cp 0;	H,N,P/V
+or 1	res 0, a; or 1;	
+or 1	res 0, a; xor 1;	
+or 1	res 0, a; add a, 1;	P/V
+or 2	or a; or 2;	
+or 2	or 2; or a;	
+or 2	or 2; or 2;	
+or 2	or 2; cp 0;	H,N,P/V
+or 2	or 2; cp 1;	H,N,P/V
+or 2	or 2; adc a, 0;	P/V
+or 2	or 2; sbc a, 0;	H,N,P/V
+or 2	or 2; set 1, a;	
+or 2	xor 2; or 2;	
+or 2	set 1, a; or a;	
+or 2	set 1, a; or 2;	
+or 2	set 1, a; cp 0;	H,N,P/V
+or 2	set 1, a; cp 1;	H,N,P/V
+or 2	res 1, a; or 2;	
+or 2	res 1, a; xor 2;	
+or 2	res 1, a; add a, 2;	P/V
+or 224	or a; or 224;	
+or 224	or 224; or a;	
+or 224	or 224; or 224;	
+or 224	or 224; cp 0;	H,N,P/V
+or 224	or 224; cp 1;	H,N,P/V
+or 224	or 224; cp 2;	H,N,P/V
+or 224	or 224; adc a, 0;	P/V
+or 224	or 224; sbc a, 0;	H,N,P/V
+or 224	or 224; bit 7, a;	H,N,P/V
+or 224	or 224; set 5, a;	
+or 224	or 224; set 6, a;	
+or 224	or 224; set 7, a;	
+or 224	xor 224; or 224;	
+or 224	add a, 224; or 224;	
+or 224	sub 224; or 224;	
+or 224	set 5, a; or 224;	
+or 224	set 6, a; or 224;	
+or 224	set 7, a; or 224;	
+or 224	res 5, a; or 224;	
+or 224	res 6, a; or 224;	
+or 224	res 7, a; or 224;	
+or 255	and b; or 255;	
+or 255	and c; or 255;	
+or 255	and d; or 255;	
+or 255	and e; or 255;	
+or 255	and h; or 255;	
+or 255	and l; or 255;	
+or 255	and 1; or 255;	
+or 255	and 2; or 255;	
+or 255	and 224; or 255;	
+or 255	or a; or 255;	
+or 255	or b; or 255;	
+or 255	or c; or 255;	
+or 255	or d; or 255;	
+or 255	or e; or 255;	
+or 255	or h; or 255;	
+or 255	or l; or 255;	
+or 255	or 1; or 255;	
+or 255	or 2; or 255;	
+or 255	or 224; or 255;	
+or 255	or 224; ld a, 255;	P/V
+or 255	or 255; or a;	
+or 255	or 255; or b;	
+or 255	or 255; or c;	
+or 255	or 255; or d;	
+or 255	or 255; or e;	
+or 255	or 255; or h;	
+or 255	or 255; or l;	
+or 255	or 255; or 1;	
+or 255	or 255; or 2;	
+or 255	or 255; or 224;	
+or 255	or 255; or 255;	
+or 255	or 255; cp 0;	H,N,P/V
+or 255	or 255; cp 1;	H,N,P/V
+or 255	or 255; cp 2;	H,N,P/V
+or 255	or 255; adc a, 0;	P/V
+or 255	or 255; sbc a, 0;	H,N,P/V
+or 255	or 255; ld a, 255;	
+or 255	or 255; bit 7, a;	H,N,P/V
+or 255	or 255; set 0, a;	
+or 255	or 255; set 1, a;	
+or 255	or 255; set 2, a;	
+or 255	or 255; set 3, a;	
+or 255	or 255; set 4, a;	
+or 255	or 255; set 5, a;	
+or 255	or 255; set 6, a;	
+or 255	or 255; set 7, a;	
+or 255	xor a; or 255;	
+or 255	xor a; xor 255;	
+or 255	xor a; dec a;	H,N,P/V
+or 255	xor a; add a, 255;	P/V
+or 255	xor a; adc a, 255;	P/V
+or 255	xor b; or 255;	
+or 255	xor c; or 255;	
+or 255	xor d; or 255;	
+or 255	xor e; or 255;	
+or 255	xor h; or 255;	
+or 255	xor l; or 255;	
+or 255	xor 1; or 255;	
+or 255	xor 2; or 255;	
+or 255	xor 224; or 255;	
+or 255	xor 255; or 255;	
+or 255	inc a; or 255;	
+or 255	dec a; or 255;	
+or 255	add a, a; or 255;	
+or 255	add a, b; or 255;	
+or 255	add a, c; or 255;	
+or 255	add a, d; or 255;	
+or 255	add a, e; or 255;	
+or 255	add a, h; or 255;	
+or 255	add a, l; or 255;	
+or 255	add a, ixh; or 255;	
+or 255	add a, ixl; or 255;	
+or 255	add a, iyh; or 255;	
+or 255	add a, iyl; or 255;	
+or 255	add a, 1; or 255;	
+or 255	add a, 2; or 255;	
+or 255	add a, 224; or 255;	
+or 255	add a, 255; or 255;	
+or 255	adc a, a; or 255;	
+or 255	adc a, b; or 255;	
+or 255	adc a, c; or 255;	
+or 255	adc a, d; or 255;	
+or 255	adc a, e; or 255;	
+or 255	adc a, h; or 255;	
+or 255	adc a, l; or 255;	
+or 255	adc a, ixh; or 255;	
+or 255	adc a, ixl; or 255;	
+or 255	adc a, iyh; or 255;	
+or 255	adc a, iyl; or 255;	
+or 255	adc a, 0; or 255;	
+or 255	adc a, 1; or 255;	
+or 255	adc a, 2; or 255;	
+or 255	adc a, 224; or 255;	
+or 255	adc a, 255; or 255;	
+or 255	sub a; or 255;	
+or 255	sub a; xor 255;	
+or 255	sub a; dec a;	H,N,P/V
+or 255	sub a; add a, 255;	P/V
+or 255	sub a; adc a, 255;	P/V
+or 255	sub b; or 255;	
+or 255	sub c; or 255;	
+or 255	sub d; or 255;	
+or 255	sub e; or 255;	
+or 255	sub h; or 255;	
+or 255	sub l; or 255;	
+or 255	sub 1; or 255;	
+or 255	sub 2; or 255;	
+or 255	sub 224; or 255;	
+or 255	sub 255; or 255;	
+or 255	sbc a, a; or 255;	
+or 255	sbc a, b; or 255;	
+or 255	sbc a, c; or 255;	
+or 255	sbc a, d; or 255;	
+or 255	sbc a, e; or 255;	
+or 255	sbc a, h; or 255;	
+or 255	sbc a, l; or 255;	
+or 255	sbc a, ixh; or 255;	
+or 255	sbc a, ixl; or 255;	
+or 255	sbc a, iyh; or 255;	
+or 255	sbc a, iyl; or 255;	
+or 255	sbc a, 0; or 255;	
+or 255	sbc a, 1; or 255;	
+or 255	sbc a, 2; or 255;	
+or 255	sbc a, 224; or 255;	
+or 255	sbc a, 255; or 255;	
+or 255	ld a, b; or 255;	
+or 255	ld a, c; or 255;	
+or 255	ld a, d; or 255;	
+or 255	ld a, e; or 255;	
+or 255	ld a, h; or 255;	
+or 255	ld a, l; or 255;	
+or 255	ld a, 0; or 255;	
+or 255	ld a, 0; xor 255;	
+or 255	ld a, 0; add a, 255;	P/V
+or 255	ld a, 1; or 255;	
+or 255	ld a, 2; or 255;	
+or 255	ld a, 224; or 255;	
+or 255	ld a, 255; or a;	
+or 255	ld a, 255; or b;	
+or 255	ld a, 255; or c;	
+or 255	ld a, 255; or d;	
+or 255	ld a, 255; or e;	
+or 255	ld a, 255; or h;	
+or 255	ld a, 255; or l;	
+or 255	ld a, 255; or 1;	
+or 255	ld a, 255; or 2;	
+or 255	ld a, 255; or 224;	
+or 255	ld a, 255; or 255;	
+or 255	ld a, 255; cp 0;	H,N,P/V
+or 255	ld a, 255; cp 1;	H,N,P/V
+or 255	ld a, 255; cp 2;	H,N,P/V
+or 255	ld a, ixh; or 255;	
+or 255	ld a, ixl; or 255;	
+or 255	ld a, iyh; or 255;	
+or 255	ld a, iyl; or 255;	
+or 255	rlc a; or 255;	
+or 255	rl a; or 255;	
+or 255	rrc a; or 255;	
+or 255	rr a; or 255;	
+or 255	rlca; or 255;	
+or 255	rla; or 255;	
+or 255	rrca; or 255;	
+or 255	rra; or 255;	
+or 255	sra a; or 255;	
+or 255	srl a; or 255;	
+or 255	sli a; or 255;	
+or 255	cpl; or 255;	
+or 255	neg; or 255;	
+or 255	set 0, a; or 255;	
+or 255	set 1, a; or 255;	
+or 255	set 2, a; or 255;	
+or 255	set 3, a; or 255;	
+or 255	set 4, a; or 255;	
+or 255	set 5, a; or 255;	
+or 255	set 6, a; or 255;	
+or 255	set 7, a; or 255;	
+or 255	res 0, a; or 255;	
+or 255	res 1, a; or 255;	
+or 255	res 2, a; or 255;	
+or 255	res 3, a; or 255;	
+or 255	res 4, a; or 255;	
+or 255	res 5, a; or 255;	
+or 255	res 6, a; or 255;	
+or 255	res 7, a; or 255;	
+xor a	and b; sbc a, a;	H,N,P/V
+xor a	and c; sbc a, a;	H,N,P/V
+xor a	and d; sbc a, a;	H,N,P/V
+xor a	and e; sbc a, a;	H,N,P/V
+xor a	and h; sbc a, a;	H,N,P/V
+xor a	and l; sbc a, a;	H,N,P/V
+xor a	and 1; and 2;	H,N
+xor a	and 1; and 224;	H,N
+xor a	and 1; sbc a, a;	H,N,P/V
+xor a	and 2; and 1;	H,N
+xor a	and 2; and 224;	H,N
+xor a	and 2; sbc a, a;	H,N,P/V
+xor a	and 224; and 1;	H,N
+xor a	and 224; and 2;	H,N
+xor a	and 224; sbc a, a;	H,N,P/V
+xor a	or a; sbc a, a;	H,N,P/V
+xor a	or b; sbc a, a;	H,N,P/V
+xor a	or c; sbc a, a;	H,N,P/V
+xor a	or d; sbc a, a;	H,N,P/V
+xor a	or e; sbc a, a;	H,N,P/V
+xor a	or h; sbc a, a;	H,N,P/V
+xor a	or l; sbc a, a;	H,N,P/V
+xor a	or 1; sbc a, a;	H,N,P/V
+xor a	or 2; sbc a, a;	H,N,P/V
+xor a	or 224; sbc a, a;	H,N,P/V
+xor a	or 255; xor 255;	
+xor a	or 255; inc a;	H,N,P/V
+xor a	or 255; sub 255;	H,N,P/V
+xor a	or 255; sbc a, a;	H,N,P/V
+xor a	or 255; sbc a, 255;	H,N,P/V
+xor a	xor a; and b;	H,N
+xor a	xor a; and c;	H,N
+xor a	xor a; and d;	H,N
+xor a	xor a; and e;	H,N
+xor a	xor a; and h;	H,N
+xor a	xor a; and l;	H,N
+xor a	xor a; and 1;	H,N
+xor a	xor a; and 2;	H,N
+xor a	xor a; and 224;	H,N
+xor a	xor a; or a;	
+xor a	xor a; cp a;	H,N,P/V
+xor a	xor a; cp 0;	H,N,P/V
+xor a	xor a; add a, a;	P/V
+xor a	xor a; adc a, a;	P/V
+xor a	xor a; adc a, 0;	P/V
+xor a	xor a; sbc a, a;	H,N,P/V
+xor a	xor a; sbc a, 0;	H,N,P/V
+xor a	xor a; ld a, 0;	
+xor a	xor a; rlc a;	
+xor a	xor a; rl a;	
+xor a	xor a; rrc a;	
+xor a	xor a; rr a;	
+xor a	xor a; rlca;	
+xor a	xor a; rla;	
+xor a	xor a; rrca;	
+xor a	xor a; rra;	
+xor a	xor a; sra a;	
+xor a	xor a; srl a;	
+xor a	xor a; neg;	H,N,P/V
+xor a	xor a; bit 0, a;	H,N
+xor a	xor a; bit 1, a;	H,N
+xor a	xor a; bit 2, a;	H,N
+xor a	xor a; bit 3, a;	H,N
+xor a	xor a; bit 4, a;	H,N
+xor a	xor a; bit 5, a;	H,N
+xor a	xor a; bit 6, a;	H,N
+xor a	xor a; bit 7, a;	H,N
+xor a	xor a; res 0, a;	
+xor a	xor a; res 1, a;	
+xor a	xor a; res 2, a;	
+xor a	xor a; res 3, a;	
+xor a	xor a; res 4, a;	
+xor a	xor a; res 5, a;	
+xor a	xor a; res 6, a;	
+xor a	xor a; res 7, a;	
+xor a	xor b; sbc a, a;	H,N,P/V
+xor a	xor c; sbc a, a;	H,N,P/V
+xor a	xor d; sbc a, a;	H,N,P/V
+xor a	xor e; sbc a, a;	H,N,P/V
+xor a	xor h; sbc a, a;	H,N,P/V
+xor a	xor l; sbc a, a;	H,N,P/V
+xor a	xor 1; sbc a, a;	H,N,P/V
+xor a	xor 2; sbc a, a;	H,N,P/V
+xor a	xor 224; sbc a, a;	H,N,P/V
+xor a	xor 255; sbc a, a;	H,N,P/V
+xor a	cp a; sbc a, a;	H,N,P/V
+xor a	cp a; ld a, 0;	H,N,P/V
+xor a	cp 0; sbc a, a;	H,N,P/V
+xor a	add a, a; and 1;	H,N
+xor a	sub a; and b;	H,N
+xor a	sub a; and c;	H,N
+xor a	sub a; and d;	H,N
+xor a	sub a; and e;	H,N
+xor a	sub a; and h;	H,N
+xor a	sub a; and l;	H,N
+xor a	sub a; and 1;	H,N
+xor a	sub a; and 2;	H,N
+xor a	sub a; and 224;	H,N
+xor a	sub a; or a;	
+xor a	sub a; cp a;	H,N,P/V
+xor a	sub a; cp 0;	H,N,P/V
+xor a	sub a; add a, a;	P/V
+xor a	sub a; adc a, a;	P/V
+xor a	sub a; adc a, 0;	P/V
+xor a	sub a; sbc a, a;	H,N,P/V
+xor a	sub a; sbc a, 0;	H,N,P/V
+xor a	sub a; ld a, 0;	H,N,P/V
+xor a	sub a; rlc a;	
+xor a	sub a; rl a;	
+xor a	sub a; rrc a;	
+xor a	sub a; rr a;	
+xor a	sub a; rlca;	P/V
+xor a	sub a; rla;	P/V
+xor a	sub a; rrca;	P/V
+xor a	sub a; rra;	P/V
+xor a	sub a; sra a;	
+xor a	sub a; srl a;	
+xor a	sub a; neg;	H,N,P/V
+xor a	sub a; bit 0, a;	H,N
+xor a	sub a; bit 1, a;	H,N
+xor a	sub a; bit 2, a;	H,N
+xor a	sub a; bit 3, a;	H,N
+xor a	sub a; bit 4, a;	H,N
+xor a	sub a; bit 5, a;	H,N
+xor a	sub a; bit 6, a;	H,N
+xor a	sub a; bit 7, a;	H,N
+xor a	sub a; res 0, a;	H,N,P/V
+xor a	sub a; res 1, a;	H,N,P/V
+xor a	sub a; res 2, a;	H,N,P/V
+xor a	sub a; res 3, a;	H,N,P/V
+xor a	sub a; res 4, a;	H,N,P/V
+xor a	sub a; res 5, a;	H,N,P/V
+xor a	sub a; res 6, a;	H,N,P/V
+xor a	sub a; res 7, a;	H,N,P/V
+xor a	ld a, b; xor b;	
+xor a	ld a, b; sub b;	H,N,P/V
+xor a	ld a, c; xor c;	
+xor a	ld a, c; sub c;	H,N,P/V
+xor a	ld a, d; xor d;	
+xor a	ld a, d; sub d;	H,N,P/V
+xor a	ld a, e; xor e;	
+xor a	ld a, e; sub e;	H,N,P/V
+xor a	ld a, h; xor h;	
+xor a	ld a, h; sub h;	H,N,P/V
+xor a	ld a, l; xor l;	
+xor a	ld a, l; sub l;	H,N,P/V
+xor a	ld a, 0; and b;	H,N
+xor a	ld a, 0; and c;	H,N
+xor a	ld a, 0; and d;	H,N
+xor a	ld a, 0; and e;	H,N
+xor a	ld a, 0; and h;	H,N
+xor a	ld a, 0; and l;	H,N
+xor a	ld a, 0; and 1;	H,N
+xor a	ld a, 0; and 2;	H,N
+xor a	ld a, 0; and 224;	H,N
+xor a	ld a, 0; or a;	
+xor a	ld a, 0; cp 0;	H,N,P/V
+xor a	ld a, 0; add a, a;	P/V
+xor a	ld a, 0; rlc a;	
+xor a	ld a, 0; rrc a;	
+xor a	ld a, 0; sra a;	
+xor a	ld a, 0; srl a;	
+xor a	ld a, 0; neg;	H,N,P/V
+xor a	ld a, 1; and 2;	H,N
+xor a	ld a, 1; and 224;	H,N
+xor a	ld a, 1; xor 1;	
+xor a	ld a, 1; sub 1;	H,N,P/V
+xor a	ld a, 2; and 1;	H,N
+xor a	ld a, 2; and 224;	H,N
+xor a	ld a, 2; xor 2;	
+xor a	ld a, 2; sub 2;	H,N,P/V
+xor a	ld a, 224; and 1;	H,N
+xor a	ld a, 224; and 2;	H,N
+xor a	ld a, 224; xor 224;	
+xor a	ld a, 224; sub 224;	H,N,P/V
+xor a	ld a, 255; xor 255;	
+xor a	ld a, 255; sub 255;	H,N,P/V
+xor a	res 0, a; and 1;	H,N
+xor a	res 1, a; and 2;	H,N
+xor b	or a; xor b;	
+xor b	xor b; or a;	
+xor b	xor b; cp 0;	H,N,P/V
+xor b	xor b; adc a, 0;	P/V
+xor b	xor b; sbc a, 0;	H,N,P/V
+xor c	or a; xor c;	
+xor c	xor c; or a;	
+xor c	xor c; cp 0;	H,N,P/V
+xor c	xor c; adc a, 0;	P/V
+xor c	xor c; sbc a, 0;	H,N,P/V
+xor d	or a; xor d;	
+xor d	xor d; or a;	
+xor d	xor d; cp 0;	H,N,P/V
+xor d	xor d; adc a, 0;	P/V
+xor d	xor d; sbc a, 0;	H,N,P/V
+xor e	or a; xor e;	
+xor e	xor e; or a;	
+xor e	xor e; cp 0;	H,N,P/V
+xor e	xor e; adc a, 0;	P/V
+xor e	xor e; sbc a, 0;	H,N,P/V
+xor h	or a; xor h;	
+xor h	xor h; or a;	
+xor h	xor h; cp 0;	H,N,P/V
+xor h	xor h; adc a, 0;	P/V
+xor h	xor h; sbc a, 0;	H,N,P/V
+xor l	or a; xor l;	
+xor l	xor l; or a;	
+xor l	xor l; cp 0;	H,N,P/V
+xor l	xor l; adc a, 0;	P/V
+xor l	xor l; sbc a, 0;	H,N,P/V
+xor 1	or a; xor 1;	
+xor 1	xor 1; or a;	
+xor 1	xor 1; cp 0;	H,N,P/V
+xor 1	xor 1; adc a, 0;	P/V
+xor 1	xor 1; sbc a, 0;	H,N,P/V
+xor 2	or a; xor 2;	
+xor 2	xor 2; or a;	
+xor 2	xor 2; cp 0;	H,N,P/V
+xor 2	xor 2; adc a, 0;	P/V
+xor 2	xor 2; sbc a, 0;	H,N,P/V
+xor 224	or a; xor 224;	
+xor 224	xor 224; or a;	
+xor 224	xor 224; cp 0;	H,N,P/V
+xor 224	xor 224; adc a, 0;	P/V
+xor 224	xor 224; sbc a, 0;	H,N,P/V
+xor 255	or a; xor 255;	
+xor 255	xor 255; or a;	
+xor 255	xor 255; cp 0;	H,N,P/V
+xor 255	xor 255; adc a, 0;	P/V
+xor 255	xor 255; sbc a, 0;	H,N,P/V
+xor 255	cpl; or a;	
+xor 255	cpl; cp 0;	H,N,P/V
+cp a	or a; cp a;	
+cp b	or a; cp b;	
+cp c	or a; cp c;	
+cp d	or a; cp d;	
+cp e	or a; cp e;	
+cp h	or a; cp h;	
+cp l	or a; cp l;	
+cp 0	or a; or a;	H,N,P/V
+cp 0	or a; cp 0;	
+cp 0	or a; adc a, 0;	H,N
+cp 0	or a; sbc a, 0;	
+cp 0	xor b; xor b;	H,N,P/V
+cp 0	xor c; xor c;	H,N,P/V
+cp 0	xor d; xor d;	H,N,P/V
+cp 0	xor e; xor e;	H,N,P/V
+cp 0	xor h; xor h;	H,N,P/V
+cp 0	xor l; xor l;	H,N,P/V
+cp 0	xor 1; xor 1;	H,N,P/V
+cp 0	xor 2; xor 2;	H,N,P/V
+cp 0	xor 224; xor 224;	H,N,P/V
+cp 0	xor 255; xor 255;	H,N,P/V
+cp 0	cp a; adc a, 0;	H,N
+cp 0	cp a; sbc a, 0;	
+cp 0	cp 0; adc a, 0;	H,N
+cp 0	cp 0; sbc a, 0;	
+cp 0	add a, a; rr a;	H,N,P/V
+cp 0	srl a; adc a, a;	H,N,P/V
+cp 0	srl a; rl a;	H,N,P/V
+cp 0	cpl; xor 255;	H,N,P/V
+cp 1	or a; cp 1;	
+cp 2	or a; cp 2;	
+cp 224	or a; cp 224;	
+cp 255	or a; cp 255;	
+add a, a	or a; add a, a;	
+add a, a	or a; adc a, a;	
+add a, a	or a; rl a;	H,N,P/V
+add a, a	cp a; adc a, a;	
+add a, a	cp a; rl a;	H,N,P/V
+add a, a	cp 0; adc a, a;	
+add a, a	cp 0; rl a;	H,N,P/V
+add a, a	add a, a; res 0, a;	
+add a, a	sli a; dec a;	H,N,P/V
+add a, b	or a; add a, b;	
+add a, b	or a; adc a, b;	
+add a, b	cp a; adc a, b;	
+add a, b	cp 0; adc a, b;	
+add a, c	or a; add a, c;	
+add a, c	or a; adc a, c;	
+add a, c	cp a; adc a, c;	
+add a, c	cp 0; adc a, c;	
+add a, d	or a; add a, d;	
+add a, d	or a; adc a, d;	
+add a, d	cp a; adc a, d;	
+add a, d	cp 0; adc a, d;	
+add a, e	or a; add a, e;	
+add a, e	or a; adc a, e;	
+add a, e	cp a; adc a, e;	
+add a, e	cp 0; adc a, e;	
+add a, h	or a; add a, h;	
+add a, h	or a; adc a, h;	
+add a, h	cp a; adc a, h;	
+add a, h	cp 0; adc a, h;	
+add a, l	or a; add a, l;	
+add a, l	or a; adc a, l;	
+add a, l	cp a; adc a, l;	
+add a, l	cp 0; adc a, l;	
+add a, ixh	or a; add a, ixh;	
+add a, ixh	or a; adc a, ixh;	
+add a, ixh	cp a; adc a, ixh;	
+add a, ixh	cp 0; adc a, ixh;	
+add a, ixl	or a; add a, ixl;	
+add a, ixl	or a; adc a, ixl;	
+add a, ixl	cp a; adc a, ixl;	
+add a, ixl	cp 0; adc a, ixl;	
+add a, iyh	or a; add a, iyh;	
+add a, iyh	or a; adc a, iyh;	
+add a, iyh	cp a; adc a, iyh;	
+add a, iyh	cp 0; adc a, iyh;	
+add a, iyl	or a; add a, iyl;	
+add a, iyl	or a; adc a, iyl;	
+add a, iyl	cp a; adc a, iyl;	
+add a, iyl	cp 0; adc a, iyl;	
+add a, 1	or a; add a, 1;	
+add a, 1	or a; adc a, 1;	
+add a, 1	cp a; adc a, 1;	
+add a, 1	cp 0; adc a, 1;	
+add a, 1	sub 255; ccf;	H,N
+add a, 1	scf; adc a, 0;	
+add a, 2	or a; add a, 2;	
+add a, 2	or a; adc a, 2;	
+add a, 2	cp a; adc a, 2;	
+add a, 2	cp 0; adc a, 2;	
+add a, 2	scf; adc a, 1;	
+add a, 224	or a; add a, 224;	
+add a, 224	or a; adc a, 224;	
+add a, 224	cp a; adc a, 224;	
+add a, 224	cp 0; adc a, 224;	
+add a, 255	or a; add a, 255;	
+add a, 255	or a; adc a, 255;	
+add a, 255	cp a; adc a, 255;	
+add a, 255	cp 0; adc a, 255;	
+add a, 255	sub 1; ccf;	H,N
+sub a	and b; sbc a, a;	
+sub a	and c; sbc a, a;	
+sub a	and d; sbc a, a;	
+sub a	and e; sbc a, a;	
+sub a	and h; sbc a, a;	
+sub a	and l; sbc a, a;	
+sub a	and 1; and 2;	H,N,P/V
+sub a	and 1; and 224;	H,N,P/V
+sub a	and 1; sbc a, a;	
+sub a	and 2; and 1;	H,N,P/V
+sub a	and 2; and 224;	H,N,P/V
+sub a	and 2; sbc a, a;	
+sub a	and 224; and 1;	H,N,P/V
+sub a	and 224; and 2;	H,N,P/V
+sub a	and 224; sbc a, a;	
+sub a	or a; sbc a, a;	
+sub a	or b; sbc a, a;	
+sub a	or c; sbc a, a;	
+sub a	or d; sbc a, a;	
+sub a	or e; sbc a, a;	
+sub a	or h; sbc a, a;	
+sub a	or l; sbc a, a;	
+sub a	or 1; sbc a, a;	
+sub a	or 2; sbc a, a;	
+sub a	or 224; sbc a, a;	
+sub a	or 255; xor 255;	H,N,P/V
+sub a	or 255; inc a;	H,N
+sub a	or 255; sub 255;	
+sub a	or 255; sbc a, a;	
+sub a	or 255; sbc a, 255;	
+sub a	xor a; and b;	H,N,P/V
+sub a	xor a; and c;	H,N,P/V
+sub a	xor a; and d;	H,N,P/V
+sub a	xor a; and e;	H,N,P/V
+sub a	xor a; and h;	H,N,P/V
+sub a	xor a; and l;	H,N,P/V
+sub a	xor a; and 1;	H,N,P/V
+sub a	xor a; and 2;	H,N,P/V
+sub a	xor a; and 224;	H,N,P/V
+sub a	xor a; or a;	H,N,P/V
+sub a	xor a; cp a;	
+sub a	xor a; cp 0;	
+sub a	xor a; add a, a;	H,N
+sub a	xor a; adc a, a;	H,N
+sub a	xor a; adc a, 0;	H,N
+sub a	xor a; sbc a, a;	
+sub a	xor a; sbc a, 0;	
+sub a	xor a; ld a, 0;	H,N,P/V
+sub a	xor a; rlc a;	H,N,P/V
+sub a	xor a; rl a;	H,N,P/V
+sub a	xor a; rrc a;	H,N,P/V
+sub a	xor a; rr a;	H,N,P/V
+sub a	xor a; rlca;	H,N,P/V
+sub a	xor a; rla;	H,N,P/V
+sub a	xor a; rrca;	H,N,P/V
+sub a	xor a; rra;	H,N,P/V
+sub a	xor a; sra a;	H,N,P/V
+sub a	xor a; srl a;	H,N,P/V
+sub a	xor a; neg;	
+sub a	xor a; bit 0, a;	H,N,P/V
+sub a	xor a; bit 1, a;	H,N,P/V
+sub a	xor a; bit 2, a;	H,N,P/V
+sub a	xor a; bit 3, a;	H,N,P/V
+sub a	xor a; bit 4, a;	H,N,P/V
+sub a	xor a; bit 5, a;	H,N,P/V
+sub a	xor a; bit 6, a;	H,N,P/V
+sub a	xor a; bit 7, a;	H,N,P/V
+sub a	xor a; res 0, a;	H,N,P/V
+sub a	xor a; res 1, a;	H,N,P/V
+sub a	xor a; res 2, a;	H,N,P/V
+sub a	xor a; res 3, a;	H,N,P/V
+sub a	xor a; res 4, a;	H,N,P/V
+sub a	xor a; res 5, a;	H,N,P/V
+sub a	xor a; res 6, a;	H,N,P/V
+sub a	xor a; res 7, a;	H,N,P/V
+sub a	xor b; sbc a, a;	
+sub a	xor c; sbc a, a;	
+sub a	xor d; sbc a, a;	
+sub a	xor e; sbc a, a;	
+sub a	xor h; sbc a, a;	
+sub a	xor l; sbc a, a;	
+sub a	xor 1; sbc a, a;	
+sub a	xor 2; sbc a, a;	
+sub a	xor 224; sbc a, a;	
+sub a	xor 255; sbc a, a;	
+sub a	cp a; sbc a, a;	
+sub a	cp a; ld a, 0;	
+sub a	cp 0; sbc a, a;	
+sub a	add a, a; and 1;	H,N,P/V
+sub a	sub a; and b;	H,N,P/V
+sub a	sub a; and c;	H,N,P/V
+sub a	sub a; and d;	H,N,P/V
+sub a	sub a; and e;	H,N,P/V
+sub a	sub a; and h;	H,N,P/V
+sub a	sub a; and l;	H,N,P/V
+sub a	sub a; and 1;	H,N,P/V
+sub a	sub a; and 2;	H,N,P/V
+sub a	sub a; and 224;	H,N,P/V
+sub a	sub a; or a;	H,N,P/V
+sub a	sub a; cp a;	
+sub a	sub a; cp 0;	
+sub a	sub a; add a, a;	H,N
+sub a	sub a; adc a, a;	H,N
+sub a	sub a; adc a, 0;	H,N
+sub a	sub a; sbc a, a;	
+sub a	sub a; sbc a, 0;	
+sub a	sub a; ld a, 0;	
+sub a	sub a; rlc a;	H,N,P/V
+sub a	sub a; rl a;	H,N,P/V
+sub a	sub a; rrc a;	H,N,P/V
+sub a	sub a; rr a;	H,N,P/V
+sub a	sub a; rlca;	H,N
+sub a	sub a; rla;	H,N
+sub a	sub a; rrca;	H,N
+sub a	sub a; rra;	H,N
+sub a	sub a; sra a;	H,N,P/V
+sub a	sub a; srl a;	H,N,P/V
+sub a	sub a; neg;	
+sub a	sub a; bit 0, a;	H,N,P/V
+sub a	sub a; bit 1, a;	H,N,P/V
+sub a	sub a; bit 2, a;	H,N,P/V
+sub a	sub a; bit 3, a;	H,N,P/V
+sub a	sub a; bit 4, a;	H,N,P/V
+sub a	sub a; bit 5, a;	H,N,P/V
+sub a	sub a; bit 6, a;	H,N,P/V
+sub a	sub a; bit 7, a;	H,N,P/V
+sub a	sub a; res 0, a;	
+sub a	sub a; res 1, a;	
+sub a	sub a; res 2, a;	
+sub a	sub a; res 3, a;	
+sub a	sub a; res 4, a;	
+sub a	sub a; res 5, a;	
+sub a	sub a; res 6, a;	
+sub a	sub a; res 7, a;	
+sub a	ld a, b; xor b;	H,N,P/V
+sub a	ld a, b; sub b;	
+sub a	ld a, c; xor c;	H,N,P/V
+sub a	ld a, c; sub c;	
+sub a	ld a, d; xor d;	H,N,P/V
+sub a	ld a, d; sub d;	
+sub a	ld a, e; xor e;	H,N,P/V
+sub a	ld a, e; sub e;	
+sub a	ld a, h; xor h;	H,N,P/V
+sub a	ld a, h; sub h;	
+sub a	ld a, l; xor l;	H,N,P/V
+sub a	ld a, l; sub l;	
+sub a	ld a, 0; and b;	H,N,P/V
+sub a	ld a, 0; and c;	H,N,P/V
+sub a	ld a, 0; and d;	H,N,P/V
+sub a	ld a, 0; and e;	H,N,P/V
+sub a	ld a, 0; and h;	H,N,P/V
+sub a	ld a, 0; and l;	H,N,P/V
+sub a	ld a, 0; and 1;	H,N,P/V
+sub a	ld a, 0; and 2;	H,N,P/V
+sub a	ld a, 0; and 224;	H,N,P/V
+sub a	ld a, 0; or a;	H,N,P/V
+sub a	ld a, 0; cp 0;	
+sub a	ld a, 0; add a, a;	H,N
+sub a	ld a, 0; rlc a;	H,N,P/V
+sub a	ld a, 0; rrc a;	H,N,P/V
+sub a	ld a, 0; sra a;	H,N,P/V
+sub a	ld a, 0; srl a;	H,N,P/V
+sub a	ld a, 0; neg;	
+sub a	ld a, 1; and 2;	H,N,P/V
+sub a	ld a, 1; and 224;	H,N,P/V
+sub a	ld a, 1; xor 1;	H,N,P/V
+sub a	ld a, 1; sub 1;	
+sub a	ld a, 2; and 1;	H,N,P/V
+sub a	ld a, 2; and 224;	H,N,P/V
+sub a	ld a, 2; xor 2;	H,N,P/V
+sub a	ld a, 2; sub 2;	
+sub a	ld a, 224; and 1;	H,N,P/V
+sub a	ld a, 224; and 2;	H,N,P/V
+sub a	ld a, 224; xor 224;	H,N,P/V
+sub a	ld a, 224; sub 224;	
+sub a	ld a, 255; xor 255;	H,N,P/V
+sub a	ld a, 255; sub 255;	
+sub a	res 0, a; and 1;	H,N,P/V
+sub a	res 1, a; and 2;	H,N,P/V
+sub b	or a; sub b;	
+sub b	or a; sbc a, b;	
+sub b	cp a; sbc a, b;	
+sub b	cp 0; sbc a, b;	
+sub c	or a; sub c;	
+sub c	or a; sbc a, c;	
+sub c	cp a; sbc a, c;	
+sub c	cp 0; sbc a, c;	
+sub d	or a; sub d;	
+sub d	or a; sbc a, d;	
+sub d	cp a; sbc a, d;	
+sub d	cp 0; sbc a, d;	
+sub e	or a; sub e;	
+sub e	or a; sbc a, e;	
+sub e	cp a; sbc a, e;	
+sub e	cp 0; sbc a, e;	
+sub h	or a; sub h;	
+sub h	or a; sbc a, h;	
+sub h	cp a; sbc a, h;	
+sub h	cp 0; sbc a, h;	
+sub l	or a; sub l;	
+sub l	or a; sbc a, l;	
+sub l	cp a; sbc a, l;	
+sub l	cp 0; sbc a, l;	
+sub 1	or a; sub 1;	
+sub 1	or a; sbc a, 1;	
+sub 1	cp a; sbc a, 1;	
+sub 1	cp 0; sbc a, 1;	
+sub 1	cp 1; dec a;	
+sub 1	add a, 255; ccf;	H,N
+sub 1	scf; sbc a, 0;	
+sub 2	or a; sub 2;	
+sub 2	or a; sbc a, 2;	
+sub 2	cp a; sbc a, 2;	
+sub 2	cp 0; sbc a, 2;	
+sub 2	scf; sbc a, 1;	
+sub 224	or a; sub 224;	
+sub 224	or a; sbc a, 224;	
+sub 224	cp a; sbc a, 224;	
+sub 224	cp 0; sbc a, 224;	
+sub 255	or a; sub 255;	
+sub 255	or a; sbc a, 255;	
+sub 255	xor 255; neg;	
+sub 255	cp a; sbc a, 255;	
+sub 255	cp 0; sbc a, 255;	
+sub 255	cp 255; inc a;	H,N
+sub 255	add a, 1; ccf;	H,N
+sub 255	cpl; neg;	
+sbc a, a	sbc a, a; adc a, a;	H,N
+sbc a, a	sbc a, a; sbc a, a;	
+sbc a, a	sbc a, a; rlc a;	H,N,P/V
+sbc a, a	sbc a, a; rl a;	H,N,P/V
+sbc a, a	sbc a, a; rrc a;	H,N,P/V
+sbc a, a	sbc a, a; rr a;	H,N,P/V
+sbc a, a	sbc a, a; rlca;	H,N
+sbc a, a	sbc a, a; rla;	H,N
+sbc a, a	sbc a, a; rrca;	H,N
+sbc a, a	sbc a, a; rra;	H,N
+sbc a, a	sbc a, a; sra a;	H,N,P/V
+sbc a, a	sbc a, a; bit 7, a;	H,N,P/V
+sbc a, a	ld a, b; sbc a, b;	
+sbc a, a	ld a, c; sbc a, c;	
+sbc a, a	ld a, d; sbc a, d;	
+sbc a, a	ld a, e; sbc a, e;	
+sbc a, a	ld a, h; sbc a, h;	
+sbc a, a	ld a, l; sbc a, l;	
+sbc a, a	ld a, 0; sbc a, 0;	
+sbc a, a	ld a, 1; sbc a, 1;	
+sbc a, a	ld a, 2; sbc a, 2;	
+sbc a, a	ld a, 224; sbc a, 224;	
+sbc a, a	ld a, 255; sbc a, 255;	
+sbc a, a	ld a, ixh; sbc a, ixh;	
+sbc a, a	ld a, ixl; sbc a, ixl;	
+sbc a, a	ld a, iyh; sbc a, iyh;	
+sbc a, a	ld a, iyl; sbc a, iyl;	
+add hl, hl	add hl, hl; res 0, l;	
+sbc hl, hl	inc h; sbc hl, hl;	
+sbc hl, hl	inc l; sbc hl, hl;	
+sbc hl, hl	inc hl; sbc hl, hl;	
+sbc hl, hl	dec h; sbc hl, hl;	
+sbc hl, hl	dec l; sbc hl, hl;	
+sbc hl, hl	dec hl; sbc hl, hl;	
+sbc hl, hl	sbc hl, hl; adc hl, hl;	H,N
+sbc hl, hl	sbc hl, hl; sbc hl, hl;	
+sbc hl, hl	sbc hl, hl; ld h, l;	
+sbc hl, hl	sbc hl, hl; ld l, h;	
+sbc hl, hl	sbc hl, hl; rlc h;	H,N,P/V
+sbc hl, hl	sbc hl, hl; rlc l;	H,N,P/V
+sbc hl, hl	sbc hl, hl; rl h;	H,N,P/V
+sbc hl, hl	sbc hl, hl; rl l;	H,N,P/V
+sbc hl, hl	sbc hl, hl; rrc h;	H,N,P/V
+sbc hl, hl	sbc hl, hl; rrc l;	H,N,P/V
+sbc hl, hl	sbc hl, hl; rr h;	H,N,P/V
+sbc hl, hl	sbc hl, hl; rr l;	H,N,P/V
+sbc hl, hl	sbc hl, hl; sra h;	H,N,P/V
+sbc hl, hl	sbc hl, hl; sra l;	H,N,P/V
+sbc hl, hl	sbc hl, hl; bit 7, h;	H,N,P/V
+sbc hl, hl	sbc hl, hl; bit 7, l;	H,N,P/V
+sbc hl, hl	ld h, a; sbc hl, hl;	
+sbc hl, hl	ld h, b; sbc hl, hl;	
+sbc hl, hl	ld h, c; sbc hl, hl;	
+sbc hl, hl	ld h, d; sbc hl, hl;	
+sbc hl, hl	ld h, e; sbc hl, hl;	
+sbc hl, hl	ld h, l; sbc hl, hl;	
+sbc hl, hl	ld h, 0; sbc hl, hl;	
+sbc hl, hl	ld h, 1; sbc hl, hl;	
+sbc hl, hl	ld h, 2; sbc hl, hl;	
+sbc hl, hl	ld h, 224; sbc hl, hl;	
+sbc hl, hl	ld h, 255; sbc hl, hl;	
+sbc hl, hl	ld l, a; sbc hl, hl;	
+sbc hl, hl	ld l, b; sbc hl, hl;	
+sbc hl, hl	ld l, c; sbc hl, hl;	
+sbc hl, hl	ld l, d; sbc hl, hl;	
+sbc hl, hl	ld l, e; sbc hl, hl;	
+sbc hl, hl	ld l, h; sbc hl, hl;	
+sbc hl, hl	ld l, 0; sbc hl, hl;	
+sbc hl, hl	ld l, 1; sbc hl, hl;	
+sbc hl, hl	ld l, 2; sbc hl, hl;	
+sbc hl, hl	ld l, 224; sbc hl, hl;	
+sbc hl, hl	ld l, 255; sbc hl, hl;	
+sbc hl, hl	ld hl, 0; sbc hl, hl;	
+sbc hl, hl	ld hl, 1; sbc hl, hl;	
+sbc hl, hl	ld hl, 2; sbc hl, hl;	
+sbc hl, hl	ld hl, 65535; sbc hl, hl;	
+sbc hl, hl	set 0, h; sbc hl, hl;	
+sbc hl, hl	set 0, l; sbc hl, hl;	
+sbc hl, hl	set 1, h; sbc hl, hl;	
+sbc hl, hl	set 1, l; sbc hl, hl;	
+sbc hl, hl	set 2, h; sbc hl, hl;	
+sbc hl, hl	set 2, l; sbc hl, hl;	
+sbc hl, hl	set 3, h; sbc hl, hl;	
+sbc hl, hl	set 3, l; sbc hl, hl;	
+sbc hl, hl	set 4, h; sbc hl, hl;	
+sbc hl, hl	set 4, l; sbc hl, hl;	
+sbc hl, hl	set 5, h; sbc hl, hl;	
+sbc hl, hl	set 5, l; sbc hl, hl;	
+sbc hl, hl	set 6, h; sbc hl, hl;	
+sbc hl, hl	set 6, l; sbc hl, hl;	
+sbc hl, hl	set 7, h; sbc hl, hl;	
+sbc hl, hl	set 7, l; sbc hl, hl;	
+sbc hl, hl	res 0, h; sbc hl, hl;	
+sbc hl, hl	res 0, l; sbc hl, hl;	
+sbc hl, hl	res 1, h; sbc hl, hl;	
+sbc hl, hl	res 1, l; sbc hl, hl;	
+sbc hl, hl	res 2, h; sbc hl, hl;	
+sbc hl, hl	res 2, l; sbc hl, hl;	
+sbc hl, hl	res 3, h; sbc hl, hl;	
+sbc hl, hl	res 3, l; sbc hl, hl;	
+sbc hl, hl	res 4, h; sbc hl, hl;	
+sbc hl, hl	res 4, l; sbc hl, hl;	
+sbc hl, hl	res 5, h; sbc hl, hl;	
+sbc hl, hl	res 5, l; sbc hl, hl;	
+sbc hl, hl	res 6, h; sbc hl, hl;	
+sbc hl, hl	res 6, l; sbc hl, hl;	
+sbc hl, hl	res 7, h; sbc hl, hl;	
+sbc hl, hl	res 7, l; sbc hl, hl;	
+ld a, 0	ld a, 0; res 0, a;	
+ld a, 0	ld a, 0; res 1, a;	
+ld a, 0	ld a, 0; res 2, a;	
+ld a, 0	ld a, 0; res 3, a;	
+ld a, 0	ld a, 0; res 4, a;	
+ld a, 0	ld a, 0; res 5, a;	
+ld a, 0	ld a, 0; res 6, a;	
+ld a, 0	ld a, 0; res 7, a;	
+ld a, 0	ld a, 1; res 0, a;	
+ld a, 0	ld a, 2; res 1, a;	
+ld a, 0	ld a, 255; cpl;	H,N
+ld a, 1	ld a, 0; set 0, a;	
+ld a, 1	ld a, 1; set 0, a;	
+ld a, 1	ld a, 1; res 1, a;	
+ld a, 1	ld a, 1; res 2, a;	
+ld a, 1	ld a, 1; res 3, a;	
+ld a, 1	ld a, 1; res 4, a;	
+ld a, 1	ld a, 1; res 5, a;	
+ld a, 1	ld a, 1; res 6, a;	
+ld a, 1	ld a, 1; res 7, a;	
+ld a, 2	ld a, 0; set 1, a;	
+ld a, 2	ld a, 2; set 1, a;	
+ld a, 2	ld a, 2; res 0, a;	
+ld a, 2	ld a, 2; res 2, a;	
+ld a, 2	ld a, 2; res 3, a;	
+ld a, 2	ld a, 2; res 4, a;	
+ld a, 2	ld a, 2; res 5, a;	
+ld a, 2	ld a, 2; res 6, a;	
+ld a, 2	ld a, 2; res 7, a;	
+ld a, 224	ld a, 224; set 5, a;	
+ld a, 224	ld a, 224; set 6, a;	
+ld a, 224	ld a, 224; set 7, a;	
+ld a, 224	ld a, 224; res 0, a;	
+ld a, 224	ld a, 224; res 1, a;	
+ld a, 224	ld a, 224; res 2, a;	
+ld a, 224	ld a, 224; res 3, a;	
+ld a, 224	ld a, 224; res 4, a;	
+ld a, 255	ld a, 0; cpl;	H,N
+ld a, 255	ld a, 255; set 0, a;	
+ld a, 255	ld a, 255; set 1, a;	
+ld a, 255	ld a, 255; set 2, a;	
+ld a, 255	ld a, 255; set 3, a;	
+ld a, 255	ld a, 255; set 4, a;	
+ld a, 255	ld a, 255; set 5, a;	
+ld a, 255	ld a, 255; set 6, a;	
+ld a, 255	ld a, 255; set 7, a;	
+ld b, 0	ld b, 0; res 0, b;	
+ld b, 0	ld b, 0; res 1, b;	
+ld b, 0	ld b, 0; res 2, b;	
+ld b, 0	ld b, 0; res 3, b;	
+ld b, 0	ld b, 0; res 4, b;	
+ld b, 0	ld b, 0; res 5, b;	
+ld b, 0	ld b, 0; res 6, b;	
+ld b, 0	ld b, 0; res 7, b;	
+ld b, 0	ld b, 1; res 0, b;	
+ld b, 0	ld b, 2; res 1, b;	
+ld b, 1	ld b, 0; set 0, b;	
+ld b, 1	ld b, 1; set 0, b;	
+ld b, 1	ld b, 1; res 1, b;	
+ld b, 1	ld b, 1; res 2, b;	
+ld b, 1	ld b, 1; res 3, b;	
+ld b, 1	ld b, 1; res 4, b;	
+ld b, 1	ld b, 1; res 5, b;	
+ld b, 1	ld b, 1; res 6, b;	
+ld b, 1	ld b, 1; res 7, b;	
+ld b, 2	ld b, 0; set 1, b;	
+ld b, 2	ld b, 2; set 1, b;	
+ld b, 2	ld b, 2; res 0, b;	
+ld b, 2	ld b, 2; res 2, b;	
+ld b, 2	ld b, 2; res 3, b;	
+ld b, 2	ld b, 2; res 4, b;	
+ld b, 2	ld b, 2; res 5, b;	
+ld b, 2	ld b, 2; res 6, b;	
+ld b, 2	ld b, 2; res 7, b;	
+ld b, 224	ld b, 224; set 5, b;	
+ld b, 224	ld b, 224; set 6, b;	
+ld b, 224	ld b, 224; set 7, b;	
+ld b, 224	ld b, 224; res 0, b;	
+ld b, 224	ld b, 224; res 1, b;	
+ld b, 224	ld b, 224; res 2, b;	
+ld b, 224	ld b, 224; res 3, b;	
+ld b, 224	ld b, 224; res 4, b;	
+ld b, 255	ld b, 255; set 0, b;	
+ld b, 255	ld b, 255; set 1, b;	
+ld b, 255	ld b, 255; set 2, b;	
+ld b, 255	ld b, 255; set 3, b;	
+ld b, 255	ld b, 255; set 4, b;	
+ld b, 255	ld b, 255; set 5, b;	
+ld b, 255	ld b, 255; set 6, b;	
+ld b, 255	ld b, 255; set 7, b;	
+ld c, 0	ld c, 0; res 0, c;	
+ld c, 0	ld c, 0; res 1, c;	
+ld c, 0	ld c, 0; res 2, c;	
+ld c, 0	ld c, 0; res 3, c;	
+ld c, 0	ld c, 0; res 4, c;	
+ld c, 0	ld c, 0; res 5, c;	
+ld c, 0	ld c, 0; res 6, c;	
+ld c, 0	ld c, 0; res 7, c;	
+ld c, 0	ld c, 1; dec bc;	
+ld c, 0	ld c, 1; res 0, c;	
+ld c, 0	ld c, 2; res 1, c;	
+ld c, 1	ld c, 0; inc bc;	
+ld c, 1	ld c, 0; set 0, c;	
+ld c, 1	ld c, 1; set 0, c;	
+ld c, 1	ld c, 1; res 1, c;	
+ld c, 1	ld c, 1; res 2, c;	
+ld c, 1	ld c, 1; res 3, c;	
+ld c, 1	ld c, 1; res 4, c;	
+ld c, 1	ld c, 1; res 5, c;	
+ld c, 1	ld c, 1; res 6, c;	
+ld c, 1	ld c, 1; res 7, c;	
+ld c, 1	ld c, 2; dec bc;	
+ld c, 2	ld c, 0; set 1, c;	
+ld c, 2	ld c, 1; inc bc;	
+ld c, 2	ld c, 2; set 1, c;	
+ld c, 2	ld c, 2; res 0, c;	
+ld c, 2	ld c, 2; res 2, c;	
+ld c, 2	ld c, 2; res 3, c;	
+ld c, 2	ld c, 2; res 4, c;	
+ld c, 2	ld c, 2; res 5, c;	
+ld c, 2	ld c, 2; res 6, c;	
+ld c, 2	ld c, 2; res 7, c;	
+ld c, 224	ld c, 224; set 5, c;	
+ld c, 224	ld c, 224; set 6, c;	
+ld c, 224	ld c, 224; set 7, c;	
+ld c, 224	ld c, 224; res 0, c;	
+ld c, 224	ld c, 224; res 1, c;	
+ld c, 224	ld c, 224; res 2, c;	
+ld c, 224	ld c, 224; res 3, c;	
+ld c, 224	ld c, 224; res 4, c;	
+ld c, 255	ld c, 255; set 0, c;	
+ld c, 255	ld c, 255; set 1, c;	
+ld c, 255	ld c, 255; set 2, c;	
+ld c, 255	ld c, 255; set 3, c;	
+ld c, 255	ld c, 255; set 4, c;	
+ld c, 255	ld c, 255; set 5, c;	
+ld c, 255	ld c, 255; set 6, c;	
+ld c, 255	ld c, 255; set 7, c;	
+ld d, 0	ld d, 0; res 0, d;	
+ld d, 0	ld d, 0; res 1, d;	
+ld d, 0	ld d, 0; res 2, d;	
+ld d, 0	ld d, 0; res 3, d;	
+ld d, 0	ld d, 0; res 4, d;	
+ld d, 0	ld d, 0; res 5, d;	
+ld d, 0	ld d, 0; res 6, d;	
+ld d, 0	ld d, 0; res 7, d;	
+ld d, 0	ld d, 1; res 0, d;	
+ld d, 0	ld d, 2; res 1, d;	
+ld d, 1	ld d, 0; set 0, d;	
+ld d, 1	ld d, 1; set 0, d;	
+ld d, 1	ld d, 1; res 1, d;	
+ld d, 1	ld d, 1; res 2, d;	
+ld d, 1	ld d, 1; res 3, d;	
+ld d, 1	ld d, 1; res 4, d;	
+ld d, 1	ld d, 1; res 5, d;	
+ld d, 1	ld d, 1; res 6, d;	
+ld d, 1	ld d, 1; res 7, d;	
+ld d, 2	ld d, 0; set 1, d;	
+ld d, 2	ld d, 2; set 1, d;	
+ld d, 2	ld d, 2; res 0, d;	
+ld d, 2	ld d, 2; res 2, d;	
+ld d, 2	ld d, 2; res 3, d;	
+ld d, 2	ld d, 2; res 4, d;	
+ld d, 2	ld d, 2; res 5, d;	
+ld d, 2	ld d, 2; res 6, d;	
+ld d, 2	ld d, 2; res 7, d;	
+ld d, 224	ld d, 224; set 5, d;	
+ld d, 224	ld d, 224; set 6, d;	
+ld d, 224	ld d, 224; set 7, d;	
+ld d, 224	ld d, 224; res 0, d;	
+ld d, 224	ld d, 224; res 1, d;	
+ld d, 224	ld d, 224; res 2, d;	
+ld d, 224	ld d, 224; res 3, d;	
+ld d, 224	ld d, 224; res 4, d;	
+ld d, 255	ld d, 255; set 0, d;	
+ld d, 255	ld d, 255; set 1, d;	
+ld d, 255	ld d, 255; set 2, d;	
+ld d, 255	ld d, 255; set 3, d;	
+ld d, 255	ld d, 255; set 4, d;	
+ld d, 255	ld d, 255; set 5, d;	
+ld d, 255	ld d, 255; set 6, d;	
+ld d, 255	ld d, 255; set 7, d;	
+ld e, 0	ld e, 0; res 0, e;	
+ld e, 0	ld e, 0; res 1, e;	
+ld e, 0	ld e, 0; res 2, e;	
+ld e, 0	ld e, 0; res 3, e;	
+ld e, 0	ld e, 0; res 4, e;	
+ld e, 0	ld e, 0; res 5, e;	
+ld e, 0	ld e, 0; res 6, e;	
+ld e, 0	ld e, 0; res 7, e;	
+ld e, 0	ld e, 1; dec de;	
+ld e, 0	ld e, 1; res 0, e;	
+ld e, 0	ld e, 2; res 1, e;	
+ld e, 1	ld e, 0; inc de;	
+ld e, 1	ld e, 0; set 0, e;	
+ld e, 1	ld e, 1; set 0, e;	
+ld e, 1	ld e, 1; res 1, e;	
+ld e, 1	ld e, 1; res 2, e;	
+ld e, 1	ld e, 1; res 3, e;	
+ld e, 1	ld e, 1; res 4, e;	
+ld e, 1	ld e, 1; res 5, e;	
+ld e, 1	ld e, 1; res 6, e;	
+ld e, 1	ld e, 1; res 7, e;	
+ld e, 1	ld e, 2; dec de;	
+ld e, 2	ld e, 0; set 1, e;	
+ld e, 2	ld e, 1; inc de;	
+ld e, 2	ld e, 2; set 1, e;	
+ld e, 2	ld e, 2; res 0, e;	
+ld e, 2	ld e, 2; res 2, e;	
+ld e, 2	ld e, 2; res 3, e;	
+ld e, 2	ld e, 2; res 4, e;	
+ld e, 2	ld e, 2; res 5, e;	
+ld e, 2	ld e, 2; res 6, e;	
+ld e, 2	ld e, 2; res 7, e;	
+ld e, 224	ld e, 224; set 5, e;	
+ld e, 224	ld e, 224; set 6, e;	
+ld e, 224	ld e, 224; set 7, e;	
+ld e, 224	ld e, 224; res 0, e;	
+ld e, 224	ld e, 224; res 1, e;	
+ld e, 224	ld e, 224; res 2, e;	
+ld e, 224	ld e, 224; res 3, e;	
+ld e, 224	ld e, 224; res 4, e;	
+ld e, 255	ld e, 255; set 0, e;	
+ld e, 255	ld e, 255; set 1, e;	
+ld e, 255	ld e, 255; set 2, e;	
+ld e, 255	ld e, 255; set 3, e;	
+ld e, 255	ld e, 255; set 4, e;	
+ld e, 255	ld e, 255; set 5, e;	
+ld e, 255	ld e, 255; set 6, e;	
+ld e, 255	ld e, 255; set 7, e;	
+ld h, 0	ld h, 0; res 0, h;	
+ld h, 0	ld h, 0; res 1, h;	
+ld h, 0	ld h, 0; res 2, h;	
+ld h, 0	ld h, 0; res 3, h;	
+ld h, 0	ld h, 0; res 4, h;	
+ld h, 0	ld h, 0; res 5, h;	
+ld h, 0	ld h, 0; res 6, h;	
+ld h, 0	ld h, 0; res 7, h;	
+ld h, 0	ld h, 1; res 0, h;	
+ld h, 0	ld h, 2; res 1, h;	
+ld h, 1	ld h, 0; set 0, h;	
+ld h, 1	ld h, 1; set 0, h;	
+ld h, 1	ld h, 1; res 1, h;	
+ld h, 1	ld h, 1; res 2, h;	
+ld h, 1	ld h, 1; res 3, h;	
+ld h, 1	ld h, 1; res 4, h;	
+ld h, 1	ld h, 1; res 5, h;	
+ld h, 1	ld h, 1; res 6, h;	
+ld h, 1	ld h, 1; res 7, h;	
+ld h, 2	ld h, 0; set 1, h;	
+ld h, 2	ld h, 2; set 1, h;	
+ld h, 2	ld h, 2; res 0, h;	
+ld h, 2	ld h, 2; res 2, h;	
+ld h, 2	ld h, 2; res 3, h;	
+ld h, 2	ld h, 2; res 4, h;	
+ld h, 2	ld h, 2; res 5, h;	
+ld h, 2	ld h, 2; res 6, h;	
+ld h, 2	ld h, 2; res 7, h;	
+ld h, 224	ld h, 224; set 5, h;	
+ld h, 224	ld h, 224; set 6, h;	
+ld h, 224	ld h, 224; set 7, h;	
+ld h, 224	ld h, 224; res 0, h;	
+ld h, 224	ld h, 224; res 1, h;	
+ld h, 224	ld h, 224; res 2, h;	
+ld h, 224	ld h, 224; res 3, h;	
+ld h, 224	ld h, 224; res 4, h;	
+ld h, 255	ld h, 255; set 0, h;	
+ld h, 255	ld h, 255; set 1, h;	
+ld h, 255	ld h, 255; set 2, h;	
+ld h, 255	ld h, 255; set 3, h;	
+ld h, 255	ld h, 255; set 4, h;	
+ld h, 255	ld h, 255; set 5, h;	
+ld h, 255	ld h, 255; set 6, h;	
+ld h, 255	ld h, 255; set 7, h;	
+ld l, 0	ld l, 0; res 0, l;	
+ld l, 0	ld l, 0; res 1, l;	
+ld l, 0	ld l, 0; res 2, l;	
+ld l, 0	ld l, 0; res 3, l;	
+ld l, 0	ld l, 0; res 4, l;	
+ld l, 0	ld l, 0; res 5, l;	
+ld l, 0	ld l, 0; res 6, l;	
+ld l, 0	ld l, 0; res 7, l;	
+ld l, 0	ld l, 1; dec hl;	
+ld l, 0	ld l, 1; res 0, l;	
+ld l, 0	ld l, 2; res 1, l;	
+ld l, 1	ld l, 0; inc hl;	
+ld l, 1	ld l, 0; set 0, l;	
+ld l, 1	ld l, 1; set 0, l;	
+ld l, 1	ld l, 1; res 1, l;	
+ld l, 1	ld l, 1; res 2, l;	
+ld l, 1	ld l, 1; res 3, l;	
+ld l, 1	ld l, 1; res 4, l;	
+ld l, 1	ld l, 1; res 5, l;	
+ld l, 1	ld l, 1; res 6, l;	
+ld l, 1	ld l, 1; res 7, l;	
+ld l, 1	ld l, 2; dec hl;	
+ld l, 2	ld l, 0; set 1, l;	
+ld l, 2	ld l, 1; inc hl;	
+ld l, 2	ld l, 2; set 1, l;	
+ld l, 2	ld l, 2; res 0, l;	
+ld l, 2	ld l, 2; res 2, l;	
+ld l, 2	ld l, 2; res 3, l;	
+ld l, 2	ld l, 2; res 4, l;	
+ld l, 2	ld l, 2; res 5, l;	
+ld l, 2	ld l, 2; res 6, l;	
+ld l, 2	ld l, 2; res 7, l;	
+ld l, 224	ld l, 224; set 5, l;	
+ld l, 224	ld l, 224; set 6, l;	
+ld l, 224	ld l, 224; set 7, l;	
+ld l, 224	ld l, 224; res 0, l;	
+ld l, 224	ld l, 224; res 1, l;	
+ld l, 224	ld l, 224; res 2, l;	
+ld l, 224	ld l, 224; res 3, l;	
+ld l, 224	ld l, 224; res 4, l;	
+ld l, 255	ld l, 255; set 0, l;	
+ld l, 255	ld l, 255; set 1, l;	
+ld l, 255	ld l, 255; set 2, l;	
+ld l, 255	ld l, 255; set 3, l;	
+ld l, 255	ld l, 255; set 4, l;	
+ld l, 255	ld l, 255; set 5, l;	
+ld l, 255	ld l, 255; set 6, l;	
+ld l, 255	ld l, 255; set 7, l;	
+ld ixl, 0	ld ixl, 1; dec ix;	
+ld ixl, 1	ld ixl, 0; inc ix;	
+ld ixl, 1	ld ixl, 2; dec ix;	
+ld ixl, 2	ld ixl, 1; inc ix;	
+ld iyl, 0	ld iyl, 1; dec iy;	
+ld iyl, 1	ld iyl, 0; inc iy;	
+ld iyl, 1	ld iyl, 2; dec iy;	
+ld iyl, 2	ld iyl, 1; inc iy;	
+ld bc, 0	ld b, 0; ld c, b;	
+ld bc, 0	ld c, 0; ld b, c;	
+ld bc, 0	ld bc, 0; ld b, c;	
+ld bc, 0	ld bc, 0; ld c, b;	
+ld bc, 0	ld bc, 0; res 0, b;	
+ld bc, 0	ld bc, 0; res 0, c;	
+ld bc, 0	ld bc, 0; res 1, b;	
+ld bc, 0	ld bc, 0; res 1, c;	
+ld bc, 0	ld bc, 0; res 2, b;	
+ld bc, 0	ld bc, 0; res 2, c;	
+ld bc, 0	ld bc, 0; res 3, b;	
+ld bc, 0	ld bc, 0; res 3, c;	
+ld bc, 0	ld bc, 0; res 4, b;	
+ld bc, 0	ld bc, 0; res 4, c;	
+ld bc, 0	ld bc, 0; res 5, b;	
+ld bc, 0	ld bc, 0; res 5, c;	
+ld bc, 0	ld bc, 0; res 6, b;	
+ld bc, 0	ld bc, 0; res 6, c;	
+ld bc, 0	ld bc, 0; res 7, b;	
+ld bc, 0	ld bc, 0; res 7, c;	
+ld bc, 0	ld bc, 1; dec bc;	
+ld bc, 0	ld bc, 1; ld c, b;	
+ld bc, 0	ld bc, 1; ld c, 0;	
+ld bc, 0	ld bc, 1; res 0, c;	
+ld bc, 0	ld bc, 2; ld c, b;	
+ld bc, 0	ld bc, 2; ld c, 0;	
+ld bc, 0	ld bc, 2; res 1, c;	
+ld bc, 0	ld bc, 65535; inc bc;	
+ld bc, 1	ld bc, 0; inc bc;	
+ld bc, 1	ld bc, 0; set 0, c;	
+ld bc, 1	ld bc, 1; ld c, 1;	
+ld bc, 1	ld bc, 1; set 0, c;	
+ld bc, 1	ld bc, 1; res 0, b;	
+ld bc, 1	ld bc, 1; res 1, b;	
+ld bc, 1	ld bc, 1; res 1, c;	
+ld bc, 1	ld bc, 1; res 2, b;	
+ld bc, 1	ld bc, 1; res 2, c;	
+ld bc, 1	ld bc, 1; res 3, b;	
+ld bc, 1	ld bc, 1; res 3, c;	
+ld bc, 1	ld bc, 1; res 4, b;	
+ld bc, 1	ld bc, 1; res 4, c;	
+ld bc, 1	ld bc, 1; res 5, b;	
+ld bc, 1	ld bc, 1; res 5, c;	
+ld bc, 1	ld bc, 1; res 6, b;	
+ld bc, 1	ld bc, 1; res 6, c;	
+ld bc, 1	ld bc, 1; res 7, b;	
+ld bc, 1	ld bc, 1; res 7, c;	
+ld bc, 1	ld bc, 2; dec bc;	
+ld bc, 1	ld bc, 2; ld c, 1;	
+ld bc, 2	ld bc, 0; set 1, c;	
+ld bc, 2	ld bc, 1; inc bc;	
+ld bc, 2	ld bc, 1; ld c, 2;	
+ld bc, 2	ld bc, 2; ld c, 2;	
+ld bc, 2	ld bc, 2; set 1, c;	
+ld bc, 2	ld bc, 2; res 0, b;	
+ld bc, 2	ld bc, 2; res 0, c;	
+ld bc, 2	ld bc, 2; res 1, b;	
+ld bc, 2	ld bc, 2; res 2, b;	
+ld bc, 2	ld bc, 2; res 2, c;	
+ld bc, 2	ld bc, 2; res 3, b;	
+ld bc, 2	ld bc, 2; res 3, c;	
+ld bc, 2	ld bc, 2; res 4, b;	
+ld bc, 2	ld bc, 2; res 4, c;	
+ld bc, 2	ld bc, 2; res 5, b;	
+ld bc, 2	ld bc, 2; res 5, c;	
+ld bc, 2	ld bc, 2; res 6, b;	
+ld bc, 2	ld bc, 2; res 6, c;	
+ld bc, 2	ld bc, 2; res 7, b;	
+ld bc, 2	ld bc, 2; res 7, c;	
+ld bc, 65535	ld b, 255; ld c, b;	
+ld bc, 65535	ld b, 255; ld c, 255;	
+ld bc, 65535	ld c, 255; ld b, c;	
+ld bc, 65535	ld bc, 0; dec bc;	
+ld bc, 65535	ld bc, 65535; ld b, c;	
+ld bc, 65535	ld bc, 65535; ld c, b;	
+ld bc, 65535	ld bc, 65535; ld c, 255;	
+ld bc, 65535	ld bc, 65535; set 0, b;	
+ld bc, 65535	ld bc, 65535; set 0, c;	
+ld bc, 65535	ld bc, 65535; set 1, b;	
+ld bc, 65535	ld bc, 65535; set 1, c;	
+ld bc, 65535	ld bc, 65535; set 2, b;	
+ld bc, 65535	ld bc, 65535; set 2, c;	
+ld bc, 65535	ld bc, 65535; set 3, b;	
+ld bc, 65535	ld bc, 65535; set 3, c;	
+ld bc, 65535	ld bc, 65535; set 4, b;	
+ld bc, 65535	ld bc, 65535; set 4, c;	
+ld bc, 65535	ld bc, 65535; set 5, b;	
+ld bc, 65535	ld bc, 65535; set 5, c;	
+ld bc, 65535	ld bc, 65535; set 6, b;	
+ld bc, 65535	ld bc, 65535; set 6, c;	
+ld bc, 65535	ld bc, 65535; set 7, b;	
+ld bc, 65535	ld bc, 65535; set 7, c;	
+ld de, 0	ld d, 0; ld e, d;	
+ld de, 0	ld e, 0; ld d, e;	
+ld de, 0	ld de, 0; ld d, e;	
+ld de, 0	ld de, 0; ld e, d;	
+ld de, 0	ld de, 0; res 0, d;	
+ld de, 0	ld de, 0; res 0, e;	
+ld de, 0	ld de, 0; res 1, d;	
+ld de, 0	ld de, 0; res 1, e;	
+ld de, 0	ld de, 0; res 2, d;	
+ld de, 0	ld de, 0; res 2, e;	
+ld de, 0	ld de, 0; res 3, d;	
+ld de, 0	ld de, 0; res 3, e;	
+ld de, 0	ld de, 0; res 4, d;	
+ld de, 0	ld de, 0; res 4, e;	
+ld de, 0	ld de, 0; res 5, d;	
+ld de, 0	ld de, 0; res 5, e;	
+ld de, 0	ld de, 0; res 6, d;	
+ld de, 0	ld de, 0; res 6, e;	
+ld de, 0	ld de, 0; res 7, d;	
+ld de, 0	ld de, 0; res 7, e;	
+ld de, 0	ld de, 1; dec de;	
+ld de, 0	ld de, 1; ld e, d;	
+ld de, 0	ld de, 1; ld e, 0;	
+ld de, 0	ld de, 1; res 0, e;	
+ld de, 0	ld de, 2; ld e, d;	
+ld de, 0	ld de, 2; ld e, 0;	
+ld de, 0	ld de, 2; res 1, e;	
+ld de, 0	ld de, 65535; inc de;	
+ld de, 1	ld de, 0; inc de;	
+ld de, 1	ld de, 0; set 0, e;	
+ld de, 1	ld de, 1; ld e, 1;	
+ld de, 1	ld de, 1; set 0, e;	
+ld de, 1	ld de, 1; res 0, d;	
+ld de, 1	ld de, 1; res 1, d;	
+ld de, 1	ld de, 1; res 1, e;	
+ld de, 1	ld de, 1; res 2, d;	
+ld de, 1	ld de, 1; res 2, e;	
+ld de, 1	ld de, 1; res 3, d;	
+ld de, 1	ld de, 1; res 3, e;	
+ld de, 1	ld de, 1; res 4, d;	
+ld de, 1	ld de, 1; res 4, e;	
+ld de, 1	ld de, 1; res 5, d;	
+ld de, 1	ld de, 1; res 5, e;	
+ld de, 1	ld de, 1; res 6, d;	
+ld de, 1	ld de, 1; res 6, e;	
+ld de, 1	ld de, 1; res 7, d;	
+ld de, 1	ld de, 1; res 7, e;	
+ld de, 1	ld de, 2; dec de;	
+ld de, 1	ld de, 2; ld e, 1;	
+ld de, 2	ld de, 0; set 1, e;	
+ld de, 2	ld de, 1; inc de;	
+ld de, 2	ld de, 1; ld e, 2;	
+ld de, 2	ld de, 2; ld e, 2;	
+ld de, 2	ld de, 2; set 1, e;	
+ld de, 2	ld de, 2; res 0, d;	
+ld de, 2	ld de, 2; res 0, e;	
+ld de, 2	ld de, 2; res 1, d;	
+ld de, 2	ld de, 2; res 2, d;	
+ld de, 2	ld de, 2; res 2, e;	
+ld de, 2	ld de, 2; res 3, d;	
+ld de, 2	ld de, 2; res 3, e;	
+ld de, 2	ld de, 2; res 4, d;	
+ld de, 2	ld de, 2; res 4, e;	
+ld de, 2	ld de, 2; res 5, d;	
+ld de, 2	ld de, 2; res 5, e;	
+ld de, 2	ld de, 2; res 6, d;	
+ld de, 2	ld de, 2; res 6, e;	
+ld de, 2	ld de, 2; res 7, d;	
+ld de, 2	ld de, 2; res 7, e;	
+ld de, 65535	ld d, 255; ld e, d;	
+ld de, 65535	ld d, 255; ld e, 255;	
+ld de, 65535	ld e, 255; ld d, e;	
+ld de, 65535	ld de, 0; dec de;	
+ld de, 65535	ld de, 65535; ld d, e;	
+ld de, 65535	ld de, 65535; ld e, d;	
+ld de, 65535	ld de, 65535; ld e, 255;	
+ld de, 65535	ld de, 65535; set 0, d;	
+ld de, 65535	ld de, 65535; set 0, e;	
+ld de, 65535	ld de, 65535; set 1, d;	
+ld de, 65535	ld de, 65535; set 1, e;	
+ld de, 65535	ld de, 65535; set 2, d;	
+ld de, 65535	ld de, 65535; set 2, e;	
+ld de, 65535	ld de, 65535; set 3, d;	
+ld de, 65535	ld de, 65535; set 3, e;	
+ld de, 65535	ld de, 65535; set 4, d;	
+ld de, 65535	ld de, 65535; set 4, e;	
+ld de, 65535	ld de, 65535; set 5, d;	
+ld de, 65535	ld de, 65535; set 5, e;	
+ld de, 65535	ld de, 65535; set 6, d;	
+ld de, 65535	ld de, 65535; set 6, e;	
+ld de, 65535	ld de, 65535; set 7, d;	
+ld de, 65535	ld de, 65535; set 7, e;	
+ld hl, 0	ld h, 0; ld l, h;	
+ld hl, 0	ld l, 0; ld h, l;	
+ld hl, 0	ld hl, 0; ld h, l;	
+ld hl, 0	ld hl, 0; ld l, h;	
+ld hl, 0	ld hl, 0; res 0, h;	
+ld hl, 0	ld hl, 0; res 0, l;	
+ld hl, 0	ld hl, 0; res 1, h;	
+ld hl, 0	ld hl, 0; res 1, l;	
+ld hl, 0	ld hl, 0; res 2, h;	
+ld hl, 0	ld hl, 0; res 2, l;	
+ld hl, 0	ld hl, 0; res 3, h;	
+ld hl, 0	ld hl, 0; res 3, l;	
+ld hl, 0	ld hl, 0; res 4, h;	
+ld hl, 0	ld hl, 0; res 4, l;	
+ld hl, 0	ld hl, 0; res 5, h;	
+ld hl, 0	ld hl, 0; res 5, l;	
+ld hl, 0	ld hl, 0; res 6, h;	
+ld hl, 0	ld hl, 0; res 6, l;	
+ld hl, 0	ld hl, 0; res 7, h;	
+ld hl, 0	ld hl, 0; res 7, l;	
+ld hl, 0	ld hl, 1; dec hl;	
+ld hl, 0	ld hl, 1; ld l, h;	
+ld hl, 0	ld hl, 1; ld l, 0;	
+ld hl, 0	ld hl, 1; res 0, l;	
+ld hl, 0	ld hl, 2; ld l, h;	
+ld hl, 0	ld hl, 2; ld l, 0;	
+ld hl, 0	ld hl, 2; res 1, l;	
+ld hl, 0	ld hl, 65535; inc hl;	
+ld hl, 1	ld hl, 0; inc hl;	
+ld hl, 1	ld hl, 0; set 0, l;	
+ld hl, 1	ld hl, 1; ld l, 1;	
+ld hl, 1	ld hl, 1; set 0, l;	
+ld hl, 1	ld hl, 1; res 0, h;	
+ld hl, 1	ld hl, 1; res 1, h;	
+ld hl, 1	ld hl, 1; res 1, l;	
+ld hl, 1	ld hl, 1; res 2, h;	
+ld hl, 1	ld hl, 1; res 2, l;	
+ld hl, 1	ld hl, 1; res 3, h;	
+ld hl, 1	ld hl, 1; res 3, l;	
+ld hl, 1	ld hl, 1; res 4, h;	
+ld hl, 1	ld hl, 1; res 4, l;	
+ld hl, 1	ld hl, 1; res 5, h;	
+ld hl, 1	ld hl, 1; res 5, l;	
+ld hl, 1	ld hl, 1; res 6, h;	
+ld hl, 1	ld hl, 1; res 6, l;	
+ld hl, 1	ld hl, 1; res 7, h;	
+ld hl, 1	ld hl, 1; res 7, l;	
+ld hl, 1	ld hl, 2; dec hl;	
+ld hl, 1	ld hl, 2; ld l, 1;	
+ld hl, 2	ld hl, 0; set 1, l;	
+ld hl, 2	ld hl, 1; inc hl;	
+ld hl, 2	ld hl, 1; ld l, 2;	
+ld hl, 2	ld hl, 2; ld l, 2;	
+ld hl, 2	ld hl, 2; set 1, l;	
+ld hl, 2	ld hl, 2; res 0, h;	
+ld hl, 2	ld hl, 2; res 0, l;	
+ld hl, 2	ld hl, 2; res 1, h;	
+ld hl, 2	ld hl, 2; res 2, h;	
+ld hl, 2	ld hl, 2; res 2, l;	
+ld hl, 2	ld hl, 2; res 3, h;	
+ld hl, 2	ld hl, 2; res 3, l;	
+ld hl, 2	ld hl, 2; res 4, h;	
+ld hl, 2	ld hl, 2; res 4, l;	
+ld hl, 2	ld hl, 2; res 5, h;	
+ld hl, 2	ld hl, 2; res 5, l;	
+ld hl, 2	ld hl, 2; res 6, h;	
+ld hl, 2	ld hl, 2; res 6, l;	
+ld hl, 2	ld hl, 2; res 7, h;	
+ld hl, 2	ld hl, 2; res 7, l;	
+ld hl, 65535	ld h, 255; ld l, h;	
+ld hl, 65535	ld h, 255; ld l, 255;	
+ld hl, 65535	ld l, 255; ld h, l;	
+ld hl, 65535	ld hl, 0; dec hl;	
+ld hl, 65535	ld hl, 65535; ld h, l;	
+ld hl, 65535	ld hl, 65535; ld l, h;	
+ld hl, 65535	ld hl, 65535; ld l, 255;	
+ld hl, 65535	ld hl, 65535; set 0, h;	
+ld hl, 65535	ld hl, 65535; set 0, l;	
+ld hl, 65535	ld hl, 65535; set 1, h;	
+ld hl, 65535	ld hl, 65535; set 1, l;	
+ld hl, 65535	ld hl, 65535; set 2, h;	
+ld hl, 65535	ld hl, 65535; set 2, l;	
+ld hl, 65535	ld hl, 65535; set 3, h;	
+ld hl, 65535	ld hl, 65535; set 3, l;	
+ld hl, 65535	ld hl, 65535; set 4, h;	
+ld hl, 65535	ld hl, 65535; set 4, l;	
+ld hl, 65535	ld hl, 65535; set 5, h;	
+ld hl, 65535	ld hl, 65535; set 5, l;	
+ld hl, 65535	ld hl, 65535; set 6, h;	
+ld hl, 65535	ld hl, 65535; set 6, l;	
+ld hl, 65535	ld hl, 65535; set 7, h;	
+ld hl, 65535	ld hl, 65535; set 7, l;	
+ld ix, 0	ld ixh, 0; ld ixl, ixh;	
+ld ix, 0	ld ixl, 0; ld ixh, ixl;	
+ld ix, 0	ld ix, 0; ld ixl, ixh;	
+ld ix, 0	ld ix, 0; ld ixh, ixl;	
+ld ix, 0	ld ix, 1; dec ix;	
+ld ix, 0	ld ix, 1; ld ixl, 0;	
+ld ix, 0	ld ix, 1; ld ixl, ixh;	
+ld ix, 0	ld ix, 2; ld ixl, 0;	
+ld ix, 0	ld ix, 2; ld ixl, ixh;	
+ld ix, 0	ld ix, 65535; inc ix;	
+ld ix, 1	ld ix, 0; inc ix;	
+ld ix, 1	ld ix, 1; ld ixh, 0;	
+ld ix, 1	ld ix, 1; ld ixl, 1;	
+ld ix, 1	ld ix, 2; dec ix;	
+ld ix, 1	ld ix, 2; ld ixl, 1;	
+ld ix, 2	ld ix, 1; inc ix;	
+ld ix, 2	ld ix, 1; ld ixl, 2;	
+ld ix, 2	ld ix, 2; ld ixh, 0;	
+ld ix, 2	ld ix, 2; ld ixl, 2;	
+ld ix, 65535	ld ixh, 255; ld ixl, 255;	
+ld ix, 65535	ld ixh, 255; ld ixl, ixh;	
+ld ix, 65535	ld ixl, 255; ld ixh, ixl;	
+ld ix, 65535	ld ix, 0; dec ix;	
+ld ix, 65535	ld ix, 65535; ld ixh, 255;	
+ld ix, 65535	ld ix, 65535; ld ixl, 255;	
+ld ix, 65535	ld ix, 65535; ld ixl, ixh;	
+ld ix, 65535	ld ix, 65535; ld ixh, ixl;	
+ld iy, 0	ld iyh, 0; ld iyl, iyh;	
+ld iy, 0	ld iyl, 0; ld iyh, iyl;	
+ld iy, 0	ld iy, 0; ld iyl, iyh;	
+ld iy, 0	ld iy, 0; ld iyh, iyl;	
+ld iy, 0	ld iy, 1; dec iy;	
+ld iy, 0	ld iy, 1; ld iyl, 0;	
+ld iy, 0	ld iy, 1; ld iyl, iyh;	
+ld iy, 0	ld iy, 2; ld iyl, 0;	
+ld iy, 0	ld iy, 2; ld iyl, iyh;	
+ld iy, 0	ld iy, 65535; inc iy;	
+ld iy, 1	ld iy, 0; inc iy;	
+ld iy, 1	ld iy, 1; ld iyh, 0;	
+ld iy, 1	ld iy, 1; ld iyl, 1;	
+ld iy, 1	ld iy, 2; dec iy;	
+ld iy, 1	ld iy, 2; ld iyl, 1;	
+ld iy, 2	ld iy, 1; inc iy;	
+ld iy, 2	ld iy, 1; ld iyl, 2;	
+ld iy, 2	ld iy, 2; ld iyh, 0;	
+ld iy, 2	ld iy, 2; ld iyl, 2;	
+ld iy, 65535	ld iyh, 255; ld iyl, 255;	
+ld iy, 65535	ld iyh, 255; ld iyl, iyh;	
+ld iy, 65535	ld iyl, 255; ld iyh, iyl;	
+ld iy, 65535	ld iy, 0; dec iy;	
+ld iy, 65535	ld iy, 65535; ld iyh, 255;	
+ld iy, 65535	ld iy, 65535; ld iyl, 255;	
+ld iy, 65535	ld iy, 65535; ld iyl, iyh;	
+ld iy, 65535	ld iy, 65535; ld iyh, iyl;	
+rlc a	or a; rlc a;	
+rlc b	or a; rlc b;	
+rlc c	or a; rlc c;	
+rlc d	or a; rlc d;	
+rlc e	or a; rlc e;	
+rlc h	or a; rlc h;	
+rlc l	or a; rlc l;	
+rrc a	or a; rrc a;	
+rrc b	or a; rrc b;	
+rrc c	or a; rrc c;	
+rrc d	or a; rrc d;	
+rrc e	or a; rrc e;	
+rrc h	or a; rrc h;	
+rrc l	or a; rrc l;	
+sla b	or a; rl b;	
+sla b	or a; sla b;	
+sla b	cp a; rl b;	
+sla b	cp 0; rl b;	
+sla b	sla b; res 0, b;	
+sla b	sli b; dec b;	H,N,P/V
+sla c	or a; rl c;	
+sla c	or a; sla c;	
+sla c	cp a; rl c;	
+sla c	cp 0; rl c;	
+sla c	sla c; res 0, c;	
+sla c	sli c; dec c;	H,N,P/V
+sla d	or a; rl d;	
+sla d	or a; sla d;	
+sla d	cp a; rl d;	
+sla d	cp 0; rl d;	
+sla d	sla d; res 0, d;	
+sla d	sli d; dec d;	H,N,P/V
+sla e	or a; rl e;	
+sla e	or a; sla e;	
+sla e	cp a; rl e;	
+sla e	cp 0; rl e;	
+sla e	sla e; res 0, e;	
+sla e	sli e; dec e;	H,N,P/V
+sla h	or a; rl h;	
+sla h	or a; sla h;	
+sla h	cp a; rl h;	
+sla h	cp 0; rl h;	
+sla h	sla h; res 0, h;	
+sla h	sli h; dec h;	H,N,P/V
+sla l	or a; rl l;	
+sla l	or a; sla l;	
+sla l	cp a; rl l;	
+sla l	cp 0; rl l;	
+sla l	sla l; res 0, l;	
+sla l	sli l; dec l;	H,N,P/V
+sra a	or a; sra a;	
+sra b	or a; sra b;	
+sra c	or a; sra c;	
+sra d	or a; sra d;	
+sra e	or a; sra e;	
+sra h	or a; sra h;	
+sra l	or a; sra l;	
+srl a	or a; rr a;	
+srl a	or a; srl a;	
+srl a	cp a; rr a;	
+srl a	cp 0; rr a;	
+srl a	srl a; res 7, a;	
+srl b	or a; rr b;	
+srl b	or a; srl b;	
+srl b	cp a; rr b;	
+srl b	cp 0; rr b;	
+srl b	srl b; res 7, b;	
+srl c	or a; rr c;	
+srl c	or a; srl c;	
+srl c	cp a; rr c;	
+srl c	cp 0; rr c;	
+srl c	srl c; res 7, c;	
+srl d	or a; rr d;	
+srl d	or a; srl d;	
+srl d	cp a; rr d;	
+srl d	cp 0; rr d;	
+srl d	srl d; res 7, d;	
+srl e	or a; rr e;	
+srl e	or a; srl e;	
+srl e	cp a; rr e;	
+srl e	cp 0; rr e;	
+srl e	srl e; res 7, e;	
+srl h	or a; rr h;	
+srl h	or a; srl h;	
+srl h	cp a; rr h;	
+srl h	cp 0; rr h;	
+srl h	srl h; res 7, h;	
+srl l	or a; rr l;	
+srl l	or a; srl l;	
+srl l	cp a; rr l;	
+srl l	cp 0; rr l;	
+srl l	srl l; res 7, l;	
+sli a	or a; sli a;	
+sli a	add a, a; inc a;	P/V
+sli a	sli a; set 0, a;	
+sli a	scf; adc a, a;	H,N,P/V
+sli a	scf; rl a;	
+sli b	or a; sli b;	
+sli b	sla b; inc b;	P/V
+sli b	sli b; set 0, b;	
+sli b	scf; rl b;	
+sli c	or a; sli c;	
+sli c	sla c; inc c;	P/V
+sli c	sli c; set 0, c;	
+sli c	scf; rl c;	
+sli d	or a; sli d;	
+sli d	sla d; inc d;	P/V
+sli d	sli d; set 0, d;	
+sli d	scf; rl d;	
+sli e	or a; sli e;	
+sli e	sla e; inc e;	P/V
+sli e	sli e; set 0, e;	
+sli e	scf; rl e;	
+sli h	or a; sli h;	
+sli h	sla h; inc h;	P/V
+sli h	sli h; set 0, h;	
+sli h	scf; rl h;	
+sli l	or a; sli l;	
+sli l	sla l; inc l;	P/V
+sli l	sli l; set 0, l;	
+sli l	scf; rl l;	
+neg	or a; neg;	
+neg	xor 255; sub 255;	
+neg	xor 255; sbc a, 255;	
+neg	cpl; sub 255;	
+set 0, a	set 0, a; set 0, a;	
+set 0, a	res 0, a; set 0, a;	
+set 0, b	set 0, b; set 0, b;	
+set 0, b	res 0, b; set 0, b;	
+set 0, c	set 0, c; set 0, c;	
+set 0, c	res 0, c; inc bc;	
+set 0, c	res 0, c; set 0, c;	
+set 0, d	set 0, d; set 0, d;	
+set 0, d	res 0, d; set 0, d;	
+set 0, e	set 0, e; set 0, e;	
+set 0, e	res 0, e; inc de;	
+set 0, e	res 0, e; set 0, e;	
+set 0, h	set 0, h; set 0, h;	
+set 0, h	res 0, h; set 0, h;	
+set 0, l	set 0, l; set 0, l;	
+set 0, l	res 0, l; inc hl;	
+set 0, l	res 0, l; set 0, l;	
+set 1, a	set 1, a; set 1, a;	
+set 1, a	res 1, a; set 1, a;	
+set 1, b	set 1, b; set 1, b;	
+set 1, b	res 1, b; set 1, b;	
+set 1, c	set 1, c; set 1, c;	
+set 1, c	res 1, c; set 1, c;	
+set 1, d	set 1, d; set 1, d;	
+set 1, d	res 1, d; set 1, d;	
+set 1, e	set 1, e; set 1, e;	
+set 1, e	res 1, e; set 1, e;	
+set 1, h	set 1, h; set 1, h;	
+set 1, h	res 1, h; set 1, h;	
+set 1, l	set 1, l; set 1, l;	
+set 1, l	res 1, l; set 1, l;	
+set 2, a	set 2, a; set 2, a;	
+set 2, a	res 2, a; set 2, a;	
+set 2, b	set 2, b; set 2, b;	
+set 2, b	res 2, b; set 2, b;	
+set 2, c	set 2, c; set 2, c;	
+set 2, c	res 2, c; set 2, c;	
+set 2, d	set 2, d; set 2, d;	
+set 2, d	res 2, d; set 2, d;	
+set 2, e	set 2, e; set 2, e;	
+set 2, e	res 2, e; set 2, e;	
+set 2, h	set 2, h; set 2, h;	
+set 2, h	res 2, h; set 2, h;	
+set 2, l	set 2, l; set 2, l;	
+set 2, l	res 2, l; set 2, l;	
+set 3, a	set 3, a; set 3, a;	
+set 3, a	res 3, a; set 3, a;	
+set 3, b	set 3, b; set 3, b;	
+set 3, b	res 3, b; set 3, b;	
+set 3, c	set 3, c; set 3, c;	
+set 3, c	res 3, c; set 3, c;	
+set 3, d	set 3, d; set 3, d;	
+set 3, d	res 3, d; set 3, d;	
+set 3, e	set 3, e; set 3, e;	
+set 3, e	res 3, e; set 3, e;	
+set 3, h	set 3, h; set 3, h;	
+set 3, h	res 3, h; set 3, h;	
+set 3, l	set 3, l; set 3, l;	
+set 3, l	res 3, l; set 3, l;	
+set 4, a	set 4, a; set 4, a;	
+set 4, a	res 4, a; set 4, a;	
+set 4, b	set 4, b; set 4, b;	
+set 4, b	res 4, b; set 4, b;	
+set 4, c	set 4, c; set 4, c;	
+set 4, c	res 4, c; set 4, c;	
+set 4, d	set 4, d; set 4, d;	
+set 4, d	res 4, d; set 4, d;	
+set 4, e	set 4, e; set 4, e;	
+set 4, e	res 4, e; set 4, e;	
+set 4, h	set 4, h; set 4, h;	
+set 4, h	res 4, h; set 4, h;	
+set 4, l	set 4, l; set 4, l;	
+set 4, l	res 4, l; set 4, l;	
+set 5, a	set 5, a; set 5, a;	
+set 5, a	res 5, a; set 5, a;	
+set 5, b	set 5, b; set 5, b;	
+set 5, b	res 5, b; set 5, b;	
+set 5, c	set 5, c; set 5, c;	
+set 5, c	res 5, c; set 5, c;	
+set 5, d	set 5, d; set 5, d;	
+set 5, d	res 5, d; set 5, d;	
+set 5, e	set 5, e; set 5, e;	
+set 5, e	res 5, e; set 5, e;	
+set 5, h	set 5, h; set 5, h;	
+set 5, h	res 5, h; set 5, h;	
+set 5, l	set 5, l; set 5, l;	
+set 5, l	res 5, l; set 5, l;	
+set 6, a	set 6, a; set 6, a;	
+set 6, a	res 6, a; set 6, a;	
+set 6, b	set 6, b; set 6, b;	
+set 6, b	res 6, b; set 6, b;	
+set 6, c	set 6, c; set 6, c;	
+set 6, c	res 6, c; set 6, c;	
+set 6, d	set 6, d; set 6, d;	
+set 6, d	res 6, d; set 6, d;	
+set 6, e	set 6, e; set 6, e;	
+set 6, e	res 6, e; set 6, e;	
+set 6, h	set 6, h; set 6, h;	
+set 6, h	res 6, h; set 6, h;	
+set 6, l	set 6, l; set 6, l;	
+set 6, l	res 6, l; set 6, l;	
+set 7, a	set 7, a; set 7, a;	
+set 7, a	res 7, a; set 7, a;	
+set 7, b	set 7, b; set 7, b;	
+set 7, b	res 7, b; set 7, b;	
+set 7, c	set 7, c; set 7, c;	
+set 7, c	res 7, c; set 7, c;	
+set 7, d	set 7, d; set 7, d;	
+set 7, d	res 7, d; set 7, d;	
+set 7, e	set 7, e; set 7, e;	
+set 7, e	res 7, e; set 7, e;	
+set 7, h	set 7, h; set 7, h;	
+set 7, h	res 7, h; set 7, h;	
+set 7, l	set 7, l; set 7, l;	
+set 7, l	res 7, l; set 7, l;	
+res 0, a	set 0, a; res 0, a;	
+res 0, a	res 0, a; res 0, a;	
+res 0, b	set 0, b; res 0, b;	
+res 0, b	res 0, b; res 0, b;	
+res 0, c	set 0, c; dec bc;	
+res 0, c	set 0, c; res 0, c;	
+res 0, c	res 0, c; res 0, c;	
+res 0, d	set 0, d; res 0, d;	
+res 0, d	res 0, d; res 0, d;	
+res 0, e	set 0, e; dec de;	
+res 0, e	set 0, e; res 0, e;	
+res 0, e	res 0, e; res 0, e;	
+res 0, h	set 0, h; res 0, h;	
+res 0, h	res 0, h; res 0, h;	
+res 0, l	set 0, l; dec hl;	
+res 0, l	set 0, l; res 0, l;	
+res 0, l	res 0, l; res 0, l;	
+res 1, a	set 1, a; res 1, a;	
+res 1, a	res 1, a; res 1, a;	
+res 1, b	set 1, b; res 1, b;	
+res 1, b	res 1, b; res 1, b;	
+res 1, c	set 1, c; res 1, c;	
+res 1, c	res 1, c; res 1, c;	
+res 1, d	set 1, d; res 1, d;	
+res 1, d	res 1, d; res 1, d;	
+res 1, e	set 1, e; res 1, e;	
+res 1, e	res 1, e; res 1, e;	
+res 1, h	set 1, h; res 1, h;	
+res 1, h	res 1, h; res 1, h;	
+res 1, l	set 1, l; res 1, l;	
+res 1, l	res 1, l; res 1, l;	
+res 2, a	set 2, a; res 2, a;	
+res 2, a	res 2, a; res 2, a;	
+res 2, b	set 2, b; res 2, b;	
+res 2, b	res 2, b; res 2, b;	
+res 2, c	set 2, c; res 2, c;	
+res 2, c	res 2, c; res 2, c;	
+res 2, d	set 2, d; res 2, d;	
+res 2, d	res 2, d; res 2, d;	
+res 2, e	set 2, e; res 2, e;	
+res 2, e	res 2, e; res 2, e;	
+res 2, h	set 2, h; res 2, h;	
+res 2, h	res 2, h; res 2, h;	
+res 2, l	set 2, l; res 2, l;	
+res 2, l	res 2, l; res 2, l;	
+res 3, a	set 3, a; res 3, a;	
+res 3, a	res 3, a; res 3, a;	
+res 3, b	set 3, b; res 3, b;	
+res 3, b	res 3, b; res 3, b;	
+res 3, c	set 3, c; res 3, c;	
+res 3, c	res 3, c; res 3, c;	
+res 3, d	set 3, d; res 3, d;	
+res 3, d	res 3, d; res 3, d;	
+res 3, e	set 3, e; res 3, e;	
+res 3, e	res 3, e; res 3, e;	
+res 3, h	set 3, h; res 3, h;	
+res 3, h	res 3, h; res 3, h;	
+res 3, l	set 3, l; res 3, l;	
+res 3, l	res 3, l; res 3, l;	
+res 4, a	set 4, a; res 4, a;	
+res 4, a	res 4, a; res 4, a;	
+res 4, b	set 4, b; res 4, b;	
+res 4, b	res 4, b; res 4, b;	
+res 4, c	set 4, c; res 4, c;	
+res 4, c	res 4, c; res 4, c;	
+res 4, d	set 4, d; res 4, d;	
+res 4, d	res 4, d; res 4, d;	
+res 4, e	set 4, e; res 4, e;	
+res 4, e	res 4, e; res 4, e;	
+res 4, h	set 4, h; res 4, h;	
+res 4, h	res 4, h; res 4, h;	
+res 4, l	set 4, l; res 4, l;	
+res 4, l	res 4, l; res 4, l;	
+res 5, a	set 5, a; res 5, a;	
+res 5, a	res 5, a; res 5, a;	
+res 5, b	set 5, b; res 5, b;	
+res 5, b	res 5, b; res 5, b;	
+res 5, c	set 5, c; res 5, c;	
+res 5, c	res 5, c; res 5, c;	
+res 5, d	set 5, d; res 5, d;	
+res 5, d	res 5, d; res 5, d;	
+res 5, e	set 5, e; res 5, e;	
+res 5, e	res 5, e; res 5, e;	
+res 5, h	set 5, h; res 5, h;	
+res 5, h	res 5, h; res 5, h;	
+res 5, l	set 5, l; res 5, l;	
+res 5, l	res 5, l; res 5, l;	
+res 6, a	set 6, a; res 6, a;	
+res 6, a	res 6, a; res 6, a;	
+res 6, b	set 6, b; res 6, b;	
+res 6, b	res 6, b; res 6, b;	
+res 6, c	set 6, c; res 6, c;	
+res 6, c	res 6, c; res 6, c;	
+res 6, d	set 6, d; res 6, d;	
+res 6, d	res 6, d; res 6, d;	
+res 6, e	set 6, e; res 6, e;	
+res 6, e	res 6, e; res 6, e;	
+res 6, h	set 6, h; res 6, h;	
+res 6, h	res 6, h; res 6, h;	
+res 6, l	set 6, l; res 6, l;	
+res 6, l	res 6, l; res 6, l;	
+res 7, a	set 7, a; res 7, a;	
+res 7, a	res 7, a; res 7, a;	
+res 7, b	set 7, b; res 7, b;	
+res 7, b	res 7, b; res 7, b;	
+res 7, c	set 7, c; res 7, c;	
+res 7, c	res 7, c; res 7, c;	
+res 7, d	set 7, d; res 7, d;	
+res 7, d	res 7, d; res 7, d;	
+res 7, e	set 7, e; res 7, e;	
+res 7, e	res 7, e; res 7, e;	
+res 7, h	set 7, h; res 7, h;	
+res 7, h	res 7, h; res 7, h;	
+res 7, l	set 7, l; res 7, l;	
+res 7, l	res 7, l; res 7, l;	

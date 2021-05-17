@@ -673,7 +673,7 @@ public class ASMSXDialect implements Dialect {
                     }
                 }
                 // generate "select" code:
-                if (page.isRegister(code) && page.registerOrFlagName.equals("a")) {
+                if (page.isRegister() && page.registerOrFlagName.equals("a")) {
                     // ld (address), a:
                     s.type = CodeStatement.STATEMENT_CPUOP;
                     List<Expression> sArguments = new ArrayList<>();

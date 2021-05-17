@@ -1,0 +1,21 @@
+allowed_ops: 
+    logic
+    increment
+    addition
+    ld
+    rotation
+    shift
+    negation
+    bits
+    carry
+    cp
+    jump
+allow_ram_use = false
+allowed_registers: a, b, c, d, e, h, l, ixl, ixh, iyl, iyh, af, bc, de, hl, ix, iy
+8bit_constants: 0, 1, 2, 224, #ff
+16bit_constants: 0, 1, 2, #ffff
+max_ops = 7
+initial_state:
+    HL = val
+goal_state:
+    HL = val << 13

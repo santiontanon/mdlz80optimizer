@@ -134,7 +134,7 @@ public class ExpressionParser {
         while(!tokens.isEmpty()) {
             if (tokens.get(0).equals("+")) {
                 tokens.remove(0);
-                if (exp.isRegister(code)) {
+                if (exp.isRegister()) {
                     // special case for ix+nn (since I want the register to be separated from the expression)
                     Expression exp2 = parse(tokens, s, previous, code);
                     if (exp2 == null) {
@@ -153,7 +153,7 @@ public class ExpressionParser {
                 }
             }
             if (tokens.get(0).equals("-")) {
-                if (exp.isRegister(code)) {
+                if (exp.isRegister()) {
                     // special case for ix+nn (since I want the register to be separated from the expression)
                     // We do NOT remove the "-" from the token list, and just parse it as a sum
                     Expression exp2 = parse(tokens, s, previous, code);

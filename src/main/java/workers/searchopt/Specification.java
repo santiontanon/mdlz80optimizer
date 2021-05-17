@@ -175,16 +175,16 @@ public class Specification {
     int maxSimulationTime = 256;
     int maxSizeInBytes = 256;
     int maxOps = 4;
-    int searchType = SearchBasedOptimizer.SEARCH_ID_OPS;
+    public int searchType = SearchBasedOptimizer.SEARCH_ID_OPS;
     int searchTimeCalculation = SearchBasedOptimizer.SEARCH_TIME_AVERAGE;
     
     // instruction set:
-    List<String> allowedOps = new ArrayList<>();
-    List<String> allowedRegisters = new ArrayList<>();
-    boolean allowRamUse = false;
-    boolean allowIO = false;
-    boolean allowGhostRegisters = false;
-    boolean allowLoops = false;
+    public List<String> allowedOps = new ArrayList<>();
+    public List<String> allowedRegisters = new ArrayList<>();
+    public boolean allowRamUse = false;
+    public boolean allowIO = false;
+    public boolean allowGhostRegisters = false;
+    public boolean allowLoops = false;
     
     public List<Integer> allowed8bitConstants = new ArrayList<>();
     public List<Integer> allowed16bitConstants = new ArrayList<>();
@@ -245,6 +245,9 @@ public class Specification {
         allowedOps.add("bit");
         allowedOps.add("set");
         allowedOps.add("res");
+
+        allowedOps.add("ccf");
+        allowedOps.add("scf");
 
         allowedOps.add("cp");
         

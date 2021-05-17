@@ -458,6 +458,9 @@ public class SpecificationParser {
                 case "a":
                     spec.allowedRegisters.add("a");
                     break;
+                case "af":
+                    spec.allowedRegisters.add("af");
+                    break;
                 case "b":
                     spec.allowedRegisters.add("b");
                     break;

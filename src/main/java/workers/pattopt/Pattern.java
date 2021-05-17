@@ -349,7 +349,7 @@ public class Pattern {
             pattern.symbolName.startsWith("?")) {
             // it's a variable!
             if (pattern.symbolName.startsWith("?reg")) {
-                if (arg2.isRegister(code)) {
+                if (arg2.isRegister()) {
                     return match.addVariableMatch(pattern.symbolName, arg2);
                 } else {
                     return false;

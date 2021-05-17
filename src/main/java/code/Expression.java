@@ -1108,19 +1108,19 @@ public class Expression {
     }
 
     
-    public boolean isRegister(CodeBase code) {
+    public boolean isRegister() {
         if (type != EXPRESSION_REGISTER_OR_FLAG) {
             return false;
         }
-        return code.isRegister(registerOrFlagName);
+        return CodeBase.isRegister(registerOrFlagName);
     }
 
     
-    public boolean is8bitRegister(CodeBase code) {
+    public boolean is8bitRegister() {
         if (type != EXPRESSION_REGISTER_OR_FLAG) {
             return false;
         }
-        return code.is8bitRegister(registerOrFlagName);
+        return CodeBase.is8bitRegister(registerOrFlagName);
     }
     
     
@@ -1380,6 +1380,26 @@ public class Expression {
         return false;
     }    
 
+    
+    public List<String> getAllRegisters()
+    {
+        List<String> l = new ArrayList<>();
+        getAllRegisters(l);
+        return l;
+    }
+
+
+    public void getAllRegisters(List<String> l)
+    {
+        if (isRegister()) {
+            if (!l.contains(registerOrFlagName)) l.add(registerOrFlagName);
+        } else if (args != null) {
+            for(Expression arg:args) {
+                arg.getAllRegisters(l);
+            }
+        }
+    }    
+    
 
     public List<String> getAllSymbols()
     {

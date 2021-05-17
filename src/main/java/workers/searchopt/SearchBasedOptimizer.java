@@ -191,37 +191,23 @@ public class SearchBasedOptimizer implements MDLWorker {
         }
         
         // Precompute all the op dependencies before search:
-        List<CPUOpDependency> allDependencies = new ArrayList<>();
-        for(String regName: new String[]{"A", "F", "B", "C", "D", "E", "H", "L", 
-                                         "IXH", "IXL", "IYH", "IYL"}) {
-            if (regName.equals("F") ||
-                spec.allowedRegisters.contains(regName.toLowerCase())) {
-                allDependencies.add(new CPUOpDependency(regName, null, null, null, null));
-            }
-        }
-        for(String flagName: new String[]{"S" ,"Z" ,"H" , "P/V" ,"N" , "C"}) {
-            // "H" and "N" are only useful for DAA:
-            if (!spec.allowedOps.contains("daa") && flagName.equals("H")) continue;
-            if (!spec.allowedOps.contains("daa") && flagName.equals("N")) continue;
-            if (flagName.equals("P/V")) {
-                if (!spec.allowedOps.contains("jp") &&
-                    !spec.allowedOps.contains("ret") &&
-                    !spec.allowedOps.contains("call")) {
-                    continue;
-                }
-            }
-            allDependencies.add(new CPUOpDependency(null, flagName, null, null, null));
-        }
-        if (spec.allowIO) {
-            allDependencies.add(new CPUOpDependency(null, null, "C", null, null));
-        }
-        if (spec.allowRamUse) {
-            allDependencies.add(new CPUOpDependency(null, null, null, "0", "0x10000"));
-        }
+        List<CPUOpDependency> allDependencies = precomputeAllDependencies(spec);
         nDependencies = allDependencies.size();
         config.debug("nDependencies: " + nDependencies);
         
-        List<SBOCandidate> allCandidateOps = precomputeCandidateOps(spec, allDependencies, code, 2);
+        SequenceFilter filter = new SequenceFilter(config);
+        filter.setSpecification(spec);
+        try {
+            filter.loadEquivalences("data/equivalencies-l1.txt");
+            filter.loadEquivalences("data/equivalencies-l2-to-l1.txt");
+            filter.loadEquivalences("data/equivalencies-l2.txt");
+        }catch(Exception e) {
+            config.error("Could not load equivalences files...: " + e.getMessage());
+            config.error(Arrays.toString(e.getStackTrace()));
+            return false;
+        }
+        
+        List<SBOCandidate> allCandidateOps = precomputeCandidateOps(spec, allDependencies, code, filter, 2);
         if (allCandidateOps == null) return false;
                 
         // Precalculate which registers to randomize:
@@ -272,7 +258,7 @@ public class SearchBasedOptimizer implements MDLWorker {
                 for(int depth = 0; depth<=spec.maxOps; depth++) {
                     if (depth == 4) {
                         // Increase precomputation (not worth it before this point):
-                        allCandidateOps = precomputeCandidateOps(spec, allDependencies, code, 3);
+                        allCandidateOps = precomputeCandidateOps(spec, allDependencies, code, filter, 3);
                         if (allCandidateOps == null) return false;                        
 //                    } else if (depth == 6) {
 //                        // Increase precomputation (not worth it before this point):
@@ -298,7 +284,7 @@ public class SearchBasedOptimizer implements MDLWorker {
                 for(int size = 0; size<=spec.maxSizeInBytes; size++) {
                     if (size == 4) {
                         // Increase precomputation (not worth it before this point):
-                        allCandidateOps = precomputeCandidateOps(spec, allDependencies, code, 3);
+                        allCandidateOps = precomputeCandidateOps(spec, allDependencies, code, filter, 3);
                         if (allCandidateOps == null) return false;                        
                     }
                     state.init(allCandidateOps, size==0);
@@ -320,7 +306,7 @@ public class SearchBasedOptimizer implements MDLWorker {
                 for(int maxTime = 0; maxTime<=spec.maxSimulationTime; maxTime++) {
                     if (maxTime == nopDuration*4) {
                         // Increase precomputation (not worth it before this point):
-                        allCandidateOps = precomputeCandidateOps(spec, allDependencies, code, 3);
+                        allCandidateOps = precomputeCandidateOps(spec, allDependencies, code, filter, 3);
                         if (allCandidateOps == null) return false;                        
                     }
                     state.init(allCandidateOps, maxTime==0);
@@ -369,8 +355,42 @@ public class SearchBasedOptimizer implements MDLWorker {
     }
     
     
+    public static List<CPUOpDependency>  precomputeAllDependencies(Specification spec)
+    {
+        // Precompute all the op dependencies before search:
+        List<CPUOpDependency> allDependencies = new ArrayList<>();
+        for(String regName: new String[]{"A", "F", "B", "C", "D", "E", "H", "L", 
+                                         "IXH", "IXL", "IYH", "IYL"}) {
+            if (regName.equals("F") ||
+                spec.allowedRegisters.contains(regName.toLowerCase())) {
+                allDependencies.add(new CPUOpDependency(regName, null, null, null, null));
+            }
+        }
+        for(String flagName: new String[]{"S" ,"Z" ,"H" , "P/V" ,"N" , "C"}) {
+            // "H" and "N" are only useful for DAA:
+            if (!spec.allowedOps.contains("daa") && flagName.equals("H")) continue;
+            if (!spec.allowedOps.contains("daa") && flagName.equals("N")) continue;
+            if (flagName.equals("P/V")) {
+                if (!spec.allowedOps.contains("jp") &&
+                    !spec.allowedOps.contains("ret") &&
+                    !spec.allowedOps.contains("call")) {
+                    continue;
+                }
+            }
+            allDependencies.add(new CPUOpDependency(null, flagName, null, null, null));
+        }
+        if (spec.allowIO) {
+            allDependencies.add(new CPUOpDependency(null, null, "C", null, null));
+        }
+        if (spec.allowRamUse) {
+            allDependencies.add(new CPUOpDependency(null, null, null, "0", "0x10000"));
+        }
+        return allDependencies;
+    }
+    
+    
     List<SBOCandidate> precomputeCandidateOps(Specification spec, List<CPUOpDependency> allDependencies, CodeBase code,
-            int maxLength)
+                                              SequenceFilter filter, int maxLength)
     {
         List<SBOCandidate> candidates = new ArrayList<>();
         
@@ -491,10 +511,21 @@ public class SearchBasedOptimizer implements MDLWorker {
             }
         }
         
+        // Filter the base candidates to begin with:
+        List<SBOCandidate> toDelete = new ArrayList<>();
+        for(SBOCandidate c:candidates) {
+            List<SBOCandidate> l = new ArrayList<>();
+            l.add(c);
+            if (filter.filterSequence(l)) {
+                toDelete.add(c);
+            }
+        }
+        candidates.removeAll(toDelete);
+        
         // Precompute which ops can follow which other ops:
         HashMap<String, SBOCandidate> candidateOpsByPrefix = new HashMap<>();
         SBOCandidate.precomputeCandidates(candidateOpsByPrefix, 
-                candidates, allDependencies, spec, code, maxLength, config);
+                candidates, allDependencies, spec, code, maxLength, filter, config);
         
         return candidates;
     }

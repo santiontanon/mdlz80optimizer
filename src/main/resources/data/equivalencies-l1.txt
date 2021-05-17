@@ -1,0 +1,14 @@
+and 0	xor a	H,N
+and 0	sub a	H,N,P/V
+and 255	or a	H,N
+and 255	or 0	H,N
+and 255	xor 0	H,N
+and 255	cp 0	H,N,P/V
+or a	or 0	
+or a	xor 0	
+or a	cp 0	H,N,P/V
+or 0	xor 0	
+or 0	cp 0	H,N,P/V
+xor a	sub a	H,N,P/V
+xor 0	cp 0	H,N,P/V
+adc a, a	rl a	H,N,P/V
