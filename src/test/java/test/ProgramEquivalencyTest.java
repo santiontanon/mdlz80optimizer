@@ -69,7 +69,7 @@ public class ProgramEquivalencyTest {
     @Test public void test11() throws Exception { test("or h", "or h\ncp 0", false, HNPVFlags); }
     
     // Some of these are slow, so, just run them every once in a while:
-    @Test public void sbotest1() throws Exception { testSequencesFromFile("data/equivalencies-l1.txt"); }
+//    @Test public void sbotest1() throws Exception { testSequencesFromFile("data/equivalencies-l1.txt"); }
 //    @Test public void sbotest2() throws Exception { testSequencesFromFile("data/equivalencies-l2-to-l1.txt"); }
 //    @Test public void sbotest3() throws Exception { testSequencesFromFile("data/equivalencies-l2.txt"); }
     
