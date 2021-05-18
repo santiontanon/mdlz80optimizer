@@ -432,5 +432,18 @@ public class CPUConstants {
                 return null;
         }    
     }
-
+    
+    
+    public static Integer flagByName(String flag)
+    {
+        switch(flag.toUpperCase()) {
+            case "C": return flag_C;
+            case "N": return flag_N;
+            case "P/V": return flag_PV;
+            case "H": return flag_H;
+            case "Z": return flag_Z;
+            case "S": return flag_S;
+        }
+        return null;
+    }
 }

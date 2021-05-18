@@ -163,7 +163,6 @@ or c	or a; or c;
 or c	or c; or a;	
 or c	or c; or c;	
 or c	or c; cp 0;	H,N,P/V
-or c	or c; cp 1;	H,N,P/V
 or c	or c; adc a, 0;	P/V
 or c	or c; sbc a, 0;	H,N,P/V
 or c	xor c; or c;	

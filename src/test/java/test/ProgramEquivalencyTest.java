@@ -10,12 +10,14 @@ import code.CPUOp;
 import code.CodeBase;
 import code.CodeStatement;
 import code.SourceFile;
+import java.io.BufferedReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import org.junit.Assert;
 import org.junit.Test;
 import parser.SourceLine;
+import util.Resources;
 import util.microprocessor.PlainZ80IO;
 import util.microprocessor.PlainZ80Memory;
 import util.microprocessor.ProcessorException;
@@ -66,37 +68,71 @@ public class ProgramEquivalencyTest {
     @Test public void test10() throws Exception { test("add a, a\nsbc a, a", "adc a, a\nsbc a, a", false, HNPVFlags); }
     @Test public void test11() throws Exception { test("or h", "or h\ncp 0", false, HNPVFlags); }
     
+    // Some of these are slow, so, just run them every once in a while:
+    @Test public void sbotest1() throws Exception { testSequencesFromFile("data/equivalencies-l1.txt"); }
+//    @Test public void sbotest2() throws Exception { testSequencesFromFile("data/equivalencies-l2-to-l1.txt"); }
+//    @Test public void sbotest3() throws Exception { testSequencesFromFile("data/equivalencies-l2.txt"); }
+    
+    
     private void test(String program1, String program2, boolean checkMemory, List<Integer> flagsToIgnore) throws Exception
     {
         Assert.assertTrue(config.parseArgs("dummy"));
  
-        String lines1[] = program1.split("\n");
-        String lines2[] = program2.split("\n");
- 
         CodeBase code = new CodeBase(config);
-        SourceFile f1 = new SourceFile("dummy1", null, null, code, config);
-        List<CodeStatement> statements1 = new ArrayList<>();
+        List<CodeStatement> statements1 = parseSequenceString(program1, "\n", code);        
+        List<CodeStatement> statements2 = parseSequenceString(program2, "\n", code);
         
-        SourceFile f2 = new SourceFile("dummy2", null, null, code, config);
-        List<CodeStatement> statements2 = new ArrayList<>();
-        
-        for(int i = 0;i<lines1.length;i++) {
-            String line = lines1[i];
-            List<String> tokens = config.tokenizer.tokenize(line);
-            List<CodeStatement> l = config.lineParser.parse(tokens, new SourceLine(line, f1, i), f1, null, code, config);
-            statements1.addAll(l);
-        }
-
-        for(int i = 0;i<lines2.length;i++) {
-            String line = lines2[i];
-            List<String> tokens = config.tokenizer.tokenize(line);
-            List<CodeStatement> l = config.lineParser.parse(tokens, new SourceLine(line, f2, i), f2, null, code, config);
-            statements2.addAll(l);
-        }
-
         Assert.assertTrue(comparePrograms(statements1, statements2,
                                           flagsToIgnore,
                                           code, checkMemory, REPETITIONS));
+    }
+    
+    
+    private void testSequencesFromFile(String sequencesFile) throws Exception
+    {
+        Assert.assertTrue(config.parseArgs("dummy"));
+        CodeBase code = new CodeBase(config);
+        
+        BufferedReader br = Resources.asReader(sequencesFile);
+        while(true) {
+            String line = br.readLine();
+            if (line == null) break;
+            String columns[] = line.split("\t");
+            String seq1 = columns[0];
+            String seq2 = columns[1];
+            String flagStr = (columns.length >= 3 ? columns[2]:"");
+            List<Integer> flagsToIgnore = new ArrayList<>();
+            for(String flag:flagStr.split(",")) {
+                if (!flag.strip().isEmpty()) {
+                    flagsToIgnore.add(CPUConstants.flagByName(flag));
+                }
+            }
+            
+            // parse sequences:
+            List<CodeStatement> statements1 = parseSequenceString(seq1, ";", code);
+            List<CodeStatement> statements2 = parseSequenceString(seq2, ";", code);
+            
+            Assert.assertTrue(comparePrograms(statements1, statements2,
+                                              flagsToIgnore,
+                                              code, false, REPETITIONS));
+        }        
+    }
+    
+    
+    private List<CodeStatement> parseSequenceString(String sequence, String separator, CodeBase code) throws Exception
+    {
+        String lines[] = sequence.split(separator);
+ 
+        SourceFile f = new SourceFile("dummy1", null, null, code, config);
+        List<CodeStatement> statements = new ArrayList<>();
+                
+        for(int i = 0;i<lines.length;i++) {
+            String line = lines[i];
+            List<String> tokens = config.tokenizer.tokenize(line);
+            List<CodeStatement> l = config.lineParser.parse(tokens, new SourceLine(line, f, i), f, null, code, config);
+            statements.addAll(l);
+        }
+        return statements;
     }
     
     
@@ -117,7 +153,7 @@ public class ProgramEquivalencyTest {
                     code, 
                     z80Memory1, z801, z80Memory2, z802,
                     checkMemory)) return false;
-        }
+        }        
         return true;
     }
     
