@@ -451,7 +451,6 @@ public class SpecificationParser {
     
     static boolean parseAllowedRegisters(List<String> tokens, Specification spec, MDLConfig config)
     {
-        // parse initial state statements:
         while(!tokens.isEmpty()) {
             String register = tokens.remove(0);
             switch(register.toLowerCase()) {
@@ -540,6 +539,28 @@ public class SpecificationParser {
                 }
             }
         }
+        
+        if (spec.allowedRegisters.contains("b") && spec.allowedRegisters.contains("c") &&
+            !spec.allowedRegisters.contains("bc")) {
+            spec.allowedRegisters.add("bc");
+        }
+        if (spec.allowedRegisters.contains("d") && spec.allowedRegisters.contains("e") &&
+            !spec.allowedRegisters.contains("de")) {
+            spec.allowedRegisters.add("de");
+        }
+        if (spec.allowedRegisters.contains("h") && spec.allowedRegisters.contains("l") &&
+            !spec.allowedRegisters.contains("hl")) {
+            spec.allowedRegisters.add("hl");
+        }
+        if (spec.allowedRegisters.contains("ixh") && spec.allowedRegisters.contains("ixl") &&
+            !spec.allowedRegisters.contains("ix")) {
+            spec.allowedRegisters.add("ix");
+        }
+        if (spec.allowedRegisters.contains("iyh") && spec.allowedRegisters.contains("iyl") &&
+            !spec.allowedRegisters.contains("iy")) {
+            spec.allowedRegisters.add("iy");
+        }
+        
         return true;
     }
     
