@@ -1,0 +1,16 @@
+  allowed_ops:
+      ld
+      jr
+      cp
+  allow_ram_use = false
+  allow_loops = false
+  allowed_registers: a, c, h, l
+  max_ops = 10
+  initial_state:
+      A = val1
+      H = val2
+      L = val3
+  goal_state:
+      A = (val1 <= val2 && val1 <= val3) ? val1 : (val2 <= val3 ? val2 : val3)
+      H = (val2 <= val1 && val1 <= val3) ? val1 : ((val1 <= val2 && val2 <= val3) ? val2 : val3)
+      L = (val1 >= val2 && val1 >= val3) ? val1 : (val2 >= val3 ? val2 : val3)

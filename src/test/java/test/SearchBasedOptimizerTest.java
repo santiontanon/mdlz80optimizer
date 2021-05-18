@@ -53,7 +53,6 @@ public class SearchBasedOptimizerTest {
 //    @Test public void test8() throws IOException { test("data/searchtests/test8.txt", "data/searchtests/test8-expected.asm"); }
     
     @Test public void testFlags1() throws IOException { test("data/searchtests/test-flags1.txt", "data/searchtests/test-flags1-expected.asm"); }
-
     @Test public void testLShift9() throws IOException { test("data/searchtests/test-large1.txt", "data/searchtests/test-large1-expected.asm"); }
     @Test public void testLShift9size() throws IOException { test("data/searchtests/test-large1.txt", "data/searchtests/test-large1-size-expected.asm", "-so-size"); }
     @Test public void testLShift9time() throws IOException { test("data/searchtests/test-large1.txt", "data/searchtests/test-large1-time-expected.asm", "-so-time"); }
@@ -79,7 +78,11 @@ public class SearchBasedOptimizerTest {
 //    @Test public void testLShift13Hard() throws IOException { test("data/searchtests/test-large6.txt", "data/searchtests/test-large6-expected.asm"); }
     // Current version: 18.08 sec (155315809 solutions tested, 8-threads)
 //    @Test public void testLShift13HardSpeed() throws IOException { test("data/searchtests/test-large6.txt", "data/searchtests/test-large6-time-expected.asm", "-so-time"); }
+
+    // Current version: ???
+//    @Test public void testSort() throws IOException { test("data/searchtests/test-sort2.txt", "data/searchtests/test-sort2-expected.asm"); }
     
+    // Current version: ???
 //    @Test public void testLShift13Complete() throws IOException { test("data/searchtests/test-large7.txt", "data/searchtests/test-large7-expected.asm"); }
 
     
