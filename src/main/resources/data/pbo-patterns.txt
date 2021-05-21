@@ -1663,6 +1663,30 @@ equal(?const3,?const1+1)
 in(?regixiy,IX,IY)
 regsNotUsedAfter(10,?regixiy,HL,A)
 
+pattern: Remove ld ?reg0, ?const; ...; add ?reg1, ?reg0, as ?const = 0
+name: add-0-to-regpair
+0: ld ?reg0, ?const
+1: *
+2: add ?reg1, ?reg0
+replacement:
+1: *
+constraints:
+in(?reg1,HL,IX,IY)
+equal(?const,0)
+regsNotModified(1, ?reg0)
+flagsNotUsedAfter(2,H,N,C)
+
+pattern: Remove ld ?reg0, ?const; ...; add a, ?reg0, as ?const = 0
+name: add-0-to-a
+0: ld ?reg0, ?const
+1: *
+2: add a, ?reg0
+replacement:
+1: *
+constraints:
+regsNotModified(1, ?reg0)
+equal(?const,0)
+flagsNotUsedAfter(2,S,Z,H,P/V,N,C)
 
 ; automatically generated
 pattern: replace rlc ?reg0; rl ?reg1 with rlca; rl ?reg1
