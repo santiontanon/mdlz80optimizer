@@ -13,9 +13,7 @@ import code.CodeBase;
 import code.SourceFile;
 import code.CodeStatement;
 import java.io.IOException;
-import java.util.Collections;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.lang3.tuple.Pair;
 import util.Resources;
 import workers.MDLWorker;
 
@@ -247,7 +245,7 @@ public class PatternBasedOptimizer implements MDLWorker {
                 }
             }
         } catch (Exception e) {
-            config.error("PatternBasedOptimizer: error initializing patterns!");
+            config.error("PatternBasedOptimizer: error initializing patterns! " + e.getMessage());
         }
     }
 

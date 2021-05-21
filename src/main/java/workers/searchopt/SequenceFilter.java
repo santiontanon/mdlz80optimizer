@@ -12,7 +12,6 @@ import code.CodeStatement;
 import code.Expression;
 import code.SourceFile;
 import java.io.BufferedReader;
-import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -84,14 +83,14 @@ public class SequenceFilter {
     
     public boolean filterSequence(String sequenceString, int maxSubSequenceSize) throws Exception
     {
-        List<SBOCandidate> seq = parseSequence(sequenceString);
+        List<SBOCandidate> seq = parseSequence(sequenceString, allDependencies, config);
         return filterSequence(seq, maxSubSequenceSize);
     }
 
     
     public boolean filterSequence(String sequenceString, Specification spec) throws Exception
     {
-        List<SBOCandidate> seq = parseSequence(sequenceString);
+        List<SBOCandidate> seq = parseSequence(sequenceString, allDependencies, config);
         return filterSequence(seq);
     }
     
@@ -206,19 +205,22 @@ public class SequenceFilter {
             String flagStr = (columns.length >= 3 ? columns[2]:"");
             
             // parse sequences:
-            List<SBOCandidate> l1 = parseSequence(seq1);
+            List<SBOCandidate> l1 = parseSequence(seq1, allDependencies, config);
             if (l1 == null) {
                 config.error("SequenceFilter: cannot parse " + seq1);
                 return false;
             }
-            List<SBOCandidate> l2 = parseSequence(seq2);
+            List<SBOCandidate> l2 = parseSequence(seq2, allDependencies, config);
             if (l2 == null) {
                 config.error("SequenceFilter: cannot parse " + seq2);
                 return false;
             }
             List<String> flags = new ArrayList<>();
             for(String flag:flagStr.split(",")) {
-                flags.add(flag.strip());
+                flag = flag.strip();
+                if (!flag.isEmpty()) {
+                    flags.add(flag);
+                }
             }
             
             addEquivalence(l1, l2, flags);
@@ -229,7 +231,7 @@ public class SequenceFilter {
     }
     
     
-    public List<SBOCandidate> parseSequence(String sequence) throws Exception
+    public static List<SBOCandidate> parseSequence(String sequence, List<CPUOpDependency> allDependencies, MDLConfig config) throws Exception
     {
         String lines[] = sequence.split(";");
  

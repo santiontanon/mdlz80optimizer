@@ -67,7 +67,7 @@ public class PatternBasedOptimizerTest {
     @Test public void test29() throws IOException { test("data/tests/test29.asm", null, null, "size",  3, 4, 4); }
     @Test public void test30() throws IOException { test("data/tests/test30.asm", null, null, "size",  3, 6, 6); }
     @Test public void test31() throws IOException { test("data/tests/test31.asm", null, null, "size",  8, 32, 32); }
-    @Test public void test32() throws IOException { test("data/tests/test32.asm", null, null, "size",  4, 7, 7); }
+    @Test public void test32() throws IOException { test("data/tests/test32.asm", null, null, "size",  5, 10, 10); }
     @Test public void test33() throws IOException { test("data/tests/test33.asm", null, null, "size",  3, -6, -6); }
     @Test public void test34() throws IOException { test("data/tests/test34.asm", null, null, "size",  1, 5, 5); }
     @Test public void test35() throws IOException { test("data/tests/test35.asm", null, null, "size",  1, 8, 3); }

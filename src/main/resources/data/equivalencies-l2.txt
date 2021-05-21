@@ -1408,7 +1408,6 @@ or d; xor d;	or d; sub d;	H,N,P/V
 or d; xor d;	or d; sbc a, d;	H,N,P/V
 or d; cp 0;	or d; adc a, 0;	H,N
 or d; cp 0;	or d; sbc a, 0;	
-or d; dec a;	or d; sbc a, 1;	
 or d; add a, a;	or d; adc a, a;	
 or d; add a, a;	or d; rl a;	H,N,P/V
 or d; add a, b;	or d; adc a, b;	
@@ -1535,7 +1534,6 @@ or h; xor h;	or h; sub h;	H,N,P/V
 or h; xor h;	or h; sbc a, h;	H,N,P/V
 or h; cp 0;	or h; adc a, 0;	H,N
 or h; cp 0;	or h; sbc a, 0;	
-or h; dec a;	or h; sbc a, 1;	
 or h; add a, a;	or h; adc a, a;	
 or h; add a, a;	or h; rl a;	H,N,P/V
 or h; add a, b;	or h; adc a, b;	
@@ -6468,8 +6466,6 @@ dec ix; inc ix;	rla; rra;	H,N
 dec ix; inc ix;	rra; rla;	H,N
 dec ix; inc ix;	cpl; cpl;	H,N
 dec ix; inc ix;	ccf; ccf;	H,N
-dec ix; add ix, bc;	add ix, bc; dec ix;	H,N
-dec ix; add ix, de;	add ix, de; dec ix;	H,N
 dec ix; rl a;	adc a, a; dec ix;	H,N,P/V
 dec iy; xor a;	dec iy; sub a;	H,N,P/V
 dec iy; inc iy;	rla; rra;	H,N
@@ -8995,7 +8991,6 @@ adc hl, hl; sbc hl, hl;	rlc h; sbc hl, hl;
 adc hl, hl; sbc hl, hl;	rl h; sbc hl, hl;	
 adc hl, hl; sbc hl, hl;	sla h; sbc hl, hl;	
 adc hl, hl; sbc hl, hl;	sli h; sbc hl, hl;	
-adc hl, hl; set 0, h;	set 7, l; adc hl, hl;	P/V
 adc hl, hl; scf;	set 7, h; adc hl, hl;	H,N,P/V
 sbc hl, bc; or a;	sbc hl, bc; cp 0;	H,N,P/V
 sbc hl, bc; xor a;	sbc hl, bc; sub a;	H,N,P/V
@@ -17594,7 +17589,6 @@ srl h; scf;	set 0, h; srl h;
 srl l; or a;	srl l; cp 0;	H,N,P/V
 srl l; xor a;	srl l; sub a;	H,N,P/V
 srl l; adc a, a;	srl l; rl a;	H,N,P/V
-srl l; adc hl, hl;	sli h; res 0, h;	H,N,P/V
 srl l; rlc l;	srl l; sla l;	
 srl l; sra l;	srl l; srl l;	
 srl l; scf;	set 0, l; srl l;	

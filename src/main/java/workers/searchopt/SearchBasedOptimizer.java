@@ -355,22 +355,23 @@ public class SearchBasedOptimizer implements MDLWorker {
     }
     
     
-    public static List<CPUOpDependency>  precomputeAllDependencies(Specification spec)
+    public static List<CPUOpDependency> precomputeAllDependencies(Specification spec)
     {
         // Precompute all the op dependencies before search:
         List<CPUOpDependency> allDependencies = new ArrayList<>();
         for(String regName: new String[]{"A", "F", "B", "C", "D", "E", "H", "L", 
                                          "IXH", "IXL", "IYH", "IYL"}) {
             if (regName.equals("F") ||
+                spec == null ||
                 spec.allowedRegisters.contains(regName.toLowerCase())) {
                 allDependencies.add(new CPUOpDependency(regName, null, null, null, null));
             }
         }
         for(String flagName: new String[]{"S" ,"Z" ,"H" , "P/V" ,"N" , "C"}) {
             // "H" and "N" are only useful for DAA:
-            if (!spec.allowedOps.contains("daa") && flagName.equals("H")) continue;
-            if (!spec.allowedOps.contains("daa") && flagName.equals("N")) continue;
-            if (flagName.equals("P/V")) {
+            if (spec != null && !spec.allowedOps.contains("daa") && flagName.equals("H")) continue;
+            if (spec != null && !spec.allowedOps.contains("daa") && flagName.equals("N")) continue;
+            if (spec != null && flagName.equals("P/V")) {
                 if (!spec.allowedOps.contains("jp") &&
                     !spec.allowedOps.contains("ret") &&
                     !spec.allowedOps.contains("call")) {
@@ -379,10 +380,10 @@ public class SearchBasedOptimizer implements MDLWorker {
             }
             allDependencies.add(new CPUOpDependency(null, flagName, null, null, null));
         }
-        if (spec.allowIO) {
+        if (spec == null || spec.allowIO) {
             allDependencies.add(new CPUOpDependency(null, null, "C", null, null));
         }
-        if (spec.allowRamUse) {
+        if (spec == null || spec.allowRamUse) {
             allDependencies.add(new CPUOpDependency(null, null, null, "0", "0x10000"));
         }
         return allDependencies;
