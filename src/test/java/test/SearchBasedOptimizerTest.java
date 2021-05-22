@@ -54,8 +54,8 @@ public class SearchBasedOptimizerTest {
     
     @Test public void testFlags1() throws IOException { test("data/searchtests/test-flags1.txt", "data/searchtests/test-flags1-expected.asm"); }
     @Test public void testLShift9() throws IOException { test("data/searchtests/test-large1.txt", "data/searchtests/test-large1-expected.asm"); }
-    @Test public void testLShift9size() throws IOException { test("data/searchtests/test-large1.txt", "data/searchtests/test-large1-size-expected.asm", "-so-size"); }
-    @Test public void testLShift9time() throws IOException { test("data/searchtests/test-large1.txt", "data/searchtests/test-large1-time-expected.asm", "-so-time"); }
+    @Test public void testLShift9size() throws IOException { test("data/searchtests/test-large1.txt", "data/searchtests/test-large1-size-expected.asm", "size"); }
+    @Test public void testLShift9time() throws IOException { test("data/searchtests/test-large1.txt", "data/searchtests/test-large1-time-expected.asm", "speed"); }
 
     // Current version: 0.06 sec (8947 solutions tested 1-thread)
 //    @Test public void testLShift10() throws IOException { test("data/searchtests/test-large2.txt", "data/searchtests/test-large2-expected.asm"); }
@@ -77,7 +77,7 @@ public class SearchBasedOptimizerTest {
     // Current version: 18.82 sec (459424276 solutions tested, 8-threads)
 //    @Test public void testLShift13Hard() throws IOException { test("data/searchtests/test-large6.txt", "data/searchtests/test-large6-expected.asm"); }
     // Current version: 16.59 sec (155315803 solutions tested, 8-threads)
-//    @Test public void testLShift13HardSpeed() throws IOException { test("data/searchtests/test-large6.txt", "data/searchtests/test-large6-time-expected.asm", "-so-time"); }
+//    @Test public void testLShift13HardSpeed() throws IOException { test("data/searchtests/test-large6.txt", "data/searchtests/test-large6-time-expected.asm", "speed"); }
 
     // Current version: ???
 //    @Test public void testSort() throws IOException { test("data/searchtests/test-sort2.txt", "data/searchtests/test-sort2-expected.asm"); }
@@ -95,7 +95,7 @@ public class SearchBasedOptimizerTest {
     private void test(String inputFile, String expectedOutput, String searchTypeArg) throws IOException
     {
         if (searchTypeArg != null) {
-            Assert.assertTrue(config.parseArgs(inputFile, searchTypeArg));
+            Assert.assertTrue(config.parseArgs(inputFile, "-so", searchTypeArg));
         } else {
             Assert.assertTrue(config.parseArgs(inputFile, "-so"));
 //            Assert.assertTrue(config.parseArgs(inputFile, "-so", "-so-threads", "1"));

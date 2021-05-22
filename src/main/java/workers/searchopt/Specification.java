@@ -397,27 +397,6 @@ public class Specification {
         return goalDependenciesSatisfiedFromTheStart;
     }
     
-    /*
-    public boolean initCPU(Z80Core z80, CodeBase code)
-    {
-        for(SpecificationExpression exp:startState) {
-            Integer value = exp.right.evaluateToInteger(null, code, true);
-            if (value == null) return false;
-            z80.setRegisterValue(exp.leftRegister, value);
-        }
-        return true;
-    }
-    
-    
-    public boolean checkGoalState(Z80Core z80, IMemory z80memory, CodeBase code)
-    {
-        for(SpecificationExpression exp:goalState) {
-            if (!exp.check(z80, z80memory, code)) return false;
-        }
-        return true;
-    }
-    */
-    
     
     public boolean precomputeTestCases(CodeBase code, MDLConfig config)
     {
@@ -483,6 +462,40 @@ public class Specification {
         }
         return true;
     }
+    
+    
+    public List<CPUOpDependency> precomputeAllDependencies()
+    {
+        // Precompute all the op dependencies before search:
+        List<CPUOpDependency> allDependencies = new ArrayList<>();
+        for(String regName: new String[]{"A", "F", "B", "C", "D", "E", "H", "L", 
+                                         "IXH", "IXL", "IYH", "IYL"}) {
+            if (regName.equals("F") ||
+                allowedRegisters.contains(regName.toLowerCase())) {
+                allDependencies.add(new CPUOpDependency(regName, null, null, null, null));
+            }
+        }
+        for(String flagName: new String[]{"S" ,"Z" ,"H" , "P/V" ,"N" , "C"}) {
+            // "H" and "N" are only useful for DAA:
+            if (!allowedOps.contains("daa") && flagName.equals("H")) continue;
+            if (!allowedOps.contains("daa") && flagName.equals("N")) continue;
+            if (flagName.equals("P/V")) {
+                if (!allowedOps.contains("jp") &&
+                    !allowedOps.contains("ret") &&
+                    !allowedOps.contains("call")) {
+                    continue;
+                }
+            }
+            allDependencies.add(new CPUOpDependency(null, flagName, null, null, null));
+        }
+        if (allowIO) {
+            allDependencies.add(new CPUOpDependency(null, null, "C", null, null));
+        }
+        if (allowRamUse) {
+            allDependencies.add(new CPUOpDependency(null, null, null, "0", "0x10000"));
+        }
+        return allDependencies;
+    }    
     
     
     @Override

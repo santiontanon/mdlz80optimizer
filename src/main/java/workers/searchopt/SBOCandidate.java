@@ -10,9 +10,16 @@ import code.CPUOp;
 import code.CPUOpDependency;
 import code.CodeBase;
 import code.CodeStatement;
+import code.Expression;
+import code.SourceFile;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.StringTokenizer;
+import parser.SourceLine;
+import util.microprocessor.Z80.CPUConstants;
+import util.microprocessor.Z80.CPUConstants.RegisterNames;
+import workers.searchopt.Specification.PrecomputedTestCase;
 
 /**
  *
@@ -688,6 +695,658 @@ public class SBOCandidate {
         return true;
     }
     */
+    
+    
+    static List<SBOCandidate> precomputeCandidateOps(Specification spec, List<CPUOpDependency> allDependencies, CodeBase code,
+                                                     SequenceFilter filter, int maxLength, MDLConfig config)
+    {
+        List<SBOCandidate> candidates = new ArrayList<>();
+        
+        /*
+        OK - AND/OR/XOR
+        OK - INC/DEC
+        OK - ADD/ADC/SUB/SBC
+        OK - LD
+        OK - RLCA/RLA/RRCA/RRA/RLC/RL/RRC/RR
+        OK - SLA/SRA/SRL/SLI
+        OK - CPL/NEG
+        OK - BIT/SET/RES
+        OK - CCF/SCF
+        OK - CP
+        OK - JP/JR/DJNZ
+        - PUSH/POP
+        - EX/EXX
+        - LDI/LDD/LDIR/LDDR
+        - CPI/CPD/CPIR/CPDR
+        - DAA
+        - HALT/DI/EI/IM
+        - RLD/RRD
+        - CALL/RET/RETI/RETN
+        - RST
+        - IN/INI/IND/INIR/INDR
+        - OUT/OUTI/OUTD/OTIR/OTDR
+        - NOP
+        */
+        
+        if (spec.allowedOps.contains("and") ||
+            spec.allowedOps.contains("or") ||
+            spec.allowedOps.contains("xor") ||
+            spec.allowedOps.contains("cp")) {
+            if (!precomputeAndOrXorCp(candidates, spec, allDependencies, code, config)) return null;
+        }
+        if (spec.allowedOps.contains("inc") ||
+            spec.allowedOps.contains("dec")) {
+            if (!precomputeIncDec(candidates, spec, allDependencies, code, config)) return null;
+        }
+        if (spec.allowedOps.contains("add") ||
+            spec.allowedOps.contains("adc") ||
+            spec.allowedOps.contains("sub") ||
+            spec.allowedOps.contains("sbc")) {
+            if (!precomputeAddAdcSubSbc(candidates, spec, allDependencies, code, config)) return null;
+        }
+        if (spec.allowedOps.contains("ld")) {
+            if (!precomputeLd(candidates, spec, allDependencies, code, config)) return null;
+        }
+        if (spec.allowedOps.contains("rlc") ||
+            spec.allowedOps.contains("rl") ||
+            spec.allowedOps.contains("rrc") ||
+            spec.allowedOps.contains("rr") ||
+            spec.allowedOps.contains("rlca") ||
+            spec.allowedOps.contains("rla") ||
+            spec.allowedOps.contains("rrca") ||
+            spec.allowedOps.contains("rra")) {
+            if (!precomputeRotations(candidates, spec, allDependencies, code, config)) return null;
+        }
+        if (spec.allowedOps.contains("sla") ||
+            spec.allowedOps.contains("sra") ||
+            spec.allowedOps.contains("srl") ||
+            spec.allowedOps.contains("sli")) {
+            if (!precomputeShifts(candidates, spec, allDependencies, code, config)) return null;
+        }
+        if (spec.allowedOps.contains("cpl") ||
+            spec.allowedOps.contains("neg")) {
+            if (!precomputeNegations(candidates, spec, allDependencies, code, config)) return null;
+        }
+        if (spec.allowedOps.contains("bit") ||
+            spec.allowedOps.contains("set") ||
+            spec.allowedOps.contains("res")) {
+            if (!precomputeBits(candidates, spec, allDependencies, code, config)) return null;
+        }
+        if (spec.allowedOps.contains("ccf") ||
+            spec.allowedOps.contains("sfc")) {
+            if (!precomputeCarry(candidates, spec, allDependencies, code, config)) return null;
+        }
+        if (spec.allowedOps.contains("jp") ||
+            spec.allowedOps.contains("jr") ||
+            spec.allowedOps.contains("djnz")) {
+            if (!precomputeJumps(candidates, spec, allDependencies, code, config)) return null;
+        }
+        
+        config.debug("allCandidateOps: " + candidates.size());
+        
+        // Precalculate which instructions can contribute to the solution:
+        boolean goalDependencies[] = spec.getGoalDependencies(allDependencies);
+        spec.getGoalDependenciesSatisfiedFromTheStart(allDependencies); // precalculate for later
+        for(int i = 0;i<allDependencies.size();i++) {
+            if (!goalDependencies[i]) continue;
+            boolean isVariable = false;
+            if (allDependencies.get(i).register != null) {
+                RegisterNames reg = CPUConstants.registerByName(allDependencies.get(i).register);
+                Integer value = null;
+                for(PrecomputedTestCase ptc:spec.precomputedTestCases) {
+                    Integer value2 = ptc.getGoalRegisterValue(reg);
+                    if (value2 == null) break;
+                    if (value == null) {
+                        value = value2;
+                    } else {
+                        if (!value.equals(value2)) {
+                            isVariable = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            for(SBOCandidate op:candidates) {
+                if (op.outputDependencies[i] != 0) {
+                    if (isVariable &&
+                        op.op.spec.getName().equalsIgnoreCase("ld") &&
+                        op.op.args.get(1).type == Expression.EXPRESSION_INTEGER_CONSTANT) {
+                        // this output is variable, so, it will never be satisfied by a "ld XXX,constant"
+                        continue;
+                    }
+                    op.directContributionToGoal = true;
+                }
+            }
+        }
+        
+        // Filter the base candidates to begin with:
+        List<SBOCandidate> toDelete = new ArrayList<>();
+        for(SBOCandidate c:candidates) {
+            List<SBOCandidate> l = new ArrayList<>();
+            l.add(c);
+            if (filter.filterSequence(l)) {
+                toDelete.add(c);
+            }
+        }
+        candidates.removeAll(toDelete);
+        
+        // Precompute which ops can follow which other ops:
+        HashMap<String, SBOCandidate> candidateOpsByPrefix = new HashMap<>();
+        SBOCandidate.precomputeCandidates(candidateOpsByPrefix, 
+                candidates, allDependencies, spec, code, maxLength, filter, config);
+        
+        return candidates;
+    }
+    
+    
+    static boolean precomputeOp(String line, List<SBOCandidate> candidates, List<CPUOpDependency> allDependencies, CodeBase code, MDLConfig config)
+    {
+        List<String> tokens = config.tokenizer.tokenize(line);
+        SourceFile sf = new SourceFile("dummy", null, null, code, config);
+        SourceLine sl = new SourceLine(line, sf, 0);
+        List<CodeStatement> l = config.lineParser.parse(tokens, sl, sf, null, code, config);
+        if (l == null || l.size() != 1) {
+            config.error("Parsing candidate op in the search-based optimizer resulted in none, or more than one op! " + line);
+            return false;
+        }
+        CodeStatement s = l.get(0);
+        SBOCandidate candidate = new SBOCandidate(s, allDependencies, code, config);
+        if (candidate.bytes == null) return false;
+        candidates.add(candidate);
+        return true;
+    }
+    
+    
+    static boolean precomputeAndOrXorCp(List<SBOCandidate> candidates, Specification spec, 
+                                 List<CPUOpDependency> allDependencies, CodeBase code, MDLConfig config)
+    {
+        if (!spec.allowedRegisters.contains("a")) return true;
+        
+        String opNames[] = {"and", "or", "xor", "cp"};
+        String regNames[] = {"a", "b", "c", "d", "e", "h", "l"};
+        for(String opName : opNames) {
+            if (!spec.allowedOps.contains(opName)) continue;
+                        
+            // register argument:
+            for(String regName : regNames) {
+                if (!spec.allowedRegisters.contains(regName)) continue;
+                
+                if (opName.equals("and") && spec.allowedOps.contains("or") && !spec.allowedOps.contains("daa")) {
+                    // If we don't have "DAA", the "H" flag is useless, and hence, "or a" and "and a" are equivalent
+                    if (regName.equals("a")) continue;
+                }
+                
+                String line = opName + " " + regName;
+                if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;
+            }
+            
+            // constant argument:
+            for(Integer constant:spec.allowed8bitConstants) {
+                String line = opName + " " + constant;
+                if (constant == 0) {
+                    if (opName.equals("add") || opName.equals("sub")) continue;
+                }                
+                if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;                
+            }
+            
+            // (hl):
+            if (spec.allowRamUse && spec.allowedRegisters.contains("hl")) {
+                String line = opName + " (hl)";
+                if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;            
+            }
+            
+            // (ix+d) / (iy+d):
+            if (spec.allowRamUse) {
+                for(String reg:new String[]{"ix","iy"}) {
+                    if (!spec.allowedRegisters.contains(reg)) continue;
+                    for(Integer constant:spec.allowedOffsetConstants) {
+                        if (constant >= 0) {
+                            String line = opName + " ("+reg+"+"+constant+")";
+                            if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;            
+                        } else {
+                            String line = opName + " ("+reg+constant+")";
+                            if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;            
+                        }
+                    }
+                }
+            }
+        }
+        return true;
+    }
+    
+
+    static boolean precomputeIncDec(List<SBOCandidate> candidates, Specification spec, 
+                             List<CPUOpDependency> allDependencies, CodeBase code, MDLConfig config)
+    {
+        String opNames[] = {"inc", "dec"};
+        String regNames[] = {"a", "b", "c", "d", "e", "h", "l",
+                             "bc", "de", "hl", 
+                             "ix", "iy",
+                             "ixh", "ixl", "iyh", "iyl"};
+        for(String opName: opNames) {
+            // register argument:
+            if (!spec.allowedOps.contains(opName)) continue;
+            for(String regName : regNames) {
+                if (!spec.allowedRegisters.contains(regName)) continue;
+                String line = opName + " " + regName;
+                if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;
+            }
+            
+            // (hl):
+            if (spec.allowRamUse && spec.allowedRegisters.contains("hl")) {
+                String line = opName + " (hl)";
+                if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;            
+            }
+            
+            // (ix+d) / (iy+d):
+            if (spec.allowRamUse) {
+                for(String reg:new String[]{"ix","iy"}) {
+                    if (!spec.allowedRegisters.contains(reg)) continue;
+                    for(Integer constant:spec.allowedOffsetConstants) {
+                        if (constant >= 0) {
+                            String line = opName + " ("+reg+"+"+constant+")";
+                            if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;            
+                        } else {
+                            String line = opName + " ("+reg+constant+")";
+                            if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;            
+                        }
+                    }
+                }        
+            }
+        }
+        return true;
+    }
+    
+    
+    static boolean precomputeAddAdcSubSbc(List<SBOCandidate> candidates, Specification spec, 
+                                   List<CPUOpDependency> allDependencies, CodeBase code, MDLConfig config)
+    {
+        if (!spec.allowedRegisters.contains("a")) return true;
+        
+        String opNames[] = {"add", "adc", "sub", "sbc"};
+        String regNames[] = {"a", "b", "c", "d", "e", "h", "l", "ixh", "ixl", "iyh", "iyl"};
+        for(String opName : opNames) {
+            if (!spec.allowedOps.contains(opName)) continue;
+            // register argument:
+            for(String regName : regNames) {
+                if (!spec.allowedRegisters.contains(regName)) continue;
+                String line = opName + " a," + regName;
+                if (opName.equals("sub") && regName.startsWith("i")) continue;
+                if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;
+            }
+            
+            // constant argument:
+            for(Integer constant:spec.allowed8bitConstants) {
+                String line = opName + " a," + constant;
+                if (constant == 0) {
+                    if (opName.equals("add") || opName.equals("sub")) continue;
+                }
+                if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;
+            }
+            
+            // (hl):
+            if (spec.allowRamUse) {
+                String line = opName + " a,(hl)";
+                if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;            
+            }
+            
+            // (ix+d) / (iy+d):
+            if (spec.allowRamUse) {
+                for(String reg:new String[]{"ix","iy"}) {
+                    if (!spec.allowedRegisters.contains(reg)) continue;
+                    for(Integer constant:spec.allowedOffsetConstants) {
+                        if (constant >= 0) {
+                            String line = opName + " a,("+reg+"+"+constant+")";
+                            if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;            
+                        } else {
+                            String line = opName + " a,("+reg+constant+")";
+                            if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;            
+                        }
+                    }
+                }
+            }
+        }
+        
+        String ops16bit[] = {"add hl,bc", "add hl,de", "add hl,hl", "add hl,sp",
+                             "add ix,bc", "add ix,de", "add ix,ix", "add ix,sp",
+                             "add iy,bc", "add iy,de", "add iy,iy", "add iy,sp",
+        
+                             "adc hl,bc", "adc hl,de", "adc hl,hl", "adc hl,sp",
+                             "sbc hl,bc", "sbc hl,de", "sbc hl,hl", "sbc hl,sp"};
+        for(String line:ops16bit) {
+            StringTokenizer st = new StringTokenizer(line, " ,");
+            if (!spec.allowedOps.contains(st.nextToken())) continue;
+            if (!spec.allowedRegisters.contains(st.nextToken())) continue;
+            if (!spec.allowedRegisters.contains(st.nextToken())) continue;
+            if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;            
+        }
+        return true;
+    }    
+    
+    
+    static boolean precomputeLd(List<SBOCandidate> candidates, Specification spec, 
+                         List<CPUOpDependency> allDependencies, CodeBase code, MDLConfig config)
+    {
+        String regNames[] = {"a", "b", "c", "d", "e", "h", "l"};
+        for(String arg1 : regNames) {
+            if (!spec.allowedRegisters.contains(arg1)) continue;
+            for(String arg2 : regNames) {
+                if (arg1.equals(arg2)) continue;
+                if (!spec.allowedRegisters.contains(arg2)) continue;
+                String line = "ld " + arg1 + "," + arg2;
+                if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;
+            }
+            if (spec.allowRamUse && spec.allowedRegisters.contains("hl")) {
+                String line = "ld (hl)," + arg1;
+                if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;
+                line = "ld " + arg1 + ",(hl)";
+                if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;
+            }
+            
+            // constant argument:
+            for(Integer constant:spec.allowed8bitConstants) {
+                String line = "ld " + arg1 + "," + constant;
+                if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;                
+            }
+            
+            // (ix+d) / (iy+d):
+            if (spec.allowRamUse) {
+                for(String reg:new String[]{"ix","iy"}) {
+                    if (!spec.allowedRegisters.contains(reg)) continue;
+                    for(Integer constant:spec.allowedOffsetConstants) {
+                        if (constant >= 0) {
+                            String line = "ld " + arg1 + ",("+reg+"+"+constant+")";
+                            if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;            
+                            line = "ld ("+reg+"+"+constant+")," + arg1;
+                            if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;            
+                        } else {
+                            String line = "ld " + arg1 + ",("+reg+constant+")";
+                            if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;
+                            line = "ld ("+reg+constant+")," + arg1;
+                            if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;
+                        }
+                    }
+                }
+            }
+        }
+        
+        String regNames2[] = {"a", "b", "c", "d", "e"};
+        String regNames3[] = {"ixh", "ixl", "iyh", "iyl"};
+        for(String arg1 : regNames2) {
+            if (!spec.allowedRegisters.contains(arg1)) continue;
+            for(String arg2 : regNames3) {
+                if (!spec.allowedRegisters.contains(arg2)) continue;
+                String line = "ld " + arg1 + "," + arg2;
+                if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;
+            }
+        }
+        for(String arg1 : regNames3) {
+            if (!spec.allowedRegisters.contains(arg1)) continue;
+            for(String arg2 : regNames2) {
+                if (!spec.allowedRegisters.contains(arg2)) continue;
+                String line = "ld " + arg1 + "," + arg2;
+                if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;
+            }
+        }
+        
+        // ld (hl)/ixh/ixl/iyh/iyl,n:
+        {
+            String args[] = {"ixh", "ixl", "iyh", "iyl"};
+            for(String  arg1:args) {
+                if (!spec.allowedRegisters.contains(arg1)) continue;
+                for(Integer constant:spec.allowed8bitConstants) {
+                    String line = "ld " + arg1 + "," + constant;
+                    if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;                
+                }
+            }
+        }
+        
+        if (spec.allowRamUse && spec.allowedRegisters.contains("hl")) {
+            for(Integer constant:spec.allowed8bitConstants) {
+                String line = "ld (hl)," + constant;
+                if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;                
+            }
+        }
+        
+//        if (spec.allowRamUse) {
+            // ld (nn),a/bc/de/hl/ix/iy/sp
+            // ...
+        
+            // ld a/bc/de/hl/ix/iy/sp,(nn)
+            // ...            
+//        }
+
+        // ld (ix+o)/(iy+o),n
+        if (spec.allowRamUse) {
+            for(Integer constant:spec.allowed8bitConstants) {
+                for(String reg:new String[]{"ix","iy"}) {
+                    if (!spec.allowedRegisters.contains(reg)) continue;
+                    for(Integer offset:spec.allowedOffsetConstants) {
+                        if (constant >= 0) {
+                            String line = "ld ("+reg+"+"+offset+")," + constant;
+                            if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;            
+                        } else {
+                            String line = "ld ("+reg+offset+")," + constant;
+                            if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;            
+                        }
+                    }
+                }
+            }
+        }
+
+        // ld bc/de/hl/sp/ix/iy,nn
+        {
+            String args[] = {"bc", "de", "hl", "sp", "ix", "iy"};
+            for(String arg1:args) {
+                if (!spec.allowedRegisters.contains(arg1)) continue;
+                for(Integer constant:spec.allowed16bitConstants) {
+                    String line = "ld " + arg1 + "," + constant;
+                    if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;                
+                }
+            }
+        }
+        
+        String otherOps[] = {"ld a,i", "ld a,r", "ld i,a", "ld r,a",
+                             "ld sp,hl", "ld sp,ix", "ld sp,iy",
+                             "ld ixl,ixh", "ld ixh,ixl", 
+                             "ld iyl,iyh", "ld iyh,iyl",
+                             };
+        for(String line:otherOps) {
+            StringTokenizer st = new StringTokenizer(line, " ,");
+            st.nextToken();
+            if (!spec.allowedRegisters.contains(st.nextToken())) continue;
+            if (!spec.allowedRegisters.contains(st.nextToken())) continue;
+            if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;            
+        }
+        if (spec.allowRamUse) {
+            String otherRamOps[] = {"ld (bc),a", "ld (de),a",
+                                    "ld a,(bc)", "ld a,(de)"};
+            for(String line:otherRamOps) {
+                StringTokenizer st = new StringTokenizer(line, " ,()");
+                st.nextToken();
+                if (!spec.allowedRegisters.contains(st.nextToken())) continue;
+                if (!spec.allowedRegisters.contains(st.nextToken())) continue;
+                if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;            
+            }            
+        }
+        return true;
+    }
+    
+    
+    static boolean precomputeRotations(List<SBOCandidate> candidates, Specification spec, 
+                                List<CPUOpDependency> allDependencies, CodeBase code, MDLConfig config)
+    {
+        String opNames[] = {"rlc", "rl", "rrc", "rr"};
+        String regNames[] = {"a", "b", "c", "d", "e", "h", "l"};
+        for(String op: opNames) {
+            if (!spec.allowedOps.contains(op)) continue;
+            for(String reg : regNames) {
+                if (!spec.allowedRegisters.contains(reg)) continue;
+                String line = op + " " + reg;
+                if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;
+            }
+            if (spec.allowRamUse && spec.allowedRegisters.contains("hl")) {
+                String line = op + " (hl)";
+                if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;
+            }
+            
+            // (ix+o)/(iy+o):
+            if (spec.allowRamUse) {
+                for(String reg:new String[]{"ix","iy"}) {
+                    if (!spec.allowedRegisters.contains(reg)) continue;
+                    for(Integer constant:spec.allowedOffsetConstants) {
+                        if (constant >= 0) {
+                            String line = op + " ("+reg+"+"+constant+")";
+                            if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;            
+                        } else {
+                            String line = op + " ("+reg+constant+")";
+                            if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;            
+                        }
+                    }
+                }        
+            }
+        }        
+        if (spec.allowedRegisters.contains("a")) {
+            String otherOps[] = {"rlca", "rla", "rrca", "rra"};
+            for(String line:otherOps) {
+                if (!spec.allowedOps.contains(line)) continue;
+                if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;            
+            }
+        }
+        return true;
+    }
+
+
+    static boolean precomputeShifts(List<SBOCandidate> candidates, Specification spec, 
+                             List<CPUOpDependency> allDependencies, CodeBase code, MDLConfig config)
+    {
+        String opNames[] = {"sla", "sra", "srl", "sli"};
+        String regNames[] = {"a", "b", "c", "d", "e", "h", "l"};
+        for(String op: opNames) {
+            if (!spec.allowedOps.contains(op)) continue;
+            for(String reg : regNames) {
+                if (!spec.allowedRegisters.contains(reg)) continue;
+                
+                // sla a is the same as add a,a, but slower
+                if (op.equals("sla") && reg.equals("a") && spec.allowedOps.contains("add")) continue;
+                String line = op + " " + reg;
+                if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;
+            }
+            if (spec.allowRamUse && spec.allowedRegisters.contains("hl")) {
+                String line = op + " (hl)";
+                if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;
+            }
+            
+            // (ix+o)/(iy+o):
+            if (spec.allowRamUse) {
+                for(String reg:new String[]{"ix","iy"}) {
+                    if (!spec.allowedRegisters.contains(reg)) continue;
+                    for(Integer constant:spec.allowedOffsetConstants) {
+                        if (constant >= 0) {
+                            String line = op + " ("+reg+"+"+constant+")";
+                            if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;            
+                        } else {
+                            String line = op + " ("+reg+constant+")";
+                            if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;            
+                        }
+                    }
+                }   
+            }
+        }        
+        return true;
+    }
+    
+    
+    static boolean precomputeNegations(List<SBOCandidate> candidates, Specification spec, 
+                             List<CPUOpDependency> allDependencies, CodeBase code, MDLConfig config)
+    {
+        if (!spec.allowedRegisters.contains("a")) return true;
+
+        String opNames[] = {"cpl", "neg"};
+        for(String op: opNames) {
+            if (!spec.allowedOps.contains(op)) continue;
+            if (!precomputeOp(op, candidates, allDependencies, code, config)) return false;
+        }        
+        return true;
+    }    
+    
+    
+    static boolean precomputeBits(List<SBOCandidate> candidates, Specification spec, 
+                             List<CPUOpDependency> allDependencies, CodeBase code, MDLConfig config)
+    {
+        String opNames[] = {"bit", "set", "res"};
+        String registers[] = {"a", "b", "c", "d", "e", "h", "l"};
+        String bits[] = {"0", "1", "2", "3", "4", "5", "6", "7"};
+        for(String op: opNames) {
+            if (!spec.allowedOps.contains(op)) continue;
+            for(String bit: bits) {
+                for(String reg: registers) {
+                    if (!spec.allowedRegisters.contains(reg)) continue;
+                    String line = op + " " + bit + ","+reg;
+                    if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;
+                }
+                // (hl)
+                if (spec.allowRamUse && spec.allowedRegisters.contains("hl")) {
+                    String line = op + " " + bit + ",(hl)";
+                    if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;
+                }
+                // (ix+o)/(iy+o):
+                if (spec.allowRamUse) {
+                    for(String reg:new String[]{"ix","iy"}) {
+                        if (!spec.allowedRegisters.contains(reg)) continue;
+                        for(Integer constant:spec.allowedOffsetConstants) {
+                            if (constant >= 0) {
+                                String line = op + " " + bit +",("+reg+"+"+constant+")";
+                                if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;            
+                            } else {
+                                String line = op + " " + bit +", ("+reg+constant+")";
+                                if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;            
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return true;
+    }   
+    
+    
+    static boolean precomputeCarry(List<SBOCandidate> candidates, Specification spec, 
+                            List<CPUOpDependency> allDependencies, CodeBase code, MDLConfig config)
+    {
+        String opNames[] = {"ccf", "scf"};
+        for(String op: opNames) {
+            if (!spec.allowedOps.contains(op)) continue;
+            if (!precomputeOp(op, candidates, allDependencies, code, config)) return false;
+        }
+        return true;
+    }   
+    
+    
+    static boolean precomputeJumps(List<SBOCandidate> candidates, Specification spec, 
+                            List<CPUOpDependency> allDependencies, CodeBase code, MDLConfig config)
+    {
+        if (spec.allowedOps.contains("jp")) {
+            for(String flag:new String[]{"", "z,", "po,", "pe,", "p,", "nz,", "nc,", "m,", "c,"}) {
+                String line = "jp " + flag + "$";
+                if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;
+            }
+            if (!precomputeOp("jp hl", candidates, allDependencies, code, config)) return false;
+            if (!precomputeOp("jp ix", candidates, allDependencies, code, config)) return false;
+            if (!precomputeOp("jp iy", candidates, allDependencies, code, config)) return false;
+        }
+        if (spec.allowedOps.contains("jr")) {
+            for(String flag:new String[]{"", "z,", "nz,", "nc,", "c,"}) {
+                String line = "jr " + flag + "$";
+                if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;
+            }
+        }
+        if (spec.allowedOps.contains("djnz")) {
+            if (!precomputeOp("djnz $", candidates, allDependencies, code, config)) return false;
+        }
+        return true;
+    }
+    
     
     @Override
     public String toString()

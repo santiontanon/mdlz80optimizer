@@ -38,7 +38,7 @@ public class SequenceFilter {
     public void setSpecification(Specification a_spec)
     {
         spec = a_spec;
-        allDependencies = SearchBasedOptimizer.precomputeAllDependencies(spec);
+        allDependencies = spec.precomputeAllDependencies();
     }
     
     
