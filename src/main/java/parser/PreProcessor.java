@@ -311,7 +311,7 @@ public class PreProcessor {
 
 
     public List<CodeStatement> handleStatement(SourceLine sl,
-            CodeStatement s, SourceFile source, CodeBase code, boolean expandMacroCalls)
+            CodeStatement s, SourceFile source, CodeBase code, boolean expandMacroCalls, boolean errorMessageIfUnableToExpand)
     {
         List<CodeStatement> l = new ArrayList<>();
                 
@@ -405,7 +405,7 @@ public class PreProcessor {
                     return l;
                 } else {
                     // macro is not yet defined, keep it in the code, and we will evaluate later
-                    if (expandMacroCalls) {
+                    if (expandMacroCalls && errorMessageIfUnableToExpand) {
                         config.error("Could not expand macro in " + sl);
                     }
                     return null;

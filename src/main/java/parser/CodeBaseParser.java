@@ -285,7 +285,7 @@ public class CodeBaseParser {
                 for(CodeStatement s:newStatements) {
                     if (config.eagerMacroEvaluation ||
                         (config.macrosToEvaluateEagerly.contains(s.macroCallName))) {
-                        List<CodeStatement> l2 = config.preProcessor.handleStatement(sl, s, f, code, true);
+                        List<CodeStatement> l2 = config.preProcessor.handleStatement(sl, s, f, code, true, false);
                         if (l2 == null) {
                             f.addStatement(s);
                         } else {
@@ -306,7 +306,7 @@ public class CodeBaseParser {
             }
             for(CodeStatement s:l) {
                 int macroNestingLevel = config.preProcessor.getCurrentMacroStateNExpansions();
-                List<CodeStatement> l2 = config.preProcessor.handleStatement(sl, s, f, code, config.eagerMacroEvaluation);
+                List<CodeStatement> l2 = config.preProcessor.handleStatement(sl, s, f, code, config.eagerMacroEvaluation, false);
                 if (l2 == null) {
                     f.addStatement(s);
                 } else {
@@ -376,7 +376,7 @@ public class CodeBaseParser {
                 // expand macro!
                 // config.trace("expandAllMacros: Expanding macro: " + s_macro.macroCallName != null ? s_macro.macroCallName : s_macro.macroCallMacro.name);
 
-                List<CodeStatement> l2 = config.preProcessor.handleStatement(s_macro.sl, s_macro, f, code, true);
+                List<CodeStatement> l2 = config.preProcessor.handleStatement(s_macro.sl, s_macro, f, code, true, true);
                 int insertionPoint = i;
                 if (l2 == null) {
                     config.debug("Cannot yet expand macro "+s_macro.macroCallName+" in "+s_macro.sl);
@@ -424,7 +424,7 @@ public class CodeBaseParser {
                         for(CodeStatement s:l) {
                             // we set expandMacroCalls to "false" here, as if we are in this function, it means we are not evaluating
                             // macros eagerly:
-                            List<CodeStatement> l3 = config.preProcessor.handleStatement(sl, s, f, code, false);
+                            List<CodeStatement> l3 = config.preProcessor.handleStatement(sl, s, f, code, false, false);
                             if (l3 == null) {
                                 f.addStatement(insertionPoint, s);
                                 insertionPoint++;
@@ -522,7 +522,9 @@ public class CodeBaseParser {
     public boolean replaceJumpExpressionWithLabelForSafety(CodeStatement s, int idx, CodeBase code)
     {
         String labelPrefix = "___MDL_SAFETY_LABEL_";
-        config.warn("Safety: creating an auxiliary label for the jump in " + s.sl);
+        if (config.warning_labelless_jump) {
+            config.warn("Safety: creating an auxiliary label for the jump in " + s.sl);
+        }
 
         Expression destination = s.op.getTargetJumpExpression();
         CodeStatement current = s;

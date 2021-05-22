@@ -83,6 +83,7 @@ public class MDLConfig {
     public boolean warning_jpHlWithParenthesis = false;
     public boolean warning_unofficialOps = false;
     public boolean warning_ambiguous = false;
+    public boolean warning_labelless_jump = false;
 
     public boolean convertToOfficial = true;
     public boolean evaluateAllExpressions = false;
@@ -157,6 +158,7 @@ public class MDLConfig {
             + "- ```-warn-jp(rr)```: turns on warnings for using confusing 'jp (hl)' instead of 'jp hl' (this is turned off by default in dialects that do not support this).\n"
             + "- ```-warn-unofficial```: turns on warnings for using unofficial op syntax (e.g., 'add 1' instead of 'add a,1'.\n"
             + "- ```-warn-ambiguous```: turns on warnings for using ambiguous or error-inducing syntax in some dialects.\n"
+            + "- ```-warn-labelless-jump```: turns on warnings for using jumps that instead of jumping to a label, are defined as something like 'jp $+5'."
             + "- ```-do-not-convert-to-official```: turns off automatic conversion of unofficial op syntax to official ones in assembler output.\n"
             + "- ```-hex#```: hex numbers render like #ffff (default). These flags also have analogous effect on binary and octal constant rendering.\n"
             + "- ```-HEX#```: hex numbers render like #FFFF.\n"

@@ -455,7 +455,7 @@ public class GlassDialect implements Dialect {
                         break;
                     }
                     for(CodeStatement s:l) {
-                        List<CodeStatement> l2 = preProcessor.handleStatement(sl, s, f, code, false);
+                        List<CodeStatement> l2 = preProcessor.handleStatement(sl, s, f, code, false, false);
                         if (l2 == null) {
                             f.addStatement(s);
                         } else {
