@@ -269,7 +269,7 @@ public class SpecificationParser {
             
             return spec;
         } catch (Exception e) {
-            config.error("Exception while trying to parse specificaiton file '"+inputFile+"'");
+            config.error("Exception while trying to parse specification file '"+inputFile+"'");
             config.error("Exception message: " + Arrays.toString(e.getStackTrace()));
             return null;
         }

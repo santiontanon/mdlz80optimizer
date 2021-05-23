@@ -521,10 +521,10 @@ public class SearchBasedOptimizer implements MDLWorker {
             line2++;
         }
 
-        config.trace("- Optimizing lines " + line + " -> " + line2);
-        for(CodeStatement s:codeToOptimize) {
-            config.trace("    " + s);
-        }
+//        System.out.println("- Optimizing lines " + line + " -> " + line2);
+//        for(CodeStatement s:codeToOptimize) {
+//            System.out.println("    " + s);
+//        }
         
         // - Create a specification, and synthesize test cases:
         Specification spec = new Specification();
@@ -554,13 +554,12 @@ public class SearchBasedOptimizer implements MDLWorker {
             String regName = CPUConstants.registerName(reg);
             if (!spec.allowedRegisters.contains(regName)) spec.allowedRegisters.add(regName);
         }
-        config.trace("    - Allowed Registers: " + spec.allowedRegisters);
+//        System.out.println("    - Allowed Registers: " + spec.allowedRegisters);
         
         // - Find the set of constants used in the code:
         spec.allowed8bitConstants.clear();
         spec.allowed16bitConstants.clear();
-        HashMap<Integer, List<Expression>> constants8bitToExpressions = new HashMap<>();
-        HashMap<Integer, List<Expression>> constants16bitToExpressions = new HashMap<>();
+        HashMap<Integer, List<Expression>> constantsToExpressions = new HashMap<>();
         for(CodeStatement s:codeToOptimize) {
             for(int i = 0;i<s.op.args.size();i++) {
                 Expression arg = s.op.args.get(i);
@@ -572,13 +571,15 @@ public class SearchBasedOptimizer implements MDLWorker {
                     }
                     if (s.op.spec.args.get(i).byteConstantAllowed) {
                         if (!spec.allowed8bitConstants.contains(value)) spec.allowed8bitConstants.add(value);
-                        if (constants8bitToExpressions.containsKey(value)) {
-                            constants8bitToExpressions.get(value).add(arg);
+                        if (!spec.allowed16bitConstants.contains(value)) spec.allowed16bitConstants.add(value);
+                        if (constantsToExpressions.containsKey(value)) {
+                            constantsToExpressions.get(value).add(arg);
                         } else {
                             List<Expression> l = new ArrayList<>();
                             l.add(arg);
-                            constants8bitToExpressions.put(value, l);
+                            constantsToExpressions.put(value, l);
                         }
+                        /*
                     } else {
                         if (!spec.allowed16bitConstants.contains(value))  spec.allowed16bitConstants.add(value);
                         if (constants16bitToExpressions.containsKey(value)) {
@@ -588,21 +589,23 @@ public class SearchBasedOptimizer implements MDLWorker {
                             l.add(arg);
                             constants16bitToExpressions.put(value, l);
                         }
+                        */
                     }
+
                 }
             }
         }
         // to do: find offset constants (and support memory access)
-        config.trace("    - Allowed 8bit Constants: " + spec.allowed8bitConstants);
-        config.trace("    - Allowed 16bit Constants: " + spec.allowed16bitConstants);
+//        System.out.println("    - Allowed 8bit Constants: " + spec.allowed8bitConstants);
+//        System.out.println("    - Allowed 16bit Constants: " + spec.allowed16bitConstants);
                 
         // Find which registers and flags are used afterwards:
         registersUsedAfter.remove(RegisterNames.R);
         if (!inputRegisters.contains(RegisterNames.F)) inputRegisters.add(RegisterNames.F);
         List<Integer> flagsUsedAfter = findFlagsUsedAfter(codeToOptimize, f, code);
-        config.trace("    - Input registers: " + inputRegisters);
-        config.trace("    - Goal registers: " + registersUsedAfter);
-        config.trace("    - Goal flags: " + flagsUsedAfter);
+//        System.out.println("    - Input registers: " + inputRegisters);
+//        System.out.println("    - Goal registers: " + registersUsedAfter);
+//        System.out.println("    - Goal flags: " + flagsUsedAfter);
         
         // Precompute goalDependencies / initialDependencies:
         List<CPUOpDependency> allDependencies = spec.precomputeAllDependencies();
@@ -647,6 +650,21 @@ public class SearchBasedOptimizer implements MDLWorker {
         SourceFile sf = new SourceFile("dummy.asm", null, null, code, config);
         if (!workGenerate(spec, filter, allDependencies, sf, code)) {
             return false;
+        }
+        
+        // Replace constants by their corresponding expressions:
+        for(CodeStatement s:sf.getStatements()) {
+            if (s.op != null) {
+                for(int i = 0;i<s.op.args.size();i++) {
+                    Expression arg = s.op.args.get(i);
+                    if (arg.type == Expression.EXPRESSION_INTEGER_CONSTANT) {
+                        List<Expression> l = constantsToExpressions.get(arg.integerConstant);
+                        if (l != null && !l.isEmpty()) {
+                            s.op.args.set(i, l.get(0));
+                        }
+                    }
+                }
+            }
         }
                 
         // - If better, replace:
@@ -739,6 +757,7 @@ public class SearchBasedOptimizer implements MDLWorker {
                 f.getStatements().remove(s);
             }
             for(CodeStatement s:optimized) {
+                s.source = f;
                 f.addStatement(insertionPoint, s);
                 insertionPoint++;
             }
@@ -828,7 +847,6 @@ public class SearchBasedOptimizer implements MDLWorker {
             test.goalFlags[i] = goalFlags.get(i);
             test.goalFlagValues[i] = z80.getFlagValue(CPUConstants.flagIndex(goalFlags.get(i)));
         }
-        
                     
         return test;
     }
@@ -874,13 +892,13 @@ public class SearchBasedOptimizer implements MDLWorker {
         
         for(RegisterNames reg:CPUConstants.allRegisters) {
             if (!allowGhostRegisters && CPUConstants.isGhostRegister(reg)) continue;
-            for(CodeStatement s:l) {
-                Boolean notUsed = Pattern.regNotUsedAfter(s, CPUConstants.registerName(reg), f, code);
-                if (notUsed == null || notUsed == false) {
-                    registers.add(reg);
-                    break;
-                }
+//            for(CodeStatement s:l) {
+            CodeStatement s = l.get(l.size()-1);
+            Boolean notUsed = Pattern.regNotUsedAfter(s, CPUConstants.registerName(reg), f, code);
+            if (notUsed == null || notUsed == false) {
+                registers.add(reg);
             }
+//            }
         }
         
         
