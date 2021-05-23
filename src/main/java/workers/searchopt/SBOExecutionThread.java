@@ -206,7 +206,7 @@ public class SBOExecutionThread extends Thread {
                         }
                     }
                     if (!goalDependenciesSatisfied) continue;
-                }                                    
+                }
                 System.arraycopy(candidate.bytes, 0, z80Memory.memory, codeAddress, candidate.bytes.length);
                 currentOps[depth] = candidate.op;
                 currentOpsAddresses[depth] = codeAddress;

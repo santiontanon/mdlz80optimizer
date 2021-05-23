@@ -11,20 +11,30 @@ import code.CPUOp;
 import code.CPUOpDependency;
 import code.CodeBase;
 import code.CodeStatement;
+import code.Expression;
 import code.SourceFile;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Random;
 import parser.SourceLine;
+import util.microprocessor.PlainZ80IO;
+import util.microprocessor.PlainZ80Memory;
+import util.microprocessor.Z80.CPUConfig;
 import util.microprocessor.Z80.CPUConstants;
 import util.microprocessor.Z80.CPUConstants.RegisterNames;
+import util.microprocessor.Z80.Z80Core;
 import workers.MDLWorker;
+import workers.pattopt.Pattern;
 
 /**
  *
  * @author santi
  */
 public class SearchBasedOptimizer implements MDLWorker {    
+    public static final String SBO_RESULT_KEY = "Search-based optimizer optimizations";
+    
     // Type of operation to perform:
     public static final int SBO_GENERATE = 0;
     public static final int SBO_OPTIMIZE = 1;
@@ -38,13 +48,12 @@ public class SearchBasedOptimizer implements MDLWorker {
     public static final int SEARCH_TIME_BEST = 1;
     public static final int SEARCH_TIME_AVERAGE = 2;
     
-    // randomize the register contents:
-    public RegisterNames eightBitRegistersToRandomize[] = null;
-
+    Random random = new Random();
     MDLConfig config;
     boolean trigger = false;
     int operation = SBO_GENERATE;
     boolean showNewBestDuringSearch = true;
+    boolean silentSearch = false;
     
     // Search configuration parameters if specified via flags (will overwrite
     // those in the Specification file):
@@ -204,11 +213,6 @@ public class SearchBasedOptimizer implements MDLWorker {
             return false;
         }
         
-        // Precompute all the op dependencies before search:
-        List<CPUOpDependency> allDependencies = spec.precomputeAllDependencies();
-        int nDependencies = allDependencies.size();
-        config.debug("nDependencies: " + nDependencies);
-        
         SequenceFilter filter = new SequenceFilter(config);
         filter.setSpecification(spec);
         try {
@@ -221,10 +225,25 @@ public class SearchBasedOptimizer implements MDLWorker {
             return false;
         }
         
+        List<CPUOpDependency> allDependencies = spec.precomputeAllDependencies();        
+                
+        return workGenerate(spec, filter, allDependencies, sf, code);
+    }
+    
+    private boolean workGenerate(Specification spec, 
+                                 SequenceFilter filter,
+                                 List<CPUOpDependency> allDependencies,
+                                 SourceFile sf,
+                                 CodeBase code) {
+        // Precompute all the op dependencies before search:
+        int nDependencies = allDependencies.size();
+        config.debug("nDependencies: " + nDependencies);
+                
         List<SBOCandidate> allCandidateOps = SBOCandidate.precomputeCandidateOps(spec, allDependencies, code, filter, 2, config);
         if (allCandidateOps == null) return false;
-                
+        
         // Precalculate which registers to randomize:
+        RegisterNames eightBitRegistersToRandomize[] = null;
         {
             List<RegisterNames> toRandomize = new ArrayList<>();
             // Add all the registers in the goal (to prevent spurious matches):
@@ -291,7 +310,7 @@ public class SearchBasedOptimizer implements MDLWorker {
                     for(int i = 0;i<nThreads;i++) threads[i].join();
                     if (state.bestOps != null) break;
                     String time = String.format("%.02f", (System.currentTimeMillis() - start)/1000.0f) + "s";
-                    config.info("SearchBasedOptimizer: depth "+depth+" complete ("+state.solutionsEvaluated+" solutions tested, time elapsed: "+time+")");
+                    if (!silentSearch) config.info("SearchBasedOptimizer: depth "+depth+" complete ("+state.solutionsEvaluated+" solutions tested, time elapsed: "+time+")");
                 }
 
             } else if (spec.searchType == SEARCH_ID_BYTES) {
@@ -313,7 +332,7 @@ public class SearchBasedOptimizer implements MDLWorker {
                     for(int i = 0;i<nThreads;i++) threads[i].join();
                     if (state.bestOps != null) break;
                     String time = String.format("%.02f", (System.currentTimeMillis() - start)/1000.0f) + "s";
-                    config.info("SearchBasedOptimizer: size "+size+" complete ("+state.solutionsEvaluated+" solutions tested, time elapsed: "+time+")");
+                    if (!silentSearch) config.info("SearchBasedOptimizer: size "+size+" complete ("+state.solutionsEvaluated+" solutions tested, time elapsed: "+time+")");
                 }
 
             } else if (spec.searchType == SEARCH_ID_CYCLES) {
@@ -335,7 +354,7 @@ public class SearchBasedOptimizer implements MDLWorker {
                     for(int i = 0;i<nThreads;i++) threads[i].join();
                     if (state.bestOps != null) break;
                     String time = String.format("%.02f", (System.currentTimeMillis() - start)/1000.0f) + "s";
-                    config.info("SearchBasedOptimizer: time "+maxTime+" complete ("+state.solutionsEvaluated+" solutions tested, time elapsed: "+time+")");
+                    if (!silentSearch) config.info("SearchBasedOptimizer: time "+maxTime+" complete ("+state.solutionsEvaluated+" solutions tested, time elapsed: "+time+")");
                 }
                 
             } else {
@@ -349,7 +368,7 @@ public class SearchBasedOptimizer implements MDLWorker {
         }
             
         if (state.bestOps == null) {
-            config.error("No program that satisfied the specification was found.");
+            if (!silentSearch) config.error("No program that satisfied the specification was found.");
             return false;
         }
         
@@ -363,26 +382,35 @@ public class SearchBasedOptimizer implements MDLWorker {
         }
         
         String time = String.format("%.02f", (System.currentTimeMillis() - start)/1000.0f) + "s";
-        config.info("SearchBasedOptimizer: search ended ("+state.solutionsEvaluated+" solutions tested, time elapsed: "+time+")");
+        if (!silentSearch) config.info("SearchBasedOptimizer: search ended ("+state.solutionsEvaluated+" solutions tested, time elapsed: "+time+")");
                 
         return true;
     }
     
     
     private boolean workOptimize(CodeBase code) {
+        silentSearch = true;
+        showNewBestDuringSearch = false;
+        
         OptimizationResult r = new OptimizationResult();
         
         for (SourceFile f : code.getSourceFiles()) {
             for (int i = 0; i < f.getStatements().size(); i++) {
-                if (optimizeStartingFromLine(f, i, code, r)) {
-                    i = Math.max(0, i-2);   // go back a couple of statements, as more optimizations might chain
+                try {
+                    if (optimizeStartingFromLine(f, i, code, r)) {
+                        i = Math.max(0, i-2);   // go back a couple of statements, as more optimizations might chain
+                        code.resetAddresses();
+                    }
+                } catch(Exception e) {
+                    config.error(e.getMessage());
+                    config.error(Arrays.toString(e.getStackTrace()));
                 }
             }
         }
         
         code.resetAddresses();
 
-        Integer noptimizations = r.optimizerSpecificStats.get("Search-based optimizer optimizations");
+        Integer noptimizations = r.optimizerSpecificStats.get(SBO_RESULT_KEY);
         if (noptimizations == null) noptimizations = 0;
         config.info("SearchBasedOptimizer: "+noptimizations+" optimizations applied, " +
                     r.bytesSaved+" bytes, " + 
@@ -395,6 +423,8 @@ public class SearchBasedOptimizer implements MDLWorker {
     
     private boolean preventOptimization(CodeStatement s, CodeBase code)
     {
+        if (s.type != CodeStatement.STATEMENT_CPUOP &&
+            s.type != CodeStatement.STATEMENT_NONE) return false;
         if (code.protectedFromOptimization(s)) return true;
         
         switch(s.op.spec.getName()) {
@@ -405,10 +435,28 @@ public class SearchBasedOptimizer implements MDLWorker {
             case "rst":
             case "ret":
             case "reti":
+            case "retn":
             case "djnz":
             case "push":
             case "pop":
+            case "di":
+            case "ei":
+            case "ldi":
+            case "ldd":
+            case "ldir":
+            case "lddr":
+            case "outi":
+            case "outd":
+            case "otir":
+            case "otdr":
+            case "exx":
+            case "halt":
                 return true;
+            case "ex":
+                if (s.op.args.get(0).registerOrFlagName.equals("af") ||
+                    s.op.args.get(0).registerOrFlagName.equals("af'")) {
+                    return true;
+                }
         }
         
         for(int i = 0;i<s.op.spec.args.size();i++) {
@@ -424,14 +472,16 @@ public class SearchBasedOptimizer implements MDLWorker {
     }
     
     
-    private boolean optimizeStartingFromLine(SourceFile f, int line, CodeBase code, OptimizationResult r)
+    private boolean optimizeStartingFromLine(SourceFile f, int line, CodeBase code, OptimizationResult r) throws Exception
     {
         if (f.getStatements().get(line).op == null) return false;
+//        System.out.println(f.getStatements().get(line).fileNameLineString());
         
         List<CodeStatement> codeToOptimize = new ArrayList<>();
         int line2 = line;
         while(codeToOptimize.size() < optimization_max_block_size && line2 < f.getStatements().size()) {
             CodeStatement s = f.getStatements().get(line2);
+            if (!codeToOptimize.isEmpty() && s.label != null) return false;
             if (s.op != null) {
                 if (preventOptimization(s, code)) {
                     return false;
@@ -440,12 +490,411 @@ public class SearchBasedOptimizer implements MDLWorker {
             }
             line2++;
         }
+
+        config.trace("- Optimizing lines " + line + " -> " + line2);
+        for(CodeStatement s:codeToOptimize) {
+            config.trace("    " + s);
+        }
         
-//        System.out.println("optimizing lines " + line + " -> " + line2);
-//        for(CodeStatement s:codeToOptimize) {
-//            System.out.println("    " + s);
-//        }
+        // - Create a specification, and synthesize test cases:
+        Specification spec = new Specification();
+        spec.numberOfRandomSolutionChecks = 10000;
+        spec.maxOps = optimization_max_block_size;
+        if (flags_searchType != -1) {
+            spec.searchType = flags_searchType;
+        }
+        spec.allowedOps.remove("jp");
+        spec.allowedOps.remove("jr");
+        spec.allowedOps.remove("djnz");
         
-        return false;
+        // - Find which registers we can use during search:
+        List<RegisterNames> modifiedRegisters = findModifiedRegisters(codeToOptimize, f, code);
+        List<RegisterNames> registersUsedAfter = findRegistersUsedAfter(codeToOptimize, f, code, spec.allowGhostRegisters);
+        List<RegisterNames> registersNotUsedAfter = findRegistersNotUsedAfter(codeToOptimize, f, code, spec.allowGhostRegisters);
+        List<RegisterNames> inputRegisters = findUsedRegisters(codeToOptimize, f, code);
+        for(RegisterNames reg:modifiedRegisters) {
+            String regName = CPUConstants.registerName(reg);
+            if (!spec.allowedRegisters.contains(regName)) spec.allowedRegisters.add(regName);
+        }
+        for(RegisterNames reg:registersNotUsedAfter) {
+            String regName = CPUConstants.registerName(reg);
+            if (!spec.allowedRegisters.contains(regName)) spec.allowedRegisters.add(regName);
+        }
+        for(RegisterNames reg:inputRegisters) {
+            String regName = CPUConstants.registerName(reg);
+            if (!spec.allowedRegisters.contains(regName)) spec.allowedRegisters.add(regName);
+        }
+        config.trace("    - Allowed Registers: " + spec.allowedRegisters);
+        
+        // - Find the set of constants used in the code:
+        spec.allowed8bitConstants.clear();
+        spec.allowed16bitConstants.clear();
+        HashMap<Integer, List<Expression>> constants8bitToExpressions = new HashMap<>();
+        HashMap<Integer, List<Expression>> constants16bitToExpressions = new HashMap<>();
+        for(CodeStatement s:codeToOptimize) {
+            for(int i = 0;i<s.op.args.size();i++) {
+                Expression arg = s.op.args.get(i);
+                if (arg.evaluatesToIntegerConstant()) {
+                    Integer value = arg.evaluateToInteger(s, code, true);
+                    if (value == null) {
+                        config.warn("Could not evaluate " + arg + " to an integer constant");
+                        return false;
+                    }
+                    if (s.op.spec.args.get(i).byteConstantAllowed) {
+                        if (!spec.allowed8bitConstants.contains(value)) spec.allowed8bitConstants.add(value);
+                        if (constants8bitToExpressions.containsKey(value)) {
+                            constants8bitToExpressions.get(value).add(arg);
+                        } else {
+                            List<Expression> l = new ArrayList<>();
+                            l.add(arg);
+                            constants8bitToExpressions.put(value, l);
+                        }
+                    } else {
+                        if (!spec.allowed16bitConstants.contains(value))  spec.allowed16bitConstants.add(value);
+                        if (constants16bitToExpressions.containsKey(value)) {
+                            constants16bitToExpressions.get(value).add(arg);
+                        } else {
+                            List<Expression> l = new ArrayList<>();
+                            l.add(arg);
+                            constants16bitToExpressions.put(value, l);
+                        }
+                    }
+                }
+            }
+        }
+        // to do: find offset constants (and support memory access)
+        config.trace("    - Allowed 8bit Constants: " + spec.allowed8bitConstants);
+        config.trace("    - Allowed 16bit Constants: " + spec.allowed16bitConstants);
+                
+        // Find which registers and flags are used afterwards:
+        registersUsedAfter.remove(RegisterNames.R);
+        if (!inputRegisters.contains(RegisterNames.F)) inputRegisters.add(RegisterNames.F);
+        List<Integer> flagsUsedAfter = findFlagsUsedAfter(codeToOptimize, f, code);
+        config.trace("    - Input registers: " + inputRegisters);
+        config.trace("    - Goal registers: " + registersUsedAfter);
+        config.trace("    - Goal flags: " + flagsUsedAfter);
+        
+        // Precompute goalDependencies / initialDependencies:
+        List<CPUOpDependency> allDependencies = spec.precomputeAllDependencies();
+        spec.goalDependencies = new boolean[allDependencies.size()];
+        spec.initialDependencies = new boolean[allDependencies.size()];
+        for(int i = 0;i<allDependencies.size();i++) {
+            spec.initialDependencies[i] = true;
+            CPUOpDependency dep = allDependencies.get(i);
+            if (dep.register != null && registersUsedAfter.contains(CPUConstants.registerByName(dep.register))) {
+                spec.goalDependencies[i] = true;
+            } else if (dep.flag != null && flagsUsedAfter.contains(CPUConstants.flagByName(dep.flag))) {
+                spec.goalDependencies[i] = true;
+            } else {
+                spec.goalDependencies[i] = false;
+            }
+        }
+        spec.precomputeGoalDependencyIndexes();
+        
+        // Precompute test cases:
+        spec.codeStartAddress = codeToOptimize.get(0).getAddress(code);
+        PlainZ80Memory z80Memory = new PlainZ80Memory();
+        Z80Core z80 = new Z80Core(z80Memory, new PlainZ80IO(), new CPUConfig(config));        
+        for(int i = 0;i<0x10000;i++) {
+            int v = random.nextInt(256);
+            z80Memory.writeByte(i, v);
+        }
+        spec.precomputedTestCases = new Specification.PrecomputedTestCase[spec.numberOfRandomSolutionChecks];
+        for(int i = 0;i<spec.numberOfRandomSolutionChecks;i++) {
+            spec.precomputedTestCases[i] = generatePrecomputedTestCase(codeToOptimize, inputRegisters, spec.allowedRegisters, registersUsedAfter, flagsUsedAfter, spec.codeStartAddress, z80, z80Memory, code);
+        }
+        
+        // - Search:
+        SequenceFilter filter = new SequenceFilter(config);
+        filter.setSpecification(spec);
+        try {
+            filter.loadEquivalences("data/equivalencies-l1.txt");
+        }catch(Exception e) {
+            config.error("Could not load equivalences files...: " + e.getMessage());
+            config.error(Arrays.toString(e.getStackTrace()));
+            return false;
+        }
+        SourceFile sf = new SourceFile("dummy.asm", null, null, code, config);
+        if (!workGenerate(spec, filter, allDependencies, sf, code)) {
+            return false;
+        }
+                
+        // - If better, replace:
+        return replaceIfBetter(codeToOptimize, sf.getStatements(), spec.searchType, f, r);
+    }
+    
+    
+    boolean replaceIfBetter(List<CodeStatement> originalCode, List<CodeStatement> optimized, int criteria, SourceFile f, 
+                            OptimizationResult r)
+    {
+        boolean better = false;
+        int n1 = 0, bytes1 = 0, time1[] = {0, 0};
+        int n2 = 0, bytes2 = 0, time2[] = {0, 0};
+
+        for(CodeStatement s:originalCode) {
+            if (s.op != null) {
+                n1++;
+                bytes1 += s.op.spec.sizeInBytes;
+                time1[0] += s.op.spec.times[0];
+                if (s.op.spec.times.length >= 2) {
+                    time1[1] += s.op.spec.times[1];
+                } else {
+                    time1[1] += s.op.spec.times[0];
+                }
+            }
+        }
+
+        for(CodeStatement s:optimized) {
+            if (s.op != null) {
+                n2++;
+                bytes2 += s.op.spec.sizeInBytes;
+                time2[0] += s.op.spec.times[0];
+                if (s.op.spec.times.length >= 2) {
+                    time2[1] += s.op.spec.times[1];
+                } else {
+                    time2[1] += s.op.spec.times[0];
+                }
+            }
+        }
+        
+        boolean betterTime = (time2[0] < time1[0] || time2[1] < time1[1]) &&
+                             (time2[0] <= time1[0] && time2[1] <= time1[1]);
+        
+        if (criteria == SEARCH_ID_OPS) {
+            if (n2 < n1 ||
+                (n2 == n1 && 
+                 (bytes2 < bytes1 || betterTime) &&
+                 (bytes2 <= bytes1 && time2[0] <= time1[0] && time2[1] <= time1[1]))) {
+                better = true;
+            }
+        } else if (criteria == SEARCH_ID_BYTES) {
+            if (bytes2 < bytes1 ||
+                (bytes2 == bytes1 && betterTime)) {
+                better = true;
+            }
+        } else if (criteria == SEARCH_ID_CYCLES) {
+            if (betterTime ||
+                (time2[0] == time1[0] && time2[1] == time1[1] && bytes2 < bytes1)) {
+                better = true;
+            }
+        }
+
+        if (better) {
+            int bytesSaved = bytes1 - bytes2;
+            int timeSaved[] = new int[]{time1[0] - time2[0], time1[1] - time2[1]};
+            String timeSavedString = timeSaved[0] + "/" + timeSaved[1];
+            if (timeSaved[0] == timeSaved[1]) {
+                timeSavedString = "" + timeSaved[0];
+            }
+            String originalString = "";
+            String optimizedString = "";
+            for(CodeStatement s:originalCode) {
+                originalString += s.op.toString();
+                if (s != originalCode.get(originalCode.size()-1)) {
+                    originalString += "; ";
+                }
+            }
+            for(CodeStatement s:optimized) {
+                optimizedString += s.op.toString();
+                if (s != optimized.get(optimized.size()-1)) {
+                    optimizedString += "; ";
+                }
+            }
+            config.info("Search-based optimization", originalCode.get(0).fileNameLineString(),
+                        "replace " + originalString + " with " + optimizedString + " ("+bytesSaved+" bytes, " +
+                        timeSavedString + " " +config.timeUnit+"s saved)");
+            // replace!:
+            int insertionPoint = f.getStatements().indexOf(originalCode.get(0));
+            for(CodeStatement s:originalCode) {
+                f.getStatements().remove(s);
+            }
+            for(CodeStatement s:optimized) {
+                f.addStatement(insertionPoint, s);
+                insertionPoint++;
+            }
+            
+            r.addOptimizerSpecific(SBO_RESULT_KEY, 1);
+            r.addSavings(bytesSaved, timeSaved);
+        }
+        
+        return better;
+    }
+
+
+    Specification.PrecomputedTestCase generatePrecomputedTestCase(
+            List<CodeStatement> l,
+            List<RegisterNames> inputRegisters,
+            List<String> allowedRegisters,
+            List<RegisterNames> goalRegisters,
+            List<Integer> goalFlags,
+            int startAddress,
+            Z80Core z80,
+            PlainZ80Memory memory,
+            CodeBase code) throws Exception
+    {
+        Specification.PrecomputedTestCase test = new Specification.PrecomputedTestCase();
+        
+        // Assign random values to the input registers:
+        List<RegisterNames> registersToInit = new ArrayList<>();
+        registersToInit.addAll(inputRegisters);
+        for(RegisterNames reg:goalRegisters) {
+            if (CPUConstants.is8bitRegister(reg) && !registersToInit.contains(reg)) {
+                registersToInit.add(reg);
+            }
+        }
+        for(String regName:allowedRegisters) {
+            RegisterNames reg = CPUConstants.registerByName(regName);
+            if (CPUConstants.is8bitRegister(reg) && !registersToInit.contains(reg)) {
+                registersToInit.add(reg);
+            }
+        }
+        test.startRegisters = new RegisterNames[registersToInit.size()];
+        test.startRegisterValues = new int[registersToInit.size()];
+        for(int i = 0;i<registersToInit.size();i++) {
+            test.startRegisters[i] = registersToInit.get(i);
+            test.startRegisterValues[i] = random.nextInt(256);
+        }
+        
+        // Set up the simulator:
+        List<Integer> opAddresses = new ArrayList<>();
+        int currentAddress = startAddress;
+        for(CodeStatement s:l) {
+            if (s.op == null) continue;
+            CPUOp op = s.op;
+            List<Integer> bytes = op.assembleToBytes(null, code, config);
+            opAddresses.add(currentAddress);
+            for(Integer value:bytes) {
+                memory.writeByte(currentAddress, value);
+                currentAddress++;
+            }
+        }
+        z80.resetTStates();
+        test.initCPU(z80);
+        z80.setProgramCounter(startAddress);
+                
+        // Simulate the program:
+        memory.writeProtect(startAddress, currentAddress);
+        int steps = 0;
+        while(opAddresses.contains(z80.getProgramCounter())) {
+            z80.executeOneInstruction();
+            steps++;
+        }
+        memory.clearWriteProtections();
+        
+        // Set the goal register/flag values (consider only the 8bit ones):
+        List<RegisterNames> goalRegisters8bit = new ArrayList<>();
+        for(RegisterNames reg:goalRegisters) {
+            if (CPUConstants.is8bitRegister(reg)) goalRegisters8bit.add(reg);
+        }
+        test.goalRegisters = new RegisterNames[goalRegisters8bit.size()];
+        test.goalRegisterValues = new int[goalRegisters8bit.size()];
+        for(int i = 0;i<goalRegisters8bit.size();i++) {
+            test.goalRegisters[i] = goalRegisters8bit.get(i);
+            test.goalRegisterValues[i] = z80.getRegisterValue(goalRegisters8bit.get(i));
+        }
+        test.goalFlags = new int[goalFlags.size()];
+        test.goalFlagValues = new boolean[goalFlags.size()];
+        for(int i = 0;i<goalFlags.size();i++) {
+            test.goalFlags[i] = goalFlags.get(i);
+            test.goalFlagValues[i] = z80.getFlagValue(CPUConstants.flagIndex(goalFlags.get(i)));
+        }
+        
+                    
+        return test;
+    }
+    
+    
+    List<RegisterNames> findUsedRegisters(List<CodeStatement> l, SourceFile f, CodeBase code)
+    {
+        List<RegisterNames> registers = new ArrayList<>();
+        
+        for(RegisterNames reg:CPUConstants.eightBitRegisters) {
+            for(CodeStatement s:l) {
+                if (!Pattern.regNotUsed(s, CPUConstants.registerName(reg), f, code)) {
+                    registers.add(reg);
+                    break;
+                }
+            }
+        }
+        
+        return registers;
+    }
+
+    
+    List<RegisterNames> findModifiedRegisters(List<CodeStatement> l, SourceFile f, CodeBase code)
+    {
+        List<RegisterNames> registers = new ArrayList<>();
+        
+        for(RegisterNames reg:CPUConstants.allRegisters) {
+            for(CodeStatement s:l) {
+                if (!Pattern.regNotModified(s, CPUConstants.registerName(reg), f, code)) {
+                    registers.add(reg);
+                    break;
+                }
+            }
+        }
+        
+        return registers;
+    }
+
+
+    List<RegisterNames> findRegistersUsedAfter(List<CodeStatement> l, SourceFile f, CodeBase code, boolean allowGhostRegisters)
+    {
+        List<RegisterNames> registers = new ArrayList<>();
+        
+        for(RegisterNames reg:CPUConstants.allRegisters) {
+            if (!allowGhostRegisters && CPUConstants.isGhostRegister(reg)) continue;
+            for(CodeStatement s:l) {
+                Boolean notUsed = Pattern.regNotUsedAfter(s, CPUConstants.registerName(reg), f, code);
+                if (notUsed == null || notUsed == false) {
+                    registers.add(reg);
+                    break;
+                }
+            }
+        }
+        
+        
+        return registers;
+    }
+    
+    
+    List<Integer> findFlagsUsedAfter(List<CodeStatement> l, SourceFile f, CodeBase code)
+    {
+        List<Integer> flags = new ArrayList<>();
+        
+        for(Integer flag:new int[]{ CPUConstants.flag_C, CPUConstants.flag_N, 
+                                    CPUConstants.flag_PV, CPUConstants.flag_H, 
+                                    CPUConstants.flag_Z, CPUConstants.flag_S}) {
+            for(CodeStatement s:l) {
+                Boolean notUsed = Pattern.flagNotUsedAfter(s, CPUConstants.flagName(flag), f, code);
+                if (notUsed == null || notUsed == false) {
+                    flags.add(flag);
+                    break;
+                }
+            }
+        }
+        
+        
+        return flags;
+    }
+
+        
+    List<RegisterNames> findRegistersNotUsedAfter(List<CodeStatement> l, SourceFile f, CodeBase code, boolean allowGhostRegisters)
+    {
+        List<RegisterNames> registers = new ArrayList<>();
+        
+        for(RegisterNames reg:CPUConstants.allRegisters) {
+            if (!allowGhostRegisters && CPUConstants.isGhostRegister(reg)) continue;
+            for(CodeStatement s:l) {
+                Boolean notUsed = Pattern.regNotUsedAfter(s, CPUConstants.registerName(reg), f, code);
+                if (notUsed != null && notUsed == true) {
+                    registers.add(reg);
+                    break;
+                }
+            }
+        }
+        
+        
+        return registers;
     }
 }

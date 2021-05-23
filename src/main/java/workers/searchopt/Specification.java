@@ -45,7 +45,7 @@ public class Specification {
                 if (z80.getRegisterValue(goalRegisters[i]) != goalRegisterValues[i]) return false;
             }
             for(int i = 0;i<goalFlags.length;i++) {
-                 if (z80.getFlagValue(goalFlags[i]) != goalFlagValues[i]) return false;
+                 if (z80.getFlagValue(CPUConstants.flagIndex(goalFlags[i])) != goalFlagValues[i]) return false;
             }
             return true;
         }        
@@ -60,7 +60,7 @@ public class Specification {
                 }
             }
             for(int i = 0;i<goalFlags.length;i++) {
-                 if (z80.getFlagValue(goalFlags[i]) != goalFlagValues[i]) {
+                 if (z80.getFlagValue(CPUConstants.flagIndex(goalFlags[i])) != goalFlagValues[i]) {
                     config.info("Flag mismatch: " + goalFlags[i] + " != " + goalFlagValues[i]);
                     return false;
                  }
@@ -167,6 +167,30 @@ public class Specification {
             }
             return null;
         }        
+        
+        
+        public Boolean getStartFlagValue(int flag)
+        {
+            Integer F = getStartRegisterValue(CPUConstants.RegisterNames.F);
+            if (F == null) return null;
+            return (F & flag) != 0;
+        }
+
+
+        public Boolean getGoalFlagValue(int flag)
+        {
+            Integer F = getGoalRegisterValue(CPUConstants.RegisterNames.F);
+            if (F != null) {
+                return (F & flag) != 0;
+            }
+            for(int i = 0;i<goalFlags.length;i++) {
+                if (goalFlags[i] == flag) {
+                    return goalFlagValues[i];
+                }
+            }
+            return null;
+        }
+        
     }
 
     
@@ -199,6 +223,7 @@ public class Specification {
     public PrecomputedTestCase precomputedTestCases[] = null;
     
     
+    boolean initialDependencies[] = null;
     boolean goalDependencies[] = null;
     int goalDependencyIndexes[] = null;
     boolean goalDependenciesSatisfiedFromTheStart[] = null;
@@ -311,8 +336,9 @@ public class Specification {
     
     public boolean[] getInitialDependencies(List<CPUOpDependency> allDependencies)
     {
-        boolean dependencies[] = new boolean[allDependencies.size()];
-        for(int i = 0;i<dependencies.length;i++) dependencies[i] = false;
+        if (initialDependencies != null) return initialDependencies;
+        initialDependencies = new boolean[allDependencies.size()];
+        for(int i = 0;i<initialDependencies.length;i++) initialDependencies[i] = false;
         
         for(SpecificationExpression exp:startState) {
             CPUOpDependency dep = null;
@@ -323,12 +349,12 @@ public class Specification {
             } else {
                 return null;
             }
-            for(int i = 0;i<dependencies.length;i++) {
-                if (dep.match(allDependencies.get(i))) dependencies[i] = true;
+            for(int i = 0;i<initialDependencies.length;i++) {
+                if (dep.match(allDependencies.get(i))) initialDependencies[i] = true;
             }
         }
         
-        return dependencies;
+        return initialDependencies;
     }
 
 
@@ -352,6 +378,13 @@ public class Specification {
             }
         }
         
+        precomputeGoalDependencyIndexes();
+        return goalDependencies;
+    }
+    
+        
+    void precomputeGoalDependencyIndexes()
+    {
         int nDependencies = 0;
         for(boolean tmp:goalDependencies) {
             if (tmp) nDependencies ++;
@@ -364,8 +397,6 @@ public class Specification {
                 j++;
             }
         }
-        
-        return goalDependencies;
     }
     
     
@@ -378,16 +409,29 @@ public class Specification {
         for(int i = 0;i<allDependencies.size();i++) {
             if (goalDependencies[i]) {
                 CPUOpDependency dep = allDependencies.get(i);
-                if (dep.register == null) continue;
-                goalDependenciesSatisfiedFromTheStart[i] = true;
-                for(PrecomputedTestCase ptc:precomputedTestCases) {
-                    Integer val1 = ptc.getStartRegisterValue(CPUConstants.registerByName(dep.register));
-                    Integer val2 = ptc.getGoalRegisterValue(CPUConstants.registerByName(dep.register));
-                    if (val1 != null && val2 != null && val1.equals(val2)) {
-                        // satisfied from beginning!
-                    } else {
-                        goalDependenciesSatisfiedFromTheStart[i] = false;
-                        break;
+                if (dep.register != null) {
+                    goalDependenciesSatisfiedFromTheStart[i] = true;
+                    for(PrecomputedTestCase ptc:precomputedTestCases) {
+                        Integer val1 = ptc.getStartRegisterValue(CPUConstants.registerByName(dep.register));
+                        Integer val2 = ptc.getGoalRegisterValue(CPUConstants.registerByName(dep.register));
+                        if (val1 != null && val2 != null && val1.equals(val2)) {
+                            // satisfied from the start!
+                        } else {
+                            goalDependenciesSatisfiedFromTheStart[i] = false;
+                            break;
+                        }
+                    }
+                } else if (dep.flag != null) {
+                    goalDependenciesSatisfiedFromTheStart[i] = true;
+                    for(PrecomputedTestCase ptc:precomputedTestCases) {
+                        Boolean val1 = ptc.getStartFlagValue(CPUConstants.flagByName(dep.flag));
+                        Boolean val2 = ptc.getGoalFlagValue(CPUConstants.flagByName(dep.flag));
+                        if (val1 != null && val2 != null && val1.equals(val2)) {
+                            // satisfied from the start!
+                        } else {
+                            goalDependenciesSatisfiedFromTheStart[i] = false;
+                            break;
+                        }
                     }
                 }
             } else {
@@ -468,10 +512,9 @@ public class Specification {
     {
         // Precompute all the op dependencies before search:
         List<CPUOpDependency> allDependencies = new ArrayList<>();
-        for(String regName: new String[]{"A", "F", "B", "C", "D", "E", "H", "L", 
+        for(String regName: new String[]{"A", "B", "C", "D", "E", "H", "L", 
                                          "IXH", "IXL", "IYH", "IYL"}) {
-            if (regName.equals("F") ||
-                allowedRegisters.contains(regName.toLowerCase())) {
+            if (allowedRegisters.contains(regName.toLowerCase())) {
                 allDependencies.add(new CPUOpDependency(regName, null, null, null, null));
             }
         }

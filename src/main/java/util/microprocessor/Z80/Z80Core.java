@@ -322,6 +322,7 @@ public class Z80Core implements ICPUData {
                 break;                
             case B:
                 reg_B = value & 0xff;
+                break;
             case C:
                 reg_C = value & 0xff;
                 break;

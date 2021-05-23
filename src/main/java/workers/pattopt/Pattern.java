@@ -1238,7 +1238,7 @@ public class Pattern {
     }
 
 
-    public boolean regNotModified(CodeStatement s, String reg, SourceFile f, CodeBase code)
+    public static boolean regNotModified(CodeStatement s, String reg, SourceFile f, CodeBase code)
     {
         CPUOpDependency dep = new CPUOpDependency(reg.toUpperCase(), null, null, null, null);        
         if (s.type == CodeStatement.STATEMENT_CPUOP) {
@@ -1278,7 +1278,7 @@ public class Pattern {
     }    
     
 
-    public boolean regNotUsed(CodeStatement s, String reg, SourceFile f, CodeBase code)
+    public static boolean regNotUsed(CodeStatement s, String reg, SourceFile f, CodeBase code)
     {
         CPUOpDependency dep = new CPUOpDependency(reg.toUpperCase(), null, null, null, null);        
         if (s.type == CodeStatement.STATEMENT_CPUOP) {
@@ -1316,14 +1316,14 @@ public class Pattern {
     }    
     
     
-    public Boolean regNotUsedAfter(CodeStatement s, String reg, SourceFile f, CodeBase code)
+    public static Boolean regNotUsedAfter(CodeStatement s, String reg, SourceFile f, CodeBase code)
     {
         CPUOpDependency dep = new CPUOpDependency(reg.toUpperCase(), null, null, null, null);
         return depNotUsedAfter(s, dep, f, code);
     }
 
 
-    public Boolean flagNotUsedAfter(CodeStatement s, String flag, SourceFile f, CodeBase code)
+    public static Boolean flagNotUsedAfter(CodeStatement s, String flag, SourceFile f, CodeBase code)
     {
         CPUOpDependency dep = new CPUOpDependency(null, flag.toUpperCase(), null, null, null);
         return depNotUsedAfter(s, dep, f, code);
@@ -1332,7 +1332,7 @@ public class Pattern {
 
     // - returns true/false if we know for sure the dependency is or not used
     // - returns null when it's unclear
-    public Boolean depNotUsedAfter(CodeStatement s, CPUOpDependency a_dep, SourceFile f, CodeBase code)
+    public static Boolean depNotUsedAfter(CodeStatement s, CPUOpDependency a_dep, SourceFile f, CodeBase code)
     {
         List<DepCheckNode> open = new ArrayList<>();
         HashMap<CodeStatement,List<DepCheckNode>> closed = new HashMap<>();

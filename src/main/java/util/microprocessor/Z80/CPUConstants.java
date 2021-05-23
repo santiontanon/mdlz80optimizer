@@ -59,14 +59,14 @@ public class CPUConstants {
     final static int resetBit6 = setBit6 ^ 0x00FF;
     final static int resetBit7 = setBit7 ^ 0x00FF;
     // flag register bit positions for setting
-    final static int flag_S = 0x0080;
-    final static int flag_Z = 0x0040;
-    final static int flag_5 = 0x0020;
+    public final static int flag_S = 0x0080;
+    public final static int flag_Z = 0x0040;
+    public final static int flag_5 = 0x0020;
     public final static int flag_H = 0x0010;
-    final static int flag_3 = 0x0008;
+    public final static int flag_3 = 0x0008;
     public final static int flag_PV = 0x0004;
     public final static int flag_N = 0x0002;
-    final static int flag_C = 0x0001;
+    public final static int flag_C = 0x0001;
     // for resetting
     final static int flag_S_N = 0x007F;
     final static int flag_Z_N = 0x00BF;
@@ -347,6 +347,27 @@ public class CPUConstants {
     }
     
     
+    public static boolean isGhostRegister(RegisterNames reg)
+    {
+        switch(reg) {
+            case A_ALT:
+            case B_ALT:
+            case C_ALT:
+            case D_ALT:
+            case E_ALT:
+            case F_ALT:
+            case H_ALT:
+            case L_ALT:
+            case AF_ALT:
+            case BC_ALT:
+            case DE_ALT:
+            case HL_ALT:
+                return true;
+        }
+        return false;        
+    }
+    
+    
     public static String registerName(RegisterNames reg)
     {
         switch(reg) {
@@ -431,6 +452,34 @@ public class CPUConstants {
             default:
                 return null;
         }    
+    }
+    
+    
+    public static int flagIndex(int flag)
+    {
+        switch(flag) {
+            case flag_C: return 0;
+            case flag_N: return 1;
+            case flag_PV: return 2;
+            case flag_H: return 3;
+            case flag_Z: return 6;
+            default: // flag_S
+                return 7;
+        }
+    }
+
+
+    public static String flagName(int flag)
+    {
+        switch(flag) {
+            case flag_C: return "C";
+            case flag_N: return "N";
+            case flag_PV: return "P/V";
+            case flag_H: return "H";
+            case flag_Z: return "Z";
+            case flag_S: return "S";
+        }
+        return null;
     }
     
     
