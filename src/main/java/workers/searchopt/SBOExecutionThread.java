@@ -141,7 +141,6 @@ public class SBOExecutionThread extends Thread {
                 if (op == null) return;
 
                 List<SBOCandidate> candidateOps = new ArrayList<>();
-//                System.out.println("thread " + threadID + " <start> " + op.op);
                 candidateOps.add(op);                
                 // Loop, just in case something changes in between because of another thread:
                 do {
@@ -160,7 +159,6 @@ public class SBOExecutionThread extends Thread {
                     depthFirstSearch_timeBounded(0, 0, spec.codeStartAddress, candidateOps);
                 }
                 globalState.incrementSolutionsEvaluated(solutionsEvaluated);
-//                System.out.println("    thread " + threadID + " end with " + solutionsEvaluated);
             }
         } catch (Exception e) {
             config.error(e.getMessage());
@@ -385,7 +383,7 @@ public class SBOExecutionThread extends Thread {
             }
             
             // Print statement to print sequences and visually inspect if there are any prunable ones:
-//            if (depth == 3) System.out.println(Arrays.toString(currentOps));
+//            if (depth == 2) System.out.println(Arrays.toString(currentOps));
             
             solutionsEvaluated++;
 

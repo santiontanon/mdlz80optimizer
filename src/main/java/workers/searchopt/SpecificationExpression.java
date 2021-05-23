@@ -14,7 +14,7 @@ import util.microprocessor.Z80.CPUConstants;
  */
 public class SpecificationExpression {
     public CPUConstants.RegisterNames leftRegister  = null;
-    public Integer leftFlag = null;
+    public Integer leftFlagIndex = null;
     public Expression right;
 
     public String leftRegisterOrFlagName; // just for the "toString" method

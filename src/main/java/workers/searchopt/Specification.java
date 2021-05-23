@@ -194,7 +194,7 @@ public class Specification {
     }
 
     
-    int numberOfRandomSolutionChecks = 1000;
+    int numberOfRandomSolutionChecks = 10000;
     int codeStartAddress = 0x4000;
     int maxSimulationTime = 256;
     int maxSizeInBytes = 256;
@@ -344,8 +344,8 @@ public class Specification {
             CPUOpDependency dep = null;
             if (exp.leftRegister != null) {
                 dep = new CPUOpDependency(exp.leftRegisterOrFlagName.toUpperCase(), null, null, null, null);
-            } else if (exp.leftFlag != null) {
-                dep = new CPUOpDependency(null, CPUConstants.flagNames[exp.leftFlag], null, null, null);
+            } else if (exp.leftFlagIndex != null) {
+                dep = new CPUOpDependency(null, CPUConstants.flagNames[exp.leftFlagIndex], null, null, null);
             } else {
                 return null;
             }
@@ -368,8 +368,8 @@ public class Specification {
             CPUOpDependency dep = null;
             if (exp.leftRegister != null) {
                 dep = new CPUOpDependency(exp.leftRegisterOrFlagName.toUpperCase(), null, null, null, null);
-            } else if (exp.leftFlag != null) {
-                dep = new CPUOpDependency(null, CPUConstants.flagNames[exp.leftFlag], null, null, null);
+            } else if (exp.leftFlagIndex != null) {
+                dep = new CPUOpDependency(null, CPUConstants.flagNames[exp.leftFlagIndex], null, null, null);
             } else {
                 return null;
             }
@@ -473,7 +473,7 @@ public class Specification {
             int n_goalFlags = 0;
             for(SpecificationExpression exp : goalState) {
                 if (exp.leftRegister != null) n_goalRegisters ++;
-                if (exp.leftFlag != null) n_goalFlags ++;
+                if (exp.leftFlagIndex != null) n_goalFlags ++;
             }
             testCase.goalRegisters = new CPUConstants.RegisterNames[n_goalRegisters];
             testCase.goalRegisterValues = new int[n_goalRegisters];
@@ -497,7 +497,7 @@ public class Specification {
                     kreg++;
                 } else {
                     // it's a flag condition:
-                    testCase.goalFlags[j] = exp.leftFlag;
+                    testCase.goalFlags[j] = CPUConstants.flags[exp.leftFlagIndex];
                     testCase.goalFlagValues[kflag] = value != Expression.FALSE;
                     kflag++;
                 }

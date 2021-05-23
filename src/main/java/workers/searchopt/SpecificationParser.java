@@ -674,22 +674,22 @@ public class SpecificationParser {
                 
             // flag_C, flag_N, flag_PV, flag_3, flag_H, flag_5, flag_Z, flag_S
             case "c_flag":
-                specExp.leftFlag = 0;
+                specExp.leftFlagIndex = 0;
                 break;
             case "n_flag":
-                specExp.leftFlag = 1;
+                specExp.leftFlagIndex = 1;
                 break;
             case "pv_flag":
-                specExp.leftFlag = 2;
+                specExp.leftFlagIndex = 2;
                 break;
             case "h_flag":
-                specExp.leftFlag = 4;
+                specExp.leftFlagIndex = 4;
                 break;
             case "z_flag":
-                specExp.leftFlag = 6;
+                specExp.leftFlagIndex = 6;
                 break;
             case "s_flag":
-                specExp.leftFlag = 7;
+                specExp.leftFlagIndex = 7;
                 break;
                 
             default:
