@@ -103,7 +103,7 @@ public class ProgramEquivalencyTest {
             String flagStr = (columns.length >= 3 ? columns[2]:"");
             List<Integer> flagsToIgnore = new ArrayList<>();
             for(String flag:flagStr.split(",")) {
-                if (!flag.strip().isEmpty()) {
+                if (!flag.trim().isEmpty()) {
                     flagsToIgnore.add(CPUConstants.flagByName(flag));
                 }
             }

@@ -19,7 +19,6 @@ import java.util.StringTokenizer;
 import parser.SourceLine;
 import util.microprocessor.Z80.CPUConstants;
 import util.microprocessor.Z80.CPUConstants.RegisterNames;
-import workers.searchopt.Specification.PrecomputedTestCase;
 
 /**
  *
@@ -176,6 +175,13 @@ public class SBOCandidate {
             open.add(op);
         }
         
+        if (maxLength == 1) {
+            for(SBOCandidate op:allCandidateOps) {
+                op.potentialFollowUps = allCandidateOps;
+            }
+            return true;
+        }
+                
         // Precalculate potential followups to each op:
         int n = 0;
         while(!open.isEmpty()) {
@@ -221,7 +227,7 @@ public class SBOCandidate {
         for(SBOCandidate c:sequence) {
             str += c.op + "; ";
         }
-        return str.strip();
+        return str.trim();
     }
 
 

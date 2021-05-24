@@ -390,6 +390,9 @@ public class SBOExecutionThread extends Thread {
             int size = breakPoint - spec.codeStartAddress;
             float time = -1;
             for(int i = 0; i < spec.numberOfRandomSolutionChecks; i++) {
+                if (spec.precomputedTestCases[i] == null) {
+                    spec.precomputedTestCases[i] = spec.testCaseGenerator.generateTestCase(config);
+                }
                 int time2 = evaluateSolutionInternal(breakPoint, spec.precomputedTestCases[i]);
                 if (time2 < 0) {
                     return false;
@@ -453,7 +456,7 @@ public class SBOExecutionThread extends Thread {
     // return -1 is solution fails
     // return time it takes if solution succeeds
     // "i" is the index of the 
-    final int evaluateSolutionInternal(int breakPoint, Specification.PrecomputedTestCase testCase) throws ProcessorException
+    final int evaluateSolutionInternal(int breakPoint, PrecomputedTestCase testCase) throws ProcessorException
     {
         // evaluate solution:
         z80.shallowReset();

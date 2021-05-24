@@ -217,7 +217,7 @@ public class SequenceFilter {
             }
             List<String> flags = new ArrayList<>();
             for(String flag:flagStr.split(",")) {
-                flag = flag.strip();
+                flag = flag.trim();
                 if (!flag.isEmpty()) {
                     flags.add(flag);
                 }

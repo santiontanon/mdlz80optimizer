@@ -67,6 +67,18 @@ public class SearchBasedOptimizer implements MDLWorker {
     
     int optimization_max_block_size = 2;
     
+    static final HashMap<Integer, Integer> precomputeScheduleDepth = new HashMap<>();
+    static final HashMap<Integer, Integer> precomputeScheduleSize = new HashMap<>();
+    static final HashMap<Integer, Integer> precomputeScheduleTime = new HashMap<>();
+    static {
+        precomputeScheduleDepth.put(3, 2);
+        precomputeScheduleDepth.put(4, 3);
+        precomputeScheduleSize.put(3, 2);
+        precomputeScheduleSize.put(5, 3);
+        precomputeScheduleTime.put(3, 2);
+        precomputeScheduleTime.put(4, 3);
+    }
+    
         
     
     public SearchBasedOptimizer(MDLConfig a_config)
@@ -269,7 +281,7 @@ public class SearchBasedOptimizer implements MDLWorker {
         int nDependencies = allDependencies.size();
         config.debug("nDependencies: " + nDependencies);
                 
-        List<SBOCandidate> allCandidateOps = SBOCandidate.precomputeCandidateOps(spec, allDependencies, code, filter, 2, config);
+        List<SBOCandidate> allCandidateOps = SBOCandidate.precomputeCandidateOps(spec, allDependencies, code, filter, 1, config);
         if (allCandidateOps == null) return false;
         
         // Precalculate which registers to randomize:
@@ -319,9 +331,9 @@ public class SearchBasedOptimizer implements MDLWorker {
             if (spec.searchType == SEARCH_ID_OPS) {
                 int codeMaxAddress = spec.codeStartAddress + spec.maxSizeInBytes;
                 for(int depth = 0; depth<=spec.maxOps; depth++) {
-                    if (depth == 4) {
+                    if (precomputeScheduleDepth.containsKey(depth)) {
                         // Increase precomputation (not worth it before this point):
-                        allCandidateOps = SBOCandidate.precomputeCandidateOps(spec, allDependencies, code, filter, 3, config);
+                        allCandidateOps = SBOCandidate.precomputeCandidateOps(spec, allDependencies, code, filter, precomputeScheduleDepth.get(depth), config);
                         if (allCandidateOps == null) return false;                        
 //                    } else if (depth == 6) {
 //                        // Increase precomputation (not worth it before this point):
@@ -345,9 +357,9 @@ public class SearchBasedOptimizer implements MDLWorker {
 
             } else if (spec.searchType == SEARCH_ID_BYTES) {
                 for(int size = 0; size<=spec.maxSizeInBytes; size++) {
-                    if (size == 4) {
+                    if (precomputeScheduleSize.containsKey(size)) {
                         // Increase precomputation (not worth it before this point):
-                        allCandidateOps = SBOCandidate.precomputeCandidateOps(spec, allDependencies, code, filter, 3, config);
+                        allCandidateOps = SBOCandidate.precomputeCandidateOps(spec, allDependencies, code, filter, precomputeScheduleSize.get(size), config);
                         if (allCandidateOps == null) return false;                        
                     }
                     state.init(allCandidateOps, size==0);
@@ -367,9 +379,10 @@ public class SearchBasedOptimizer implements MDLWorker {
 
             } else if (spec.searchType == SEARCH_ID_CYCLES) {
                 for(int maxTime = 0; maxTime<=spec.maxSimulationTime; maxTime++) {
-                    if (maxTime == nopDuration*4) {
+                    if ((maxTime % nopDuration == 0) && 
+                        precomputeScheduleSize.containsKey(maxTime/nopDuration)) {
                         // Increase precomputation (not worth it before this point):
-                        allCandidateOps = SBOCandidate.precomputeCandidateOps(spec, allDependencies, code, filter, 3, config);
+                        allCandidateOps = SBOCandidate.precomputeCandidateOps(spec, allDependencies, code, filter, precomputeScheduleSize.get(maxTime/nopDuration), config);
                         if (allCandidateOps == null) return false;                        
                     }
                     state.init(allCandidateOps, maxTime==0);
@@ -632,9 +645,10 @@ public class SearchBasedOptimizer implements MDLWorker {
             int v = random.nextInt(256);
             z80Memory.writeByte(i, v);
         }
-        spec.precomputedTestCases = new Specification.PrecomputedTestCase[spec.numberOfRandomSolutionChecks];
+        spec.precomputedTestCases = new PrecomputedTestCase[spec.numberOfRandomSolutionChecks];
+        spec.testCaseGenerator = new PrecomputedTestCaseGeneratorForOptimization(codeToOptimize, inputRegisters, spec.allowedRegisters, registersUsedAfter, flagsUsedAfter, spec.codeStartAddress, z80, z80Memory, code);
         for(int i = 0;i<spec.numberOfRandomSolutionChecks;i++) {
-            spec.precomputedTestCases[i] = generatePrecomputedTestCase(codeToOptimize, inputRegisters, spec.allowedRegisters, registersUsedAfter, flagsUsedAfter, spec.codeStartAddress, z80, z80Memory, code);
+            spec.precomputedTestCases[i] = spec.testCaseGenerator.generateTestCase(config);
         }
         
         // - Search:
@@ -767,88 +781,6 @@ public class SearchBasedOptimizer implements MDLWorker {
         }
         
         return better;
-    }
-
-
-    Specification.PrecomputedTestCase generatePrecomputedTestCase(
-            List<CodeStatement> l,
-            List<RegisterNames> inputRegisters,
-            List<String> allowedRegisters,
-            List<RegisterNames> goalRegisters,
-            List<Integer> goalFlags,
-            int startAddress,
-            Z80Core z80,
-            PlainZ80Memory memory,
-            CodeBase code) throws Exception
-    {
-        Specification.PrecomputedTestCase test = new Specification.PrecomputedTestCase();
-        
-        // Assign random values to the input registers:
-        List<RegisterNames> registersToInit = new ArrayList<>();
-        registersToInit.addAll(inputRegisters);
-        for(RegisterNames reg:goalRegisters) {
-            if (CPUConstants.is8bitRegister(reg) && !registersToInit.contains(reg)) {
-                registersToInit.add(reg);
-            }
-        }
-        for(String regName:allowedRegisters) {
-            RegisterNames reg = CPUConstants.registerByName(regName);
-            if (CPUConstants.is8bitRegister(reg) && !registersToInit.contains(reg)) {
-                registersToInit.add(reg);
-            }
-        }
-        test.startRegisters = new RegisterNames[registersToInit.size()];
-        test.startRegisterValues = new int[registersToInit.size()];
-        for(int i = 0;i<registersToInit.size();i++) {
-            test.startRegisters[i] = registersToInit.get(i);
-            test.startRegisterValues[i] = random.nextInt(256);
-        }
-        
-        // Set up the simulator:
-        List<Integer> opAddresses = new ArrayList<>();
-        int currentAddress = startAddress;
-        for(CodeStatement s:l) {
-            if (s.op == null) continue;
-            CPUOp op = s.op;
-            List<Integer> bytes = op.assembleToBytes(null, code, config);
-            opAddresses.add(currentAddress);
-            for(Integer value:bytes) {
-                memory.writeByte(currentAddress, value);
-                currentAddress++;
-            }
-        }
-        z80.resetTStates();
-        test.initCPU(z80);
-        z80.setProgramCounter(startAddress);
-                
-        // Simulate the program:
-        memory.writeProtect(startAddress, currentAddress);
-        int steps = 0;
-        while(opAddresses.contains(z80.getProgramCounter())) {
-            z80.executeOneInstruction();
-            steps++;
-        }
-        memory.clearWriteProtections();
-        
-        // Set the goal register/flag values (consider only the 8bit ones):
-        List<RegisterNames> goalRegisters8bit = new ArrayList<>();
-        for(RegisterNames reg:goalRegisters) {
-            if (CPUConstants.is8bitRegister(reg)) goalRegisters8bit.add(reg);
-        }
-        test.goalRegisters = new RegisterNames[goalRegisters8bit.size()];
-        test.goalRegisterValues = new int[goalRegisters8bit.size()];
-        for(int i = 0;i<goalRegisters8bit.size();i++) {
-            test.goalRegisters[i] = goalRegisters8bit.get(i);
-            test.goalRegisterValues[i] = z80.getRegisterValue(goalRegisters8bit.get(i));
-        }
-        test.goalFlags = new int[goalFlags.size()];
-        test.goalFlagValues = new boolean[goalFlags.size()];
-        for(int i = 0;i<goalFlags.size();i++) {
-            test.goalFlags[i] = goalFlags.get(i);
-            test.goalFlagValues[i] = z80.getFlagValue(CPUConstants.flagIndex(goalFlags.get(i)));
-        }
-                    
-        return test;
     }
     
     
