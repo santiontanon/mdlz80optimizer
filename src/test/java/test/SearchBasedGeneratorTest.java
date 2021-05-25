@@ -74,10 +74,12 @@ public class SearchBasedGeneratorTest {
     // Current version: 18.05 sec (153390292 solutions tested 1-thread)
 //     Current version: 3.92 sec (123484497 solutions tested 8-thread)
 //    @Test public void testLShift13() throws IOException { test("data/searchtests/test-large5.txt", "data/searchtests/test-large5-expected.asm"); }
-    // Current version: 18.82 sec (459424276 solutions tested, 8-threads)
+    // Current version: 22.89 sec (488176140 solutions tested, 8-threads)
 //    @Test public void testLShift13Hard() throws IOException { test("data/searchtests/test-large6.txt", "data/searchtests/test-large6-expected.asm"); }
-    // Current version: 16.59 sec (155315803 solutions tested, 8-threads)
+    // Current version: 17.34 sec (155315899 solutions tested, 8-threads)
 //    @Test public void testLShift13HardSpeed() throws IOException { test("data/searchtests/test-large6.txt", "data/searchtests/test-large6-time-expected.asm", "speed"); }
+    // Current version: 9.73 sec (186244162 solutions tested, 8-threads)
+//    @Test public void testLShift13HardSize() throws IOException { test("data/searchtests/test-large6.txt", "data/searchtests/test-large6-size-expected.asm", "size"); }
 
     // Current version: ???
 //    @Test public void testSort() throws IOException { test("data/searchtests/test-sort2.txt", "data/searchtests/test-sort2-expected.asm"); }

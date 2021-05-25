@@ -67,22 +67,22 @@ public class SearchBasedOptimizer implements MDLWorker {
     
     int optimization_max_block_size = 2;
     
-    static final HashMap<Integer, Integer> precomputeScheduleDepth = new HashMap<>();
-    static final HashMap<Integer, Integer> precomputeScheduleSize = new HashMap<>();
-    static final HashMap<Integer, Integer> precomputeScheduleTime = new HashMap<>();
-    static {
-        precomputeScheduleDepth.put(3, 2);
-        precomputeScheduleDepth.put(4, 3);
-        precomputeScheduleSize.put(3, 2);
-        precomputeScheduleSize.put(5, 3);
-        precomputeScheduleTime.put(3, 2);
-        precomputeScheduleTime.put(4, 3);
-    }
-    
+    public final int DEPTH_TO_PRECOMPUTE3 = 4;
+    public final int SIZE_TO_PRECOMPUTE3 = 7;
+    public final int TIME_TO_PRECOMPUTE3 = 4;
+    HashMap<Integer, Integer> precomputeScheduleDepth = new HashMap<>();
+    HashMap<Integer, Integer> precomputeScheduleSize = new HashMap<>();
+    HashMap<Integer, Integer> precomputeScheduleTime = new HashMap<>();
         
     
     public SearchBasedOptimizer(MDLConfig a_config)
     {
+        precomputeScheduleDepth.put(3, 2);
+        precomputeScheduleDepth.put(DEPTH_TO_PRECOMPUTE3, 3);
+        precomputeScheduleSize.put(3, 2);
+        precomputeScheduleSize.put(SIZE_TO_PRECOMPUTE3, 3);
+        precomputeScheduleTime.put(3, 2);
+        precomputeScheduleTime.put(TIME_TO_PRECOMPUTE3, 3);
         config = a_config;
     }
     
@@ -277,9 +277,11 @@ public class SearchBasedOptimizer implements MDLWorker {
                                  List<CPUOpDependency> allDependencies,
                                  SourceFile sf,
                                  CodeBase code) {
+        config.debug("workGenerate: search parameters: " + spec.searchType + ", " + spec.maxOps + ", " + spec.maxSizeInBytes + ", " + spec.maxSimulationTime);
+        
         // Precompute all the op dependencies before search:
         int nDependencies = allDependencies.size();
-        config.debug("nDependencies: " + nDependencies);
+        config.debug("workGenerate: nDependencies: " + nDependencies);
                 
         List<SBOCandidate> allCandidateOps = SBOCandidate.precomputeCandidateOps(spec, allDependencies, code, filter, 1, config);
         if (allCandidateOps == null) return false;
@@ -434,6 +436,10 @@ public class SearchBasedOptimizer implements MDLWorker {
     private boolean workOptimize(CodeBase code) {
         silentSearch = true;
         showNewBestDuringSearch = false;
+        // We will never precompute to depth 3 in this case, as the instruction set is too large, and it takes too long:
+        precomputeScheduleDepth.remove(DEPTH_TO_PRECOMPUTE3);
+        precomputeScheduleSize.remove(SIZE_TO_PRECOMPUTE3);
+        precomputeScheduleTime.remove(TIME_TO_PRECOMPUTE3);
         
         OptimizationResult r = new OptimizationResult();
         
@@ -522,6 +528,8 @@ public class SearchBasedOptimizer implements MDLWorker {
         
         List<CodeStatement> codeToOptimize = new ArrayList<>();
         int line2 = line;
+        int codeToOptimizeSize = 0;
+        int codeToOptimizeTime[] = new int[]{0, 0};
         while(codeToOptimize.size() < optimization_max_block_size && line2 < f.getStatements().size()) {
             CodeStatement s = f.getStatements().get(line2);
             if (!codeToOptimize.isEmpty() && s.label != null) return false;
@@ -530,6 +538,13 @@ public class SearchBasedOptimizer implements MDLWorker {
                     return false;
                 }
                 codeToOptimize.add(s);
+                codeToOptimizeSize += s.op.spec.sizeInBytes;
+                codeToOptimizeTime[0] += s.op.spec.times[0];
+                if (s.op.spec.times.length>=2) {
+                    codeToOptimizeTime[1] += s.op.spec.times[1];
+                } else {
+                    codeToOptimizeTime[1] += s.op.spec.times[0];
+                }
             }
             line2++;
         }
@@ -542,9 +557,17 @@ public class SearchBasedOptimizer implements MDLWorker {
         // - Create a specification, and synthesize test cases:
         Specification spec = new Specification();
         if (flags_nChecks != -1) spec.numberOfRandomSolutionChecks = flags_nChecks;
-        spec.maxOps = optimization_max_block_size;
         if (flags_searchType != -1) {
             spec.searchType = flags_searchType;
+        }
+        if (spec.searchType == SEARCH_ID_OPS) {
+            spec.maxOps = optimization_max_block_size;
+        } else if (spec.searchType == SEARCH_ID_BYTES) {
+            spec.maxOps = optimization_max_block_size + 1;
+            spec.maxSizeInBytes = codeToOptimizeSize;
+        } else {
+            spec.maxOps = optimization_max_block_size + 1;
+            spec.maxSimulationTime = Math.max(codeToOptimizeTime[0], codeToOptimizeTime[1]);
         }
         spec.allowedOps.remove("jp");
         spec.allowedOps.remove("jr");
