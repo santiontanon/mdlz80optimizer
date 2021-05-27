@@ -241,14 +241,14 @@ OR IYq	8	FD B0+q	2	A,IYq				A	S,Z,H,P/V,N,C			true
 OR n	7	F6 n	2	A				A	S,Z,H,P/V,N,C			true
 OTDR	21/16	ED BB	2	B,C,HL			[HL-B:HL]	B,HL	S,Z,H,P/V,N,C	C		true
 OTIR	21/16	ED B3	2	B,C,HL			[HL:HL+B]	B,HL	S,Z,H,P/V,N,C	C		true
-OUT (C),A	12	ED 79	2	A,C					S,Z,N	C		true
-OUT (C),B	12	ED 41	2	B,C					S,Z,N	C		true
-OUT (C),C	12	ED 49	2	C					S,Z,N	C		true
-OUT (C),D	12	ED 51	2	C,D					S,Z,N	C		true
-OUT (C),E	12	ED 59	2	C,E					S,Z,N	C		true
-OUT (C),H	12	ED 61	2	C,H					S,Z,N	C		true
-OUT (C),L	12	ED 69	2	C,L					S,Z,N	C		true
-OUT (n),A	11	D3 n	2	A					S,Z,N	n		true
+OUT (C),A	12	ED 79	2	A,BC					S,Z,N	C		true
+OUT (C),B	12	ED 41	2	BC					S,Z,N	C		true
+OUT (C),C	12	ED 49	2	BC					S,Z,N	C		true
+OUT (C),D	12	ED 51	2	BC,D					S,Z,N	C		true
+OUT (C),E	12	ED 59	2	BC,E					S,Z,N	C		true
+OUT (C),H	12	ED 61	2	BC,H					S,Z,N	C		true
+OUT (C),L	12	ED 69	2	BC,L					S,Z,N	C		true
+OUT (n),A	11	D3 n	2	A,B					S,Z,N	n		true
 OUTD	16	ED AB	2	B,C,HL			HL	B,HL	S,Z,H,P/V,N,C	C		true
 OUTI	16	ED A3	2	B,C,HL			HL	B,HL	S,Z,H,P/V,N,C	C		true
 POP IX	14	DD E1	2	SP			[SP:SP+1]	IX,SP				true

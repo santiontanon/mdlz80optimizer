@@ -243,13 +243,13 @@ OR n	2	F6 n	2	A				A	S,Z,H,P/V,N,C			true
 OTDR	6/5	ED BB	2	B,C,HL			[HL-B:HL]	B,HL	S,Z,H,P/V,N,C	C		true
 OTIR	6/5	ED B3	2	B,C,HL			[HL:HL+B]	B,HL	S,Z,H,P/V,N,C	C		true
 OUT (C),A	4	ED 79	2	A,BC					S,Z,N	C		true
-OUT (C),B	4	ED 41	2	BC,C					S,Z,N	C		true
+OUT (C),B	4	ED 41	2	BC					S,Z,N	C		true
 OUT (C),C	4	ED 49	2	BC					S,Z,N	C		true
 OUT (C),D	4	ED 51	2	BC,D					S,Z,N	C		true
 OUT (C),E	4	ED 59	2	BC,E					S,Z,N	C		true
 OUT (C),H	4	ED 61	2	BC,H					S,Z,N	C		true
 OUT (C),L	4	ED 69	2	BC,L					S,Z,N	C		true
-OUT (n),A	4	D3 n	2	A					S,Z,N	n		true
+OUT (n),A	4	D3 n	2	A,B					S,Z,N	n		true
 OUTD	5	ED AB	2	B,C,HL			HL	B,HL	S,Z,H,P/V,N,C	C		true
 OUTI	5	ED A3	2	B,C,HL			HL	B,HL	S,Z,H,P/V,N,C	C		true
 POP IX	5	DD E1	2	SP			[SP:SP+1]	IX,SP				true
