@@ -354,7 +354,11 @@ public class SearchBasedOptimizer implements MDLWorker {
                     for(int i = 0;i<nThreads;i++) threads[i].join();
                     if (state.bestOps != null) break;
                     String time = String.format("%.02f", (System.currentTimeMillis() - start)/1000.0f) + "s";
-                    if (!silentSearch) config.info("SearchBasedOptimizer: depth "+depth+" complete ("+state.solutionsEvaluated+" solutions tested, time elapsed: "+time+")");
+                    if (silentSearch) {
+                        config.debug("SearchBasedOptimizer: depth "+depth+" complete ("+state.solutionsEvaluated+" solutions tested, time elapsed: "+time+")");
+                    } else {
+                        config.info("SearchBasedOptimizer: depth "+depth+" complete ("+state.solutionsEvaluated+" solutions tested, time elapsed: "+time+")");
+                    }
                 }
 
             } else if (spec.searchType == SEARCH_ID_BYTES) {
@@ -524,7 +528,7 @@ public class SearchBasedOptimizer implements MDLWorker {
     private boolean optimizeStartingFromLine(SourceFile f, int line, CodeBase code, OptimizationResult r) throws Exception
     {
         if (f.getStatements().get(line).op == null) return false;
-//        System.out.println(f.getStatements().get(line).fileNameLineString());
+        config.debug(f.getStatements().get(line).fileNameLineString());
         
         List<CodeStatement> codeToOptimize = new ArrayList<>();
         int line2 = line;
@@ -548,11 +552,11 @@ public class SearchBasedOptimizer implements MDLWorker {
             }
             line2++;
         }
-
-//        System.out.println("- Optimizing lines " + line + " -> " + line2);
-//        for(CodeStatement s:codeToOptimize) {
-//            System.out.println("    " + s);
-//        }
+        
+        config.debug("- Optimizing lines " + line + " -> " + line2);
+        for(CodeStatement s:codeToOptimize) {
+            config.debug("    " + s);
+        }
         
         // - Create a specification, and synthesize test cases:
         Specification spec = new Specification();
@@ -576,7 +580,8 @@ public class SearchBasedOptimizer implements MDLWorker {
         // - Find which registers we can use during search:
         List<RegisterNames> modifiedRegisters = findModifiedRegisters(codeToOptimize, f, code);
         List<RegisterNames> registersUsedAfter = findRegistersUsedAfter(codeToOptimize, f, code, spec.allowGhostRegisters);
-        List<RegisterNames> registersNotUsedAfter = findRegistersNotUsedAfter(codeToOptimize, f, code, spec.allowGhostRegisters);
+//        List<RegisterNames> registersNotUsedAfter = findRegistersNotUsedAfter(codeToOptimize, f, code, spec.allowGhostRegisters);
+        List<RegisterNames> registersNotUsedAfter = findRegistersNotUsedAfter(registersUsedAfter, f, code, spec.allowGhostRegisters);
         List<RegisterNames> inputRegisters = findUsedRegisters(codeToOptimize, f, code);
         for(RegisterNames reg:modifiedRegisters) {
             String regName = CPUConstants.registerName(reg);
@@ -591,7 +596,7 @@ public class SearchBasedOptimizer implements MDLWorker {
             if (!spec.allowedRegisters.contains(regName)) spec.allowedRegisters.add(regName);
         }
 //        System.out.println("    - Allowed Registers: " + spec.allowedRegisters);
-        
+                
         // - Find the set of constants used in the code:
         spec.allowed8bitConstants.clear();
         spec.allowed16bitConstants.clear();
@@ -845,21 +850,38 @@ public class SearchBasedOptimizer implements MDLWorker {
     {
         List<RegisterNames> registers = new ArrayList<>();
         
-        for(RegisterNames reg:CPUConstants.allRegisters) {
+        for(RegisterNames reg:CPUConstants.eightBitRegisters) {
             if (!allowGhostRegisters && CPUConstants.isGhostRegister(reg)) continue;
-//            for(CodeStatement s:l) {
             CodeStatement s = l.get(l.size()-1);
             Boolean notUsed = Pattern.regNotUsedAfter(s, CPUConstants.registerName(reg), f, code);
             if (notUsed == null || notUsed == false) {
                 registers.add(reg);
             }
-//            }
         }
-        
         
         return registers;
     }
     
+
+//    List<RegisterNames> findRegistersNotUsedAfter(List<CodeStatement> l, SourceFile f, CodeBase code, boolean allowGhostRegisters)
+    List<RegisterNames> findRegistersNotUsedAfter(List<RegisterNames> registersUsedAfter, SourceFile f, CodeBase code, boolean allowGhostRegisters)
+    {
+        List<RegisterNames> registers = new ArrayList<>();
+        
+        for(RegisterNames reg:CPUConstants.allRegisters) {
+            if (!allowGhostRegisters && CPUConstants.isGhostRegister(reg)) continue;
+//            CodeStatement s = l.get(l.size()-1);
+//            Boolean notUsed = Pattern.regNotUsedAfter(s, CPUConstants.registerName(reg), f, code);
+//            if (notUsed != null && notUsed == true) {
+            if (!registersUsedAfter.contains(reg)) {                
+                registers.add(reg);
+                break;
+            }
+        }        
+        
+        return registers;
+    }    
+
     
     List<Integer> findFlagsUsedAfter(List<CodeStatement> l, SourceFile f, CodeBase code)
     {
@@ -879,25 +901,5 @@ public class SearchBasedOptimizer implements MDLWorker {
         
         
         return flags;
-    }
-
-        
-    List<RegisterNames> findRegistersNotUsedAfter(List<CodeStatement> l, SourceFile f, CodeBase code, boolean allowGhostRegisters)
-    {
-        List<RegisterNames> registers = new ArrayList<>();
-        
-        for(RegisterNames reg:CPUConstants.allRegisters) {
-            if (!allowGhostRegisters && CPUConstants.isGhostRegister(reg)) continue;
-            for(CodeStatement s:l) {
-                Boolean notUsed = Pattern.regNotUsedAfter(s, CPUConstants.registerName(reg), f, code);
-                if (notUsed != null && notUsed == true) {
-                    registers.add(reg);
-                    break;
-                }
-            }
-        }
-        
-        
-        return registers;
     }
 }

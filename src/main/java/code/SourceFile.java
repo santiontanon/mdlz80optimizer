@@ -146,7 +146,6 @@ public class SourceFile {
                     return null;
                 }
                 if (s.op.isRet()) {
-                    // we don't know where are we going to jump to:
                     if (callStack != null && !callStack.isEmpty()) {
                         CodeStatement target = callStack.get(callStack.size()-1);
                         if (target != null) {
@@ -162,6 +161,7 @@ public class SourceFile {
                             return next;
                         }
                     }
+                    // we don't know where are we going to jump to:
                     return null;
                 }
 

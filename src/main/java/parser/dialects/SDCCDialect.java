@@ -341,6 +341,7 @@ public class SDCCDialect implements Dialect {
             {
                 String str = toStringLabelWithoutSafetyEqu(s, useOriginalNames);
                 str += "    "+config.lineParser.KEYWORD_ORG+" " + s.org.toString();
+                if (s.comment != null) str += "  " + s.comment;
                 return str;
             }
             
@@ -446,6 +447,7 @@ public class SDCCDialect implements Dialect {
                 String str = toStringLabelWithoutSafetyEqu(s, useOriginalNames) + " ";
                 config.output_equsWithoutColon = tmp;
                 str += config.lineParser.KEYWORD_EQU+" " + s.label.exp.toString();
+                if (s.comment != null) str += "  " + s.comment;
                 return str;
             }   
             

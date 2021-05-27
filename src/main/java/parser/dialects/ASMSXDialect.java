@@ -1206,6 +1206,7 @@ public class ASMSXDialect implements Dialect {
                 config.output_indirectionsWithSquareBrakets = !zilogMode;
                 str += "    " + s.op.toStringInternal(useOriginalNames, true, s, code);
                 config.output_indirectionsWithSquareBrakets = tmp;
+                if (s.comment != null) str += "  " + s.comment;
                 return str;
             }
             case CodeStatement.STATEMENT_DATA_BYTES:
@@ -1218,6 +1219,7 @@ public class ASMSXDialect implements Dialect {
                         str += ", ";
                     }
                 }
+                if (s.comment != null) str += "  " + s.comment;
                 return str;
             }
             case CodeStatement.STATEMENT_DATA_WORDS:
@@ -1230,6 +1232,7 @@ public class ASMSXDialect implements Dialect {
                         str += ", ";
                     }
                 }
+                if (s.comment != null) str += "  " + s.comment;
                 return str;
             }
             case CodeStatement.STATEMENT_DATA_DOUBLE_WORDS:
@@ -1241,6 +1244,7 @@ public class ASMSXDialect implements Dialect {
                         str += ", ";
                     }
                 }
+                if (s.comment != null) str += "  " + s.comment;
                 return str;
             }
             case CodeStatement.STATEMENT_DEFINE_SPACE:
@@ -1274,6 +1278,7 @@ public class ASMSXDialect implements Dialect {
                         str += "    "+config.lineParser.KEYWORD_STD_DS+" " + s.space + ", " + s.space_value;
                     }
                 }
+                if (s.comment != null) str += "  " + s.comment;
                 return str;
             }
             default:

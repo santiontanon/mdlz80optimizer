@@ -178,15 +178,15 @@ EX (SP),IY	7	FD E3	2	HL,IY			[SP:SP+1]	IY			[SP:SP+1]	true
 IM 0	2	ED 46	2									true
 IM 1	2	ED 56	2									true
 IM 2	2	ED 5E	2									true
-IN A,(C)	4	ED 78	2	C		C		A	S,Z,N			true
-IN A,(n)	3	DB n	2			n		A	S,Z,N			true
-IN B,(C)	4	ED 40	2	C		C		B	S,Z,N			true
-IN C,(C)	4	ED 48	2	C		C		C	S,Z,N			true
-IN D,(C)	4	ED 50	2	C		C		D	S,Z,N			true
-IN E,(C)	4	ED 58	2	C		C		E	S,Z,N			true
-IN F,(C)	4	ED 70	2	C		C		F	S,Z,N			true
-IN H,(C)	4	ED 60	2	C		C		H	S,Z,N			true
-IN L,(C)	4	ED 68	2	C		C		L	S,Z,N			true
+IN A,(C)	4	ED 78	2	BC		C		A	S,Z,N			true
+IN A,(n)	3	DB n	2	B		n		A	S,Z,N			true
+IN B,(C)	4	ED 40	2	BC		C		B	S,Z,N			true
+IN C,(C)	4	ED 48	2	BC		C		C	S,Z,N			true
+IN D,(C)	4	ED 50	2	BC		C		D	S,Z,N			true
+IN E,(C)	4	ED 58	2	BC		C		E	S,Z,N			true
+IN F,(C)	4	ED 70	2	BC		C		F	S,Z,N			true
+IN H,(C)	4	ED 60	2	BC		C		H	S,Z,N			true
+IN L,(C)	4	ED 68	2	BC		C		L	S,Z,N			true
 INC IX	3	DD 23	2	IX				IX				true
 INC IXp	2	DD 04+8*p	2	IXp				IXp	S,Z,H,P/V,N			true
 INC IY	3	FD 23	2	IY				IY				true

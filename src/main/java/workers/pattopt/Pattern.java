@@ -1418,7 +1418,7 @@ public class Pattern {
                 }
             }
         }
-
+        
         return true;
     }
     

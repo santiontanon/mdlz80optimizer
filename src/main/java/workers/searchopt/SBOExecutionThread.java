@@ -113,7 +113,7 @@ public class SBOExecutionThread extends Thread {
                 currentDependencies[0][i] = initialDependencies[i] ? 1:0;
             }
         }
-        config.debug("Initial dependency set: " + Arrays.toString(currentDependencies[0]));        
+//        config.debug("Initial dependency set: " + Arrays.toString(currentDependencies[0]));        
 
         searchType = a_searchType;
         codeMaxOps = a_codeMaxOps;

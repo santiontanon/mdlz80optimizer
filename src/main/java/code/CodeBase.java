@@ -251,6 +251,7 @@ public class CodeBase {
 
     public boolean protectedFromOptimization(SourceLine sl) 
     {
+        if (sl == null || sl.line == null) return false;
         if (sl.line.contains(config.PRAGMA_NO_OPTIMIZATION)) return true;
         for(Pair<SourceLine, SourceLine> block: optimizationProtectedBlocks) {
             if (sl.precedesEq(block.getRight()) &&

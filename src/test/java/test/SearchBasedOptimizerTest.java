@@ -30,14 +30,15 @@ public class SearchBasedOptimizerTest {
     }
 
     @Test public void test1_2() throws IOException { test("data/searchtests/opt-test1.asm", "data/searchtests/opt-test1-expected-b2.asm", "ops", 2); }
-    @Test public void test1_3() throws IOException { test("data/searchtests/opt-test1.asm", new String[]{"data/searchtests/opt-test1-expected-b3.asm",
-                                                                                                         "data/searchtests/opt-test1-expected2-b3.asm"}, "ops", 3); }
-    @Test public void test2() throws IOException { test("data/searchtests/opt-test2.asm", new String[]{"data/searchtests/opt-test2-expected.asm", 
-                                                                                                       "data/searchtests/opt-test2-expected2.asm"}); }
-    @Test public void test2_size() throws IOException { test("data/searchtests/opt-test2.asm", new String[]{"data/searchtests/opt-test2-expected.asm", 
-                                                                                                            "data/searchtests/opt-test2-expected2.asm"}, "size", 2); }
-    @Test public void test2_speed() throws IOException { test("data/searchtests/opt-test2.asm", new String[]{"data/searchtests/opt-test2-expected.asm", 
-                                                                                                            "data/searchtests/opt-test2-expected2.asm"}, "speed", 2); }
+    @Test public void test1_3() throws IOException { test("data/searchtests/opt-test1.asm", 
+            new String[]{"data/searchtests/opt-test1-expected-b3.asm", "data/searchtests/opt-test1-expected2-b3.asm"}, "ops", 3); }
+    @Test public void test2() throws IOException { test("data/searchtests/opt-test2.asm", 
+            new String[]{"data/searchtests/opt-test2-expected.asm", "data/searchtests/opt-test2-expected2.asm"}); }
+    @Test public void test2_size() throws IOException { test("data/searchtests/opt-test2.asm", 
+            new String[]{"data/searchtests/opt-test2-expected.asm", "data/searchtests/opt-test2-expected2.asm"}, "size", 2); }
+    @Test public void test2_speed() throws IOException { test("data/searchtests/opt-test2.asm", 
+            new String[]{"data/searchtests/opt-test2-expected.asm", "data/searchtests/opt-test2-expected2.asm"}, "speed", 2); }
+    @Test public void test3() throws IOException { test("data/searchtests/opt-test3.asm", new String[]{"data/searchtests/opt-test3-expected.asm"}); }
 
     
     private void test(String inputFile, String expectedOutput) throws IOException
