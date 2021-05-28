@@ -502,14 +502,8 @@ public class SearchBasedOptimizer implements MDLWorker {
             case "outd":
             case "otir":
             case "otdr":
-            case "exx":
             case "halt":
                 return true;
-            case "ex":
-                if (s.op.args.get(0).registerOrFlagName.equals("af") ||
-                    s.op.args.get(0).registerOrFlagName.equals("af'")) {
-                    return true;
-                }
         }
         
         for(int i = 0;i<s.op.spec.args.size();i++) {

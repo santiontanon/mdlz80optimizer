@@ -1,0 +1,11 @@
+allowed_ops: 
+    ex
+allowed_registers: de, hl
+initial_state:
+    d = ?v1
+    e = 0
+    h = ?v2
+    l = 0
+goal_state:
+    h = ?v1
+    d = ?v2

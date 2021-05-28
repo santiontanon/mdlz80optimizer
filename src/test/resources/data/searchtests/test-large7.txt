@@ -10,6 +10,7 @@ allowed_ops:
     carry
     cp
     jump
+    ex
 allow_ram_use = false
 allowed_registers: a, b, c, d, e, h, l, ixl, ixh, iyl, iyh, af, bc, de, hl, ix, iy
 8bit_constants: 0, 1, 2, 224, #ff

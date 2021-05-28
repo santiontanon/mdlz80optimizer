@@ -27,6 +27,7 @@ import util.microprocessor.Z80.CPUConstants.RegisterNames;
 public class SBOCandidate {
     public int bytes[] = null;
     public CPUOp op;
+    public String opString = null;
 
     // Cached dependencies (which registers/flags do these ops depend on, and which do they set):
     public boolean inputDependencies[] = null;
@@ -99,6 +100,7 @@ public class SBOCandidate {
     {
         bytes = c.bytes;
         op = c.op;
+        opString = c.opString;
         inputDependencies = c.inputDependencies;
         outputDependencies = c.outputDependencies;
         directContributionToGoal = c.directContributionToGoal;
@@ -120,10 +122,10 @@ public class SBOCandidate {
         String prefixStr = "";
         if (prefix != null) {
             for(SBOCandidate c:prefix) {
-                prefixStr += c.op + ";";
+                prefixStr += c.toString() + ";";
             }
          }
-        prefixStr += op + ";";
+        prefixStr += toString() + ";";
         return prefixStr;
     }
     
@@ -139,7 +141,7 @@ public class SBOCandidate {
         }
         String prefixStr = "";
         for(SBOCandidate c:l) {
-            prefixStr += c.op + ";";
+            prefixStr += c.toString() + ";";
         }
         return prefixStr;
     }
@@ -211,10 +213,10 @@ public class SBOCandidate {
             }
         }
         
-        int count = 0;
-        for(String key:candidateOpsByPrefix.keySet()) {
-            count += candidateOpsByPrefix.get(key).potentialFollowUps.size();
-        }
+//        int count = 0;
+//        for(String key:candidateOpsByPrefix.keySet()) {
+//            count += candidateOpsByPrefix.get(key).potentialFollowUps.size();
+//        }
 //        System.out.println("precomputeCandidates (allCandidateOps = "+allCandidateOps.size()+", maxLength = " + maxLength + ") = " + count);
         
         return true;
@@ -225,7 +227,7 @@ public class SBOCandidate {
     {
         String str = "";
         for(SBOCandidate c:sequence) {
-            str += c.op + "; ";
+            str += c.toString() + "; ";
         }
         return str.trim();
     }
@@ -720,8 +722,8 @@ public class SBOCandidate {
         OK - CCF/SCF
         OK - CP
         OK - JP/JR/DJNZ
+        OK - EX/EXX
         - PUSH/POP
-        - EX/EXX
         - LDI/LDD/LDIR/LDDR
         - CPI/CPD/CPIR/CPDR
         - DAA
@@ -786,6 +788,9 @@ public class SBOCandidate {
             spec.allowedOps.contains("jr") ||
             spec.allowedOps.contains("djnz")) {
             if (!precomputeJumps(candidates, spec, allDependencies, code, config)) return null;
+        }
+        if (spec.allowedOps.contains("ex")) {
+            if (!precomputeEx(candidates, spec, allDependencies, code, config)) return null;
         }
         
         config.debug("allCandidateOps: " + candidates.size());
@@ -1274,7 +1279,7 @@ public class SBOCandidate {
             if (!precomputeOp(op, candidates, allDependencies, code, config)) return false;
         }        
         return true;
-    }    
+    }
     
     
     static boolean precomputeBits(List<SBOCandidate> candidates, Specification spec, 
@@ -1354,9 +1359,43 @@ public class SBOCandidate {
     }
     
     
+    static boolean precomputeEx(List<SBOCandidate> candidates, Specification spec, 
+                                List<CPUOpDependency> allDependencies, CodeBase code, MDLConfig config)
+    {
+        if (spec.allowedRegisters.contains("de") &&
+            spec.allowedRegisters.contains("hl")) {
+            if (!precomputeOp("ex de,hl", candidates, allDependencies, code, config)) return false;
+        }
+        if (spec.allowRamUse && 
+            spec.allowedRegisters.contains("sp")) {
+            if (spec.allowedRegisters.contains("hl")) {
+                if (!precomputeOp("ex (sp),hl", candidates, allDependencies, code, config)) return false;
+            }
+            if (spec.allowedRegisters.contains("ix")) {
+                if (!precomputeOp("ex (sp),ix", candidates, allDependencies, code, config)) return false;
+            }
+            if (spec.allowedRegisters.contains("iy")) {
+                if (!precomputeOp("ex (sp),iy", candidates, allDependencies, code, config)) return false;
+            }
+        }
+        if (spec.allowGhostRegisters) {
+            if (spec.allowedRegisters.contains("af")) {
+                if (!precomputeOp("ex af,af'", candidates, allDependencies, code, config)) return false;
+            }
+            if (spec.allowedRegisters.contains("bc") &&
+                spec.allowedRegisters.contains("de") &&
+                spec.allowedRegisters.contains("hl")) {
+                if (!precomputeOp("exx", candidates, allDependencies, code, config)) return false;
+            }
+        }
+        return true;
+    }    
+    
+    
     @Override
     public String toString()
     {
-        return op.toString();
+        if (opString == null) opString = op.toString();
+        return opString;
     }
 }

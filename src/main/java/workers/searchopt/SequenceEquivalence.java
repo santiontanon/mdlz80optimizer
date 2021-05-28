@@ -139,7 +139,7 @@ public class SequenceEquivalence {
     {
         String key = "";
         for(SBOCandidate s:seq) {
-            key += s.op.toString() + "; ";
+            key += s.toString() + "; ";
         }
         return key;
     }

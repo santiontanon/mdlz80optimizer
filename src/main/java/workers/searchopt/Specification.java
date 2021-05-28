@@ -107,6 +107,8 @@ public class Specification {
         allowedOps.add("jr");
         allowedOps.add("djnz");
         
+        allowedOps.add("ex");        
+        
         allowedRegisters.add("a");
         allowedRegisters.add("af");
         allowedRegisters.add("b");

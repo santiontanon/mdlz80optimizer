@@ -33,7 +33,13 @@ public class PrecomputedTestCase {
     public boolean checkGoalState(Z80Core z80)
     {
         for(int i = 0;i<goalRegisters.length;i++) {
-            if (z80.getRegisterValue(goalRegisters[i]) != goalRegisterValues[i]) return false;
+            if (z80.getRegisterValue(goalRegisters[i]) != goalRegisterValues[i]) {
+//                System.out.println("register mismatch: " + goalRegisters[i] + " -> " + z80.getRegisterValue(goalRegisters[i]) + " vs " + goalRegisterValues[i]);
+//                for(int j = 0;j<startRegisters.length;j++) {
+//                    System.out.println("    initial " + startRegisters[j] + " = " + startRegisterValues[j]);
+//                }
+                return false;
+            }
         }
         for(int i = 0;i<goalFlags.length;i++) {
              if (z80.getFlagValue(CPUConstants.flagIndex(goalFlags[i])) != goalFlagValues[i]) return false;
