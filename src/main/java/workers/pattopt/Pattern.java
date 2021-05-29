@@ -1393,9 +1393,16 @@ public class Pattern {
                 }
                 for(Pair<CodeStatement, List<CodeStatement>> nextNext_pair: nextNext_l) {
                     CodeStatement nextNext = nextNext_pair.getLeft();
-                    List<CodeStatement> netNext_stack = nextNext_pair.getRight();
+                    List<CodeStatement> nextNext_stack = nextNext_pair.getRight();
+                    if (nextNext_stack != null && !nextNext_stack.isEmpty()) {
+                        int size = nextNext_stack.size();
+                        if (nextNext_stack.indexOf(nextNext_stack.get(size-1)) != size-1) {
+                            // recursive call, we will get into an infinite loop, so, stop it!
+                            return null;
+                        }
+                    }
                     if (!closed.containsKey(nextNext)) {
-                        DepCheckNode nextNode = new DepCheckNode(nextNext, dep, netNext_stack);
+                        DepCheckNode nextNode = new DepCheckNode(nextNext, dep, nextNext_stack);
                         open.add(nextNode);
                         List<DepCheckNode> l = new ArrayList<>();
                         l.add(nextNode);
@@ -1404,13 +1411,13 @@ public class Pattern {
                         List<DepCheckNode> l = closed.get(nextNext);
                         boolean found = false;
                         for(DepCheckNode n:l) {
-                            if (n.match(dep, netNext_stack)) {
+                            if (n.match(dep, nextNext_stack)) {
                                 found = true;
                                 break;
                             }
                         }
                         if (!found) {
-                            DepCheckNode nextNode = new DepCheckNode(nextNext, dep, netNext_stack);
+                            DepCheckNode nextNode = new DepCheckNode(nextNext, dep, nextNext_stack);
                             l.add(nextNode);
                             open.add(nextNode);
                         }

@@ -30,6 +30,12 @@ public class CPUOpSpec {
     public List<String> outputRegs, outputFlags;
     public String outputPort = null, outputMemoryStart = null, outputMemoryEnd = null;
     
+    // Precompute instruction types:
+    public boolean isConditional = false, isRet = false, isRst = false, isCall = false,
+                   isJump = false, isRelativeJump = false, isPush = false, isPop = false,
+                   mightJump = false;
+    public int jumpLabelArgument = -1;
+
     
     public CPUOpSpec(String a_opName, int a_size, int a_times[], String a_byteRepresentation, boolean a_official, MDLConfig a_config)
     {
@@ -53,6 +59,40 @@ public class CPUOpSpec {
             }
         }
         assert(sizeInBytes == bytesRepresentation.size());
+    }
+    
+    
+    public void precomputeInstructionTypes()
+    {
+        // precompute instruction types:
+        if (inputFlags!= null && !inputFlags.isEmpty() &&
+            (opName.equalsIgnoreCase("cp") ||
+             opName.equalsIgnoreCase("call") ||
+             opName.equalsIgnoreCase("ret") ||
+             opName.equalsIgnoreCase("jp") ||
+             opName.equalsIgnoreCase("jr"))) {
+            isConditional = true;
+        }
+        if (opName.equalsIgnoreCase("djnz")) isConditional = true;
+        if (opName.equalsIgnoreCase("call") ||
+            opName.equalsIgnoreCase("jp") ||
+            opName.equalsIgnoreCase("jr") ||
+            opName.equalsIgnoreCase("djnz")) {
+            jumpLabelArgument = args.size()-1;
+        }
+        if (opName.equalsIgnoreCase("ret")) isRet = true;
+        if (opName.equalsIgnoreCase("reti")) isRet = true;
+        if (opName.equalsIgnoreCase("retn")) isRet = true;
+        if (opName.equalsIgnoreCase("rst")) isRst = true;
+        if (opName.equalsIgnoreCase("call")) isCall = true;
+        if (opName.equalsIgnoreCase("jp")) isJump = true;
+        if (opName.equalsIgnoreCase("jr")) isJump = true;
+        if (opName.equalsIgnoreCase("djnz")) isJump = true;
+        if (opName.equalsIgnoreCase("jr")) isRelativeJump = true;
+        if (opName.equalsIgnoreCase("djnz")) isRelativeJump = true;
+        if (opName.equalsIgnoreCase("push")) isPush = true;
+        if (opName.equalsIgnoreCase("pop")) isPop = true;
+        if (isRet || jumpLabelArgument != -1) mightJump = true;
     }
     
     
@@ -222,7 +262,7 @@ public class CPUOpSpec {
         return deps;
     }
 
-
+    /*
     public boolean isConditional()
     {
         // TODO(santi@): move this info to the CPU definition file
@@ -320,5 +360,6 @@ public class CPUOpSpec {
         if (jumpLabelArgument() != -1) return true;
         return false;
     }
+    */
         
 }

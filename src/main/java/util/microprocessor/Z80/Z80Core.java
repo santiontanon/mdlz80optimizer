@@ -268,7 +268,7 @@ public class Z80Core implements ICPUData {
      * Sets a register value via a register name
      *
      * @param name Register name
-     * @return The register value
+     * @param value The value to assign to the register
      */
     public void setRegisterValue(RegisterNames name, int value) {
         switch (name) {

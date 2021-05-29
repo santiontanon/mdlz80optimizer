@@ -172,7 +172,7 @@ public class CPUOp {
 
     public Expression getTargetJumpExpression()
     {
-        int labelArg = spec.jumpLabelArgument();
+        int labelArg = spec.jumpLabelArgument;
         if (labelArg == -1) return null;
         Expression targetLabel = args.get(labelArg);
         return targetLabel;
@@ -181,7 +181,7 @@ public class CPUOp {
 
     public SourceConstant getTargetJumpLabel(CodeBase code)
     {
-        int labelArg = spec.jumpLabelArgument();
+        int labelArg = spec.jumpLabelArgument;
         if (labelArg == -1) return null;
         Expression targetLabel = args.get(labelArg);
         if (targetLabel.type == Expression.EXPRESSION_SYMBOL) {
@@ -194,55 +194,55 @@ public class CPUOp {
 
     public boolean isConditional()
     {
-        return spec.isConditional();
+        return spec.isConditional;
     }
 
 
     public boolean isRet()
     {
-        return spec.isRet();
+        return spec.isRet;
     }
     
     
     public boolean isRst()
     {
-        return spec.isRst();
+        return spec.isRst;
     }
     
     
     public boolean mightJump()
     {
-        return spec.mightJump();
+        return spec.mightJump;
     }
 
 
     public boolean isCall()
     {
-        return spec.isCall();
+        return spec.isCall;
     }
 
     
     public boolean isJump()
     {
-        return spec.isJump();
+        return spec.isJump;
     }
     
 
     public boolean isRelativeJump()
     {
-        return spec.isRelativeJump();
+        return spec.isRelativeJump;
     }
 
     
     public boolean isPush()
     {
-        return spec.isPush();
+        return spec.isPush;
     }
 
 
     public boolean isPop()
     {
-        return spec.isPop();
+        return spec.isPop;
     }
 
     
@@ -257,7 +257,7 @@ public class CPUOp {
     */
     public boolean modifiesStackInNonStandardWay()
     {
-        if (spec.isRst()) return true;
+        if (spec.isRst) return true;
         if (!args.isEmpty() &&
             args.get(0).type == Expression.EXPRESSION_REGISTER_OR_FLAG &&
             args.get(0).registerOrFlagName.equalsIgnoreCase("sp")) {
@@ -323,7 +323,7 @@ public class CPUOp {
                 
             } else if (v[1].equals("o")) {
                 // jr/djnz offset:
-                if (spec.isJump()) {
+                if (spec.isJump) {
                     int base = s.getAddress(code) + spec.sizeInBytes;
                     if (args == null || args.isEmpty() || args.get(args.size()-1) == null) {
                         if (!silent) config.error("Unable to convert " + this + " to bytes! Could not find the target label for the jump");
@@ -528,7 +528,7 @@ public class CPUOp {
     {
         if (!isJump()) return true;
         
-        int idx = spec.jumpLabelArgument();
+        int idx = spec.jumpLabelArgument;
         if (spec.args.get(idx).relativeLabelAllowed) {
             Expression target = args.get(idx);
             Integer endAddress = target.evaluateToInteger(s, code, true);

@@ -73,6 +73,9 @@ public class SearchBasedOptimizer implements MDLWorker {
     HashMap<Integer, Integer> precomputeScheduleDepth = new HashMap<>();
     HashMap<Integer, Integer> precomputeScheduleSize = new HashMap<>();
     HashMap<Integer, Integer> precomputeScheduleTime = new HashMap<>();
+    
+    // Cache to accelerate computations:
+    List<RegisterNames> registersUsedAfter_previous = null;
         
     
     public SearchBasedOptimizer(MDLConfig a_config)
@@ -448,11 +451,13 @@ public class SearchBasedOptimizer implements MDLWorker {
         OptimizationResult r = new OptimizationResult();
         
         for (SourceFile f : code.getSourceFiles()) {
+            registersUsedAfter_previous = null;
             for (int i = 0; i < f.getStatements().size(); i++) {
                 try {
                     if (optimizeStartingFromLine(f, i, code, r)) {
                         i = Math.max(0, i-2);   // go back a couple of statements, as more optimizations might chain
                         code.resetAddresses();
+                        registersUsedAfter_previous = null;
                     }
                 } catch(Exception e) {
                     config.error(e.getMessage());
@@ -503,7 +508,13 @@ public class SearchBasedOptimizer implements MDLWorker {
             case "otir":
             case "otdr":
             case "halt":
+            case "exx":
                 return true;
+            case "ex":
+                if (s.op.args.get(0).registerOrFlagName != null &&
+                    s.op.args.get(0).registerOrFlagName.equals("af")) {
+                    return true;
+                }
         }
         
         for(int i = 0;i<s.op.spec.args.size();i++) {
@@ -521,7 +532,10 @@ public class SearchBasedOptimizer implements MDLWorker {
     
     private boolean optimizeStartingFromLine(SourceFile f, int line, CodeBase code, OptimizationResult r) throws Exception
     {
-        if (f.getStatements().get(line).op == null) return false;
+        if (f.getStatements().get(line).op == null) {
+            registersUsedAfter_previous = null;
+            return false;
+        }
         config.debug(f.getStatements().get(line).fileNameLineString());
         
         List<CodeStatement> codeToOptimize = new ArrayList<>();
@@ -530,9 +544,13 @@ public class SearchBasedOptimizer implements MDLWorker {
         int codeToOptimizeTime[] = new int[]{0, 0};
         while(codeToOptimize.size() < optimization_max_block_size && line2 < f.getStatements().size()) {
             CodeStatement s = f.getStatements().get(line2);
-            if (!codeToOptimize.isEmpty() && s.label != null) return false;
+            if (!codeToOptimize.isEmpty() && s.label != null) {
+                registersUsedAfter_previous = null;
+                return false;
+            }
             if (s.op != null) {
                 if (preventOptimization(s, code)) {
+                    registersUsedAfter_previous = null;
                     return false;
                 }
                 codeToOptimize.add(s);
@@ -573,10 +591,10 @@ public class SearchBasedOptimizer implements MDLWorker {
         
         // - Find which registers we can use during search:
         List<RegisterNames> modifiedRegisters = findModifiedRegisters(codeToOptimize, f, code);
-        List<RegisterNames> registersUsedAfter = findRegistersUsedAfter(codeToOptimize, f, code, spec.allowGhostRegisters);
-//        List<RegisterNames> registersNotUsedAfter = findRegistersNotUsedAfter(codeToOptimize, f, code, spec.allowGhostRegisters);
-        List<RegisterNames> registersNotUsedAfter = findRegistersNotUsedAfter(registersUsedAfter, f, code, spec.allowGhostRegisters);
         List<RegisterNames> inputRegisters = findUsedRegisters(codeToOptimize, f, code);
+        List<RegisterNames> registersUsedAfter = findRegistersUsedAfter(codeToOptimize, f, code, spec.allowGhostRegisters, modifiedRegisters, inputRegisters);
+        registersUsedAfter_previous = registersUsedAfter;
+        List<RegisterNames> registersNotUsedAfter = findRegistersNotUsedAfter(registersUsedAfter, f, code, spec.allowGhostRegisters);
         for(RegisterNames reg:modifiedRegisters) {
             String regName = CPUConstants.registerName(reg);
             if (!spec.allowedRegisters.contains(regName)) spec.allowedRegisters.add(regName);
@@ -614,19 +632,7 @@ public class SearchBasedOptimizer implements MDLWorker {
                             l.add(arg);
                             constantsToExpressions.put(value, l);
                         }
-                        /*
-                    } else {
-                        if (!spec.allowed16bitConstants.contains(value))  spec.allowed16bitConstants.add(value);
-                        if (constants16bitToExpressions.containsKey(value)) {
-                            constants16bitToExpressions.get(value).add(arg);
-                        } else {
-                            List<Expression> l = new ArrayList<>();
-                            l.add(arg);
-                            constants16bitToExpressions.put(value, l);
-                        }
-                        */
                     }
-
                 }
             }
         }
@@ -683,7 +689,7 @@ public class SearchBasedOptimizer implements MDLWorker {
             config.error(Arrays.toString(e.getStackTrace()));
             return false;
         }
-        SourceFile sf = new SourceFile("dummy.asm", null, null, code, config);
+        SourceFile sf = new SourceFile(f.fileName + "[optimized]", null, null, code, config);
         if (!workGenerate(spec, filter, allDependencies, sf, code)) {
             return false;
         }
@@ -794,6 +800,7 @@ public class SearchBasedOptimizer implements MDLWorker {
             }
             for(CodeStatement s:optimized) {
                 s.source = f;
+                s.sl.lineNumber = originalCode.get(0).sl.lineNumber;
                 f.addStatement(insertionPoint, s);
                 insertionPoint++;
             }
@@ -840,16 +847,62 @@ public class SearchBasedOptimizer implements MDLWorker {
     }
 
 
-    List<RegisterNames> findRegistersUsedAfter(List<CodeStatement> l, SourceFile f, CodeBase code, boolean allowGhostRegisters)
+    List<RegisterNames> findRegistersUsedAfter(List<CodeStatement> l, SourceFile f, CodeBase code, boolean allowGhostRegisters,
+                                               List<RegisterNames> modifiedRegisters, List<RegisterNames> inputRegisters)
     {
         List<RegisterNames> registers = new ArrayList<>();
-        
-        for(RegisterNames reg:CPUConstants.eightBitRegisters) {
-            if (!allowGhostRegisters && CPUConstants.isGhostRegister(reg)) continue;
-            CodeStatement s = l.get(l.size()-1);
-            Boolean notUsed = Pattern.regNotUsedAfter(s, CPUConstants.registerName(reg), f, code);
-            if (notUsed == null || notUsed == false) {
-                registers.add(reg);
+     
+        if (registersUsedAfter_previous == null) {        
+            // recompute from scratch (this can be slow some times):
+            for(RegisterNames reg:CPUConstants.eightBitRegisters) {
+                if (!allowGhostRegisters && CPUConstants.isGhostRegister(reg)) continue;
+                if (reg == RegisterNames.R) continue;
+                CodeStatement s = l.get(l.size()-1);
+                Boolean notUsed = Pattern.regNotUsedAfter(s, CPUConstants.registerName(reg), f, code);
+                if (notUsed == null || notUsed == false) {
+                    registers.add(reg);
+                }
+            }
+        } else {
+            // use cache:
+//            System.out.println("cache");
+            for(RegisterNames reg:CPUConstants.eightBitRegisters) {
+                if (!allowGhostRegisters && CPUConstants.isGhostRegister(reg)) continue;
+                if (reg == RegisterNames.R) continue;
+                boolean check = false, used = false;
+                if (modifiedRegisters.contains(reg)) {
+                    // - If a register is in "modifiedRegisters" we need to calculate from scratch again
+                    check = true;
+                }
+                if (registersUsedAfter_previous.contains(reg)) {
+                    if (inputRegisters.contains(reg)) {
+                        check = true;
+                    } else {
+                        // - If a register was used, but is not in "inputRegisters", then it's still used (assert that it cannot be in "modifiedRegisters")
+                        used = true;
+                    }
+                }
+                if (check) {
+                    CodeStatement s = l.get(l.size()-1);
+                    Boolean notUsed = Pattern.regNotUsedAfter(s, CPUConstants.registerName(reg), f, code);
+                    if (notUsed == null || notUsed == false) used = true;
+//                } else {
+//                    // DEBUG (to ensure using the cache is identical to calculating from scratch):
+//                    CodeStatement s = l.get(l.size()-1);
+//                    Boolean notUsed = Pattern.regNotUsedAfter(s, CPUConstants.registerName(reg), f, code);
+//                    if (notUsed == null || notUsed == false) {
+//                        if (!used) {
+//                            System.out.println("ERROR: "+reg+" is used!");
+//                            System.out.println("registersUsedAfter_previous: " + registersUsedAfter_previous);
+//                            System.out.println("modifiedRegisters: " + modifiedRegisters);
+//                            System.out.println("inputRegisters: " + inputRegisters);
+//                            System.out.println("l: " + l);
+//                        }
+//                    } else {
+//                        if (used) System.out.println("ERROR: it is not used!");
+//                    }
+                }
+                if (used) registers.add(reg);
             }
         }
         
@@ -857,16 +910,12 @@ public class SearchBasedOptimizer implements MDLWorker {
     }
     
 
-//    List<RegisterNames> findRegistersNotUsedAfter(List<CodeStatement> l, SourceFile f, CodeBase code, boolean allowGhostRegisters)
     List<RegisterNames> findRegistersNotUsedAfter(List<RegisterNames> registersUsedAfter, SourceFile f, CodeBase code, boolean allowGhostRegisters)
     {
         List<RegisterNames> registers = new ArrayList<>();
         
         for(RegisterNames reg:CPUConstants.allRegisters) {
             if (!allowGhostRegisters && CPUConstants.isGhostRegister(reg)) continue;
-//            CodeStatement s = l.get(l.size()-1);
-//            Boolean notUsed = Pattern.regNotUsedAfter(s, CPUConstants.registerName(reg), f, code);
-//            if (notUsed != null && notUsed == true) {
             if (!registersUsedAfter.contains(reg)) {                
                 registers.add(reg);
                 break;

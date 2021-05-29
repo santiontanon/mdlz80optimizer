@@ -601,7 +601,7 @@ public class CodeBaseParser {
                     Expression.constantExpression(offset, config), config);
         }
         // replace the jump destination:
-        s.op.args.set(s.op.spec.jumpLabelArgument(), newDestination);        
+        s.op.args.set(s.op.spec.jumpLabelArgument, newDestination);        
         return true;
     }
 }

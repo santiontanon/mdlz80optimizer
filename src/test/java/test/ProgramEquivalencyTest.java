@@ -67,6 +67,8 @@ public class ProgramEquivalencyTest {
 
     @Test public void test10() throws Exception { test("add a, a\nsbc a, a", "adc a, a\nsbc a, a", false, HNPVFlags); }
     @Test public void test11() throws Exception { test("or h", "or h\ncp 0", false, HNPVFlags); }
+
+    @Test public void test12() throws Exception { test("cpl\n rlc a\nrlc a\nrlc a\nand #05", "rlca\nrlca\nrlca\ncpl\nand #05", false, HNPVFlags); }
     
     // Some of these are slow, so, just run them every once in a while:
 //    @Test public void sbotest1() throws Exception { testSequencesFromFile("data/equivalencies-l1.txt"); }

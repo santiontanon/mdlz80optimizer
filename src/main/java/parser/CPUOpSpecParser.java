@@ -294,6 +294,8 @@ public class CPUOpSpecParser {
                 }
             }
         }
+        
+        spec.precomputeInstructionTypes();
 
         return spec;
     }
