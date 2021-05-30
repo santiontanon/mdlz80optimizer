@@ -13,6 +13,7 @@ import code.CodeBase;
 import code.CodeStatement;
 import code.Expression;
 import code.SourceFile;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -50,6 +51,8 @@ public class SearchBasedOptimizer implements MDLWorker {
     
     Random random = new Random();
     MDLConfig config;
+    MDLConfig internalConfig;  // an alternative config to parse ops using default z80 syntax
+    
     boolean trigger = false;
     int operation = SBO_GENERATE;
     boolean showNewBestDuringSearch = true;
@@ -87,6 +90,16 @@ public class SearchBasedOptimizer implements MDLWorker {
         precomputeScheduleTime.put(3, 2);
         precomputeScheduleTime.put(TIME_TO_PRECOMPUTE3, 3);
         config = a_config;
+        
+        internalConfig = new MDLConfig();
+        internalConfig.labelsHaveSafeValues = config.labelsHaveSafeValues;
+        try {
+            internalConfig.parseArgs("dummy", "-dialect", "mdl", "-cpu", config.cpu);
+        } catch(IOException e) {
+            config.error("Problem initializing the SearchBasedOptimizer!");
+        }
+        internalConfig.logger = config.logger;
+        
     }
     
     
@@ -134,9 +147,9 @@ public class SearchBasedOptimizer implements MDLWorker {
                 operation = SBO_GENERATE;
                 config.codeSource = MDLConfig.CODE_FROM_SEARCHBASEDOPTIMIZER;
             } else if (originalFlag.equals("-so-opt") ||
-                       config.inputFile.endsWith(".asm") ||
-                       config.inputFile.endsWith(".z80") ||
-                       config.inputFile.endsWith(".a80")) {
+                       config.inputFile.toLowerCase().endsWith(".asm") ||
+                       config.inputFile.toLowerCase().endsWith(".z80") ||
+                       config.inputFile.toLowerCase().endsWith(".a80")) {
                 operation = SBO_OPTIMIZE;
                 config.codeSource = MDLConfig.CODE_FROM_INPUT_FILE;                
             } else {
@@ -258,7 +271,7 @@ public class SearchBasedOptimizer implements MDLWorker {
             return false;
         }
         
-        SequenceFilter filter = new SequenceFilter(config);
+        SequenceFilter filter = new SequenceFilter(internalConfig);
         filter.setSpecification(spec);
         try {
             filter.loadEquivalences("data/equivalencies-l1.txt");
@@ -286,7 +299,7 @@ public class SearchBasedOptimizer implements MDLWorker {
         int nDependencies = allDependencies.size();
         config.debug("workGenerate: nDependencies: " + nDependencies);
                 
-        List<SBOCandidate> allCandidateOps = SBOCandidate.precomputeCandidateOps(spec, allDependencies, code, filter, 1, config);
+        List<SBOCandidate> allCandidateOps = SBOCandidate.precomputeCandidateOps(spec, allDependencies, code, filter, 1, internalConfig);
         if (allCandidateOps == null) return false;
         
         // Precalculate which registers to randomize:
@@ -524,6 +537,10 @@ public class SearchBasedOptimizer implements MDLWorker {
                 s.op.spec.args.get(i).regOffsetIndirection != null) {
                 return true;
             }
+            if (s.op.args.get(i).registerOrFlagName != null &&
+                s.op.args.get(i).registerOrFlagName.equals("sp")) {
+                return true;
+            }
         }
         
         return false;
@@ -680,7 +697,7 @@ public class SearchBasedOptimizer implements MDLWorker {
         }
         
         // - Search:
-        SequenceFilter filter = new SequenceFilter(config);
+        SequenceFilter filter = new SequenceFilter(internalConfig);
         filter.setSpecification(spec);
         try {
             filter.loadEquivalences("data/equivalencies-l1.txt");
