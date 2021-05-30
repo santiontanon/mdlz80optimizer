@@ -39,7 +39,7 @@ Note: notice that all the tasks concerning generating outputs (assembler, binari
 - ```-warn-jp(rr)```: turns on warnings for using confusing 'jp (hl)' instead of 'jp hl' (this is turned off by default in dialects that do not support this).
 - ```-warn-unofficial```: turns on warnings for using unofficial op syntax (e.g., 'add 1' instead of 'add a,1'.
 - ```-warn-ambiguous```: turns on warnings for using ambiguous or error-inducing syntax in some dialects.
-- ```-do-not-convert-to-official```: turns off automatic conversion of unofficial op syntax to official ones in assembler output.
+- ```-warn-labelless-jump```: turns on warnings for using jumps that instead of jumping to a label, are defined as something like 'jp $+5'.- ```-do-not-convert-to-official```: turns off automatic conversion of unofficial op syntax to official ones in assembler output.
 - ```-hex#```: hex numbers render like #ffff (default). These flags also have analogous effect on binary and octal constant rendering.
 - ```-HEX#```: hex numbers render like #FFFF.
 - ```-hexh```: hex numbers render like 0ffffh.
@@ -60,11 +60,15 @@ Note: notice that all the tasks concerning generating outputs (assembler, binari
 - ```-out-do-not-evaluate-dialect-functions```: some assembler dialects define functions like random/sin/cos that can be used to form expressions. By default, MDL replaces them by the result of their execution before generating assembler output (as those might not be defined in other assemblers, and thus this keeps the assembler output as compatible as possible). Use this flag if you don't want this to happen.
 - ```-out-evaluate-all-expressions```: this flag makes MDL resolve all expressions down to their ultimate numeric or string value when generating assembler code.
 - ```-safety-labels-for-jumps-to-constants```: makes MDL replace the destination of a jump/call to a constant (e.g. ```jp #3c4a```) by a label. MDL does not do this by default since calls to constants are often used for BIOS calls (although replacing those constants by labels is recommended). Jumpts to constants are unsafe for optimization as the code at the target address (```#3c4a``` in the example) might move as a result of optimization. Hence, it's safer to add a safety label at the target address and use it for the jump.
-- ```-so```: (new in version 2.0) Runs the search-based-based optimizer (input file is a function specification instead of an assembler file).
-- ```-so-ops```/```-so-size```/```-so-time```: Runs the optimizer with a specific optimization goal (minimize the number of CPU ops, number of bytes, or execution time). This will overwrite whatever is specified in the specificaiton file (default is to optimize by number of ops).
-- ```-so-maxops <n>```: Sets the upper limit of how many CPU ops the resulting program can have.
-- ```-so-maxsize <n>```: Sets the maximum number of bytes the resulting program can occupy.
-- ```-so-maxtime <n>```: Sets the maximum time (in whichever units the target CPU uses) that the resulting program can take to execute.
+- ```-so```: Runs the search-based-based optimizer (if the input file is an assembler file (.asm/.z80/.a80), it'll try to optimize it; if the input file is a specification file (.txt), it will use as a target for program generation; which of the two will be auto-detected based on the file extension). You can pass an optional parameter: ````-so size```, ```-so speed```, or ```-so ops```, to tell the optimizer to optimize for program size, execution speed, or number of instructions. This will overwrite whatever is specified in the specificaiton file (default is to optimize by number of ops).
+- ```-so-gen```: Like above, but instead of autodetecting, it always assumes the input file is a specification file for program generation.
+- ```-so-opt```: Like above, but instead of autodetecting, it always assumes the input file is an assembler file for optimization.
+- ```-so-maxops <n>```: (only for program generation) Sets the upper limit of how many CPU ops the resulting program can have.
+- ```-so-maxsize <n>```: (only for program generation) Sets the maximum number of bytes the resulting program can occupy.
+- ```-so-maxtime <n>```: (only for program generation) Sets the maximum time (in whichever units the target CPU uses) that the resulting program can take to execute.
+- ```-so-threads <n>```: Sets the number of threads to use during search (default value is the number of cores of the CPU).
+- ```-so-checks <n>```: Sets the number of random solution checks to consider a solution valid (default is 10000). Higher means more safety, but slower. If this is too low, the optimizer might generate wrong code by chance.
+- ```-so-blocksize <n>```: (only for existing assembler optimization) Blocks of this number of instructions will be taken one at a time and optimized (default is 2).
 - ```-ro```: runs the code reoganizer optimizer.
 - ```-ro-no-inliner```: deactivates the function inliner.
 - ```-ro-no-merger```: deactivates the block merger.
