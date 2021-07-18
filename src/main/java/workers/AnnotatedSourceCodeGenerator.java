@@ -174,7 +174,7 @@ public class AnnotatedSourceCodeGenerator implements MDLWorker {
             sb.append("  ");
             Integer size = ss.sizeInBytes(code, true, true, true);
             if (size == null) {
-                config.error("Cannot evaluate the size of statement: " + ss);
+                config.error("Cannot evaluate the size of statement " + ss + " in " + ss.sl);
                 return;
             }
             String sizeString = "" + (size > 0 ? size:"");
@@ -223,7 +223,7 @@ public class AnnotatedSourceCodeGenerator implements MDLWorker {
             
             Integer size = ss.sizeInBytes(code, true, true, true);
             if (size == null) {
-                config.error("Cannot evaluate the size of statement: " + ss);
+                config.error("Cannot evaluate the size of statement " + ss + " in " + ss.sl);
                 return;
             }
             String sizeString = "" + (size > 0 ? size:"");

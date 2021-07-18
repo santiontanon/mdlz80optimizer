@@ -101,6 +101,7 @@ public class PatternBasedOptimizerTest {
     @Test public void test61() throws IOException { test("data/tests/test61.asm", null, null, "size",  2, 8, 8); }
     @Test public void test62() throws IOException { test("data/tests/test62.asm", null, null, "size",  22, 135, 135); }
     @Test public void test63() throws IOException { test("data/tests/test63.asm", null, null, "size",  8, 41, 41); }
+    @Test public void test64() throws IOException { test("data/tests/test64.asm", null, null, "size",  1, 5, 5); }
 
     
     private void test(String inputFile, String dialect, String cpu, String target, int expectedSavedBytes, int expectedSavedTime1, int expectedSavedTime2) throws IOException

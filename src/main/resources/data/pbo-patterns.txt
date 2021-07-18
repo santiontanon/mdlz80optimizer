@@ -466,6 +466,7 @@ replacement:
 1: *
 constraints:
 regsNotModified(1, ?reg1, ?reg2)
+notIn(?reg2,R)
 
 ; Thanks to theNestruo for suggesting the idea for this pattern:
 pattern: Replace ld (?reg2),?const with ld (?reg2),?reg (as ?reg == ?const here)
