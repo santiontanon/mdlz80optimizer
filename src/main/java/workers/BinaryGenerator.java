@@ -220,7 +220,7 @@ public class BinaryGenerator implements MDLWorker {
                         data[i*4+2] = (byte)(int)((v>>16)&0x00ff);
                         data[i*4+3] = (byte)(int)((v>>24)&0x00ff);
                     } else {
-                        config.error("Cannot evaluate expression " + exp + "when generating a binary.");
+                        config.error("Cannot evaluate expression " + exp + " when generating a binary.");
                         return null;
                     }
                 }
@@ -240,7 +240,7 @@ public class BinaryGenerator implements MDLWorker {
                         return null;
                     }
                     if (amount < 0) {
-                        config.error("Negative space in " + s.sl);
+                        config.error("Negative space ("+amount+") in " + s.sl);
                         return null;
                     }
                     byte data[] = new byte[amount];
@@ -274,7 +274,7 @@ public class BinaryGenerator implements MDLWorker {
     {
         Object val = exp.evaluate(ss, code, true);
         if (val == null) {
-            config.error("Cannot evaluate expression " + exp + "when generating a binary.");
+            config.error("Cannot evaluate expression " + exp + " when generating a binary.");
             return false;
         }
         return valueToBytes(val, ss, code, data);
