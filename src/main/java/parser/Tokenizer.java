@@ -58,7 +58,7 @@ public class Tokenizer {
         doubleTokens.add("--");
         doubleTokens.add("::");
         doubleTokens.add("=:");
-        doubleTokens.add("==");    
+        doubleTokens.add("==");
         
         multilineCommentStartTokens.add("/*");
         multilineCommentEndTokens.add("*/");

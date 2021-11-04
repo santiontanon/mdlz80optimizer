@@ -11,6 +11,7 @@ import code.SourceConstant;
 import code.SourceFile;
 import code.CodeStatement;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.lang3.tuple.Pair;
 import parser.SourceLine;
@@ -23,6 +24,7 @@ public class TniAsmDialect implements Dialect {
 
     private final MDLConfig config;
 
+    List<CodeStatement> linesToKeepIfGeneratingDialectAsm = new ArrayList<>();     
 
     /**
      * Constructor
@@ -44,6 +46,8 @@ public class TniAsmDialect implements Dialect {
         config.preProcessor.macroSynonyms.put("ifexist", config.preProcessor.MACRO_IFDEF);
         
         config.lineParser.addKeywordSynonym("rb", config.lineParser.KEYWORD_DS);
+        config.lineParser.addKeywordSynonym("%res8", config.lineParser.KEYWORD_DS);
+        config.lineParser.addKeywordSynonym("::", config.lineParser.KEYWORD_STD_COLON);
         
         config.lineParser.defineSpaceVirtualByDefault = true;
         config.lineParser.allowtniASMMultipleInstructionsPerLine = true;
@@ -57,6 +61,10 @@ public class TniAsmDialect implements Dialect {
         config.expressionParser.OP_LOGICAL_OR = "or";
         config.expressionParser.OP_LOGICAL_AND = "and";
         config.expressionParser.OP_MOD = "mod";
+        
+        config.tokenizer.doubleTokens.add("%symfile");
+        config.tokenizer.doubleTokens.add("%expfile");
+        config.tokenizer.doubleTokens.add("%res8");
     }
 
     
@@ -66,6 +74,10 @@ public class TniAsmDialect implements Dialect {
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("rw")) return true;
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("fname")) return true;
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("forg")) return true;
+        if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("%symfile")) return true;
+        if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("%expfile")) return true;
+        if (tokens.size()>= 2 && tokens.get(0).equalsIgnoreCase("phase")) return true;
+        if (tokens.size()>= 1 && tokens.get(0).equalsIgnoreCase("dephase")) return true;
         return false;
     }
     
@@ -144,14 +156,58 @@ public class TniAsmDialect implements Dialect {
             // just ignore for now
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }        
+        if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("%symfile")) {
+            tokens.remove(0);
+            tokens.remove(0);   // file name
+            // just ignore for now
+            return true;
+        }
+        if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("%expfile")) {
+            tokens.remove(0);
+            tokens.remove(0);   // file name
+            // just ignore for now
+            return true;
+        }
+        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("phase")) {
+            tokens.remove(0);
+            
+            // parse as an "org":
+            Expression exp = config.expressionParser.parse(tokens, s, previous, code);
+            if (exp == null) {
+                config.error("Cannot parse phase address in " + sl);
+                return false;
+            }            
+            s.type = CodeStatement.STATEMENT_ORG;
+            s.org = exp;
+            
+            linesToKeepIfGeneratingDialectAsm.add(s);
+            
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
+        }
+        
+        if (tokens.size() >= 1 && tokens.get(0).equalsIgnoreCase("dephase")) {
+            tokens.remove(0);
+            
+            // ignore for now...
+            
+            linesToKeepIfGeneratingDialectAsm.add(s);
+            
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
+        }        
         
         return false;
     }
-    
+        
     
     @Override
     public String statementToString(CodeStatement s, CodeBase code, Path rootPath) {
         boolean useOriginalNames = false;
+        if (linesToKeepIfGeneratingDialectAsm.contains(s)) {
+            return s.sl.line;
+        }
+
+//        if (auxiliaryStatementsToRemoveIfGeneratingDialectasm.contains(s)) return "";
+        
         return s.toStringUsingRootPath(rootPath, useOriginalNames, true, code);
-    }      
+    }        
 }

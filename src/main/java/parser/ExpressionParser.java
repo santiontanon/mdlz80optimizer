@@ -372,7 +372,9 @@ public class ExpressionParser {
                         i++;
                     }
                     if (token2.toLowerCase().endsWith("b") ||
-                        (tokens.size()>i && tokens.get(i).toLowerCase().endsWith("b"))) {
+                         (tokens.size()>i && 
+                          !config.tokenizer.isSingleLineComment(tokens.get(i)) &&
+                          tokens.get(i).toLowerCase().endsWith("b"))) {
                         if (!token2.toLowerCase().endsWith("b")) {
                             token2 += tokens.get(i);
                             i++;
