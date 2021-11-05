@@ -11,3 +11,5 @@ c9: equ 0b11100100
 c10: equ 0b11100100
 c11: equ 0o123
 c12: equ 0o123
+c13: equ 0xcf00
+c14: equ 0xfa

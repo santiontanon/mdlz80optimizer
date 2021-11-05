@@ -11,3 +11,5 @@ c9: equ %11100100
 c10: equ % 1110 0100
 c11: equ 123o
 c12: equ 123q
+c13: equ cf00h
+c14: equ fah

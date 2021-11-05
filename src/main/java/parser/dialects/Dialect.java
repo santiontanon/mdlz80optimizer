@@ -116,7 +116,7 @@ public interface Dialect {
     
     
     // Called after all the code is parsed before all macros are expanded
-    default boolean performAnyPostParsingActions(CodeBase code) {
+    default boolean postParsePreMacroExpansionActions(CodeBase code) {
         // (no-op by default)
         return true;        
     }

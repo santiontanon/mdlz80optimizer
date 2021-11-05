@@ -284,7 +284,7 @@ public class GlassDialect implements Dialect {
 
     
     @Override
-    public boolean performAnyPostParsingActions(CodeBase code)
+    public boolean postParsePreMacroExpansionActions(CodeBase code)
     {
         // Assemble Macros:
         for(List<SourceMacro> l:config.preProcessor.macros.values()) {

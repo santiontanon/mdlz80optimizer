@@ -1400,7 +1400,7 @@ public class Expression {
         }
     }    
     
-
+    
     public List<String> getAllSymbols()
     {
         List<String> l = new ArrayList<>();
@@ -1416,6 +1416,26 @@ public class Expression {
         } else if (args != null) {
             for(Expression arg:args) {
                 arg.getAllSymbols(l);
+            }
+        }
+    }   
+    
+
+    public List<Expression> getAllSymbolExpressions()
+    {
+        List<Expression> l = new ArrayList<>();
+        getAllSymbolExpressions(l);
+        return l;
+    }
+
+
+    public void getAllSymbolExpressions(List<Expression> l)
+    {
+        if (type == EXPRESSION_SYMBOL) {
+            if (!l.contains(this)) l.add(this);
+        } else if (args != null) {
+            for(Expression arg:args) {
+                arg.getAllSymbolExpressions(l);
             }
         }
     }    

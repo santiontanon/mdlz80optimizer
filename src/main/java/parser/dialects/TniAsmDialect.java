@@ -65,6 +65,7 @@ public class TniAsmDialect implements Dialect {
         config.tokenizer.doubleTokens.add("%symfile");
         config.tokenizer.doubleTokens.add("%expfile");
         config.tokenizer.doubleTokens.add("%res8");
+        config.tokenizer.doubleTokens.add("%res16");
     }
 
     
@@ -72,6 +73,7 @@ public class TniAsmDialect implements Dialect {
     public boolean recognizeIdiom(List<String> tokens, SourceConstant label, CodeBase code)
     {
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("rw")) return true;
+        if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("%res16")) return true;
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("fname")) return true;
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("forg")) return true;
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("%symfile")) return true;
@@ -132,7 +134,8 @@ public class TniAsmDialect implements Dialect {
             SourceLine sl,
             CodeStatement s, CodeStatement previous, SourceFile source, CodeBase code)
     {
-        if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("rw")) {
+        if ((tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("rw")) ||
+            (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("%res16"))) {
             tokens.remove(0);
             
             // Parse it as a "ds", but multiply the number by 2:
@@ -198,6 +201,42 @@ public class TniAsmDialect implements Dialect {
         return false;
     }
         
+    
+    @Override
+    public boolean postParsePreMacroExpansionActions(CodeBase code)
+    {
+        // Check to see if any labels were actually hex constants:
+        for(SourceFile f:code.getSourceFiles()) {
+            for(CodeStatement s:f.getStatements()) {
+                for(Expression e:s.getAllExpressions()) {
+                    for(Expression symbol:e.getAllSymbolExpressions()) {
+                        if (!symbol.symbolName.equals(CodeBase.CURRENT_ADDRESS) && 
+                            code.getSymbolValue(symbol.symbolName, true) == null) {
+                            // Label that could not be evaluated:
+                            if (symbol.symbolName.endsWith("h") || symbol.symbolName.endsWith("H")) {
+                                String prefix = symbol.symbolName.substring(0, symbol.symbolName.length()-1);
+                                Integer hex = config.tokenizer.parseHex(prefix);
+                                if (hex != null) {
+                                    // replace expression with hex constant:
+                                    if (config.warning_ambiguous) {
+                                        config.warn("'" + symbol.symbolName + "' is an ambiguous constant, that could be interpreted as a label or as a hex constant. Please prefix by a leading 0 if this is supposed to be a hex constant in " + s.sl);
+                                    }
+                                    if (prefix.length() <= 2) {
+                                        e.copyFrom(Expression.constantExpression(hex, Expression.RENDER_AS_8BITHEX, config));
+                                    } else {
+                                        e.copyFrom(Expression.constantExpression(hex, Expression.RENDER_AS_16BITHEX, config));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        return true;
+    }
+    
     
     @Override
     public String statementToString(CodeStatement s, CodeBase code, Path rootPath) {

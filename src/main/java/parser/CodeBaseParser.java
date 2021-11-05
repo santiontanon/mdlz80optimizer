@@ -70,7 +70,7 @@ public class CodeBaseParser {
 
         // Dialect actions before expanding all macros:
         if (config.dialectParser != null) {
-            if (!config.dialectParser.performAnyPostParsingActions(code)) {
+            if (!config.dialectParser.postParsePreMacroExpansionActions(code)) {
                 return false;
             }
         }
