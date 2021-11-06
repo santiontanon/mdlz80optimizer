@@ -34,13 +34,13 @@ public class SourceLineTrackingTest {
 
     @Test public void test1() throws IOException {
         // (uses wildcards to prevent test failure in Windows)
-        optimizeAndLookFor("data/tests/test1.asm",
+        optimizeAndLookFor("data/potests/test1.asm",
                 "INFO: Pattern-based optimization in *test1.asm#6: Replace cp 0 with or a (1 bytes, 3 t-states saved)",
                 "INFO: Pattern-based optimization in *test1.asm#15: Remove unused ld a,0 (2 bytes, 8 t-states saved)");
     }
     @Test public void test29() throws IOException {
         // (uses wildcards to prevent test failure in Windows)
-        optimizeAndLookFor("data/tests/test29.asm",
+        optimizeAndLookFor("data/potests/test29.asm",
                 "INFO: Pattern-based optimization in *test29-include.asm#4 (expanded from *test29.asm#6): Replace ld a,0 with xor a (1 bytes, 3 t-states saved)",
                 "INFO: Pattern-based optimization in *test29-include.asm#4 (expanded from *test29.asm#8): Replace ld a,0 with xor a (1 bytes, 3 t-states saved)");
     }

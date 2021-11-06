@@ -18,7 +18,7 @@ import parser.SourceLine;
 
 /**
  * tniASM 0.45 Dialect
- * @author theNestruo
+ * @author theNestruo (with later contributions from santi.ontanon)
  */
 public class TniAsmDialect implements Dialect {
 

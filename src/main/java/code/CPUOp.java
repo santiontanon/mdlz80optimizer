@@ -322,9 +322,12 @@ public class CPUOp {
                 data.add(baseByte);
                 
             } else if (v[1].equals("o")) {
-                // jr/djnz offset:
                 if (spec.isJump) {
-                    int base = s.getAddress(code) + spec.sizeInBytes;
+                    // jr/djnz offset:
+                    if (s == null) {
+                        if (!silent) config.error("Trying to convert " + this + " to bytes without specifying a CodeStatement.");
+                        return null;                        
+                    }
                     if (args == null || args.isEmpty() || args.get(args.size()-1) == null) {
                         if (!silent) config.error("Unable to convert " + this + " to bytes! Could not find the target label for the jump");
                         return null;                        
@@ -335,6 +338,7 @@ public class CPUOp {
                         return null;                        
                     }
 
+                    int base = s.getAddress(code) + spec.sizeInBytes;
                     int offset = (target - base);
                     
                     // check if it's within jr range!:
@@ -387,7 +391,7 @@ public class CPUOp {
                 for(Expression arg:args) {
                     String undefined = arg.findUndefinedSymbol(code);
                     if (undefined != null) {
-                        if (!silent) config.error("Undefined symbol \"" + undefined + "\" in " + s.sl.fileNameLineString());
+                        if (!silent) config.error("Undefined symbol \"" + undefined + "\"" + (s!=null ? " in " + s.sl.fileNameLineString():""));
                         return null;
                     }
                     if (arg.evaluatesToIntegerConstant()) {
@@ -410,7 +414,7 @@ public class CPUOp {
                 for(Expression arg:args) {
                     String undefined = arg.findUndefinedSymbol(code);
                     if (undefined != null) {
-                        if (!silent) config.error("Undefined symbol \"" + undefined + "\" in " + s.sl.fileNameLineString());
+                        if (!silent) config.error("Undefined symbol \"" + undefined + "\"" + (s!=null ? " in " + s.sl.fileNameLineString():""));
                         return null;
                     }
                     if (arg.evaluatesToIntegerConstant()) {

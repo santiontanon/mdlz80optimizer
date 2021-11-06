@@ -1008,6 +1008,38 @@ public class Pattern {
                 break;
             }
             
+            case "noStackArguments":
+            {
+                String functionName = constraint.args[0];
+                SourceConstant sc = code.getSymbol(functionName);
+                if (sc == null) break;
+                CodeStatement s = sc.definingStatement;
+                if (s == null) break;
+                // Look for a signs that would indicate if the function takes arguments in the stack:
+                // - detect if SP is moved to IX or IY, either by "ld IX/IY, SP" or "add IX/IY, SP"
+                // - we only check the first 10 ops of the function (or until we find a jump or a ret):
+                int n_ops_left = 10;
+                while(s != null && n_ops_left > 0) {
+                    if (s.op != null) {
+                        n_ops_left --;
+                        
+                        if (s.op.spec.opName.equalsIgnoreCase("ld") ||
+                            s.op.spec.opName.equalsIgnoreCase("add")) {
+                            if (s.op.args.get(0).isRegister() && 
+                                s.op.args.get(1).isRegister() &&
+                                (s.op.args.get(0).registerOrFlagName.equalsIgnoreCase("ix") ||
+                                 s.op.args.get(0).registerOrFlagName.equalsIgnoreCase("iy")) &&
+                                s.op.args.get(1).registerOrFlagName.equalsIgnoreCase("sp")) {
+                                // function is likely to accept stack parameters!
+                                return false;
+                            }
+                        }
+                    }
+                    s = s.source.getNextStatementTo(s, code);
+                }
+                break;
+            }
+            
             default:
                 throw new UnsupportedOperationException("Unknown pattern constraint " + constraint.name);
         }        

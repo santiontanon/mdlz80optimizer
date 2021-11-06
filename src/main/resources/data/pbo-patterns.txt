@@ -27,6 +27,7 @@
 ; - reachableByJr(#, label)
 ; - evenPushPops(#)
 ; - atLeastOneCPUOp(#)
+; - noStackArguments(label): ensures that the function "label" does not take arguments from the stack.
 ; You can add ":ID" after any constraint, which the effect that the constraint will be checked right after the pattern line
 ; with number == ID is matched.
 
@@ -290,6 +291,8 @@ pattern: Replace call ?const; ret with jp ?const
 1: ret
 replacement:
 0: jp ?const
+constraints:
+noStackArguments(?const)
 
 pattern: Replace and 1; cp 1; ?op z,?const with rra; ?op nz,?const
 0: and 1

@@ -34,7 +34,7 @@ public class PotentialOptimizationsTest {
         code = new CodeBase(config);
     }
 
-    @Test public void test43() throws IOException { Assert.assertEquals(2, test("data/tests/test43.asm")); }
+    @Test public void test43() throws IOException { Assert.assertEquals(2, test("data/potests/test43.asm")); }
 
 
     private int test(String inputFile) throws IOException
