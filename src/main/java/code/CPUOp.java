@@ -391,7 +391,7 @@ public class CPUOp {
                 for(Expression arg:args) {
                     String undefined = arg.findUndefinedSymbol(code);
                     if (undefined != null) {
-                        if (!silent) config.error("Undefined symbol \"" + undefined + "\"" + (s!=null ? " in " + s.sl.fileNameLineString():""));
+                        if (!silent) config.error("Undefined symbol \"" + undefined + "\"" + (s!=null ? " in " + s.sl.fileNameLineString():" in synthetic op " + this));
                         return null;
                     }
                     if (arg.evaluatesToIntegerConstant()) {
@@ -414,7 +414,7 @@ public class CPUOp {
                 for(Expression arg:args) {
                     String undefined = arg.findUndefinedSymbol(code);
                     if (undefined != null) {
-                        if (!silent) config.error("Undefined symbol \"" + undefined + "\"" + (s!=null ? " in " + s.sl.fileNameLineString():""));
+                        if (!silent) config.error("Undefined symbol \"" + undefined + "\"" + (s!=null ? " in " + s.sl.fileNameLineString():" in synthetic op " + this));
                         return null;
                     }
                     if (arg.evaluatesToIntegerConstant()) {

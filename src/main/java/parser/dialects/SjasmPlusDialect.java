@@ -17,6 +17,7 @@ import java.io.FileOutputStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.StringTokenizer;
 import parser.LineParser;
@@ -114,6 +115,8 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
     // Record of "savebin", "savesna", etc. commands, to execute them after the code has been loaded:
     List<SaveCommand> saveCommands = new ArrayList<>();
     
+    HashMap<String, List<Expression>> defarrays = new HashMap<>();
+    
     Expression minimumOutputSize = null;
     CodeStatement minimumOutputSize_statement = null;
 
@@ -139,9 +142,9 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
         config.lineParser.addKeywordSynonym("block", config.lineParser.KEYWORD_DS);
         config.lineParser.addKeywordSynonym("::", config.lineParser.KEYWORD_COLON);
                 
-        config.lineParser.keywordsHintingALabel.add("=");
-        config.lineParser.keywordsHintingALabel.add("defl");
-        
+        config.lineParser.keywordsHintingANonScopedLabel.add("=");
+        config.lineParser.keywordsHintingANonScopedLabel.add("defl");
+                
         config.warning_jpHlWithParenthesis = true;
         config.lineParser.allowEmptyDB_DW_DD_definitions = true;
         config.lineParser.allowIncludesWithoutQuotes = true;
@@ -165,6 +168,8 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
         config.expressionParser.dialectFunctionsSingleArgumentNoParenthesisPrecedence.put(
                 "low", config.expressionParser.OPERATOR_PRECEDENCE[Expression.EXPRESSION_SUM]);
         config.expressionParser.sjasmPlusCurlyBracketExpressions = true;
+        config.expressionParser.allowArrayIndexingSyntax = true;
+        config.expressionParser.arrayIndexSignifyingLength = "#";
                         
         config.preProcessor.macroSynonyms.put("dup", config.preProcessor.MACRO_REPT);
         config.preProcessor.macroSynonyms.put("edup", config.preProcessor.MACRO_ENDR);
@@ -418,6 +423,7 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
                 (tokens.get(1).equalsIgnoreCase("(") || config.tokenizer.isInteger(tokens.get(1)))) {
             return true;
         }
+        if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("defarray")) return true;
         
 
         for(SjasmStruct s:structs) {
@@ -959,7 +965,13 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
                    tokens.get(0).equalsIgnoreCase("liston") || 
                    tokens.get(0).equalsIgnoreCase("listall") ||
                    tokens.get(0).equalsIgnoreCase("listact") ||
-                   tokens.get(0).equalsIgnoreCase("listmc"))) {
+                   tokens.get(0).equalsIgnoreCase("listmc") ||
+                   tokens.get(0).equalsIgnoreCase("--") ||
+                   tokens.get(0).equalsIgnoreCase("=") ||
+                   tokens.get(0).equalsIgnoreCase("syntax") ||
+                   tokens.get(0).equalsIgnoreCase("abfw") ||
+                   tokens.get(0).equalsIgnoreCase("zxnext") ||
+                   tokens.get(0).equalsIgnoreCase("cspect"))) {
                 tokens.remove(0);
             }
             
@@ -989,6 +1001,31 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
                 l.addAll(l2);
             }
             return true;
+        }
+        if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("defarray")) {
+            tokens.remove(0);
+            String arrayName = tokens.remove(0);
+            List<Expression> data = new ArrayList<>();
+            boolean done = false;        
+            while (!done) {
+                Expression exp = config.expressionParser.parse(tokens, s, previous, code);
+                if (exp == null) {
+                    config.error("parseData: Cannot parse line " + sl);
+                    return false;
+                } else {
+                    data.add(exp);
+                }
+                if (!tokens.isEmpty() && tokens.get(0).equals(",")) {
+                    tokens.remove(0);
+                } else {
+                    done = true;
+                }
+            }
+            
+            defarrays.put(arrayName, data);
+            
+            linesToKeepIfGeneratingDialectAsm.add(s);
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);            
         }
         
         if (parseAbyte(tokens, l, sl, s, previous, source, code)) return true;
@@ -1182,6 +1219,33 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
             int val = memory[address % deviceRAMSize];
             return val;
         }
+        if (functionName.equalsIgnoreCase("array.length") && args.size() == 1 &&
+            args.get(0).isConstant() &&
+            args.get(0).stringConstant != null) {
+            String arrayName = args.get(0).stringConstant;
+            List<Expression> array = defarrays.get(arrayName);
+            if (array == null) {
+                config.error("Requesting the length of an undefined array " + arrayName + " in " + s.sl);
+                return null;
+            }
+            return array.size();
+        }
+        if (functionName.equalsIgnoreCase("array.index") && args.size() == 2 &&
+            args.get(0).isConstant() &&
+            args.get(0).stringConstant != null) {
+            String arrayName = args.get(0).stringConstant;
+            List<Expression> array = defarrays.get(arrayName);
+            if (array == null) {
+                config.error("Indexing an undefined array " + arrayName + " in " + s.sl);
+                return null;
+            }
+            Integer index = args.get(1).evaluateToInteger(s, code, silent);
+            if (index == null) {
+                config.error("Cannot evaluate array index in " + s.sl);
+                return null;
+            }
+            return array.get(index).evaluateToInteger(s, code, silent);
+        } 
         return null;
     }
 
@@ -1202,7 +1266,33 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
                     args.get(0),
                     Expression.constantExpression(0x00ff, Expression.RENDER_AS_16BITHEX, config), config);
         }
-
+        if (functionName.equalsIgnoreCase("array.length") && args.size() == 1 &&
+            args.get(0).isConstant() &&
+            args.get(0).stringConstant != null) {
+            String arrayName = args.get(0).stringConstant;
+            List<Expression> array = defarrays.get(arrayName);
+            if (array == null) {
+                config.error("Requesting the length of an undefined array " + arrayName + " in " + s.sl);
+                return null;
+            }
+            return Expression.constantExpression(array.size(), config);
+        }
+        if (functionName.equalsIgnoreCase("array.index") && args.size() == 2 &&
+            args.get(0).isConstant() &&
+            args.get(0).stringConstant != null) {
+            String arrayName = args.get(0).stringConstant;
+            List<Expression> array = defarrays.get(arrayName);
+            if (array == null) {
+                config.error("Indexing an undefined array " + arrayName + " in " + s.sl);
+                return null;
+            }
+            Integer index = args.get(1).evaluateToInteger(s, code, false);
+            if (index == null) {
+                config.error("Cannot evaluate array index in " + s.sl);
+                return null;
+            }
+            return array.get(index);
+        } 
         return null;
     }
     

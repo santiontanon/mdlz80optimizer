@@ -473,7 +473,8 @@ public class SearchBasedOptimizer implements MDLWorker {
                         registersUsedAfter_previous = null;
                     }
                 } catch(Exception e) {
-                    config.error(e.getMessage());
+                    config.error("Error encountered while running the SearchBasedOptimizer starting at line: " + f.getStatements().get(i));
+                    config.error("Exception: " + e.getMessage());
                     config.error(Arrays.toString(e.getStackTrace()));
                 }
             }

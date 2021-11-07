@@ -222,9 +222,9 @@ public class TniAsmDialect implements Dialect {
                                         config.warn("'" + symbol.symbolName + "' is an ambiguous constant, that could be interpreted as a label or as a hex constant. Please prefix by a leading 0 if this is supposed to be a hex constant in " + s.sl);
                                     }
                                     if (prefix.length() <= 2) {
-                                        e.copyFrom(Expression.constantExpression(hex, Expression.RENDER_AS_8BITHEX, config));
+                                        symbol.copyFrom(Expression.constantExpression(hex, Expression.RENDER_AS_8BITHEX, config));
                                     } else {
-                                        e.copyFrom(Expression.constantExpression(hex, Expression.RENDER_AS_16BITHEX, config));
+                                        symbol.copyFrom(Expression.constantExpression(hex, Expression.RENDER_AS_16BITHEX, config));
                                     }
                                 }
                             }

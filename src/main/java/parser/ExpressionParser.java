@@ -69,10 +69,12 @@ public class ExpressionParser {
     
     public boolean allowFloatingPointNumbers = false;
     public boolean binaryDigitsCanContainSpaces = false;
+    public boolean allowArrayIndexingSyntax = false;
+    public String arrayIndexSignifyingLength = null;  // this is to cover the [#] syntax of SjasmPlus
 
     // This is used by the macro80 dialect:
     public boolean doubleHashToMarkExternalSymbols = false;
-    
+        
     // indexed by the operator numbers:
     // Precedences obtained from the ones used by c++: https://en.cppreference.com/w/cpp/language/operator_precedence
     public int OPERATOR_PRECEDENCE[] = {
@@ -346,6 +348,63 @@ public class ExpressionParser {
                 exp = Expression.operatorExpression(Expression.EXPRESSION_AND, exp, exp2, config);
                 continue;
             }
+            // array indexing:
+            if (allowArrayIndexingSyntax && 
+                exp.symbolName != null &&
+                tokens.get(0).equalsIgnoreCase("[")) {
+                tokens.remove(0);
+                if (arrayIndexSignifyingLength != null &&
+                    !tokens.isEmpty() && 
+                    tokens.get(0).equalsIgnoreCase(arrayIndexSignifyingLength)) {
+                    tokens.remove(0);
+                    if (tokens.isEmpty() || !tokens.get(0).equalsIgnoreCase("]")) {
+                        config.error("Expected ] after array index in " + s.sl);
+                        return null;
+                    }
+                    tokens.remove(0);
+                    // Parse as an array length:
+                    List<Expression> args = new ArrayList<>();
+                    args.add(Expression.constantExpression(exp.symbolName, config));
+                    exp = Expression.dialectFunctionExpression("array.length", args, config);
+                    Expression translated = config.dialectParser.translateToStandardExpression(exp.dialectFunction, args, s, code);
+                    if (translated != null) {
+                        translated.originalDialectExpression = exp;
+                        exp = translated;
+                    } else {
+                        if (config.evaluateDialectFunctions) {
+                            config.codeBaseParser.expressionsToReplaceByValueAtTheEnd.add(Pair.of(exp, s));
+                        }
+                    }
+                    continue;                    
+                }
+                Expression exp2 = parseInternal(tokens, s, previous, code);
+                if (exp2 == null) {
+                    config.error("Error parsing array index in " + s.sl);
+                    return null;
+                }
+                if (tokens.isEmpty() || !tokens.get(0).equalsIgnoreCase("]")) {
+                    config.error("Expected ] after array index in " + s.sl);
+                    return null;
+                }
+                tokens.remove(0);
+                
+                // Parse as an array indexing expression:
+                List<Expression> args = new ArrayList<>();
+                args.add(Expression.constantExpression(exp.symbolName, config));
+                args.add(exp2);
+                exp = Expression.dialectFunctionExpression("array.index", args, config);
+                Expression translated = config.dialectParser.translateToStandardExpression(exp.dialectFunction, args, s, code);
+                if (translated != null) {
+                    translated.originalDialectExpression = exp;
+                    exp = translated;
+                } else {
+                    if (config.evaluateDialectFunctions) {
+                        config.codeBaseParser.expressionsToReplaceByValueAtTheEnd.add(Pair.of(exp, s));
+                    }
+                }
+                continue;
+            }
+            
             return exp;
         }
 

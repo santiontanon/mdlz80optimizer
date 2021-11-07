@@ -137,6 +137,10 @@ public class PrecomputedTestCaseGeneratorForOptimization implements PrecomputedT
             if (s.op == null) continue;
             CPUOp op = s.op;
             List<Integer> bytes = op.assembleToBytes(null, code, config);
+            if (bytes == null) {
+                config.error("Could not generate test case for search-based optimizer!");
+                return null;
+            }
             opAddresses.add(currentAddress);
             for(Integer value:bytes) {
                 memory.writeByte(currentAddress, value);
