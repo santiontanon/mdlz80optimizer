@@ -1694,13 +1694,13 @@ flagsNotUsedAfter(2,S,Z,H,P/V,N,C)
 
 ; bc == 0 after ldir
 ; Thanks to max_iwamoto for suggesting the idea for this pattern
-pattern: replace rrc ?reg0; rrc ?reg1 with rrca; rrc ?reg1
+pattern: remove unnecessary ld ?reg, ?const (as ?reg is already 0 here)
 name: bc=0-after-ldir
-0: ?op
+2: ?op
 1: *
-2: ld ?reg,?const
+0: ld ?reg,?const
 replacement:
-0: ?op
+2: ?op
 1: *
 constraints:
 in(?op,ldir,lddr)
@@ -1709,30 +1709,30 @@ equal(?const,0)
 
 ; bc == 0 after ldir (2)
 ; Thanks to max_iwamoto for suggesting the idea for this pattern
-pattern: replace rrc ?reg0; rrc ?reg1 with rrca; rrc ?reg1
+pattern: replace ld bc,?const by ld c,?const (as b is already 0 here)
 name: b=0-after-ldir
-0: ?op
+2: ?op
 1: *
-2: ld bc,?const
+0: ld bc,?const
 replacement:
-0: ?op
+2: ?op
 1: *
-2: ld c,?const
+0: ld c,?const
 constraints:
 in(?op,ldir,lddr)
 equal(?const, (?const) & #00ff)
 
 ; bc == 0 after ldir (3)
 ; Thanks to max_iwamoto for suggesting the idea for this pattern
-pattern: replace rrc ?reg0; rrc ?reg1 with rrca; rrc ?reg1
+pattern: replace ld bc,?const by b,(?const) >> 8 (as c is already 0 here)
 name: c=0-after-ldir
-0: ?op
+2: ?op
 1: *
-2: ld bc,?const
+0: ld bc,?const
 replacement:
-0: ?op
+2: ?op
 1: *
-2: ld b,(?const) >> 8
+0: ld b,(?const) >> 8
 constraints:
 in(?op,ldir,lddr)
 equal(?const, (?const) & #ff00)
