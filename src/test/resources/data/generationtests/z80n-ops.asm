@@ -9,3 +9,6 @@
     add bc, a
     add de, a
     add hl, a
+    swapnib
+    mul d, e
+    ldws
