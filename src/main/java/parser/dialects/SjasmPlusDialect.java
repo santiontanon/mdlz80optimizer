@@ -427,6 +427,9 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
             return true;
         }
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("defarray")) return true;
+        if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("mmu")) return true;
+        if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("savenex")) return true;
+        if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("cspectmap")) return true;
         
 
         for(SjasmStruct s:structs) {
@@ -485,7 +488,7 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
             }
             Integer value = exp.evaluateToInteger(s, code, false);
             if (value == null || value == Expression.FALSE) {
-                config.error("Assertion failed in " + sl);
+                config.error("Assertion ("+exp+") failed in " + sl);
                 return false;
             }
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
@@ -1030,6 +1033,34 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
             linesToKeepIfGeneratingDialectAsm.add(s);
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);            
         }
+        if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("mmu")) {
+            // ignore for now:
+            while(!tokens.isEmpty() && !config.tokenizer.isSingleLineComment(tokens.get(0))) {
+                tokens.remove(0);
+            }
+            
+            linesToKeepIfGeneratingDialectAsm.add(s);
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);            
+        }
+        if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("savenex")) {
+            // ignore for now:
+            while(!tokens.isEmpty() && !config.tokenizer.isSingleLineComment(tokens.get(0))) {
+                tokens.remove(0);
+            }
+            
+            linesToKeepIfGeneratingDialectAsm.add(s);
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);            
+        }
+        if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("cspectmap")) {
+            // ignore for now:
+            while(!tokens.isEmpty() && !config.tokenizer.isSingleLineComment(tokens.get(0))) {
+                tokens.remove(0);
+            }
+            
+            linesToKeepIfGeneratingDialectAsm.add(s);
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);            
+        }
+        
         
         if (parseAbyte(tokens, l, sl, s, previous, source, code)) return true;
         
@@ -1182,17 +1213,26 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
             if (value == null) return null;
             return value&0xff;
         }
-        if (functionName.equalsIgnoreCase("$$") && args.size() == 1) {
-            if (args.get(0).type != Expression.EXPRESSION_SYMBOL) {
-                config.error("':' operator used on a non-symbol expression at " + s.sl);
-                return null;
+        if (functionName.equalsIgnoreCase("$$")) {
+            if (args.isEmpty()) {
+                if (currentPages.isEmpty()) {
+                    config.error("Canot evaluate '"+functionName+"' as we have no current page defined, in " + s.sl);
+                    return null;
+                } else {
+                    return currentPages.get(0);
+                }
+            } else if (args.size() == 1) {
+                if (args.get(0).type != Expression.EXPRESSION_SYMBOL) {
+                    config.error("':' operator used on a non-symbol expression at " + s.sl);
+                    return null;
+                }
+                Integer page = symbolPage.get(args.get(0).symbolName);
+                if (page == null) {
+                    config.error("Unknown page of symbol "+args.get(0).symbolName+" at " + s.sl);
+                    return null;
+                }
+                return page;
             }
-            Integer page = symbolPage.get(args.get(0).symbolName);
-            if (page == null) {
-                config.error("Unknown page of symbol "+args.get(0).symbolName+" at " + s.sl);
-                return null;
-            }
-            return page;
         }
         if (functionName.equalsIgnoreCase("{") && args.size() == 1) {
             byte []memory = reconstructDeviceRAMUntil(null, code);

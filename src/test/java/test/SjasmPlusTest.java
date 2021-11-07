@@ -31,26 +31,26 @@ public class SjasmPlusTest {
         code = new CodeBase(config);
     }
 
-//    @Test public void test1() throws IOException { Assert.assertTrue(test("data/generationtests/sjasmplus-test1.asm",
-//                                                                          "data/generationtests/sjasmplus-test1-expected.asm")); }
-//    @Test public void test2() throws IOException { Assert.assertTrue(test("data/generationtests/sjasmplus-test2.asm",
-//                                                                          "data/generationtests/sjasmplus-test2-expected.asm")); }
-//    @Test public void test3() throws IOException { Assert.assertTrue(test("data/generationtests/sjasmplus-test3.asm",
-//                                                                          "data/generationtests/sjasmplus-test3-expected.asm")); }
-//    @Test public void test4() throws IOException { Assert.assertTrue(test("data/generationtests/sjasm-sjasmplus-abyte.asm",
-//                                                                          "data/generationtests/sjasm-sjasmplus-abyte-expected.asm")); }
-//    @Test public void test5() throws IOException { Assert.assertTrue(test("data/generationtests/sjasmplus-fake.asm",
-//                                                                          "data/generationtests/sjasmplus-fake-expected.asm")); }
-//    @Test public void test6() throws IOException { Assert.assertTrue(test("data/generationtests/sjasmplus-test6.asm",
-//                                                                          "data/generationtests/sjasmplus-test6-expected.asm")); }
-//    @Test public void test7() throws IOException { Assert.assertTrue(test("data/generationtests/sjasmplus-test7.asm",
-//                                                                          "data/generationtests/sjasmplus-test7-expected.asm")); }
-//    @Test public void test8() throws IOException { Assert.assertTrue(test("data/generationtests/sjasmplus-test8.asm",
-//                                                                          "data/generationtests/sjasmplus-test8-expected.asm")); }
-//    @Test public void test9() throws IOException { Assert.assertTrue(test("data/generationtests/sjasmplus-test9.asm",
-//                                                                          "data/generationtests/sjasmplus-test9-expected.asm")); }
-//    @Test public void test10() throws IOException { Assert.assertTrue(test("data/generationtests/sjasmplus-defarray.asm",
-//                                                                           "data/generationtests/sjasmplus-defarray-expected.asm")); }
+    @Test public void test1() throws IOException { Assert.assertTrue(test("data/generationtests/sjasmplus-test1.asm",
+                                                                          "data/generationtests/sjasmplus-test1-expected.asm")); }
+    @Test public void test2() throws IOException { Assert.assertTrue(test("data/generationtests/sjasmplus-test2.asm",
+                                                                          "data/generationtests/sjasmplus-test2-expected.asm")); }
+    @Test public void test3() throws IOException { Assert.assertTrue(test("data/generationtests/sjasmplus-test3.asm",
+                                                                          "data/generationtests/sjasmplus-test3-expected.asm")); }
+    @Test public void test4() throws IOException { Assert.assertTrue(test("data/generationtests/sjasm-sjasmplus-abyte.asm",
+                                                                          "data/generationtests/sjasm-sjasmplus-abyte-expected.asm")); }
+    @Test public void test5() throws IOException { Assert.assertTrue(test("data/generationtests/sjasmplus-fake.asm",
+                                                                          "data/generationtests/sjasmplus-fake-expected.asm")); }
+    @Test public void test6() throws IOException { Assert.assertTrue(test("data/generationtests/sjasmplus-test6.asm",
+                                                                          "data/generationtests/sjasmplus-test6-expected.asm")); }
+    @Test public void test7() throws IOException { Assert.assertTrue(test("data/generationtests/sjasmplus-test7.asm",
+                                                                          "data/generationtests/sjasmplus-test7-expected.asm")); }
+    @Test public void test8() throws IOException { Assert.assertTrue(test("data/generationtests/sjasmplus-test8.asm",
+                                                                          "data/generationtests/sjasmplus-test8-expected.asm")); }
+    @Test public void test9() throws IOException { Assert.assertTrue(test("data/generationtests/sjasmplus-test9.asm",
+                                                                          "data/generationtests/sjasmplus-test9-expected.asm")); }
+    @Test public void test10() throws IOException { Assert.assertTrue(test("data/generationtests/sjasmplus-defarray.asm",
+                                                                           "data/generationtests/sjasmplus-defarray-expected.asm")); }
     @Test public void test11() throws IOException { Assert.assertTrue(test("data/generationtests/sjasmplus-structs.asm",
                                                                            "data/generationtests/sjasmplus-structs-expected.asm")); }
 

@@ -199,7 +199,7 @@ public class Expression {
             case EXPRESSION_SYMBOL: {
                 if (symbolName.equals(CodeBase.CURRENT_ADDRESS)) {
                     if (s != null) {
-                        return s.getAddressInternal(code, true, previous, variableStack);
+                        return (s.getAddressInternal(code, true, previous, variableStack) & 0xffff);
                     } else {
                         return null;
                     }

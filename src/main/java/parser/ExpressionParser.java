@@ -636,9 +636,19 @@ public class ExpressionParser {
                 
             } else if (dialectFunctionsSingleArgumentNoParenthesisPrecedence.containsKey(tokens.get(0).toLowerCase())) {
                 String functionName = tokens.remove(0);
+                // Exception for SjasmPlus:
+                if (functionName.equalsIgnoreCase("$$")) {
+                    // See if the next token is not a symbol:
+                    if (tokens.isEmpty() || !config.tokenizer.isSymbol(tokens.get(0))) {
+                        // Parse as the symbol "$$":
+                        Expression exp = Expression.dialectFunctionExpression(functionName, new ArrayList<>(), config);
+                        return exp;
+                    }
+                }
+
                 Expression arg = parse(tokens, s, previous, code);
                 if (arg == null) {
-                    config.error("Failed to parse argument list of a dialect function.");
+                    config.error("Failed to parse argument list of function " + functionName);
                     return null;
                 }
                                 
