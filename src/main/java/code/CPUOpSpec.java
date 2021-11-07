@@ -52,6 +52,8 @@ public class CPUOpSpec {
             List<String> tokens = config.tokenizer.tokenize(byteString);
             if (tokens.get(0).equals("o") ||
                 tokens.get(0).equals("n") ||
+                tokens.get(0).equals("n1") ||
+                tokens.get(0).equals("n2") ||
                 tokens.get(0).equals("nn")) {
                 bytesRepresentation.add(new String[]{"0", byteString});
             } else {

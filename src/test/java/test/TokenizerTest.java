@@ -119,6 +119,9 @@ public class TokenizerTest {
         Assert.assertArrayEquals(new String[]{"db", "\"\"\"", ",", "\"~\""}, tokenize("db \"\\\"\", \"~\""));
         config.tokenizer.stringEscapeSequences.clear();
     }
+    @Test public void test28() {
+        Assert.assertArrayEquals(new String[]{"ld","a",",","$$","label"}, tokenize("ld	a,$$label"));
+    }
 
     
     private String[] tokenize(String line)

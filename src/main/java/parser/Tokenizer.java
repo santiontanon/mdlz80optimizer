@@ -26,6 +26,7 @@ public class Tokenizer {
     public boolean sdccStyleDollarInLabels = false;
     public boolean allowQuestionMarksInSymbols = false;
     public boolean allowDotFollowedByNumberLabels = true;
+    public boolean binaryDigitsCanContainQoutes = false;
     
     public List<String> multilineCommentStartTokens = new ArrayList<>();
     public List<String> multilineCommentEndTokens = new ArrayList<>();
@@ -109,6 +110,12 @@ public class Tokenizer {
                         continue;
                     }
                 }
+                if (previous.equals("$") && next.equals("$")) {
+                    tokens.remove(tokens.size()-1);
+                    tokens.add(previous.concat(next));
+                    previous = previous.concat(next);
+                    continue;
+                }
                 if (previous.equals("$") && isHexCharacter(next.charAt(0))) {
                     // merge, as this is just a single symbol
                     tokens.remove(tokens.size()-1);
@@ -170,6 +177,21 @@ public class Tokenizer {
                 tokens.add(token);
             } else if (next.equals("'")) {
                 StringBuilder tokenBuilder = new StringBuilder(next);
+                if (binaryDigitsCanContainQoutes && previous != null) {
+                    if (isBinary(previous) && st.hasMoreTokens()) {
+                        next = st.nextToken();
+                        if (isBinary(next)) {
+                            String token = previous + next;
+                            tokens.remove(tokens.size()-1);
+                            tokens.add(token);
+                            previous = token;
+                            continue;
+                        } else {
+                            tokenBuilder.append(next);
+                        }
+                    }
+                }
+                
                 while(st.hasMoreTokens()) {
                     next = st.nextToken();
                     tokenBuilder.append(next);

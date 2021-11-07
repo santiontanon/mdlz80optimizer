@@ -167,6 +167,8 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
                 "high", config.expressionParser.OPERATOR_PRECEDENCE[Expression.EXPRESSION_SUM]);
         config.expressionParser.dialectFunctionsSingleArgumentNoParenthesisPrecedence.put(
                 "low", config.expressionParser.OPERATOR_PRECEDENCE[Expression.EXPRESSION_SUM]);
+        config.expressionParser.dialectFunctionsSingleArgumentNoParenthesisPrecedence.put(
+                "$$", 0);
         config.expressionParser.sjasmPlusCurlyBracketExpressions = true;
         config.expressionParser.allowArrayIndexingSyntax = true;
         config.expressionParser.arrayIndexSignifyingLength = "#";
@@ -387,6 +389,7 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
         config.tokenizer.multilineCommentEndTokens.remove("}");
         config.tokenizer.allowQuestionMarksInSymbols = true;
         config.tokenizer.allowDotFollowedByNumberLabels = false;
+        config.tokenizer.binaryDigitsCanContainQoutes = true;
     }
     
     
@@ -1179,7 +1182,7 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
             if (value == null) return null;
             return value&0xff;
         }
-        if (functionName.equalsIgnoreCase(":") && args.size() == 1) {
+        if (functionName.equalsIgnoreCase("$$") && args.size() == 1) {
             if (args.get(0).type != Expression.EXPRESSION_SYMBOL) {
                 config.error("':' operator used on a non-symbol expression at " + s.sl);
                 return null;
@@ -1300,7 +1303,8 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
     @Override
     public boolean expressionEvaluatesToIntegerConstant(String functionName) {
         if (functionName.equalsIgnoreCase("{") || 
-            functionName.equalsIgnoreCase("{b")) {
+            functionName.equalsIgnoreCase("{b") ||
+            functionName.equalsIgnoreCase("$$")) {
             return true;
         }
         return false;

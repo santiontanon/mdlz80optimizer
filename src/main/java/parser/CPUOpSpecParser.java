@@ -200,6 +200,10 @@ public class CPUOpSpecParser {
                 arg.max = 7;
             } else if (argStr.equals("n")) {
                 arg.byteConstantAllowed = true;
+            } else if (argStr.equals("n1")) {
+                arg.byteConstantAllowed = true;
+            } else if (argStr.equals("n2")) {
+                arg.byteConstantAllowed = true;
             } else if (argStr.equals("nn")) {
                 arg.wordConstantAllowed = true;
             } else if (argStr.equals("o")) {

@@ -408,6 +408,43 @@ public class CPUOp {
                 }
                 data.add(n & 0xff);
                 
+            } else if (v[1].equals("n1") ||
+                       v[1].equals("n2")) {
+                // 8 bit argument
+                Integer n1 = null;
+                Integer n2 = null;
+                for(Expression arg:args) {
+                    String undefined = arg.findUndefinedSymbol(code);
+                    if (undefined != null) {
+                        if (!silent) config.error("Undefined symbol \"" + undefined + "\"" + (s!=null ? " in " + s.sl.fileNameLineString():" in synthetic op " + this));
+                        return null;
+                    }
+                    if (arg.evaluatesToIntegerConstant()) {
+                        if (n1 != null && n2 != null) {
+                            if (!silent) config.error("Unable to convert " + this + " to bytes! more than two numeric constants in one op!");
+                            return null;
+                        }
+                        if (n1 == null) {
+                            n1 = arg.evaluateToInteger(s, code, true);
+                        } else {
+                            n2 = arg.evaluateToInteger(s, code, true);
+                        }
+                    }
+                }
+                if (v[1].equals("n1")) {
+                    if (n1 == null) {
+                        if (!silent) config.error("Unable to convert " + this + " to bytes! no 8bit numeric constants in the op!");
+                        return null;
+                    }
+                    data.add(n1 & 0xff);
+                } else {
+                    if (n2 == null) {
+                        if (!silent) config.error("Unable to convert " + this + " to bytes! only one 8bit numeric constant in the op!");
+                        return null;
+                    }
+                    data.add(n2 & 0xff);
+                }
+                
             } else if (v[1].equals("nn")) {
                 // 16 bit argument
                 Integer nn = null;
