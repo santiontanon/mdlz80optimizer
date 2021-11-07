@@ -182,10 +182,72 @@ public abstract class SjasmDerivativeDialect implements Dialect {
                 // it is a struct definition:
                 boolean done = false;
                 List<Expression> data = new ArrayList<>();
+
+                if (!tokens.isEmpty() && tokens.get(0).equals("=") && s.label != null) {
+                    // struct definition without actually defining data:
+                    tokens.remove(0);
+                    Expression exp = config.expressionParser.parse(tokens, s, previous, code);
+                    if (exp == null) {
+                        config.error("Cannot parse struct instantiation in " + sl);
+                        return false;
+                    }
+                    // Generate all the field definitions:
+                    // modify the original label to an equ:
+                    s.type = CodeStatement.STATEMENT_CONSTANT;
+                    s.label.exp = exp;
+                    s.label.clearCache();
+                    
+                    int currentOffset = 0;
+                    for(int i = 0;i<st.attributeNames.size();i++) {                        
+                        CodeStatement s2 = new CodeStatement(CodeStatement.STATEMENT_CONSTANT, sl, source, config);
+                        SourceConstant c = new SourceConstant(s.label.name + "." + st.rawAttributeNames.get(i),
+                                s.label.name + "." + st.rawAttributeNames.get(i), 
+                                Expression.operatorExpression(Expression.EXPRESSION_SUM, 
+                                        exp, 
+                                        Expression.constantExpression(currentOffset, config), config), s2, config);
+                        s2.label = c;
+                        int res = code.addSymbol(c.name, c);
+                        if (res == -1) return false;
+                        if (res == 0) s.redefinedLabel = true; 
+                        l.add(s2);
+
+                        switch(st.attributeCodeStatementTypes.get(i)) {
+                            case CodeStatement.STATEMENT_DATA_BYTES:
+                                currentOffset ++;
+                                break;
+                            case CodeStatement.STATEMENT_DATA_WORDS:
+                                currentOffset +=2;
+                                break;
+                            case CodeStatement.STATEMENT_DATA_DOUBLE_WORDS:
+                                currentOffset +=4;
+                                break;
+                            default:
+                                config.error("Field " + st.attributeNames.get(i) + " of struct " + st.name + " has an unsupported type ("+st.attributeCodeStatementTypes.get(i)+") in " + sl);
+                                return false;
+                        }
+ 
+                    }                    
+                    return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
+                }
                 
                 if (tokens.isEmpty() || tokens.get(0).equals(":") || config.tokenizer.isSingleLineComment(tokens.get(0))) done = true;
-                
+
+                int nOpenCurlyBrackets = 0;
                 while (!done) {
+                    if (!tokens.isEmpty() && tokens.get(0).equalsIgnoreCase("{")) {
+                        tokens.remove(0);
+                        nOpenCurlyBrackets++;
+                    }
+                    if (!tokens.isEmpty() && tokens.get(0).equalsIgnoreCase("}") && nOpenCurlyBrackets > 0) {
+                        tokens.remove(0);
+                        nOpenCurlyBrackets--;
+                    }
+                    if (!tokens.isEmpty() && tokens.get(0).equalsIgnoreCase(",")) {
+                        tokens.remove(0);
+                        // default value:
+                        data.add(st.attributeDefaults.get(data.size()));
+                        continue;
+                    }
                     Expression exp = config.expressionParser.parse(tokens, s, previous, code);
                     if (exp == null) {
                         config.error("Cannot parse struct instantiation in " + sl);
@@ -198,6 +260,17 @@ public abstract class SjasmDerivativeDialect implements Dialect {
                     } else {
                         done = true;
                     }
+                }
+                while(nOpenCurlyBrackets > 0) {
+                    if (!tokens.isEmpty() && tokens.get(0).equalsIgnoreCase("}")) {
+                        tokens.remove(0);
+                        nOpenCurlyBrackets--;
+                    }
+                }
+                
+                if (nOpenCurlyBrackets > 0) {
+                    config.error("Cannot parse struct instantiation (missing closing curly bracket) in " + sl);
+                    return false;                    
                 }
                 
                 // fill the rest with defaults:

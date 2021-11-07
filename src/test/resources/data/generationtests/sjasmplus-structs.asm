@@ -1,0 +1,22 @@
+; Test for struct definition and usage
+	STRUCT SCOLOR
+RED	BYTE 4
+GREEN	BYTE 5
+BLUE	BYTE 6
+	ENDS
+
+	STRUCT SDOT
+X	BYTE
+Y	BYTE
+C	SCOLOR 0,0,0 ; use new default values
+	ENDS
+
+COLORTABLE:
+  SCOLOR 0,0,0
+  SCOLOR 1,2,3
+  SCOLOR ,2
+
+DOT1: SDOT 1,2,3,4,5
+DOT2: SDOT {1,2,3,4,5}
+DOT3: SDOT {1,2,{3,4,5}}
+DOT4: SDOT = #c000
