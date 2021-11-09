@@ -206,6 +206,8 @@ public class CPUOpSpecParser {
                 arg.byteConstantAllowed = true;
             } else if (argStr.equals("nn")) {
                 arg.wordConstantAllowed = true;
+            } else if (argStr.equals("mm")) {
+                arg.wordConstantBigEndianAllowed = true;
             } else if (argStr.equals("o")) {
                 arg.relativeLabelAllowed = true;
             } else if (argStr.equals("(n)")) {

@@ -16,6 +16,7 @@ public class CPUOpSpecArg {
     public boolean wordConstantIndirectionAllowed = false;
     public boolean byteConstantAllowed = false;
     public boolean wordConstantAllowed = false;
+    public boolean wordConstantBigEndianAllowed = false;
     public boolean relativeLabelAllowed = false;
     public Integer min = null;
     public Integer max = null;
@@ -60,6 +61,7 @@ public class CPUOpSpecArg {
         }
         if (byteConstantAllowed ||
             wordConstantAllowed ||
+            wordConstantBigEndianAllowed ||
             relativeLabelAllowed) {
             if (exp.type != Expression.EXPRESSION_PARENTHESIS &&
                 exp.evaluatesToIntegerConstant()) {
@@ -111,6 +113,7 @@ public class CPUOpSpecArg {
         if (wordConstantIndirectionAllowed != arg.wordConstantIndirectionAllowed) return false;
         if (byteConstantAllowed != arg.byteConstantAllowed) return false;
         if (wordConstantAllowed != arg.wordConstantAllowed) return false;
+        if (wordConstantBigEndianAllowed != arg.wordConstantBigEndianAllowed) return false;
         if (relativeLabelAllowed != arg.relativeLabelAllowed) return false;
         
         if (min == null && arg.min != null) return false;

@@ -468,15 +468,41 @@ CP A, n	7	FE n	2	A					S,Z,H,P/V,N,C			false
 CP A, (IX+o)	19	DD BE o	3	A,IX			IX+o		S,Z,H,P/V,N,C			false
 CP A, (IY+o)	19	FD BE o	3	A,IY			IY+o		S,Z,H,P/V,N,C			false
 ; z80n/z80next extended instructions:
-NEXTREG n1, n2	20	ED 91 n1 n2	4									TRUE
-NEXTREG n, A	17	ED 92 n	3	A								TRUE
-ADD BC, nn	11	ED 36 nn nn	4	BC				BC	H,N,C			TRUE
-ADD DE, nn	11	ED 35 nn nn	4	DE				DE	H,N,C			TRUE
-ADD HL, nn	11	ED 34 nn nn	4	HL				HL	H,N,C			TRUE
-ADD BC, A	8	ED 33	2	A,BC				BC	C			TRUE
-ADD DE, A	8	ED 32	2	A,DE				DE	C			TRUE
-ADD HL, A	8	ED 31	2	A,HL				HL	C			TRUE
-SWAPNIB	8	ED 23	2	A				A				TRUE
-MUL D, E	8	ED 30	2	DE				DE				TRUE													
-MUL DE	8	ED 30	2	DE				DE				FALSE													
-LDWS	14	ED A5	2	DE,HL			HL	L,D	S,Z,H,P/V,N		DE	TRUE
+NEXTREG n1, n2	20	ED 91 n1 n2	4									true
+NEXTREG n, A	17	ED 92 n	3	A								true
+ADD BC, nn	11	ED 36 nn nn	4	BC				BC	H,N,C			true
+ADD DE, nn	11	ED 35 nn nn	4	DE				DE	H,N,C			true
+ADD HL, nn	11	ED 34 nn nn	4	HL				HL	H,N,C			true
+ADD BC, A	8	ED 33	2	A,BC				BC	C			true
+ADD DE, A	8	ED 32	2	A,DE				DE	C			true
+ADD HL, A	8	ED 31	2	A,HL				HL	C			true
+SWAPNIB	8	ED 23	2	A				A				true
+MUL D, E	8	ED 30	2	DE				DE				true
+MUL DE	8	ED 30	2	DE				DE				false
+LDWS	14	ED A5	2	DE,HL			HL	L,D	S,Z,H,P/V,N		DE	true
+LDIX	16	ED A4	2	BC,DE,HL, A			HL	BC,HL,DE	H,P/V,N		DE	true
+LDIRX	21/16	ED B4	2	BC,DE,HL, A			[HL:HL+BC]	BC,DE,HL			[DE:DE+BC]	true
+LDDX	16	ED AC	2	BC,DE,HL, A			HL	BC,HL,DE	H,P/V,N		DE	true
+LDDRX	21/16	ED BC	2	BC,DE,HL, A			[HL-BC:HL]	BC,DE,HL			[DE-BC:DE]	true
+LDPIRX	21/16	ED B7	2	BC,DE,HL, A			[HL&#FFF8+E&7,HL&#FFF8+E&7+BC)	BC,HL,DE			[DE:DE+BC]	true
+OUTINB	16	ED 90	2	B,C,HL			HL	HL	S,Z,H,P/V,N,C	C		true
+MIRROR A	8	ED 24	2	A				A				true
+PUSH mm	23	ED 8A mm mm	4	SP				SP			[SP-2:SP-1]	true
+PIXELDN	8	ED 93	2	HL				HL				true
+PIXELAD	8	ED 94	2	DE				HL				true
+SETAE	8	ED 95	2	E				A				true
+TEST n	11	ED 27 n	3	A					S,Z,H,P/V,N,C			true
+BSLA DE,B	8	ED 28	2	DE,B				DE				true
+BSRA DE,B	8	ED 29	2	DE,B				DE				true
+BSRL DE,B	8	ED 2A	2	DE,B				DE				true
+BSRF DE,B	8	ED 2B	2	DE,B				DE				true
+BRLC DE,B	8	ED 2C	2	DE,B				DE				true
+JP (C)	13	ED 98	2	C		C		PC				true
+LIRX	21/16	ED B4	2	BC,DE,HL, A			[HL:HL+BC]	BC,DE,HL			[DE:DE+BC]	false
+LDRX	21/16	ED BC	2	BC,DE,HL, A			[HL-BC:HL]	BC,DE,HL			[DE-BC:DE]	false
+LPRX	21/16	ED B7	2	BC,DE,HL, A			[HL&#FFF8+E&7,HL&#FFF8+E&7+BC)	BC,HL,DE			[DE:DE+BC]	false
+OTIB	16	ED 90	2	B,C,HL			HL	HL	S,Z,H,P/V,N,C	C		false
+MIRR A	8	ED 24	2	A				A				false
+PXDN	8	ED 93	2	HL				HL				false
+PXAD	8	ED 94	2	DE				HL				false
+STAE	8	ED 95	2	E				A				false

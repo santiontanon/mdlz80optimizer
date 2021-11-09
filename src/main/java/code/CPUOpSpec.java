@@ -54,7 +54,8 @@ public class CPUOpSpec {
                 tokens.get(0).equals("n") ||
                 tokens.get(0).equals("n1") ||
                 tokens.get(0).equals("n2") ||
-                tokens.get(0).equals("nn")) {
+                tokens.get(0).equals("nn") ||
+                tokens.get(0).equals("mm")) {
                 bytesRepresentation.add(new String[]{"0", byteString});
             } else {
                 bytesRepresentation.add(new String[]{tokens.get(0), byteString.substring(tokens.get(0).length())});

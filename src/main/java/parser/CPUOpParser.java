@@ -263,6 +263,9 @@ public class CPUOpParser {
                     } else if (token.equals("nn")) {
                         // we assume this occurs only as the second argument:
                         tokens.addAll(config.tokenizer.tokenize(a_args.get(1).toString()));
+                    } else if (token.equals("mm")) {
+                        // we assume this occurs only as the first argument:
+                        tokens.addAll(config.tokenizer.tokenize(a_args.get(0).toString()));
                     } else {
                         tokens.add(token);
                     }

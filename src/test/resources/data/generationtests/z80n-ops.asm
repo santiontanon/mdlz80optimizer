@@ -12,3 +12,21 @@
     swapnib
     mul d, e
     ldws
+    ldix
+    ldirx
+    lddx
+    lddrx
+    ldpirx
+    outinb
+    mirror a
+    push #0102
+    pixeldn
+    pixelad
+    setae
+    test #01
+    bsla de, b
+    bsra de, b
+    bsrl de, b
+    bsrf de, b
+    brlc de, b
+    jp (c)

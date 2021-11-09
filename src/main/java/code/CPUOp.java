@@ -445,7 +445,8 @@ public class CPUOp {
                     data.add(n2 & 0xff);
                 }
                 
-            } else if (v[1].equals("nn")) {
+            } else if (v[1].equals("nn") ||
+                       v[1].equals("mm")) {
                 // 16 bit argument
                 Integer nn = null;
                 for(Expression arg:args) {
@@ -470,11 +471,21 @@ public class CPUOp {
                     if (!silent) config.error("Unable to convert " + this + " to bytes! no 16bit numeric constants in the op! Arguments: " + args);
                     return null;
                 }
-                if (nn_state == 0) {
-                    data.add(nn & 0xff);
-                    nn_state = 1;
+                if (v[1].equals("nn")) {
+                    if (nn_state == 0) {
+                        data.add(nn & 0xff);
+                        nn_state = 1;
+                    } else {
+                        data.add((nn >> 8) & 0xff);
+                    }
                 } else {
-                    data.add((nn >> 8) & 0xff);
+                    // big endian:
+                    if (nn_state == 0) {
+                        data.add((nn >> 8) & 0xff);
+                        nn_state = 1;
+                    } else {
+                        data.add(nn & 0xff);
+                    }
                 }
                 
             } else if (v[1].equals("+0")) {
