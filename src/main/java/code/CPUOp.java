@@ -540,6 +540,13 @@ public class CPUOp {
                     if (!silent) config.error("Unable to convert bit or register name to value " + this);
                 }
                 data.add(baseByte+8*(b&0x07)+r);
+
+            } else if (v[1].equals("+8*r")) {
+                Integer r = registerValueForByte(args.get(0).registerOrFlagName);
+                if (r == null) {
+                    if (!silent) config.error("Unable to convert bit or register name to value " + this);
+                }
+                data.add(baseByte+8*r);
                 
             } else {
                 if (!silent) config.error("Unable to convert " + this + " to bytes! Unsupported byte modifier " + v[1]);

@@ -1,4 +1,4 @@
-; Test case: 
+; Test case for z80n-specific instructions: 
     org #0000
 
     nextreg 1, 2
