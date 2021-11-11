@@ -542,7 +542,10 @@ public class CPUOp {
                 data.add(baseByte+8*(b&0x07)+r);
 
             } else if (v[1].equals("+8*r")) {
-                Integer r = registerValueForByte(args.get(0).registerOrFlagName);
+                Integer r = registerValueForByte(
+                        args.get(0).registerOrFlagName != null ?
+                        args.get(0).registerOrFlagName :
+                        args.get(1).registerOrFlagName);
                 if (r == null) {
                     if (!silent) config.error("Unable to convert bit or register name to value " + this);
                 }
