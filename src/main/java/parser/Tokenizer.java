@@ -26,7 +26,7 @@ public class Tokenizer {
     public boolean sdccStyleDollarInLabels = false;
     public boolean allowQuestionMarksInSymbols = false;
     public boolean allowDotFollowedByNumberLabels = true;
-    public boolean binaryDigitsCanContainQoutes = false;
+    public boolean numericConstantsCanContainQoutes = false;
     
     public List<String> multilineCommentStartTokens = new ArrayList<>();
     public List<String> multilineCommentEndTokens = new ArrayList<>();
@@ -177,17 +177,19 @@ public class Tokenizer {
                 tokens.add(token);
             } else if (next.equals("'")) {
                 StringBuilder tokenBuilder = new StringBuilder(next);
-                if (binaryDigitsCanContainQoutes && previous != null) {
-                    if (isBinary(previous) && st.hasMoreTokens()) {
-                        next = st.nextToken();
-                        if (isBinary(next)) {
-                            String token = previous + next;
-                            tokens.remove(tokens.size()-1);
-                            tokens.add(token);
-                            previous = token;
-                            continue;
-                        } else {
-                            tokenBuilder.append(next);
+                if (numericConstantsCanContainQoutes && previous != null) {
+                    if (st.hasMoreTokens()) {
+                        if (isHex(previous) || isInteger(previous) || isBinary(previous)) {
+                            next = st.nextToken();
+                            if (isHex(next) || isInteger(next) || isBinary(next)) {
+                                String token = previous + next;
+                                tokens.remove(tokens.size()-1);
+                                tokens.add(token);
+                                previous = token;
+                                continue;
+                            } else {
+                                tokenBuilder.append(next);
+                            }
                         }
                     }
                 }

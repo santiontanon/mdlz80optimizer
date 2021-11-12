@@ -389,7 +389,7 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
         config.tokenizer.multilineCommentEndTokens.remove("}");
         config.tokenizer.allowQuestionMarksInSymbols = true;
         config.tokenizer.allowDotFollowedByNumberLabels = false;
-        config.tokenizer.binaryDigitsCanContainQoutes = true;
+        config.tokenizer.numericConstantsCanContainQoutes = true;
     }
     
     
