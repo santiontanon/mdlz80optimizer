@@ -585,6 +585,16 @@ public class SearchBasedOptimizer implements MDLWorker {
                 assignKnownRegisterName(s.op.args.get(0).registerOrFlagName.toUpperCase(), val-1, knownRegisterValues, toClear);
             }
         }
+
+        // Clear known vlaues after calls/jumps for safety:
+        if (s.op.spec.isCall) {
+            knownRegisterValues.clear();
+            return;
+        }
+        if (s.op.spec.isJump && !s.op.spec.isConditional) {
+            knownRegisterValues.clear();
+            return;
+        }
                 
         for(String reg:toClear) {
             knownRegisterValues.remove(reg);
@@ -629,7 +639,10 @@ public class SearchBasedOptimizer implements MDLWorker {
     {
         if (s.type != CodeStatement.STATEMENT_CPUOP &&
             s.type != CodeStatement.STATEMENT_NONE) return false;
-        if (code.protectedFromOptimization(s)) return true;
+        if (code.protectedFromOptimization(s)) {
+            config.debug("SBO: preventOptimization: protected!");
+            return true;
+        }
         
         switch(s.op.spec.getName()) {
             case "nop":
@@ -655,10 +668,12 @@ public class SearchBasedOptimizer implements MDLWorker {
             case "otdr":
             case "halt":
             case "exx":
+                config.debug("SBO: preventOptimization: unsupported instruction " + s.op.spec.getName());
                 return true;
             case "ex":
                 if (s.op.args.get(0).registerOrFlagName != null &&
                     s.op.args.get(0).registerOrFlagName.equals("af")) {
+                    config.debug("SBO: preventOptimization: unsupported case of ex");
                     return true;
                 }
         }
@@ -667,15 +682,18 @@ public class SearchBasedOptimizer implements MDLWorker {
             if (s.op.spec.args.get(i).wordConstantIndirectionAllowed) {
                 // Only allow "ld (nn),X" for now:
                 if (s.op.isLd() && i == 0) return false;
+                config.debug("SBO: preventOptimization: unsupported indirection: " + s.op);
                 return true;
             } else if (s.op.spec.args.get(i).byteConstantIndirectionAllowed ||
                        s.op.spec.args.get(i).wordConstantIndirectionAllowed ||
                        s.op.spec.args.get(i).regIndirection != null ||
                        s.op.spec.args.get(i).regOffsetIndirection != null) {
+                config.debug("SBO: preventOptimization: unsupported op: " + s.op);
                 return true;
             }
             if (s.op.args.get(i).registerOrFlagName != null &&
-                s.op.args.get(i).registerOrFlagName.equals("sp")) {
+                s.op.args.get(i).registerOrFlagName.equalsIgnoreCase("sp")) {
+                config.debug("SBO: preventOptimization: unsupported op: " + s.op);
                 return true;
             }
         }
@@ -692,7 +710,7 @@ public class SearchBasedOptimizer implements MDLWorker {
         }
         config.debug(f.getStatements().get(line).fileNameLineString());
         
-        config.debug("Optimizing from line " + f.getStatements().get(line).op + "\t\tknowing: " + knownRegisterValues);
+        config.debug("SBO: Optimizing from line " + f.getStatements().get(line).op + "\t\tknowing: " + knownRegisterValues);
         
         List<CodeStatement> codeToOptimize = new ArrayList<>();
         int line2 = line;
@@ -702,11 +720,13 @@ public class SearchBasedOptimizer implements MDLWorker {
             CodeStatement s = f.getStatements().get(line2);
             if (!codeToOptimize.isEmpty() && s.label != null) {
                 registersUsedAfter_previous = null;
+                config.debug("SBO: skipping optimization since we found a label.");
                 return false;
             }
             if (s.op != null) {
                 if (preventOptimization(s, code)) {
                     registersUsedAfter_previous = null;
+                    config.debug("SBO: skipping optimization since we found a yet unsupported case.");
                     return false;
                 }
                 codeToOptimize.add(s);
@@ -721,7 +741,7 @@ public class SearchBasedOptimizer implements MDLWorker {
             line2++;
         }
         
-        config.debug("- Optimizing lines " + line + " -> " + line2);
+        config.debug("SBO: Optimizing lines " + line + " -> " + line2);
         for(CodeStatement s:codeToOptimize) {
             config.debug("    " + s);
         }
