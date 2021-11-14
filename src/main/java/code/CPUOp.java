@@ -197,6 +197,12 @@ public class CPUOp {
         return spec.isConditional;
     }
 
+    
+    public boolean isLd()
+    {
+        return spec.opName.equalsIgnoreCase("ld");
+    }
+    
 
     public boolean isRet()
     {

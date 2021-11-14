@@ -6,6 +6,7 @@
 package workers.searchopt;
 
 import cl.MDLConfig;
+import java.util.HashMap;
 
 /**
  *

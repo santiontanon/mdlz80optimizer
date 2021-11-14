@@ -302,8 +302,8 @@ public class SearchBasedOptimizer implements MDLWorker {
         List<SBOCandidate> allCandidateOps = SBOCandidate.precomputeCandidateOps(spec, allDependencies, code, filter, 1, internalConfig);
         if (allCandidateOps == null) return false;
         
-        // Precalculate which registers to randomize:
-        RegisterNames eightBitRegistersToRandomize[] = null;
+        // Precompute which registers to randomize:
+        RegisterNames eightBitRegistersToRandomize[];
         {
             List<RegisterNames> toRandomize = new ArrayList<>();
             // Add all the registers in the goal (to prevent spurious matches):
@@ -464,13 +464,23 @@ public class SearchBasedOptimizer implements MDLWorker {
         OptimizationResult r = new OptimizationResult();
         
         for (SourceFile f : code.getSourceFiles()) {
+            HashMap<String, Integer> knownRegisterValues = new HashMap<>();
             registersUsedAfter_previous = null;
             for (int i = 0; i < f.getStatements().size(); i++) {
+                // reset known register values after each label:
+                if (f.getStatements().get(i).label != null ||
+                    f.getStatements().get(i).include != null) knownRegisterValues.clear();
+                
                 try {
-                    if (optimizeStartingFromLine(f, i, code, r)) {
+                    if (optimizeStartingFromLine(f, i, knownRegisterValues, code, r)) {
                         i = Math.max(0, i-2);   // go back a couple of statements, as more optimizations might chain
                         code.resetAddresses();
                         registersUsedAfter_previous = null;
+                        
+                        // Reset known values after optimization just in case:
+                        knownRegisterValues.clear();
+                    } else {
+                        updateKnownRegisterValues(f.getStatements().get(i), knownRegisterValues, code);
                     }
                 } catch(Exception e) {
                     config.error("Error encountered while running the SearchBasedOptimizer starting at line: " + f.getStatements().get(i));
@@ -490,6 +500,95 @@ public class SearchBasedOptimizer implements MDLWorker {
         config.optimizerStats.addSavings(r);
         if (config.dialectParser != null) return config.dialectParser.postCodeModificationActions(code);
         return true;
+    }
+    
+    
+    private void updateKnownRegisterValues(CodeStatement s, HashMap<String, Integer> knownRegisterValues, CodeBase code)
+    {
+        if (s.op == null) return;
+        
+        // Clear all the output registers:
+        List<String> toClear = new ArrayList<>();
+        for(String reg2:knownRegisterValues.keySet()) {
+            for(String reg1:s.op.spec.outputRegs) {
+                if (CPUOpDependency.registerMatch(reg1, reg2)) {
+                    toClear.add(reg2);
+                    break;
+                }
+            }
+        }
+        
+        // "ld" instructions:
+        if (s.op.isLd()) {
+            if (s.op.args.get(0).isRegister() &&
+                s.op.args.get(1).isConstant()) {
+                Integer val = s.op.args.get(1).evaluateToInteger(s, code, true, null);
+                if (val != null) {
+                    assignKnownRegisterName(s.op.args.get(0).registerOrFlagName.toUpperCase(), val, knownRegisterValues, toClear);
+                }
+            }
+        }
+        
+        // "ldir / lddr / otir / otdr":
+        if (s.op.spec.opName.equalsIgnoreCase("ldir") ||
+            s.op.spec.opName.equalsIgnoreCase("lddr") ||
+            s.op.spec.opName.equalsIgnoreCase("otir") ||
+            s.op.spec.opName.equalsIgnoreCase("otdr")) {
+            assignKnownRegisterName("BC", 0, knownRegisterValues, toClear);
+        }
+        
+        // inc/dec when we had a known value:
+        if (s.op.spec.opName.equalsIgnoreCase("inc") &&
+            s.op.args.get(0).isRegister()) {
+            Integer val = getKnownRegisterValue(s.op.args.get(0).registerOrFlagName.toUpperCase(), knownRegisterValues);
+            if (val != null) {
+                assignKnownRegisterName(s.op.args.get(0).registerOrFlagName.toUpperCase(), val+1, knownRegisterValues, toClear);
+            }
+        }
+        if (s.op.spec.opName.equalsIgnoreCase("dec") &&
+            s.op.args.get(0).isRegister()) {
+            Integer val = getKnownRegisterValue(s.op.args.get(0).registerOrFlagName.toUpperCase(), knownRegisterValues);
+            if (val != null) {
+                assignKnownRegisterName(s.op.args.get(0).registerOrFlagName.toUpperCase(), val-1, knownRegisterValues, toClear);
+            }
+        }
+                
+        for(String reg:toClear) {
+            knownRegisterValues.remove(reg);
+        }
+        
+//        config.debug(knownRegisterValues + "\t\tafter " + s.op);
+    }
+    
+    
+    private Integer getKnownRegisterValue(String reg, HashMap<String, Integer> knownRegisterValues)
+    {
+        if (knownRegisterValues.containsKey(reg)) return knownRegisterValues.get(reg);
+
+        // See if it's a 16 bit register for which we know both sides:
+        String primitiveRegs[] = CodeBase.get8bitRegistersOfRegisterPair(reg);
+        if (primitiveRegs != null && primitiveRegs.length == 2) {
+            if (knownRegisterValues.containsKey(primitiveRegs[0]) &&
+                knownRegisterValues.containsKey(primitiveRegs[1])) {
+                return knownRegisterValues.get(primitiveRegs[0])*256 + knownRegisterValues.get(primitiveRegs[1]);
+            }
+        }
+        return null;
+    }
+
+    
+    private void assignKnownRegisterName(String reg, int val, HashMap<String, Integer> knownRegisterValues, List<String> toClear)
+    {
+        String primitiveRegs[] = CodeBase.get8bitRegistersOfRegisterPair(reg);
+        if (primitiveRegs != null && primitiveRegs.length == 2) {
+            toClear.remove(primitiveRegs[0]);
+            toClear.remove(primitiveRegs[1]);
+            knownRegisterValues.put(primitiveRegs[0], val/256);
+            knownRegisterValues.put(primitiveRegs[1], val%256);
+        } else {
+            toClear.remove(reg);
+            knownRegisterValues.put(reg, val);
+        }
     }
     
     
@@ -548,13 +647,15 @@ public class SearchBasedOptimizer implements MDLWorker {
     }
     
     
-    private boolean optimizeStartingFromLine(SourceFile f, int line, CodeBase code, OptimizationResult r) throws Exception
+    private boolean optimizeStartingFromLine(SourceFile f, int line, HashMap<String, Integer> knownRegisterValues, CodeBase code, OptimizationResult r) throws Exception
     {
         if (f.getStatements().get(line).op == null) {
             registersUsedAfter_previous = null;
             return false;
         }
         config.debug(f.getStatements().get(line).fileNameLineString());
+        
+//        System.out.println("Optimizing from line " + f.getStatements().get(line).op + "\t\tknowing: " + knownRegisterValues);
         
         List<CodeStatement> codeToOptimize = new ArrayList<>();
         int line2 = line;
@@ -665,6 +766,14 @@ public class SearchBasedOptimizer implements MDLWorker {
 //        System.out.println("    - Input registers: " + inputRegisters);
 //        System.out.println("    - Goal registers: " + registersUsedAfter);
 //        System.out.println("    - Goal flags: " + flagsUsedAfter);
+
+        // Start State:
+        for(String reg:knownRegisterValues.keySet()) {
+            SpecificationExpression exp = new SpecificationExpression();
+            exp.leftRegister = CPUConstants.registerByName(reg);
+            exp.right = Expression.constantExpression(knownRegisterValues.get(reg), config);
+            spec.startState.add(exp);
+        }
         
         // Precompute goalDependencies / initialDependencies:
         List<CPUOpDependency> allDependencies = spec.precomputeAllDependencies();
@@ -687,17 +796,17 @@ public class SearchBasedOptimizer implements MDLWorker {
         spec.codeStartAddress = codeToOptimize.get(0).getAddress(code);
         PlainZ80Memory z80Memory = new PlainZ80Memory();
         Z80Core z80 = new Z80Core(z80Memory, new PlainZ80IO(), new CPUConfig(config));        
-        for(int i = 0;i<0x10000;i++) {
+        for(int i = 0;i<PlainZ80Memory.MEMORY_SIZE;i++) {
             int v = random.nextInt(256);
             z80Memory.writeByte(i, v);
         }
         spec.precomputedTestCases = new PrecomputedTestCase[spec.numberOfRandomSolutionChecks];
-        spec.testCaseGenerator = new PrecomputedTestCaseGeneratorForOptimization(codeToOptimize, inputRegisters, spec.allowedRegisters, registersUsedAfter, flagsUsedAfter, spec.codeStartAddress, z80, z80Memory, code);
+        spec.testCaseGenerator = new PrecomputedTestCaseGeneratorForOptimization(spec, codeToOptimize, inputRegisters, registersUsedAfter, flagsUsedAfter, z80, z80Memory, code);
         for(int i = 0;i<spec.numberOfRandomSolutionChecks;i++) {
             spec.precomputedTestCases[i] = spec.testCaseGenerator.generateTestCase(config);
         }
         
-        // - Search:
+        // Search:
         SequenceFilter filter = new SequenceFilter(internalConfig);
         filter.setSpecification(spec);
         try {

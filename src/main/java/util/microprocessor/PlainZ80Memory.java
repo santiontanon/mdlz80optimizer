@@ -14,10 +14,12 @@ import org.apache.commons.lang3.tuple.Pair;
  * @author santi
  */
 public class PlainZ80Memory implements IMemory {    
-    public final int[] memory = new int[0x10000];
+    public static final int MEMORY_SIZE = 0x10000;
+    public final int[] memory;
     public List<Pair<Integer, Integer>> writeProtections = new ArrayList<>();
 
     public PlainZ80Memory() {
+        this.memory = new int[MEMORY_SIZE];
     }
 
     @Override

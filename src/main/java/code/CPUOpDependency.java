@@ -72,20 +72,7 @@ public class CPUOpDependency {
     public boolean match(CPUOpDependency dep)
     {
         if (register != null && dep.register != null) {
-            if (register.equals(dep.register)) return true;
-            // match register pairs with their invididual parts:
-            if (register.equals("A") && dep.register.equals("AF")) return true;
-            if (register.equals("AF") && dep.register.equals("A")) return true;
-            if ((register.equals("B") || register.equals("C")) && dep.register.equals("BC")) return true;
-            if ((dep.register.equals("B") || dep.register.equals("C")) && register.equals("BC")) return true;
-            if ((register.equals("D") || register.equals("E")) && dep.register.equals("DE")) return true;
-            if ((dep.register.equals("D") || dep.register.equals("E")) && register.equals("DE")) return true;
-            if ((register.equals("H") || register.equals("L")) && dep.register.equals("HL")) return true;
-            if ((dep.register.equals("H") || dep.register.equals("L")) && register.equals("HL")) return true;
-            if ((register.equals("IXL") || register.equals("IXH")) && dep.register.equals("IX")) return true;
-            if ((dep.register.equals("IXL") || dep.register.equals("IXH")) && register.equals("IX")) return true;
-            if ((register.equals("IYL") || register.equals("IYH")) && dep.register.equals("IY")) return true;
-            if ((dep.register.equals("IYL") || dep.register.equals("IYH")) && register.equals("IY")) return true;
+            if (CPUOpDependency.registerMatch(register, dep.register)) return true;
             return false;
         }
         if (flag != null) return flag.equals(dep.flag);
@@ -175,4 +162,23 @@ public class CPUOpDependency {
         
     }
     
+    
+    public static boolean registerMatch(String reg1, String reg2)
+    {
+        if (reg1.equals(reg2)) return true;
+        // match register pairs with their invididual parts:
+        if (reg1.equals("A") && reg2.equals("AF")) return true;
+        if (reg1.equals("AF") && reg2.equals("A")) return true;
+        if ((reg1.equals("B") || reg1.equals("C")) && reg2.equals("BC")) return true;
+        if ((reg2.equals("B") || reg2.equals("C")) && reg1.equals("BC")) return true;
+        if ((reg1.equals("D") || reg1.equals("E")) && reg2.equals("DE")) return true;
+        if ((reg2.equals("D") || reg2.equals("E")) && reg1.equals("DE")) return true;
+        if ((reg1.equals("H") || reg1.equals("L")) && reg2.equals("HL")) return true;
+        if ((reg2.equals("H") || reg2.equals("L")) && reg1.equals("HL")) return true;
+        if ((reg1.equals("IXL") || reg1.equals("IXH")) && reg2.equals("IX")) return true;
+        if ((reg2.equals("IXL") || reg2.equals("IXH")) && reg1.equals("IX")) return true;
+        if ((reg1.equals("IYL") || reg1.equals("IYH")) && reg2.equals("IY")) return true;
+        if ((reg2.equals("IYL") || reg2.equals("IYH")) && reg1.equals("IY")) return true;
+        return false;
+    }
 }

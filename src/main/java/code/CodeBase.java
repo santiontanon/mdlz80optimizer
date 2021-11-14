@@ -86,6 +86,21 @@ public class CodeBase {
         return false;
     }
     
+    
+    public static String[] get8bitRegistersOfRegisterPair(String regpair)
+    {
+        switch(regpair.toUpperCase()) {
+            case "AF": return new String[]{"A", "F"};
+            case "AF'": return new String[]{"A'", "F'"};
+            case "BC": return new String[]{"B", "C"};
+            case "DE": return new String[]{"D", "E"};
+            case "HL": return new String[]{"H", "L"};
+            case "IX": return new String[]{"IXH", "IXL"};
+            case "IY": return new String[]{"IYH", "IYL"};
+        }
+        return null;
+    }
+    
 
     public static boolean isCondition(String name)
     {

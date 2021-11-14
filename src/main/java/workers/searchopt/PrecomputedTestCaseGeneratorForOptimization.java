@@ -26,6 +26,7 @@ import util.microprocessor.Z80.Z80Core;
 public class PrecomputedTestCaseGeneratorForOptimization implements PrecomputedTestCaseGenerator {
 
     Random random = new Random();
+    Specification spec;
     List<CodeStatement> codeToOptimize;
     List<RegisterNames> inputRegisters;
     List<String> allowedRegisters;
@@ -39,21 +40,21 @@ public class PrecomputedTestCaseGeneratorForOptimization implements PrecomputedT
     List<RegisterNames> appearInOr, appearInXor, appearInAnd, appearInAddSub;
     
     public PrecomputedTestCaseGeneratorForOptimization(
+            Specification a_spec,
             List<CodeStatement> a_codeToOptimize,
             List<RegisterNames> a_inputRegisters,
-            List<String> a_allowedRegisters,
             List<RegisterNames> a_goalRegisters,
             List<Integer> a_goalFlags,
-            int a_startAddress,
             Z80Core a_z80,
             PlainZ80Memory a_memory,
             CodeBase a_code) {
+        spec = a_spec;
         codeToOptimize = a_codeToOptimize;
         inputRegisters = a_inputRegisters;
-        allowedRegisters = a_allowedRegisters;
+        allowedRegisters = spec.allowedRegisters;
         goalRegisters = a_goalRegisters;
         goalFlags = a_goalFlags;
-        startAddress = a_startAddress;
+        startAddress = spec.codeStartAddress;
         z80 = a_z80;
         memory = a_memory;
         code = a_code;
@@ -93,6 +94,7 @@ public class PrecomputedTestCaseGeneratorForOptimization implements PrecomputedT
         if (!appearInAddSub.isEmpty()) appearInAddSub.add(RegisterNames.A);
     }
     
+    
     @Override
     public PrecomputedTestCase generateTestCase(MDLConfig config) {
         PrecomputedTestCase test = new PrecomputedTestCase();
@@ -111,23 +113,34 @@ public class PrecomputedTestCaseGeneratorForOptimization implements PrecomputedT
                 registersToInit.add(reg);
             }
         }
+
         test.startRegisters = new CPUConstants.RegisterNames[registersToInit.size()];
         test.startRegisterValues = new int[registersToInit.size()];
         for(int i = 0;i<registersToInit.size();i++) {
             test.startRegisters[i] = registersToInit.get(i);
-            test.startRegisterValues[i] = random.nextInt(256);
-            if (appearInOr.contains(test.startRegisters[i]) ||
-                appearInXor.contains(test.startRegisters[i]) ||
-                appearInAddSub.contains(test.startRegisters[i])) {
-                if (random.nextDouble() < 0.1) {
-                    test.startRegisterValues[i] = 0;
+            Integer val = null;
+            for(SpecificationExpression exp:spec.startState) {
+                if (exp.leftRegister == test.startRegisters[i]) {
+                    val = exp.right.evaluateToInteger(null, code, true);
                 }
-            } 
-            if (appearInAnd.contains(test.startRegisters[i])) {
-                if (random.nextDouble() < 0.1) {
-                    test.startRegisterValues[i] = 0xff;
-                }
-            } 
+            }
+            if (val != null) {
+                test.startRegisterValues[i] = val;
+            } else {
+                test.startRegisterValues[i] = random.nextInt(256);                
+                if (appearInOr.contains(test.startRegisters[i]) ||
+                    appearInXor.contains(test.startRegisters[i]) ||
+                    appearInAddSub.contains(test.startRegisters[i])) {
+                    if (random.nextDouble() < 0.1) {
+                        test.startRegisterValues[i] = 0;
+                    }
+                } 
+                if (appearInAnd.contains(test.startRegisters[i])) {
+                    if (random.nextDouble() < 0.1) {
+                        test.startRegisterValues[i] = 0xff;
+                    }
+                } 
+            }
         }
         
         // Set up the simulator:
