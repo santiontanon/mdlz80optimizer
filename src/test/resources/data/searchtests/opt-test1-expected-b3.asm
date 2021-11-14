@@ -3,7 +3,7 @@
     ld bc, 1
     and b
     ld hl, var1
-    add hl, bc
+    inc l
     ld (hl), a
 
 loop:

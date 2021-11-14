@@ -64,4 +64,17 @@ public interface IMemory {
     default void writeWord(int address, int data) {
         // do nothing
     }
+    
+    
+    default void writeProtect(int start, int end)
+    {
+    }
+    
+    
+    default void clearWriteProtections()
+    {    
+    }
+    
+    
+    public int[] getMemoryArray();
 }

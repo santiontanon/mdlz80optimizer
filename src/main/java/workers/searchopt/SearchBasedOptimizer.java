@@ -20,8 +20,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
 import parser.SourceLine;
+import util.microprocessor.IMemory;
 import util.microprocessor.PlainZ80IO;
 import util.microprocessor.PlainZ80Memory;
+import util.microprocessor.TrackingZ80Memory;
 import util.microprocessor.Z80.CPUConfig;
 import util.microprocessor.Z80.CPUConstants;
 import util.microprocessor.Z80.CPUConstants.RegisterNames;
@@ -302,10 +304,15 @@ public class SearchBasedOptimizer implements MDLWorker {
         List<SBOCandidate> allCandidateOps = SBOCandidate.precomputeCandidateOps(spec, allDependencies, code, filter, 1, internalConfig);
         if (allCandidateOps == null) return false;
         
-        // Precompute which registers to randomize:
+//        System.out.println("goalDependencies: " + Arrays.toString(spec.goalDependencies));
+//        System.out.println("goalDependenciesSatisfiedFromTheStart: " + Arrays.toString(spec.goalDependenciesSatisfiedFromTheStart));
+        
+        // Precompute which registers and memory addresses to randomize:
         RegisterNames eightBitRegistersToRandomize[];
+        int memoryAddressesToRandomize[];
         {
             List<RegisterNames> toRandomize = new ArrayList<>();
+            List<Integer> addressToRandomize = new ArrayList<>();
             // Add all the registers in the goal (to prevent spurious matches):
             for(SpecificationExpression exp:spec.goalState) {
                 if (exp.leftRegister != null) {
@@ -321,6 +328,8 @@ public class SearchBasedOptimizer implements MDLWorker {
                             }
                         }
                     }
+                } else if (exp.leftConstantMemoryAddress != null) {
+                    addressToRandomize.add(exp.leftConstantMemoryAddress);
                 }
             }
             // Remove the ones that will be initialized already in the start state:
@@ -329,11 +338,19 @@ public class SearchBasedOptimizer implements MDLWorker {
                     for(RegisterNames reg:CPUConstants.primitive8BitRegistersOf(exp.leftRegister)) {
                         toRandomize.remove(reg);
                     }
+                } else if (exp.leftConstantMemoryAddress != null) {
+                    if (addressToRandomize.contains(exp.leftConstantMemoryAddress)) {
+                        addressToRandomize.remove(exp.leftConstantMemoryAddress);
+                    }
                 }
             }
             eightBitRegistersToRandomize = new RegisterNames[toRandomize.size()];
             for(int i = 0;i<toRandomize.size();i++) {
                 eightBitRegistersToRandomize[i] = toRandomize.get(i);
+            }
+            memoryAddressesToRandomize = new int[addressToRandomize.size()];
+            for(int i = 0;i<addressToRandomize.size();i++) {
+                memoryAddressesToRandomize[i] = addressToRandomize.get(i);
             }
         }
                 
@@ -345,6 +362,7 @@ public class SearchBasedOptimizer implements MDLWorker {
 //        nThreads = 1;
         SBOExecutionThread threads[] = new SBOExecutionThread[nThreads];
         long start = System.currentTimeMillis();
+        
         try {
             if (spec.searchType == SEARCH_ID_OPS) {
                 int codeMaxAddress = spec.codeStartAddress + spec.maxSizeInBytes;
@@ -363,6 +381,7 @@ public class SearchBasedOptimizer implements MDLWorker {
                         threads[i] = new SBOExecutionThread("thread-" + i, 
                                             spec, allDependencies, goalDependencies,
                                             state, eightBitRegistersToRandomize,
+                                            memoryAddressesToRandomize,
                                             showNewBestDuringSearch, code, config,
                                             spec.searchType, depth, codeMaxAddress, spec.maxSimulationTime);
                         threads[i].start();
@@ -389,6 +408,7 @@ public class SearchBasedOptimizer implements MDLWorker {
                         threads[i] = new SBOExecutionThread("thread-" + i, 
                                             spec, allDependencies, goalDependencies,
                                             state, eightBitRegistersToRandomize,
+                                            memoryAddressesToRandomize,
                                             showNewBestDuringSearch, code, config,
                                             spec.searchType, spec.maxOps, spec.codeStartAddress + size, spec.maxSimulationTime);
                         threads[i].start();
@@ -412,6 +432,7 @@ public class SearchBasedOptimizer implements MDLWorker {
                         threads[i] = new SBOExecutionThread("thread-" + i, 
                                             spec, allDependencies, goalDependencies,
                                             state, eightBitRegistersToRandomize,
+                                            memoryAddressesToRandomize,
                                             showNewBestDuringSearch, code, config,
                                             spec.searchType, spec.maxOps, spec.codeStartAddress + spec.maxSizeInBytes, maxTime);
                         threads[i].start();
@@ -464,21 +485,27 @@ public class SearchBasedOptimizer implements MDLWorker {
         OptimizationResult r = new OptimizationResult();
         
         for (SourceFile f : code.getSourceFiles()) {
+            HashMap<Integer,HashMap<String,Integer>> previousKnownRegisterValues = new HashMap<>();
             HashMap<String, Integer> knownRegisterValues = new HashMap<>();
             registersUsedAfter_previous = null;
             for (int i = 0; i < f.getStatements().size(); i++) {
+                HashMap<String, Integer> knownRegisterValuesCopy = new HashMap<>();
+                knownRegisterValuesCopy.putAll(knownRegisterValues);
+                previousKnownRegisterValues.put(i, knownRegisterValuesCopy);
+
                 // reset known register values after each label:
                 if (f.getStatements().get(i).label != null ||
                     f.getStatements().get(i).include != null) knownRegisterValues.clear();
                 
                 try {
                     if (optimizeStartingFromLine(f, i, knownRegisterValues, code, r)) {
-                        i = Math.max(0, i-2);   // go back a couple of statements, as more optimizations might chain
+                        i = Math.max(-1, i-2);   // go back a couple of statements, as more optimizations might chain
                         code.resetAddresses();
                         registersUsedAfter_previous = null;
                         
                         // Reset known values after optimization just in case:
                         knownRegisterValues.clear();
+                        knownRegisterValues.putAll(previousKnownRegisterValues.get(i+1));
                     } else {
                         updateKnownRegisterValues(f.getStatements().get(i), knownRegisterValues, code);
                     }
@@ -523,6 +550,12 @@ public class SearchBasedOptimizer implements MDLWorker {
             if (s.op.args.get(0).isRegister() &&
                 s.op.args.get(1).isConstant()) {
                 Integer val = s.op.args.get(1).evaluateToInteger(s, code, true, null);
+                if (val != null) {
+                    assignKnownRegisterName(s.op.args.get(0).registerOrFlagName.toUpperCase(), val, knownRegisterValues, toClear);
+                }
+            } else if (s.op.args.get(0).isRegister() &&
+                       s.op.args.get(1).isRegister()) {
+                Integer val = knownRegisterValues.get(s.op.args.get(1).registerOrFlagName.toUpperCase());
                 if (val != null) {
                     assignKnownRegisterName(s.op.args.get(0).registerOrFlagName.toUpperCase(), val, knownRegisterValues, toClear);
                 }
@@ -631,10 +664,14 @@ public class SearchBasedOptimizer implements MDLWorker {
         }
         
         for(int i = 0;i<s.op.spec.args.size();i++) {
-            if (s.op.spec.args.get(i).byteConstantIndirectionAllowed ||
-                s.op.spec.args.get(i).wordConstantIndirectionAllowed ||
-                s.op.spec.args.get(i).regIndirection != null ||
-                s.op.spec.args.get(i).regOffsetIndirection != null) {
+            if (s.op.spec.args.get(i).wordConstantIndirectionAllowed) {
+                // Only allow "ld (nn),X" for now:
+                if (s.op.isLd() && i == 0) return false;
+                return true;
+            } else if (s.op.spec.args.get(i).byteConstantIndirectionAllowed ||
+                       s.op.spec.args.get(i).wordConstantIndirectionAllowed ||
+                       s.op.spec.args.get(i).regIndirection != null ||
+                       s.op.spec.args.get(i).regOffsetIndirection != null) {
                 return true;
             }
             if (s.op.args.get(i).registerOrFlagName != null &&
@@ -655,7 +692,7 @@ public class SearchBasedOptimizer implements MDLWorker {
         }
         config.debug(f.getStatements().get(line).fileNameLineString());
         
-//        System.out.println("Optimizing from line " + f.getStatements().get(line).op + "\t\tknowing: " + knownRegisterValues);
+        config.debug("Optimizing from line " + f.getStatements().get(line).op + "\t\tknowing: " + knownRegisterValues);
         
         List<CodeStatement> codeToOptimize = new ArrayList<>();
         int line2 = line;
@@ -712,6 +749,7 @@ public class SearchBasedOptimizer implements MDLWorker {
         List<RegisterNames> modifiedRegisters = findModifiedRegisters(codeToOptimize, f, code);
         List<RegisterNames> inputRegisters = findUsedRegisters(codeToOptimize, f, code);
         List<RegisterNames> registersUsedAfter = findRegistersUsedAfter(codeToOptimize, f, code, spec.allowGhostRegisters, modifiedRegisters, inputRegisters);
+        boolean goalRequiresSettingMemory = false;
         registersUsedAfter_previous = registersUsedAfter;
         List<RegisterNames> registersNotUsedAfter = findRegistersNotUsedAfter(registersUsedAfter, f, code, spec.allowGhostRegisters);
         for(RegisterNames reg:modifiedRegisters) {
@@ -741,7 +779,8 @@ public class SearchBasedOptimizer implements MDLWorker {
                         config.warn("Could not evaluate " + arg + " to an integer constant");
                         return false;
                     }
-                    if (s.op.spec.args.get(i).byteConstantAllowed) {
+                    if (s.op.spec.args.get(i).byteConstantAllowed ||
+                        s.op.spec.args.get(i).wordConstantAllowed) {
                         if (!spec.allowed8bitConstants.contains(value)) spec.allowed8bitConstants.add(value);
                         if (!spec.allowed16bitConstants.contains(value)) spec.allowed16bitConstants.add(value);
                         if (constantsToExpressions.containsKey(value)) {
@@ -751,6 +790,11 @@ public class SearchBasedOptimizer implements MDLWorker {
                             l.add(arg);
                             constantsToExpressions.put(value, l);
                         }
+                    }
+                    if (i == 0 && s.op.isLd() && s.op.spec.args.get(0).wordConstantIndirectionAllowed) {
+                        spec.allowRamUse = true;
+                        goalRequiresSettingMemory = true;
+                        if (!spec.allowed16bitConstants.contains(value)) spec.allowed16bitConstants.add(value);
                     }
                 }
             }
@@ -786,15 +830,22 @@ public class SearchBasedOptimizer implements MDLWorker {
                 spec.goalDependencies[i] = true;
             } else if (dep.flag != null && flagsUsedAfter.contains(CPUConstants.flagByName(dep.flag))) {
                 spec.goalDependencies[i] = true;
+            } else if (dep.memoryStart != null && goalRequiresSettingMemory) {
+                spec.goalDependencies[i] = true;
             } else {
                 spec.goalDependencies[i] = false;
             }
         }
         spec.precomputeGoalDependencyIndexes();
-        
+
         // Precompute test cases:
         spec.codeStartAddress = codeToOptimize.get(0).getAddress(code);
-        PlainZ80Memory z80Memory = new PlainZ80Memory();
+        IMemory z80Memory;
+        if (spec.allowRamUse) {
+            z80Memory = new TrackingZ80Memory();
+        } else {
+            z80Memory = new PlainZ80Memory();
+        }
         Z80Core z80 = new Z80Core(z80Memory, new PlainZ80IO(), new CPUConfig(config));        
         for(int i = 0;i<PlainZ80Memory.MEMORY_SIZE;i++) {
             int v = random.nextInt(256);
@@ -806,6 +857,13 @@ public class SearchBasedOptimizer implements MDLWorker {
             spec.precomputedTestCases[i] = spec.testCaseGenerator.generateTestCase(config);
         }
         
+        // Add the goal addresses as fake goal specifications, so their addresses are randomized:
+        for(Integer address:((PrecomputedTestCaseGeneratorForOptimization)(spec.testCaseGenerator)).goalAddresses) {
+            SpecificationExpression exp = new SpecificationExpression();
+            exp.leftConstantMemoryAddress = address;
+            spec.goalState.add(exp);
+        }
+                
         // Search:
         SequenceFilter filter = new SequenceFilter(internalConfig);
         filter.setSpecification(spec);

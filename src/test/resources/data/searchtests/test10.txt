@@ -1,0 +1,10 @@
+allowed_ops: 
+    ld
+allowed_registers: hl
+allow_ram_use = true
+max_ops = 1
+initial_state:
+    h = #c0
+    l = #00
+goal_state:
+    (#c000) = 0

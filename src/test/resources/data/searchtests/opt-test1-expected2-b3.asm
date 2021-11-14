@@ -1,9 +1,8 @@
     org #4000
 
     xor a
-    ld bc, 1
     ld hl, var1
-    add hl, bc
+    inc l
     ld (hl), a
 
 loop:

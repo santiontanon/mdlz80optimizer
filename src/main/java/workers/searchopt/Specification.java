@@ -172,9 +172,11 @@ public class Specification {
         for(SpecificationExpression exp:startState) {
             CPUOpDependency dep = null;
             if (exp.leftRegister != null) {
-                dep = new CPUOpDependency(exp.leftRegisterOrFlagName.toUpperCase(), null, null, null, null);
+                dep = new CPUOpDependency(CPUConstants.registerName(exp.leftRegister).toUpperCase(), null, null, null, null);
             } else if (exp.leftFlagIndex != null) {
                 dep = new CPUOpDependency(null, CPUConstants.flagNames[exp.leftFlagIndex], null, null, null);
+            } else if (exp.leftConstantMemoryAddress != null) {
+                dep = new CPUOpDependency(null, null, null, ""+exp.leftConstantMemoryAddress, ""+exp.leftConstantMemoryAddress);
             } else {
                 return null;
             }
@@ -196,9 +198,11 @@ public class Specification {
         for(SpecificationExpression exp:goalState) {
             CPUOpDependency dep = null;
             if (exp.leftRegister != null) {
-                dep = new CPUOpDependency(exp.leftRegisterOrFlagName.toUpperCase(), null, null, null, null);
+                dep = new CPUOpDependency(CPUConstants.registerName(exp.leftRegister).toUpperCase(), null, null, null, null);
             } else if (exp.leftFlagIndex != null) {
                 dep = new CPUOpDependency(null, CPUConstants.flagNames[exp.leftFlagIndex], null, null, null);
+            } else if (exp.leftConstantMemoryAddress != null) {
+                dep = new CPUOpDependency(null, null, null, ""+exp.leftConstantMemoryAddress, ""+exp.leftConstantMemoryAddress);
             } else {
                 return null;
             }
@@ -262,6 +266,9 @@ public class Specification {
                             break;
                         }
                     }
+                } else if (dep.memoryStart != null) {
+                    // For now, assume it's always not satisfied:
+                    goalDependenciesSatisfiedFromTheStart[i] = false;
                 }
             } else {
                 goalDependenciesSatisfiedFromTheStart[i] = true;
@@ -279,6 +286,8 @@ public class Specification {
         for(int i = 0;i<numberOfRandomSolutionChecks;i++) {
             PrecomputedTestCase testCase = new PrecomputedTestCase();
             
+            if (allowRamUse) testCase.trackMemoryWrites = true;
+            
             // randomize constants:
             for(InputParameter parameter:parameters) {
                 int value = parameter.minValue + rand.nextInt((parameter.maxValue - parameter.minValue)+1);
@@ -286,29 +295,61 @@ public class Specification {
                 parameter.symbol.clearCache();            
             }
             
-            testCase.startRegisters = new CPUConstants.RegisterNames[startState.size()];
-            testCase.startRegisterValues = new int[startState.size()];
-            for(int j = 0;j<startState.size();j++) {
+            int n_startRegisters = 0;
+//            int n_startFlags = 0;
+            int n_startMemoryAddresses = 0;
+            for(SpecificationExpression exp : startState) {
+                if (exp.leftRegister != null) n_startRegisters ++;
+                if (exp.leftFlagIndex != null) {
+//                    n_startFlags ++;
+                    config.error("Flag values not yet supported in the start state.");
+                    return false;
+                }
+                if (exp.leftConstantMemoryAddress != null) n_startMemoryAddresses ++;
+            }
+            testCase.startRegisters = new CPUConstants.RegisterNames[n_startRegisters];
+            testCase.startRegisterValues = new int[n_startRegisters];
+            testCase.startMemoryAddresses = new int[n_startMemoryAddresses];
+            testCase.startMemoryValues = new int[n_startMemoryAddresses];
+            for(int j = 0, kreg = 0, kmem = 0;j<startState.size();j++) {
                 SpecificationExpression exp = startState.get(j);
                 Integer value = exp.right.evaluateToInteger(null, code, true);
                 if (value == null) {
                     config.error("Cannot evaluate expression " + exp);
                     return false;
                 }
-                testCase.startRegisters[j] = exp.leftRegister;
-                testCase.startRegisterValues[j] = value;
+                if (exp.leftRegister != null) {
+                    testCase.startRegisters[kreg] = exp.leftRegister;
+                    if (CPUConstants.is8bitRegister(exp.leftRegister)) {
+                        testCase.startRegisterValues[kreg] = (value & 0xff);
+                    } else {
+                        testCase.startRegisterValues[kreg] = (value & 0xffff);
+                    }                
+                    kreg++;
+                } else if (exp.leftConstantMemoryAddress != null) {
+                    testCase.startMemoryAddresses[kmem] = exp.leftConstantMemoryAddress;
+                    testCase.startMemoryValues[kmem] = value;
+                    kmem++;
+                } else {
+                    config.error("Unsupported specification expression: " + exp);
+                    return false;
+                } 
             }
             int n_goalRegisters = 0;
             int n_goalFlags = 0;
+            int n_goalMemoryAddresses = 0;
             for(SpecificationExpression exp : goalState) {
                 if (exp.leftRegister != null) n_goalRegisters ++;
                 if (exp.leftFlagIndex != null) n_goalFlags ++;
+                if (exp.leftConstantMemoryAddress != null) n_goalMemoryAddresses ++;
             }
             testCase.goalRegisters = new CPUConstants.RegisterNames[n_goalRegisters];
             testCase.goalRegisterValues = new int[n_goalRegisters];
             testCase.goalFlags = new int[n_goalFlags];
             testCase.goalFlagValues = new boolean[n_goalFlags];
-            for(int j = 0, kreg = 0, kflag = 0;j<goalState.size();j++) {
+            testCase.goalMemoryAddresses = new int[n_goalMemoryAddresses];
+            testCase.goalMemoryValues = new int[n_goalMemoryAddresses];
+            for(int j = 0, kreg = 0, kflag = 0, kmem = 0;j<goalState.size();j++) {
                 SpecificationExpression exp = goalState.get(j);
                 Integer value = exp.right.evaluateToInteger(null, code, true);
                 if (value == null) {
@@ -324,11 +365,18 @@ public class Specification {
                         testCase.goalRegisterValues[kreg] = (value & 0xffff);
                     }                
                     kreg++;
-                } else {
+                } else if (exp.leftFlagIndex != null) {
                     // it's a flag condition:
                     testCase.goalFlags[j] = CPUConstants.flags[exp.leftFlagIndex];
                     testCase.goalFlagValues[kflag] = value != Expression.FALSE;
                     kflag++;
+                } else if (exp.leftConstantMemoryAddress != null) {
+                    testCase.goalMemoryAddresses[kmem] = exp.leftConstantMemoryAddress;
+                    testCase.goalMemoryValues[kmem] = value;
+                    kmem++;
+                } else {
+                    config.error("Unsupported specification expression: " + exp);
+                    return false;
                 }
             }
             precomputedTestCases[i] = testCase;

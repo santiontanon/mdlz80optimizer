@@ -14,7 +14,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
-import util.microprocessor.PlainZ80Memory;
+import util.microprocessor.IMemory;
+import util.microprocessor.TrackingZ80Memory;
 import util.microprocessor.Z80.CPUConstants;
 import util.microprocessor.Z80.CPUConstants.RegisterNames;
 import util.microprocessor.Z80.Z80Core;
@@ -31,10 +32,11 @@ public class PrecomputedTestCaseGeneratorForOptimization implements PrecomputedT
     List<RegisterNames> inputRegisters;
     List<String> allowedRegisters;
     List<RegisterNames> goalRegisters;
+    public List<Integer> goalAddresses;
     List<Integer> goalFlags;
     int startAddress;
     Z80Core z80;
-    PlainZ80Memory memory;
+    IMemory memory;
     CodeBase code;
     
     List<RegisterNames> appearInOr, appearInXor, appearInAnd, appearInAddSub;
@@ -46,7 +48,7 @@ public class PrecomputedTestCaseGeneratorForOptimization implements PrecomputedT
             List<RegisterNames> a_goalRegisters,
             List<Integer> a_goalFlags,
             Z80Core a_z80,
-            PlainZ80Memory a_memory,
+            IMemory a_memory,
             CodeBase a_code) {
         spec = a_spec;
         codeToOptimize = a_codeToOptimize;
@@ -63,6 +65,7 @@ public class PrecomputedTestCaseGeneratorForOptimization implements PrecomputedT
         appearInXor = new ArrayList<>();
         appearInAnd = new ArrayList<>();
         appearInAddSub = new ArrayList<>();
+        goalAddresses = new ArrayList<>();
         for(CodeStatement s:codeToOptimize) {
             if (s.op == null) continue;
             for(int i = 0;i<s.op.args.size();i++) {
@@ -87,17 +90,33 @@ public class PrecomputedTestCaseGeneratorForOptimization implements PrecomputedT
                     }
                 }
             }
+            if (s.op.isLd() && s.op.args.get(0).evaluatesToIntegerConstant() &&
+                s.op.spec.args.get(0).wordConstantIndirectionAllowed) {
+                // This is an instruction that sets a memory value:
+                Integer address = s.op.args.get(0).evaluateToInteger(s, code, true, null);
+                if (address != null) {
+                    goalAddresses.add(address);
+                }
+            }
         }
         if (!appearInOr.isEmpty()) appearInOr.add(RegisterNames.A);
         if (!appearInXor.isEmpty()) appearInXor.add(RegisterNames.A);
         if (!appearInAnd.isEmpty()) appearInAnd.add(RegisterNames.A);
         if (!appearInAddSub.isEmpty()) appearInAddSub.add(RegisterNames.A);
+        
+//        System.out.println("inputRegisters:" + inputRegisters);        
+//        System.out.println("allowedRegisters:" + allowedRegisters);        
+//        System.out.println("goalRegisters:" + goalRegisters);        
+//        System.out.println("goalAddresses:" + goalAddresses);        
+//        System.out.println("goalFlags:" + goalFlags);        
     }
     
     
     @Override
     public PrecomputedTestCase generateTestCase(MDLConfig config) {
         PrecomputedTestCase test = new PrecomputedTestCase();
+        
+        if (spec.allowRamUse) test.trackMemoryWrites = true;
         
         // Assign random values to the input registers:
         List<CPUConstants.RegisterNames> registersToInit = new ArrayList<>();
@@ -179,6 +198,9 @@ public class PrecomputedTestCaseGeneratorForOptimization implements PrecomputedT
             return null;
         }
         memory.clearWriteProtections();
+        if (memory instanceof TrackingZ80Memory) {
+            ((TrackingZ80Memory)memory).clearMemoryWrites();
+        }
         
         // Set the goal register/flag values (consider only the 8bit ones):
         List<CPUConstants.RegisterNames> goalRegisters8bit = new ArrayList<>();
@@ -197,7 +219,13 @@ public class PrecomputedTestCaseGeneratorForOptimization implements PrecomputedT
             test.goalFlags[i] = goalFlags.get(i);
             test.goalFlagValues[i] = z80.getFlagValue(CPUConstants.flagIndex(goalFlags.get(i)));
         }
-                    
+        test.goalMemoryAddresses = new int[goalAddresses.size()];
+        test.goalMemoryValues = new int[goalAddresses.size()];
+        for(int i = 0;i<goalAddresses.size();i++) {
+            test.goalMemoryAddresses[i] = goalAddresses.get(i);
+            test.goalMemoryValues[i] = z80.readByte(goalAddresses.get(i));
+        }
+                            
         return test;
     }    
 }

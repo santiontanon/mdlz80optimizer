@@ -1118,13 +1118,19 @@ public class SBOCandidate {
             }
         }
         
-//        if (spec.allowRamUse) {
+        if (spec.allowRamUse) {
             // ld (nn),a/bc/de/hl/ix/iy/sp
-            // ...
-        
             // ld a/bc/de/hl/ix/iy/sp,(nn)
-            // ...            
-//        }
+            String args[] = {"a", "bc", "de", "hl", "ix", "iy", "sp"};
+            for(String arg:args) {
+                for(Integer address:spec.allowed16bitConstants) {
+                    String line = "ld (" + address + ")," + arg;
+                    if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;                
+                    line = "ld "+arg+",(" + address + ")";
+                    if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;                
+                }                
+            }        
+        }
 
         // ld (ix+o)/(iy+o),n
         if (spec.allowRamUse) {

@@ -15,9 +15,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
+import util.microprocessor.IMemory;
 import util.microprocessor.PlainZ80IO;
 import util.microprocessor.PlainZ80Memory;
 import util.microprocessor.ProcessorException;
+import util.microprocessor.TrackingZ80Memory;
 import util.microprocessor.Z80.CPUConfig;
 import util.microprocessor.Z80.CPUConstants;
 import util.microprocessor.Z80.CPUConstants.RegisterNames;
@@ -38,12 +40,13 @@ public class SBOExecutionThread extends Thread {
     List<CPUOpDependency> allDependencies;
             
     RegisterNames eightBitRegistersToRandomize[];
+    int memoryAddressesToRandomize[];
     boolean showNewBestDuringSearch = true;
     CodeBase code;
     
     Random rand = new Random();
     Z80Core z80 = null;
-    PlainZ80Memory z80Memory = null;
+    IMemory z80Memory = null;
     
     // Store the current program, and additional info to create jumps afterwards:
     CPUOp currentOps[] = null;
@@ -79,6 +82,7 @@ public class SBOExecutionThread extends Thread {
                               Specification a_spec, List<CPUOpDependency> a_allDependencies, 
                               boolean a_goalDependencies[],
                               SBOGlobalSearchState a_best, RegisterNames a_eightBitRegistersToRandomize[], 
+                              int a_memoryAddressesToRandomize[],
                               boolean a_showNewBestDuringSearch, CodeBase a_code,
                               MDLConfig a_config,
                               int a_searchType, int a_codeMaxOps, int a_codeMaxAddress, int a_maxSimulationTime)
@@ -91,10 +95,15 @@ public class SBOExecutionThread extends Thread {
         goalDependencies = a_goalDependencies;
         globalState = a_best;
         eightBitRegistersToRandomize = a_eightBitRegistersToRandomize;
+        memoryAddressesToRandomize = a_memoryAddressesToRandomize;
         showNewBestDuringSearch = a_showNewBestDuringSearch;
         code = a_code;
         
-        z80Memory = new PlainZ80Memory();
+        if (spec.allowRamUse) {
+            z80Memory = new TrackingZ80Memory();
+        } else {
+            z80Memory = new PlainZ80Memory();
+        }
         z80 = new Z80Core(z80Memory, new PlainZ80IO(), new CPUConfig(config));
         
         // Run the search process to generate code:
@@ -205,7 +214,7 @@ public class SBOExecutionThread extends Thread {
                     }
                     if (!goalDependenciesSatisfied) continue;
                 }
-                System.arraycopy(candidate.bytes, 0, z80Memory.memory, codeAddress, candidate.bytes.length);
+                System.arraycopy(candidate.bytes, 0, z80Memory.getMemoryArray(), codeAddress, candidate.bytes.length);
                 currentOps[depth] = candidate.op;
                 currentOpsAddresses[depth] = codeAddress;
                 if (candidate.isAbsoluteJump) {
@@ -284,7 +293,7 @@ public class SBOExecutionThread extends Thread {
                     if (!goalDependenciesSatisfied) continue;
                 }                                    
                                
-                System.arraycopy(candidate.bytes, 0, z80Memory.memory, codeAddress, candidate.bytes.length);
+                System.arraycopy(candidate.bytes, 0, z80Memory.getMemoryArray(), codeAddress, candidate.bytes.length);
                 currentOps[depth] = candidate.op;
                 currentOpsAddresses[depth] = codeAddress;
                 if (candidate.isAbsoluteJump) {
@@ -383,6 +392,7 @@ public class SBOExecutionThread extends Thread {
             }
             
             // Print statement to print sequences and visually inspect if there are any prunable ones:
+//            if (depth == 1) System.out.println(Arrays.toString(currentOps));
 //            if (depth == 2) System.out.println(Arrays.toString(currentOps));
             
             solutionsEvaluated++;
@@ -464,10 +474,10 @@ public class SBOExecutionThread extends Thread {
         for(CPUConstants.RegisterNames register: eightBitRegistersToRandomize) {
             z80.setRegisterValue(register, rand.nextInt(256));
         }
+        for(int address: memoryAddressesToRandomize) {
+            z80.writeByte(address, rand.nextInt(256));
+        }
         z80.setProgramCounter(spec.codeStartAddress);
-                                 
-        // randomize the memory contents:
-        // ...
         
         // execute initial state:
         testCase.initCPU(z80);
@@ -480,6 +490,7 @@ public class SBOExecutionThread extends Thread {
         
         // check if the solution worked:
         if (testCase.checkGoalState(z80)) {
+//        if (testCase.checkGoalStateDebug(z80, config)) {
             return (int)z80.getTStates();
         } else {
             return -1;

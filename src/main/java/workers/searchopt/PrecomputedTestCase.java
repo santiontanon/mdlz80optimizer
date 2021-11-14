@@ -6,6 +6,7 @@
 package workers.searchopt;
 
 import cl.MDLConfig;
+import util.microprocessor.TrackingZ80Memory;
 import util.microprocessor.Z80.CPUConstants;
 import util.microprocessor.Z80.Z80Core;
 
@@ -16,10 +17,17 @@ import util.microprocessor.Z80.Z80Core;
 public class PrecomputedTestCase {
     CPUConstants.RegisterNames startRegisters[] = null;
     int startRegisterValues[] = null;
+    int startMemoryAddresses[] = null;
+    int startMemoryValues[] = null;
+    
     CPUConstants.RegisterNames goalRegisters[] = null;
     int goalRegisterValues[] = null;
     int goalFlags[] = null;
     boolean goalFlagValues[] = null;
+    int goalMemoryAddresses[] = null;
+    int goalMemoryValues[] = null;
+    
+    boolean trackMemoryWrites = false;
 
 
     public void initCPU(Z80Core z80)
@@ -27,6 +35,14 @@ public class PrecomputedTestCase {
         for(int i = 0;i<startRegisters.length;i++) {
             z80.setRegisterValue(startRegisters[i], startRegisterValues[i]);
         }
+        if (startMemoryAddresses != null) {
+            for(int i = 0;i<startMemoryAddresses.length;i++) {
+                z80.writeByte(startMemoryAddresses[i], startMemoryValues[i]);
+            }
+        }
+        if (trackMemoryWrites) {
+            ((TrackingZ80Memory)z80.getRAM()).clearMemoryWrites();
+        }        
     }
 
 
@@ -43,6 +59,22 @@ public class PrecomputedTestCase {
         }
         for(int i = 0;i<goalFlags.length;i++) {
              if (z80.getFlagValue(CPUConstants.flagIndex(goalFlags[i])) != goalFlagValues[i]) return false;
+        }
+        for(int i = 0;i<goalMemoryAddresses.length;i++) {
+            if (z80.readByte(goalMemoryAddresses[i]) != goalMemoryValues[i]) return false;
+        }
+        
+        if (trackMemoryWrites) {
+            for(Integer address:((TrackingZ80Memory)z80.getRAM()).getMemoryWrites()) {
+                boolean found = false;
+                for(int i = 0;i<goalMemoryAddresses.length;i++) {
+                    if (address == goalMemoryAddresses[i]) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) return false;
+            }
         }
         return true;
     }        
@@ -62,6 +94,28 @@ public class PrecomputedTestCase {
                 return false;
              }
         }
+        for(int i = 0;i<goalMemoryAddresses.length;i++) {
+            if (z80.readByte(goalMemoryAddresses[i]) != goalMemoryValues[i]) {
+                config.info("RAM position " + goalMemoryAddresses[i] + " does not contain byte " + goalMemoryValues[i]);
+                return false;
+            }
+        }
+        if (trackMemoryWrites) {
+            for(Integer address:((TrackingZ80Memory)z80.getRAM()).getMemoryWrites()) {
+                boolean found = false;
+                for(int i = 0;i<goalMemoryAddresses.length;i++) {
+                    if (address == goalMemoryAddresses[i]) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    config.info("RAM position " + address + " was written to, but it shouldn't have!");
+                    return false;
+                }
+            }
+        }
+        
         return true;
     }
 

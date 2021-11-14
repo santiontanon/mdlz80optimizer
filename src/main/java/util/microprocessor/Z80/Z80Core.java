@@ -133,6 +133,15 @@ public class Z80Core implements ICPUData {
     public boolean getHalt() {
         return halt;
     }
+    
+    /**
+     * Returns the Z80 memory.
+     * 
+     * @return The instance of the IMemory interface used by this simulator.
+     */
+    public IMemory getRAM() {
+        return ram;
+    }
 
     /**
      * Recover the present program counter (PC) value
@@ -362,6 +371,32 @@ public class Z80Core implements ICPUData {
     public int getSP() {
         return reg_SP;
     }
+    
+    
+    /**
+     * Reads a byte from RAM
+     *
+     * @param address The address to read.
+     * @return The byte in address "address".
+     */
+    public int readByte(int address)
+    {
+        return ram.readByte(address);
+    }
+
+    
+    /**
+     * Writes a byte to RAM
+     *
+     * @param address The address to write to.
+     * @param value The value to write.
+     */
+    public void writeByte(int address, int value)
+    {
+        ram.writeByte(address, value);
+    }
+    
+    
 
     /**
      * Execute a single instruction at the present program counter (PC) then return. The internal state of the processor

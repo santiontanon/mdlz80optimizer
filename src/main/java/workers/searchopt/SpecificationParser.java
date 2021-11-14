@@ -575,129 +575,53 @@ public class SpecificationParser {
         
         SpecificationExpression specExp = new SpecificationExpression();
         
-        specExp.leftRegisterOrFlagName = tokens.remove(0);
-        specExp.leftRegister = CPUConstants.registerByName(specExp.leftRegisterOrFlagName.toLowerCase());
-        if (specExp.leftRegister == null) {
-            switch(specExp.leftRegisterOrFlagName.toLowerCase()) {
-                /*
-                case "a":
-                    specExp.leftRegister = CPUConstants.RegisterNames.A;
-                    break;
-                case "a'":
-                    specExp.leftRegister = CPUConstants.RegisterNames.A_ALT;
-                    break;
-                case "f":
-                    specExp.leftRegister = CPUConstants.RegisterNames.F;
-                    break;
-                case "f'":
-                    specExp.leftRegister = CPUConstants.RegisterNames.F_ALT;
-                    break;
-                case "bc":
-                    specExp.leftRegister = CPUConstants.RegisterNames.BC;
-                    break;
-                case "b":
-                    specExp.leftRegister = CPUConstants.RegisterNames.B;
-                    break;
-                case "c":
-                    specExp.leftRegister = CPUConstants.RegisterNames.C;
-                    break;
-                case "de":
-                    specExp.leftRegister = CPUConstants.RegisterNames.DE;
-                    break;
-                case "d":
-                    specExp.leftRegister = CPUConstants.RegisterNames.D;
-                    break;
-                case "e":
-                    specExp.leftRegister = CPUConstants.RegisterNames.E;
-                    break;
-                case "hl":
-                    specExp.leftRegister = CPUConstants.RegisterNames.HL;
-                    break;
-                case "h":
-                    specExp.leftRegister = CPUConstants.RegisterNames.H;
-                    break;
-                case "l":
-                    specExp.leftRegister = CPUConstants.RegisterNames.L;
-                    break;
+        String token = tokens.remove(0);
+        if (token.equals("(")) {
+            // memory address:
+            Expression exp = config.expressionParser.parse(tokens, null, null, code);
+            if (exp == null) {
+                config.error("Cannot parse left-hand side expression in: " + line);
+                return false;
+            }
+            token = tokens.remove(0);
+            if (!token.equals(")")) {
+                config.error("Cannot parse left-hand side expression in: " + line);
+                return false;
+            }
+            Integer val = exp.evaluateToInteger(null, code, true);
+            if (val == null) {
+                config.error("Cannot evaluate address in left-hand side expression to a constant in: " + line);
+                return false;
+            }
+            specExp.leftConstantMemoryAddress = val;
+        } else {
+            specExp.leftRegister = CPUConstants.registerByName(token.toLowerCase());
+            if (specExp.leftRegister == null) {
+                switch(token.toLowerCase()) {
+                    // flag_C, flag_N, flag_PV, flag_3, flag_H, flag_5, flag_Z, flag_S
+                    case "c_flag":
+                        specExp.leftFlagIndex = 0;
+                        break;
+                    case "n_flag":
+                        specExp.leftFlagIndex = 1;
+                        break;
+                    case "pv_flag":
+                        specExp.leftFlagIndex = 2;
+                        break;
+                    case "h_flag":
+                        specExp.leftFlagIndex = 4;
+                        break;
+                    case "z_flag":
+                        specExp.leftFlagIndex = 6;
+                        break;
+                    case "s_flag":
+                        specExp.leftFlagIndex = 7;
+                        break;
 
-                case "bc'":
-                    specExp.leftRegister = CPUConstants.RegisterNames.BC_ALT;
-                    break;
-                case "b'":
-                    specExp.leftRegister = CPUConstants.RegisterNames.B_ALT;
-                    break;
-                case "c'":
-                    specExp.leftRegister = CPUConstants.RegisterNames.C_ALT;
-                    break;
-                case "de'":
-                    specExp.leftRegister = CPUConstants.RegisterNames.DE_ALT;
-                    break;
-                case "d'":
-                    specExp.leftRegister = CPUConstants.RegisterNames.E_ALT;
-                    break;
-                case "e'":
-                    specExp.leftRegister = CPUConstants.RegisterNames.E_ALT;
-                    break;
-                case "hl'":
-                    specExp.leftRegister = CPUConstants.RegisterNames.HL_ALT;
-                    break;
-                case "h'":
-                    specExp.leftRegister = CPUConstants.RegisterNames.H_ALT;
-                    break;
-                case "l'":
-                    specExp.leftRegister = CPUConstants.RegisterNames.L_ALT;
-                    break;                
-
-                case "ix":
-                    specExp.leftRegister = CPUConstants.RegisterNames.IX;
-                    break;
-                case "ixh":
-                    specExp.leftRegister = CPUConstants.RegisterNames.IXH;
-                    break;
-                case "ixl":
-                    specExp.leftRegister = CPUConstants.RegisterNames.IXL;
-                    break;                
-
-                case "iy":
-                    specExp.leftRegister = CPUConstants.RegisterNames.IY;
-                    break;
-                case "iyh":
-                    specExp.leftRegister = CPUConstants.RegisterNames.IYH;
-                    break;
-                case "iyl":
-                    specExp.leftRegister = CPUConstants.RegisterNames.IYL;
-                    break;                
-
-                case "sp":
-                    specExp.leftRegister = CPUConstants.RegisterNames.SP;
-                    break;
-                case "pc":
-                    specExp.leftRegister = CPUConstants.RegisterNames.PC;
-                    break;
-                */
-                // flag_C, flag_N, flag_PV, flag_3, flag_H, flag_5, flag_Z, flag_S
-                case "c_flag":
-                    specExp.leftFlagIndex = 0;
-                    break;
-                case "n_flag":
-                    specExp.leftFlagIndex = 1;
-                    break;
-                case "pv_flag":
-                    specExp.leftFlagIndex = 2;
-                    break;
-                case "h_flag":
-                    specExp.leftFlagIndex = 4;
-                    break;
-                case "z_flag":
-                    specExp.leftFlagIndex = 6;
-                    break;
-                case "s_flag":
-                    specExp.leftFlagIndex = 7;
-                    break;
-
-                default:
-                    config.error("Unknown register/flag " + specExp.leftRegisterOrFlagName);
-                    return false;
+                    default:
+                        config.error("Unknown register/flag " + token);
+                        return false;
+                }
             }
         }
         

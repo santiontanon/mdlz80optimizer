@@ -15,9 +15,9 @@ import util.microprocessor.Z80.CPUConstants;
 public class SpecificationExpression {
     public CPUConstants.RegisterNames leftRegister  = null;
     public Integer leftFlagIndex = null;
+    public Integer leftConstantMemoryAddress = null;
+    
     public Expression right;
-
-    public String leftRegisterOrFlagName; // just for the "toString" method
 
     /*
     public boolean check(Z80Core z80, IMemory z80memory, CodeBase code)
@@ -57,6 +57,14 @@ public class SpecificationExpression {
 
     @Override
     public String toString() {
-        return leftRegisterOrFlagName + " = " + right;
+        if (leftRegister != null) {
+            return CPUConstants.registerName(leftRegister) + " = " + right;        
+        } else if (leftFlagIndex != null) {
+            return CPUConstants.flagName(leftFlagIndex) + " = " + right;
+        } else if (leftConstantMemoryAddress != null) {
+            return "(" + leftConstantMemoryAddress + ") = " + right;
+        } else {
+            return null;
+        }        
     }    
 }

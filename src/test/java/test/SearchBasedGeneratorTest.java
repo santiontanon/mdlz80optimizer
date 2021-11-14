@@ -37,7 +37,6 @@ public class SearchBasedGeneratorTest {
     // Most tests are disabled here by default, as initializing the Search-based optimizer is a bit slow
     // So, we don't want to do it every time MDL is re-build. Just make sure these tests are re-run before
     // any new release.
-
     @Test public void test0() throws IOException { test("data/searchtests/test0.txt", "data/searchtests/test0-expected.asm"); }
 //    @Test public void test1() throws IOException { test("data/searchtests/test1.txt", "data/searchtests/test1-expected.asm"); }
 //    @Test public void test1b() throws IOException { test("data/searchtests/test1b.txt", "data/searchtests/test1b-expected.asm"); }
@@ -52,11 +51,12 @@ public class SearchBasedGeneratorTest {
 //    @Test public void test7() throws IOException { test("data/searchtests/test7.txt", "data/searchtests/test7-expected.asm"); }
 //    @Test public void test8() throws IOException { test("data/searchtests/test8.txt", "data/searchtests/test8-expected.asm"); }
 //    @Test public void test9() throws IOException { test("data/searchtests/test9.txt", "data/searchtests/test9-expected.asm"); }
+    @Test public void test10() throws IOException { test("data/searchtests/test10.txt", "data/searchtests/test10-expected.asm"); }
     
     @Test public void testFlags1() throws IOException { test("data/searchtests/test-flags1.txt", "data/searchtests/test-flags1-expected.asm"); }
-    @Test public void testLShift9() throws IOException { test("data/searchtests/test-large1.txt", "data/searchtests/test-large1-expected.asm"); }
-    @Test public void testLShift9size() throws IOException { test("data/searchtests/test-large1.txt", "data/searchtests/test-large1-size-expected.asm", "size"); }
-    @Test public void testLShift9time() throws IOException { test("data/searchtests/test-large1.txt", "data/searchtests/test-large1-time-expected.asm", "speed"); }
+//    @Test public void testLShift9() throws IOException { test("data/searchtests/test-large1.txt", "data/searchtests/test-large1-expected.asm"); }
+//    @Test public void testLShift9size() throws IOException { test("data/searchtests/test-large1.txt", "data/searchtests/test-large1-size-expected.asm", "size"); }
+//    @Test public void testLShift9time() throws IOException { test("data/searchtests/test-large1.txt", "data/searchtests/test-large1-time-expected.asm", "speed"); }
 
     // Current version: 0.06 sec (8947 solutions tested 1-thread)
 //    @Test public void testLShift10() throws IOException { test("data/searchtests/test-large2.txt", "data/searchtests/test-large2-expected.asm"); }

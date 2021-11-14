@@ -50,14 +50,23 @@ public class PlainZ80Memory implements IMemory {
     }
     
     
-    public void writeProtect(int start, int end)
+    @Override
+    final public void writeProtect(int start, int end)
     {
         writeProtections.add(Pair.of(start, end));
     }
     
     
-    public void clearWriteProtections()
+    @Override
+    final public void clearWriteProtections()
     {
         writeProtections.clear();
     }    
+    
+    
+    @Override
+    final public int[] getMemoryArray()
+    {
+        return memory;
+    }
 }
