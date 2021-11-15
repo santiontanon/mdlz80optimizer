@@ -1123,6 +1123,7 @@ public class SBOCandidate {
             // ld a/bc/de/hl/ix/iy/sp,(nn)
             String args[] = {"a", "bc", "de", "hl", "ix", "iy", "sp"};
             for(String arg:args) {
+                if (!spec.allowedRegisters.contains(arg)) continue;
                 for(Integer address:spec.allowed16bitConstants) {
                     String line = "ld (" + address + ")," + arg;
                     if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;                

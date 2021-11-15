@@ -40,6 +40,7 @@ public class SBOExecutionThread extends Thread {
     List<CPUOpDependency> allDependencies;
             
     RegisterNames eightBitRegistersToRandomize[];
+    boolean randomizeSP = false;
     int memoryAddressesToRandomize[];
     boolean showNewBestDuringSearch = true;
     CodeBase code;
@@ -98,6 +99,10 @@ public class SBOExecutionThread extends Thread {
         memoryAddressesToRandomize = a_memoryAddressesToRandomize;
         showNewBestDuringSearch = a_showNewBestDuringSearch;
         code = a_code;
+        
+        if (spec.allowedRegisters.contains("sp")) {
+            randomizeSP = true;
+        }
         
         if (spec.allowRamUse) {
             z80Memory = new TrackingZ80Memory();
@@ -474,8 +479,16 @@ public class SBOExecutionThread extends Thread {
         for(CPUConstants.RegisterNames register: eightBitRegistersToRandomize) {
             z80.setRegisterValue(register, rand.nextInt(256));
         }
+        if (randomizeSP) {
+            z80.setRegisterValue(RegisterNames.SP, rand.nextInt(256*256));
+        }
         for(int address: memoryAddressesToRandomize) {
             z80.writeByte(address, rand.nextInt(256));
+        }
+        if (testCase.goalMemoryAddresses != null) {
+            for(int address: testCase.goalMemoryAddresses) {
+                z80.writeByte(address, rand.nextInt(256));
+            }
         }
         z80.setProgramCounter(spec.codeStartAddress);
         

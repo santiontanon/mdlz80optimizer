@@ -60,8 +60,10 @@ public class PrecomputedTestCase {
         for(int i = 0;i<goalFlags.length;i++) {
              if (z80.getFlagValue(CPUConstants.flagIndex(goalFlags[i])) != goalFlagValues[i]) return false;
         }
-        for(int i = 0;i<goalMemoryAddresses.length;i++) {
-            if (z80.readByte(goalMemoryAddresses[i]) != goalMemoryValues[i]) return false;
+        if (goalMemoryAddresses != null) {
+            for(int i = 0;i<goalMemoryAddresses.length;i++) {
+                if (z80.readByte(goalMemoryAddresses[i]) != goalMemoryValues[i]) return false;
+            }
         }
         
         if (trackMemoryWrites) {

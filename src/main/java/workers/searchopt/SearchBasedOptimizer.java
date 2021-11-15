@@ -878,11 +878,11 @@ public class SearchBasedOptimizer implements MDLWorker {
         }
         
         // Add the goal addresses as fake goal specifications, so their addresses are randomized:
-        for(Integer address:((PrecomputedTestCaseGeneratorForOptimization)(spec.testCaseGenerator)).goalAddresses) {
-            SpecificationExpression exp = new SpecificationExpression();
-            exp.leftConstantMemoryAddress = address;
-            spec.goalState.add(exp);
-        }
+//        for(Integer address:((PrecomputedTestCaseGeneratorForOptimization)(spec.testCaseGenerator)).goalAddresses) {
+//            SpecificationExpression exp = new SpecificationExpression();
+//            exp.leftConstantMemoryAddress = address;
+//            spec.goalState.add(exp);
+//        }
                 
         // Search:
         SequenceFilter filter = new SequenceFilter(internalConfig);

@@ -32,7 +32,6 @@ public class PrecomputedTestCaseGeneratorForOptimization implements PrecomputedT
     List<RegisterNames> inputRegisters;
     List<String> allowedRegisters;
     List<RegisterNames> goalRegisters;
-    public List<Integer> goalAddresses;
     List<Integer> goalFlags;
     int startAddress;
     Z80Core z80;
@@ -65,7 +64,6 @@ public class PrecomputedTestCaseGeneratorForOptimization implements PrecomputedT
         appearInXor = new ArrayList<>();
         appearInAnd = new ArrayList<>();
         appearInAddSub = new ArrayList<>();
-        goalAddresses = new ArrayList<>();
         for(CodeStatement s:codeToOptimize) {
             if (s.op == null) continue;
             for(int i = 0;i<s.op.args.size();i++) {
@@ -88,14 +86,6 @@ public class PrecomputedTestCaseGeneratorForOptimization implements PrecomputedT
                             appearInAddSub.add(reg);
                         }
                     }
-                }
-            }
-            if (s.op.isLd() && s.op.args.get(0).evaluatesToIntegerConstant() &&
-                s.op.spec.args.get(0).wordConstantIndirectionAllowed) {
-                // This is an instruction that sets a memory value:
-                Integer address = s.op.args.get(0).evaluateToInteger(s, code, true, null);
-                if (address != null) {
-                    goalAddresses.add(address);
                 }
             }
         }
@@ -198,9 +188,6 @@ public class PrecomputedTestCaseGeneratorForOptimization implements PrecomputedT
             return null;
         }
         memory.clearWriteProtections();
-        if (memory instanceof TrackingZ80Memory) {
-            ((TrackingZ80Memory)memory).clearMemoryWrites();
-        }
         
         // Set the goal register/flag values (consider only the 8bit ones):
         List<CPUConstants.RegisterNames> goalRegisters8bit = new ArrayList<>();
@@ -219,12 +206,23 @@ public class PrecomputedTestCaseGeneratorForOptimization implements PrecomputedT
             test.goalFlags[i] = goalFlags.get(i);
             test.goalFlagValues[i] = z80.getFlagValue(CPUConstants.flagIndex(goalFlags.get(i)));
         }
-        test.goalMemoryAddresses = new int[goalAddresses.size()];
-        test.goalMemoryValues = new int[goalAddresses.size()];
-        for(int i = 0;i<goalAddresses.size();i++) {
-            test.goalMemoryAddresses[i] = goalAddresses.get(i);
-            test.goalMemoryValues[i] = z80.readByte(goalAddresses.get(i));
+        
+        if (spec.allowRamUse) {
+            List<Integer> goalAddresses = new ArrayList<>();
+            for(Integer address:((TrackingZ80Memory)memory).getMemoryWrites()) {
+                if (!goalAddresses.contains(address)) goalAddresses.add(address);
+            }
+            test.goalMemoryAddresses = new int[goalAddresses.size()];
+            test.goalMemoryValues = new int[goalAddresses.size()];
+            for(int i = 0;i<goalAddresses.size();i++) {
+                test.goalMemoryAddresses[i] = goalAddresses.get(i);
+                test.goalMemoryValues[i] = z80.readByte(goalAddresses.get(i));
+            }
         }
+        
+        if (memory instanceof TrackingZ80Memory) {
+            ((TrackingZ80Memory)memory).clearMemoryWrites();
+        }        
                             
         return test;
     }    
