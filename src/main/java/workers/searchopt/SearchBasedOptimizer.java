@@ -38,6 +38,8 @@ import workers.pattopt.Pattern;
 public class SearchBasedOptimizer implements MDLWorker {    
     public static final String SBO_RESULT_KEY = "Search-based optimizer optimizations";
     
+//    public static final int MAX_NUMBER_OF_OPTIMIZATIONS = -1;  // Only used for debugging
+    
     // Type of operation to perform:
     public static final int SBO_GENERATE = 0;
     public static final int SBO_OPTIMIZE = 1;
@@ -514,7 +516,19 @@ public class SearchBasedOptimizer implements MDLWorker {
                     config.error("Exception: " + e.getMessage());
                     config.error(Arrays.toString(e.getStackTrace()));
                 }
+                // DEBUGGING BLOCK:
+//                Integer noptimizations = r.optimizerSpecificStats.get(SBO_RESULT_KEY);
+//                if (MAX_NUMBER_OF_OPTIMIZATIONS >=0 && noptimizations != null &&
+//                    noptimizations >= MAX_NUMBER_OF_OPTIMIZATIONS) {
+//                    break;
+//                }
             }
+            // DEBUGGING BLOCK:
+//            Integer noptimizations = r.optimizerSpecificStats.get(SBO_RESULT_KEY);
+//            if (MAX_NUMBER_OF_OPTIMIZATIONS >=0 && noptimizations != null &&
+//                noptimizations >= MAX_NUMBER_OF_OPTIMIZATIONS) {
+//                break;
+//            }
         }
         
         code.resetAddresses();

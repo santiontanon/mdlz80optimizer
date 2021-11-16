@@ -38,7 +38,8 @@ public class PrecomputedTestCaseGeneratorForOptimization implements PrecomputedT
     IMemory memory;
     CodeBase code;
     
-    List<RegisterNames> appearInOr, appearInXor, appearInAnd, appearInAddSub;
+    List<RegisterNames> appearInOr, appearInXor, appearInAnd, appearInAddSub,
+                        appearInAdc, appearInSbc;
     
     public PrecomputedTestCaseGeneratorForOptimization(
             Specification a_spec,
@@ -64,6 +65,8 @@ public class PrecomputedTestCaseGeneratorForOptimization implements PrecomputedT
         appearInXor = new ArrayList<>();
         appearInAnd = new ArrayList<>();
         appearInAddSub = new ArrayList<>();
+        appearInAdc = new ArrayList<>();
+        appearInSbc = new ArrayList<>();
         for(CodeStatement s:codeToOptimize) {
             if (s.op == null) continue;
             for(int i = 0;i<s.op.args.size();i++) {
@@ -80,10 +83,12 @@ public class PrecomputedTestCaseGeneratorForOptimization implements PrecomputedT
                         } else if (s.op.spec.getName().equals("and")) {
                             appearInAnd.add(reg);
                         } else if (s.op.spec.getName().equals("add") ||
-                                   s.op.spec.getName().equals("adc") ||
-                                   s.op.spec.getName().equals("sub") ||
-                                   s.op.spec.getName().equals("sbc")) {
+                                   s.op.spec.getName().equals("sub")) {
                             appearInAddSub.add(reg);
+                        } else if (s.op.spec.getName().equals("adc")) {
+                            appearInAdc.add(reg);
+                        } else if (s.op.spec.getName().equals("sbc")) {
+                            appearInSbc.add(reg);
                         }
                     }
                 }
@@ -92,12 +97,11 @@ public class PrecomputedTestCaseGeneratorForOptimization implements PrecomputedT
         if (!appearInOr.isEmpty()) appearInOr.add(RegisterNames.A);
         if (!appearInXor.isEmpty()) appearInXor.add(RegisterNames.A);
         if (!appearInAnd.isEmpty()) appearInAnd.add(RegisterNames.A);
-        if (!appearInAddSub.isEmpty()) appearInAddSub.add(RegisterNames.A);
+        if (!appearInAddSub.isEmpty()) appearInAddSub.add(RegisterNames.A);        
         
 //        System.out.println("inputRegisters:" + inputRegisters);        
 //        System.out.println("allowedRegisters:" + allowedRegisters);        
 //        System.out.println("goalRegisters:" + goalRegisters);        
-//        System.out.println("goalAddresses:" + goalAddresses);        
 //        System.out.println("goalFlags:" + goalFlags);        
     }
     
@@ -123,6 +127,8 @@ public class PrecomputedTestCaseGeneratorForOptimization implements PrecomputedT
             }
         }
 
+//        System.out.println("registersToInit: " + registersToInit);
+//        System.out.println("appearInSbc: " + appearInSbc);
         test.startRegisters = new CPUConstants.RegisterNames[registersToInit.size()];
         test.startRegisterValues = new int[registersToInit.size()];
         for(int i = 0;i<registersToInit.size();i++) {
@@ -152,6 +158,55 @@ public class PrecomputedTestCaseGeneratorForOptimization implements PrecomputedT
             }
         }
         
+        for(RegisterNames reg:appearInAdc) {
+            if (CPUConstants.is8bitRegister(reg)) {
+                int AIdx = registersToInit.indexOf(RegisterNames.A);
+                if (AIdx >= 0 && random.nextDouble() < 0.1) {
+                    int regIdx = registersToInit.indexOf(reg);
+                    if (regIdx >= 0) {
+                        test.startRegisterValues[regIdx] = 255 - test.startRegisterValues[AIdx];
+                    }
+                }
+            } else {
+                int HIdx = registersToInit.indexOf(RegisterNames.H);
+                int LIdx = registersToInit.indexOf(RegisterNames.L);
+                if (HIdx >= 0 && LIdx >=0 && random.nextDouble() < 0.1) {
+                    RegisterNames pair[] = CPUConstants.primitive8BitRegistersOf(reg);
+                    int regHIdx = registersToInit.indexOf(pair[0]);
+                    int regLIdx = registersToInit.indexOf(pair[1]);
+                    if (regHIdx >= 0 && regLIdx >=0) {
+                        int HLValue = test.startRegisterValues[HIdx]*256 + test.startRegisterValues[LIdx];
+                        int regValue = 65535 - HLValue;
+                        test.startRegisterValues[regHIdx] = regValue/256;
+                        test.startRegisterValues[regLIdx] = regValue%256;
+                    }
+                }
+            }
+        }
+        for(RegisterNames reg:appearInSbc) {
+            if (CPUConstants.is8bitRegister(reg)) {
+                int AIdx = registersToInit.indexOf(RegisterNames.A);
+                if (AIdx >= 0 && random.nextDouble() < 0.1) {
+                    int regIdx = registersToInit.indexOf(reg);
+                    if (regIdx >= 0) {
+                        test.startRegisterValues[regIdx] = test.startRegisterValues[AIdx];
+                    }
+                }
+            } else {
+                int HIdx = registersToInit.indexOf(RegisterNames.H);
+                int LIdx = registersToInit.indexOf(RegisterNames.L);
+                if (HIdx >= 0 && LIdx >=0 && random.nextDouble() < 0.1) {
+                    RegisterNames pair[] = CPUConstants.primitive8BitRegistersOf(reg);
+                    int regHIdx = registersToInit.indexOf(pair[0]);
+                    int regLIdx = registersToInit.indexOf(pair[1]);
+                    if (regHIdx >= 0 && regLIdx >=0) {
+                        test.startRegisterValues[regHIdx] = test.startRegisterValues[HIdx];
+                        test.startRegisterValues[regLIdx] = test.startRegisterValues[LIdx];
+                    }
+                }
+            }
+        }
+
         // Set up the simulator:
         List<Integer> opAddresses = new ArrayList<>();
         int currentAddress = startAddress;
