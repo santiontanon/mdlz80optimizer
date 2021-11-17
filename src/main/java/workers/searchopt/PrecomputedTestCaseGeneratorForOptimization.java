@@ -142,7 +142,12 @@ public class PrecomputedTestCaseGeneratorForOptimization implements PrecomputedT
             if (val != null) {
                 test.startRegisterValues[i] = val;
             } else {
-                test.startRegisterValues[i] = random.nextInt(256);                
+                test.startRegisterValues[i] = random.nextInt(256);
+                // 0 is a special value that often elicits special cases, so
+                // give it a higher probability:
+                if (random.nextDouble() < 0.05) {
+                    test.startRegisterValues[i] = 0;
+                }
                 if (appearInOr.contains(test.startRegisters[i]) ||
                     appearInXor.contains(test.startRegisters[i]) ||
                     appearInAddSub.contains(test.startRegisters[i])) {

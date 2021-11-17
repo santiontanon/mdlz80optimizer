@@ -243,4 +243,28 @@ public class PrecomputedTestCase {
         }
         return null;
     }    
+    
+    
+    public String toString()
+    {
+        /*
+        CPUConstants.RegisterNames startRegisters[] = null;
+        int startRegisterValues[] = null;
+        int startMemoryAddresses[] = null;
+        int startMemoryValues[] = null;
+
+        CPUConstants.RegisterNames goalRegisters[] = null;
+        int goalRegisterValues[] = null;
+        int goalFlags[] = null;
+        boolean goalFlagValues[] = null;
+        int goalMemoryAddresses[] = null;
+        int goalMemoryValues[] = null;
+        */
+        String str = "";
+        str += "GOAL: ";
+        for(int i = 0;i<goalRegisterValues.length;i++) {
+            str += CPUConstants.registerName(goalRegisters[i]) + "=" + goalRegisterValues[i] + ", ";
+        }
+        return str;
+    }
 }

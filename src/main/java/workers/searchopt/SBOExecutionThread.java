@@ -425,10 +425,16 @@ public class SBOExecutionThread extends Thread {
                         break;
                 }
             }
+                        
             if (spec.searchTimeCalculation == SearchBasedOptimizer.SEARCH_TIME_AVERAGE) {
                 time /= spec.numberOfRandomSolutionChecks;
             }
             if (isBetter(depth, size, time)) {
+//                // Print tests:
+//                for(int i = 0; i < spec.numberOfRandomSolutionChecks; i++) {
+//                    System.out.println("test " + i + ": " + spec.precomputedTestCases[i]);
+//                }
+                
                 List<CPUOp> bestOps = new ArrayList<>();
                 for(int i = 0;i<depth;i++) {
                     CPUOp op = currentOps[i];
