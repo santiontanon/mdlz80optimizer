@@ -435,7 +435,7 @@ public class SBOExecutionThread extends Thread {
 //                    System.out.println("test " + i + ": " + spec.precomputedTestCases[i]);
 //                }
                 
-                List<CPUOp> bestOps = new ArrayList<>();
+                List<CPUOp> localBestOps = new ArrayList<>();
                 for(int i = 0;i<depth;i++) {
                     CPUOp op = currentOps[i];
                     if (op.isJump()) {
@@ -454,13 +454,13 @@ public class SBOExecutionThread extends Thread {
                                             Expression.constantExpression(-offset, config), config));
                         }
                     }
-                    bestOps.add(op);
+                    localBestOps.add(op);
                 }
-                globalState.newBest(bestOps, size, time);
+                globalState.newBest(localBestOps, size, time);
 
                 if (showNewBestDuringSearch) {
                     config.info("New solution found (size: "+size+" bytes, time: " + time + " " + config.timeUnit + "s):");
-                    for(CPUOp op:bestOps) {
+                    for(CPUOp op:localBestOps) {
                         config.info("    " + op);
                     }
                 }

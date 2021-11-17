@@ -10,8 +10,8 @@
     jp p, loop
 
     ld hl, 0
-    ld a, (hl)
     ld (49152), hl
+    ld a, (hl)
     ld (#c006), a
 
 loop:

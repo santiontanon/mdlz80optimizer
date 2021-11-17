@@ -694,8 +694,8 @@ public class SearchBasedOptimizer implements MDLWorker {
         
         for(int i = 0;i<s.op.spec.args.size();i++) {
             if (s.op.spec.args.get(i).wordConstantIndirectionAllowed) {
-                // Only allow "ld (nn),X" for now:
-                if (s.op.isLd() && i == 0) return false;
+                // Only allow "ld":
+                if (s.op.isLd()) return false;
                 config.debug("SBO: preventOptimization: unsupported indirection: " + s.op);
                 return true;
             } else if (s.op.spec.args.get(i).byteConstantIndirectionAllowed ||
@@ -725,6 +725,7 @@ public class SearchBasedOptimizer implements MDLWorker {
         config.debug(f.getStatements().get(line).fileNameLineString());
         
         config.debug("SBO: Optimizing from line " + f.getStatements().get(line).op + "\t\tknowing: " + knownRegisterValues);
+//        config.info("SBO: Optimizing from line " + f.getStatements().get(line).op + "\t\tknowing: " + knownRegisterValues);
         
         List<CodeStatement> codeToOptimize = new ArrayList<>();
         int line2 = line;

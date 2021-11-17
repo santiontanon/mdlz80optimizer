@@ -41,7 +41,7 @@ public class PrecomputedTestCase {
             }
         }
         if (trackMemoryWrites) {
-            ((TrackingZ80Memory)z80.getRAM()).clearMemoryWrites();
+            ((TrackingZ80Memory)z80.getRAM()).clearMemoryAccesses();
         }        
     }
 
@@ -245,8 +245,11 @@ public class PrecomputedTestCase {
     }    
     
     
+    @Override
     public String toString()
     {
+        // This is just a debugging function, which gets changed to print
+        // whichever informatino is useful whenever I am debugging.
         /*
         CPUConstants.RegisterNames startRegisters[] = null;
         int startRegisterValues[] = null;

@@ -22,6 +22,7 @@ public class TrackingZ80Memory implements IMemory {
     public final int[] memory;
     public List<Pair<Integer, Integer>> writeProtections = new ArrayList<>();
     List<Integer> memoryWrites = new ArrayList();
+    List<Pair<Integer, Integer>> memoryReads = new ArrayList();
 
     public TrackingZ80Memory() {
         this.memory = new int[MEMORY_SIZE];
@@ -29,6 +30,7 @@ public class TrackingZ80Memory implements IMemory {
 
     @Override
     final public int readByte(int address) {
+        memoryReads.add(Pair.of(address, memory[address]));
         return memory[address];
     }
 
@@ -76,9 +78,16 @@ public class TrackingZ80Memory implements IMemory {
     }
     
     
-    final public void clearMemoryWrites()
+    final public List<Pair<Integer, Integer>> getMemoryReads()
+    {
+        return memoryReads;
+    }
+
+
+    final public void clearMemoryAccesses()
     {
         memoryWrites.clear();
+        memoryReads.clear();
     }
 
 

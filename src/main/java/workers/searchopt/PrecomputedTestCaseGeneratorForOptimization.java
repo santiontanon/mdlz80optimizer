@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
+import org.apache.commons.lang3.tuple.Pair;
 import util.microprocessor.IMemory;
 import util.microprocessor.TrackingZ80Memory;
 import util.microprocessor.Z80.CPUConstants;
@@ -232,6 +233,10 @@ public class PrecomputedTestCaseGeneratorForOptimization implements PrecomputedT
         z80.resetTStates();
         test.initCPU(z80);
         z80.setProgramCounter(startAddress);
+        
+        if (test.trackMemoryWrites) {
+            ((TrackingZ80Memory)memory).clearMemoryAccesses();
+        }
                 
         // Simulate the program:
         memory.writeProtect(startAddress, currentAddress);
@@ -268,6 +273,42 @@ public class PrecomputedTestCaseGeneratorForOptimization implements PrecomputedT
         }
         
         if (spec.allowRamUse) {
+            // Store the initial values of the RAM positions that were read:
+            List<Integer> addressesToInit = new ArrayList<>();
+            List<Integer> valuesToInitTo = new ArrayList<>();
+            for(Pair<Integer,Integer> read:((TrackingZ80Memory)memory).getMemoryReads()) {
+                if (!addressesToInit.contains(read.getLeft()) &&
+                     read.getLeft()<startAddress || 
+                     read.getLeft()>=currentAddress) {
+                    
+                    addressesToInit.add(read.getLeft());
+                    valuesToInitTo.add(read.getRight());
+                }                
+            }
+            if (test.startMemoryAddresses == null) {
+                test.startMemoryAddresses = new int[addressesToInit.size()];
+                test.startMemoryValues = new int[valuesToInitTo.size()];
+                for(int i = 0;i<addressesToInit.size();i++) {
+                    test.startMemoryAddresses[i] = addressesToInit.get(i);
+                    test.startMemoryValues[i] = valuesToInitTo.get(i);
+                }
+            } else {
+                int newAddresses[] = new int[test.startMemoryAddresses.length+addressesToInit.size()];
+                int newValues[] = new int[test.startMemoryValues.length+valuesToInitTo.size()];
+                for(int i = 0;i<newAddresses.length;i++) {
+                    if (i<test.startMemoryAddresses.length) {
+                        newAddresses[i] = test.startMemoryAddresses[i];
+                        newValues[i] = test.startMemoryValues[i];
+                    } else {
+                        newAddresses[i] = addressesToInit.get(i - test.startMemoryAddresses.length);
+                        newValues[i] = valuesToInitTo.get(i - test.startMemoryAddresses.length);
+                    }
+                }
+                test.startMemoryAddresses = newAddresses;
+                test.startMemoryValues = newValues;
+            }
+            
+            
             List<Integer> goalAddresses = new ArrayList<>();
             for(Integer address:((TrackingZ80Memory)memory).getMemoryWrites()) {
                 if (!goalAddresses.contains(address)) goalAddresses.add(address);
@@ -278,10 +319,12 @@ public class PrecomputedTestCaseGeneratorForOptimization implements PrecomputedT
                 test.goalMemoryAddresses[i] = goalAddresses.get(i);
                 test.goalMemoryValues[i] = z80.readByte(goalAddresses.get(i));
             }
-        }
-        
-        if (memory instanceof TrackingZ80Memory) {
-            ((TrackingZ80Memory)memory).clearMemoryWrites();
+            
+            // Randomize those positions for the next test, in case the z80
+            // memory is reused to create the next test:
+            for(int address:addressesToInit) {
+                memory.writeByte(address, random.nextInt(256));
+            }            
         }        
                             
         return test;
