@@ -283,6 +283,7 @@ public class PrecomputedTestCaseGeneratorForOptimization implements PrecomputedT
                     
                     addressesToInit.add(read.getLeft());
                     valuesToInitTo.add(read.getRight());
+//                    System.out.println("  read " + read.getRight() + " from " + read.getLeft());
                 }                
             }
             if (test.startMemoryAddresses == null) {
@@ -324,6 +325,7 @@ public class PrecomputedTestCaseGeneratorForOptimization implements PrecomputedT
             // memory is reused to create the next test:
             for(int address:addressesToInit) {
                 memory.writeByte(address, random.nextInt(256));
+//                System.out.println("    random init of " + address);
             }            
         }        
                             

@@ -826,9 +826,17 @@ public class SearchBasedOptimizer implements MDLWorker {
                             constantsToExpressions.put(value, l);
                         }
                     }
-                    if (i == 0 && s.op.isLd() && s.op.spec.args.get(0).wordConstantIndirectionAllowed) {
+                    // Memory writes:
+                    if (i == 0 && s.op.isLd() && 
+                        s.op.spec.args.get(0).wordConstantIndirectionAllowed) {
                         spec.allowRamUse = true;
                         goalRequiresSettingMemory = true;
+                        if (!spec.allowed16bitConstants.contains(value)) spec.allowed16bitConstants.add(value);
+                    }
+                    // Memory reads:
+                    if (i == 1 && s.op.isLd() && 
+                        s.op.spec.args.get(1).wordConstantIndirectionAllowed) {
+                        spec.allowRamUse = true;
                         if (!spec.allowed16bitConstants.contains(value)) spec.allowed16bitConstants.add(value);
                     }
                 }
