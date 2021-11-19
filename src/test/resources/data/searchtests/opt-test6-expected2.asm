@@ -10,7 +10,7 @@
     jp p, loop
 
     ld hl, 0
-    ld (49152), hl
+    ld (#c000), hl
     ld a, (hl)
     ld (#c006), a
 

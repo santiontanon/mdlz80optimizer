@@ -45,6 +45,7 @@ public class SearchBasedOptimizerTest {
             new String[]{"data/searchtests/opt-test6-expected.asm", "data/searchtests/opt-test6-expected2.asm"}); }
     @Test public void test7() throws IOException { test("data/searchtests/opt-test7.asm", new String[]{"data/searchtests/opt-test7-expected.asm"}); }
     @Test public void test8() throws IOException { test("data/searchtests/opt-test8.asm", new String[]{"data/searchtests/opt-test8-expected.asm"}); }
+    @Test public void test9() throws IOException { test("data/searchtests/opt-test9.asm", new String[]{"data/searchtests/opt-test9-expected.asm"}); }
 
             
     private void test(String inputFile, String expectedOutputFiles[]) throws IOException

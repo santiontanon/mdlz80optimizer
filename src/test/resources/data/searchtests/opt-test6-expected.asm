@@ -11,7 +11,7 @@
 
     ld hl, 0
     ld a, (hl)
-    ld (49152), hl
+    ld (#c000), hl
     ld (#c006), a
 
 loop:

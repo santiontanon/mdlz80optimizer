@@ -1139,7 +1139,7 @@ public class SBOCandidate {
                 for(String reg:new String[]{"ix","iy"}) {
                     if (!spec.allowedRegisters.contains(reg)) continue;
                     for(Integer offset:spec.allowedOffsetConstants) {
-                        if (constant >= 0) {
+                        if (offset >= 0) {
                             String line = "ld ("+reg+"+"+offset+")," + constant;
                             if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;            
                         } else {

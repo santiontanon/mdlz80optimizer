@@ -6,6 +6,7 @@ package util.microprocessor;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import org.apache.commons.lang3.tuple.Pair;
 
 /**
@@ -19,18 +20,28 @@ import org.apache.commons.lang3.tuple.Pair;
  */
 public class TrackingZ80Memory implements IMemory {    
     public static final int MEMORY_SIZE = 0x10000;
+    public static final int TRACKING_BUFFER = 32;
+    
     public final int[] memory;
     public List<Pair<Integer, Integer>> writeProtections = new ArrayList<>();
-    List<Integer> memoryWrites = new ArrayList();
-    List<Pair<Integer, Integer>> memoryReads = new ArrayList();
-
+    int memoryWritesIndex = 0;
+    int memoryWriteAddresses[] = new int[TRACKING_BUFFER];
+    int memoryReadsIndex = 0;
+    int memoryReadAddresses[] = new int[TRACKING_BUFFER];
+    int memoryReadValues[] = new int[TRACKING_BUFFER];
+    Random r = new Random();
+    
     public TrackingZ80Memory() {
         this.memory = new int[MEMORY_SIZE];
     }
 
     @Override
     final public int readByte(int address) {
-        memoryReads.add(Pair.of(address, memory[address]));
+        if (memoryReadsIndex<TRACKING_BUFFER) {
+            memoryReadAddresses[memoryReadsIndex] = address;
+            memoryReadValues[memoryReadsIndex] = memory[address];
+            memoryReadsIndex++;
+        }
         return memory[address];
     }
 
@@ -45,7 +56,10 @@ public class TrackingZ80Memory implements IMemory {
         for(Pair<Integer, Integer> p:writeProtections) {
             if (address >= p.getLeft() && address < p.getRight()) return;
         }
-        memoryWrites.add(address);
+        if (memoryWritesIndex<TRACKING_BUFFER) {
+            memoryWriteAddresses[memoryWritesIndex] = address;
+            memoryWritesIndex++;
+        }
         memory[address] = data;
     }
 
@@ -74,20 +88,48 @@ public class TrackingZ80Memory implements IMemory {
     
     final public List<Integer> getMemoryWrites()
     {
-        return memoryWrites;
+        List<Integer> writes = new ArrayList<>();
+        for(int i = 0;i<memoryWritesIndex;i++) {
+            writes.add(memoryWriteAddresses[i]);
+        }
+        return writes;
     }
     
     
     final public List<Pair<Integer, Integer>> getMemoryReads()
     {
-        return memoryReads;
+        List<Pair<Integer, Integer>> reads = new ArrayList<>();
+        for(int i = 0;i<memoryReadsIndex;i++) {
+            reads.add(Pair.of(memoryReadAddresses[i], memoryReadValues[i]));
+        }
+        return reads;
     }
 
 
     final public void clearMemoryAccesses()
     {
-        memoryWrites.clear();
-        memoryReads.clear();
+        memoryWritesIndex = 0;
+        memoryReadsIndex = 0;
+    }
+    
+    
+    final public void clearMemoryAccessesRandomizingThem(int protectStart, int protectEnd)
+    {
+        for(int i = 0;i<memoryWritesIndex;i++) {
+            int address = memoryWriteAddresses[i];
+            if (address < protectStart || address >= protectEnd) {                
+                memory[address] = r.nextInt(256);
+            }
+        }
+        for(int i = 0;i<memoryReadsIndex;i++) {
+            int address = memoryReadAddresses[i];
+            if (address < protectStart || address >= protectEnd) {  
+                memory[address] = r.nextInt(256);
+            }
+        }
+        memoryWritesIndex = 0;
+        memoryReadsIndex = 0;
+        
     }
 
 

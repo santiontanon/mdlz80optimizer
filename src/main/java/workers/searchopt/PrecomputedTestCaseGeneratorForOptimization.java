@@ -100,10 +100,11 @@ public class PrecomputedTestCaseGeneratorForOptimization implements PrecomputedT
         if (!appearInAnd.isEmpty()) appearInAnd.add(RegisterNames.A);
         if (!appearInAddSub.isEmpty()) appearInAddSub.add(RegisterNames.A);        
         
-//        System.out.println("inputRegisters:" + inputRegisters);        
-//        System.out.println("allowedRegisters:" + allowedRegisters);        
-//        System.out.println("goalRegisters:" + goalRegisters);        
-//        System.out.println("goalFlags:" + goalFlags);        
+//        System.out.println("inputRegisters: " + inputRegisters);        
+//        System.out.println("allowedRegisters: " + allowedRegisters);        
+//        System.out.println("goalRegisters: " + goalRegisters);        
+//        System.out.println("goalFlags: " + goalFlags);        
+//        System.out.println("allowRamUse: " + spec.allowRamUse);        
     }
     
     

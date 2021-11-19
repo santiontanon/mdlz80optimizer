@@ -500,18 +500,32 @@ public class SBOExecutionThread extends Thread {
         
         // execute initial state:
         testCase.initCPU(z80);
+        if (spec.allowRamUse) {
+            ((TrackingZ80Memory)z80.getRAM()).clearMemoryAccesses();
+        }
         
         while(z80.getProgramCounter() < breakPoint && 
               z80.getTStates() < spec.maxSimulationTime) {
             z80.executeOneInstruction();
         }
-        if (z80.getTStates() >= spec.maxSimulationTime) return -1;
+        if (z80.getTStates() >= spec.maxSimulationTime) {
+            if (spec.allowRamUse) {
+                ((TrackingZ80Memory)z80.getRAM()).clearMemoryAccessesRandomizingThem(spec.codeStartAddress, breakPoint);
+            }
+            return -1;
+        }
         
         // check if the solution worked:
         if (testCase.checkGoalState(z80)) {
 //        if (testCase.checkGoalStateDebug(z80, config)) {
+            if (spec.allowRamUse) {
+                ((TrackingZ80Memory)z80.getRAM()).clearMemoryAccessesRandomizingThem(spec.codeStartAddress, breakPoint);
+            }
             return (int)z80.getTStates();
         } else {
+            if (spec.allowRamUse) {
+                ((TrackingZ80Memory)z80.getRAM()).clearMemoryAccessesRandomizingThem(spec.codeStartAddress, breakPoint);
+            }
             return -1;
         }
     }    

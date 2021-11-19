@@ -551,10 +551,12 @@ public class SearchBasedOptimizer implements MDLWorker {
         // Clear all the output registers:
         List<String> toClear = new ArrayList<>();
         for(String reg2:knownRegisterValues.keySet()) {
-            for(String reg1:s.op.spec.outputRegs) {
-                if (CPUOpDependency.registerMatch(reg1, reg2)) {
-                    toClear.add(reg2);
-                    break;
+            for(CPUOpDependency dep:s.op.getOutputDependencies()) {
+                if (dep.register != null) {
+                    if (CPUOpDependency.registerMatch(dep.register, reg2)) {
+                        toClear.add(reg2);
+                        break;
+                    }
                 }
             }
         }
@@ -831,13 +833,31 @@ public class SearchBasedOptimizer implements MDLWorker {
                         s.op.spec.args.get(0).wordConstantIndirectionAllowed) {
                         spec.allowRamUse = true;
                         goalRequiresSettingMemory = true;
-                        if (!spec.allowed16bitConstants.contains(value)) spec.allowed16bitConstants.add(value);
+                        if (!spec.allowed16bitConstants.contains(value)) {
+                            spec.allowed16bitConstants.add(value);
+                        }
+                        if (constantsToExpressions.containsKey(value)) {
+                            constantsToExpressions.get(value).add(arg.args.get(0));
+                        } else {
+                            List<Expression> l = new ArrayList<>();
+                            l.add(arg.args.get(0));
+                            constantsToExpressions.put(value, l);
+                        }
                     }
                     // Memory reads:
                     if (i == 1 && s.op.isLd() && 
                         s.op.spec.args.get(1).wordConstantIndirectionAllowed) {
                         spec.allowRamUse = true;
-                        if (!spec.allowed16bitConstants.contains(value)) spec.allowed16bitConstants.add(value);
+                        if (!spec.allowed16bitConstants.contains(value)) {
+                            spec.allowed16bitConstants.add(value);
+                        }
+                        if (constantsToExpressions.containsKey(value)) {
+                            constantsToExpressions.get(value).add(arg.args.get(0));
+                        } else {
+                            List<Expression> l = new ArrayList<>();
+                            l.add(arg.args.get(0));
+                            constantsToExpressions.put(value, l);
+                        }
                     }
                 }
             }
@@ -894,6 +914,11 @@ public class SearchBasedOptimizer implements MDLWorker {
             int v = random.nextInt(256);
             z80Memory.writeByte(i, v);
         }
+        if (spec.allowRamUse) {
+//            System.out.println("value at 52432: " + z80Memory.readByte(52432));
+//            System.out.println("value at 52433: " + z80Memory.readByte(52433));
+            ((TrackingZ80Memory)z80Memory).clearMemoryAccesses();
+        }
         spec.precomputedTestCases = new PrecomputedTestCase[spec.numberOfRandomSolutionChecks];
         spec.testCaseGenerator = new PrecomputedTestCaseGeneratorForOptimization(spec, codeToOptimize, inputRegisters, registersUsedAfter, flagsUsedAfter, z80, z80Memory, code);
         for(int i = 0;i<spec.numberOfRandomSolutionChecks;i++) {
@@ -923,6 +948,7 @@ public class SearchBasedOptimizer implements MDLWorker {
         }
         
         // Replace constants by their corresponding expressions:
+//        System.out.println("constantsToExpressions: " + constantsToExpressions);
         for(CodeStatement s:sf.getStatements()) {
             if (s.op != null) {
                 for(int i = 0;i<s.op.args.size();i++) {
@@ -931,6 +957,14 @@ public class SearchBasedOptimizer implements MDLWorker {
                         List<Expression> l = constantsToExpressions.get(arg.integerConstant);
                         if (l != null && !l.isEmpty()) {
                             s.op.args.set(i, l.get(0));
+                        }
+                    } else if (arg.type == Expression.EXPRESSION_PARENTHESIS &&
+                               arg.args.size() == 1 &&
+                               arg.args.get(0).type == Expression.EXPRESSION_INTEGER_CONSTANT) {
+                        // indirection:
+                        List<Expression> l = constantsToExpressions.get(arg.args.get(0).integerConstant);
+                        if (l != null && !l.isEmpty()) {
+                            arg.args.set(0, l.get(0));
                         }
                     }
                 }

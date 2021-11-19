@@ -78,6 +78,11 @@ public class PrecomputedTestCase {
                 if (!found) return false;
             }
         }
+
+//        for(int i = 0;i<goalRegisters.length;i++) {
+//            System.out.println(goalRegisters[i] + ": " + goalRegisterValues[i]);
+//        }
+        
         return true;
     }        
 
