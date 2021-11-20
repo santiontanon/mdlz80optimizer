@@ -554,8 +554,7 @@ public class SearchBasedOptimizer implements MDLWorker {
                 if (sc.exp != null && sc.exp.isConstant()) return true;
                 if (sc.isLabel()) {
                     CodeStatement s = sc.definingStatement;
-                    SourceFile f = s.source;
-                    s = f.getPreviousStatementTo(s, code);
+                    s = s.source.getPreviousStatementTo(s, code);
                     while(s != null) {
                         if (s.op != null) return false;
                         if (s.org != null) {
@@ -563,7 +562,7 @@ public class SearchBasedOptimizer implements MDLWorker {
                         }
                         if (s.space != null && !s.space.isConstant()) return false;
                         if (s.include != null) return false;
-                        s = f.getPreviousStatementTo(s, code);
+                        s = s.source.getPreviousStatementTo(s, code);
                     }
                     if (s == null) return false;
                 }
@@ -728,7 +727,7 @@ public class SearchBasedOptimizer implements MDLWorker {
             if (s.op.spec.args.get(i).wordConstantIndirectionAllowed ||
                 s.op.spec.args.get(i).regIndirection != null ||
                 s.op.spec.args.get(i).regOffsetIndirection != null) {
-                // Only allow "ld":
+                // Only allow memory accesses for "ld" for now:
                 if (!s.op.isLd()) {
                     config.debug("SBO: preventOptimization: unsupported indirection: " + s.op);
                     return true;
