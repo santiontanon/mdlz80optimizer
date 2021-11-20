@@ -240,7 +240,10 @@ public class SBOCandidate {
 //            if (!sequenceMakesSensePair(sequence.get(i), sequence.get(i+1), spec, code)) return false;
 //        }
         
-        if (filter.filterSequence(sequence, 2)) return false;
+        if (filter.filterSequence(sequence, 2)) {
+//            System.out.println("filtered: " + sequenceString(sequence));
+            return false;
+        }
         
         // check for instructions that get masked out (all its effects are overwritten by subsequent instructions):
         for(int i = 0;i<sequence.size()-2;i++) {
@@ -341,7 +344,7 @@ public class SBOCandidate {
                     !op2.op.isJump()) {
                     // general canonical order of instructions that are independent:
                     if (op1.op.toString().compareTo(op2.op.toString()) > 0) {
-//                        System.out.println(sequenceString(sequence));
+//                        System.out.println("- removed: " + sequenceString(sequence));
                         return false;
                     }
                 }
@@ -828,6 +831,11 @@ public class SBOCandidate {
                 }
             }
         }
+        
+//        System.out.println("op.directContributionToGoal:");
+//        for(SBOCandidate op:candidates) {
+//            System.out.println("    " + op + ": " + op.directContributionToGoal);
+//        }
         
         // Filter the base candidates to begin with:
         List<SBOCandidate> toDelete = new ArrayList<>();

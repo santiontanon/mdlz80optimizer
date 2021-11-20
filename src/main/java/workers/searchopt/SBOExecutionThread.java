@@ -188,10 +188,11 @@ public class SBOExecutionThread extends Thread {
             return evaluateSolution(depth, 0, 0, codeAddress);
         } else {
             boolean found = false;
-            // the very last op must contribute to the goal:
+                        
             for(SBOCandidate candidate : candidateOps) {
                 int nextAddress = codeAddress + candidate.bytes.length;
                 if (nextAddress > codeMaxAddress) continue;
+                // the very last op must contribute to the goal:
                 if (!candidate.directContributionToGoal &&
                     (depth == codeMaxOps-1 || codeMaxAddress == nextAddress)) {
                     continue;
@@ -264,10 +265,10 @@ public class SBOExecutionThread extends Thread {
             return false;
         } else {
             boolean found = false;
-            // the very last op must contribute to the goal:
             for(SBOCandidate candidate : candidateOps) {
                 int nextAddress = codeAddress + candidate.bytes.length;
                 if (nextAddress > codeMaxAddress) continue;
+                // the very last op must contribute to the goal:
                 if (!candidate.directContributionToGoal &&
                     (depth == codeMaxOps-1 || codeMaxAddress == nextAddress)) {
                     continue;

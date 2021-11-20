@@ -1,0 +1,12 @@
+allowed_ops: 
+    ld
+allowed_registers: hl
+allow_ram_use = true
+16bit_constants:
+    1234
+8bit_constants:
+    5
+max_ops = 2
+initial_state:
+goal_state:
+    (1234) = 5

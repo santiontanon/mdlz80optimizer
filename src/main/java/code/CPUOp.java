@@ -202,6 +202,18 @@ public class CPUOp {
     {
         return spec.opName.equalsIgnoreCase("ld");
     }
+
+
+    public boolean isLdToMemory()
+    {
+        if (!spec.opName.equalsIgnoreCase("ld")) return false;
+        if (spec.args.get(0).wordConstantIndirectionAllowed ||
+            spec.args.get(0).regIndirection != null ||
+            spec.args.get(0).regOffsetIndirection != null) {
+            return true;
+        }
+        return false;
+    }
     
 
     public boolean isRet()

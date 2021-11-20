@@ -1,0 +1,17 @@
+allowed_ops: 
+    ld
+allowed_registers: ix
+allow_ram_use = true
+16bit_constants:
+    1234
+8bit_constants:
+    1
+    2
+offset_constants:
+    0
+    2
+max_size = 12
+initial_state:
+goal_state:
+    (1234) = 1
+    (1236) = 2

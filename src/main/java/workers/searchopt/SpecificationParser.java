@@ -100,7 +100,7 @@ public class SpecificationParser {
                     }
                 } else if (tokens.size()>=3 && tokens.get(0).equalsIgnoreCase("max_size") && tokens.get(1).equals("=")) {
                     if (config.tokenizer.isInteger(tokens.get(2))) {
-                        spec.maxSimulationTime = Integer.parseInt(tokens.get(2));
+                        spec.maxSizeInBytes = Integer.parseInt(tokens.get(2));
                         tokens.remove(0);
                         tokens.remove(0);
                         tokens.remove(0);
@@ -250,10 +250,14 @@ public class SpecificationParser {
                 for(String symbolName: exp.getAllSymbols()) {
                     SourceConstant symbol = new SourceConstant(symbolName, symbolName, exp, null, config);
                     code.addSymbol(symbolName, symbol);
-                    if (CPUConstants.is8bitRegister(sexp.leftRegister)) {
+                    if (sexp.leftRegister != null) {
+                        if (CPUConstants.is8bitRegister(sexp.leftRegister)) {
+                            spec.addParameter(symbol, 0, 0xff);
+                        } else {
+                            spec.addParameter(symbol, 0, 0xffff);
+                        }
+                    } else if (sexp.leftConstantMemoryAddress != null) {
                         spec.addParameter(symbol, 0, 0xff);
-                    } else {
-                        spec.addParameter(symbol, 0, 0xffff);
                     }
                 }
             }

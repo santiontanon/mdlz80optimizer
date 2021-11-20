@@ -39,9 +39,9 @@ public class SearchBasedGeneratorTest {
     // any new release.
     @Test public void test0() throws IOException { test("data/searchtests/test0.txt", "data/searchtests/test0-expected.asm"); }
 //    @Test public void test1() throws IOException { test("data/searchtests/test1.txt", "data/searchtests/test1-expected.asm"); }
-//    @Test public void test1b() throws IOException { test("data/searchtests/test1b.txt", "data/searchtests/test1b-expected.asm"); }
+//    @Test public void test1b() throws IOException { test("data/searchtests/test1b.txt", new String[]{"data/searchtests/test1b-expected.asm", "data/searchtests/test1b-expected2.asm"}); }
 //    @Test public void test2() throws IOException { test("data/searchtests/test2.txt", "data/searchtests/test2-expected.asm"); }
-//    @Test public void test2b() throws IOException { test("data/searchtests/test2b.txt", null); }
+//    @Test public void test2b() throws IOException { test("data/searchtests/test2b.txt", (String[])null); }
 //    @Test public void test2c() throws IOException { test("data/searchtests/test2c.txt", "data/searchtests/test2c-expected.asm"); }
 //    @Test public void test3() throws IOException { test("data/searchtests/test3.txt", "data/searchtests/test3-expected.asm"); }
 //    @Test public void test4() throws IOException { test("data/searchtests/test4.txt", "data/searchtests/test4-expected.asm"); }
@@ -51,8 +51,11 @@ public class SearchBasedGeneratorTest {
 //    @Test public void test7() throws IOException { test("data/searchtests/test7.txt", "data/searchtests/test7-expected.asm"); }
 //    @Test public void test8() throws IOException { test("data/searchtests/test8.txt", "data/searchtests/test8-expected.asm"); }
 //    @Test public void test9() throws IOException { test("data/searchtests/test9.txt", "data/searchtests/test9-expected.asm"); }
-    @Test public void test10() throws IOException { test("data/searchtests/test10.txt", "data/searchtests/test10-expected.asm"); }
-    
+//    @Test public void test10() throws IOException { test("data/searchtests/test10.txt", "data/searchtests/test10-expected.asm"); }
+//    @Test public void test11() throws IOException { test("data/searchtests/test11.txt", "data/searchtests/test11-expected.asm"); }
+//    @Test public void test12() throws IOException { test("data/searchtests/test12.txt", "data/searchtests/test12-expected.asm", "size"); }
+//    @Test public void test13() throws IOException { test("data/searchtests/test13.txt", "data/searchtests/test13-expected.asm", "size"); }
+
     @Test public void testFlags1() throws IOException { test("data/searchtests/test-flags1.txt", "data/searchtests/test-flags1-expected.asm"); }
 //    @Test public void testLShift9() throws IOException { test("data/searchtests/test-large1.txt", "data/searchtests/test-large1-expected.asm"); }
 //    @Test public void testLShift9size() throws IOException { test("data/searchtests/test-large1.txt", "data/searchtests/test-large1-size-expected.asm", "size"); }
@@ -91,11 +94,23 @@ public class SearchBasedGeneratorTest {
     
     private void test(String inputFile, String expectedOutput) throws IOException
     {
+        test(inputFile, new String[]{expectedOutput}, null);
+    }
+
+
+    private void test(String inputFile, String expectedOutput[]) throws IOException
+    {
         test(inputFile, expectedOutput, null);
     }
     
-            
+
     private void test(String inputFile, String expectedOutput, String searchTypeArg) throws IOException
+    {
+        test(inputFile, new String[]{expectedOutput}, searchTypeArg);
+    }
+    
+    
+    private void test(String inputFile, String expectedOutputs[], String searchTypeArg) throws IOException
     {
         if (searchTypeArg != null) {
             Assert.assertTrue(config.parseArgs(inputFile, "-so", searchTypeArg));
@@ -103,7 +118,7 @@ public class SearchBasedGeneratorTest {
             Assert.assertTrue(config.parseArgs(inputFile, "-so"));
 //            Assert.assertTrue(config.parseArgs(inputFile, "-so", "-so-threads", "1"));
         }
-        if (expectedOutput == null) {
+        if (expectedOutputs == null) {
             Assert.assertFalse(
                     "Solution found, when there should not have been one for specification file: " + inputFile,
                     sbo.work(code));
@@ -115,7 +130,14 @@ public class SearchBasedGeneratorTest {
             SourceCodeGenerator scg = new SourceCodeGenerator(config);
             Assert.assertFalse(code.outputs.isEmpty());
             String result = scg.outputFileString(code.outputs.get(0), code);
-            Assert.assertTrue(compareOutputsWithAlternatives(result, expectedOutput));
+            boolean matchesAtLeastOne = false;
+            for(String expectedOutput:expectedOutputs) {
+                if (compareOutputsWithAlternatives(result, expectedOutput)) {
+                    matchesAtLeastOne = true;
+                    break;
+                }
+            }
+            Assert.assertTrue(matchesAtLeastOne);
         }
     }    
     

@@ -63,7 +63,10 @@ public class SequenceFilter {
     public boolean filterSequence(List<SBOCandidate> sequence)
     {
         if (sequence.size() == 2) {
-            if (filter2SequenceHardcoded(sequence.get(0), sequence.get(1))) return true;
+            if (filter2SequenceHardcoded(sequence.get(0), sequence.get(1))) {
+//                System.out.println("filter2SequenceHardcoded filtered: " + sequence);
+                return true;
+            }
         }
         List<SequenceEquivalence> l = equivalences.get(SequenceEquivalence.getKeySBO(sequence));
         if (l == null) return false;
@@ -96,7 +99,7 @@ public class SequenceFilter {
     
     
     public boolean filter2SequenceHardcoded(SBOCandidate op1, SBOCandidate op2)
-    {
+    {        
         // These sequences are already captured below, so, no need to check for them:
         // - ld X, Y; ld X, Z
         // op1, op2 is useless if op2's output is a superseteq of op1's, but op2 does not take any input dependency from op1
@@ -122,8 +125,11 @@ public class SequenceFilter {
             }
         }
         if (!op1.op.isJump() && op2outputIsSuperset && !op2dependsOnOp1) {
-//            System.out.println("- removed: " + op1.op + "; " + op2.op);
-            return true;
+            // If both are "ld" to memory, we are not sure if they are actually redundant:
+            if (!op1.op.isLdToMemory() || !op2.op.isLdToMemory()) {
+//                System.out.println("- removed: " + op1.op + "; " + op2.op);
+                return true;
+            }
         }
 
         if (op1.op.spec.getName().equals("ld") &&
@@ -173,8 +179,7 @@ public class SequenceFilter {
                 return true;
             }
         }        
-        
-        
+                
         if (!op2dependsOnOp1 && 
             !op1WouldDependOnOp2 && 
             op1op2OutputsDisjoint &&
