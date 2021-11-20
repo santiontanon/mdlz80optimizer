@@ -12,6 +12,7 @@ import code.CPUOpDependency;
 import code.CodeBase;
 import code.CodeStatement;
 import code.Expression;
+import code.SourceConstant;
 import code.SourceFile;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -544,6 +545,34 @@ public class SearchBasedOptimizer implements MDLWorker {
     }
     
     
+    private boolean isOptimizationSafeConstant(Expression exp, CodeBase code) 
+    {
+        if (exp.isConstant()) return true;
+        if (exp.symbolName != null) {
+            SourceConstant sc = code.getSymbol(exp.symbolName);
+            if (sc != null) {
+                if (sc.exp != null && sc.exp.isConstant()) return true;
+                if (sc.isLabel()) {
+                    CodeStatement s = sc.definingStatement;
+                    SourceFile f = s.source;
+                    s = f.getPreviousStatementTo(s, code);
+                    while(s != null) {
+                        if (s.op != null) return false;
+                        if (s.org != null) {
+                            return s.org.isConstant();
+                        }
+                        if (s.space != null && !s.space.isConstant()) return false;
+                        if (s.include != null) return false;
+                        s = f.getPreviousStatementTo(s, code);
+                    }
+                    if (s == null) return false;
+                }
+            }
+        }
+        return false;
+    }
+    
+    
     private void updateKnownRegisterValues(CodeStatement s, HashMap<String, Integer> knownRegisterValues, CodeBase code)
     {
         if (s.op == null) return;
@@ -564,7 +593,8 @@ public class SearchBasedOptimizer implements MDLWorker {
         // "ld" instructions:
         if (s.op.isLd()) {
             if (s.op.args.get(0).isRegister() &&
-                s.op.args.get(1).isConstant()) {
+                s.op.args.get(1).evaluatesToIntegerConstant() &&
+                isOptimizationSafeConstant(s.op.args.get(1), code)) {
                 Integer val = s.op.args.get(1).evaluateToInteger(s, code, true, null);
                 if (val != null) {
                     assignKnownRegisterName(s.op.args.get(0).registerOrFlagName.toUpperCase(), val, knownRegisterValues, toClear);
@@ -695,15 +725,15 @@ public class SearchBasedOptimizer implements MDLWorker {
         }
         
         for(int i = 0;i<s.op.spec.args.size();i++) {
-            if (s.op.spec.args.get(i).wordConstantIndirectionAllowed) {
+            if (s.op.spec.args.get(i).wordConstantIndirectionAllowed ||
+                s.op.spec.args.get(i).regIndirection != null ||
+                s.op.spec.args.get(i).regOffsetIndirection != null) {
                 // Only allow "ld":
-                if (s.op.isLd()) return false;
-                config.debug("SBO: preventOptimization: unsupported indirection: " + s.op);
-                return true;
-            } else if (s.op.spec.args.get(i).byteConstantIndirectionAllowed ||
-                       s.op.spec.args.get(i).wordConstantIndirectionAllowed ||
-                       s.op.spec.args.get(i).regIndirection != null ||
-                       s.op.spec.args.get(i).regOffsetIndirection != null) {
+                if (!s.op.isLd()) {
+                    config.debug("SBO: preventOptimization: unsupported indirection: " + s.op);
+                    return true;
+                }
+            } else if (s.op.spec.args.get(i).byteConstantIndirectionAllowed) {
                 config.debug("SBO: preventOptimization: unsupported op: " + s.op);
                 return true;
             }
@@ -725,10 +755,7 @@ public class SearchBasedOptimizer implements MDLWorker {
             return false;
         }
         config.debug(f.getStatements().get(line).fileNameLineString());
-        
-        config.debug("SBO: Optimizing from line " + f.getStatements().get(line).op + "\t\tknowing: " + knownRegisterValues);
-//        config.info("SBO: Optimizing from line " + f.getStatements().get(line).op + "\t\tknowing: " + knownRegisterValues);
-        
+                
         List<CodeStatement> codeToOptimize = new ArrayList<>();
         int line2 = line;
         int codeToOptimizeSize = 0;
@@ -758,11 +785,14 @@ public class SearchBasedOptimizer implements MDLWorker {
             line2++;
         }
         
-        config.debug("SBO: Optimizing lines " + line + " -> " + line2);
-        for(CodeStatement s:codeToOptimize) {
-            config.debug("    " + s);
-        }
+        config.debug("SBO: Optimizing from line " + f.getStatements().get(line).op + "\t\tknowing: " + knownRegisterValues);
+//        config.info("SBO: Optimizing from line " + f.getStatements().get(line).op + "\t\tknowing: " + knownRegisterValues);
         
+//        config.debug("SBO: Optimizing lines " + line + " -> " + line2);
+//        for(CodeStatement s:codeToOptimize) {
+//            config.debug("    " + s);
+//        }
+//        
         // - Create a specification, and synthesize test cases:
         Specification spec = new Specification();
         if (flags_nChecks != -1) spec.numberOfRandomSolutionChecks = flags_nChecks;
@@ -810,6 +840,23 @@ public class SearchBasedOptimizer implements MDLWorker {
         for(CodeStatement s:codeToOptimize) {
             for(int i = 0;i<s.op.args.size();i++) {
                 Expression arg = s.op.args.get(i);
+                
+                // Memory writes:
+                if (i == 0 && s.op.isLd() && 
+                    s.op.spec.args.get(i).wordConstantIndirectionAllowed ||
+                    s.op.spec.args.get(i).regIndirection != null ||
+                    s.op.spec.args.get(i).regOffsetIndirection != null) {
+                    spec.allowRamUse = true;
+                    goalRequiresSettingMemory = true;
+                }
+                // Memory reads:
+                if (i == 1 && s.op.isLd() && 
+                    s.op.spec.args.get(i).wordConstantIndirectionAllowed ||
+                    s.op.spec.args.get(i).regIndirection != null ||
+                    s.op.spec.args.get(i).regOffsetIndirection != null) {
+                    spec.allowRamUse = true;
+                }                
+                
                 if (arg.evaluatesToIntegerConstant()) {
                     Integer value = arg.evaluateToInteger(s, code, true);
                     if (value == null) {
@@ -828,26 +875,8 @@ public class SearchBasedOptimizer implements MDLWorker {
                             constantsToExpressions.put(value, l);
                         }
                     }
-                    // Memory writes:
-                    if (i == 0 && s.op.isLd() && 
-                        s.op.spec.args.get(0).wordConstantIndirectionAllowed) {
-                        spec.allowRamUse = true;
-                        goalRequiresSettingMemory = true;
-                        if (!spec.allowed16bitConstants.contains(value)) {
-                            spec.allowed16bitConstants.add(value);
-                        }
-                        if (constantsToExpressions.containsKey(value)) {
-                            constantsToExpressions.get(value).add(arg.args.get(0));
-                        } else {
-                            List<Expression> l = new ArrayList<>();
-                            l.add(arg.args.get(0));
-                            constantsToExpressions.put(value, l);
-                        }
-                    }
-                    // Memory reads:
-                    if (i == 1 && s.op.isLd() && 
-                        s.op.spec.args.get(1).wordConstantIndirectionAllowed) {
-                        spec.allowRamUse = true;
+                    if (s.op.isLd() && 
+                        s.op.spec.args.get(i).wordConstantIndirectionAllowed) {
                         if (!spec.allowed16bitConstants.contains(value)) {
                             spec.allowed16bitConstants.add(value);
                         }
