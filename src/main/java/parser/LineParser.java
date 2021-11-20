@@ -467,7 +467,7 @@ public class LineParser {
                         config.error("Problem defining symbol " + labelPrefix + token + " in " + sl);
                         return false;
                     }
-                    if (!scope) {
+                    if (!scope && c.relativeTo == null) {
                         c.name = c.originalName;
                     }
                     s.type = CodeStatement.STATEMENT_NONE;

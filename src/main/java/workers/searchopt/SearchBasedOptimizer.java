@@ -723,6 +723,13 @@ public class SearchBasedOptimizer implements MDLWorker {
                 }
         }
         
+        // If a value is being assigned to "R", we do not try to optimize that, since
+        // the optimizer will try to remove that assignment, which is usually wrong:
+        if (s.op.isLd() && s.op.args.get(0).registerOrFlagName != null &&
+            s.op.args.get(0).registerOrFlagName.equalsIgnoreCase("r")) {
+            return true;
+        }
+        
         for(int i = 0;i<s.op.spec.args.size();i++) {
             if (s.op.spec.args.get(i).wordConstantIndirectionAllowed ||
                 s.op.spec.args.get(i).regIndirection != null ||
@@ -1195,7 +1202,7 @@ public class SearchBasedOptimizer implements MDLWorker {
                 if (used) registers.add(reg);
             }
         }
-        
+                
         return registers;
     }
     
