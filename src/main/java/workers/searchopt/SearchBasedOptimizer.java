@@ -955,24 +955,19 @@ public class SearchBasedOptimizer implements MDLWorker {
             ((TrackingZ80Memory)z80Memory).clearMemoryAccesses();
         }
         spec.precomputedTestCases = new PrecomputedTestCase[spec.numberOfRandomSolutionChecks];
-        spec.testCaseGenerator = new PrecomputedTestCaseGeneratorForOptimization(spec, codeToOptimize, inputRegisters, registersUsedAfter, flagsUsedAfter, z80, z80Memory, code);
+        spec.testCaseGenerator = new PrecomputedTestCaseGeneratorForOptimization(
+                spec, codeToOptimize, inputRegisters, registersUsedAfter,
+                flagsUsedAfter, z80, z80Memory, code, config);
         for(int i = 0;i<spec.numberOfRandomSolutionChecks;i++) {
             spec.precomputedTestCases[i] = spec.testCaseGenerator.generateTestCase(config);
         }
         
-        // Add the goal addresses as fake goal specifications, so their addresses are randomized:
-//        for(Integer address:((PrecomputedTestCaseGeneratorForOptimization)(spec.testCaseGenerator)).goalAddresses) {
-//            SpecificationExpression exp = new SpecificationExpression();
-//            exp.leftConstantMemoryAddress = address;
-//            spec.goalState.add(exp);
-//        }
-                
         // Search:
         SequenceFilter filter = new SequenceFilter(internalConfig);
         filter.setSpecification(spec);
         try {
             filter.loadEquivalences("data/equivalencies-l1.txt");
-        }catch(Exception e) {
+        } catch(Exception e) {
             config.error("Could not load equivalences files...: " + e.getMessage());
             config.error(Arrays.toString(e.getStackTrace()));
             return false;

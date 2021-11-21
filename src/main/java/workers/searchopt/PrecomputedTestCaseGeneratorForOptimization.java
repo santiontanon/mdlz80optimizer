@@ -42,6 +42,13 @@ public class PrecomputedTestCaseGeneratorForOptimization implements PrecomputedT
     List<RegisterNames> appearInOr, appearInXor, appearInAnd, appearInAddSub,
                         appearInAdc, appearInSbc;
     
+    // Precalculated things that are constant accross tests:
+    List<CPUConstants.RegisterNames> registersToInit = new ArrayList<>();
+    CPUConstants.RegisterNames startRegisters[];
+    Integer startRegisterValues[];
+    List<Integer> opAddresses;
+    List<Integer> opBytes;
+    
     public PrecomputedTestCaseGeneratorForOptimization(
             Specification a_spec,
             List<CodeStatement> a_codeToOptimize,
@@ -50,7 +57,8 @@ public class PrecomputedTestCaseGeneratorForOptimization implements PrecomputedT
             List<Integer> a_goalFlags,
             Z80Core a_z80,
             IMemory a_memory,
-            CodeBase a_code) {
+            CodeBase a_code,
+            MDLConfig config) {
         spec = a_spec;
         codeToOptimize = a_codeToOptimize;
         inputRegisters = a_inputRegisters;
@@ -100,22 +108,7 @@ public class PrecomputedTestCaseGeneratorForOptimization implements PrecomputedT
         if (!appearInAnd.isEmpty()) appearInAnd.add(RegisterNames.A);
         if (!appearInAddSub.isEmpty()) appearInAddSub.add(RegisterNames.A);        
         
-//        System.out.println("inputRegisters: " + inputRegisters);        
-//        System.out.println("allowedRegisters: " + allowedRegisters);        
-//        System.out.println("goalRegisters: " + goalRegisters);        
-//        System.out.println("goalFlags: " + goalFlags);        
-//        System.out.println("allowRamUse: " + spec.allowRamUse);        
-    }
-    
-    
-    @Override
-    public PrecomputedTestCase generateTestCase(MDLConfig config) {
-        PrecomputedTestCase test = new PrecomputedTestCase();
-        
-        if (spec.allowRamUse) test.trackMemoryWrites = true;
-        
         // Assign random values to the input registers:
-        List<CPUConstants.RegisterNames> registersToInit = new ArrayList<>();
         registersToInit.addAll(inputRegisters);
         for(CPUConstants.RegisterNames reg:goalRegisters) {
             if (CPUConstants.is8bitRegister(reg) && !registersToInit.contains(reg)) {
@@ -128,43 +121,74 @@ public class PrecomputedTestCaseGeneratorForOptimization implements PrecomputedT
                 registersToInit.add(reg);
             }
         }
-
-//        System.out.println("registersToInit: " + registersToInit);
-//        System.out.println("appearInSbc: " + appearInSbc);
-        test.startRegisters = new CPUConstants.RegisterNames[registersToInit.size()];
-        test.startRegisterValues = new int[registersToInit.size()];
+        startRegisters = new CPUConstants.RegisterNames[registersToInit.size()];
+        startRegisterValues = new Integer[registersToInit.size()];
         for(int i = 0;i<registersToInit.size();i++) {
-            test.startRegisters[i] = registersToInit.get(i);
-            Integer val = null;
+            startRegisters[i] = registersToInit.get(i);
+            startRegisterValues[i] = null;
             for(SpecificationExpression exp:spec.startState) {
-                if (exp.leftRegister == test.startRegisters[i]) {
-                    val = exp.right.evaluateToInteger(null, code, true);
+                if (exp.leftRegister == startRegisters[i]) {
+                    startRegisterValues[i] = exp.right.evaluateToInteger(null, code, true);
                 }
             }
-            if (val != null) {
-                test.startRegisterValues[i] = val;
+        }
+        
+        opAddresses = new ArrayList<>();
+        opBytes = new ArrayList<>();
+        int currentAddress = startAddress;
+        for(CodeStatement s:codeToOptimize) {
+            if (s.op == null) continue;
+            CPUOp op = s.op;
+            List<Integer> bytes = op.assembleToBytes(null, code, config);
+            if (bytes == null) {
+                config.error("Error generating bytes to initialize the search-based optimizer, for instruction: " + op);
             } else {
-                test.startRegisterValues[i] = random.nextInt(256);
+                opBytes.addAll(bytes);
+                opAddresses.add(currentAddress);
+                currentAddress += bytes.size();
+            }
+        }
+
+//        System.out.println("registersToInit: " + registersToInit);
+//        System.out.println("appearInSbc: " + appearInSbc);        
+//        System.out.println("inputRegisters: " + inputRegisters);        
+//        System.out.println("allowedRegisters: " + allowedRegisters);        
+//        System.out.println("goalRegisters: " + goalRegisters);        
+//        System.out.println("goalFlags: " + goalFlags);        
+//        System.out.println("allowRamUse: " + spec.allowRamUse);        
+    }
+    
+    
+    @Override
+    public PrecomputedTestCase generateTestCase(MDLConfig config) {
+        PrecomputedTestCase test = new PrecomputedTestCase();        
+        if (spec.allowRamUse) test.trackMemoryWrites = true;
+
+        test.startRegisters = startRegisters;
+        test.startRegisterValues = new int[registersToInit.size()];
+        for(int i = 0;i<registersToInit.size();i++) {
+            if (startRegisterValues[i] != null) {
+                test.startRegisterValues[i] = startRegisterValues[i];
+            } else {
                 // 0 is a special value that often elicits special cases, so
                 // give it a higher probability:
                 if (random.nextDouble() < 0.05) {
                     test.startRegisterValues[i] = 0;
-                }
-                if (appearInOr.contains(test.startRegisters[i]) ||
-                    appearInXor.contains(test.startRegisters[i]) ||
-                    appearInAddSub.contains(test.startRegisters[i])) {
-                    if (random.nextDouble() < 0.1) {
+                } else {
+                    if ((appearInOr.contains(test.startRegisters[i]) ||
+                         appearInXor.contains(test.startRegisters[i]) ||
+                         appearInAddSub.contains(test.startRegisters[i])) &&
+                        random.nextDouble() < 0.1) {
                         test.startRegisterValues[i] = 0;
-                    }
-                } 
-                if (appearInAnd.contains(test.startRegisters[i])) {
-                    if (random.nextDouble() < 0.1) {
+                    } else if (appearInAnd.contains(test.startRegisters[i]) &&
+                               random.nextDouble() < 0.1) {
                         test.startRegisterValues[i] = 0xff;
+                    } else {
+                        test.startRegisterValues[i] = random.nextInt(256);                
                     }
-                } 
+                }
             }
         }
-        
         for(RegisterNames reg:appearInAdc) {
             if (CPUConstants.is8bitRegister(reg)) {
                 int AIdx = registersToInit.indexOf(RegisterNames.A);
@@ -215,21 +239,10 @@ public class PrecomputedTestCaseGeneratorForOptimization implements PrecomputedT
         }
 
         // Set up the simulator:
-        List<Integer> opAddresses = new ArrayList<>();
         int currentAddress = startAddress;
-        for(CodeStatement s:codeToOptimize) {
-            if (s.op == null) continue;
-            CPUOp op = s.op;
-            List<Integer> bytes = op.assembleToBytes(null, code, config);
-            if (bytes == null) {
-                config.error("Could not generate test case for search-based optimizer!");
-                return null;
-            }
-            opAddresses.add(currentAddress);
-            for(Integer value:bytes) {
-                memory.writeByte(currentAddress, value);
-                currentAddress++;
-            }
+        for(Integer value:opBytes) {
+            memory.writeByte(currentAddress, value);
+            currentAddress++;
         }
         z80.resetTStates();
         test.initCPU(z80);

@@ -336,242 +336,247 @@ public class CPUOp {
         
         for(String v[]:spec.bytesRepresentation) {
             int baseByte = config.tokenizer.parseHex(v[0]);
-            if (v[1].equals("")) {
-                data.add(baseByte);
-                
-            } else if (v[1].equals("o")) {
-                if (spec.isJump) {
-                    // jr/djnz offset:
-                    if (s == null) {
-                        if (!silent) config.error("Trying to convert " + this + " to bytes without specifying a CodeStatement.");
-                        return null;                        
-                    }
-                    if (args == null || args.isEmpty() || args.get(args.size()-1) == null) {
-                        if (!silent) config.error("Unable to convert " + this + " to bytes! Could not find the target label for the jump");
-                        return null;                        
-                    }
-                    Integer target = args.get(args.size()-1).evaluateToInteger(s, code, true);
-                    if (target == null) {
-                        if (!silent) config.error("Unable to resolve '" + args.get(args.size()-1) + "' in " + s.sl);
-                        return null;                        
-                    }
-
-                    int base = s.getAddress(code) + spec.sizeInBytes;
-                    int offset = (target - base);
-                    
-                    // check if it's within jr range!:
-                    if (!offsetWithinJrRange(offset)) {
-                        if (!silent) config.error("Jump offset out of range: " + offset + " in " + s.sl);
-                        return null;
-                    }
-                    
-                    data.add(offset & 0xff);
-                } else {
-                    // ld IX/IY offet:
-                    int arg_idx = -1;
-                    for(int i = 0;i<args.size();i++) {
-                        if (spec.args.get(i).regOffsetIndirection != null) {
-                            arg_idx = i;
+            switch (v[1]) {
+                case "":
+                    data.add(baseByte);
+                    break;
+                case "o":
+                    if (spec.isJump) {
+                        // jr/djnz offset:
+                        if (s == null) {
+                            if (!silent) config.error("Trying to convert " + this + " to bytes without specifying a CodeStatement.");
+                            return null;
                         }
-                    }
-                    if (arg_idx == -1) {
-                        if (!silent) config.error("Unable to convert " + this + " to bytes! Could not find argument with an indirection with offset");
-                        return null;
-                    }
-                    Integer o = null;
-                    if (args.get(arg_idx).type == Expression.EXPRESSION_PARENTHESIS) {
-                        Expression arg = args.get(arg_idx).args.get(0);
-                        switch (arg.type) {
-                            case Expression.EXPRESSION_SUM:
-                                o = arg.args.get(1).evaluateToInteger(s, code, true);
-                                break;
-                            case Expression.EXPRESSION_SUB:
-                            {
-                                o = arg.args.get(1).evaluateToInteger(s, code, true);
-                                if (o != null) o = -o;
-                                break;
+                        if (args == null || args.isEmpty() || args.get(args.size()-1) == null) {
+                            if (!silent) config.error("Unable to convert " + this + " to bytes! Could not find the target label for the jump");
+                            return null;
+                        }
+                        Integer target = args.get(args.size()-1).evaluateToInteger(s, code, true);
+                        if (target == null) {
+                            if (!silent) config.error("Unable to resolve '" + args.get(args.size()-1) + "' in " + s.sl);
+                            return null;
+                        }
+                        
+                        int base = s.getAddress(code) + spec.sizeInBytes;
+                        int offset = (target - base);
+                        
+                        // check if it's within jr range!:
+                        if (!offsetWithinJrRange(offset)) {
+                            if (!silent) config.error("Jump offset out of range: " + offset + " in " + s.sl);
+                            return null;
+                        }
+                        
+                        data.add(offset & 0xff);
+                    } else {
+                        // ld IX/IY offet:
+                        int arg_idx = -1;
+                        for(int i = 0;i<args.size();i++) {
+                            if (spec.args.get(i).regOffsetIndirection != null) {
+                                arg_idx = i;
                             }
-                            case Expression.EXPRESSION_REGISTER_OR_FLAG:
-                                o = 0;
-                                break;
                         }
-                    }
-                    if (o == null) {
-                        if (!silent) config.error("Unable to convert " + this + " to bytes! Could not find the offset");
-                        return null;
-                    }
-                    data.add(o);
-                }
-                
-            } else if (v[1].equals("n")) {
-                // 8 bit argument
-                Integer n = null;
-                for(Expression arg:args) {
-                    String undefined = arg.findUndefinedSymbol(code);
-                    if (undefined != null) {
-                        if (!silent) config.error("Undefined symbol \"" + undefined + "\"" + (s!=null ? " in " + s.sl.fileNameLineString():" in synthetic op " + this));
-                        return null;
-                    }
-                    if (arg.evaluatesToIntegerConstant()) {
-                        if (n != null) {
-                            if (!silent) config.error("Unable to convert " + this + " to bytes! two numeric constants in one op!");
+                        if (arg_idx == -1) {
+                            if (!silent) config.error("Unable to convert " + this + " to bytes! Could not find argument with an indirection with offset");
                             return null;
                         }
-                        n = arg.evaluateToInteger(s, code, true);
-                    }
-                }
-                if (n == null) {
-                    if (!silent) config.error("Unable to convert " + this + " to bytes! no 8bit numeric constants in the op!");
-                    return null;
-                }
-                data.add(n & 0xff);
-                
-            } else if (v[1].equals("n1") ||
-                       v[1].equals("n2")) {
-                // 8 bit argument
-                Integer n1 = null;
-                Integer n2 = null;
-                for(Expression arg:args) {
-                    String undefined = arg.findUndefinedSymbol(code);
-                    if (undefined != null) {
-                        if (!silent) config.error("Undefined symbol \"" + undefined + "\"" + (s!=null ? " in " + s.sl.fileNameLineString():" in synthetic op " + this));
-                        return null;
-                    }
-                    if (arg.evaluatesToIntegerConstant()) {
-                        if (n1 != null && n2 != null) {
-                            if (!silent) config.error("Unable to convert " + this + " to bytes! more than two numeric constants in one op!");
+                        Integer o = null;
+                        if (args.get(arg_idx).type == Expression.EXPRESSION_PARENTHESIS) {
+                            Expression arg = args.get(arg_idx).args.get(0);
+                            switch (arg.type) {
+                                case Expression.EXPRESSION_SUM:
+                                    o = arg.args.get(1).evaluateToInteger(s, code, true);
+                                    break;
+                                case Expression.EXPRESSION_SUB:
+                                {
+                                    o = arg.args.get(1).evaluateToInteger(s, code, true);
+                                    if (o != null) o = -o;
+                                    break;
+                                }
+                                case Expression.EXPRESSION_REGISTER_OR_FLAG:
+                                    o = 0;
+                                    break;
+                            }
+                        }
+                        if (o == null) {
+                            if (!silent) config.error("Unable to convert " + this + " to bytes! Could not find the offset");
                             return null;
                         }
-                        if (n1 == null) {
-                            n1 = arg.evaluateToInteger(s, code, true);
-                        } else {
-                            n2 = arg.evaluateToInteger(s, code, true);
+                        data.add(o);
+                    }   break;
+                case "n":
+                    // 8 bit argument
+                    Integer n = null;
+                    for(Expression arg:args) {
+                        String undefined = arg.findUndefinedSymbol(code);
+                        if (undefined != null) {
+                            if (!silent) config.error("Undefined symbol \"" + undefined + "\"" + (s!=null ? " in " + s.sl.fileNameLineString():" in synthetic op " + this));
+                            return null;
                         }
-                    }
-                }
-                if (v[1].equals("n1")) {
-                    if (n1 == null) {
+                        if (arg.evaluatesToIntegerConstant()) {
+                            if (n != null) {
+                                if (!silent) config.error("Unable to convert " + this + " to bytes! two numeric constants in one op!");
+                                return null;
+                            }
+                            n = arg.evaluateToInteger(s, code, true);
+                        }
+                    }   if (n == null) {
                         if (!silent) config.error("Unable to convert " + this + " to bytes! no 8bit numeric constants in the op!");
                         return null;
-                    }
-                    data.add(n1 & 0xff);
-                } else {
-                    if (n2 == null) {
-                        if (!silent) config.error("Unable to convert " + this + " to bytes! only one 8bit numeric constant in the op!");
-                        return null;
-                    }
-                    data.add(n2 & 0xff);
-                }
-                
-            } else if (v[1].equals("nn") ||
-                       v[1].equals("mm")) {
-                // 16 bit argument
-                Integer nn = null;
-                for(Expression arg:args) {
-                    String undefined = arg.findUndefinedSymbol(code);
-                    if (undefined != null) {
-                        if (!silent) config.error("Undefined symbol \"" + undefined + "\"" + (s!=null ? " in " + s.sl.fileNameLineString():" in synthetic op " + this));
-                        return null;
-                    }
-                    if (arg.evaluatesToIntegerConstant()) {
-                        if (nn != null) {
-                            if (!silent) config.error("Unable to convert " + this + " to bytes! two numeric constants in one op!");
+                    }   data.add(n & 0xff);
+                    break;
+                case "n1":
+                case "n2":
+                    // 8 bit argument
+                    Integer n1 = null;
+                    Integer n2 = null;
+                    for(Expression arg:args) {
+                        String undefined = arg.findUndefinedSymbol(code);
+                        if (undefined != null) {
+                            if (!silent) config.error("Undefined symbol \"" + undefined + "\"" + (s!=null ? " in " + s.sl.fileNameLineString():" in synthetic op " + this));
                             return null;
                         }
-                        nn = arg.evaluateToInteger(s, code, true);
-                        if (nn == null) {
-                            if (!silent) config.error("Unable to convert " + this + " to bytes! Cannot evaluate " + arg);
+                        if (arg.evaluatesToIntegerConstant()) {
+                            if (n1 != null && n2 != null) {
+                                if (!silent) config.error("Unable to convert " + this + " to bytes! more than two numeric constants in one op!");
+                                return null;
+                            }
+                            if (n1 == null) {
+                                n1 = arg.evaluateToInteger(s, code, true);
+                            } else {
+                                n2 = arg.evaluateToInteger(s, code, true);
+                            }
+                        }
+                    }   if (v[1].equals("n1")) {
+                        if (n1 == null) {
+                            if (!silent) config.error("Unable to convert " + this + " to bytes! no 8bit numeric constants in the op!");
                             return null;
                         }
-                    }
-                }
-                if (nn == null) {
-                    if (!silent) config.error("Unable to convert " + this + " to bytes! no 16bit numeric constants in the op! Arguments: " + args);
-                    return null;
-                }
-                if (v[1].equals("nn")) {
-                    if (nn_state == 0) {
-                        data.add(nn & 0xff);
-                        nn_state = 1;
+                        data.add(n1 & 0xff);
                     } else {
-                        data.add((nn >> 8) & 0xff);
-                    }
-                } else {
-                    // big endian:
-                    if (nn_state == 0) {
-                        data.add((nn >> 8) & 0xff);
-                        nn_state = 1;
+                        if (n2 == null) {
+                            if (!silent) config.error("Unable to convert " + this + " to bytes! only one 8bit numeric constant in the op!");
+                            return null;
+                        }
+                        data.add(n2 & 0xff);
+                    }   break;
+                case "nn":
+                case "mm":
+                    // 16 bit argument
+                    Integer nn = null;
+                    for(Expression arg:args) {
+                        String undefined = arg.findUndefinedSymbol(code);
+                        if (undefined != null) {
+                            if (!silent) config.error("Undefined symbol \"" + undefined + "\"" + (s!=null ? " in " + s.sl.fileNameLineString():" in synthetic op " + this));
+                            return null;
+                        }
+                        if (arg.evaluatesToIntegerConstant()) {
+                            if (nn != null) {
+                                if (!silent) config.error("Unable to convert " + this + " to bytes! two numeric constants in one op!");
+                                return null;
+                            }
+                            nn = arg.evaluateToInteger(s, code, true);
+                            if (nn == null) {
+                                if (!silent) config.error("Unable to convert " + this + " to bytes! Cannot evaluate " + arg);
+                                return null;
+                            }
+                        }
+                    }   if (nn == null) {
+                        if (!silent) config.error("Unable to convert " + this + " to bytes! no 16bit numeric constants in the op! Arguments: " + args);
+                        return null;
+                    }   if (v[1].equals("nn")) {
+                        if (nn_state == 0) {
+                            data.add(nn & 0xff);
+                            nn_state = 1;
+                        } else {
+                            data.add((nn >> 8) & 0xff);
+                        }
                     } else {
-                        data.add(nn & 0xff);
+                        // big endian:
+                        if (nn_state == 0) {
+                            data.add((nn >> 8) & 0xff);
+                            nn_state = 1;
+                        } else {
+                            data.add(nn & 0xff);
+                        }
+                    }   break;
+                case "+0":
+                    data.add(baseByte+0);
+                    break;
+                case "+1":
+                    data.add(baseByte+1);
+                    break;
+                case "+2":
+                    data.add(baseByte+2);
+                    break;
+                case "+3":
+                    data.add(baseByte+3);
+                    break;
+                case "+4":
+                    data.add(baseByte+4);
+                    break;
+                case "+5":
+                    data.add(baseByte+5);
+                    break;
+                case "+6":
+                    data.add(baseByte+6);
+                    break;
+                case "+7":
+                    data.add(baseByte+7);
+                    break;
+                case "+r":
+                case "+p":
+                case "+q":
+                    {
+                        // register (which is the last argument of the op):
+                        Integer r = registerValueForByte(args.get(args.size()-1).registerOrFlagName);
+                        if (r == null) {
+                            if (!silent) config.error("Unable to convert register name to value " + this);
+                            return null;
+                        }       data.add(baseByte+r);
+                        break;
                     }
-                }
-                
-            } else if (v[1].equals("+0")) {
-                data.add(baseByte+0);
-            } else if (v[1].equals("+1")) {
-                data.add(baseByte+1);
-            } else if (v[1].equals("+2")) {
-                data.add(baseByte+2);
-            } else if (v[1].equals("+3")) {
-                data.add(baseByte+3);
-            } else if (v[1].equals("+4")) {
-                data.add(baseByte+4);
-            } else if (v[1].equals("+5")) {
-                data.add(baseByte+5);
-            } else if (v[1].equals("+6")) {
-                data.add(baseByte+6);
-            } else if (v[1].equals("+7")) {
-                data.add(baseByte+7);
-
-            } else if (v[1].equals("+r") ||
-                       v[1].equals("+p") ||
-                       v[1].equals("+q")) {
-                // register (which is the last argument of the op):
-                Integer r = registerValueForByte(args.get(args.size()-1).registerOrFlagName);
-                if (r == null) {
-                    if (!silent) config.error("Unable to convert register name to value " + this);
+                case "+8*p":
+                case "+8*q":
+                    {
+                        // register (which is the last argument of the op):
+                        Integer r = registerValueForByte(args.get(args.size()-1).registerOrFlagName);
+                        if (r == null) {
+                            if (!silent) config.error("Unable to convert register name to value " + this);
+                            return null;
+                        }       data.add(baseByte+8*r);
+                        break;
+                    }
+                case "+8*b":
+                    {
+                        Integer b = args.get(0).evaluateToInteger(s, code, true);
+                        if (b == null) {
+                            if (!silent) config.error("Unable to convert bit to value " + this);
+                        }       data.add(baseByte+8*(b&0x07));
+                        break;
+                    }
+                case "+8*b+r":
+                    {
+                        Integer b = args.get(0).evaluateToInteger(s, code, true);
+                        Integer r = registerValueForByte(args.get(1).registerOrFlagName);
+                        if (b == null || r == null) {
+                            if (!silent) config.error("Unable to convert bit or register name to value " + this);
+                        }       data.add(baseByte+8*(b&0x07)+r);
+                        break;
+                    }
+                case "+8*r":
+                    {
+                        Integer r = registerValueForByte(
+                                args.get(0).registerOrFlagName != null ?
+                                        args.get(0).registerOrFlagName :
+                                        args.get(1).registerOrFlagName);
+                        if (r == null) {
+                            if (!silent) config.error("Unable to convert bit or register name to value " + this);
+                        }       data.add(baseByte+8*r);
+                        break;
+                    }
+                default:
+                    if (!silent) config.error("Unable to convert " + this + " to bytes! Unsupported byte modifier " + v[1]);
                     return null;
-                }
-                data.add(baseByte+r);
-
-            } else if (v[1].equals("+8*p") ||
-                       v[1].equals("+8*q")) {
-                // register (which is the last argument of the op):
-                Integer r = registerValueForByte(args.get(args.size()-1).registerOrFlagName);
-                if (r == null) {
-                    if (!silent) config.error("Unable to convert register name to value " + this);
-                    return null;
-                }
-                data.add(baseByte+8*r);
-                
-            } else if (v[1].equals("+8*b")) {
-                Integer b = args.get(0).evaluateToInteger(s, code, true);
-                if (b == null) {
-                    if (!silent) config.error("Unable to convert bit to value " + this);
-                }
-                data.add(baseByte+8*(b&0x07));
-                
-            } else if (v[1].equals("+8*b+r")) {
-                Integer b = args.get(0).evaluateToInteger(s, code, true);
-                Integer r = registerValueForByte(args.get(1).registerOrFlagName);
-                if (b == null || r == null) {
-                    if (!silent) config.error("Unable to convert bit or register name to value " + this);
-                }
-                data.add(baseByte+8*(b&0x07)+r);
-
-            } else if (v[1].equals("+8*r")) {
-                Integer r = registerValueForByte(
-                        args.get(0).registerOrFlagName != null ?
-                        args.get(0).registerOrFlagName :
-                        args.get(1).registerOrFlagName);
-                if (r == null) {
-                    if (!silent) config.error("Unable to convert bit or register name to value " + this);
-                }
-                data.add(baseByte+8*r);
-                
-            } else {
-                if (!silent) config.error("Unable to convert " + this + " to bytes! Unsupported byte modifier " + v[1]);
-                return null;
             }
         }
         return data;

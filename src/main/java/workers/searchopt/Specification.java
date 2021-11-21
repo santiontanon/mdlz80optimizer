@@ -243,12 +243,18 @@ public class Specification {
             if (goalDependencies[i]) {
                 CPUOpDependency dep = allDependencies.get(i);
                 if (dep.register != null) {
+                    CPUConstants.RegisterNames reg = CPUConstants.registerByName(dep.register);
                     goalDependenciesSatisfiedFromTheStart[i] = true;
                     for(PrecomputedTestCase ptc:precomputedTestCases) {
-                        Integer val1 = ptc.getStartRegisterValue(CPUConstants.registerByName(dep.register));
-                        Integer val2 = ptc.getGoalRegisterValue(CPUConstants.registerByName(dep.register));
-                        if (val1 != null && val2 != null && val1.equals(val2)) {
-                            // satisfied from the start!
+                        Integer val1 = ptc.getGoalRegisterValue(reg);
+                        if (val1 != null) {
+                            Integer val2 = ptc.getStartRegisterValue(reg);
+                            if (val2 != null && val1.equals(val2)) {
+                                // satisfied from the start!
+                            } else {
+                                goalDependenciesSatisfiedFromTheStart[i] = false;
+                                break;
+                            }
                         } else {
                             goalDependenciesSatisfiedFromTheStart[i] = false;
                             break;
@@ -256,11 +262,17 @@ public class Specification {
                     }
                 } else if (dep.flag != null) {
                     goalDependenciesSatisfiedFromTheStart[i] = true;
+                    int flag = CPUConstants.flagByName(dep.flag);
                     for(PrecomputedTestCase ptc:precomputedTestCases) {
-                        Boolean val1 = ptc.getStartFlagValue(CPUConstants.flagByName(dep.flag));
-                        Boolean val2 = ptc.getGoalFlagValue(CPUConstants.flagByName(dep.flag));
-                        if (val1 != null && val2 != null && val1.equals(val2)) {
-                            // satisfied from the start!
+                        Boolean val1 = ptc.getGoalFlagValue(flag);
+                        if (val1 != null) {                        
+                            Boolean val2 = ptc.getStartFlagValue(flag);
+                            if (val2 != null && val1.equals(val2)) {
+                                // satisfied from the start!
+                            } else {
+                                goalDependenciesSatisfiedFromTheStart[i] = false;
+                                break;
+                            }
                         } else {
                             goalDependenciesSatisfiedFromTheStart[i] = false;
                             break;
