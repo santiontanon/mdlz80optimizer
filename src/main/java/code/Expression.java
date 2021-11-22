@@ -213,7 +213,16 @@ public class Expression {
                         value = code.getSymbolValueInternal(previous.labelPrefix + symbolName, silent, variableStack);
                     }
                     if (value == null) {
-                            if (!silent) {
+                        if (config.tryParsingUndefinedSymbolsAsHex) {
+                            if (symbolName.endsWith("h") || symbolName.endsWith("H")) {
+                                String prefix = symbolName.substring(0, symbolName.length()-1);
+                                Integer hex = config.tokenizer.parseHex(prefix);
+                                if (hex != null) {
+                                    return hex;
+                                }
+                            }
+                        }
+                        if (!silent) {
                             config.error("Undefined symbol " + symbolName + " in " + s.sl);
                         }
                         return null;

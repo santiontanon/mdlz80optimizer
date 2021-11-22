@@ -61,6 +61,7 @@ public class LineParser {
 
     // sjasm defines macros like: "macro macroname arg1,...,agn" instead of "macroname: macro arg1,...,argn":
     public int macroDefinitionStyle = MACRO_LABEL_MACRO_ARGS;
+    public boolean tniAsmStylemacroArgs = false;
     // Pasmo allows you to call macros with less parameters than defined, just using empty strings as defaults:
     public boolean emptyStringDefaultArgumentsForMacros = false;
     public boolean allowNumberLabels = false;   // also for sjasm (for "reusable" labels)
@@ -70,6 +71,7 @@ public class LineParser {
     
     public boolean allowColonSeparatedInstructions = false;
     public boolean allowtniASMMultipleInstructionsPerLine = false;
+    public boolean allowBackslashAsLineBreaks = false;
     
     public List<String> tokensPreventingTextMacroExpansion = new ArrayList<>();
     
@@ -326,6 +328,11 @@ public class LineParser {
                     return true;
                 }
             }
+        } else if (config.preProcessor.isMacro(token)) {
+            tokens.remove(0);
+            if (parseMacroCall(tokens, token, l, sl, s, previous, source, code)) {
+                return true;
+            }
         } else {
             if (parseRestofTheLineInternal(tokens, l, sl, s, previous, false, source, code)) {
                 return true;
@@ -542,7 +549,7 @@ public class LineParser {
                 l.add(s2);
                 return parseInternal(tokens, l, sl, s2, null, source, code, true);
             }
-        }        
+        }
         
         if (tokens.isEmpty()) {
             return true;
@@ -1036,6 +1043,7 @@ public class LineParser {
             case MACRO_LABEL_MACRO_ARGS:
                 if (s.label == null) {
                     config.error("parseMacroDefinition: Cannot parse line " + sl);
+                    config.error("Leftover tokens: " + tokens);
                     return false;
                 }
                 s.label.exp = null; // make sure it's not defined as a label!
@@ -1044,6 +1052,7 @@ public class LineParser {
                 {
                     if (s.label != null || tokens.isEmpty()) {
                         config.error("parseMacroDefinition: Cannot parse line " + sl);
+                        config.error("Leftover tokens: " + tokens);
                         return false;
                     }
                     String macroNameStr = tokens.remove(0);
@@ -1063,6 +1072,7 @@ public class LineParser {
                     // we have "macro name args"
                     if (tokens.isEmpty()) {
                         config.error("parseMacroDefinition: Cannot parse line " + sl);
+                        config.error("Leftover tokens: " + tokens);
                         return false;
                     }
                     String macroNameStr = tokens.remove(0);
@@ -1088,8 +1098,18 @@ public class LineParser {
                 && !config.tokenizer.isMultiLineCommentStart(tokens.get(0))) {
             String token = tokens.remove(0);
             String argName = token;
-            if (macroArguentPrefixes.contains(token) && !tokens.isEmpty()) {
-                argName = token + tokens.remove(0);
+            if (tniAsmStylemacroArgs && token.equalsIgnoreCase("%") &&
+                !tokens.isEmpty()) {
+                token = tokens.remove(0);
+                if (!token.equalsIgnoreCase("n") && !token.equalsIgnoreCase("s")) {
+                    config.error("Unrecognized macro argument type: %" + token + " in " + sl.line);
+                    return false;
+                }
+                argName = "#" + (args.size()+1);
+            } else {
+                if (macroArguentPrefixes.contains(token) && !tokens.isEmpty()) {
+                    argName = token + tokens.remove(0);
+                }
             }
             
             args.add(argName);

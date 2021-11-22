@@ -92,6 +92,7 @@ public class MDLConfig {
     public boolean convertSymbolstoUpperCase = false;
     public boolean safetyLabelsForJumpsToConstants = false;
     public boolean considerCpuOpSymbolsWithoutIndentationToBeLabels = false;
+    public boolean tryParsingUndefinedSymbolsAsHex = false;
 
     // Two variables, as if they are both false, no conversion is done
     public boolean output_opsInLowerCase = true;

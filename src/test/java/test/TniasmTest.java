@@ -37,6 +37,10 @@ public class TniasmTest {
                                                                           "data/generationtests/tniasm-constants-expected.asm")); }
     @Test public void test3() throws IOException { Assert.assertTrue(test("data/generationtests/tniasm-multiple.asm",
                                                                           "data/generationtests/tniasm-multiple-expected.asm")); }
+    @Test public void test4() throws IOException { Assert.assertTrue(test("data/generationtests/tniasm-macros.asm",
+                                                                          "data/generationtests/tniasm-macros-expected.asm")); }
+    @Test public void test5() throws IOException { Assert.assertTrue(test("data/generationtests/tniasm-error.asm",
+                                                                          "data/generationtests/tniasm-error-expected.asm")); }
 
     private boolean test(String inputFile, String expectedOutputFile) throws IOException
     {
@@ -55,11 +59,13 @@ public class TniasmTest {
         }
         
         List<String> expectedLines = new ArrayList<>();
-        BufferedReader br = Resources.asReader(expectedOutputFile);
-        while(true) {
-            String line = br.readLine();
-            if (line == null) break;
-            expectedLines.add(line.trim());
+        if (expectedOutputFile != null) {
+            BufferedReader br = Resources.asReader(expectedOutputFile);
+            while(true) {
+                String line = br.readLine();
+                if (line == null) break;
+                expectedLines.add(line.trim());
+            }
         }
         System.out.println("\n--------------------------------------");
         System.out.println(result);

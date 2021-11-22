@@ -14,6 +14,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.lang3.tuple.Pair;
+import parser.LineParser;
 import parser.SourceLine;
 
 /**
@@ -44,6 +45,12 @@ public class TniAsmDialect implements Dialect {
         config.relativizeIncbinPaths = false;
 
         config.preProcessor.macroSynonyms.put("ifexist", config.preProcessor.MACRO_IFDEF);
+        config.preProcessor.macroSynonyms.put("%if", config.preProcessor.MACRO_IF);
+        config.preProcessor.macroSynonyms.put("%else", config.preProcessor.MACRO_ELSE);
+        config.preProcessor.macroSynonyms.put("%endif", config.preProcessor.MACRO_ENDIF);
+        config.preProcessor.macroSynonyms.put("%macro", config.preProcessor.MACRO_MACRO);
+        config.preProcessor.macroSynonyms.put("%endmacro", config.preProcessor.MACRO_ENDM);
+        config.lineParser.addKeywordSynonym("%macro", config.preProcessor.MACRO_MACRO);
         
         config.lineParser.addKeywordSynonym("rb", config.lineParser.KEYWORD_DS);
         config.lineParser.addKeywordSynonym("%res8", config.lineParser.KEYWORD_DS);
@@ -51,6 +58,9 @@ public class TniAsmDialect implements Dialect {
         
         config.lineParser.defineSpaceVirtualByDefault = true;
         config.lineParser.allowtniASMMultipleInstructionsPerLine = true;
+        config.lineParser.allowBackslashAsLineBreaks = true;
+        config.lineParser.macroDefinitionStyle = LineParser.MACRO_MACRO_NAME_ARGS;
+        config.lineParser.tniAsmStylemacroArgs = true;
         config.caseSensitiveSymbols = false;
         
         config.expressionParser.binaryDigitsCanContainSpaces = true;
@@ -61,11 +71,21 @@ public class TniAsmDialect implements Dialect {
         config.expressionParser.OP_LOGICAL_OR = "or";
         config.expressionParser.OP_LOGICAL_AND = "and";
         config.expressionParser.OP_MOD = "mod";
+        config.expressionParser.addOpSynonym("|", config.expressionParser.OP_LOGICAL_OR);
+        config.expressionParser.addOpSynonym("&", config.expressionParser.OP_LOGICAL_AND);
+        config.expressionParser.addOpSynonym("%", config.expressionParser.OP_MOD);
+        config.tryParsingUndefinedSymbolsAsHex = true;
         
         config.tokenizer.doubleTokens.add("%symfile");
         config.tokenizer.doubleTokens.add("%expfile");
         config.tokenizer.doubleTokens.add("%res8");
         config.tokenizer.doubleTokens.add("%res16");
+        config.tokenizer.doubleTokens.add("%if");
+        config.tokenizer.doubleTokens.add("%else");
+        config.tokenizer.doubleTokens.add("%endif");
+        config.tokenizer.doubleTokens.add("%macro");
+        config.tokenizer.doubleTokens.add("%endmacro");
+        config.tokenizer.doubleTokens.add("%error");
     }
 
     
@@ -80,6 +100,7 @@ public class TniAsmDialect implements Dialect {
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("%expfile")) return true;
         if (tokens.size()>= 2 && tokens.get(0).equalsIgnoreCase("phase")) return true;
         if (tokens.size()>= 1 && tokens.get(0).equalsIgnoreCase("dephase")) return true;
+        if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase("%error")) return true;
         return false;
     }
     
@@ -187,7 +208,6 @@ public class TniAsmDialect implements Dialect {
             
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
-        
         if (tokens.size() >= 1 && tokens.get(0).equalsIgnoreCase("dephase")) {
             tokens.remove(0);
             
@@ -197,6 +217,12 @@ public class TniAsmDialect implements Dialect {
             
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }        
+        if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("%error")) {
+            config.error(tokens.get(1));
+            tokens.remove(0);
+            tokens.remove(0);
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
+        }
         
         return false;
     }

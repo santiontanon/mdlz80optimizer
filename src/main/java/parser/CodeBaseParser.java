@@ -25,7 +25,8 @@ public class CodeBaseParser {
     // once the code is parsed. Examples of this are dialect-specific functions, which we want
     // to resolve before generating asm output to maintain maximum compatibility in the output:
     public List<Pair<Expression, CodeStatement>> expressionsToReplaceByValueAtTheEnd = new ArrayList<>();
-
+    String restOfTheCurrentLine = null;   // for dialects that allow breaking lines with "\\"
+    
 
     public CodeBaseParser(MDLConfig a_config) {
         config = a_config;
@@ -153,8 +154,7 @@ public class CodeBaseParser {
             if (code.getSourceFile(newName) == null) return newName;
         }
     }
-    
-    
+
 
     public SourceFile parseSourceFile(String fileName, CodeBase code, SourceFile parent,
             CodeStatement parentInclude) {
@@ -192,7 +192,14 @@ public class CodeBaseParser {
     Pair<SourceLine, Integer> getNextLine(BufferedReader br, SourceFile f, int file_linenumber, List<String> tokens)
             throws IOException
     {
-        SourceLine sl = config.preProcessor.expandMacros();
+        SourceLine sl = null;
+        if (restOfTheCurrentLine != null) {
+            sl = new SourceLine(restOfTheCurrentLine, f, file_linenumber);
+            restOfTheCurrentLine = null;
+        }
+        if (sl == null) {
+            sl = config.preProcessor.expandMacros();
+        }
         if (sl == null) {
             String line = null;
             if (br != null) line = br.readLine();
@@ -200,8 +207,29 @@ public class CodeBaseParser {
             file_linenumber++;
             sl = new SourceLine(line, f, file_linenumber);
         }
-
+        
         config.tokenizer.tokenize(sl.line, tokens);
+        if (config.lineParser.allowBackslashAsLineBreaks) {
+            int idx = tokens.indexOf("\\");
+            if (idx >= 0) {
+                // there is a line break:
+                List<String> tokens2 = config.tokenizer.tokenizeIncludingBlanks(sl.line);
+                idx = tokens2.indexOf("\\");
+                // Reconstruct the first part of the line, and the second:
+                String firstLine = "";
+                restOfTheCurrentLine = "";
+                for(int i = 0;i<idx;i++) {
+                    firstLine += tokens2.get(i);
+                }
+                for(int i = idx+1;i<tokens2.size();i++) {
+                    restOfTheCurrentLine += tokens2.get(i);
+                }
+                sl.line = firstLine;
+                tokens.clear();
+                config.tokenizer.tokenize(firstLine, tokens);
+            }
+        }
+        
         if (config.considerLinesEndingInCommaAsUnfinished &&
             !tokens.isEmpty() && tokens.get(tokens.size()-1).equals(",")) {
             // unfinished line, get the next one!
