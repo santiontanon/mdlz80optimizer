@@ -60,7 +60,7 @@ public class PatternBasedOptimizer implements MDLWorker {
     public String docString() {
         // This string has MD tags, so that I can easily generate the corresponding documentation in github with the 
         // hidden "-helpmd" flag:        
-        return "- ```-po```: Runs the pattern-based optimizer using the latest settings. You can pass an optional parameter, like ````-po size``` or ```-po speed```, which are shortcuts for '-po -popatterns data/pbo-patterns-size.txt' and '-po -popatterns data/pbo-patterns-speed.txt' (some dialects might change the defaults of these two)\n" +
+        return "- ```-po```: Runs the pattern-based optimizer. You can pass an optional parameter, like ````-po size``` or ```-po speed```, which are shortcuts for '-po -popatterns data/pbo-patterns-size.txt' and '-po -popatterns data/pbo-patterns-speed.txt' (some dialects might change the defaults of these two)\n" +
                "- ```-po1```/```-po2```/```-po3```: The same as ```-po```, but specify whether to do 1, 2 or 3 passes of optimization (```-po``` is equivalent to ```-po2```). The more passes, the slower the optimization. Usually 1 pass is enough, but often 2 passes finds a few additional optimizations. 3 passes rarely finds any additional optimization.\n"+
                "- ```-posilent```: Supresses the pattern-based-optimizer output\n" +
                "- ```-popotential```: Reports lines where a potential optimization was not applied for safety, but could maybe be done manually (at most one potential optimization per line is shown).\n" +

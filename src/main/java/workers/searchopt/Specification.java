@@ -238,8 +238,8 @@ public class Specification {
         if (goalDependenciesSatisfiedFromTheStart != null) return goalDependenciesSatisfiedFromTheStart;
         getGoalDependencies(allDependencies);
         goalDependenciesSatisfiedFromTheStart = new boolean[allDependencies.size()];
-        for(int i = 0;i<goalDependenciesSatisfiedFromTheStart.length;i++) goalDependenciesSatisfiedFromTheStart[i] = false;
         for(int i = 0;i<allDependencies.size();i++) {
+            goalDependenciesSatisfiedFromTheStart[i] = false;
             if (goalDependencies[i]) {
                 CPUOpDependency dep = allDependencies.get(i);
                 if (dep.register != null) {

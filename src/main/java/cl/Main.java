@@ -7,6 +7,7 @@ import workers.DotGenerator;
 import code.CodeBase;
 import workers.AnnotatedSourceCodeGenerator;
 import workers.BinaryGenerator;
+import workers.DataOptimizer;
 import workers.Help;
 import workers.reorgopt.CodeReorganizer;
 import workers.pattopt.PatternBasedOptimizer;
@@ -28,6 +29,7 @@ public class Main {
         config.registerWorker(new SearchBasedOptimizer(config));
         config.registerWorker(new CodeReorganizer(config));
         config.registerWorker(new PatternBasedOptimizer(config));
+        config.registerWorker(new DataOptimizer(config));
         
         config.registerWorker(new DotGenerator(config));
         config.registerWorker(new SymbolTableGenerator(config));
