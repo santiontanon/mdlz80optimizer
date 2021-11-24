@@ -131,28 +131,75 @@ public class DataOptimizer implements MDLWorker {
             }
         }
         
-        // Step 2: convert each block to bytes:
-        List<List<Integer>> blockBytes = new ArrayList<>();
-        for(CodeBlock db:dataBlocks) {
-            List<Integer> bytes = assembleToBytes(db, code);
-            if (bytes == null) return false;
-            config.debug("DataBlock " + db.startStatement.label.name + ": " +  bytes.size());
-            blockBytes.add(bytes);
-        }
+        // Step 2: convert each block to bytes:        
+        List<List<Integer>> blockBytes = blocksToBytes(dataBlocks, code);
         
-        // Step 3: Look for optimization oportunities:
+        // Step 3: Look for optimization oportunities (coarse-grained):
         // - Check if a block is contained in another
         findBlocksContainedInOthers(dataBlocks, blockBytes, savings);
-
         // - Check if the end of one datablock is a prefix of another
         // - Check if the reverse of one is contained in another
         // - Check if the reverse of the beginning of one is a prefix of another
+        // ...
+        
+        // Step 4: split the blocks into smaller blocks:
+        dataBlocks = splitIntoFineGrainedblocks(dataBlocks, code);
+        blockBytes = blocksToBytes(dataBlocks, code);
+        
+
+        // Step 5: Look for optimization oportunities (fine-grained):
+        findBlocksContainedInOthers(dataBlocks, blockBytes, savings);
         // ...
         
         config.optimizerStats.addSavings(savings);
         return true;
     }
     
+    
+    public List<CodeBlock> splitIntoFineGrainedblocks(List<CodeBlock> dataBlocks, CodeBase code)
+    {
+        List<CodeBlock> fineGrainedBlocks = new ArrayList<>();
+        
+        for(CodeBlock b:dataBlocks) {
+            CodeStatement start = null;
+            for(CodeStatement s:b.statements) {
+                if (s.label != null) {
+                    if (start != null) {
+                        // new block:
+                        CodeBlock block = new CodeBlock("data-fg-" + fineGrainedBlocks.size(),
+                                                        CodeBlock.TYPE_DATA,
+                                                        start, s, code);
+                        fineGrainedBlocks.add(block);
+                        start = s;
+                    } else {
+                        start = s;
+                    }
+                }
+            }
+            if (start != null) {
+                // new block:
+                CodeBlock block = new CodeBlock("data-fg-" + fineGrainedBlocks.size(),
+                                                CodeBlock.TYPE_DATA,
+                                                start, null, code);
+                fineGrainedBlocks.add(block);
+            }
+        }
+        config.debug("DataOptimizer: splitIntoFineGrainedblocks: from " + dataBlocks.size() + " to " + fineGrainedBlocks.size());
+        
+        return fineGrainedBlocks;
+    }
+    
+    public List<List<Integer>> blocksToBytes(List<CodeBlock> dataBlocks, CodeBase code)
+    {
+        List<List<Integer>> blockBytes = new ArrayList<>();
+        for(CodeBlock db:dataBlocks) {
+            List<Integer> bytes = assembleToBytes(db, code);
+            if (bytes == null) return null;
+            config.debug("DataBlock " + db.startStatement.label.name + ": " +  bytes.size());
+            blockBytes.add(bytes);
+        }
+        return blockBytes;
+    }    
     
     public List<Integer> assembleToBytes(CodeBlock db, CodeBase code)
     {
@@ -173,22 +220,33 @@ public class DataOptimizer implements MDLWorker {
                                             List<List<Integer>> blockBytes,
                                             OptimizationResult savings)
     {
+        List<CodeBlock> blocksToRemove = new ArrayList<>();
         for(int i = 0;i<dataBlocks.size();i++) {
+            if (blocksToRemove.contains(dataBlocks.get(i))) continue;
             for(int j = 0;j<dataBlocks.size();j++) {
                 if (i==j) continue;
-                if (blockBytes.get(i).size() == blockBytes.get(j).size() && i>j) continue;
+                if (blocksToRemove.contains(dataBlocks.get(j))) continue;
                 int startPosition = blockContained(blockBytes.get(i), 
                                                    blockBytes.get(j));
                 if (startPosition >= 0) {
+                    blocksToRemove.add(dataBlocks.get(i));
+                    
                     config.info("DataOptimizer: data block containment detected ("+blockBytes.get(i).size()+" bytes saved):");
-                    config.info("    block starting at " + dataBlocks.get(i).startStatement.fileNameLineString() + " (with size "+blockBytes.get(i).size()+")");
-                    config.info("    contained in data block starting at " + dataBlocks.get(j).startStatement.fileNameLineString() + ", at offset " + i);
+                    config.info("    block '"+dataBlocks.get(i).label.name+"' starting at " + dataBlocks.get(i).startStatement.fileNameLineString() + " (with size "+blockBytes.get(i).size()+")");
+                    config.info("    contained in data block '"+dataBlocks.get(j).label.name+"' starting at " + dataBlocks.get(j).startStatement.fileNameLineString() + ", at offset " + i);
                     config.info("    (Note: MDL does not know how to automatically do this optimization yet)");
                     savings.addSavings(blockBytes.get(i).size(), new int[]{0});
                     savings.addOptimizerSpecific(DATA_OPTIMIZER_OPTIMIZATIONS_CODE, 1);
                     break;
                 }
             }
+        }
+        
+        // Remove the block to prevent further optimizations on it:
+        for(CodeBlock b:blocksToRemove) {
+            int idx = dataBlocks.indexOf(b);
+            dataBlocks.remove(idx);
+            blockBytes.remove(idx);
         }
     }
     

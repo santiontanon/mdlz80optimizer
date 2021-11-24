@@ -37,6 +37,7 @@ public class DataOptimizerTest {
     }
 
     @Test public void test1() throws IOException { test("data/dotests/test1.asm", 1, 4); }
+    @Test public void test2() throws IOException { test("data/dotests/test2.asm", 1, 4); }
 
     
     private void test(String inputFile, int nDataOptimizations, int expectedSavedBytes) throws IOException
