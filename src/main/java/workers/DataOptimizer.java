@@ -19,6 +19,7 @@ import workers.reorgopt.CodeBlock;
  */
 public class DataOptimizer implements MDLWorker {
     public static final String DATA_OPTIMIZER_OPTIMIZATIONS_CODE = "DataOptimizer optimizations";
+    public static final String DATA_OPTIMIZER_POTENTIAL_BYTES_CODE = "DataOptimizer potential bytes saved";
 
     MDLConfig config;
     BinaryGenerator binaryGenerator;
@@ -35,13 +36,13 @@ public class DataOptimizer implements MDLWorker {
     public String docString() {
         // This string has MD tags, so that I can easily generate the corresponding documentation in github with the 
         // hidden "-helpmd" flag:        
-        return "- ```-do```: Runs the data optimizer (only provides suggestions for now).\n";
+        return "- ```-do```: Runs the data optimizer (only provides potential ideas for space saving).\n";
     }
 
     
     @Override
     public String simpleDocString() {
-        return "- ```-do```: Runs the data optimizer (only provides suggestions for now).\n";
+        return "- ```-do```: Runs the data optimizer (only provides potential ideas for space saving).\n";
     }
 
     
@@ -222,20 +223,22 @@ public class DataOptimizer implements MDLWorker {
     {
         List<CodeBlock> blocksToRemove = new ArrayList<>();
         for(int i = 0;i<dataBlocks.size();i++) {
+            if (blockBytes.get(i).isEmpty()) continue;
             if (blocksToRemove.contains(dataBlocks.get(i))) continue;
             for(int j = 0;j<dataBlocks.size();j++) {
                 if (i==j) continue;
+                if (blockBytes.get(j).isEmpty()) continue;
                 if (blocksToRemove.contains(dataBlocks.get(j))) continue;
                 int startPosition = blockContained(blockBytes.get(i), 
                                                    blockBytes.get(j));
                 if (startPosition >= 0) {
                     blocksToRemove.add(dataBlocks.get(i));
                     
-                    config.info("DataOptimizer: data block containment detected ("+blockBytes.get(i).size()+" bytes saved):");
+                    config.info("DataOptimizer: data block containment detected ("+blockBytes.get(i).size()+" could be bytes saved):");
                     config.info("    block '"+dataBlocks.get(i).label.name+"' starting at " + dataBlocks.get(i).startStatement.fileNameLineString() + " (with size "+blockBytes.get(i).size()+")");
                     config.info("    contained in data block '"+dataBlocks.get(j).label.name+"' starting at " + dataBlocks.get(j).startStatement.fileNameLineString() + ", at offset " + i);
-                    config.info("    (Note: MDL does not know how to automatically do this optimization yet)");
-                    savings.addSavings(blockBytes.get(i).size(), new int[]{0});
+                    config.info("    (Note: MDL cannot know if this optimization is feasible, please make sure it does not break the code before applying it)");
+                    savings.addOptimizerSpecific(DATA_OPTIMIZER_POTENTIAL_BYTES_CODE, blockBytes.get(i).size());
                     savings.addOptimizerSpecific(DATA_OPTIMIZER_OPTIMIZATIONS_CODE, 1);
                     break;
                 }

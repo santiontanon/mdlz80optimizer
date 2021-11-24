@@ -16,7 +16,6 @@ import code.SourceFile;
 import code.CodeStatement;
 import java.util.ArrayList;
 import java.util.List;
-import workers.AnnotatedSourceCodeGenerator;
 import workers.DataOptimizer;
 
 /**
@@ -77,7 +76,9 @@ public class DataOptimizerTest {
         Assert.assertEquals(labelsBefore.size(), labelsAfter.size());
         Integer nOptimizations = r.optimizerSpecificStats.get(DataOptimizer.DATA_OPTIMIZER_OPTIMIZATIONS_CODE);
         if (nOptimizations == null) nOptimizations = 0;
+        Integer nPotentialBytes = r.optimizerSpecificStats.get(DataOptimizer.DATA_OPTIMIZER_POTENTIAL_BYTES_CODE);
+        if (nPotentialBytes == null) nPotentialBytes = 0;
         Assert.assertEquals("r.nDataOptimizations", nDataOptimizations, (int)nOptimizations);
-        Assert.assertEquals("r.bytesSaved", expectedSavedBytes, r.bytesSaved);
+        Assert.assertEquals("r.nPotentialBytes", expectedSavedBytes, (int)nPotentialBytes);
     }
 }
