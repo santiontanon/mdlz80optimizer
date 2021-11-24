@@ -35,13 +35,13 @@ public class DataOptimizer implements MDLWorker {
     public String docString() {
         // This string has MD tags, so that I can easily generate the corresponding documentation in github with the 
         // hidden "-helpmd" flag:        
-        return "- ```-do```: Runs the data optimizer.\n";
+        return "- ```-do```: Runs the data optimizer (only provides suggestions for now).\n";
     }
 
     
     @Override
     public String simpleDocString() {
-        return "- ```-do```: Runs the data optimizer.\n";
+        return "- ```-do```: Runs the data optimizer (only provides suggestions for now).\n";
     }
 
     
