@@ -5,6 +5,7 @@
 package workers;
 
 import cl.MDLConfig;
+import cl.OptimizationResult;
 import code.CodeBase;
 import code.CodeStatement;
 import code.SourceFile;
@@ -17,6 +18,7 @@ import workers.reorgopt.CodeBlock;
  * @author santi
  */
 public class DataOptimizer implements MDLWorker {
+    public static final String DATA_OPTIMIZER_OPTIMIZATIONS_CODE = "DataOptimizer optimizations";
 
     MDLConfig config;
     BinaryGenerator binaryGenerator;
@@ -62,6 +64,9 @@ public class DataOptimizer implements MDLWorker {
     
     @Override
     public boolean work(CodeBase code) {
+        OptimizationResult savings = new OptimizationResult();
+        savings.addOptimizerSpecific(DATA_OPTIMIZER_OPTIMIZATIONS_CODE, 0);
+
         List<CodeBlock> dataBlocks = new ArrayList<>();
         
         // Step 1: identify all the data blocks
@@ -137,13 +142,14 @@ public class DataOptimizer implements MDLWorker {
         
         // Step 3: Look for optimization oportunities:
         // - Check if a block is contained in another
-        findBlocksContainedInOthers(dataBlocks, blockBytes);
+        findBlocksContainedInOthers(dataBlocks, blockBytes, savings);
 
         // - Check if the end of one datablock is a prefix of another
         // - Check if the reverse of one is contained in another
         // - Check if the reverse of the beginning of one is a prefix of another
         // ...
         
+        config.optimizerStats.addSavings(savings);
         return true;
     }
     
@@ -164,11 +170,13 @@ public class DataOptimizer implements MDLWorker {
     
     
     public void findBlocksContainedInOthers(List<CodeBlock> dataBlocks, 
-                                            List<List<Integer>> blockBytes)
+                                            List<List<Integer>> blockBytes,
+                                            OptimizationResult savings)
     {
         for(int i = 0;i<dataBlocks.size();i++) {
             for(int j = 0;j<dataBlocks.size();j++) {
                 if (i==j) continue;
+                if (blockBytes.get(i).size() == blockBytes.get(j).size() && i>j) continue;
                 int startPosition = blockContained(blockBytes.get(i), 
                                                    blockBytes.get(j));
                 if (startPosition >= 0) {
@@ -176,6 +184,8 @@ public class DataOptimizer implements MDLWorker {
                     config.info("    block starting at " + dataBlocks.get(i).startStatement.fileNameLineString() + " (with size "+blockBytes.get(i).size()+")");
                     config.info("    contained in data block starting at " + dataBlocks.get(j).startStatement.fileNameLineString() + ", at offset " + i);
                     config.info("    (Note: MDL does not know how to automatically do this optimization yet)");
+                    savings.addSavings(blockBytes.get(i).size(), new int[]{0});
+                    savings.addOptimizerSpecific(DATA_OPTIMIZER_OPTIMIZATIONS_CODE, 1);
                     break;
                 }
             }
@@ -188,7 +198,7 @@ public class DataOptimizer implements MDLWorker {
     {
         int l1 = b1.size();
         int l2 = b2.size();
-        for(int i = 0;i < l2 - l1;i++) {
+        for(int i = 0;i <= l2 - l1;i++) {
             boolean found = true;
             for(int j = 0;j < l1;j++) {
                 if (!b1.get(j).equals(b2.get(i+j))) {
