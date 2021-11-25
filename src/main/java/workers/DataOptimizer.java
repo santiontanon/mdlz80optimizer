@@ -144,12 +144,13 @@ public class DataOptimizer implements MDLWorker {
         
         // Step 3: Look for optimization oportunities (coarse-grained):
         // - Check if a block is contained in another
-        findBlocksContainedInOthers(dataBlocks, blockBytes, savings);
+        findBlocksContainedInOthers(dataBlocks, blockBytes, savings, false, code);
         // - Check if the end of one datablock is a prefix of another
-        findBlocksPrefixingOthers(dataBlocks, blockBytes, savings);
+        findBlocksPrefixingOthers(dataBlocks, blockBytes, savings, false, code);
         // - Check if the reverse of one is contained in another
+        findBlocksContainedInOthers(dataBlocks, blockBytes, savings, true, code);
         // - Check if the reverse of the beginning of one is a prefix of another
-        // ...
+        findBlocksPrefixingOthers(dataBlocks, blockBytes, savings, true, code);
         
         // Step 4: split the blocks into smaller blocks:
         List<CodeBlock> finegrainedDataBlocks = splitIntoFineGrainedblocks(dataBlocks, code);
@@ -157,8 +158,10 @@ public class DataOptimizer implements MDLWorker {
         
         // Step 5: Look for optimization oportunities (same as above, but with
         // fine-grained blocks):
-        findBlocksContainedInOthers(finegrainedDataBlocks, finegrainedBlockBytes, savings);
-        findBlocksPrefixingOthers(finegrainedDataBlocks, finegrainedBlockBytes, savings);
+        findBlocksContainedInOthers(finegrainedDataBlocks, finegrainedBlockBytes, savings, false, code);
+        findBlocksPrefixingOthers(finegrainedDataBlocks, finegrainedBlockBytes, savings, false, code);
+        findBlocksContainedInOthers(finegrainedDataBlocks, finegrainedBlockBytes, savings, true, code);
+        findBlocksPrefixingOthers(finegrainedDataBlocks, finegrainedBlockBytes, savings, true, code);
         
         config.optimizerStats.addSavings(savings);
         return true;
@@ -227,30 +230,56 @@ public class DataOptimizer implements MDLWorker {
     
     public void findBlocksContainedInOthers(List<CodeBlock> dataBlocks, 
                                             List<List<Integer>> blockBytes,
-                                            OptimizationResult savings)
+                                            OptimizationResult savings,
+                                            boolean reverseOrder,
+                                            CodeBase code)
     {
         List<CodeBlock> blocksToRemove = new ArrayList<>();
         for(int i = 0;i<dataBlocks.size();i++) {
             if (blockBytes.get(i).isEmpty()) continue;
             if (blockBytes.get(i).size() < minSavingsToConsider) continue;
+            if (dataBlocks.get(i).containsOptimizationProtectedStatements(code)) continue;
             if (blocksToRemove.contains(dataBlocks.get(i))) continue;
             for(int j = 0;j<dataBlocks.size();j++) {
                 if (i==j) continue;
                 if (blockBytes.get(j).isEmpty()) continue;
                 if (blocksToRemove.contains(dataBlocks.get(j))) continue;
-                int startPosition = blockContained(blockBytes.get(i), 
-                                                   blockBytes.get(j));
-                if (startPosition >= 0) {
-                    blocksToRemove.add(dataBlocks.get(i));
-                    
-                    config.info("DataOptimizer: data block containment detected ("+blockBytes.get(i).size()+" bytes could be saved):");
-                    config.info("    Block '"+dataBlocks.get(i).label.name+"' starting at " + dataBlocks.get(i).startStatement.fileNameLineString() + " (with size "+blockBytes.get(i).size()+")");
-                    config.info("    contained in data block '"+dataBlocks.get(j).label.name+"' starting at " + dataBlocks.get(j).startStatement.fileNameLineString() + ", at offset " + startPosition);
-                    config.info("    Block '"+dataBlocks.get(i).label.name+"' could be redundant.");
-                    config.info("    (Note: MDL cannot know if this optimization is feasible, please make sure it does not break the code before applying it)");
-                    savings.addOptimizerSpecific(DATA_OPTIMIZER_POTENTIAL_BYTES_CODE, blockBytes.get(i).size());
-                    savings.addOptimizerSpecific(DATA_OPTIMIZER_OPTIMIZATIONS_CODE, 1);
-                    break;
+                if (dataBlocks.get(j).containsOptimizationProtectedStatements(code)) continue;
+                
+                if (reverseOrder) {
+                    List<Integer> reversed = new ArrayList<>();
+                    for(int v:blockBytes.get(i)) {
+                        reversed.add(0, v);
+                    }
+                    int startPosition = blockContained(reversed, 
+                                                       blockBytes.get(j));
+                    if (startPosition >= 0) {
+                        blocksToRemove.add(dataBlocks.get(i));
+
+                        config.info("DataOptimizer: reverse data block containment detected ("+blockBytes.get(i).size()+" bytes could be saved):");
+                        config.info("    A version of block '"+dataBlocks.get(i).label.name+"' starting at " + dataBlocks.get(i).startStatement.fileNameLineString() + " (with size "+blockBytes.get(i).size()+")");
+                        config.info("    but in reverse order is contained in data block '"+dataBlocks.get(j).label.name+"' starting at " + dataBlocks.get(j).startStatement.fileNameLineString() + ", at offset " + startPosition);
+                        config.info("    Block '"+dataBlocks.get(i).label.name+"' could be redundant with some code adjustment.");
+                        config.info("    (Note: MDL cannot know if this optimization is feasible, please make sure it does not break the code before applying it)");
+                        savings.addOptimizerSpecific(DATA_OPTIMIZER_POTENTIAL_BYTES_CODE, blockBytes.get(i).size());
+                        savings.addOptimizerSpecific(DATA_OPTIMIZER_OPTIMIZATIONS_CODE, 1);
+                        break;
+                    }                    
+                } else {                
+                    int startPosition = blockContained(blockBytes.get(i), 
+                                                       blockBytes.get(j));
+                    if (startPosition >= 0) {
+                        blocksToRemove.add(dataBlocks.get(i));
+
+                        config.info("DataOptimizer: data block containment detected ("+blockBytes.get(i).size()+" bytes could be saved):");
+                        config.info("    Block '"+dataBlocks.get(i).label.name+"' starting at " + dataBlocks.get(i).startStatement.fileNameLineString() + " (with size "+blockBytes.get(i).size()+")");
+                        config.info("    contained in data block '"+dataBlocks.get(j).label.name+"' starting at " + dataBlocks.get(j).startStatement.fileNameLineString() + ", at offset " + startPosition);
+                        config.info("    Block '"+dataBlocks.get(i).label.name+"' could be redundant.");
+                        config.info("    (Note: MDL cannot know if this optimization is feasible, please make sure it does not break the code before applying it)");
+                        savings.addOptimizerSpecific(DATA_OPTIMIZER_POTENTIAL_BYTES_CODE, blockBytes.get(i).size());
+                        savings.addOptimizerSpecific(DATA_OPTIMIZER_OPTIMIZATIONS_CODE, 1);
+                        break;
+                    }
                 }
             }
         }
@@ -287,31 +316,65 @@ public class DataOptimizer implements MDLWorker {
     
     public void findBlocksPrefixingOthers(List<CodeBlock> dataBlocks, 
                                             List<List<Integer>> blockBytes,
-                                            OptimizationResult savings)
+                                            OptimizationResult savings,
+                                            boolean reverseOrder,
+                                            CodeBase code)
     {
         List<CodeBlock> blocksToRemove = new ArrayList<>();
         for(int i = 0;i<dataBlocks.size();i++) {
             if (blockBytes.get(i).isEmpty()) continue;
             if (blocksToRemove.contains(dataBlocks.get(i))) continue;
+            if (dataBlocks.get(i).containsOptimizationProtectedStatements(code)) continue;
             for(int j = 0;j<dataBlocks.size();j++) {
                 if (i==j) continue;
                 if (blockBytes.get(j).isEmpty()) continue;
                 if (blocksToRemove.contains(dataBlocks.get(j))) continue;
-                int startPosition = blockEndsInPrefix(blockBytes.get(i), 
-                                                      blockBytes.get(j));
-                if (startPosition >= 0) {
-                    int bytesSaved = blockBytes.get(j).size() - startPosition;
-                    if (bytesSaved < minSavingsToConsider) continue;
-                    blocksToRemove.add(dataBlocks.get(i));
-                    
-                    config.info("DataOptimizer: data block prefix detected ("+bytesSaved+" bytes could be saved):");
-                    config.info("    The last "+bytesSaved+" bytes of block '"+dataBlocks.get(j).label.name+"' starting at " + dataBlocks.get(j).startStatement.fileNameLineString());
-                    config.info("    are identical to the first "+bytesSaved+" bytes of block '"+dataBlocks.get(i).label.name+"' starting at " + dataBlocks.get(i).startStatement.fileNameLineString());
-                    config.info("    They could be combined.");
-                    config.info("    (Note: MDL cannot know if this optimization is feasible, please make sure it does not break the code before applying it)");
-                    savings.addOptimizerSpecific(DATA_OPTIMIZER_POTENTIAL_BYTES_CODE, bytesSaved);
-                    savings.addOptimizerSpecific(DATA_OPTIMIZER_OPTIMIZATIONS_CODE, 1);
-                    break;
+                if (dataBlocks.get(j).containsOptimizationProtectedStatements(code)) continue;
+                
+                if (reverseOrder) {
+                    int bytesSaved = blockEndsInPrefixReversed(blockBytes.get(i), blockBytes.get(j));
+                    if (bytesSaved > minSavingsToConsider) {
+                        blocksToRemove.add(dataBlocks.get(i));
+
+                        config.info("DataOptimizer: reverse data block endings detected ("+bytesSaved+" bytes could be saved):");
+                        config.info("    The last "+bytesSaved+" bytes of block '"+dataBlocks.get(j).label.name+"' starting at " + dataBlocks.get(j).startStatement.fileNameLineString());
+                        config.info("    but in reverse order are identical to the last "+bytesSaved+" bytes of block '"+dataBlocks.get(i).label.name+"' starting at " + dataBlocks.get(i).startStatement.fileNameLineString());
+                        config.info("    They could be combined with some code adjustment.");
+                        config.info("    (Note: MDL cannot know if this optimization is feasible, please make sure it does not break the code before applying it)");
+                        savings.addOptimizerSpecific(DATA_OPTIMIZER_POTENTIAL_BYTES_CODE, bytesSaved);
+                        savings.addOptimizerSpecific(DATA_OPTIMIZER_OPTIMIZATIONS_CODE, 1);
+                        break;
+                    } else {
+                        bytesSaved = blockStartsInPrefixReversed(blockBytes.get(i), blockBytes.get(j));
+                        if (bytesSaved > minSavingsToConsider) {
+                            blocksToRemove.add(dataBlocks.get(i));
+
+                            config.info("DataOptimizer: reverse data block prefix detected ("+bytesSaved+" bytes could be saved):");
+                            config.info("    The first "+bytesSaved+" bytes of block '"+dataBlocks.get(j).label.name+"' starting at " + dataBlocks.get(j).startStatement.fileNameLineString());
+                            config.info("    but in reverse order are identical to the first "+bytesSaved+" bytes of block '"+dataBlocks.get(i).label.name+"' starting at " + dataBlocks.get(i).startStatement.fileNameLineString());
+                            config.info("    They could be combined with some code adjustment.");
+                            config.info("    (Note: MDL cannot know if this optimization is feasible, please make sure it does not break the code before applying it)");
+                            savings.addOptimizerSpecific(DATA_OPTIMIZER_POTENTIAL_BYTES_CODE, bytesSaved);
+                            savings.addOptimizerSpecific(DATA_OPTIMIZER_OPTIMIZATIONS_CODE, 1);
+                            break;
+                        }
+                    }
+                } else {
+                    int startPosition = blockEndsInPrefix(blockBytes.get(i), blockBytes.get(j));
+                    if (startPosition >= 0) {
+                        int bytesSaved = blockBytes.get(j).size() - startPosition;
+                        if (bytesSaved < minSavingsToConsider) continue;
+                        blocksToRemove.add(dataBlocks.get(i));
+
+                        config.info("DataOptimizer: data block prefix detected ("+bytesSaved+" bytes could be saved):");
+                        config.info("    The last "+bytesSaved+" bytes of block '"+dataBlocks.get(j).label.name+"' starting at " + dataBlocks.get(j).startStatement.fileNameLineString());
+                        config.info("    are identical to the first "+bytesSaved+" bytes of block '"+dataBlocks.get(i).label.name+"' starting at " + dataBlocks.get(i).startStatement.fileNameLineString());
+                        config.info("    They could be combined.");
+                        config.info("    (Note: MDL cannot know if this optimization is feasible, please make sure it does not break the code before applying it)");
+                        savings.addOptimizerSpecific(DATA_OPTIMIZER_POTENTIAL_BYTES_CODE, bytesSaved);
+                        savings.addOptimizerSpecific(DATA_OPTIMIZER_OPTIMIZATIONS_CODE, 1);
+                        break;
+                    }
                 }
             }
         }
@@ -343,5 +406,48 @@ public class DataOptimizer implements MDLWorker {
             }
         }
         return -1;
-    }    
+    }
+    
+    // Checks if the end of "b1" is a reversed version of the end of "b2":
+    // Example: b1: 0,1,[2,3,4,5,6,7], b2: 10,9,8,[7,6,5,4,3,2]
+    public int blockEndsInPrefixReversed(List<Integer> b1, List<Integer> b2)
+    {
+        int l1 = b1.size();
+        int l2 = b2.size();
+        for(int l = 1; l < Math.min(l1, l2); l++) {
+            boolean found = true;
+            for(int i = 0; i < l; i++) {
+                if (!b1.get(l1 - (i+1)).equals(b2.get(l2 - (l - i)))) {
+                    found = false;
+                    break;
+                }
+            }
+            if (found) {
+                return l;
+            }
+        }
+        return -1;
+    }        
+
+    // Checks if the end of "b1" is a reversed version of the end of "b2":
+    // Example: b1: [0,1,2,3,4],5,6,7, b2: [4,3,2,1,0],-1,-2,-3
+    public int blockStartsInPrefixReversed(List<Integer> b1, List<Integer> b2)
+    {
+        int l1 = b1.size();
+        int l2 = b2.size();
+        for(int l = 1; l < Math.min(l1, l2); l++) {
+            boolean found = true;
+            for(int i = 0; i < l; i++) {
+                if (!b1.get(i).equals(b2.get((l - i) - 1))) {
+                    found = false;
+                    break;
+                }
+            }
+            if (found) {
+                return l;
+            }
+        }
+        return -1;
+    }        
+
 }

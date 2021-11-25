@@ -39,6 +39,10 @@ public class DataOptimizerTest {
     @Test public void test2() throws IOException { test("data/dotests/test2.asm", 1, 4); }
     @Test public void test3() throws IOException { test("data/dotests/test3.asm", 1, 4); }
     @Test public void test4() throws IOException { test("data/dotests/test4.asm", 1, 4); }
+    @Test public void test5() throws IOException { test("data/dotests/test5.asm", 1, 5); }
+    @Test public void test6() throws IOException { test("data/dotests/test6.asm", 1, 6); }
+    @Test public void test7() throws IOException { test("data/dotests/test7.asm", 1, 5); }
+    @Test public void test8() throws IOException { test("data/dotests/test8.asm", 0, 0); }
 
     
     private void test(String inputFile, int nDataOptimizations, int expectedSavedBytes) throws IOException

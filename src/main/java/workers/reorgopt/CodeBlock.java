@@ -120,6 +120,15 @@ public class CodeBlock {
     }
     
     
+    public boolean containsOptimizationProtectedStatements(CodeBase code)
+    {
+        for(CodeStatement s:statements) {
+            if (code.protectedFromOptimization(s)) return true;
+        }
+        return false;
+    }
+    
+    
     public boolean sanityCheck(String errorID, MDLConfig config)
     {
         for(CodeBlock b1:subBlocks) {
