@@ -24,6 +24,7 @@ public class DataOptimizer implements MDLWorker {
     MDLConfig config;
     BinaryGenerator binaryGenerator;
     boolean trigger = false;
+    int minSavingsToConsider = 4;
     
     public DataOptimizer(MDLConfig a_config)
     {
@@ -36,7 +37,8 @@ public class DataOptimizer implements MDLWorker {
     public String docString() {
         // This string has MD tags, so that I can easily generate the corresponding documentation in github with the 
         // hidden "-helpmd" flag:        
-        return "- ```-do```: Runs the data optimizer (only provides potential ideas for space saving).\n";
+        return "- ```-do```: Runs the data optimizer (only provides potential ideas for space saving).\n" +
+               "- ```-do-minsavings <min>```: sets the minimum number of potential bytes that should be saved in order for the data optimizer to generate an optimization suggestion (default value is 4).";
     }
 
     
@@ -51,6 +53,11 @@ public class DataOptimizer implements MDLWorker {
         if (flags.get(0).equals("-do")) {
             flags.remove(0);
             trigger = true;
+            return true;
+        } else if (flags.get(0).equals("-do-minsavings") && flags.size()>=2) {
+            flags.remove(0);
+            Integer value = Integer.parseInt(flags.remove(0));
+            minSavingsToConsider = value;
             return true;
         }
         return false;
@@ -139,18 +146,19 @@ public class DataOptimizer implements MDLWorker {
         // - Check if a block is contained in another
         findBlocksContainedInOthers(dataBlocks, blockBytes, savings);
         // - Check if the end of one datablock is a prefix of another
+        findBlocksPrefixingOthers(dataBlocks, blockBytes, savings);
         // - Check if the reverse of one is contained in another
         // - Check if the reverse of the beginning of one is a prefix of another
         // ...
         
         // Step 4: split the blocks into smaller blocks:
-        dataBlocks = splitIntoFineGrainedblocks(dataBlocks, code);
-        blockBytes = blocksToBytes(dataBlocks, code);
+        List<CodeBlock> finegrainedDataBlocks = splitIntoFineGrainedblocks(dataBlocks, code);
+        List<List<Integer>> finegrainedBlockBytes = blocksToBytes(finegrainedDataBlocks, code);
         
-
-        // Step 5: Look for optimization oportunities (fine-grained):
-        findBlocksContainedInOthers(dataBlocks, blockBytes, savings);
-        // ...
+        // Step 5: Look for optimization oportunities (same as above, but with
+        // fine-grained blocks):
+        findBlocksContainedInOthers(finegrainedDataBlocks, finegrainedBlockBytes, savings);
+        findBlocksPrefixingOthers(finegrainedDataBlocks, finegrainedBlockBytes, savings);
         
         config.optimizerStats.addSavings(savings);
         return true;
@@ -224,6 +232,7 @@ public class DataOptimizer implements MDLWorker {
         List<CodeBlock> blocksToRemove = new ArrayList<>();
         for(int i = 0;i<dataBlocks.size();i++) {
             if (blockBytes.get(i).isEmpty()) continue;
+            if (blockBytes.get(i).size() < minSavingsToConsider) continue;
             if (blocksToRemove.contains(dataBlocks.get(i))) continue;
             for(int j = 0;j<dataBlocks.size();j++) {
                 if (i==j) continue;
@@ -234,9 +243,10 @@ public class DataOptimizer implements MDLWorker {
                 if (startPosition >= 0) {
                     blocksToRemove.add(dataBlocks.get(i));
                     
-                    config.info("DataOptimizer: data block containment detected ("+blockBytes.get(i).size()+" could be bytes saved):");
-                    config.info("    block '"+dataBlocks.get(i).label.name+"' starting at " + dataBlocks.get(i).startStatement.fileNameLineString() + " (with size "+blockBytes.get(i).size()+")");
-                    config.info("    contained in data block '"+dataBlocks.get(j).label.name+"' starting at " + dataBlocks.get(j).startStatement.fileNameLineString() + ", at offset " + i);
+                    config.info("DataOptimizer: data block containment detected ("+blockBytes.get(i).size()+" bytes could be saved):");
+                    config.info("    Block '"+dataBlocks.get(i).label.name+"' starting at " + dataBlocks.get(i).startStatement.fileNameLineString() + " (with size "+blockBytes.get(i).size()+")");
+                    config.info("    contained in data block '"+dataBlocks.get(j).label.name+"' starting at " + dataBlocks.get(j).startStatement.fileNameLineString() + ", at offset " + startPosition);
+                    config.info("    Block '"+dataBlocks.get(i).label.name+"' could be redundant.");
                     config.info("    (Note: MDL cannot know if this optimization is feasible, please make sure it does not break the code before applying it)");
                     savings.addOptimizerSpecific(DATA_OPTIMIZER_POTENTIAL_BYTES_CODE, blockBytes.get(i).size());
                     savings.addOptimizerSpecific(DATA_OPTIMIZER_OPTIMIZATIONS_CODE, 1);
@@ -261,8 +271,8 @@ public class DataOptimizer implements MDLWorker {
         int l2 = b2.size();
         for(int i = 0;i <= l2 - l1;i++) {
             boolean found = true;
-            for(int j = 0;j < l1;j++) {
-                if (!b1.get(j).equals(b2.get(i+j))) {
+            for(int j = 0; j < l1; j++) {
+                if (!b1.get(j).equals(b2.get(i + j))) {
                     found = false;
                     break;
                 }
@@ -273,4 +283,65 @@ public class DataOptimizer implements MDLWorker {
         }
         return -1;
     }
+    
+    
+    public void findBlocksPrefixingOthers(List<CodeBlock> dataBlocks, 
+                                            List<List<Integer>> blockBytes,
+                                            OptimizationResult savings)
+    {
+        List<CodeBlock> blocksToRemove = new ArrayList<>();
+        for(int i = 0;i<dataBlocks.size();i++) {
+            if (blockBytes.get(i).isEmpty()) continue;
+            if (blocksToRemove.contains(dataBlocks.get(i))) continue;
+            for(int j = 0;j<dataBlocks.size();j++) {
+                if (i==j) continue;
+                if (blockBytes.get(j).isEmpty()) continue;
+                if (blocksToRemove.contains(dataBlocks.get(j))) continue;
+                int startPosition = blockEndsInPrefix(blockBytes.get(i), 
+                                                      blockBytes.get(j));
+                if (startPosition >= 0) {
+                    int bytesSaved = blockBytes.get(j).size() - startPosition;
+                    if (bytesSaved < minSavingsToConsider) continue;
+                    blocksToRemove.add(dataBlocks.get(i));
+                    
+                    config.info("DataOptimizer: data block prefix detected ("+bytesSaved+" bytes could be saved):");
+                    config.info("    The last "+bytesSaved+" bytes of block '"+dataBlocks.get(j).label.name+"' starting at " + dataBlocks.get(j).startStatement.fileNameLineString());
+                    config.info("    are identical to the first "+bytesSaved+" bytes of block '"+dataBlocks.get(i).label.name+"' starting at " + dataBlocks.get(i).startStatement.fileNameLineString());
+                    config.info("    They could be combined.");
+                    config.info("    (Note: MDL cannot know if this optimization is feasible, please make sure it does not break the code before applying it)");
+                    savings.addOptimizerSpecific(DATA_OPTIMIZER_POTENTIAL_BYTES_CODE, bytesSaved);
+                    savings.addOptimizerSpecific(DATA_OPTIMIZER_OPTIMIZATIONS_CODE, 1);
+                    break;
+                }
+            }
+        }
+        
+        // Remove the block to prevent further optimizations on it:
+        for(CodeBlock b:blocksToRemove) {
+            int idx = dataBlocks.indexOf(b);
+            dataBlocks.remove(idx);
+            blockBytes.remove(idx);
+        }
+    }    
+    
+    
+    // Checks if the end of "b2" is a prefix for "b1":
+    public int blockEndsInPrefix(List<Integer> b1, List<Integer> b2)
+    {
+        int l1 = b1.size();
+        int l2 = b2.size();
+        for(int i = Math.max(0, l2 - l1); i < l2; i++) {
+            boolean found = true;
+            for(int j = 0; i+j < l2; j++) {
+                if (!b1.get(j).equals(b2.get(i + j))) {
+                    found = false;
+                    break;
+                }
+            }
+            if (found) {
+                return i;
+            }
+        }
+        return -1;
+    }    
 }
