@@ -731,15 +731,15 @@ public class SearchBasedOptimizer implements MDLWorker {
         }
         
         for(int i = 0;i<s.op.spec.args.size();i++) {
-            if (s.op.spec.args.get(i).wordConstantIndirectionAllowed ||
+            /* if (s.op.spec.args.get(i).wordConstantIndirectionAllowed ||
                 s.op.spec.args.get(i).regIndirection != null ||
                 s.op.spec.args.get(i).regOffsetIndirection != null) {
-                // Only allow memory accesses for "ld" for now:
+                // Only allow memory accesses for some instructions for now:
                 if (!s.op.isLd()) {
                     config.debug("SBO: preventOptimization: unsupported indirection: " + s.op);
                     return true;
                 }
-            } else if (s.op.spec.args.get(i).byteConstantIndirectionAllowed) {
+            } else */ if (s.op.spec.args.get(i).byteConstantIndirectionAllowed) {
                 config.debug("SBO: preventOptimization: unsupported op: " + s.op);
                 return true;
             }
@@ -848,18 +848,12 @@ public class SearchBasedOptimizer implements MDLWorker {
                 Expression arg = s.op.args.get(i);
                 
                 // Memory writes:
-                if (i == 0 && s.op.isLd() && 
-                    s.op.spec.args.get(i).wordConstantIndirectionAllowed ||
-                    s.op.spec.args.get(i).regIndirection != null ||
-                    s.op.spec.args.get(i).regOffsetIndirection != null) {
+                if (i == 0 && s.op.writesToMemory()) {
                     spec.allowRamUse = true;
                     goalRequiresSettingMemory = true;
                 }
                 // Memory reads:
-                if (i == 1 && s.op.isLd() && 
-                    s.op.spec.args.get(i).wordConstantIndirectionAllowed ||
-                    s.op.spec.args.get(i).regIndirection != null ||
-                    s.op.spec.args.get(i).regOffsetIndirection != null) {
+                if (i == 0 && s.op.readsFromMemory()) {
                     spec.allowRamUse = true;
                 }                
                 
@@ -933,6 +927,7 @@ public class SearchBasedOptimizer implements MDLWorker {
             } else {
                 spec.goalDependencies[i] = false;
             }
+//            System.out.println("  goalDependency: " + allDependencies.get(i));
         }
         spec.precomputeGoalDependencyIndexes();
 
@@ -940,11 +935,12 @@ public class SearchBasedOptimizer implements MDLWorker {
         spec.codeStartAddress = codeToOptimize.get(0).getAddress(code);
         IMemory z80Memory;
         if (spec.allowRamUse) {
-            z80Memory = new TrackingZ80Memory();
+            z80Memory = new TrackingZ80Memory(null);
         } else {
             z80Memory = new PlainZ80Memory();
         }
         Z80Core z80 = new Z80Core(z80Memory, new PlainZ80IO(), new CPUConfig(config));        
+        if (spec.allowRamUse) ((TrackingZ80Memory)z80Memory).setCPU(z80);
         for(int i = 0;i<PlainZ80Memory.MEMORY_SIZE;i++) {
             int v = random.nextInt(256);
             z80Memory.writeByte(i, v);
@@ -1110,9 +1106,15 @@ public class SearchBasedOptimizer implements MDLWorker {
         List<RegisterNames> registers = new ArrayList<>();
         
         for(RegisterNames reg:CPUConstants.eightBitRegisters) {
+            String regName = CPUConstants.registerName(reg);
+            CPUOpDependency dep = new CPUOpDependency(regName.toUpperCase(), null, null, null, null);        
             for(CodeStatement s:l) {
-                if (!Pattern.regNotUsed(s, CPUConstants.registerName(reg), f, code)) {
+                if (!Pattern.regNotUsed(s, regName, f, code)) {
                     registers.add(reg);
+                    break;
+                }
+                if (s.op != null && s.op.checkOutputDependency(dep) == null) {
+                    // register written by this instruction, so, it can't be an input register
                     break;
                 }
             }

@@ -48,6 +48,7 @@ public class PrecomputedTestCase {
 
     public boolean checkGoalState(Z80Core z80)
     {
+//        System.out.println(this);
         for(int i = 0;i<goalRegisters.length;i++) {
             if (z80.getRegisterValue(goalRegisters[i]) != goalRegisterValues[i]) {
 //                System.out.println("register mismatch: " + goalRegisters[i] + " -> " + z80.getRegisterValue(goalRegisters[i]) + " vs " + goalRegisterValues[i]);
@@ -62,6 +63,7 @@ public class PrecomputedTestCase {
         }
         if (goalMemoryAddresses != null) {
             for(int i = 0;i<goalMemoryAddresses.length;i++) {
+//                System.out.println("  (" + goalMemoryAddresses[i] + ") == " + goalMemoryValues[i] + "  ->  " + z80.readByte(goalMemoryAddresses[i]));
                 if (z80.readByte(goalMemoryAddresses[i]) != goalMemoryValues[i]) return false;
             }
         }
@@ -269,9 +271,20 @@ public class PrecomputedTestCase {
         int goalMemoryValues[] = null;
         */
         String str = "";
+        str += "START: ";
+        for(int i = 0;i<startRegisterValues.length;i++) {
+            str += CPUConstants.registerName(startRegisters[i]) + "=" + startRegisterValues[i] + ", ";
+        }
+        for(int i = 0;i<startMemoryAddresses.length;i++) {
+            str += "(" + startMemoryAddresses[i] + ")=" + startMemoryValues[i] + ", ";
+        }
+
         str += "GOAL: ";
         for(int i = 0;i<goalRegisterValues.length;i++) {
             str += CPUConstants.registerName(goalRegisters[i]) + "=" + goalRegisterValues[i] + ", ";
+        }
+        for(int i = 0;i<goalMemoryAddresses.length;i++) {
+            str += "(" + goalMemoryAddresses[i] + ")=" + goalMemoryValues[i] + ", ";
         }
         return str;
     }

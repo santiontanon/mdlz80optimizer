@@ -1054,11 +1054,13 @@ public class SBOCandidate {
                 String line = "ld " + arg1 + "," + arg2;
                 if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;
             }
-            if (spec.allowRamUse && spec.allowedRegisters.contains("hl")) {
-                String line = "ld (hl)," + arg1;
-                if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;
-                line = "ld " + arg1 + ",(hl)";
-                if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;
+            if (spec.allowRamUse) {
+                if (spec.allowedRegisters.contains("hl")) {
+                    String line = "ld (hl)," + arg1;
+                    if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;
+                    line = "ld " + arg1 + ",(hl)";
+                    if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;
+                }
             }
             
             // constant argument:
@@ -1136,7 +1138,7 @@ public class SBOCandidate {
                     String line = "ld (" + address + ")," + arg;
                     if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;                
                     line = "ld "+arg+",(" + address + ")";
-                    if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;                
+                    if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;
                 }                
             }        
         }

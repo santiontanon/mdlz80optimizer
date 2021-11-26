@@ -28,7 +28,7 @@ import static util.microprocessor.Z80.CPUConstants.*;
 /**
  * The ZiLOG Z80 processor core
  */
-public class Z80Core implements ICPUData {
+public class Z80Core implements ICPUData, ICPU {
 
     // maximum address size
     private final static int MAX_ADDRESS = 65535;

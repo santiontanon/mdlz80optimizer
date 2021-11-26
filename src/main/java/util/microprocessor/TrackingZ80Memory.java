@@ -23,16 +23,26 @@ public class TrackingZ80Memory implements IMemory {
     public static final int TRACKING_BUFFER = 32;
     
     public final int[] memory;
+    ICPU cpu = null;
+    
     public List<Pair<Integer, Integer>> writeProtections = new ArrayList<>();
     int memoryWritesIndex = 0;
     int memoryWriteAddresses[] = new int[TRACKING_BUFFER];
+    int memoryWriteTime[] = new int[TRACKING_BUFFER];
     int memoryReadsIndex = 0;
     int memoryReadAddresses[] = new int[TRACKING_BUFFER];
     int memoryReadValues[] = new int[TRACKING_BUFFER];
+    int memoryReadTime[] = new int[TRACKING_BUFFER];
     Random r = new Random();
     
-    public TrackingZ80Memory() {
-        this.memory = new int[MEMORY_SIZE];
+    public TrackingZ80Memory(ICPU a_cpu) {
+        memory = new int[MEMORY_SIZE];
+        cpu = a_cpu;
+    }
+    
+    public void setCPU(ICPU a_cpu)
+    {
+        cpu = a_cpu;
     }
 
     @Override
@@ -40,6 +50,7 @@ public class TrackingZ80Memory implements IMemory {
         if (memoryReadsIndex<TRACKING_BUFFER) {
             memoryReadAddresses[memoryReadsIndex] = address;
             memoryReadValues[memoryReadsIndex] = memory[address];
+            memoryReadTime[memoryReadsIndex] = (int)cpu.getTStates();
             memoryReadsIndex++;
         }
         return memory[address];
@@ -58,6 +69,7 @@ public class TrackingZ80Memory implements IMemory {
         }
         if (memoryWritesIndex<TRACKING_BUFFER) {
             memoryWriteAddresses[memoryWritesIndex] = address;
+            memoryWriteTime[memoryWritesIndex] = (int)cpu.getTStates();
             memoryWritesIndex++;
         }
         memory[address] = data;
@@ -96,11 +108,11 @@ public class TrackingZ80Memory implements IMemory {
     }
     
     
-    final public List<Pair<Integer, Integer>> getMemoryReads()
+    final public List<int[]> getMemoryReads()
     {
-        List<Pair<Integer, Integer>> reads = new ArrayList<>();
+        List<int[]> reads = new ArrayList<>();
         for(int i = 0;i<memoryReadsIndex;i++) {
-            reads.add(Pair.of(memoryReadAddresses[i], memoryReadValues[i]));
+            reads.add(new int[]{memoryReadAddresses[i], memoryReadValues[i], (int)memoryReadTime[i]});
         }
         return reads;
     }
@@ -137,5 +149,17 @@ public class TrackingZ80Memory implements IMemory {
     final public int[] getMemoryArray()
     {
         return memory;
+    }
+    
+    
+    final public boolean writtenBefore(int address, int time)
+    {
+        for(int i = 0;i<memoryWritesIndex;i++) {
+            if (memoryWriteAddresses[i] == address && 
+                memoryWriteTime[i] < time) {
+                return true;
+            }
+        }
+        return false;
     }
 }

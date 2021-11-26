@@ -189,6 +189,10 @@ public class Specification {
     }
 
 
+    /*
+    Note: this is only used by the code generation routines. The code optimization routines use 
+    a custom version of this, directly hardcoded in SearchBasedOptimizer.java
+    */
     public boolean[] getGoalDependencies(List<CPUOpDependency> allDependencies)
     {
         if (goalDependencies != null) return goalDependencies;

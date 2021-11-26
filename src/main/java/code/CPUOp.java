@@ -196,6 +196,18 @@ public class CPUOp {
     {
         return spec.isConditional;
     }
+    
+    
+    public boolean writesToMemory()
+    {
+        return spec.outputMemoryStart != null;
+    }
+    
+    
+    public boolean readsFromMemory()
+    {
+        return spec.inputMemoryStart != null;        
+    }
 
     
     public boolean isLd()

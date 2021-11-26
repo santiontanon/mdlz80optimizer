@@ -149,13 +149,13 @@ public class PrecomputedTestCaseGeneratorForOptimization implements PrecomputedT
             }
         }
 
-//        System.out.println("registersToInit: " + registersToInit);
-//        System.out.println("appearInSbc: " + appearInSbc);        
-//        System.out.println("inputRegisters: " + inputRegisters);        
-//        System.out.println("allowedRegisters: " + allowedRegisters);        
-//        System.out.println("goalRegisters: " + goalRegisters);        
-//        System.out.println("goalFlags: " + goalFlags);        
-//        System.out.println("allowRamUse: " + spec.allowRamUse);        
+//        System.out.println("    registersToInit: " + registersToInit);
+//        System.out.println("    appearInSbc: " + appearInSbc);        
+//        System.out.println("    inputRegisters: " + inputRegisters);        
+//        System.out.println("    allowedRegisters: " + allowedRegisters);        
+//        System.out.println("    goalRegisters: " + goalRegisters);        
+//        System.out.println("    goalFlags: " + goalFlags);        
+//        System.out.println("    allowRamUse: " + spec.allowRamUse);        
     }
     
     
@@ -290,13 +290,14 @@ public class PrecomputedTestCaseGeneratorForOptimization implements PrecomputedT
             // Store the initial values of the RAM positions that were read:
             List<Integer> addressesToInit = new ArrayList<>();
             List<Integer> valuesToInitTo = new ArrayList<>();
-            for(Pair<Integer,Integer> read:((TrackingZ80Memory)memory).getMemoryReads()) {
-                if (!addressesToInit.contains(read.getLeft()) &&
-                     read.getLeft()<startAddress || 
-                     read.getLeft()>=currentAddress) {
+            for(int []read:((TrackingZ80Memory)memory).getMemoryReads()) {
+                if (!addressesToInit.contains(read[0]) &&
+                     (read[0]<startAddress || 
+                      read[0]>=currentAddress) &&
+                     !((TrackingZ80Memory)memory).writtenBefore(read[0], read[2])) {
                     
-                    addressesToInit.add(read.getLeft());
-                    valuesToInitTo.add(read.getRight());
+                    addressesToInit.add(read[0]);
+                    valuesToInitTo.add(read[1]);
 //                    System.out.println("  read " + read.getRight() + " from " + read.getLeft());
                 }                
             }
@@ -328,6 +329,7 @@ public class PrecomputedTestCaseGeneratorForOptimization implements PrecomputedT
             for(Integer address:((TrackingZ80Memory)memory).getMemoryWrites()) {
                 if (!goalAddresses.contains(address)) goalAddresses.add(address);
             }
+//            System.out.println("goalAddresses: " + goalAddresses);
             test.goalMemoryAddresses = new int[goalAddresses.size()];
             test.goalMemoryValues = new int[goalAddresses.size()];
             for(int i = 0;i<goalAddresses.size();i++) {

@@ -105,11 +105,12 @@ public class SBOExecutionThread extends Thread {
         }
         
         if (spec.allowRamUse) {
-            z80Memory = new TrackingZ80Memory();
+            z80Memory = new TrackingZ80Memory(null);
         } else {
             z80Memory = new PlainZ80Memory();
         }
         z80 = new Z80Core(z80Memory, new PlainZ80IO(), new CPUConfig(config));
+        if (spec.allowRamUse) ((TrackingZ80Memory)z80Memory).setCPU(z80);
         
         // Run the search process to generate code:
         // Search via iterative deepening:
@@ -207,7 +208,9 @@ public class SBOExecutionThread extends Thread {
                     }
                     currentDependencies[depth+1][i] = currentDependencies[depth][i] | candidate.outputDependencies[i];
                 }
-                if (!dependenciesSatisfied) continue;
+                if (!dependenciesSatisfied) {
+                    continue;
+                }
                 if (depth == codeMaxOps-1 || codeMaxAddress == nextAddress) {
                     // this is the last op we can add, so all output dependencies MUST be satisfied:
                     boolean goalDependenciesSatisfied = true;
@@ -218,7 +221,9 @@ public class SBOExecutionThread extends Thread {
                             break;
                         }
                     }
-                    if (!goalDependenciesSatisfied) continue;
+                    if (!goalDependenciesSatisfied) {
+                        continue;
+                    }
                 }
                 System.arraycopy(candidate.bytes, 0, z80Memory.getMemoryArray(), codeAddress, candidate.bytes.length);
                 currentOps[depth] = candidate.op;
@@ -398,6 +403,7 @@ public class SBOExecutionThread extends Thread {
             }
             
             // Print statement to print sequences and visually inspect if there are any prunable ones:
+//            if (depth == 0) System.out.println(Arrays.toString(currentOps));
 //            if (depth == 1) System.out.println(Arrays.toString(currentOps));
 //            if (depth == 2) System.out.println(Arrays.toString(currentOps));
             
@@ -489,6 +495,7 @@ public class SBOExecutionThread extends Thread {
         if (randomizeSP) {
             z80.setRegisterValue(RegisterNames.SP, rand.nextInt(256*256));
         }
+//        System.out.println("memoryAddressesToRandomize: " + Arrays.toString(memoryAddressesToRandomize));
         for(int address: memoryAddressesToRandomize) {
             z80.writeByte(address, rand.nextInt(256));
         }
