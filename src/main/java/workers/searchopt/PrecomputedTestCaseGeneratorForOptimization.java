@@ -14,7 +14,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
-import org.apache.commons.lang3.tuple.Pair;
 import util.microprocessor.IMemory;
 import util.microprocessor.TrackingZ80Memory;
 import util.microprocessor.Z80.CPUConstants;

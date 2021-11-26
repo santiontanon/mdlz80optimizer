@@ -707,6 +707,8 @@ public class SearchBasedOptimizer implements MDLWorker {
             case "ldd":
             case "ldir":
             case "lddr":
+            case "in":
+            case "out":
             case "outi":
             case "outd":
             case "otir":
@@ -796,9 +798,9 @@ public class SearchBasedOptimizer implements MDLWorker {
         
 //        config.debug("SBO: Optimizing lines " + line + " -> " + line2);
 //        for(CodeStatement s:codeToOptimize) {
-//            config.debug("    " + s);
+//            config.info("    " + s);
 //        }
-//        
+        
         // - Create a specification, and synthesize test cases:
         Specification spec = new Specification();
         if (flags_nChecks != -1) spec.numberOfRandomSolutionChecks = flags_nChecks;
@@ -1082,9 +1084,23 @@ public class SearchBasedOptimizer implements MDLWorker {
                         "replace " + originalString + " with " + optimizedString + " ("+bytesSaved+" bytes, " +
                         timeSavedString + " " +config.timeUnit+"s saved)");
             // replace!:
+            List<CodeStatement> additionalStatements = new ArrayList<>();
             int insertionPoint = f.getStatements().indexOf(originalCode.get(0));
             for(CodeStatement s:originalCode) {
-                f.getStatements().remove(s);
+                if (s.label == null) {
+                    f.getStatements().remove(s);
+                } else {
+                    // the statement had a label (if can only be the very first statement), so, we keep it (removing the op):
+                    SourceLine sl = new SourceLine(s.label.name + ":", f, s.sl.lineNumber);
+                    CodeStatement s2 = new CodeStatement(CodeStatement.STATEMENT_NONE, sl, f, config);
+                    s2.label = s.label;
+                    s2.labelPrefix = s.labelPrefix;
+                    additionalStatements.add(s2);
+                }
+            }
+            for(CodeStatement s:additionalStatements) {
+                f.addStatement(insertionPoint, s);
+                insertionPoint++;
             }
             for(CodeStatement s:optimized) {
                 s.source = f;
