@@ -1021,7 +1021,7 @@ pattern: Remove unnecessary ?op ?const
 replacement:
 constraints:
 equal(?const,0)
-in(?op,and,or,xor,sub)
+in(?op,add,or,xor,sub)
 flagsNotUsedAfter(0,S,Z,H,P/V,N,C)
 
 pattern: Remove unnecessary ?op a,?const
