@@ -1,7 +1,7 @@
 ; Author: Santiago Ontañón Villar (Brain Games)
-; Information to construct this table was optained from the following resources:		
+; Information to construct this table was obtained from the following resources:		
 ; - http://map.grauw.nl/resources/z80instr.php (main source; the table in this website, removing the R800 info, is the basis over which I added additional info; check this page for an explanation on the notation)						
-; - https://wiki.octoate.de/lib/exe/fetch.php/amstradcpc:z80_cpc_timings_cheat_sheet.20131019.pdf (for the Amstrad CPC timings)
+; - https://wiki.octoate.de/lib/exe/fetch.php/amstradcpc:z80_cpc_timings_cheat_sheet.20131019.pdf for the Amstrad CPC timings (thanks to cpcitor for making this sheet, based on Kevin Thacker's data)
 ; - Zilog Z80 User manual (for the registers, addresses, i/o ports and flags that affect and are affected by an instruction)
 ; - The Undocumented Z80 Documented (for corrections on the above)												
 ; - To clarify whether 16 bit adds modify the C flag or not (not clear in the manual, as it's different for HL than for IX/IY), I checked the source code of the OpenMSX emulator to see how flags are updated there
