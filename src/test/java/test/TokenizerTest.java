@@ -19,7 +19,7 @@ public class TokenizerTest {
     public TokenizerTest() {
         config = new MDLConfig();
     }
-    
+
     @Test public void test1() {
         Assert.assertArrayEquals(new String[]{"ld","a",",","2"}, tokenize("ld a,2"));
     }
@@ -122,10 +122,31 @@ public class TokenizerTest {
     @Test public void test28() {
         Assert.assertArrayEquals(new String[]{"ld","a",",","$$","label"}, tokenize("ld	a,$$label"));
     }
+    @Test public void test29sjasmplus() {
+        Assert.assertArrayEquals(new String[]{"ld","a",",","_l@a#b?e!l"}, tokenize("ld	a,_l@a#b?e!l", "sjasmplus"));
+    }
+    @Test public void test30() {
+        Assert.assertArrayEquals(new String[]{"ld","a",",","_l@a","#b","?","e","!","l"}, tokenize("ld	a,_l@a#b?e!l"));
+    }
 
     
     private String[] tokenize(String line)
     {
+        return tokenize(line, null);
+    }
+    
+    
+    private String[] tokenize(String line, String dialect)
+    {
+        try {
+            if (dialect == null) {
+            } else {
+                Assert.assertTrue(config.parseArgs("dummy","-dialect",dialect));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        
         List<String> tokens = config.tokenizer.tokenize(line);
         return tokens != null
                 ? tokens.toArray(new String[0])

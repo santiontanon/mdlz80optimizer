@@ -34,7 +34,9 @@ public class Tokenizer {
     // These are for dialects like Macro80, which can redefine the comment delimiter
     public List<String> oneTimemultilineCommentStartTokens = new ArrayList<>();
     public List<String> oneTimemultilineCommentEndTokens = new ArrayList<>();
-    
+
+    // Some dialects (e.g., sjasmplus) allow special characters, like "!" or "?" in symbols:
+    public List<String> additionalNonFirstSymbolCharacters = null;    
     
     Matcher doubleMatcher = Pattern.compile("[\\x00-\\x20]*[+-]?(((((\\p{Digit}+)(\\.)?((\\p{Digit}+)?)([eE][+-]?(\\p{Digit}+))?)|(\\.((\\p{Digit}+))([eE][+-]?(\\p{Digit}+))?)|(((0[xX](\\p{XDigit}+)(\\.)?)|(0[xX](\\p{XDigit}+)?(\\.)(\\p{XDigit}+)))[pP][+-]?(\\p{Digit}+)))[fFdD]?))[\\x00-\\x20]*")
             .matcher("");   
@@ -146,6 +148,16 @@ public class Tokenizer {
                         previous = previous.concat(next);
                         continue;
                     }
+                }
+                if (additionalNonFirstSymbolCharacters != null && 
+                    ((additionalNonFirstSymbolCharacters.contains(next) &&
+                      isSymbol(previous)) ||
+                     (additionalNonFirstSymbolCharacters.contains(previous.substring(previous.length()-1)) &&
+                      isSymbol(next)))) {
+                    tokens.remove(tokens.size()-1);
+                    tokens.add(previous.concat(next));
+                    previous = previous.concat(next);
+                    continue;
                 }
             }
             if (previous != null && isSingleLineComment(previous)) {

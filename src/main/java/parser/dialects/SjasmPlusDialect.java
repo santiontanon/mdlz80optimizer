@@ -390,6 +390,10 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
         config.tokenizer.allowQuestionMarksInSymbols = true;
         config.tokenizer.allowDotFollowedByNumberLabels = false;
         config.tokenizer.numericConstantsCanContainQoutes = true;
+        config.tokenizer.additionalNonFirstSymbolCharacters = new ArrayList<>();
+        config.tokenizer.additionalNonFirstSymbolCharacters.add("!");
+        config.tokenizer.additionalNonFirstSymbolCharacters.add("?");
+        config.tokenizer.additionalNonFirstSymbolCharacters.add("#");
     }
     
     
