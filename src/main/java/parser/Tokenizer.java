@@ -153,6 +153,7 @@ public class Tokenizer {
                     ((additionalNonFirstSymbolCharacters.contains(next) &&
                       isSymbol(previous)) ||
                      (additionalNonFirstSymbolCharacters.contains(previous.substring(previous.length()-1)) &&
+                      isSymbol(previous) &&
                       isSymbol(next)))) {
                     tokens.remove(tokens.size()-1);
                     tokens.add(previous.concat(next));
