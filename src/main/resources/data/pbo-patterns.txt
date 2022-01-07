@@ -1749,16 +1749,16 @@ constraints:
 regsNotModified(1, ?reg1)
 regsNotModified(1, ?reg2)
 
-pattern: replace ld ?reg2, a; ld hl, ?const1; ld (hl), ?reg2 with ld (?const1), a
+pattern: replace ld ?reg2, a; ld ?reg16, ?const1; ld (?reg16), ?reg2 with ld (?const1), a
 name: unnecessary-ld-to-reg
 0: ld ?reg2, a
-1: ld hl, ?const1
-2: ld (hl), ?reg2
+1: ld ?reg16, ?const1
+2: ld (?reg16), ?reg2
 replacement:
 0: ld (?const1), a
 constraints:
 regsNotUsedAfter(2, ?reg2)
-regsNotUsedAfter(2, hl)
+regsNotUsedAfter(2, ?reg16)
 
 ; automatically generated
 pattern: replace rlc ?reg0; rl ?reg1 with rlca; rl ?reg1
