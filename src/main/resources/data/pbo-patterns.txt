@@ -1759,6 +1759,7 @@ replacement:
 constraints:
 regsNotUsedAfter(2, ?reg2)
 regsNotUsedAfter(2, ?reg16)
+in(?reg16,bc,de,hl,ix,iy)
 
 ; automatically generated
 pattern: replace rlc ?reg0; rl ?reg1 with rlca; rl ?reg1
