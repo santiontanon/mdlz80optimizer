@@ -1758,6 +1758,7 @@ replacement:
 0: ld (?const1), a
 constraints:
 regsNotUsedAfter(2, ?reg2)
+regsNotUsedAfter(2, hl)
 
 ; automatically generated
 pattern: replace rlc ?reg0; rl ?reg1 with rlca; rl ?reg1
