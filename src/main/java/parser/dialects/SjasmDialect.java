@@ -1470,7 +1470,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                 config.error("Could not extract the argument of ifexists macro with arguments: " + args);
                 return null;
             }
-            String path = config.lineParser.resolveIncludePath(fileName, macroCall.source, macroCall.sl);
+            String path = config.lineParser.resolveIncludePath(fileName, macroCall.source, macroCall.sl, code, config.filePathSearchOrder);
             if (path == null) {
                 // do not expand the if:
                 return me;
@@ -1494,7 +1494,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                 config.error("Could not extract the argument of ifexists macro with arguments: " + args);
                 return null;
             }
-            String path = config.lineParser.resolveIncludePath(fileName, macroCall.source, macroCall.sl);
+            String path = config.lineParser.resolveIncludePath(fileName, macroCall.source, macroCall.sl, code, config.filePathSearchOrder);
             if (path != null) {
                 // do not expand the if:
                 return me;

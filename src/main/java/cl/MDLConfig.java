@@ -38,6 +38,11 @@ public class MDLConfig {
     public static final int CODE_FROM_INPUT_FILE = 0;
     public static final int CODE_FROM_SEARCHBASEDOPTIMIZER = 1;
     
+    public static final int FILE_SEARCH_RELATIVE_TO_INCLUDING_FILE = 0;
+    public static final int FILE_SEARCH_ADDITIONAL_PATHS = 1;
+    public static final int FILE_SEARCH_ORIGINAL_FILE_PATH = 2;
+    public static final int FILE_SEARCH_WORKING_DIRECTORY = 3;
+    
     public int codeSource = CODE_FROM_INPUT_FILE;
     
     // arguments:
@@ -115,6 +120,12 @@ public class MDLConfig {
     public String PRAGMA_NO_OPTIMIZATION = "mdl:no-opt";
     public String PRAGMA_NO_OPTIMIZATION_START = "mdl:no-opt-start";
     public String PRAGMA_NO_OPTIMIZATION_END = "mdl:no-opt-end";
+    
+    // Path search order (which is different in different dialects):
+    public int filePathSearchOrder[] = {FILE_SEARCH_RELATIVE_TO_INCLUDING_FILE,
+                                        FILE_SEARCH_ADDITIONAL_PATHS,
+                                        FILE_SEARCH_WORKING_DIRECTORY
+    };
 
     // utils:
     public MDLLogger logger;
@@ -147,7 +158,7 @@ public class MDLConfig {
                     + "(" + StringUtils.join(Dialects.knownDialects(), '/') + ") "
                     + "(default: mdl, which supports some basic code idioms common to various assemblers).\n"
             + "                   Note that even when selecting a dialect, not all syntax of a given assembler might be supported.\n"
-            + "- ```-I <folder>```: adds a folder to the include search path.\n"
+            + "- ```-I <folder>```: adds a folder to the include search path (```-inc <folder>``` can also be used for compatibility with other assemblers).\n"
             + "- ```-equ <symbol>=<value>```: defines a symbol that will exist while parsing the assembler code.\n"
             + "- ```-ansion```: turns on color message output usin ANSI codes (default: on in Unix, off in Windows).\n"
             + "- ```-ansioff```: turns off color message output usin ANSI codes.\n"
@@ -307,6 +318,7 @@ public class MDLConfig {
                         break;
 
                     case "-I":
+                    case "-inc":
                         if (args.size()>=2) {
                             args.remove(0);
                             final File includePath = new File(args.remove(0));

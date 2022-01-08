@@ -394,6 +394,11 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
         config.tokenizer.additionalNonFirstSymbolCharacters.add("!");
         config.tokenizer.additionalNonFirstSymbolCharacters.add("?");
         config.tokenizer.additionalNonFirstSymbolCharacters.add("#");
+
+//        config.filePathSearchOrder = new int[]{
+//            MDLConfig.FILE_SEARCH_RELATIVE_TO_INCLUDING_FILE,
+//            MDLConfig.FILE_SEARCH_ADDITIONAL_PATHS,
+//            MDLConfig.FILE_SEARCH_WORKING_DIRECTORY};
     }
     
     

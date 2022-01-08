@@ -635,7 +635,7 @@ public class LineParser {
             }
             if (rawFileName != null) {
                 // recursive include file:
-                String path = resolveIncludePath(rawFileName, source, sl);
+                String path = resolveIncludePath(rawFileName, source, sl, code, config.filePathSearchOrder);
                 if (path == null) return false;
                 SourceFile includedSource = codeBaseParser.parseSourceFile(path, code, source, s);
                 if (includedSource == null) {
@@ -695,7 +695,7 @@ public class LineParser {
             config.error("parseIncbin: Cannot parse line " + sl);
             return false;
         }
-        String path = resolveIncludePath(rawFileName, source, sl);
+        String path = resolveIncludePath(rawFileName, source, sl, code, config.filePathSearchOrder);
         if (path == null) return false;
         s.type = CodeStatement.STATEMENT_INCBIN;
         s.incbin = new File(path);
@@ -1190,42 +1190,69 @@ public class LineParser {
         return parseRestofTheLine(tokens, l, sl, s, previous, source, code);
     }
 
-    public String resolveIncludePath(String rawFileName, SourceFile source, SourceLine sl) {
+    public String resolveIncludePath(String rawFileName, SourceFile source, SourceLine sl, CodeBase code, int searchOrder[]) {
 
         // Make sure we don't have a windows/Unix path separator problem:
         if (rawFileName.contains("\\")) {
             rawFileName = rawFileName.replace("\\", File.separator);
         }
-
-        // Relative to current directory
-        if (Resources.exists(rawFileName)) {
-            config.debug("Included file " + rawFileName + " found relative to current directory");
-            return rawFileName;
-        }
-
-        // Relative to original source file
-        String sourcePath = source.getPath();
-        if (StringUtils.isNotBlank(sourcePath)) {
-            // santi: Do NOT change to "FilenameUtils.concat", that function assumes that the first argument
-            // is an absolute directory, which in different configurations cannot be ensured to be true.
-            // for example when calling mdl like: java -jar mdl.jar ../project/src/main.asm -I ../project2/src
-            final String relativePath = pathConcat(sourcePath, rawFileName);
-            if (Resources.exists(relativePath)) {
-                config.debug("Included file " + rawFileName + " found relative to original source file");
-                return relativePath;
+        
+        for(int searchSource:searchOrder) {
+            switch(searchSource) {
+                case MDLConfig.FILE_SEARCH_RELATIVE_TO_INCLUDING_FILE:
+                {
+                    // Relative to the source file that included this file
+                    String sourcePath = source.getPath();
+                    if (StringUtils.isNotBlank(sourcePath)) {
+                        // santi: Do NOT change to "FilenameUtils.concat", that function assumes that the first argument
+                        // is an absolute directory, which in different configurations cannot be ensured to be true.
+                        // for example when calling mdl like: java -jar mdl.jar ../project/src/main.asm -I ../project2/src
+                        final String relativePath = pathConcat(sourcePath, rawFileName);
+                        if (Resources.exists(relativePath)) {
+                            config.debug("Included file " + rawFileName + " found relative to original source file");
+                            return relativePath;
+                        }
+                    }
+                    break;
+                }
+                case MDLConfig.FILE_SEARCH_ADDITIONAL_PATHS:
+                    // Relative to any additional include directories
+                    for (File includePath : config.includeDirectories) {
+                        // santi: Do NOT change to "FilenameUtils.concat", that function assumes that the first argument
+                        // is an absolute directory, which in different configurations cannot be ensured to be true.
+                        final String relativePath = pathConcat(includePath.getAbsolutePath(), rawFileName);
+                        if (Resources.exists(relativePath)) {
+                            config.debug("Included file " + rawFileName + " found relative to include path " + includePath);
+                            return relativePath;
+                        }
+                    }
+                    break;
+                case MDLConfig.FILE_SEARCH_ORIGINAL_FILE_PATH:
+                {
+                    // Relative to the main assembler file of the project
+                    String sourcePath = code.outputs.get(0).main.getPath();
+                    if (StringUtils.isNotBlank(sourcePath)) {
+                        // santi: Do NOT change to "FilenameUtils.concat", that function assumes that the first argument
+                        // is an absolute directory, which in different configurations cannot be ensured to be true.
+                        // for example when calling mdl like: java -jar mdl.jar ../project/src/main.asm -I ../project2/src
+                        final String relativePath = pathConcat(sourcePath, rawFileName);
+                        if (Resources.exists(relativePath)) {
+                            config.debug("Included file " + rawFileName + " found relative to original source file");
+                            return relativePath;
+                        }
+                    }
+                    break;
+                }
+                case MDLConfig.FILE_SEARCH_WORKING_DIRECTORY:
+                    // Relative to current directory
+                    if (Resources.exists(rawFileName)) {
+                        config.debug("Included file " + rawFileName + " found relative to current directory");
+                        return rawFileName;
+                    }
+                    break;
             }
         }
 
-        // Relative to any include directory
-        for (File includePath : config.includeDirectories) {
-            // santi: Do NOT change to "FilenameUtils.concat", that function assumes that the first argument
-            // is an absolute directory, which in different configurations cannot be ensured to be true.
-            final String relativePath = pathConcat(includePath.getAbsolutePath(), rawFileName);
-            if (Resources.exists(relativePath)) {
-                config.debug("Included file " + rawFileName + " found relative to include path " + includePath);
-                return relativePath;
-            }
-        }
 
         config.error("Cannot find include file \"" + rawFileName + "\" in " + sl.fileNameLineString());
         return null;
