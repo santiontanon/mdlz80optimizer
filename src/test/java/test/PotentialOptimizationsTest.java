@@ -42,7 +42,7 @@ public class PotentialOptimizationsTest {
         Assert.assertTrue(config.parseArgs(inputFile));
         Assert.assertTrue(
                 "Could not parse file " + inputFile,
-                config.codeBaseParser.parseMainSourceFile(config.inputFile, code));
+                config.codeBaseParser.parseMainSourceFiles(config.inputFiles, code));
 
         String lines[];
         try (ByteArrayOutputStream optimizerOutput = new ByteArrayOutputStream();

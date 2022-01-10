@@ -43,7 +43,7 @@ public class Z180BinaryGeneratorTest {
         }
         Assert.assertTrue(
                 "Could not parse file " + inputFile,
-                config.codeBaseParser.parseMainSourceFile(config.inputFile, code));
+                config.codeBaseParser.parseMainSourceFiles(config.inputFiles, code));
 
         BinaryGenerator bg = new BinaryGenerator(config);
         ListOutputStream out = new ListOutputStream();

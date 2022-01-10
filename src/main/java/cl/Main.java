@@ -54,8 +54,8 @@ public class Main {
         CodeBase code = new CodeBase(config);
         switch(config.codeSource) {
             case MDLConfig.CODE_FROM_INPUT_FILE:
-                if (config.inputFile != null && 
-                    !config.codeBaseParser.parseMainSourceFile(config.inputFile, code)) {
+                if (!config.inputFiles.isEmpty() && 
+                    !config.codeBaseParser.parseMainSourceFiles(config.inputFiles, code)) {
                     if (config.dialectParser != null) {
                         config.error("Could not fully parse the code (error code 2).");
                     } else {

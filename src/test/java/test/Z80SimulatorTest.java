@@ -44,7 +44,7 @@ public class Z80SimulatorTest {
         Assert.assertTrue(config.parseArgs(inputFile,"-cpu",cpu));
         Assert.assertTrue(
                 "Could not parse file " + inputFile,
-                config.codeBaseParser.parseMainSourceFile(config.inputFile, code));
+                config.codeBaseParser.parseMainSourceFiles(config.inputFiles, code));
 
         // Compile the assembler code to binary:
         BinaryGenerator bg = new BinaryGenerator(config);

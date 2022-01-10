@@ -56,7 +56,7 @@ public class MessagesTest {
              PrintStream printStream = new PrintStream(optimizerOutput)) {
 
             config.logger = new MDLLogger(MDLLogger.INFO, printStream, printStream);
-            if (config.codeBaseParser.parseMainSourceFile(config.inputFile, code)) {
+            if (config.codeBaseParser.parseMainSourceFiles(config.inputFiles, code)) {
                 BinaryGenerator bg = new BinaryGenerator(config);
                 ListOutputStream out = new ListOutputStream();
                 bg.writeBytes(code.outputs.get(0).main, code, out, 0);                

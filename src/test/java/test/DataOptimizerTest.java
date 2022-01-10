@@ -50,7 +50,7 @@ public class DataOptimizerTest {
         Assert.assertTrue(config.parseArgs(inputFile, "-do"));
         Assert.assertTrue(
                 "Could not parse file " + inputFile,
-                config.codeBaseParser.parseMainSourceFile(config.inputFile, code));        
+                config.codeBaseParser.parseMainSourceFiles(config.inputFiles, code));        
         testInternal(nDataOptimizations, expectedSavedBytes);
     }
     

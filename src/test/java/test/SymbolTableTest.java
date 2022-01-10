@@ -45,7 +45,7 @@ public class SymbolTableTest {
         }
         Assert.assertTrue(
                 "Could not parse file " + inputFile,
-                config.codeBaseParser.parseMainSourceFile(config.inputFile, code));
+                config.codeBaseParser.parseMainSourceFiles(config.inputFiles, code));
 
         SymbolTableGenerator stg = new SymbolTableGenerator(config);
         stg.includeConstants = true;

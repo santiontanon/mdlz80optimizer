@@ -59,7 +59,7 @@ public class SjasmPlusTest {
         Assert.assertTrue(config.parseArgs(inputFile,"-dialect","sjasmplus"));
         Assert.assertTrue(
                 "Could not parse file " + inputFile,
-                config.codeBaseParser.parseMainSourceFile(config.inputFile, code));
+                config.codeBaseParser.parseMainSourceFiles(config.inputFiles, code));
 
         SourceCodeGenerator scg = new SourceCodeGenerator(config);
 

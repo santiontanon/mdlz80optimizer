@@ -63,7 +63,7 @@ public class ASMSXTest {
         }
         Assert.assertTrue(
                 "Could not parse file " + inputFile,
-                config.codeBaseParser.parseMainSourceFile(config.inputFile, code));
+                config.codeBaseParser.parseMainSourceFiles(config.inputFiles, code));
 
         // Compare standard assembler generation:
         SourceCodeGenerator scg = new SourceCodeGenerator(config);

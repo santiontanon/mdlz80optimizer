@@ -46,7 +46,7 @@ public class MDLConfig {
     public int codeSource = CODE_FROM_INPUT_FILE;
     
     // arguments:
-    public String inputFile = null;
+    public List<String> inputFiles = new ArrayList<>();
     public String symbolTableOutputFile = null;
     public String symbolTableAllOutputFile = null;
     public String sourceFileOutputFile = null;
@@ -149,12 +149,13 @@ public class MDLConfig {
 
     // This string has MD tags, so that I can easily generate the corresponding documentation in github with the 
     // hidden "-helpmd" flag:
-    public String docString = "MDL "+Main.VERSION_STRING+" (A Z80 assembler optimizer) by Santiago Ontañón (Brain Games, 2020-2021)\n"
+    public String docString = "MDL "+Main.VERSION_STRING+" (A Z80 assembler optimizer) by Santiago Ontañón (Brain Games, 2020-2022)\n"
             + "https://github.com/santiontanon/mdlz80optimizer\n"
             + "\n"
             + "Command Line Arguments:\n"
-            + "```java -jar mdl.jar <input assembler file> [options]```\n"
+            + "```java -jar mdl.jar <input file name(s)> [options]```\n"
             + "\n"
+            + "Several input file names can be specified, separated by spaces. In case that more than one input file name is specified, MDL will just act as if there was a master assembler file that includes them all in the specified order.\n"
             + "Note: notice that all the tasks concerning generating outputs (assembler, binaries, etc.) will be executed after the optimizers are run.\n"
             + "\n"
             + "- ```-help```: to show this information (this is the only flag that can be used without specifying an input file).\n"
@@ -201,11 +202,11 @@ public class MDLConfig {
             + "- ```-out-evaluate-all-expressions```: this flag makes MDL resolve all expressions down to their ultimate numeric or string value when generating assembler code.\n"
             + "- ```-safety-labels-for-jumps-to-constants```: makes MDL replace the destination of a jump/call to a constant (e.g. ```jp #3c4a```) by a label. MDL does not do this by default since calls to constants are often used for BIOS calls (although replacing those constants by labels is recommended). Jumpts to constants are unsafe for optimization as the code at the target address (```#3c4a``` in the example) might move as a result of optimization. Hence, it's safer to add a safety label at the target address and use it for the jump.\n";
 
-    public String simpleDocString = "MDL "+Main.VERSION_STRING+" (A Z80 assembler optimizer) by Santiago Ontañón (Brain Games, 2020-2021)\n"
+    public String simpleDocString = "MDL "+Main.VERSION_STRING+" (A Z80 assembler optimizer) by Santiago Ontañón (Brain Games, 2020-2022)\n"
             + "https://github.com/santiontanon/mdlz80optimizer\n"
             + "\n"
             + "Command Line Arguments:\n"
-            + "```java -jar mdl.jar <input assembler file> [options]```\n"
+            + "```java -jar mdl.jar <input file name(s)> [options]```\n"
             + "\n"
             + "- ```-help```: for an exhaustive list of flags (just type ```java -jar mdl.jar -help```).\n"
             + "- ```-dialect <dialect>```: selects which assembler dialect to use "
@@ -266,7 +267,6 @@ public class MDLConfig {
         List<String> args = new ArrayList<>();
         for(String arg:argsArray) args.add(arg);
 
-        int state = 0;
         while (!args.isEmpty()) {
             String arg = args.get(0);
             if (arg.startsWith("-")) {
@@ -542,15 +542,7 @@ public class MDLConfig {
                     }
                 }
             } else {
-                switch (state) {
-                    case 0:
-                        inputFile = args.remove(0);
-                        state++;
-                        break;
-                    default:
-                        error("Unrecognized argument " + arg);
-                        return false;
-                }
+                inputFiles.add(args.remove(0));
             }
         }
 
@@ -575,7 +567,7 @@ public class MDLConfig {
         Returns null if everything is fine, and an error string otherwise.
      */
     public boolean verify() {
-        if (inputFile == null && !help_triggered) {
+        if (inputFiles.isEmpty() && !help_triggered) {
             error("Missing inputFile");
             return false;
         }

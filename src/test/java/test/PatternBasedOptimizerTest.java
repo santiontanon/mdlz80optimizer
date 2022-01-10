@@ -125,7 +125,7 @@ public class PatternBasedOptimizerTest {
         }
         Assert.assertTrue(
                 "Could not parse file " + inputFile,
-                config.codeBaseParser.parseMainSourceFile(config.inputFile, code));        
+                config.codeBaseParser.parseMainSourceFiles(config.inputFiles, code));        
         testInternal(expectedSavedBytes, expectedSavedTime1, expectedSavedTime2);
     }
 
@@ -147,7 +147,7 @@ public class PatternBasedOptimizerTest {
         }
         Assert.assertTrue(
                 "Could not parse file " + inputFile,
-                config.codeBaseParser.parseMainSourceFile(config.inputFile, code));        
+                config.codeBaseParser.parseMainSourceFiles(config.inputFiles, code));        
         testInternal(expectedSavedBytes, expectedSavedTime1, expectedSavedTime2);
     }
     

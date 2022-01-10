@@ -7,14 +7,9 @@ package test;
 
 import cl.MDLConfig;
 import code.CodeBase;
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.StringTokenizer;
 import org.junit.Assert;
 import org.junit.Test;
-import util.Resources;
 import workers.SourceCodeGenerator;
 
 /**
@@ -48,7 +43,7 @@ public class GlassTest {
         Assert.assertTrue(config.parseArgs(inputFile,"-dialect","glass"));
         Assert.assertTrue(
                 "Could not parse file " + inputFile,
-                config.codeBaseParser.parseMainSourceFile(config.inputFile, code));
+                config.codeBaseParser.parseMainSourceFiles(config.inputFiles, code));
 
         // Compare standard assembler generation:
         SourceCodeGenerator scg = new SourceCodeGenerator(config);

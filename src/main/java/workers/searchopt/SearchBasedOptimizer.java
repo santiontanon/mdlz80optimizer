@@ -147,18 +147,30 @@ public class SearchBasedOptimizer implements MDLWorker {
                 }
             }
             trigger = true;
-            if (originalFlag.equals("-so-gen") ||
-                config.inputFile.endsWith(".txt")) {
+            boolean allAssembler = true;
+            for(String inputFile:config.inputFiles) {
+                if (!inputFile.toLowerCase().endsWith(".asm") &&
+                    !inputFile.toLowerCase().endsWith(".z80") &&
+                    !inputFile.toLowerCase().endsWith(".a80")) {
+                    allAssembler = false;
+                    break;
+                }
+            }
+            if (originalFlag.equals("-so-gen")) {
+                if (config.inputFiles.size()>1) {
+                    config.error("Only one input file can be specified with the '-so-gen' flag, but found more than one: " + config.inputFiles);
+                    return false;                    
+                }
+            } else if (config.inputFiles.size() == 1 &&
+                       config.inputFiles.get(0).endsWith(".txt")) {
                 operation = SBO_GENERATE;
                 config.codeSource = MDLConfig.CODE_FROM_SEARCHBASEDOPTIMIZER;
             } else if (originalFlag.equals("-so-opt") ||
-                       config.inputFile.toLowerCase().endsWith(".asm") ||
-                       config.inputFile.toLowerCase().endsWith(".z80") ||
-                       config.inputFile.toLowerCase().endsWith(".a80")) {
+                       allAssembler) {
                 operation = SBO_OPTIMIZE;
                 config.codeSource = MDLConfig.CODE_FROM_INPUT_FILE;                
             } else {
-                config.error("Could not autodetect whether '" + config.inputFile + "' is a specification file or an assembler file. Use '-so-gen'/'-'so-opt' instead of '-so' to disambiguate.");
+                config.error("Could not autodetect whether '" + config.inputFiles + "' is a (set of) specification file(s) or an (set of) assembler file(s). Use '-so-gen'/'-'so-opt' instead of '-so' to disambiguate.");
                 return false;
             }
             return true;
@@ -254,9 +266,9 @@ public class SearchBasedOptimizer implements MDLWorker {
     
     private boolean workGenerate(CodeBase code) {
         // Parse specification file:
-        Specification spec = SpecificationParser.parse(config.inputFile, code, config);
+        Specification spec = SpecificationParser.parse(config.inputFiles.get(0), code, config);
         if (spec == null) {
-            config.error("Cannot parse the input specification file '"+config.inputFile+"'");
+            config.error("Cannot parse the input specification file '"+config.inputFiles.get(0)+"'");
             return false;
         }
         

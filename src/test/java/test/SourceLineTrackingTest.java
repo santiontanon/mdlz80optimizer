@@ -50,7 +50,7 @@ public class SourceLineTrackingTest {
         Assert.assertTrue(config.parseArgs(inputFile,"-dialect","glass"));
         Assert.assertTrue(
                 "Could not parse file " + inputFile,
-                config.codeBaseParser.parseMainSourceFile(config.inputFile, code));
+                config.codeBaseParser.parseMainSourceFiles(config.inputFiles, code));
 
         // Optimize:
         String lines[];
