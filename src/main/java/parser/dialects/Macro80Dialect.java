@@ -49,8 +49,10 @@ public class Macro80Dialect implements Dialect {
         config.hexStyle = MDLConfig.HEX_STYLE_H_CAPS;
 
         config.lineParser.allowIncludesWithoutQuotes = true;
-        config.tokenizer.allowQuestionMarksInSymbols = true;
-        
+        config.tokenizer.allowQuestionMarksToStartSymbols = true;
+        config.tokenizer.additionalNonFirstSymbolCharacters = new ArrayList<>();
+        config.tokenizer.additionalNonFirstSymbolCharacters.add("?");
+
         config.expressionParser.opSynonyms.clear();
         config.expressionParser.OP_LSHIFT = "shl";
         config.expressionParser.OP_RSHIFT = "shr";

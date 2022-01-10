@@ -24,7 +24,7 @@ public class Tokenizer {
     public boolean allowAndpersandHex = false;
     public boolean sdccStyleHashMarksForConstants = false;
     public boolean sdccStyleDollarInLabels = false;
-    public boolean allowQuestionMarksInSymbols = false;
+    public boolean allowQuestionMarksToStartSymbols = false;
     public boolean allowDotFollowedByNumberLabels = true;
     public boolean numericConstantsCanContainQoutes = false;
     
@@ -86,7 +86,7 @@ public class Tokenizer {
     public List<String> tokenize(String line, List<String> tokens, boolean includeBlanks) {
         String tokenizerString = " \r\n\t()[]#,;:+-*/%|&'\"!<>=~^{}\\";
         
-        if (!allowQuestionMarksInSymbols) {
+        if (!allowQuestionMarksToStartSymbols) {
             tokenizerString += "?";
         }
         if (!sdccStyleDollarInLabels) {
@@ -277,7 +277,7 @@ public class Tokenizer {
             c>='0' && c<='9') {
             return true;
         }
-        if (allowQuestionMarksInSymbols && token.charAt(0) == '?') return true;
+        if (allowQuestionMarksToStartSymbols && token.charAt(0) == '?') return true;
         
         return false;
     }
