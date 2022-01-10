@@ -127,6 +127,11 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
         config.macrosToEvaluateEagerly.add(config.preProcessor.MACRO_IFDEF);
         config.macrosToEvaluateEagerly.add(config.preProcessor.MACRO_IFNDEF);
         
+        config.bracketIncludeFilePathSearchOrder = new int[]{
+                MDLConfig.FILE_SEARCH_WORKING_DIRECTORY,
+                MDLConfig.FILE_SEARCH_ADDITIONAL_PATHS,
+                MDLConfig.FILE_SEARCH_RELATIVE_TO_INCLUDING_FILE};
+        
         config.lineParser.tokensPreventingTextMacroExpansion.add("ifdef");
         config.lineParser.tokensPreventingTextMacroExpansion.add("ifndef");
         config.lineParser.tokensPreventingTextMacroExpansion.add("define");
@@ -393,12 +398,7 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
         config.tokenizer.additionalNonFirstSymbolCharacters = new ArrayList<>();
         config.tokenizer.additionalNonFirstSymbolCharacters.add("!");
         config.tokenizer.additionalNonFirstSymbolCharacters.add("?");
-        config.tokenizer.additionalNonFirstSymbolCharacters.add("#");
-
-//        config.filePathSearchOrder = new int[]{
-//            MDLConfig.FILE_SEARCH_RELATIVE_TO_INCLUDING_FILE,
-//            MDLConfig.FILE_SEARCH_ADDITIONAL_PATHS,
-//            MDLConfig.FILE_SEARCH_WORKING_DIRECTORY};
+        config.tokenizer.additionalNonFirstSymbolCharacters.add("#");        
     }
     
     

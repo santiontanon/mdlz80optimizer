@@ -127,6 +127,11 @@ public class MDLConfig {
                                         FILE_SEARCH_WORKING_DIRECTORY
     };
 
+    // If this is != null, includes with "<...>" syntax are allowed, and will
+    // use this search path order:
+    public int bracketIncludeFilePathSearchOrder[] = null;
+    
+    
     // utils:
     public MDLLogger logger;
     public Tokenizer tokenizer;

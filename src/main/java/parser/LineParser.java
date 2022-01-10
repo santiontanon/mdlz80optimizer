@@ -17,6 +17,7 @@ import code.Expression;
 import code.SourceConstant;
 import code.SourceFile;
 import code.CodeStatement;
+import java.util.Arrays;
 import org.apache.commons.lang3.tuple.Pair;
 import util.Resources;
 
@@ -602,6 +603,7 @@ public class LineParser {
             List<CodeStatement> l, 
             SourceLine sl,
             CodeStatement s, CodeStatement previous, SourceFile source, CodeBase code) {
+        int filePathSearchOrder[] = null;
         if (tokens.size() >= 1) {
             String rawFileName = null;
             String token = tokens.get(0);
@@ -621,21 +623,40 @@ public class LineParser {
                         }
                     }
                 }
-            } else {
-                if (allowIncludesWithoutQuotes) {
-                    rawFileName = "";
-                    while (!tokens.isEmpty()) {
-                        if (config.tokenizer.isSingleLineComment(tokens.get(0))
-                                || config.tokenizer.isMultiLineCommentStart(tokens.get(0))) {
-                            break;
-                        }
-                        rawFileName += tokens.remove(0);
+                filePathSearchOrder = config.filePathSearchOrder;
+            } else if (config.bracketIncludeFilePathSearchOrder != null && token.equals("<")) {
+                tokens.remove(0);
+                rawFileName = "";
+                while (!tokens.isEmpty()) {
+                    if (tokens.get(0).equals(">")) {
+                        break;
                     }
+                    if (config.tokenizer.isSingleLineComment(tokens.get(0))
+                        || config.tokenizer.isMultiLineCommentStart(tokens.get(0))) {
+                        break;
+                    }
+                    rawFileName += tokens.remove(0);
                 }
+                if (tokens.isEmpty() || !tokens.get(0).equals(">")) {
+                    config.error("Expecting include to end in \">\" in " + sl);
+                    return false;
+                }
+                tokens.remove(0);
+                filePathSearchOrder = config.bracketIncludeFilePathSearchOrder;
+            } else if (allowIncludesWithoutQuotes) {
+                rawFileName = "";
+                while (!tokens.isEmpty()) {
+                    if (config.tokenizer.isSingleLineComment(tokens.get(0))
+                        || config.tokenizer.isMultiLineCommentStart(tokens.get(0))) {
+                        break;
+                    }
+                    rawFileName += tokens.remove(0);
+                }
+                filePathSearchOrder = config.filePathSearchOrder;
             }
             if (rawFileName != null) {
                 // recursive include file:
-                String path = resolveIncludePath(rawFileName, source, sl, code, config.filePathSearchOrder);
+                String path = resolveIncludePath(rawFileName, source, sl, code, filePathSearchOrder);
                 if (path == null) return false;
                 SourceFile includedSource = codeBaseParser.parseSourceFile(path, code, source, s);
                 if (includedSource == null) {
@@ -662,6 +683,7 @@ public class LineParser {
         }
         String rawFileName = null;
         String token = tokens.get(0);
+        int filePathSearchOrder[] = null;
         if (config.tokenizer.isString(token)) {
             tokens.remove(0);
             rawFileName = config.tokenizer.stringValue(token);
@@ -678,24 +700,43 @@ public class LineParser {
                     }
                 }
             }
-        } else {
-            if (allowIncludesWithoutQuotes) {
-                rawFileName = "";
-                while (!tokens.isEmpty()) {
-                    if (tokens.get(0).equals(",")
-                            || config.tokenizer.isSingleLineComment(tokens.get(0))
-                            || config.tokenizer.isMultiLineCommentStart(tokens.get(0))) {
-                        break;
-                    }
-                    rawFileName += tokens.remove(0);
+            filePathSearchOrder = config.filePathSearchOrder;
+        } else if (config.bracketIncludeFilePathSearchOrder != null && token.equals("<")) {
+            tokens.remove(0);
+            rawFileName = "";
+            while (!tokens.isEmpty()) {
+                if (tokens.get(0).equals(">")) {
+                    break;
                 }
+                if (config.tokenizer.isSingleLineComment(tokens.get(0))
+                    || config.tokenizer.isMultiLineCommentStart(tokens.get(0))) {
+                    break;
+                }
+                rawFileName += tokens.remove(0);
             }
+            if (tokens.isEmpty() || !tokens.get(0).equals(">")) {
+                config.error("Expecting incbin to end in \">\" in " + sl);
+                return false;
+            }
+            tokens.remove(0);
+            filePathSearchOrder = config.bracketIncludeFilePathSearchOrder;
+        } else if (allowIncludesWithoutQuotes) {
+            rawFileName = "";
+            while (!tokens.isEmpty()) {
+                if (tokens.get(0).equals(",")
+                        || config.tokenizer.isSingleLineComment(tokens.get(0))
+                        || config.tokenizer.isMultiLineCommentStart(tokens.get(0))) {
+                    break;
+                }
+                rawFileName += tokens.remove(0);
+            }
+            filePathSearchOrder = config.filePathSearchOrder;
         }
         if (rawFileName == null) {
             config.error("parseIncbin: Cannot parse line " + sl);
             return false;
         }
-        String path = resolveIncludePath(rawFileName, source, sl, code, config.filePathSearchOrder);
+        String path = resolveIncludePath(rawFileName, source, sl, code, filePathSearchOrder);
         if (path == null) return false;
         s.type = CodeStatement.STATEMENT_INCBIN;
         s.incbin = new File(path);
@@ -1197,6 +1238,8 @@ public class LineParser {
             rawFileName = rawFileName.replace("\\", File.separator);
         }
         
+        config.debug("resolveIncludePath with searchOrder = "+Arrays.toString(searchOrder));
+        
         for(int searchSource:searchOrder) {
             switch(searchSource) {
                 case MDLConfig.FILE_SEARCH_RELATIVE_TO_INCLUDING_FILE:
@@ -1209,7 +1252,7 @@ public class LineParser {
                         // for example when calling mdl like: java -jar mdl.jar ../project/src/main.asm -I ../project2/src
                         final String relativePath = pathConcat(sourcePath, rawFileName);
                         if (Resources.exists(relativePath)) {
-                            config.debug("Included file " + rawFileName + " found relative to original source file");
+                            config.debug("Included file " + rawFileName + " found relative to including source file");
                             return relativePath;
                         }
                     }
@@ -1237,7 +1280,7 @@ public class LineParser {
                         // for example when calling mdl like: java -jar mdl.jar ../project/src/main.asm -I ../project2/src
                         final String relativePath = pathConcat(sourcePath, rawFileName);
                         if (Resources.exists(relativePath)) {
-                            config.debug("Included file " + rawFileName + " found relative to original source file");
+                            config.debug("Included file " + rawFileName + " found relative to main source file");
                             return relativePath;
                         }
                     }
