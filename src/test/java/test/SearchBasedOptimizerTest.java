@@ -52,6 +52,10 @@ public class SearchBasedOptimizerTest {
               new String[]{"data/searchtests/opt-test11-expected.asm", "data/searchtests/opt-test11-expected2.asm"}); }
     @Test public void test12() throws IOException { test("data/searchtests/opt-test12.asm", 
               new String[]{"data/searchtests/opt-test12-expected.asm"}); }
+    @Test public void test13() throws IOException { test("data/searchtests/opt-test13.asm", 
+              new String[]{"data/searchtests/opt-test13-expected-opssafe.asm"}, "opssafe", 2); }
+    @Test public void test13b() throws IOException { test("data/searchtests/opt-test13.asm", 
+              new String[]{"data/searchtests/opt-test13-expected-ops.asm"}, "ops", 2); }
 
             
     private void test(String inputFile, String expectedOutputFiles[]) throws IOException

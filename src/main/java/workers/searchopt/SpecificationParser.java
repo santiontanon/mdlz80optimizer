@@ -175,6 +175,11 @@ public class SpecificationParser {
                         tokens.remove(0);
                         tokens.remove(0);
                         tokens.remove(0);
+                    } else if (tokens.get(2).equalsIgnoreCase("opssafe")) {
+                        spec.searchType = SearchBasedOptimizer.SEARCH_ID_OPS_SAFE;
+                        tokens.remove(0);
+                        tokens.remove(0);
+                        tokens.remove(0);
                     } else if (tokens.get(2).equalsIgnoreCase("size")) {
                         spec.searchType = SearchBasedOptimizer.SEARCH_ID_BYTES;
                         tokens.remove(0);

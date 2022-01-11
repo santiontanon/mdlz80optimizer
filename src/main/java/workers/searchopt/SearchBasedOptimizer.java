@@ -49,6 +49,7 @@ public class SearchBasedOptimizer implements MDLWorker {
     public static final int SEARCH_ID_OPS = 0;  // Iterative deepening by # of ops
     public static final int SEARCH_ID_BYTES = 1;  // Iterative deepening by # of bytes
     public static final int SEARCH_ID_CYCLES = 2;  // Iterative deepning by # cycles
+    public static final int SEARCH_ID_OPS_SAFE = 3;  // Iterative deepening by # of ops but keeping only optimizations that improve either bytes or cycles
     
     public static final int SEARCH_TIME_WORST = 0;
     public static final int SEARCH_TIME_BEST = 1;
@@ -110,7 +111,7 @@ public class SearchBasedOptimizer implements MDLWorker {
     
     @Override
     public String docString() {
-        return "- ```-so```: Runs the search-based-based optimizer (if the input file is an assembler file (.asm/.z80/.a80), it'll try to optimize it; if the input file is a specification file (.txt), it will use as a target for program generation; which of the two will be auto-detected based on the file extension). You can pass an optional parameter: ````-so size```, ```-so speed```, or ```-so ops```, to tell the optimizer to optimize for program size, execution speed, or number of instructions. This will overwrite whatever is specified in the specificaiton file (default is to optimize by number of ops).\n" +
+        return "- ```-so```: Runs the search-based-based optimizer (if the input file is an assembler file (.asm/.z80/.a80), it'll try to optimize it; if the input file is a specification file (.txt), it will use as a target for program generation; which of the two will be auto-detected based on the file extension). You can pass an optional parameter: ````-so size```, ```-so speed```, ```-so ops``` or ```-so ops-safe``` (default), to tell the optimizer to optimize for program size, execution speed, number of instructions or number of instructions but ensuring at least size or speed is improved (default, as this is the computationally cheapest mode, although it might not obtain the best results). This will overwrite whatever is specified in the specificaiton file.\n" +
                "- ```-so-gen```: Like above, but instead of autodetecting, it always assumes the input file is a specification file for program generation.\n" +
                "- ```-so-opt```: Like above, but instead of autodetecting, it always assumes the input file is an assembler file for optimization.\n" +
                "- ```-so-maxops <n>```: (only for program generation) Sets the upper limit of how many CPU ops the resulting program can have.\n" +
@@ -143,6 +144,9 @@ public class SearchBasedOptimizer implements MDLWorker {
                     flags.remove(0);
                 } else if (flags.get(0).equals("ops")) {
                     flags_searchType = SEARCH_ID_OPS;
+                    flags.remove(0);
+                } else if (flags.get(0).equals("opssafe")) {
+                    flags_searchType = SEARCH_ID_OPS_SAFE;
                     flags.remove(0);
                 }
             }
@@ -379,7 +383,8 @@ public class SearchBasedOptimizer implements MDLWorker {
         long start = System.currentTimeMillis();
         
         try {
-            if (spec.searchType == SEARCH_ID_OPS) {
+            if (spec.searchType == SEARCH_ID_OPS ||
+                spec.searchType == SEARCH_ID_OPS_SAFE) {
                 int codeMaxAddress = spec.codeStartAddress + spec.maxSizeInBytes;
                 for(int depth = 0; depth<=spec.maxOps; depth++) {
                     if (precomputeScheduleDepth.containsKey(depth)) {
@@ -819,7 +824,8 @@ public class SearchBasedOptimizer implements MDLWorker {
         if (flags_searchType != -1) {
             spec.searchType = flags_searchType;
         }
-        if (spec.searchType == SEARCH_ID_OPS) {
+        if (spec.searchType == SEARCH_ID_OPS ||
+            spec.searchType == SEARCH_ID_OPS_SAFE) {
             spec.maxOps = optimization_max_block_size;
         } else if (spec.searchType == SEARCH_ID_BYTES) {
             spec.maxOps = optimization_max_block_size + 1;
@@ -1057,6 +1063,12 @@ public class SearchBasedOptimizer implements MDLWorker {
                 (n2 == n1 && 
                  (bytes2 < bytes1 || betterTime) &&
                  (bytes2 <= bytes1 && time2[0] <= time1[0] && time2[1] <= time1[1]))) {
+                better = true;
+            }
+        } else if (criteria == SEARCH_ID_OPS_SAFE) {
+            if (n2 <= n1 && 
+                (bytes2 < bytes1 || betterTime) &&
+                (bytes2 <= bytes1 && time2[0] <= time1[0] && time2[1] <= time1[1])) {
                 better = true;
             }
         } else if (criteria == SEARCH_ID_BYTES) {

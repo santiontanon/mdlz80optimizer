@@ -25,7 +25,7 @@ public class Specification {
     int maxSimulationTime = 256;
     int maxSizeInBytes = 256;
     int maxOps = 4;
-    public int searchType = SearchBasedOptimizer.SEARCH_ID_OPS;
+    public int searchType = SearchBasedOptimizer.SEARCH_ID_OPS_SAFE;
     int searchTimeCalculation = SearchBasedOptimizer.SEARCH_TIME_AVERAGE;
     
     // instruction set:

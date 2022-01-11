@@ -80,6 +80,7 @@ public class SequenceEquivalence {
     {
         if (alternativeIsBetter(SearchBasedOptimizer.SEARCH_ID_BYTES) ||
             alternativeIsBetter(SearchBasedOptimizer.SEARCH_ID_OPS) ||
+            alternativeIsBetter(SearchBasedOptimizer.SEARCH_ID_OPS_SAFE) ||
             alternativeIsBetter(SearchBasedOptimizer.SEARCH_ID_CYCLES)) return true;
         return false;
     }
@@ -96,6 +97,14 @@ public class SequenceEquivalence {
             return key1.compareTo(key2) < 0;
         } else if (searchType == SearchBasedOptimizer.SEARCH_ID_OPS) {
             if (s2.size() < s1.size()) return true;
+            if (s2.size() > s1.size()) return false;
+            if (time2 < time1) return true;
+            if (time2 > time1) return false;
+            if (size2 < size1) return true;
+            if (size2 > size1) return false;
+            // cannonical order otherwise:
+            return key1.compareTo(key2) < 0;
+        } else if (searchType == SearchBasedOptimizer.SEARCH_ID_OPS_SAFE) {
             if (s2.size() > s1.size()) return false;
             if (time2 < time1) return true;
             if (time2 > time1) return false;

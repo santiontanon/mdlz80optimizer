@@ -166,7 +166,8 @@ public class SBOExecutionThread extends Thread {
                 }while(bestIdx != globalState.bestIdx);
                 solutionsEvaluated = 0;
 
-                if (spec.searchType == SearchBasedOptimizer.SEARCH_ID_OPS) {
+                if (spec.searchType == SearchBasedOptimizer.SEARCH_ID_OPS ||
+                    spec.searchType == SearchBasedOptimizer.SEARCH_ID_OPS_SAFE) {
                     depthFirstSearch(0, spec.codeStartAddress, candidateOps);
                 } else if (spec.searchType == SearchBasedOptimizer.SEARCH_ID_BYTES) {
                     depthFirstSearch(0, spec.codeStartAddress, candidateOps);
