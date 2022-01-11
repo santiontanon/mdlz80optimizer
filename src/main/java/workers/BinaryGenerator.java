@@ -27,7 +27,26 @@ import util.TextUtils;
  * @author santi
  */
 public class BinaryGenerator implements MDLWorker {
+    
+    /*
+    Regular statements just produce a set of bytes, but some ("fpos"), change
+    the next position we should write in the output binary. These positions are
+    specified with fposAbsolute and fposOffset.
+    */
+    public static class StatementBinaryEffect {
+        CodeStatement s;
+        byte bytes[];
+        Integer fposAbsolute = null, fposOffset = null;
+        
+        public StatementBinaryEffect(CodeStatement a_s, byte a_bytes[], Integer a_fposAbsolute, Integer a_fposOffset) {
+            s = a_s;
+            bytes = a_bytes;
+            fposAbsolute = a_fposAbsolute;
+            fposOffset = a_fposOffset;
+        }
+    }
 
+    
     public static String AUTO_FILENAME = "auto";
     
     MDLConfig config = null;
@@ -89,7 +108,7 @@ public class BinaryGenerator implements MDLWorker {
                 }            
             
                 try (FileOutputStream os = new FileOutputStream(finalOutputFileName)) {
-                    if (!writeBytes(output.main, code, os, output.minimumSize)) return false;
+                    if (!writeBytes(output.main, code, os, output.minimumSize, true)) return false;
                     os.flush();
                 } catch (Exception e) {
                     config.error("Cannot write to file " + finalOutputFileName + ": " + e);
@@ -102,14 +121,40 @@ public class BinaryGenerator implements MDLWorker {
     }
     
 
-    public boolean writeBytes(SourceFile sf, CodeBase code, OutputStream os, int minimumSize) throws Exception
+    public boolean writeBytes(SourceFile sf, CodeBase code, OutputStream os, int minimumSize, boolean considerFPosEffects) throws Exception
     {
         int size = 0;
-        List<Pair<CodeStatement, byte[]>> statementBytes = new ArrayList<>();
+        List<StatementBinaryEffect> statementBytes = new ArrayList<>();
         if (!generateStatementBytes(sf, code, statementBytes)) return false;
-        for(Pair<CodeStatement, byte[]> pair:statementBytes) {
-            os.write(pair.getRight());
-            size += pair.getRight().length;
+        List<Integer> data = new ArrayList<>();        
+        int position = 0;
+        for(StatementBinaryEffect effect:statementBytes) {
+            if (effect.bytes != null) {
+                while(data.size() < position) data.add(0);
+                for(byte v:effect.bytes) {
+                    if (data.size() > position) {
+                        data.set(position, (int)v);
+                    } else {
+                        data.add((int)v);
+                    }
+                    position++;
+                }
+            }
+            if (considerFPosEffects) {
+                if (effect.fposAbsolute != null) {
+                    position = effect.fposAbsolute;
+                } else if (effect.fposOffset != null) {
+                    position += effect.fposOffset;
+                }
+            }
+        }
+        if (!data.isEmpty()) {
+            byte dataArray[] = new byte[data.size()];
+            for(int i = 0;i<data.size();i++) {
+                dataArray[i] = (byte)(int)data.get(i);
+            }
+            os.write(dataArray);
+            size += dataArray.length;
         }
         while(size < minimumSize) {
             os.write(0);
@@ -119,7 +164,7 @@ public class BinaryGenerator implements MDLWorker {
     }
 
     
-    public boolean generateStatementBytes(SourceFile sf, CodeBase code, List<Pair<CodeStatement, byte[]>> statementBytes)
+    public boolean generateStatementBytes(SourceFile sf, CodeBase code, List<StatementBinaryEffect> statementBytes)
     {
         for (CodeStatement s:sf.getStatements()) {
             switch(s.type) {
@@ -127,11 +172,33 @@ public class BinaryGenerator implements MDLWorker {
                     if (!generateStatementBytes(s.include, code, statementBytes)) return false;
                     break;
 
+                case CodeStatement.STATEMENT_FPOS:
+                {
+                    Integer fposAbsolute = null;
+                    if (s.fposAbsolute != null) {
+                        fposAbsolute = s.fposAbsolute.evaluateToInteger(s, code, true);
+                        if (fposAbsolute == null) {
+                            config.error("Cannot evaluate " + s.fposAbsolute + " in " + s.sl);
+                            return false;
+                        }
+                    }
+                    Integer fposOffset = null;
+                    if (s.fposOffset != null) {
+                        fposOffset = s.fposOffset.evaluateToInteger(s, code, true);
+                        if (fposOffset == null) {
+                            config.error("Cannot evaluate " + s.fposAbsolute + " in " + s.sl);
+                            return false;
+                        }
+                    }
+                    statementBytes.add(new StatementBinaryEffect(s, new byte[0], fposAbsolute, fposOffset));
+                    break;
+                }
+                    
                 default:
                 {
                     byte[] data = generateStatementBytes(s, code);
                     if (data != null) {
-                        statementBytes.add(Pair.of(s, data));
+                        statementBytes.add(new StatementBinaryEffect(s, data, null, null));
                     }
                 }
             }
@@ -195,13 +262,13 @@ public class BinaryGenerator implements MDLWorker {
                     if (exp.evaluatesToNumericConstant()) {
                         Integer v = exp.evaluateToInteger(s, code, true);
                         if (v == null) {
-                            config.error("Cannot evaluate expression " + exp + " when generating a binary.");
+                            config.error("Cannot evaluate expression " + exp + " when generating a binary: " + s.sl);
                             return null;
                         }
                         data[i*2] = (byte)(int)(v&0x00ff);
                         data[i*2+1] = (byte)(int)((v>>8)&0x00ff);
                     } else {
-                        config.error("Cannot evaluate expression " + exp + " when generating a binary.");
+                        config.error("Cannot evaluate expression " + exp + " when generating a binary: " + s.sl);
                         return null;
                     }
                 }
@@ -220,7 +287,7 @@ public class BinaryGenerator implements MDLWorker {
                         data[i*4+2] = (byte)(int)((v>>16)&0x00ff);
                         data[i*4+3] = (byte)(int)((v>>24)&0x00ff);
                     } else {
-                        config.error("Cannot evaluate expression " + exp + " when generating a binary.");
+                        config.error("Cannot evaluate expression " + exp + " when generating a binary: " + s.sl);
                         return null;
                     }
                 }
@@ -263,7 +330,7 @@ public class BinaryGenerator implements MDLWorker {
                     datab[i] = (byte)(int)data.get(i);
                 }
                 return datab;
-            }
+            }            
         }
         
         return null;
@@ -274,7 +341,7 @@ public class BinaryGenerator implements MDLWorker {
     {
         Object val = exp.evaluate(ss, code, true);
         if (val == null) {
-            config.error("Cannot evaluate expression " + exp + " when generating a binary.");
+            config.error("Cannot evaluate expression " + exp + " when generating a binary: " + ss.sl);
             return false;
         }
         return valueToBytes(val, ss, code, data);
@@ -298,7 +365,7 @@ public class BinaryGenerator implements MDLWorker {
         } else if (val instanceof Expression) {
             return expressionToBytes((Expression)val, ss, code, data);
         } else {
-            config.error("Unsupported value " + val + "when generating a binary.");
+            config.error("Unsupported value " + val + "when generating a binary: " + ss.sl);
             return false;
         }
         

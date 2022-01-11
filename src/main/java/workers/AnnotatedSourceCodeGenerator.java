@@ -13,7 +13,6 @@ import code.CodeStatement;
 import code.OutputBinary;
 import java.util.ArrayList;
 import java.util.HashMap;
-import org.apache.commons.lang3.tuple.Pair;
 
 /**
  *
@@ -74,15 +73,20 @@ public class AnnotatedSourceCodeGenerator implements MDLWorker {
             
             // Calculate the position of each statement in the generated binary:
             HashMap<CodeStatement, Integer> positionInBinaryMap = new HashMap<>();
-            List<Pair<CodeStatement, byte[]>> statementBytes = new ArrayList<>();
+            List<BinaryGenerator.StatementBinaryEffect> statementBytes = new ArrayList<>();
             BinaryGenerator gen = new BinaryGenerator(config);
             for(OutputBinary output: code.outputs) {
                 if (!gen.generateStatementBytes(output.main, code, statementBytes)) return false;
             }
             int position = 0;
-            for(Pair<CodeStatement, byte[]> pair:statementBytes) {
-                positionInBinaryMap.put(pair.getLeft(), position);
-                position += pair.getRight().length;
+            for(BinaryGenerator.StatementBinaryEffect effect:statementBytes) {
+                positionInBinaryMap.put(effect.s, position);
+                position += effect.bytes.length;
+                if (effect.fposAbsolute != null) {
+                    position = effect.fposAbsolute;
+                } else if (effect.fposOffset != null) {
+                    position += effect.fposOffset;
+                }
             }
             
             try (FileWriter fw = new FileWriter(outputFileName)) {

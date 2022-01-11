@@ -36,6 +36,7 @@ public class LineParser {
     public final String KEYWORD_STD_DD = "dd";
     public final String KEYWORD_STD_DS = "ds";
     public final String KEYWORD_STD_COLON = ":";
+    public final String KEYWORD_STD_FPOS = "fpos";
 
     // Dialect specific versions that will be used for parsing, or for generatinc dialect assembler:
     public String KEYWORD_ORG = "org";
@@ -47,6 +48,7 @@ public class LineParser {
     public String KEYWORD_DD = "dd";
     public String KEYWORD_DS = "ds";
     public String KEYWORD_COLON = ":";
+    public String KEYWORD_FPOS = "fpos";
     HashMap<String, String> keywordSynonyms = new HashMap<>();
     public List<String> keywordsHintingALabel = new ArrayList<>();
     public List<String> keywordsHintingANonScopedLabel = new ArrayList<>();
@@ -121,7 +123,8 @@ public class LineParser {
             isKeyword(token, KEYWORD_DB) ||
             isKeyword(token, KEYWORD_DW) ||
             isKeyword(token, KEYWORD_DD) ||
-            isKeyword(token, KEYWORD_DS)) {
+            isKeyword(token, KEYWORD_DS) ||
+            isKeyword(token, KEYWORD_FPOS)) {
             return true;
         }
         return false;
@@ -314,9 +317,16 @@ public class LineParser {
                     + sl.fileNameLineString());
             return false;
 
+        } else if (isKeyword(token, KEYWORD_FPOS)) {
+            tokens.remove(0);
+            if (parseFpos(tokens, l, sl, s, previous, source, code)) {
+                return true;
+            }
+
         } else if (config.dialectParser != null && config.dialectParser.recognizeIdiom(tokens, s.label, code)) {
             // this one might return one or more statements:
             return config.dialectParser.parseLine(tokens, l, sl, s, previous, source, code);
+            
         } else if (config.tokenizer.isSymbol(token)) {
             // try to parseArgs it as an assembler instruction or macro call:
             tokens.remove(0);
@@ -598,6 +608,30 @@ public class LineParser {
         s.org = exp;
         return parseRestofTheLine(tokens, l, sl, s, previous, source, code);
     }
+
+    
+    public boolean parseFpos(List<String> tokens, List<CodeStatement> l, 
+            SourceLine sl,
+            CodeStatement s, CodeStatement previous, SourceFile source, CodeBase code) {
+
+        Expression exp = config.expressionParser.parse(tokens, s, previous, code);
+        if (exp == null) {
+            config.error("parseFpos: Cannot parse line " + sl);
+            return false;
+        }
+
+        s.type = CodeStatement.STATEMENT_FPOS;
+        if (exp.type == Expression.EXPRESSION_PLUS_SIGN ||
+            exp.type == Expression.EXPRESSION_SIGN_CHANGE ||
+            (exp.type == Expression.EXPRESSION_INTEGER_CONSTANT &&
+             exp.integerConstant < 0)) {
+            s.fposOffset = exp;
+        } else {
+            s.fposAbsolute = exp;
+        }
+        return parseRestofTheLine(tokens, l, sl, s, previous, source, code);
+    }
+
 
     public boolean parseInclude(List<String> tokens,
             List<CodeStatement> l, 

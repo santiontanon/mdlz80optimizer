@@ -49,7 +49,7 @@ public class Z80SimulatorTest {
         // Compile the assembler code to binary:
         BinaryGenerator bg = new BinaryGenerator(config);
         ListOutputStream out = new ListOutputStream();
-        bg.writeBytes(code.outputs.get(0).main, code, out, 0);
+        bg.writeBytes(code.outputs.get(0).main, code, out, 0, true);
         
         // Setup a Z80 simulator and copy the binary to memory (at address 0 for now):
         PlainZ80Memory z80Memory = new PlainZ80Memory();

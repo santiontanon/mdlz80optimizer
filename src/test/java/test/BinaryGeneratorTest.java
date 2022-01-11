@@ -60,6 +60,8 @@ public class BinaryGeneratorTest {
                                                                           "data/generationtests/sjasmplus-test8-expected.bin")); }
     @Test public void test15() throws Exception { Assert.assertTrue(test("data/generationtests/asmsx-labels.asm", "asmsx", 
                                                                           "data/generationtests/asmsx-labels-expected.bin")); }
+    @Test public void test16() throws Exception { Assert.assertTrue(test("data/generationtests/sjasmplus-fpos.asm", "sjasmplus",
+                                                                           "data/generationtests/sjasmplus-fpos-expected.bin")); }
         
 
     private boolean test(String inputFile, String dialect, String expectedOutputFile) throws Exception
@@ -75,7 +77,7 @@ public class BinaryGeneratorTest {
 
         BinaryGenerator bg = new BinaryGenerator(config);
         ListOutputStream out = new ListOutputStream();
-        bg.writeBytes(code.outputs.get(0).main, code, out, 0);        
+        bg.writeBytes(code.outputs.get(0).main, code, out, 0, true);        
         List<Integer> actualBytes = out.getData();
         
         List<Integer> expectedBytes = new ArrayList<>();        

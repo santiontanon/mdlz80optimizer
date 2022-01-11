@@ -775,11 +775,7 @@ public class ExpressionParser {
             tokens.remove(0);
             Expression exp = parseInternal(tokens, s, previous, code);
             if (exp != null) {
-                if (exp.type == Expression.EXPRESSION_INTEGER_CONSTANT) {
-                    return exp;
-                } else {
-                    return Expression.operatorExpression(Expression.EXPRESSION_PLUS_SIGN, exp, config);
-                }
+                return Expression.operatorExpression(Expression.EXPRESSION_PLUS_SIGN, exp, config);
             }
         }
         if (tokens.size() >= 2 &&

@@ -116,7 +116,7 @@ public class ReorganizerTest {
         if (expectedBinaryOutputFile != null) {
             BinaryGenerator bg = new BinaryGenerator(config);
             ListOutputStream out = new ListOutputStream();
-            bg.writeBytes(code.outputs.get(0).main, code, out, 0);        
+            bg.writeBytes(code.outputs.get(0).main, code, out, 0, true);        
             List<Integer> actualBytes = out.getData();
         
             List<Integer> expectedBytes = new ArrayList<>();        

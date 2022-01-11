@@ -34,6 +34,7 @@ public class CodeStatement {
     public static final int STATEMENT_MACRO = 8;
     public static final int STATEMENT_MACROCALL = 9;
     public static final int STATEMENT_CPUOP = 10;
+    public static final int STATEMENT_FPOS = 11;
     
     MDLConfig config;
     
@@ -60,6 +61,7 @@ public class CodeStatement {
     public Expression space_value = null;   // if this is null, "space" is virtual,
                                             // otherwise, it is filled with this value
     public CPUOp op = null;
+    public Expression fposAbsolute = null, fposOffset = null;
     
     public SourceMacro macroCallMacro = null;   // if we know which macro it is
     public String macroCallName = null;         // if we don't know which macro, just the name
@@ -471,6 +473,15 @@ public class CodeStatement {
                 }
                 return str;
             }
+            case STATEMENT_FPOS:
+            {
+                if (fposAbsolute != null) {
+                    str += "    " + config.lineParser.KEYWORD_STD_FPOS + " " + fposAbsolute.toStringInternal(false, false, mimicTargetDialect, this, code);
+                } else {
+                    str += "    " + config.lineParser.KEYWORD_STD_FPOS + " " + fposOffset.toStringInternal(false, false, mimicTargetDialect, this, code);
+                }
+                break;
+            }
             default:
                 return null;
         }
@@ -512,6 +523,12 @@ public class CodeStatement {
         if (space_value != null && space_value.evaluatesToIntegerConstant()) {
             space_value = Expression.constantExpression(space_value.evaluateToInteger(this, code, false), config);
         } 
+        if (fposAbsolute != null && fposAbsolute.evaluatesToIntegerConstant()) {
+            fposAbsolute = Expression.constantExpression(fposAbsolute.evaluateToInteger(this, code, false), config);
+        } 
+        if (fposOffset != null && fposOffset.evaluatesToIntegerConstant()) {
+            fposOffset = Expression.constantExpression(fposOffset.evaluateToInteger(this, code, false), config);
+        } 
         if (op != null) op.evaluateAllExpressions(this, code, config);
         if (macroCallArguments != null) {
             for(int i = 0;i<macroCallArguments.size();i++) {
@@ -544,6 +561,8 @@ public class CodeStatement {
         if (incbinSkip != null) incbinSkip.resolveLocalLabels(labelPrefix, this, code);
         if (space != null) space.resolveLocalLabels(labelPrefix, this, code);
         if (space_value != null) space_value.resolveLocalLabels(labelPrefix, this, code);
+        if (fposAbsolute != null) fposAbsolute.resolveLocalLabels(labelPrefix, this, code);
+        if (fposOffset != null) fposOffset.resolveLocalLabels(labelPrefix, this, code);
         if (data != null) {
             for(Expression exp:data) {
                 exp.resolveLocalLabels(labelPrefix, this, code);
@@ -571,6 +590,8 @@ public class CodeStatement {
         if (incbinSkip != null) l.add(incbinSkip);
         if (space != null) l.add(space);
         if (space_value != null) l.add(space_value);
+        if (fposAbsolute != null) l.add(fposAbsolute);
+        if (fposOffset != null) l.add(fposOffset);
         if (data != null) l.addAll(data);
         if (op != null) l.addAll(op.args);
         if (macroCallArguments != null) l.addAll(macroCallArguments);
@@ -610,6 +631,8 @@ public class CodeStatement {
         }
         if (space != null) space.setConfig(newConfig);
         if (space_value != null) space_value.setConfig(newConfig);
+        if (fposAbsolute != null) fposAbsolute.setConfig(newConfig);
+        if (fposOffset != null) fposOffset.setConfig(newConfig);
         if (op != null) op.setConfig(newConfig);
         if (macroCallArguments != null) {
             for(Expression v:macroCallArguments) {
