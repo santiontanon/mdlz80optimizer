@@ -67,7 +67,7 @@ The specification file has two mandatory fields (```initial_state:``` and ```goa
 
 - ```allow_loops = [true/false]```  (```false``` by default) if this is set to ```true``` and jump instructions (like ```jp```) are allowed during search, jumps backwards (that might create loops) are allowed, otherwise, they are not considered. If you allow loops, recall that if your program takes more than ```max_time``` time units to execute, it will be considered to fail.
 
-- ```goal = [ops/size/time]``` defines the goal to optimize for. By default it's ```ops``` (number of instructions, which is the easiest optimization goal). This can be overriden via flats to MDL.
+- ```goal = [ops/size/time/opssafe]``` defines the goal to optimize for. By default it's ```opssafe``` (number of instructions but ensuring at least improving either time or size, which is the easiest optimization goal). This can be overriden via flats to MDL.
 
 - ```n_solution_checks = [integer]``` defines the number of test cases used to determine if a solution is correct or not. The default is 1000. Feel free to increment this to 2000 or even larger, as it shuold not affect execution speed much (most cases fail early anyway).
 
