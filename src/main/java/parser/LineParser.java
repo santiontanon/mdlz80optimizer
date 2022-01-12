@@ -544,24 +544,6 @@ public class LineParser {
             boolean allowMoreInstructions,
             SourceFile source, CodeBase code) {
         
-        if (allowColonSeparatedInstructions) {
-            if (!tokens.isEmpty() && tokens.get(0).equals(":")) {
-                tokens.remove(0);
-                CodeStatement s2 = new CodeStatement(CodeStatement.STATEMENT_NONE, sl, source, config);
-                if (labelPrefix != null) s2.labelPrefix = labelPrefix;
-                l.add(s2);
-                return parseInternal(tokens, l, sl, s2, null, source, code, false);
-            }
-        }
-        if (allowtniASMMultipleInstructionsPerLine && allowMoreInstructions) {
-            if (!tokens.isEmpty() && !config.tokenizer.isSingleLineComment(tokens.get(0))) {
-                CodeStatement s2 = new CodeStatement(CodeStatement.STATEMENT_NONE, sl, source, config);
-                if (labelPrefix != null) s2.labelPrefix = labelPrefix;
-                l.add(s2);
-                return parseInternal(tokens, l, sl, s2, null, source, code, true);
-            }
-        }
-        
         if (tokens.isEmpty()) {
             return true;
         }
@@ -574,7 +556,24 @@ public class LineParser {
             insideMultiLineComment = true;
             return parseLineInsideMultilineComment(tokens, l, sl, s, previous, source, code);
         }
-       
+        
+        if (!tokens.isEmpty()) {
+            if (allowColonSeparatedInstructions && tokens.get(0).equals(":")) {
+                tokens.remove(0);
+                CodeStatement s2 = new CodeStatement(CodeStatement.STATEMENT_NONE, sl, source, config);
+                if (labelPrefix != null) s2.labelPrefix = labelPrefix;
+                l.add(s2);
+                return parseInternal(tokens, l, sl, s2, null, source, code, false);
+            } else if (config.quirk_sjasmplus_dirbol_double_directive ||
+                       (allowtniASMMultipleInstructionsPerLine && allowMoreInstructions)) {
+                CodeStatement s2 = new CodeStatement(CodeStatement.STATEMENT_NONE, sl, source, config);
+                if (labelPrefix != null) s2.labelPrefix = labelPrefix;
+                l.add(s2);
+                boolean allowLabels = allowtniASMMultipleInstructionsPerLine && allowMoreInstructions;
+                return parseInternal(tokens, l, sl, s2, null, source, code, allowLabels);
+            }
+        }
+               
         config.error("parseRestofTheLine: Cannot parse line " + sl + "  left over tokens: " + tokens);
         return false;
     }

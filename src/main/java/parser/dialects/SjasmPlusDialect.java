@@ -985,7 +985,8 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
                    tokens.get(0).equalsIgnoreCase("syntax") ||
                    tokens.get(0).equalsIgnoreCase("abfw") ||
                    tokens.get(0).equalsIgnoreCase("zxnext") ||
-                   tokens.get(0).equalsIgnoreCase("cspect"))) {
+                   tokens.get(0).equalsIgnoreCase("cspect") ||
+                   tokens.get(0).equalsIgnoreCase("abf"))) {
                 tokens.remove(0);
             }
             

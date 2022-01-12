@@ -576,9 +576,10 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             struct.name = tokens.remove(0);
             struct.file = source;
             config.lineParser.pushLabelPrefix(struct.name + ".");
-            if (!tokens.isEmpty() && tokens.get(0).equalsIgnoreCase("struc")) {
-                // TODO(santi@): investigate what is this syntax, I found it in this file: https://github.com/GuillianSeed/MetalGear/blob/master/constants/structures.asm
-                // But it does not seem to be documented, I think it might be an error that sjasm just happens to swalow
+            if (config.quirk_sjasm_struc &&
+                !tokens.isEmpty() && tokens.get(0).equalsIgnoreCase("struc")) {
+                // I found it in this file: https://github.com/GuillianSeed/MetalGear/blob/master/constants/structures.asm
+                // But it is not documented, and likely a bug in the parser.
                 tokens.remove(0);
             }
             struct.file = source;

@@ -8,7 +8,7 @@ import cl.MDLConfig;
  * Utility class to handle dialect identifier strings
  */
 public class Dialects {
-
+    
     /**
      * @return the default dialect identifier string
      */
@@ -22,7 +22,7 @@ public class Dialects {
     public static String[] knownDialects() {
         return new String[]{"mdl", "asmsx", "asmsx-zilog", "glass", "sjasm", "sjasmplus", "tniasm", "winape", "pasmo", "sdcc", "sdasz80", "macro80"};
     }
-
+    
     /**
      * @param dialect a dialect candidate
      * @return a known dialect, or {@code null} if the candidate is not a known
@@ -78,7 +78,6 @@ public class Dialects {
     
     public static boolean selectDialect(String dialectString, MDLConfig config) {
         config.dialect = Dialects.asKnownDialect(dialectString);
-        if (config.dialect == null) return false;
-        return true;
+        return config.dialect != null;
     }
 }

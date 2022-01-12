@@ -23,8 +23,8 @@ import workers.reorgopt.CodeBlock;
  * @author santi
  */
 public interface Dialect {
-
-
+    
+   
     // @return true if the line represented by "tokens" is recognized by this dialect parser.
     default boolean recognizeIdiom(List<String> tokens, SourceConstant label, CodeBase code) {
         // (no-op by default)

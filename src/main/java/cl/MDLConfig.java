@@ -131,6 +131,9 @@ public class MDLConfig {
     // use this search path order:
     public int bracketIncludeFilePathSearchOrder[] = null;
     
+    // Dialect quirks:
+    public boolean quirk_sjasm_struc = false;
+    public boolean quirk_sjasmplus_dirbol_double_directive = false;
     
     // utils:
     public MDLLogger logger;
@@ -200,7 +203,9 @@ public class MDLConfig {
             + "- ```-out-data-instead-of-ds```: will replace statements like ```ds 4, 0``` by ```db 0, 0, 0, 0```.\n"
             + "- ```-out-do-not-evaluate-dialect-functions```: some assembler dialects define functions like random/sin/cos that can be used to form expressions. By default, MDL replaces them by the result of their execution before generating assembler output (as those might not be defined in other assemblers, and thus this keeps the assembler output as compatible as possible). Use this flag if you don't want this to happen.\n"
             + "- ```-out-evaluate-all-expressions```: this flag makes MDL resolve all expressions down to their ultimate numeric or string value when generating assembler code.\n"
-            + "- ```-safety-labels-for-jumps-to-constants```: makes MDL replace the destination of a jump/call to a constant (e.g. ```jp #3c4a```) by a label. MDL does not do this by default since calls to constants are often used for BIOS calls (although replacing those constants by labels is recommended). Jumpts to constants are unsafe for optimization as the code at the target address (```#3c4a``` in the example) might move as a result of optimization. Hence, it's safer to add a safety label at the target address and use it for the jump.\n";
+            + "- ```-safety-labels-for-jumps-to-constants```: makes MDL replace the destination of a jump/call to a constant (e.g. ```jp #3c4a```) by a label. MDL does not do this by default since calls to constants are often used for BIOS calls (although replacing those constants by labels is recommended). Jumpts to constants are unsafe for optimization as the code at the target address (```#3c4a``` in the example) might move as a result of optimization. Hence, it's safer to add a safety label at the target address and use it for the jump.\n"
+            + "- ```-quirk-sjasm-struc```: allows having the keyword ```struc``` after the definition of a struct in sjasm (as in ```STRUCT mystruct struc```), since sjasm allows this (probably by accident), and some codebases have it.\n"
+            + "- ```-quirk-sjasmplus-dirbol-double-directive```: allows two directives in the same line without any separator, like this: ```db 0,0,0 dw 0``` (this is not intended, and will be fixed in future versions of sjasmplus, but some codebases use it).\n";
 
     public String simpleDocString = "MDL "+Main.VERSION_STRING+" (A Z80 assembler optimizer) by Santiago Ontañón (Brain Games, 2020-2022)\n"
             + "https://github.com/santiontanon/mdlz80optimizer\n"
@@ -227,7 +232,7 @@ public class MDLConfig {
         // ignore all the platform specific patterns, by default:
         ignorePatternsWithTags.add(CPC_TAG);
 
-        tokenizer = new Tokenizer();
+        tokenizer = new Tokenizer();          
     }
 
 
@@ -525,7 +530,17 @@ public class MDLConfig {
                         safetyLabelsForJumpsToConstants = true;
                         args.remove(0);
                         break;
+                        
+                    case "-quirk-sjasm-struc":
+                        quirk_sjasm_struc = true;
+                        args.remove(0);
+                        break;
 
+                    case "-quirk-sjasmplus-dirbol-double-directive":
+                        quirk_sjasmplus_dirbol_double_directive = true;
+                        args.remove(0);
+                        break;
+                        
                     default:
                     {
                         MDLWorker recognizedBy = null;
@@ -553,7 +568,7 @@ public class MDLConfig {
         expressionParser = new ExpressionParser(this);
         opParser = new CPUOpParser(opSpecParser.parseSpecs(), this);
         dialectParser = Dialects.getDialectParser(dialect, this);
-        
+                
         if (!somethingToDo()) {
             help_triggered = true;
             display_simple_help = true;
