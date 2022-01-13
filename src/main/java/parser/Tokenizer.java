@@ -355,7 +355,11 @@ public class Tokenizer {
     {
         String allowed = "0123456789abcdef";
         String hex = "";
-        value = value & 0xffff;
+        if (length <=4) {
+            value = value & 0xffff;
+        } else {
+            value = value & 0xffffffff;
+        }
         while(value != 0) {
             int digit = value%16;
             value = value/16;
@@ -367,51 +371,38 @@ public class Tokenizer {
         
         return hex;
     }
+        
+    
+    public String toHexByte(int value, int hex_style)
+    {
+        return toHexWithStyle(value, 2, hex_style);
+    }
     
     
     public String toHexWord(int value, int hex_style)
     {
-        switch (hex_style) {
-            case MDLConfig.HEX_STYLE_HASH:
-                return "#" + toHex(value, 4);
-            case MDLConfig.HEX_STYLE_HASH_CAPS:
-                return "#" + toHex(value, 4).toUpperCase();
-            case MDLConfig.HEX_STYLE_H:
-            {
-                String hex = toHex(value, 4);
-                if (hex.charAt(0) >= 'a' && hex.charAt(0) <= 'f') {
-                    hex = "0" + hex;
-                }
-                return hex + "h";
-            }
-            case MDLConfig.HEX_STYLE_H_CAPS:
-            {
-                String hex = toHex(value, 4);
-                if (hex.charAt(0) >= 'a' && hex.charAt(0) <= 'f') {
-                    hex = "0" + hex;
-                }
-                return (hex + "h").toUpperCase();
-            }
-            case MDLConfig.HEX_STYLE_0X:
-                return "0x" + toHex(value, 4);
-            case MDLConfig.HEX_STYLE_0X_CAPS:
-                return "0x" + toHex(value, 4).toUpperCase();
-            default:
-                return null;
-        }
+        return toHexWithStyle(value, 4, hex_style);
+
+    }
+
+
+    public String toHexDWord(int value, int hex_style)
+    {
+        return toHexWithStyle(value, 8, hex_style);
+
     }
     
-    
-    public String toHexByte(int value, int hex_style)
+
+    public String toHexWithStyle(int value, int length, int hex_style)
     {
         switch (hex_style) {
             case MDLConfig.HEX_STYLE_HASH:
-                return "#" + toHex(value, 2);
+                return "#" + toHex(value, length);
             case MDLConfig.HEX_STYLE_HASH_CAPS:
-                return "#" + toHex(value, 2).toUpperCase();
+                return "#" + toHex(value, length).toUpperCase();
             case MDLConfig.HEX_STYLE_H:
             {
-                String hex = toHexByte(value, 2);
+                String hex = toHexByte(value, length);
                 if (hex.charAt(0) >= 'a' && hex.charAt(0) <= 'f') {
                     hex = "0" + hex;
                 }
@@ -419,21 +410,21 @@ public class Tokenizer {
             }
             case MDLConfig.HEX_STYLE_H_CAPS:
             {
-                String hex = toHex(value, 2);
+                String hex = toHex(value, length);
                 if (hex.charAt(0) >= 'a' && hex.charAt(0) <= 'f') {
                     hex = "0" + hex;
                 }
                 return (hex + "h").toUpperCase();
             }
             case MDLConfig.HEX_STYLE_0X:
-                return "0x" + toHex(value, 2);
+                return "0x" + toHex(value, length);
             case MDLConfig.HEX_STYLE_0X_CAPS:
-                return "0x" + toHex(value, 2).toUpperCase();
+                return "0x" + toHex(value, length).toUpperCase();
             
             default:
                 return null;
         }
-    }
+    }    
     
     
     public boolean isBinary(String token)

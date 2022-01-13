@@ -97,10 +97,19 @@ public class SymbolTableGenerator implements MDLWorker {
                 } else if (symbol.isLabel()) {
                     Object value = symbol.getValue(code, true);
                     if (value instanceof Integer) {
-                        if (config.hexStyleChanged) {
-                            sb.append(config.tokenizer.toHexWord((Integer)value, config.hexStyle));
+                        int int_value = (Integer)value;
+                        if (int_value < 0x10000) {
+                            if (config.hexStyleChanged) {
+                                sb.append(config.tokenizer.toHexWord(int_value, config.hexStyle));
+                            } else {
+                                sb.append(config.tokenizer.toHexWord(int_value, MDLConfig.HEX_STYLE_0X));
+                            }
                         } else {
-                            sb.append(config.tokenizer.toHexWord((Integer)value, MDLConfig.HEX_STYLE_0X));
+                            if (config.hexStyleChanged) {
+                                sb.append(config.tokenizer.toHexDWord(int_value, config.hexStyle));
+                            } else {
+                                sb.append(config.tokenizer.toHexDWord(int_value, MDLConfig.HEX_STYLE_0X));
+                            }
                         }
                     } else {
                         sb.append(value);

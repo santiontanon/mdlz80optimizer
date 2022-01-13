@@ -109,6 +109,9 @@ public class SourceFile {
         for (CodeStatement s : statements) {
             Integer s_size = s.sizeInBytesInternal(code, withIncludes, withIncbin, withVirtual, variableStack);
             if (s_size == null) return null;
+            if (s_size < 0) {
+                System.out.println("statement with negative size: " + s_size + " -> " + s);
+            }
             size += s_size;
         }
         return size;

@@ -76,6 +76,7 @@ public class CodeBaseParser {
                 CodeStatement s = new CodeStatement(CodeStatement.STATEMENT_INCLUDE, sl, f, config);
                 f.addStatement(s);
                 s.include = parseSourceFile(fileName, code, f, s);
+                s.rawInclude = fileName;
                 if (s.include == null) return false;
             }
         } else {
