@@ -229,7 +229,7 @@ public class BinaryGenerator implements MDLWorker {
                 if (s.incbinSkip != null) skip = s.incbinSkip.evaluateToInteger(s, code, false);
                 if (s.incbinSize != null) size = s.incbinSize.evaluateToInteger(s, code, false);
                 long flength = s.incbin.length();
-                int datalength = Math.max((int)flength - skip, size);
+                int datalength = Math.min((int)flength - skip, size);
                 byte data[] = new byte[datalength];
                 try (InputStream is = new FileInputStream(s.incbin)) {
                     if (skip > 0) is.skip(skip);
