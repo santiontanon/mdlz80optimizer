@@ -3,7 +3,7 @@ Santiago Ontañón (Brain Games)
 
 I spend an enourmous amount of time optimizing the Z80 assembler code of my games to make them fit within small 32KB or 48KB cartridges, and to make them run fast enough. So, I thought I'd try to write a tool that automatically does some of the optimizations that I do manually. I named it MDL after the "minimum description length" principle since, in a way, the goal of MDL is to reach the minimum description length representation of a program (although it currently only does simple optimizations).
 
-MDL (Minimum Description Length), is a command line tool to optimize Z80 assembler code. It is distributed as a Java JAR file, and from the command line, you can launch it like this:
+MDL (Minimum Description Length), is a command line tool to optimize Z80/z80n/z180 assembler code. It is distributed as a Java JAR file, and from the command line, you can launch it like this:
 
 ```
 java -jar mdl.jar
@@ -19,15 +19,16 @@ I also recorded a series of videos explaining how does MDL work:
 
 ## Command Line Arguments
 
-```java -jar mdl.jar <input assembler file> [options/tasks]```
+```java -jar mdl.jar <input file name(s)> [options]```
 
+Several input file names can be specified, separated by spaces. In case that more than one input file name is specified, MDL will just act as if there was a master assembler file that includes them all in the specified order.
 Note: notice that all the tasks concerning generating outputs (assembler, binaries, etc.) will be executed after the optimizers are run.
 
 - ```-help```: to show this information (this is the only flag that can be used without specifying an input file).
-- ```-cpu <type>```: to select a different CPU (z80/z80msx/z80cpc) (default: z80msx).
+- ```-cpu <type>```: to select a different CPU (z80/z80msx/z80cpc/z80n/z80next/z180), where z80n and z80next are synonyms (default: z80msx).
 - ```-dialect <dialect>```: to allow parsing different assembler dialects (mdl/asmsx/asmsx-zilog/glass/sjasm/sjasmplus/tniasm/winape/pasmo/sdcc/sdasz80/macro80) (default: mdl, which supports some basic code idioms common to various assemblers).
                    Note that even when selecting a dialect, not all syntax of a given assembler might be supported.
-- ```-I <folder>```: adds a folder to the include search path.
+- ```-I <folder>```: adds a folder to the include search path (```-inc <folder>``` can also be used for compatibility with other assemblers).
 - ```-equ <symbol>=<value>```: defines a symbol that will exist while parsing the assembler code.
 - ```-ansion```: turns on color message output usin ANSI codes (default: on in Unix, off in Windows).
 - ```-ansioff```: turns off color message output usin ANSI codes.
@@ -60,7 +61,9 @@ Note: notice that all the tasks concerning generating outputs (assembler, binari
 - ```-out-do-not-evaluate-dialect-functions```: some assembler dialects define functions like random/sin/cos that can be used to form expressions. By default, MDL replaces them by the result of their execution before generating assembler output (as those might not be defined in other assemblers, and thus this keeps the assembler output as compatible as possible). Use this flag if you don't want this to happen.
 - ```-out-evaluate-all-expressions```: this flag makes MDL resolve all expressions down to their ultimate numeric or string value when generating assembler code.
 - ```-safety-labels-for-jumps-to-constants```: makes MDL replace the destination of a jump/call to a constant (e.g. ```jp #3c4a```) by a label. MDL does not do this by default since calls to constants are often used for BIOS calls (although replacing those constants by labels is recommended). Jumpts to constants are unsafe for optimization as the code at the target address (```#3c4a``` in the example) might move as a result of optimization. Hence, it's safer to add a safety label at the target address and use it for the jump.
-- ```-so```: Runs the search-based-based optimizer (if the input file is an assembler file (.asm/.z80/.a80), it'll try to optimize it; if the input file is a specification file (.txt), it will use as a target for program generation; which of the two will be auto-detected based on the file extension). You can pass an optional parameter: ````-so size```, ```-so speed```, or ```-so ops```, to tell the optimizer to optimize for program size, execution speed, or number of instructions. This will overwrite whatever is specified in the specificaiton file (default is to optimize by number of ops).
+- ```-quirk-sjasm-struc```: allows having the keyword ```struc``` after the definition of a struct in sjasm (as in ```STRUCT mystruct struc```), since sjasm allows this (probably by accident), and some codebases have it.
+- ```-quirk-sjasmplus-dirbol-double-directive```: allows two directives in the same line without any separator, like this: ```db 0,0,0 dw 0``` (this is not intended, and will be fixed in future versions of sjasmplus, but some codebases use it).
+- ```-so```: Runs the search-based-based optimizer (if the input file is an assembler file (.asm/.z80/.a80), it'll try to optimize it; if the input file is a specification file (.txt), it will use as a target for program generation; which of the two will be auto-detected based on the file extension). You can pass an optional parameter: ````-so size```, ```-so speed```, ```-so ops``` or ```-so ops-safe``` (default), to tell the optimizer to optimize for program size, execution speed, number of instructions or number of instructions but ensuring at least size or speed is improved (default, as this is the computationally cheapest mode, although it might not obtain the best results). This will overwrite whatever is specified in the specificaiton file.
 - ```-so-gen```: Like above, but instead of autodetecting, it always assumes the input file is a specification file for program generation.
 - ```-so-opt```: Like above, but instead of autodetecting, it always assumes the input file is an assembler file for optimization.
 - ```-so-maxops <n>```: (only for program generation) Sets the upper limit of how many CPU ops the resulting program can have.
@@ -73,14 +76,15 @@ Note: notice that all the tasks concerning generating outputs (assembler, binari
 - ```-ro-no-inliner```: deactivates the function inliner.
 - ```-ro-no-merger```: deactivates the block merger.
 - ```-rohtml <file>```: generates a visualization of the division of the code before code reoganizer optimization as an html file.
-- ```-po```: Runs the pattern-based optimizer using the latest settings. You can pass an optional parameter, like ````-po size``` or ```-po speed```, which are shortcuts for '-po -popatterns data/pbo-patterns-size.txt' and '-po -popatterns data/pbo-patterns-speed.txt' (some dialects might change the defaults of these two)
+- ```-po```: Runs the pattern-based optimizer. You can pass an optional parameter, like ````-po size``` or ```-po speed```, which are shortcuts for '-po -popatterns data/pbo-patterns-size.txt' and '-po -popatterns data/pbo-patterns-speed.txt' (some dialects might change the defaults of these two)
 - ```-po1```/```-po2```/```-po3```: The same as ```-po```, but specify whether to do 1, 2 or 3 passes of optimization (```-po``` is equivalent to ```-po2```). The more passes, the slower the optimization. Usually 1 pass is enough, but often 2 passes finds a few additional optimizations. 3 passes rarely finds any additional optimization.
 - ```-posilent```: Supresses the pattern-based-optimizer output
 - ```-popotential```: Reports lines where a potential optimization was not applied for safety, but could maybe be done manually (at most one potential optimization per line is shown).
 - ```-popotential-all```: Same as above, but without the one-per-line constraint.
 - ```-popatterns <file>```: specifies the file to load optimization patterns from (default 'data/pbo-patterns.txt', which contains patterns that optimize both size and speed). For targetting size optimizations, use 'data/pbo-patterns-size.txt'. Notice that some dialects might change the default, for example, the sdcc dialect sets the default to 'data/pbo-patterns-sdcc-speed.txt'
 - ```-po-ldo```: some pattern-based optimizations depend on the specific value that some labels take ('label-dependent optimizations', ldo). These might be dangerous for code that is still in development.
-- ```-dot <output file>```: generates a dot file with a graph representing the whole source code. Convert it to a png using 'dot' like this: ```dot -Tpng <output file>.dot -o <output file>.png```
+- ```-do```: Runs the data optimizer (only provides potential ideas for space saving).
+- ```-do-minsavings <min>```: sets the minimum number of potential bytes that should be saved in order for the data optimizer to generate an optimization suggestion (default value is 4).- ```-dot <output file>```: generates a dot file with a graph representing the whole source code. Convert it to a png using 'dot' like this: ```dot -Tpng <output file>.dot -o <output file>.png```
 - ```-st <output file>```: to output the symbol table.
 - ```-st-constants```: includes constants, in addition to labels, in the output symbol table.
 - ```-sft <output file>```: generates a tsv file with some statistics about the source files.
