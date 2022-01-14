@@ -1512,7 +1512,7 @@ replacement:
 2: *
 constraints:
 regsNotModified(2,A)
-flagsNotUsedAfter(2,S,Z,H,P/V,N,C)
+flagsNotUsedAfter(0,S,Z,H,P/V,N,C)
 
 pattern: Replace ld (?any),0 by ld (?any),a
 1: xor a
