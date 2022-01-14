@@ -17,12 +17,34 @@ I also recorded a series of videos explaining how does MDL work:
 - Version 1.4: https://www.youtube.com/watch?v=yVniGPu-znc (in Spanish), https://www.youtube.com/watch?v=2M8la7TuCzw&t=1s (in English)
 - Introduction to the main idea (earlier versions): https://www.youtube.com/watch?v=g5aoF4-r4v4 , https://www.youtube.com/watch?v=TCtm3FRz45c , and https://www.youtube.com/watch?v=30SEguEDWp0 (in English)
 
-## Command Line Arguments
+## Command Line Arguments (simplified, see below for comprehensive list)
 
 ```java -jar mdl.jar <input file name(s)> [options]```
 
 Several input file names can be specified, separated by spaces. In case that more than one input file name is specified, MDL will just act as if there was a master assembler file that includes them all in the specified order.
-Note: notice that all the tasks concerning generating outputs (assembler, binaries, etc.) will be executed after the optimizers are run.
+
+Note: all the tasks concerning generating outputs (assembler, binaries, etc.) will be executed after the optimizers are run.
+
+- ```-help```: for an exhaustive list of flags (just type java -jar mdl.jar -help).
+- ```-dialect <dialect>```: selects which assembler dialect to use (mdl/asmsx/asmsx-zilog/glass/sjasm/sjasmplus/tniasm/winape/pasmo/sdcc/sdasz80/macro80).
+- ```-so```: Runs the search-based-based optimizer (optimizes code if the input is an assembler file; generates code if the input file is a specification file).
+- ```-ro```: Runs the code reoganizer optimizer.
+- ```-po```: Runs the pattern-based optimizer.
+- ```-do```: Runs the data optimizer (only provides potential ideas for space saving).
+- ```-asm``` <output file>: saves the resulting assembler code in a single asm file.
+- ```-bin``` <output file>: generates an assembled binary.
+- ```-st <output file>```: to output the symbol table.
+  
+See below for a more comprehensive list of flags.
+  
+
+## Command Line Arguments (comprehensive)
+
+```java -jar mdl.jar <input file name(s)> [options]```
+
+Several input file names can be specified, separated by spaces. In case that more than one input file name is specified, MDL will just act as if there was a master assembler file that includes them all in the specified order.
+  
+Note: all the tasks concerning generating outputs (assembler, binaries, etc.) will be executed after the optimizers are run.
 
 - ```-help```: to show this information (this is the only flag that can be used without specifying an input file).
 - ```-cpu <type>```: to select a different CPU (z80/z80msx/z80cpc/z80n/z80next/z180), where z80n and z80next are synonyms (default: z80msx).
