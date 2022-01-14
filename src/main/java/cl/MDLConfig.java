@@ -159,7 +159,7 @@ public class MDLConfig {
             + "```java -jar mdl.jar <input file name(s)> [options]```\n"
             + "\n"
             + "Several input file names can be specified, separated by spaces. In case that more than one input file name is specified, MDL will just act as if there was a master assembler file that includes them all in the specified order.\n"
-            + "Note: notice that all the tasks concerning generating outputs (assembler, binaries, etc.) will be executed after the optimizers are run.\n"
+            + "Note: all the tasks concerning generating outputs (assembler, binaries, etc.) will be executed after the optimizers are run.\n"
             + "\n"
             + "- ```-help```: to show this information (this is the only flag that can be used without specifying an input file).\n"
             + "- ```-cpu <type>```: to select a different CPU (z80/z80msx/z80cpc/z80n/z80next/z180), where z80n and z80next are synonyms (default: z80msx).\n"
