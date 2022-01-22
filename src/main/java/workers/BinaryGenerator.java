@@ -199,6 +199,8 @@ public class BinaryGenerator implements MDLWorker {
                     byte[] data = generateStatementBytes(s, code);
                     if (data != null) {
                         statementBytes.add(new StatementBinaryEffect(s, data, null, null));
+                    } else {
+                        return false;
                     }
                 }
             }
@@ -333,7 +335,7 @@ public class BinaryGenerator implements MDLWorker {
             }            
         }
         
-        return null;
+        return new byte[0];
     }    
     
     
