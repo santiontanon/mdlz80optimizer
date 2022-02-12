@@ -12,16 +12,24 @@ public class MDLLogger {
     public static final int DEBUG = 0;
     public static final int TRACE = 1;
     public static final int INFO = 2;
-    public static final int WARNING = 3;
-    public static final int ERROR = 4;
-    public static final int SILENT = 5;
-    
+    public static final int DIGGEST = 3;
+    public static final int WARNING = 4;
+    public static final int ERROR = 5;
+    public static final int SILENT = 6;
+        
     // colors:
     public static String ANSI_RESET = "\u001B[0m";
     public static String ANSI_RED = "\u001B[31m";
     public static String ANSI_YELLOW = "\u001B[33m";
     public static String ANSI_WHITE = "\u001b[37;1m";
 
+    public String DEBUG_PREFIX = "DEBUG: ";
+    public String TRACE_PREFIX = "TRACE: ";
+    public String INFO_PREFIX = "INFO: ";
+    public String DIGGEST_PREFIX = "DIGGEST: ";
+    public String WARNING_PREFIX = "WARNING: ";
+    public String ERROR_PREFIX = "ERROR: ";
+    
     List<Integer> minLevelToLogStack = new ArrayList<>();
     int minLevelToLog = INFO;
     PrintStream out = System.out;
@@ -38,6 +46,7 @@ public class MDLLogger {
         err = a_err;
     }
     
+
     public void setMinLevelToLog(int a_minLevelToLog)
     {
         minLevelToLog = a_minLevelToLog;
@@ -84,16 +93,19 @@ public class MDLLogger {
         }
         switch (level) {
             case DEBUG:
-                out.println("DEBUG: " + msg);
+                out.println(DEBUG_PREFIX + msg);
                 break;
             case INFO:
-                out.println("INFO: " + msg);
+                out.println(INFO_PREFIX + msg);
+                break;
+            case DIGGEST:
+                out.println(DIGGEST_PREFIX + msg);
                 break;
             case WARNING:
-                out.println(ANSI_YELLOW + "WARNING: " + msg + ANSI_RESET);
+                out.println(ANSI_YELLOW + WARNING_PREFIX + msg + ANSI_RESET);
                 break;
             case ERROR:
-                err.println(ANSI_RED + "ERROR: "+ msg + ANSI_RESET);
+                err.println(ANSI_RED + ERROR_PREFIX + msg + ANSI_RESET);
                 break;
             default:
                 out.println(msg);

@@ -553,9 +553,9 @@ public class SearchBasedOptimizer implements MDLWorker {
 
         Integer noptimizations = r.optimizerSpecificStats.get(SBO_RESULT_KEY);
         if (noptimizations == null) noptimizations = 0;
-        config.info("SearchBasedOptimizer: "+noptimizations+" optimizations applied, " +
-                    r.bytesSaved+" bytes, " + 
-                    r.timeSavingsString() + " " +config.timeUnit+"s saved.");
+        config.diggest("SearchBasedOptimizer: "+noptimizations+" optimizations applied, " +
+                r.bytesSaved+" bytes, " + 
+                r.timeSavingsString() + " " +config.timeUnit+"s saved.");
         config.optimizerStats.addSavings(r);
         if (config.dialectParser != null) return config.dialectParser.postCodeModificationActions(code);
         return true;

@@ -172,6 +172,7 @@ public class MDLConfig {
             + "- ```-ansion```: turns on color message output usin ANSI codes (default: on in Unix, off in Windows).\n"
             + "- ```-ansioff```: turns off color message output usin ANSI codes.\n"
             + "- ```-quiet```: turns off info messages; only outputs warnings and errors.\n"
+            + "- ```-diggest```: turns off most info messages; only outputs summary messages, warnings and errors.\n"
             + "- ```-debug```: turns on debug messages.\n"
             + "- ```-trace```: turns on trace messages.\n"
             + "- ```-warn```: turns on all warnings.\n"
@@ -362,6 +363,11 @@ public class MDLConfig {
                         
                     case "-quiet":
                         logger.minLevelToLog = MDLLogger.WARNING;
+                        args.remove(0);
+                        break;
+
+                    case "-diggest":
+                        logger.minLevelToLog = MDLLogger.DIGGEST;
                         args.remove(0);
                         break;
 
@@ -602,6 +608,11 @@ public class MDLConfig {
 
     public void info(String message) {
         logger.log(MDLLogger.INFO, message);
+    }
+
+
+    public void diggest(String message) {
+        logger.log(MDLLogger.DIGGEST, message);
     }
 
 

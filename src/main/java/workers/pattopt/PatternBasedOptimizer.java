@@ -286,9 +286,9 @@ public class PatternBasedOptimizer implements MDLWorker {
 
         Integer npatterns = r.optimizerSpecificStats.get("Pattern-based optimizer pattern applications");
         if (npatterns == null) npatterns = 0;
-        config.info("PatternBasedOptimizer: "+npatterns+" patterns applied, " +
-                    r.bytesSaved+" bytes, " + 
-                    r.timeSavingsString() + " " +config.timeUnit+"s saved.");
+        config.diggest("PatternBasedOptimizer: "+npatterns+" patterns applied, " +
+                       r.bytesSaved+" bytes, " + 
+                       r.timeSavingsString() + " " +config.timeUnit+"s saved.");
         return r;
     }
     

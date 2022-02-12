@@ -164,7 +164,7 @@ public class CodeReorganizer implements MDLWorker {
             }
         }
                 
-        config.info(SAVINGS_REORGANIZATIONS_CODE + ": "+savings.optimizerSpecificStats.get(SAVINGS_REORGANIZATIONS_CODE)+", " +
+        config.diggest(SAVINGS_REORGANIZATIONS_CODE + ": "+savings.optimizerSpecificStats.get(SAVINGS_REORGANIZATIONS_CODE)+", " +
             savings.bytesSaved + " bytes, " + 
             savings.timeSavingsString() + " " +config.timeUnit+"s saved.");
 
