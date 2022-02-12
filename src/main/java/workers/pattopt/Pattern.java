@@ -12,6 +12,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import cl.MDLConfig;
 import code.CPUOp;
 import code.CPUOpDependency;
+import code.CPUOpSpecArg;
 import code.CodeBase;
 import code.Expression;
 import code.SourceConstant;
@@ -396,6 +397,24 @@ public class Pattern {
             return pattern.symbolName.equals(arg2.symbolName);
         }
         if (pattern.args != null && arg2.args != null && pattern.args.size() == arg2.args.size()) {
+            // Special case of index registers (ix/iy):
+            if (pattern.type == Expression.EXPRESSION_PARENTHESIS &&
+                pattern.args.get(0).type == Expression.EXPRESSION_SUM &&
+                pattern.args.get(0).args.get(0).type == Expression.EXPRESSION_SYMBOL &&
+                pattern.args.get(0).args.get(0).symbolName.startsWith("?reg") &&
+                pattern.args.get(0).args.get(1).type == Expression.EXPRESSION_SYMBOL &&
+                pattern.args.get(0).args.get(1).symbolName.startsWith("?const")) {
+                if (arg2.type == Expression.EXPRESSION_PARENTHESIS &&
+                    arg2.args.get(0).type == Expression.EXPRESSION_REGISTER_OR_FLAG) {
+                    if (!unifyExpressions(pattern.args.get(0).args.get(0), arg2.args.get(0), false, match, s, code)) {
+                        return false;
+                    }
+                    if (!match.addVariableMatch(pattern.args.get(0).args.get(1).symbolName, Expression.constantExpression(0, config))) {
+                        return false;
+                    }
+                    return true;
+                }
+            }
             for(int i = 0;i<pattern.args.size();i++) {
                 if (!unifyExpressions(pattern.args.get(i), arg2.args.get(i), false, match, s, code)) return false;
             }
@@ -857,6 +876,7 @@ public class Pattern {
                 if (!CPUOp.offsetWithinJrRange(diff)) return false;
                 break;
             }
+            
             case "regsNotModified":
             {
                 int idx = Integer.parseInt(constraint.args[0]);
@@ -864,7 +884,7 @@ public class Pattern {
                 if (match.map.containsKey(idx)) {
                     statements.addAll(match.map.get(idx));
                 } else {
-                    return false;
+                    return true;
                 }
                 for(int i = 1;i<constraint.args.length;i++) {
                     String reg = constraint.args[i];
@@ -878,6 +898,27 @@ public class Pattern {
                 }
                 break;
             }
+            
+            case "regsModified":
+            {
+                int idx = Integer.parseInt(constraint.args[0]);
+                List<CodeStatement> statements = new ArrayList<>();
+                if (match.map.containsKey(idx)) {
+                    statements.addAll(match.map.get(idx));
+                } else {
+                    return false;
+                }
+                for(int i = 1;i<constraint.args.length;i++) {
+                    String reg = constraint.args[i];
+                    for(CodeStatement s:statements) {
+                        if (!regNotModified(s, reg, f, code)) {
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            }            
+            
             case "flagsNotModified":
             {
                 int idx = Integer.parseInt(constraint.args[0]);
@@ -1039,6 +1080,70 @@ public class Pattern {
                 }
                 break;
             }
+            
+            case "memoryNotWritten":
+            {
+                int idx = Integer.parseInt(constraint.args[0]);
+                List<CodeStatement> statements = new ArrayList<>();
+                if (match.map.containsKey(idx)) {
+                    statements.addAll(match.map.get(idx));
+                } else {
+                    return true;
+                }
+                String expression = constraint.args[1];
+                for(String variable: match.variables.keySet()) {
+                    expression = expression.replace(variable, match.variables.get(variable).toString());
+                }
+                List<String> tokens = config.tokenizer.tokenize(expression);
+                // We add a parenthesis, since that's how it is in the ops:
+                Expression exp = Expression.parenthesisExpression(
+                        config.expressionParser.parse(tokens, null, null, code),
+                        "(", config);
+                for(CodeStatement s:statements) {
+                    if (s.op == null) continue;
+                    if (s.op.isLdToMemory()) {
+                        PatternMatch match2 = new PatternMatch(match);
+                        if (unifyExpressions(exp, s.op.args.get(0), true, match2, s, code)) {
+                            return false;
+                        }
+                    }
+                }
+                break;
+            }
+            
+            case "memoryNotUsed":
+            {
+                int idx = Integer.parseInt(constraint.args[0]);
+                List<CodeStatement> statements = new ArrayList<>();
+                if (match.map.containsKey(idx)) {
+                    statements.addAll(match.map.get(idx));
+                } else {
+                    return true;
+                }
+                String expression = constraint.args[1];
+                for(String variable: match.variables.keySet()) {
+                    expression = expression.replace(variable, match.variables.get(variable).toString());
+                }
+                List<String> tokens = config.tokenizer.tokenize(expression);
+                // We add a parenthesis, since that's how it is in the ops:
+                Expression exp = Expression.parenthesisExpression(
+                        config.expressionParser.parse(tokens, null, null, code),
+                        "(", config);
+                for(CodeStatement s:statements) {
+                    if (s.op == null) continue;
+                    int i = s.op.spec.args.size() - 1;  // check only the last argument (for reads)
+                    CPUOpSpecArg argSpec = s.op.spec.args.get(i);
+                    if (argSpec.wordConstantIndirectionAllowed ||
+                        argSpec.regIndirection != null ||
+                        argSpec.regOffsetIndirection != null) {
+                        PatternMatch match2 = new PatternMatch(match);
+                        if (unifyExpressions(exp, s.op.args.get(0), true, match2, s, code)) {
+                            return false;
+                        }
+                    }
+                }
+                break;
+            }            
             
             default:
                 throw new UnsupportedOperationException("Unknown pattern constraint " + constraint.name);

@@ -15,6 +15,7 @@
 ; supported constraints:
 ; - regsNotUsedAfter(#, reg1, ..., reg)
 ; - regsNotModified(#, reg1, ..., reg)
+; - regsModified(#, reg1, ..., reg)
 ; - regsNotUsed(#, reg1, ..., reg)
 ; - flagsNotUsedAfter(#, flag1, ..., flagn)
 ; - flagsNotModified(#, flag1, ..., flagn)
@@ -28,6 +29,9 @@
 ; - evenPushPops(#)
 ; - atLeastOneCPUOp(#)
 ; - noStackArguments(label): ensures that the function "label" does not take arguments from the stack.
+; - memoryNotWritten(#, exp): ensures the memory location pointed to by exp is not written in block #. 
+;                             Notice that matching is by expression matching, so, if you specify a constant
+;                             and there happens to be a register with that has that address, it will not match.
 ; You can add ":ID" after any constraint, which the effect that the constraint will be checked right after the pattern line
 ; with number == ID is matched.
 
@@ -1760,6 +1764,67 @@ constraints:
 regsNotUsedAfter(2, ?reg2)
 regsNotUsedAfter(2, ?reg16)
 in(?reg16,bc,de,hl,ix,iy)
+
+pattern: replace ld a, (?regixiy + ?const1); add a, ?const2; ld (?regixiy + ?const1), a	with inc (?regixiy + ?const1) ... inc (?regixiy + ?const1)
+0: ld a, (?regixiy + ?const1)
+1: add a, ?const2
+2: ld (?regixiy + ?const1), a	
+replacement:
+0: [?const2] inc (?regixiy + ?const1)
+constraints:
+in(?regixiy,ix,iy)
+equal(?const2 >= 0, -1)
+equal(?const2 <= 2, -1)
+regsNotUsedAfter(2,A)
+
+pattern: Move ld ?reg2, (?regixiy + ?const1) before ld ?reg1, (?regixiy + ?const1), and replace the latter with ld ?reg1, ?reg2.
+0: ld ?reg1, (?regixiy + ?const1)
+1: *
+2: ld ?reg2, (?regixiy + ?const1)
+replacement:
+2: ld ?reg2, (?regixiy + ?const1)
+0: ld ?reg1, ?reg2
+1: *
+constraints:
+in(?regixiy,ix,iy)
+regsNotUsed(1,?reg2)
+regsNotModified(1,?reg2)
+regsModified(1,?reg1,?regixiy)
+memoryNotWritten(1,?regixiy + ?const1)
+
+pattern: Prevent moving ?regpair to hl by using register a.
+0: ld l, ?regpairl
+1: ld h, ?regpairh
+2: ld (hl), ?const1
+3: inc hl
+4: ld (hl), ?const2
+5: inc ?regpair
+6: inc ?regpair
+replacement:
+0: ld a, ?const1
+1: ld (?regpair), a
+2: inc ?regpair
+3: ld a, ?const2
+4: ld (?regpair), a
+6: inc ?regpair
+constraints:
+regpair(?regpair,?regpairh,?regpairl)
+regsNotUsedAfter(6,A)
+
+pattern: Move ld (?regpair + ?const2), a just before ld a, (?regixiy + ?const1), to save one of the ld a, (?regixiy + ?const1).
+0: ld a, (?regixiy + ?const1)
+1: *
+2: ld a, (?regixiy + ?const1)
+3: ld (?regixiy2 + ?const2), a
+replacement:
+0: ld a, (?regixiy + ?const1)
+3: ld (?regixiy2 + ?const2), a
+1: *
+constraints:
+in(?regixiy,ix,iy)
+in(?regixiy2,ix,iy)
+memoryNotWritten(1,?regixiy + ?const1)
+memoryNotUsed(1,?regixiy + ?const2)
 
 ; automatically generated
 pattern: replace rlc ?reg0; rl ?reg1 with rlca; rl ?reg1
