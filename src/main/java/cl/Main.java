@@ -18,7 +18,7 @@ import workers.searchopt.SearchBasedOptimizer;
 
 public class Main {
     
-    public static String VERSION_STRING = "v2.3";
+    public static String VERSION_STRING = "v2.4dev";
 
     public static void main(String args[]) throws Exception {
         // Set up the MDL configuration:
