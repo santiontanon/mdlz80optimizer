@@ -1824,7 +1824,7 @@ constraints:
 in(?regixiy,ix,iy)
 in(?regixiy2,ix,iy)
 memoryNotWritten(1,?regixiy + ?const1)
-memoryNotUsed(1,?regixiy + ?const2)
+memoryNotUsed(1,?regixiy2 + ?const2)
 
 ; automatically generated
 pattern: replace rlc ?reg0; rl ?reg1 with rlca; rl ?reg1
