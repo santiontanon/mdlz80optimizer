@@ -1567,7 +1567,10 @@ public class Pattern {
     }
     
     
-    // Checks that there is no unbound variable on the replacement
+    // Checks:
+    // - that there is no unbound variable on the replacement
+    // - that all numbers appearing in the pattern, appear in the same order
+    //   in the replacement.
     public boolean checkIntegrity(MDLConfig config)
     {
         CodeBase code = new CodeBase(config);
@@ -1581,7 +1584,8 @@ public class Pattern {
         for(Constraint c:constraints) {
             for(String arg:c.args) {
                 List<String> tokens = config.tokenizer.tokenize(arg);
-                Expression exp = config.expressionParser.parse(tokens, null, null, code);
+                Expression exp = config.expressionParser.parse(tokens, null,
+                                                               null, code);
                 definedSymbols.addAll(exp.getAllSymbols());
             }
         }
@@ -1590,13 +1594,32 @@ public class Pattern {
                 replacementSymbols.addAll(exp.getAllSymbols());
             }
         }
-        
         for(String symbol:replacementSymbols) {
             if (!definedSymbols.contains(symbol)) {
-                config.error("Symbol " + symbol + " is unbound in pattern!");
+                config.error("Symbol " + symbol + " is unbound in pattern: " + name);
                 return false;
             }
             
+        }
+        
+//            public List<CPUOpPattern> pattern = new ArrayList<>();
+//    public List<CPUOpPattern> replacement = new ArrayList<>();
+
+        for(int i = 0;i<pattern.size();i++) {
+            for(int j = i+1;j<pattern.size();j++) {
+                int pattID1 = pattern.get(i).ID;
+                int pattID2 = pattern.get(j).ID;
+                Integer repIdx1 = null;
+                Integer repIdx2 = null;
+                for(int k = 0;k<replacement.size();k++) {
+                    if (replacement.get(k).ID == pattID1) repIdx1 = k;
+                    if (replacement.get(k).ID == pattID2) repIdx2 = k;
+                }
+                if (repIdx1 != null && repIdx2 != null && repIdx1 > repIdx2) {
+                    config.error("Wrong ID order in pattern: " + name);
+                    return false;
+                }
+            }
         }
         
         return true;
