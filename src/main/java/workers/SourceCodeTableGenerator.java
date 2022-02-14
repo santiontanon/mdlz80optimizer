@@ -77,14 +77,15 @@ public class SourceCodeTableGenerator implements MDLWorker {
         List<String> sortedSources = new ArrayList<>();
         for(SourceFile f: code.getSourceFiles()) {
             String data = f.fileName + "\t" + f.sizeInBytes(code, false, false, false) +
-                                       "\t" + f.sizeInBytes(code, true, true, false);
+                                       "\t" + f.sizeInBytes(code, true, true, false) + 
+                                       "\t" + f.accumTimingString();
             fileInfo.put(f.fileName, data);
 
             if (config.includeBinariesInAnalysis) {
                 for(CodeStatement s : f.getStatements()) {
                     if (s.type == CodeStatement.STATEMENT_INCBIN) {
                         String data2 = s.incbin + "\t" + s.incbinSize +
-                                                 "\t" + s.incbinSize;
+                                                 "\t" + s.incbinSize + "\t-";
                         fileInfo.put(s.incbin.getName(), data2);
                     }
                 }
@@ -94,7 +95,9 @@ public class SourceCodeTableGenerator implements MDLWorker {
         sortedSources.addAll(fileInfo.keySet());
         Collections.sort(sortedSources);
         StringBuilder sb = new StringBuilder();
-        sb.append("source file\tself size\ttotal size\n");
+        sb.append("source file\tself size\ttotal size\taccum ");
+        sb.append(config.timeUnit);
+        sb.append("s\n");
         for(String name:sortedSources) {
             sb.append(fileInfo.get(name));
             sb.append("\n");

@@ -126,12 +126,13 @@ public class DotGenerator implements MDLWorker {
     }
 
 
-    static String sourceFileDotCountent(SourceFile f, CodeBase code)
+    String sourceFileDotCountent(SourceFile f, CodeBase code)
     {
         String str = "{{";
         str += "{name:|" + f.fileName + "}|";
         str += "{size(self):|" + f.sizeInBytes(code, false, false, false) + "}|";
-        str += "{size(total):|" + f.sizeInBytes(code, true, true, false) + "}";
+        str += "{size(total):|" + f.sizeInBytes(code, true, true, false) + "}|";
+        str += "{"+config.timeUnit+"s(self):|" + f.accumTimingString() + "}";
         str += "}}";
 
         return str;

@@ -117,6 +117,34 @@ public class SourceFile {
         return size;
     }
 
+    
+    // Returns the accumulated time of all the assembler instructions in this
+    // file.
+    public int[] accumTiming() {
+        int time[] = {0,0};
+        for (CodeStatement s : statements) {
+            if (s.op != null) {
+                time[0] += s.op.spec.times[0];
+                if (s.op.spec.times.length >= 2) {
+                    time[1] += s.op.spec.times[1];
+                } else {
+                    time[1] += s.op.spec.times[0];
+                }
+            }
+        }
+        return time;
+    }
+    
+    
+    public String accumTimingString() {
+        int time[] = accumTiming();
+        if (time[0] == time[1]) {
+            return "" + time[0];
+        } else {
+            return time[0] + "/" + time[1];
+        }
+    }
+    
 
     // returns <statement, callstack>
     public List<Pair<CodeStatement, List<CodeStatement>>> 
