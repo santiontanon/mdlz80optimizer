@@ -1,0 +1,7 @@
+Data: equ 1
+Data.Field: equ 0
+label: equ #0000
+label.data1: equ #0000
+label.data1.Field: equ #0000
+label.data2: equ #0001
+label.data2.Field: equ #0001

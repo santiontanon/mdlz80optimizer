@@ -198,10 +198,11 @@ public abstract class SjasmDerivativeDialect implements Dialect {
                     s.label.clearCache();
                     
                     int currentOffset = 0;
-                    for(int i = 0;i<st.attributeNames.size();i++) {                        
+                    for(int i = 0;i<st.attributeNames.size();i++) {    
                         CodeStatement s2 = new CodeStatement(CodeStatement.STATEMENT_CONSTANT, sl, source, config);
-                        SourceConstant c = new SourceConstant(s.label.name + "." + st.rawAttributeNames.get(i),
-                                s.label.name + "." + st.rawAttributeNames.get(i), 
+                        SourceConstant c = new SourceConstant(
+                                s.label.name + "." + st.rawAttributeNames.get(i),
+                                s.label.originalName + "." + st.rawAttributeNames.get(i), 
                                 Expression.operatorExpression(Expression.EXPRESSION_SUM, 
                                         exp, 
                                         Expression.constantExpression(currentOffset, config), config), s2, config);
@@ -305,8 +306,9 @@ public abstract class SjasmDerivativeDialect implements Dialect {
                             return false;
                     }
                     if (s.label != null) {
-                        SourceConstant c = new SourceConstant(s.label.name + "." + st.rawAttributeNames.get(i),
-                                s.label.name + "." + st.rawAttributeNames.get(i), 
+                        SourceConstant c = new SourceConstant(
+                                s.label.name + "." + st.rawAttributeNames.get(i),
+                                s.label.originalName + "." + st.rawAttributeNames.get(i), 
                                 Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, s2, code, config), s2, config);
                         s2.label = c;
                         int res = code.addSymbol(c.name, c);

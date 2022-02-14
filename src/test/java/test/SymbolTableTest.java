@@ -35,6 +35,8 @@ public class SymbolTableTest {
                                                                           "data/generationtests/mdl-circular-expected-st.asm")); }
     @Test public void test2() throws IOException { Assert.assertTrue(test("data/generationtests/glass-macro.asm", "glass",
                                                                           "data/generationtests/glass-macro-expected-st.asm")); }
+    @Test public void test3() throws IOException { Assert.assertTrue(test("data/symboltests/sjasmplus1.asm", "sjasmplus",
+                                                                          "data/symboltests/sjasmplus1-expected-st.txt")); }
 
     private boolean test(String inputFile, String dialect, String expectedOutputFile) throws IOException
     {
