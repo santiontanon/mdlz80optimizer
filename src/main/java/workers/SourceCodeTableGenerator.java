@@ -23,6 +23,7 @@ public class SourceCodeTableGenerator implements MDLWorker {
     MDLConfig config = null;
 
     String outputFileName = null;
+    boolean measureIndividualFunctions = false;
 
     public SourceCodeTableGenerator(MDLConfig a_config)
     {
@@ -33,7 +34,12 @@ public class SourceCodeTableGenerator implements MDLWorker {
     public String docString() {
         // This string has MD tags, so that I can easily generate the corresponding documentation in github with the 
         // hidden "-helpmd" flag:        
-        return "- ```-sft <output file>```: generates a tsv file with some statistics about the source files.\n";
+        return "- ```-sft <output file>```: generates a tsv file with some " +
+               "statistics about the source files (bytes used, accumulated " +
+               "time of all the CPU ops in the file, etc.).\n" +
+               "- ```-sft-functions```: MDL will try to identify individual " +
+               "functions in the code, and add per-function statistics to the " +
+               "file generated with the ```-sft``` flag.\n";
     }
 
     
@@ -48,6 +54,9 @@ public class SourceCodeTableGenerator implements MDLWorker {
         if (flags.get(0).equals("-sft") && flags.size()>=2) {
             flags.remove(0);
             outputFileName = flags.remove(0);
+            return true;
+        } else if (flags.get(0).equals("-sft-functions")) {
+            measureIndividualFunctions = true;
             return true;
         }
         return false;
@@ -89,6 +98,11 @@ public class SourceCodeTableGenerator implements MDLWorker {
                         fileInfo.put(s.incbin.getName(), data2);
                     }
                 }
+            }
+            
+            if (measureIndividualFunctions) {
+                // TO DO: 
+                // ...
             }
         }
 

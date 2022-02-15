@@ -1780,6 +1780,7 @@ in(?regixiy,ix,iy)
 equal(?const2 >= 0, -1)
 equal(?const2 <= 2, -1)
 regsNotUsedAfter(2,A)
+flagsNotUsedAfter(2,C)
 
 pattern: Move ld ?reg2, (?regixiy + ?const1) before ld ?reg1, (?regixiy + ?const1), and replace the latter with ld ?reg1, ?reg2.
 name: sdcc-inefficient-index-register-use1
