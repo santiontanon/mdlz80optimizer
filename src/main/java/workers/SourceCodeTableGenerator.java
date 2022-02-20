@@ -182,16 +182,34 @@ public class SourceCodeTableGenerator implements MDLWorker {
         // v1: find the first label, and run until finding a "ret", if there is
         // any non-op statement, cancel the whole function and restart:
         CodeStatement functionStart = null;
+        CodeStatement lastOp = null;
         for(CodeStatement s:f.getStatements()) {
             if (s.type == CodeStatement.STATEMENT_NONE ||
                 s.type == CodeStatement.STATEMENT_CONSTANT || 
                 s.type == CodeStatement.STATEMENT_CPUOP) {
-                if (functionStart == null) {
-                    if (s.label != null) {
+                boolean functionEnd = false;
+                if (s.label != null) {
+                    if (functionStart == null || lastOp == null) {                
                         functionStart = s;
+                    } else {
+                        // We found another label, see if a new function is
+                        // startig here:
+                        if (lastOp.op.isJump() && !lastOp.op.isConditional()) {
+                            // potential for function end. But if we reached
+                            // here, it means that none of the conditions below
+                            // are satisfied. So, see if find other clues:
+                            if (config.dialectParser != null && 
+                                config.dialectParser.hasFunctionStartMark(s)) {
+                                // function end!
+                                functions.add(Pair.of(functionStart, lastOp));
+                                functionStart = s;
+                                lastOp = null;                                
+                            }
+                        }
                     }
-                } else {
-                    boolean functionEnd = false;
+                }
+                if (s.op != null) lastOp = s;
+                if (!functionEnd && functionStart != null) {
                     if (s.op != null && s.op.isRet() && !s.op.isConditional()) {
                         functionEnd = true;
                     }
@@ -201,17 +219,26 @@ public class SourceCodeTableGenerator implements MDLWorker {
                             functionEnd = true;
                         }
                     }
-                    if (functionEnd) {
-                        // function end:
-                        functions.add(Pair.of(functionStart, s));
-                        functionStart = null;
-                    }
+                }
+                if (functionEnd) {
+                    // function end:
+                    functions.add(Pair.of(functionStart, s));
+                    functionStart = null;
+                    lastOp = null;
                 }
             } else {
                 // found a non-code part, cancel the current function:
                 functionStart = null;
             }
         }
+        
+        if (functionStart != null && lastOp != null) {
+            // We found the end of a file, and we have some code leftover,
+            // see if there was a function terminating in a non-standard way:
+            if (lastOp.op.isJump() && !lastOp.op.isConditional()) {
+                functions.add(Pair.of(functionStart, lastOp));
+            }
+        }        
         
         return functions;
     }

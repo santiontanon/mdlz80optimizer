@@ -178,4 +178,16 @@ public interface Dialect {
     {
         return false;
     }
+    
+    
+    // Some dialects might mark function starts with some special notation. 
+    // MDL can exploit these annotations in a few internal methods, such as
+    // "function identification" in the SourceCodeTableGenerator worker.
+    default boolean hasFunctionStartMark(CodeStatement s)
+    {
+        if (s.label != null) {
+            return labelIsExported(s.label);
+        }
+        return false;
+    }
 }
