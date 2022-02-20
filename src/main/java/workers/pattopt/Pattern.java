@@ -591,6 +591,17 @@ public class Pattern {
             if (!checkConstraint(constraint, match, f, code, pbo,
                                  index_to_display_message_on)) return null;
         }
+        
+        // Some optimizations are not safe in some dialects. For example, SDCC
+        // uses the stack in a very particular way, which makes MDL believe
+        // some instructions are useless. Since, it is not always possible to
+        // insert "mdl:-no-opt" tags in SDCC, we add a dialect-specific check
+        // here:
+        // Notice we use "pbo.config", since patterns use the default MDL
+        // dialect, so, we need to access the pbo config to get the actual 
+        // dialect we are currently using:
+        if (pbo.config.dialectParser != null &&
+            !pbo.config.dialectParser.safeOptimization(match)) return null;
 
         return match;
     }

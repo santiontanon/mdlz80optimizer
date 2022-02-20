@@ -18,6 +18,8 @@ import java.util.List;
 import org.apache.commons.lang3.tuple.Pair;
 import parser.LineParser;
 import parser.SourceLine;
+import workers.pattopt.CPUOpPattern;
+import workers.pattopt.PatternMatch;
 
 /**
  *
@@ -503,10 +505,44 @@ public class SDCCDialect implements Dialect {
     }
     
         
-    
     @Override
     public boolean labelIsExported(SourceConstant label)
     {
         return globalLabels.contains(label.originalName);
     }
+    
+    
+    @Override
+    public boolean safeOptimization(PatternMatch match)
+    {
+        // Check if this pattern would remove a "ld sp,ix/iy" instruction:
+        List<Integer> IDsNotToDelete = new ArrayList<>();
+        for(Integer id:match.map.keySet()) {
+            List<CodeStatement> l = match.map.get(id);
+            for(CodeStatement s:l) {
+                if (s.op != null) {
+                    if (s.op.isLd() &&
+                        "sp".equalsIgnoreCase(s.op.args.get(0).registerOrFlagName)) {
+                        IDsNotToDelete.add(id);
+                        break;
+                    }
+                }
+            }
+        }
+        for(int id:IDsNotToDelete) {
+            boolean found = false;
+            for(CPUOpPattern patt:match.pattern.replacement) {
+                if (patt.ID == id) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                // unsafe pattern!
+                config.debug("SDCCDialect prevented optimization: " + match.pattern.message);
+                return false;
+            }
+        }
+        return true;
+    }    
 }

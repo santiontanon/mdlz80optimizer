@@ -16,6 +16,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import parser.MacroExpansion;
 import parser.SourceLine;
 import parser.SourceMacro;
+import workers.pattopt.PatternMatch;
 import workers.reorgopt.CodeBlock;
 
 /**
@@ -189,5 +190,13 @@ public interface Dialect {
             return labelIsExported(s.label);
         }
         return false;
+    }
+    
+    
+    // Check to prevent some optimizations that might be unsafe in certain
+    // dialects.
+    default boolean safeOptimization(PatternMatch match)
+    {
+        return true;
     }
 }
