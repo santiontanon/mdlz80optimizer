@@ -57,7 +57,7 @@ public class SearchBasedOptimizer implements MDLWorker {
     
     Random random = new Random();
     MDLConfig config;
-    MDLConfig internalConfig;  // an alternative config to parse ops using default z80 syntax
+    MDLConfig internalConfig = null;  // an alternative config to parse ops using default z80 syntax
     
     boolean trigger = false;
     int operation = SBO_GENERATE;
@@ -95,17 +95,7 @@ public class SearchBasedOptimizer implements MDLWorker {
         precomputeScheduleSize.put(SIZE_TO_PRECOMPUTE3, 3);
         precomputeScheduleTime.put(3, 2);
         precomputeScheduleTime.put(TIME_TO_PRECOMPUTE3, 3);
-        config = a_config;
-        
-        internalConfig = new MDLConfig();
-        internalConfig.labelsHaveSafeValues = config.labelsHaveSafeValues;
-        try {
-            internalConfig.parseArgs("dummy", "-dialect", "mdl", "-cpu", config.cpu);
-        } catch(IOException e) {
-            config.error("Problem initializing the SearchBasedOptimizer!");
-        }
-        internalConfig.logger = config.logger;
-        
+        config = a_config;        
     }
     
     
@@ -260,6 +250,15 @@ public class SearchBasedOptimizer implements MDLWorker {
     
     @Override
     public boolean work(CodeBase a_code) {
+        internalConfig = new MDLConfig();
+        internalConfig.labelsHaveSafeValues = config.labelsHaveSafeValues;
+        try {
+            internalConfig.parseArgs("dummy", "-dialect", "mdl", "-cpu", config.cpu);
+        } catch(IOException e) {
+            config.error("Problem initializing the SearchBasedOptimizer!");
+        }
+        internalConfig.logger = config.logger;
+        
         if (operation == SBO_GENERATE) {
             return workGenerate(a_code);
         } else {
@@ -407,13 +406,13 @@ public class SearchBasedOptimizer implements MDLWorker {
                         threads[i].start();
                     }
                     for(int i = 0;i<nThreads;i++) threads[i].join();
-                    if (state.bestOps != null) break;
                     String time = String.format("%.02f", (System.currentTimeMillis() - start)/1000.0f) + "s";
                     if (silentSearch) {
                         config.debug("SearchBasedOptimizer: depth "+depth+" complete ("+state.solutionsEvaluated+" solutions tested, time elapsed: "+time+")");
                     } else {
                         config.info("SearchBasedOptimizer: depth "+depth+" complete ("+state.solutionsEvaluated+" solutions tested, time elapsed: "+time+")");
                     }
+                    if (state.bestOps != null) break;
                 }
 
             } else if (spec.searchType == SEARCH_ID_BYTES) {
@@ -814,9 +813,9 @@ public class SearchBasedOptimizer implements MDLWorker {
 //        config.info("SBO: Optimizing from line " + f.getStatements().get(line).op + "\t\tknowing: " + knownRegisterValues);
         
 //        config.debug("SBO: Optimizing lines " + line + " -> " + line2);
-//        for(CodeStatement s:codeToOptimize) {
-//            config.info("    " + s);
-//        }
+        for(CodeStatement s:codeToOptimize) {
+            config.debug("    " + s);
+        }
         
         // - Create a specification, and synthesize test cases:
         Specification spec = new Specification();
@@ -919,9 +918,9 @@ public class SearchBasedOptimizer implements MDLWorker {
         registersUsedAfter.remove(RegisterNames.R);
         if (!inputRegisters.contains(RegisterNames.F)) inputRegisters.add(RegisterNames.F);
         List<Integer> flagsUsedAfter = findFlagsUsedAfter(codeToOptimize, f, code);
-//        System.out.println("    - Input registers: " + inputRegisters);
-//        System.out.println("    - Goal registers: " + registersUsedAfter);
-//        System.out.println("    - Goal flags: " + flagsUsedAfter);
+        config.debug("    - Input registers: " + inputRegisters);
+        config.debug("    - Goal registers: " + registersUsedAfter);
+        config.debug("    - Goal flags: " + flagsUsedAfter);
 
         // Start State:
         for(String reg:knownRegisterValues.keySet()) {

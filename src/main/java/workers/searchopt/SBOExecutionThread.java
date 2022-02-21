@@ -535,7 +535,7 @@ public class SBOExecutionThread extends Thread {
             if (spec.allowRamUse) {
                 ((TrackingZ80Memory)z80.getRAM()).clearMemoryAccessesRandomizingThem(spec.codeStartAddress, breakPoint);
             }
-            return -1;
+            return -2;
         }
     }    
     
