@@ -73,7 +73,8 @@ public class SDCCDialect implements Dialect {
         config.lineParser.KEYWORD_DW = ".dw";
         config.lineParser.addKeywordSynonym(".word", config.lineParser.KEYWORD_DW);
         config.lineParser.addKeywordSynonym(".fdb", config.lineParser.KEYWORD_DW);
-        
+
+        config.lineParser.KEYWORD_INCBIN = ".incbin";
         config.lineParser.KEYWORD_ORG = ".org";
         
         config.preProcessor.MACRO_MACRO = ".macro";
