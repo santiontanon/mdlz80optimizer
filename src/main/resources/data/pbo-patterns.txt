@@ -910,6 +910,7 @@ constraints:
 regsNotUsedAfter(3,DE)
 
 pattern: Replace inc ?reg; ... inc ?reg with ld a,?reg; add a,?const; ld ?reg,a
+name: inc-to-add
 0: [?const] inc ?reg
 replacement:
 0: ld a,?reg

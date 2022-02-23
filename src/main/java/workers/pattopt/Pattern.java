@@ -1192,6 +1192,10 @@ public class Pattern {
                             config.error("Replacing instructions matched with a wildcard is not yet supported!");
                             return false;
                         } else {
+                            List<CodeStatement> l2 = match.map.get(key);
+                            if (!l2.isEmpty()) {
+                                replacementInsertionPoints.put(replacement.get(j), l.indexOf(l2.get(0)));
+                            }
                             found = true;
                             insertionPoint = -1;
                             break;
@@ -1288,10 +1292,13 @@ public class Pattern {
         // add the missing replacements:
         for(int ID:replacementIDs) {
             CPUOpPattern r = null;
-            int rInsertionPoint = -1;
-            for(CPUOpPattern r2:replacement) {
+            int rInsertionPoint;
+            int replacementIdx = -1;
+            for(int i = 0;i<replacement.size();i++) {
+                CPUOpPattern r2 = replacement.get(i);
                 if (r2.ID == ID) {
                     r = r2;
+                    replacementIdx = i;
                     break;
                 }
             }
@@ -1300,18 +1307,21 @@ public class Pattern {
                 return false;
             }
             
+            config.debug("inserting additional replacement " + ID + " (idx: " + replacementIdx + ")");
+            config.debug("IDs with insertion points: " + replacementInsertionPoints.keySet());
+            
             // find the insertion point:
-            int lastIdx = replacement.indexOf(lastReplacementInserted);
-            int idx = replacement.indexOf(r);
-            if (lastIdx == -1 || idx == lastIdx + 1) {
+            if (replacementIdx == replacement.size() - 1) {
                 rInsertionPoint = insertionPoint;
-            } else if (idx + 1 < replacement.size()) {
-                rInsertionPoint = replacementInsertionPoints.get(replacement.get(idx+1));
+            } else if (replacementInsertionPoints.containsKey(replacement.get(replacementIdx+1))) {
+                rInsertionPoint = replacementInsertionPoints.get(replacement.get(replacementIdx+1));
+            } else if (replacementIdx > 0 && lastReplacementInserted == replacement.get(replacementIdx-1)) {
+                rInsertionPoint = insertionPoint;
             } else {
-                config.error("Could not determine the insertion point in an additional replacement for: " + r);
+                config.error("Unsupported case when inserting new replacements in an optimization pattern! (name: " + name + ") " + message);
                 return false;
             }
-            
+                        
             if (rInsertionPoint == -1) {
                 config.error("Could not determine the insertion point in an additional replacement for: " + r);
                 return false;

@@ -18,18 +18,3 @@
 
 loop:
     jp loop
-
-
-; pattern: Move ld (?regpair + ?const2), a just before ld a, (?regixiy + ?const1), to save one of the ld a, (?regixiy + ?const1).
-; 0: ld a, (?regixiy + ?const1)
-; 1: *
-; 2: ld a, (?regixiy + ?const1)
-; 3: ld (?regixiy2 + ?const2), a
-; replacement:
-; 0: ld a, (?regixiy + ?const1)
-; 3: ld (?regixiy2 + ?const2), a
-; 1: *
-; constraints:
-; in(?regixiy,ix,iy)
-; memoryNotWritten(1,?regixiy + ?const1)
-; memoryNotUsed(1,?regixiy + ?const2)

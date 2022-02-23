@@ -22,37 +22,3 @@
 
 loop:
     jp loop
-
-
-; pattern: Prevent moving ?regpair to hl by using register a.
-; 0: ld l, ?regpairl
-; 1: ld h, ?regpairh
-; 2: ld (hl), ?const1
-; 3: inc hl
-; 4: ld (hl), ?const2
-; 5: inc ?regpair
-; 6: inc ?regpair
-; replacement:
-; 0: a, ?const1
-; 1: ld (?regpair), a
-; 2: inc ?regpair
-; 3: a, ?const2
-; 4: ld (?regpair), a
-; 6: inc ?regpair
-; constraints:
-; regpair(?regpair,?regpairh,?regpairl)
-; regsNotUsedAfter(6,A)
-
-; pattern: Move ld (?regpair + ?const2), a just before ld a, (?regixiy + ?const1), to save one of the ld a, (?regixiy + ?const1).
-; 0: ld a, (?regixiy + ?const1)
-; 1: *
-; 2: ld a, (?regixiy + ?const1)
-; 3: ld (?regpair + ?const2), a
-; replacement:
-; 0: ld a, (?regixiy + ?const1)
-; 3: ld (?regpair + ?const2), a
-; 1: *
-; constraints:
-; in(?regixiy,ix,iy)
-; memoryNotWritten(1,?regixiy + ?const1)
-; memoryNotUsed(1,?regixiy + ?const2)
