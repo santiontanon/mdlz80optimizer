@@ -1819,20 +1819,20 @@ constraints:
 regpair(?regpair,?regpairh,?regpairl)
 regsNotUsedAfter(6,A)
 
-pattern: Move ld (?regpair + ?const2), a just before ld a, (?regixiy + ?const1), to save one of the ld a, (?regixiy + ?const1).
+pattern: Move ld (?regixiy2 + ?const2), a just before ld a, (?regixiy1 + ?const1), to save one of the ld a, (?regixiy1 + ?const1).
 name: sdcc-inefficient-index-register-use2
-0: ld a, (?regixiy + ?const1)
+0: ld a, (?regixiy1 + ?const1)
 1: *
-2: ld a, (?regixiy + ?const1)
+2: ld a, (?regixiy1 + ?const1)
 3: ld (?regixiy2 + ?const2), a
 replacement:
-0: ld a, (?regixiy + ?const1)
+0: ld a, (?regixiy1 + ?const1)
 4: ld (?regixiy2 + ?const2), a
 1: *
 constraints:
-in(?regixiy,ix,iy)
+in(?regixiy1,ix,iy)
 in(?regixiy2,ix,iy)
-memoryNotWritten(1,?regixiy + ?const1)
+memoryNotWritten(1,?regixiy1 + ?const1)
 memoryNotUsed(1,?regixiy2 + ?const2)
 
 ; automatically generated

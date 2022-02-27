@@ -1148,7 +1148,7 @@ public class Pattern {
                         argSpec.regIndirection != null ||
                         argSpec.regOffsetIndirection != null) {
                         PatternMatch match2 = new PatternMatch(match);
-                        if (unifyExpressions(exp, s.op.args.get(0), true, match2, s, code)) {
+                        if (unifyExpressions(exp, s.op.args.get(i), true, match2, s, code)) {
                             return false;
                         }
                     }

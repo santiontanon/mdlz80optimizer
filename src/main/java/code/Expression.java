@@ -779,11 +779,19 @@ public class Expression {
                 return "(" + args.get(0).toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code) + ")";
             case EXPRESSION_SUM: {
                 String str = null;
-                for (Expression arg : args) {
-                    if (str == null) {
-                        str = arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
-                    } else {
-                        str += " + " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+                if (args.size() == 2 && 
+                     args.get(1).type == EXPRESSION_INTEGER_CONSTANT &&
+                     args.get(1).integerConstant < 0) {
+                    // Special case to prevent "x + -1"  
+                    str = args.get(0).toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code) +
+                          " - " + (-args.get(1).integerConstant);
+                } else {
+                    for (Expression arg : args) {
+                        if (str == null) {
+                            str = arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+                        } else {
+                            str += " + " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+                        }
                     }
                 }
                 return str;

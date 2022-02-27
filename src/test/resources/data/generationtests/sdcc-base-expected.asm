@@ -125,46 +125,46 @@ _initCanvas00101:
 	ld a, 0x81
 	out (_VDP1), a
 ;src//graphics/graphics.c:107: do {
-	ld (ix + -1), 0x00
+	ld (ix - 1), 0x00
 _initCanvas00102:
 ;src//graphics/graphics.c:108: scratchpad[((i<<5)&0xFF) + (i>>3)] = i;
-	ld l, (ix + -1)
+	ld l, (ix - 1)
 	ld h, 0x00
 	add hl, hl
 	add hl, hl
 	add hl, hl
 	add hl, hl
 	add hl, hl
-	ld (ix + -7), l
-	ld (ix + -6), 0x00
-	ld a, (ix + -1)
+	ld (ix - 7), l
+	ld (ix - 6), 0x00
+	ld a, (ix - 1)
 	rrca
 	rrca
 	rrca
 	and 0x1f
-	ld (ix + -5), a
-	ld (ix + -4), 0x00
-	ld a, (ix + -7)
-	add a, (ix + -5)
-	ld (ix + -3), a
-	ld a, (ix + -6)
-	adc a, (ix + -4)
-	ld (ix + -2), a
+	ld (ix - 5), a
+	ld (ix - 4), 0x00
+	ld a, (ix - 7)
+	add a, (ix - 5)
+	ld (ix - 3), a
+	ld a, (ix - 6)
+	adc a, (ix - 4)
+	ld (ix - 2), a
 	ld a, _scratchpad & 0x00ff
-	add a, (ix + -3)
-	ld (ix + -5), a
+	add a, (ix - 3)
+	ld (ix - 5), a
 	ld a, (_scratchpad & 0xff00) >> 8
-	adc a, (ix + -2)
-	ld (ix + -4), a
+	adc a, (ix - 2)
+	ld (ix - 4), a
 	pop bc
 	pop hl
 	push hl
 	push bc
-	ld a, (ix + -1)
+	ld a, (ix - 1)
 	ld (hl), a
 ;src//graphics/graphics.c:109: } while (++i != 0);
-	inc (ix + -1)
-	ld a, (ix + -1)
+	inc (ix - 1)
+	ld a, (ix - 1)
 	or a
 	jr nz, _initCanvas00102
 ;src//graphics/graphics.c:112: TMS99X8_memcpy(MODE2_ADDRESS_PN0 + 0x0000, (const uint8_t *)scratchpad, 256);    

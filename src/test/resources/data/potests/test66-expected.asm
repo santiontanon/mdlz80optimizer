@@ -11,7 +11,7 @@ call_f2:
 f1:
     ld ix, 0  ; this is how SDCC does it
     add ix, sp
-    ld e, (ix + -3)
+    ld e, (ix - 3)
     pop bc  ; recover the return address
     inc sp  ; remove the stack argument
     push bc
