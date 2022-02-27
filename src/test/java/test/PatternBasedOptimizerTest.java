@@ -41,8 +41,8 @@ public class PatternBasedOptimizerTest {
     @Test public void test4() throws Exception { test("data/potests/test4.asm", null, null, "size",  1, -2, -2, "data/potests/test4-expected.asm"); }
     @Test public void test5() throws Exception { test("data/potests/test5.asm", null, null, "size",  1, -2, -2, "data/potests/test5-expected.asm"); }
     @Test public void test6() throws Exception { test("data/potests/test6.asm", null, null, "size",  7, 18, 23, "data/potests/test6-expected.asm"); }
-    @Test public void test7() throws Exception { test("data/potests/test7.asm", null, null, "size",  2, 8, 8); }
-    @Test public void test8() throws Exception { test("data/potests/test8.asm", null, null, "size",  5, 29, 29); }
+    @Test public void test7() throws Exception { test("data/potests/test7.asm", null, null, "size",  3, 6, 6, "data/potests/test7-expected.asm"); }
+    @Test public void test8() throws Exception { test("data/potests/test8.asm", null, null, "size",  5, 29, 29, "data/potests/test8-expected.asm"); }
     @Test public void test9() throws Exception { test("data/potests/test9.asm", null, null, "size",  0, 0, 0); }
     @Test public void test10() throws Exception { test("data/potests/test10.asm", null, null, "size",  2, 10, 10); }
     @Test public void test11() throws Exception { test("data/potests/test11.asm", null, null, "size",  4, 8, 8); }
@@ -109,6 +109,7 @@ public class PatternBasedOptimizerTest {
     @Test public void test70() throws Exception { test("data/potests/test70.asm", null, null, "speed", 2, 16, 16, "data/potests/test70-expected.asm"); }
     @Test public void test71() throws Exception { test("data/potests/test71.asm", null, null, "speed", 3, 21, 21, "data/potests/test71-expected.asm"); }
     @Test public void test72() throws Exception { test("data/potests/test72.asm", null, null, "speed", 4, 46, 46, "data/potests/test72-expected.asm"); }
+    @Test public void test73() throws Exception { test("data/potests/test73.asm", null, null, "speed", 10, 74, 74, "data/potests/test73-expected.asm"); }
 
     
     private void test(String inputFile, String dialect, String cpu, String target,

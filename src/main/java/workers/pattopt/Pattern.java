@@ -1198,6 +1198,7 @@ public class Pattern {
                             }
                             found = true;
                             insertionPoint = -1;
+                            lastReplacementInserted = replacement.get(j);
                             break;
                         }
                     }
@@ -1289,6 +1290,7 @@ public class Pattern {
                 }                
             }
         }
+        
         // add the missing replacements:
         for(int ID:replacementIDs) {
             CPUOpPattern r = null;
@@ -1317,6 +1319,14 @@ public class Pattern {
                 rInsertionPoint = replacementInsertionPoints.get(replacement.get(replacementIdx+1));
             } else if (replacementIdx > 0 && lastReplacementInserted == replacement.get(replacementIdx-1)) {
                 rInsertionPoint = insertionPoint;
+            } else if (replacementIdx > 0 && replacementInsertionPoints.containsKey(replacement.get(replacementIdx-1))) {
+                CPUOpPattern p = replacement.get(replacementIdx-1);
+                if (!p.isWildcard()) {
+                    rInsertionPoint = replacementInsertionPoints.get(p) + 1;
+                } else {
+                    config.error("Unsupported case when inserting new replacements in an optimization pattern! (name: " + name + ") " + message);
+                    return false;
+                }
             } else {
                 config.error("Unsupported case when inserting new replacements in an optimization pattern! (name: " + name + ") " + message);
                 return false;
@@ -1338,10 +1348,18 @@ public class Pattern {
             }
             l.add(rInsertionPoint, s);
             match.added.add(s);
-            rInsertionPoint++;
-            insertionPoint = rInsertionPoint;
             lastReplacementInserted = r;
             undo.add(Pair.of(null, s));
+            // Shift all the necessary insertion points one up:
+            for(CPUOpPattern p:replacementInsertionPoints.keySet()) {
+                int oldInsertionPoint = replacementInsertionPoints.get(p);
+                if (oldInsertionPoint >= rInsertionPoint) {
+                    replacementInsertionPoints.put(p, oldInsertionPoint + 1);
+                }
+            }
+            replacementInsertionPoints.put(r, rInsertionPoint);
+            rInsertionPoint++;
+            insertionPoint = rInsertionPoint;
         }
         
         // Add new equality constraints (we add them first, in case the optimization itself breaks them):
