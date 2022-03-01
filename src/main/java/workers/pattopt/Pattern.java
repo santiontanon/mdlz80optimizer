@@ -993,8 +993,10 @@ public class Pattern {
                 }
                 break;
             }
-            case "evenPushPops":
+            case "evenPushPopsSPNotRead":
             {
+                // Checks that both there is the same number of pushes than pops
+                // and that SP is not explicitly read, like "add hl,sp"
                 int idx = Integer.parseInt(constraint.args[0]);
                 List<CodeStatement> statements = new ArrayList<>();
                 if (match.map.containsKey(idx)) {
@@ -1018,7 +1020,7 @@ public class Pattern {
                                    s.op.args.get(0).registerOrFlagName.equalsIgnoreCase("sp")) {
                             stackMovements --;
                         } else if (!s.op.args.isEmpty()) {
-                            // check if the 1st operand is SP in any form:
+                            // check if the first operand is SP in any form:
                             Expression arg = s.op.args.get(0);
                             if (arg.type == Expression.EXPRESSION_REGISTER_OR_FLAG && 
                                 arg.registerOrFlagName.equalsIgnoreCase("sp")) {
@@ -1031,6 +1033,15 @@ public class Pattern {
                                 maybeLogOptimization(match, pbo, f.getStatements().get(index_to_display_message_on).sl);
                                 return false;
                             }
+                        }
+                        if ((s.op.spec.opName.equalsIgnoreCase("add") ||
+                             s.op.spec.opName.equalsIgnoreCase("adc") ||
+                             s.op.spec.opName.equalsIgnoreCase("sbc")) &&
+                            s.op.args.size() == 2 &&
+                            s.op.args.get(1).type == Expression.EXPRESSION_REGISTER_OR_FLAG &&
+                            s.op.args.get(1).registerOrFlagName.equalsIgnoreCase("sp")) {
+                            maybeLogOptimization(match, pbo, f.getStatements().get(index_to_display_message_on).sl);
+                            return false;
                         }
                     }
                     // if at any point, there are more pops than push, stop:

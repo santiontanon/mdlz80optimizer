@@ -1,10 +1,8 @@
 ; Test case: 
 
 	pop bc
-	ld d,b
-	ld e,c
-	ld (var1),de
-	ld (var2),bc
+	ld (var1), bc
+	ld (var2), bc
 loop:
     jr loop
 

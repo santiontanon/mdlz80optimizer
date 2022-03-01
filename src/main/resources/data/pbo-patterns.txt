@@ -29,7 +29,7 @@
 ; - notIn(variable, value1, ..., valuen)
 ; - regpair(regpair,regpair_high,regpair_low)
 ; - reachableByJr(#, label)
-; - evenPushPops(#)
+; - evenPushPopsSPNotRead(#)
 ; - atLeastOneCPUOp(#)
 ; - noStackArguments(label): ensures that the function "label" does not take arguments from the stack.
 ; - memoryNotWritten(#, exp): ensures the memory location pointed to by exp is not written in block #. 
@@ -624,7 +624,7 @@ replacement:
 1: *
 constraints:
 regsNotModified(1,?reg)
-evenPushPops(1)
+evenPushPopsSPNotRead(1)
 atLeastOneCPUOp(1)
 
 ; Note that we include the "atLeastOneCPUOp" constraint, to prevent eliminating the usual push af; pop af combination used for timing
@@ -635,7 +635,7 @@ pattern: Remove push ?reg / pop ?reg as register is not used afterwards
 replacement:
 1: *
 constraints:
-evenPushPops(1)
+evenPushPopsSPNotRead(1)
 atLeastOneCPUOp(1)
 regsNotUsedAfter(2,?reg)
 
@@ -1872,6 +1872,49 @@ memoryNotWritten(4,?regixiy1 + ?const1)
 memoryNotUsed(4,?regixiy3 + ?const3)
 flagsNotUsed(4,S,Z,H,P/V,N,C)
 flagsNotModified(4,S,Z,H,P/V,N,C)
+
+pattern: Replace ex de,hl; ld hl, ?const by ld de, ?const.
+name: unnecessary-ex-de-hl
+0: ex de,hl
+1: ld hl, ?const
+2: add hl, de
+replacement:
+1: ld de, ?const
+2: add hl, de
+constraints:
+regsNotUsedAfter(2,de)
+
+pattern: Remove ld ?reg1h,?reg2h; ld ?reg1l,?reg2l and replace ld (?const1),?regpair1 by ld (?const1),?regpair2
+name: unnecessary-register-move
+0: ld ?reg1h,?reg2h
+1: ld ?reg1l,?reg2l
+2: *
+3: ld (?const1),?regpair1
+replacement:
+2: *
+3: ld (?const1),?regpair2
+constraints:
+regpair(?regpair1,?reg1h,?reg1l)
+regpair(?regpair2,?reg2h,?reg2l)
+regsNotUsed(2,?regpair1)
+regsNotModified(2,?regpair1)
+regsNotUsedAfter(3,?regpair1)
+
+pattern: Remove ld ?reg1h,?reg2h; ld ?reg1l,?reg2l and replace ld (?const1),?reg1 by ld (?const1),?reg2
+name: unnecessary-register-move2
+0: ld ?reg1l,?reg2l
+1: ld ?reg1h,?reg2h
+2: *
+3: ld (?const1),?reg1
+replacement:
+2: *
+3: ld (?const1),?reg2
+constraints:
+regpair(?reg1,?reg1h,?reg1l)
+regpair(?reg2,?reg2h,?reg2l)
+regsNotUsed(2,?reg1)
+regsNotModified(2,?reg1)
+regsNotUsedAfter(3,?reg1)
 
 ; automatically generated
 pattern: replace rlc ?reg0; rl ?reg1 with rlca; rl ?reg1
