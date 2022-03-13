@@ -37,6 +37,7 @@ public class PatternBasedOptimizer implements MDLWorker {
     boolean trigger = false;
     boolean silent = false;
     int nPasses = 2;
+    int stopAfter = -1;
     String inputPatternsFileName = null;
     List<Pattern> patterns = new ArrayList<>();
     
@@ -69,7 +70,8 @@ public class PatternBasedOptimizer implements MDLWorker {
                                      "which contains patterns that optimize both size and speed). For targetting size optimizations, use " +
                                      "'data/pbo-patterns-size.txt'. Notice that some dialects might change the default, for example, the " +
                                      "sdcc dialect sets the default to 'data/pbo-patterns-sdcc-speed.txt'\n" +
-               "- ```-po-ldo```: some pattern-based optimizations depend on the specific value that some labels take ('label-dependent optimizations', ldo). These might be dangerous for code that is still in development.\n";
+               "- ```-po-ldo```: some pattern-based optimizations depend on the specific value that some labels take ('label-dependent optimizations', ldo). These might be dangerous for code that is still in development.\n" +
+               "- ```-po-stop-after <n>```: Stops optimizing after n optimizations. This is useful for debugging, if there is any optimization that breaks the code, to help locate it.\n";
     }
 
     @Override
@@ -130,6 +132,16 @@ public class PatternBasedOptimizer implements MDLWorker {
         if (flags.get(0).equals("-po-ldo")) {
             flags.remove(00);
             preventLabelDependentOptimizations = true;
+            return true;
+        }
+        if (flags.get(0).equals("-po-stop-after") && flags.size()>=2) {
+            flags.remove(0);
+            stopAfter = Integer.parseInt(flags.get(0));
+            flags.remove(0);
+            if (stopAfter <= 0) {
+                config.error("The parameter to -po-stop-after must be an integer larger than 0.");
+                return false;
+            }
             return true;
         }
         return false;
@@ -272,14 +284,21 @@ public class PatternBasedOptimizer implements MDLWorker {
         // perform optimizations that would NOT set any equality constraints. And in the second
         // pass, we allow any kind of optimizations:
         
+        boolean done = false;
         for(int pass = 0;pass<nPasses;pass++) {
             for (SourceFile f : code.getSourceFiles()) {
                 for (int i = 0; i < f.getStatements().size(); i++) {
                     if (optimizeStartingFromLine(f, i, code, r, pass==nPasses-1)) {
                         i = Math.max(0, i-2);   // go back a couple of statements, as more optimizations might chain
+                        if (stopAfter >= 0 && appliedOptimizations.size() >= stopAfter) {
+                            done = true;
+                            break;
+                        }
                     }
                 }
+                if (done) break;
             }
+            if (done) break;
         }
         
         code.resetAddresses();
