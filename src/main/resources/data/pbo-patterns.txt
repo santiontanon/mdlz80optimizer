@@ -1714,6 +1714,7 @@ constraints:
 in(?op,ldir,lddr)
 in(?reg,b,c,bc)
 equal(?const,0)
+regsNotModified(1, ?reg)
 
 ; bc == 0 after ldir (2)
 ; Thanks to max_iwamoto for suggesting the idea for this pattern
@@ -1729,6 +1730,7 @@ replacement:
 constraints:
 in(?op,ldir,lddr)
 equal(?const, (?const) & #00ff)
+regsNotModified(1,B)
 
 ; bc == 0 after ldir (3)
 ; Thanks to max_iwamoto for suggesting the idea for this pattern
@@ -1744,6 +1746,7 @@ replacement:
 constraints:
 in(?op,ldir,lddr)
 equal(?const, (?const) & #ff00)
+regsNotModified(1,C)
 
 pattern: remove unnecessary ld ?reg1, ?reg2
 name: unnecessary-ld
