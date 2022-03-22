@@ -294,7 +294,7 @@ public class CPUOpSpec {
                     if (op == null) return null;
                     if (isJump) {
                         // relative jump offset:
-                        int jumpOffset = v - 2;
+                        int jumpOffset = v + 2;
                         if (jumpOffset >= 128) {
                             jumpOffset -= 256;
                             if (!disassembleAddArg(op, Expression.operatorExpression(Expression.EXPRESSION_SUB,

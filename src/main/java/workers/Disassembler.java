@@ -17,6 +17,7 @@ import java.io.FileInputStream;
 import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.StringTokenizer;
 import org.apache.commons.lang3.tuple.Pair;
@@ -27,7 +28,6 @@ import parser.SourceLine;
  * @author santi
  */
 public class Disassembler implements MDLWorker {
-
     
     public static class DisassemblerAnnotation {
         public int address;
@@ -50,6 +50,11 @@ public class Disassembler implements MDLWorker {
     int dataBytesPerLine = 16;
     int renderDataAs = Expression.RENDER_AS_8BITHEX;
     int maxOpSpecSizeInBytes = 1;
+    
+    boolean resolveAbsoluteAddressesToLabels = true;
+    boolean resolveRelativeAddressesToLabels = true;
+    boolean removeUnusedLabels = true;
+    boolean moveLabelsToTheirOwnLines = true;
     
     // Disassembler state:
     int state_currentBlockAddress = 0;
@@ -265,8 +270,13 @@ public class Disassembler implements MDLWorker {
             }            
         }
 
-        // Any left over data:
-        flushCurrentBlock(state_currentBlock, sf, code);        
+        // Any leftover data:
+        flushCurrentBlock(state_currentBlock, sf, code);
+        
+        resolveJumpLabels(sf, code);
+        if (removeUnusedLabels) removeUnusedLabels(sf, code);
+        if (moveLabelsToTheirOwnLines) moveLabelsToTheirOwnLines(sf, code);
+        
         return true;
     }
     
@@ -379,4 +389,90 @@ public class Disassembler implements MDLWorker {
         s.label = c;
         code.addSymbol(c.name, c);
     }
+    
+    
+
+    public void resolveJumpLabels(SourceFile sf, CodeBase code) {
+        HashMap<Integer, SourceConstant> labelsMap = new HashMap<>();
+        if (resolveAbsoluteAddressesToLabels || resolveRelativeAddressesToLabels) {
+            // Cache all the label addresses:
+            for(CodeStatement s:sf.getStatements()) {
+                if (s.label != null) {
+                    Integer address = s.getAddress(code);
+                    if (address != null) {
+                        labelsMap.put(address, s.label);
+                    }
+                }
+            }
+        }
+        
+        if (resolveAbsoluteAddressesToLabels) {
+            for(CodeStatement s:sf.getStatements()) {
+                if (s.op != null) {
+                    if ((s.op.isJump() && !s.op.isRelativeJump()) || s.op.isCall()) {
+                        Expression exp = s.op.getTargetJumpExpression();
+                        if (exp.type == Expression.EXPRESSION_INTEGER_CONSTANT) {
+                            SourceConstant label = labelsMap.get(exp.integerConstant);
+                            if (label != null) {
+                                exp.type = Expression.EXPRESSION_SYMBOL;
+                                exp.symbolName = label.name;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if (resolveRelativeAddressesToLabels) {
+            for(CodeStatement s:sf.getStatements()) {
+                if (s.op != null) {
+                    if (s.op.isRelativeJump()) {
+                        Expression exp = s.op.getTargetJumpExpression();
+                        if (exp.type != Expression.EXPRESSION_SYMBOL) {
+                            Integer address = exp.evaluateToInteger(s, code, true);
+                            if (address != null) {
+                                SourceConstant label = labelsMap.get(address);
+                                if (label != null) {
+                                    exp.type = Expression.EXPRESSION_SYMBOL;
+                                    exp.symbolName = label.name;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    
+    public void removeUnusedLabels(SourceFile sf, CodeBase code) {
+        List<String> usedLabels = new ArrayList<>();
+        // Find all the used symbols:
+        for(CodeStatement s:sf.getStatements()) {
+            if (s.op == null) continue;
+            for(Expression exp:s.op.args) {
+                exp.getAllSymbols(usedLabels);
+            }
+        }
+        for(CodeStatement s:sf.getStatements()) {
+            if (s.label != null) {
+                if (!usedLabels.contains(s.label.name)) {
+                    s.label = null;
+                }
+            }
+        }
+    }
+
+    
+    public void moveLabelsToTheirOwnLines(SourceFile sf, CodeBase code) {
+        for(int i = 0;i<sf.getStatements().size();i++) {
+            CodeStatement s = sf.getStatements().get(i);
+            if (s.label != null) {
+                CodeStatement s2 = new CodeStatement(CodeStatement.STATEMENT_NONE, new SourceLine("", sf, sf.getStatements().size()), sf, config);
+                s2.label = s.label;
+                s.label = null;
+                sf.addStatement(i, s2);
+            }
+        }
+    }
+    
 }
