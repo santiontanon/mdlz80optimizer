@@ -1610,48 +1610,52 @@ public class Expression {
             config.error("Precedence for operator " + operator + " is undefined!");
             return null;
         }
-        if (config.expressionParser.OPERATOR_PRECEDENCE[arg1.type] >= 0
-                && config.expressionParser.OPERATOR_PRECEDENCE[operator] < config.expressionParser.OPERATOR_PRECEDENCE[arg1.type]) {
-            // operator has higher precedence than the one in arg1, we need to reorder!
-            if (config.expressionParser.OPERATOR_PRECEDENCE[arg2.type] >= 0
-                    && config.expressionParser.OPERATOR_PRECEDENCE[operator] < config.expressionParser.OPERATOR_PRECEDENCE[arg2.type]) {
-                if (config.expressionParser.OPERATOR_PRECEDENCE[arg1.type] < config.expressionParser.OPERATOR_PRECEDENCE[arg2.type]) {
-                    // (1 arg1 (2 operator 3)) arg2 4
-                    Expression exp = operatorExpression(operator, arg1.args.get(arg1.args.size() - 1), arg2.args.get(0), config);                    
-                    arg1.args.set(arg1.args.size() - 1, exp);
-                    arg2.args.set(0, arg1);
-                    arg2.parenthesizeIfNecessary();
-                    return arg2;
+        if (arg1 != null && arg2 != null) {
+            if (config.expressionParser.OPERATOR_PRECEDENCE[arg1.type] >= 0
+                    && config.expressionParser.OPERATOR_PRECEDENCE[operator] < config.expressionParser.OPERATOR_PRECEDENCE[arg1.type]) {
+                // operator has higher precedence than the one in arg1, we need to reorder!
+                if (config.expressionParser.OPERATOR_PRECEDENCE[arg2.type] >= 0
+                        && config.expressionParser.OPERATOR_PRECEDENCE[operator] < config.expressionParser.OPERATOR_PRECEDENCE[arg2.type]) {
+                    if (config.expressionParser.OPERATOR_PRECEDENCE[arg1.type] < config.expressionParser.OPERATOR_PRECEDENCE[arg2.type]) {
+                        // (1 arg1 (2 operator 3)) arg2 4
+                        Expression exp = operatorExpression(operator, arg1.args.get(arg1.args.size() - 1), arg2.args.get(0), config);                    
+                        arg1.args.set(arg1.args.size() - 1, exp);
+                        arg2.args.set(0, arg1);
+                        arg2.parenthesizeIfNecessary();
+                        return arg2;
+                    } else {
+                        // 1 arg1 ((2 operator 3) arg2 4)
+                        Expression exp = operatorExpression(operator, arg1.args.get(arg1.args.size() - 1), arg2.args.get(0), config);
+                        arg2.args.set(0, exp);
+                        arg1.args.set(arg1.args.size() - 1, arg2);
+                        arg1.parenthesizeIfNecessary();
+                        return arg1;
+                    }
                 } else {
-                    // 1 arg1 ((2 operator 3) arg2 4)
-                    Expression exp = operatorExpression(operator, arg1.args.get(arg1.args.size() - 1), arg2.args.get(0), config);
-                    arg2.args.set(0, exp);
-                    arg1.args.set(arg1.args.size() - 1, arg2);
+                    // 1 arg1 (2 operator arg2)
+                    Expression exp = operatorExpression(operator, arg1.args.get(arg1.args.size() - 1), arg2, config);
+                    arg1.args.set(arg1.args.size() - 1, exp);
                     arg1.parenthesizeIfNecessary();
                     return arg1;
                 }
-            } else {
-                // 1 arg1 (2 operator arg2)
-                Expression exp = operatorExpression(operator, arg1.args.get(arg1.args.size() - 1), arg2, config);
-                arg1.args.set(arg1.args.size() - 1, exp);
-                arg1.parenthesizeIfNecessary();
-                return arg1;
+            } else if (config.expressionParser.OPERATOR_PRECEDENCE[arg2.type] >= 0
+                    && config.expressionParser.OPERATOR_PRECEDENCE[operator] < config.expressionParser.OPERATOR_PRECEDENCE[arg2.type]) {
+                // operator has higher precedence than the one in arg2, we need to reorder!
+                // (arg1 operator 3) arg2 4
+                Expression exp = operatorExpression(operator, arg1, arg2.args.get(0), config);
+                arg2.args.set(0, exp);
+                arg2.parenthesizeIfNecessary();
+                return arg2;
             }
-        } else if (config.expressionParser.OPERATOR_PRECEDENCE[arg2.type] >= 0
-                && config.expressionParser.OPERATOR_PRECEDENCE[operator] < config.expressionParser.OPERATOR_PRECEDENCE[arg2.type]) {
-            // operator has higher precedence than the one in arg2, we need to reorder!
-            // (arg1 operator 3) arg2 4
-            Expression exp = operatorExpression(operator, arg1, arg2.args.get(0), config);
-            arg2.args.set(0, exp);
-            arg2.parenthesizeIfNecessary();
-            return arg2;
         }
 
         Expression exp = new Expression(operator, config);
         exp.args = new ArrayList<>();
         exp.args.add(arg1);
         exp.args.add(arg2);
-        exp.parenthesizeIfNecessary();
+        if (arg1 != null && arg2 != null) {
+            exp.parenthesizeIfNecessary();
+        }
         return exp;
     }
 

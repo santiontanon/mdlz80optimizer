@@ -37,6 +37,7 @@ public class MDLConfig {
 
     public static final int CODE_FROM_INPUT_FILE = 0;
     public static final int CODE_FROM_SEARCHBASEDOPTIMIZER = 1;
+    public static final int CODE_FROM_DISASSEMBLY = 2;
     
     public static final int FILE_SEARCH_RELATIVE_TO_INCLUDING_FILE = 0;
     public static final int FILE_SEARCH_ADDITIONAL_PATHS = 1;

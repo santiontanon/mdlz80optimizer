@@ -17,6 +17,7 @@ public class CPUOpSpec {
     public int times[];
     public String byteRepresentationRaw = null;    // this is useful to check if two instructions are the same
     public List<String[]> bytesRepresentation; // each element is a byte, and the array has 2 elements: the byte, and the modifier
+    public List<Integer> bytesRepresentationBaseByte;
     
     public boolean official;
     public CPUOpSpec officialEquivalent = null;
@@ -48,6 +49,7 @@ public class CPUOpSpec {
         config = a_config;
         
         bytesRepresentation = new ArrayList<>();
+        bytesRepresentationBaseByte = new ArrayList<>();
         for(String byteString:byteRepresentationRaw.split(" ")) {
             List<String> tokens = config.tokenizer.tokenize(byteString);
             if (tokens.get(0).equals("o") ||
@@ -57,8 +59,10 @@ public class CPUOpSpec {
                 tokens.get(0).equals("nn") ||
                 tokens.get(0).equals("mm")) {
                 bytesRepresentation.add(new String[]{"0", byteString});
+                bytesRepresentationBaseByte.add(0);
             } else {
                 bytesRepresentation.add(new String[]{tokens.get(0), byteString.substring(tokens.get(0).length())});
+                bytesRepresentationBaseByte.add(config.tokenizer.parseHex(tokens.get(0)));
             }
         }
         assert(sizeInBytes == bytesRepresentation.size());
@@ -265,104 +269,298 @@ public class CPUOpSpec {
         return deps;
     }
 
-    /*
-    public boolean isConditional()
-    {
-        // TODO(santi@): move this info to the CPU definition file
-        if (inputFlags!= null && !inputFlags.isEmpty() &&
-            (opName.equalsIgnoreCase("cp") ||
-             opName.equalsIgnoreCase("call") ||
-             opName.equalsIgnoreCase("ret") ||
-             opName.equalsIgnoreCase("jp") ||
-             opName.equalsIgnoreCase("jr"))) {
-            return true;
+    
+    public CPUOp tryToDisassemble(List<Integer> data, int offset, CodeBase code) {
+        if (sizeInBytes > data.size() - offset) {
+            // there isn't enough data!
+            return null;
         }
-        if (opName.equalsIgnoreCase("djnz")) return true;
-        return false;
-    }
-
-
-    public int jumpLabelArgument()
-    {
-        // TODO(santi@): move this info to the CPU definition file
-        if (opName.equalsIgnoreCase("call") ||
-            opName.equalsIgnoreCase("jp") ||
-            opName.equalsIgnoreCase("jr") ||
-            opName.equalsIgnoreCase("djnz")) {
-            return args.size()-1;
-        }
-        return -1;
-    }
-
-
-    public boolean isRet()
-    {
-        // TODO(santi@): move this info to the CPU definition file
-        if (opName.equalsIgnoreCase("ret")) return true;
-        if (opName.equalsIgnoreCase("reti")) return true;
-        if (opName.equalsIgnoreCase("retn")) return true;
-        return false;
-    }
-
-
-    public boolean isRst()
-    {
-        // TODO(santi@): move this info to the CPU definition file
-        if (opName.equalsIgnoreCase("rst")) return true;
-        return false;
-    }
-
-    
-    public boolean isCall()
-    {
-        // TODO(santi@): move this info to the CPU definition file
-        if (opName.equalsIgnoreCase("call")) return true;
-        return false;
-    }
-
-    
-    public boolean isJump()
-    {
-        // TODO(santi@): move this info to the CPU definition file
-        if (opName.equalsIgnoreCase("jp")) return true;
-        if (opName.equalsIgnoreCase("jr")) return true;
-        if (opName.equalsIgnoreCase("djnz")) return true;
-        return false;
-    }
-    
-    
-    public boolean isRelativeJump()
-    {
-        // TODO(santi@): move this info to the CPU definition file
-        if (opName.equalsIgnoreCase("jr")) return true;
-        if (opName.equalsIgnoreCase("djnz")) return true;
-        return false;
-    }
-    
-
-    public boolean isPush()
-    {
-        // TODO(santi@): move this info to the CPU definition file
-        if (opName.equalsIgnoreCase("push")) return true;
-        return false;
-    }
-    
-    
-    public boolean isPop()
-    {
-        // TODO(santi@): move this info to the CPU definition file
-        if (opName.equalsIgnoreCase("pop")) return true;
-        return false;
-    }
-
-
-    public boolean mightJump()
-    {
-        // TODO(santi@): move this info to the CPU definition file
-        if (isRet()) return true;
-        if (jumpLabelArgument() != -1) return true;
-        return false;
-    }
-    */
         
+        CPUOp op = null;
+        Integer previousNN = null;
+        Integer previousMM = null;
+
+        for(int i = 0;i<bytesRepresentation.size();i++) {
+            int v = data.get(i+offset);
+            String specV[] = bytesRepresentation.get(i);
+            int baseByte = bytesRepresentationBaseByte.get(i);
+            switch (specV[1]) {            
+                case "":
+                    if (v != baseByte) return null;
+                    if (op == null) op = disassembleInstantiateOp(code);
+                    break;
+
+                case "o":
+                    if (op == null) return null;
+                    if (isJump) {
+                        // relative jump offset:
+                        int jumpOffset = v - 2;
+                        if (jumpOffset >= 128) {
+                            jumpOffset -= 256;
+                            if (!disassembleAddArg(op, Expression.operatorExpression(Expression.EXPRESSION_SUB,
+                                    Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, null, code, config),
+                                    Expression.constantExpression(-jumpOffset, config), config), false)) return null;
+                        } else {
+                            if (!disassembleAddArg(op, Expression.operatorExpression(Expression.EXPRESSION_SUM,
+                                    Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, null, code, config),
+                                    Expression.constantExpression(jumpOffset, config), config), true)) return null;
+                        }
+                    } else {
+                        // indexing offset:
+                        if (!disassembleAddArg(op, Expression.constantExpression(v, config), true)) return null;
+                    }
+                    break;
+                    
+                case "n":
+                case "n1":
+                case "n2":
+                    if (op == null) return null;
+                    if (!disassembleAddArg(op, Expression.constantExpression(v, config), true)) return null;
+                    break;
+                case "nn":
+                    // 16 bit argument
+                    if (op == null) return null;
+                    if (previousNN == null) {
+                        previousNN = v;
+                    } else {
+                        if (!disassembleAddArg(op, Expression.constantExpression(previousNN + v*256, config), true)) return null;
+                        previousNN = null;
+                    }
+                    break;
+                case "mm":
+                    // 16 bit argument
+                    if (op == null) return null;
+                    if (previousMM == null) {
+                        previousMM = v;
+                    } else {
+                        if (!disassembleAddArg(op, Expression.constantExpression(previousMM + v*256, config), true)) return null;
+                        previousMM = null;
+                    }
+                    break;
+                case "+0":
+                    if (op == null) op = disassembleInstantiateOp(code);
+                    if (v != baseByte + 0) return null;
+                    if (!disassembleAddArg(op, Expression.constantExpression(v, config), false)) return null;
+                    break;
+                case "+1":
+                    if (op == null) op = disassembleInstantiateOp(code);
+                    if (v != baseByte + 1) return null;
+                    if (!disassembleAddArg(op, Expression.constantExpression(v, config), false)) return null;       
+                    break;
+                case "+2":
+                    if (op == null) op = disassembleInstantiateOp(code);
+                    if (v != baseByte + 2) return null;
+                    if (!disassembleAddArg(op, Expression.constantExpression(v, config), false)) return null;
+                    break;
+                case "+3":
+                    if (op == null) op = disassembleInstantiateOp(code);
+                    if (v != baseByte + 3) return null;
+                    if (!disassembleAddArg(op, Expression.constantExpression(v, config), false)) return null;
+                    break;
+                case "+4":
+                    if (op == null) op = disassembleInstantiateOp(code);
+                    if (v != baseByte + 4) return null;
+                    if (!disassembleAddArg(op, Expression.constantExpression(v, config), false)) return null;
+                    break;
+                case "+5":
+                    if (op == null) return null;
+                    if (v != baseByte + 5) return null;
+                    if (!disassembleAddArg(op, Expression.constantExpression(v, config), false)) return null;
+                    break;
+                case "+6":
+                    if (op == null) op = disassembleInstantiateOp(code);
+                    if (v != baseByte + 6) return null;
+                    if (!disassembleAddArg(op, Expression.constantExpression(v, config), false)) return null;
+                    break;
+                case "+7":
+                    if (op == null) op = disassembleInstantiateOp(code);
+                    if (v != baseByte + 7) return null;
+                    if (!disassembleAddArg(op, Expression.constantExpression(v, config), false)) return null;
+                    break;
+                case "+r":
+                {
+                    if (op == null) op = disassembleInstantiateOp(code);
+                    String reg = registerForValue(v - baseByte);
+                    if (reg == null) return null;
+                    if (!disassembleAddArg(op, Expression.symbolExpression(reg, null, code, config), false)) return null;
+                    break;
+                }
+                case "+p":
+                {
+                    if (op == null) op = disassembleInstantiateOp(code);
+                    String reg = registerForValueP(v - baseByte);
+                    if (reg == null) return null;
+                    if (!disassembleAddArg(op, Expression.symbolExpression(reg, null, code, config), false)) return null;
+                    break;
+                }
+                case "+q":
+                {
+                    if (op == null) op = disassembleInstantiateOp(code);
+                    String reg = registerForValueQ(v - baseByte);
+                    if (reg == null) return null;
+                    if (!disassembleAddArg(op, Expression.symbolExpression(reg, null, code, config), false)) return null;
+                    break;
+                }
+                case "+8*p":
+                {
+                    if (op == null) op = disassembleInstantiateOp(code);
+                    String reg = registerForValueP((v - baseByte)/8);
+                    if (reg == null) return null;
+                    if (!disassembleAddArg(op, Expression.symbolExpression(reg, null, code, config), false)) return null;
+                    break;
+                }
+                case "+8*q":
+                {
+                    if (op == null) op = disassembleInstantiateOp(code);
+                    String reg = registerForValueQ((v - baseByte)/8);
+                    if (reg == null) return null;
+                    if (!disassembleAddArg(op, Expression.symbolExpression(reg, null, code, config), false)) return null;
+                    break;
+                }
+                case "+8*b":
+                {
+                    if (op == null) op = disassembleInstantiateOp(code);
+                    int b = (v - baseByte)/8;
+                    if (b<0 || b>=8) return null;
+                    if (!disassembleAddArg(op, Expression.constantExpression(b, config), false)) return null;
+                    break;
+                }
+                case "+8*b+r":
+                {
+                    if (op == null) op = disassembleInstantiateOp(code);
+                    int diff = (v - baseByte);
+                    String reg = registerForValue(diff % 8);
+                    if (reg == null) return null;
+                    int b = diff/8;
+                    if (b<0 || b>=8) return null;
+                    if (!disassembleAddArg(op, Expression.constantExpression(b, config), false)) return null;
+                    if (!disassembleAddArg(op, Expression.symbolExpression(reg, null, code, config), false)) return null;
+                    break;
+                }
+                case "+8*r":
+                {
+                    if (op == null) op = disassembleInstantiateOp(code);
+                    String reg = registerForValue((v - baseByte)/8);
+                    if (reg == null) return null;
+                    if (!disassembleAddArg(op, Expression.symbolExpression(reg, null, code, config), false)) return null;
+                    break;
+                }
+                default:
+                    return null;            
+            }
+        }
+        if (op != null && op.args.size() == args.size()) {
+            if (disassembleAddArg(op, null, true)) {
+                config.error("" + op);
+            }
+            return op;
+        }
+        return null;
+    }
+    
+    
+    public CPUOp disassembleInstantiateOp(CodeBase code) {
+        CPUOp op = new CPUOp(this, new ArrayList<>(), config);
+
+        // Add all the arguments that do not depend on additional bytes:
+        for(CPUOpSpecArg specArg:args) {                         
+            if (specArg.reg != null) {
+                if (CodeBase.isRegister(specArg.reg) && specArg.reg.toUpperCase().equals(specArg.reg)) {
+                    op.args.add(Expression.symbolExpression(specArg.reg, null, code, config));
+                } else {
+                    op.args.add(null);
+                }
+            } else if (specArg.regIndirection != null) {
+                op.args.add(Expression.parenthesisExpression(
+                        Expression.symbolExpression(specArg.regIndirection, null, code, config),
+                        "(", config));
+            } else if (specArg.regOffsetIndirection != null) {
+                op.args.add(Expression.parenthesisExpression(
+                        Expression.operatorExpression(Expression.EXPRESSION_SUM, 
+                                Expression.symbolExpression(specArg.regOffsetIndirection, null, code, config),
+                                null,
+                                config),
+                        "(", config));
+            } else if (specArg.condition != null) {
+                op.args.add(Expression.symbolExpression(specArg.condition, null, code, config));
+            } else if (specArg.byteConstantIndirectionAllowed ||
+                       specArg.wordConstantIndirectionAllowed) {
+                op.args.add(Expression.parenthesisExpression(null, "(", config));
+            } else if (specArg.byteConstantAllowed ||
+                       specArg.wordConstantAllowed) {
+                if (specArg.min != null && specArg.min.equals(specArg.max)) {
+                    op.args.add(Expression.constantExpression(specArg.min, config));
+                } else {
+                    op.args.add(null);
+                }
+            } else {                
+                op.args.add(null);
+            }
+        }
+        return op;
+    }
+    
+    
+    private String registerForValue(int value)
+    {
+        String registers[] = {"b", "c", "d", "e", "h", "l", null, "a"};
+        if (value >= 0 && value < registers.length) {
+            return registers[value];
+        }
+        return null;
+    }
+    
+
+    private String registerForValueP(int value)
+    {
+        String registers[] = {"b", "c", "d", "e", "ixh", "ixl", null, "a"};
+        if (value >= 0 && value < registers.length) {
+            return registers[value];
+        }
+        return null;
+    }
+
+    
+    private String registerForValueQ(int value)
+    {
+        String registers[] = {"b", "c", "d", "e", "iyh", "iyl", null, "a"};
+        if (value >= 0 && value < registers.length) {
+            return registers[value];
+        }
+        return null;
+    }
+
+    
+    private boolean disassembleAddArg(CPUOp op, Expression exp, boolean lookInsideExpressions)
+    {
+        for(int i = 0;i<op.args.size();i++) {
+            if (op.args.get(i) == null) {
+                op.args.set(i, exp);
+                return true;
+            } else if (lookInsideExpressions) {
+                if (disassembleAddArg(op.args.get(i), exp)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+    
+    
+    private boolean disassembleAddArg(Expression argExp, Expression exp)
+    {
+        if (argExp.args == null) return false;
+        for(int i = 0;i<argExp.args.size();i++) {
+            if (argExp.args.get(i) == null) {
+                argExp.args.set(i, exp);
+                return true;
+            } else {
+                if (disassembleAddArg(argExp.args.get(i), exp)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+    
 }

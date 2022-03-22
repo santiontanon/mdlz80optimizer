@@ -60,6 +60,9 @@ public class CPUOp {
     
     String argString(Expression arg, boolean useOriginalNames, boolean mimicTargetDialect, CodeStatement s, CodeBase code)
     {
+        if (arg == null) {
+            return "null";
+        }
         String argStr = arg.toStringInternal(false, useOriginalNames, mimicTargetDialect, s, code);
         if (config.fix_tniasm_parenthesisExpressionBug && 
             argStr.startsWith("(") &&
@@ -338,7 +341,12 @@ public class CPUOp {
 
     public List<Integer> assembleToBytes(CodeStatement s, CodeBase code, MDLConfig config)
     {
-        return assembleToBytes(s, code, false, config);
+        try {
+            return assembleToBytes(s, code, false, config);
+        } catch (Exception e) {
+            config.error("Cannot convert " + this + " to bytes!");
+            return null;
+        }
     }    
     
     public List<Integer> assembleToBytes(CodeStatement s, CodeBase code, boolean silent, MDLConfig config)
@@ -346,8 +354,9 @@ public class CPUOp {
         List<Integer> data = new ArrayList<>();
         int nn_state = 0;
         
-        for(String v[]:spec.bytesRepresentation) {
-            int baseByte = config.tokenizer.parseHex(v[0]);
+        for(int i=0;i<spec.bytesRepresentation.size();i++) {
+            String v[] = spec.bytesRepresentation.get(i);
+            int baseByte = spec.bytesRepresentationBaseByte.get(i);
             switch (v[1]) {
                 case "":
                     data.add(baseByte);
@@ -382,9 +391,9 @@ public class CPUOp {
                     } else {
                         // ld IX/IY offet:
                         int arg_idx = -1;
-                        for(int i = 0;i<args.size();i++) {
-                            if (spec.args.get(i).regOffsetIndirection != null) {
-                                arg_idx = i;
+                        for(int j = 0;j<args.size();j++) {
+                            if (spec.args.get(j).regOffsetIndirection != null) {
+                                arg_idx = j;
                             }
                         }
                         if (arg_idx == -1) {
@@ -594,6 +603,7 @@ public class CPUOp {
         return data;
     }
     
+
     private Integer registerValueForByte(String register)
     {
         switch(register.toLowerCase()) {
@@ -652,4 +662,5 @@ public class CPUOp {
             arg.setConfig(newConfig);
         }
     }
+    
 }

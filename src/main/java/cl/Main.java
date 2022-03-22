@@ -8,6 +8,7 @@ import code.CodeBase;
 import workers.AnnotatedSourceCodeGenerator;
 import workers.BinaryGenerator;
 import workers.DataOptimizer;
+import workers.Disassembler;
 import workers.Help;
 import workers.reorgopt.CodeReorganizer;
 import workers.pattopt.PatternBasedOptimizer;
@@ -26,6 +27,7 @@ public class Main {
 
         // Add the available workers (in the order in which they will be executed):
         config.registerWorker(new Help(config));
+        config.registerWorker(new Disassembler(config));
         config.registerWorker(new SearchBasedOptimizer(config));
         config.registerWorker(new CodeReorganizer(config));
         config.registerWorker(new PatternBasedOptimizer(config));
@@ -65,6 +67,9 @@ public class Main {
                 }
                 break;
             case MDLConfig.CODE_FROM_SEARCHBASEDOPTIMIZER:
+                // Code will be generated automatically when the worker is called
+                break;
+            case MDLConfig.CODE_FROM_DISASSEMBLY:
                 // Code will be generated automatically when the worker is called
                 break;
             default:
