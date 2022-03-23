@@ -13,8 +13,7 @@ import code.Expression;
 import code.SourceConstant;
 import code.SourceFile;
 import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.FileReader;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -22,6 +21,7 @@ import java.util.List;
 import java.util.StringTokenizer;
 import org.apache.commons.lang3.tuple.Pair;
 import parser.SourceLine;
+import util.Resources;
 
 /**
  *
@@ -54,7 +54,10 @@ public class Disassembler implements MDLWorker {
     boolean resolveAbsoluteAddressesToLabels = true;
     boolean resolveRelativeAddressesToLabels = true;
     boolean removeUnusedLabels = true;
+    boolean keepUserDefinedLabels = true;
     boolean moveLabelsToTheirOwnLines = true;
+    
+    List<String> userDefinedLabels = new ArrayList<>();
     
     // Disassembler state:
     int state_currentBlockAddress = 0;
@@ -123,7 +126,7 @@ public class Disassembler implements MDLWorker {
         List<Pair<Integer,DisassemblerAnnotation>> annotations = new ArrayList<>();
         
         try {
-            FileInputStream fis = new FileInputStream(config.inputFiles.get(0));
+            InputStream fis = Resources.asInputStream(config.inputFiles.get(0));
             data = fis.readAllBytes();
         } catch(Exception e) {
             config.error("Cannot read binary input file: " + config.inputFiles.get(0));
@@ -142,7 +145,7 @@ public class Disassembler implements MDLWorker {
                     break;
                 default:
                 {
-                    BufferedReader br = new BufferedReader(new FileReader(hintsFileName));
+                    BufferedReader br = new BufferedReader(Resources.asReader(hintsFileName));
                     while(true) {
                         String line = br.readLine();
                         if (line == null) break;
@@ -217,6 +220,7 @@ public class Disassembler implements MDLWorker {
                             flushCurrentBlock(state_currentBlock, sf, code);
                             state_nextStatementLabel = a.argument;
                             state_nextStatementLabelAddress = address;
+                            userDefinedLabels.add(state_nextStatementLabel);
                             break;
 
                         case "comment":
@@ -291,6 +295,7 @@ public class Disassembler implements MDLWorker {
                 // We add it as data, as if we have reached here,
                 // it means we cannot disassemble it:
                 if (!state_currentBlock.isEmpty()) {
+                    config.info("Could not disassemble data to an instruction at #" + config.tokenizer.toHex(state_currentBlockAddress, 4));
                     addDataStatement(state_currentBlock, sf, code);
                 }
             }
@@ -350,6 +355,7 @@ public class Disassembler implements MDLWorker {
                         for(int i = 0;i<offset;i++) {
                             dataBlock.add(currentBlock.remove(0));
                         }
+                        config.info("Could not disassemble data to an instruction at #" + config.tokenizer.toHex(state_currentBlockAddress, 4));
                         addDataStatement(dataBlock, sf, code);
                     }
                     // insert the op spec:
@@ -416,6 +422,11 @@ public class Disassembler implements MDLWorker {
                             if (label != null) {
                                 exp.type = Expression.EXPRESSION_SYMBOL;
                                 exp.symbolName = label.name;
+                                if (label.definingStatement != null && label.definingStatement.type == CodeStatement.STATEMENT_DATA_BYTES) {
+                                    config.info("Jump/call into a data block from "+s.label.name+": #" + config.tokenizer.toHex(exp.integerConstant, 4));
+                                }
+                            } else {
+                                config.info("Could not resolve jump/call label from "+s.label.name+": #" + config.tokenizer.toHex(exp.integerConstant, 4));
                             }
                         }
                     }
@@ -434,6 +445,11 @@ public class Disassembler implements MDLWorker {
                                 if (label != null) {
                                     exp.type = Expression.EXPRESSION_SYMBOL;
                                     exp.symbolName = label.name;
+                                    if (label.definingStatement != null && label.definingStatement.type == CodeStatement.STATEMENT_DATA_BYTES) {
+                                        config.info("Relative jump into a data block from "+s.label.name+": #" + config.tokenizer.toHex(address, 4));
+                                    }
+                                } else {
+                                    config.info("Could not resolve relative jump label from "+s.label.name+": #" + config.tokenizer.toHex(address, 4));
                                 }
                             }
                         }
@@ -446,6 +462,11 @@ public class Disassembler implements MDLWorker {
     
     public void removeUnusedLabels(SourceFile sf, CodeBase code) {
         List<String> usedLabels = new ArrayList<>();
+        
+        if (keepUserDefinedLabels) {
+            usedLabels.addAll(userDefinedLabels);    
+        }
+        
         // Find all the used symbols:
         for(CodeStatement s:sf.getStatements()) {
             if (s.op == null) continue;

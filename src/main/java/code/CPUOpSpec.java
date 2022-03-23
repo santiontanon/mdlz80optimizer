@@ -295,19 +295,19 @@ public class CPUOpSpec {
                     if (isJump) {
                         // relative jump offset:
                         int jumpOffset = v + 2;
-                        if (jumpOffset >= 128) {
+                        if (jumpOffset >= 130) {
                             jumpOffset -= 256;
                             if (!disassembleAddArg(op, Expression.operatorExpression(Expression.EXPRESSION_SUB,
                                     Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, null, code, config),
-                                    Expression.constantExpression(-jumpOffset, config), config), false)) return null;
+                                    Expression.constantExpression(-jumpOffset, config), config), true, false)) return null;
                         } else {
                             if (!disassembleAddArg(op, Expression.operatorExpression(Expression.EXPRESSION_SUM,
                                     Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, null, code, config),
-                                    Expression.constantExpression(jumpOffset, config), config), true)) return null;
+                                    Expression.constantExpression(jumpOffset, config), config), true, false)) return null;
                         }
                     } else {
                         // indexing offset:
-                        if (!disassembleAddArg(op, Expression.constantExpression(v, config), true)) return null;
+                        if (!disassembleAddArg(op, Expression.constantExpression(v, config), false, true)) return null;
                     }
                     break;
                     
@@ -315,7 +315,7 @@ public class CPUOpSpec {
                 case "n1":
                 case "n2":
                     if (op == null) return null;
-                    if (!disassembleAddArg(op, Expression.constantExpression(v, config), true)) return null;
+                    if (!disassembleAddArg(op, Expression.constantExpression(v, config), true, true)) return null;
                     break;
                 case "nn":
                     // 16 bit argument
@@ -323,7 +323,7 @@ public class CPUOpSpec {
                     if (previousNN == null) {
                         previousNN = v;
                     } else {
-                        if (!disassembleAddArg(op, Expression.constantExpression(previousNN + v*256, config), true)) return null;
+                        if (!disassembleAddArg(op, Expression.constantExpression(previousNN + v*256, config), true, true)) return null;
                         previousNN = null;
                     }
                     break;
@@ -333,56 +333,44 @@ public class CPUOpSpec {
                     if (previousMM == null) {
                         previousMM = v;
                     } else {
-                        if (!disassembleAddArg(op, Expression.constantExpression(previousMM + v*256, config), true)) return null;
+                        if (!disassembleAddArg(op, Expression.constantExpression(previousMM + v*256, config), true, true)) return null;
                         previousMM = null;
                     }
                     break;
                 case "+0":
                     if (op == null) op = disassembleInstantiateOp(code);
                     if (v != baseByte + 0) return null;
-                    if (!disassembleAddArg(op, Expression.constantExpression(v, config), false)) return null;
                     break;
                 case "+1":
                     if (op == null) op = disassembleInstantiateOp(code);
                     if (v != baseByte + 1) return null;
-                    if (!disassembleAddArg(op, Expression.constantExpression(v, config), false)) return null;       
                     break;
                 case "+2":
                     if (op == null) op = disassembleInstantiateOp(code);
                     if (v != baseByte + 2) return null;
-                    if (!disassembleAddArg(op, Expression.constantExpression(v, config), false)) return null;
                     break;
                 case "+3":
                     if (op == null) op = disassembleInstantiateOp(code);
                     if (v != baseByte + 3) return null;
-                    if (!disassembleAddArg(op, Expression.constantExpression(v, config), false)) return null;
                     break;
                 case "+4":
                     if (op == null) op = disassembleInstantiateOp(code);
                     if (v != baseByte + 4) return null;
-                    if (!disassembleAddArg(op, Expression.constantExpression(v, config), false)) return null;
                     break;
                 case "+5":
-                    if (op == null) return null;
-                    if (v != baseByte + 5) return null;
-                    if (!disassembleAddArg(op, Expression.constantExpression(v, config), false)) return null;
-                    break;
-                case "+6":
                     if (op == null) op = disassembleInstantiateOp(code);
-                    if (v != baseByte + 6) return null;
-                    if (!disassembleAddArg(op, Expression.constantExpression(v, config), false)) return null;
+                    if (v != baseByte + 5) return null;
                     break;
                 case "+7":
                     if (op == null) op = disassembleInstantiateOp(code);
                     if (v != baseByte + 7) return null;
-                    if (!disassembleAddArg(op, Expression.constantExpression(v, config), false)) return null;
                     break;
                 case "+r":
                 {
                     if (op == null) op = disassembleInstantiateOp(code);
                     String reg = registerForValue(v - baseByte);
                     if (reg == null) return null;
-                    if (!disassembleAddArg(op, Expression.symbolExpression(reg, null, code, config), false)) return null;
+                    if (!disassembleAddArg(op, Expression.symbolExpression(reg, null, code, config), true, false)) return null;
                     break;
                 }
                 case "+p":
@@ -390,7 +378,7 @@ public class CPUOpSpec {
                     if (op == null) op = disassembleInstantiateOp(code);
                     String reg = registerForValueP(v - baseByte);
                     if (reg == null) return null;
-                    if (!disassembleAddArg(op, Expression.symbolExpression(reg, null, code, config), false)) return null;
+                    if (!disassembleAddArg(op, Expression.symbolExpression(reg, null, code, config), true, false)) return null;
                     break;
                 }
                 case "+q":
@@ -398,31 +386,34 @@ public class CPUOpSpec {
                     if (op == null) op = disassembleInstantiateOp(code);
                     String reg = registerForValueQ(v - baseByte);
                     if (reg == null) return null;
-                    if (!disassembleAddArg(op, Expression.symbolExpression(reg, null, code, config), false)) return null;
+                    if (!disassembleAddArg(op, Expression.symbolExpression(reg, null, code, config), true, false)) return null;
                     break;
                 }
                 case "+8*p":
                 {
                     if (op == null) op = disassembleInstantiateOp(code);
+                    if (((v - baseByte)%8) != 0) return null;
                     String reg = registerForValueP((v - baseByte)/8);
                     if (reg == null) return null;
-                    if (!disassembleAddArg(op, Expression.symbolExpression(reg, null, code, config), false)) return null;
+                    if (!disassembleAddArg(op, Expression.symbolExpression(reg, null, code, config), true, false)) return null;
                     break;
                 }
                 case "+8*q":
                 {
                     if (op == null) op = disassembleInstantiateOp(code);
+                    if (((v - baseByte)%8) != 0) return null;
                     String reg = registerForValueQ((v - baseByte)/8);
                     if (reg == null) return null;
-                    if (!disassembleAddArg(op, Expression.symbolExpression(reg, null, code, config), false)) return null;
+                    if (!disassembleAddArg(op, Expression.symbolExpression(reg, null, code, config), true, false)) return null;
                     break;
                 }
                 case "+8*b":
                 {
                     if (op == null) op = disassembleInstantiateOp(code);
+                    if (((v - baseByte)%8) != 0) return null;
                     int b = (v - baseByte)/8;
                     if (b<0 || b>=8) return null;
-                    if (!disassembleAddArg(op, Expression.constantExpression(b, config), false)) return null;
+                    if (!disassembleAddArg(op, Expression.constantExpression(b, config), true, false)) return null;
                     break;
                 }
                 case "+8*b+r":
@@ -433,16 +424,17 @@ public class CPUOpSpec {
                     if (reg == null) return null;
                     int b = diff/8;
                     if (b<0 || b>=8) return null;
-                    if (!disassembleAddArg(op, Expression.constantExpression(b, config), false)) return null;
-                    if (!disassembleAddArg(op, Expression.symbolExpression(reg, null, code, config), false)) return null;
+                    if (!disassembleAddArg(op, Expression.constantExpression(b, config), true, false)) return null;
+                    if (!disassembleAddArg(op, Expression.symbolExpression(reg, null, code, config), true, false)) return null;
                     break;
                 }
                 case "+8*r":
                 {
                     if (op == null) op = disassembleInstantiateOp(code);
+                    if (((v - baseByte)%8) != 0) return null;
                     String reg = registerForValue((v - baseByte)/8);
                     if (reg == null) return null;
-                    if (!disassembleAddArg(op, Expression.symbolExpression(reg, null, code, config), false)) return null;
+                    if (!disassembleAddArg(op, Expression.symbolExpression(reg, null, code, config), true, false)) return null;
                     break;
                 }
                 default:
@@ -450,8 +442,9 @@ public class CPUOpSpec {
             }
         }
         if (op != null && op.args.size() == args.size()) {
-            if (disassembleAddArg(op, null, true)) {
+            if (disassembleAddArg(op, null, true, true)) {
                 config.error("" + op);
+                return null;
             }
             return op;
         }
@@ -513,7 +506,7 @@ public class CPUOpSpec {
 
     private String registerForValueP(int value)
     {
-        String registers[] = {"b", "c", "d", "e", "ixh", "ixl", null, "a"};
+        String registers[] = {null, null, null, null, "ixh", "ixl", null, null};
         if (value >= 0 && value < registers.length) {
             return registers[value];
         }
@@ -523,7 +516,7 @@ public class CPUOpSpec {
     
     private String registerForValueQ(int value)
     {
-        String registers[] = {"b", "c", "d", "e", "iyh", "iyl", null, "a"};
+        String registers[] = {null, null, null, null, "iyh", "iyl", null, null};
         if (value >= 0 && value < registers.length) {
             return registers[value];
         }
@@ -531,13 +524,21 @@ public class CPUOpSpec {
     }
 
     
-    private boolean disassembleAddArg(CPUOp op, Expression exp, boolean lookInsideExpressions)
+    /*
+    - useAsItsOwnExpression: set this to "true" if "exp" can be an argument of
+                             the op by itself (for example, an indirection
+                             offset cannot, as it is always inside some
+                             expression, like (ix+o)
+    - lookInsideExpressions: set this to "true" if "exp" can be placed inside
+                             of an expression.
+    */
+    private boolean disassembleAddArg(CPUOp op, Expression exp, boolean useAsItsOwnExpression, boolean lookInsideExpressions)
     {
         for(int i = 0;i<op.args.size();i++) {
-            if (op.args.get(i) == null) {
+            if (op.args.get(i) == null && useAsItsOwnExpression) {
                 op.args.set(i, exp);
                 return true;
-            } else if (lookInsideExpressions) {
+            } else if (op.args.get(i) != null && lookInsideExpressions) {
                 if (disassembleAddArg(op.args.get(i), exp)) {
                     return true;
                 }
