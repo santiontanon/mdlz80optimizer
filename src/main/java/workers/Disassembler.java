@@ -28,6 +28,9 @@ import util.Resources;
  * @author santi
  */
 public class Disassembler implements MDLWorker {
+    public final int BLOCK_SPACE = 0;
+    public final int BLOCK_DATA = 1;
+    public final int BLOCK_CODE = 2;
     
     public static class DisassemblerAnnotation {
         public int address;
@@ -56,13 +59,14 @@ public class Disassembler implements MDLWorker {
     boolean removeUnusedLabels = true;
     boolean keepUserDefinedLabels = true;
     boolean moveLabelsToTheirOwnLines = true;
+    boolean addCommentWithASCIIDataIfPossible = true;
     
     List<String> userDefinedLabels = new ArrayList<>();
     
     // Disassembler state:
     int state_currentBlockAddress = 0;
     List<Integer> state_currentBlock = new ArrayList<>();
-    boolean state_inCodeBlock = false;  // default to data
+    int state_blockType = BLOCK_DATA;
     int state_nextStatementLabelAddress = 0;
     String state_nextStatementLabel = null;
     int state_nextStatementCommentAddress = 0;
@@ -91,7 +95,8 @@ public class Disassembler implements MDLWorker {
                "    comment <address> <comment>\n" +
                "    comment-before <address> <comment>\n" +
                "    data <address>\n" +
-               "    code <address>\n";
+               "    code <address>\n" +
+               "    space <address>\n";
     }
 
     
@@ -150,6 +155,7 @@ public class Disassembler implements MDLWorker {
                         String line = br.readLine();
                         if (line == null) break;
                         StringTokenizer st = new StringTokenizer(line, " \t");
+                        if (!st.hasMoreTokens()) continue;
                         String type = st.nextToken();
                         String addressToken = st.nextToken();
                         String restOfTheLine = (st.hasMoreTokens() ? st.nextToken("").strip():null);
@@ -201,7 +207,7 @@ public class Disassembler implements MDLWorker {
         // Initialize the state:
         state_currentBlockAddress = address;
         state_currentBlock = new ArrayList<>();
-        state_inCodeBlock = false;  // default to data
+        state_blockType = BLOCK_DATA;
         state_nextStatementLabelAddress = 0;
         state_nextStatementLabel = null;
         state_nextStatementCommentAddress = 0;
@@ -216,6 +222,14 @@ public class Disassembler implements MDLWorker {
                 if (p.getLeft().equals(address)) {
                     DisassemblerAnnotation a = p.getRight();
                     switch(a.type) {
+                        case "space":
+                            config.debug("Space starting at " + address);
+                            if (state_blockType != BLOCK_SPACE) {
+                                flushCurrentBlock(state_currentBlock, sf, code);
+                                state_blockType = BLOCK_SPACE;
+                            }
+                            break;
+                            
                         case "label":
                             flushCurrentBlock(state_currentBlock, sf, code);
                             state_nextStatementLabel = a.argument;
@@ -241,17 +255,17 @@ public class Disassembler implements MDLWorker {
 
                         case "code":
                             config.debug("Code starting at " + address);
-                            if (!state_inCodeBlock) {
+                            if (state_blockType != BLOCK_CODE) {
                                 flushCurrentBlock(state_currentBlock, sf, code);
-                                state_inCodeBlock = true;
+                                state_blockType = BLOCK_CODE;
                             }
                             break;
 
                         case "data":
                             config.debug("Data starting at " + address);
-                            if (state_inCodeBlock) {
+                            if (state_blockType != BLOCK_DATA) {
                                 flushCurrentBlock(state_currentBlock, sf, code);
-                                state_inCodeBlock = false;
+                                state_blockType = BLOCK_DATA;
                             }
                             break;
 
@@ -267,9 +281,9 @@ public class Disassembler implements MDLWorker {
             state_currentBlock.add(v);
             address += 1;
 
-            if (state_inCodeBlock) {
+            if (state_blockType == BLOCK_CODE) {
                 tryToDisassembleInstruction(state_currentBlock, sf, code, false);
-            } else if (state_currentBlock.size() >= dataBytesPerLine) {
+            } else if (state_blockType == BLOCK_DATA && state_currentBlock.size() >= dataBytesPerLine) {
                 addDataStatement(state_currentBlock, sf, code);
             }            
         }
@@ -288,9 +302,18 @@ public class Disassembler implements MDLWorker {
     public void flushCurrentBlock(List<Integer> currentBlock, SourceFile sf, CodeBase code)
     {
         if (!state_currentBlock.isEmpty()) {
-            if (!state_inCodeBlock) {
+            if (state_blockType == BLOCK_SPACE) {
+                if (!currentBlock.isEmpty()) {
+                    // insert a space statement:
+                    CodeStatement s = new CodeStatement(CodeStatement.STATEMENT_DEFINE_SPACE, new SourceLine("", sf, sf.getStatements().size()), sf, config);
+                    s.space = Expression.constantExpression(currentBlock.size(), config);
+                    sf.addStatement(s);
+                    state_currentBlockAddress += currentBlock.size();
+                    currentBlock.clear();
+                }
+            } if (state_blockType == BLOCK_DATA) {
                 addDataStatement(state_currentBlock, sf, code);
-            } else {
+            } else if (state_blockType == BLOCK_CODE) {
                 tryToDisassembleInstruction(state_currentBlock, sf, code, true);
                 // We add it as data, as if we have reached here,
                 // it means we cannot disassemble it:
@@ -312,7 +335,7 @@ public class Disassembler implements MDLWorker {
         if (!firstBlock.isEmpty()) {
             CodeStatement s = new CodeStatement(CodeStatement.STATEMENT_DATA_BYTES, new SourceLine("", sf, sf.getStatements().size()), sf, config);
             s.data = new ArrayList<>();
-            for(Integer v:firstBlock) {
+            for(int v:firstBlock) {
                 s.data.add(Expression.constantExpression(v, renderDataAs, config));
             }
             if (state_currentBlockAddress == state_nextStatementLabelAddress &&
@@ -326,6 +349,41 @@ public class Disassembler implements MDLWorker {
                 state_nextStatementComment != null) {
                 s.comment = state_nextStatementComment;
                 state_nextStatementComment = null;
+            } else if (addCommentWithASCIIDataIfPossible) {
+                // See if the data statement makes sense as ASCII:
+                String comment = "; ";
+                boolean first = true;
+                boolean inString = false;
+                boolean anyASCII = false;
+                for(int v:firstBlock) {
+                    if (v>=32 && v<127) {
+                        anyASCII = true;
+                        // Character is within ASCII displayable character:
+                        if (first) {
+                            comment += "\"";
+                            inString = true;
+                        }
+                        if (!inString) {
+                            comment += ", \"";
+                            inString = true;
+                        }
+                        comment += (char)v;
+                    } else {
+                        if (first) {
+                            comment += v;
+                        } else if (inString) {
+                            comment += "\", " + v;
+                        } else {
+                            comment += ", " + v;
+                        }
+                        inString = false;
+                    }
+                    first = false;
+                }
+                if (inString) comment += "\"";
+                if (anyASCII) {
+                    s.comment = comment;
+                }
             }
             sf.addStatement(s);
             state_currentBlockAddress += firstBlock.size();
