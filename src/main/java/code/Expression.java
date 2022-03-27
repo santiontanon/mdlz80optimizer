@@ -663,13 +663,13 @@ public class Expression {
     
     @Override
     public String toString() {
-        return toStringInternal(false, false, false, null, null);
+        return toStringInternal(false, false, false, null, null, null);
     }    
     
 
-    public String toStringInternal(boolean splitSpecialCharactersInStrings, boolean useOriginalNames, boolean mimicTargetDialect, CodeStatement s, CodeBase code) {
+    public String toStringInternal(boolean splitSpecialCharactersInStrings, boolean useOriginalNames, boolean mimicTargetDialect, CodeStatement s, CodeBase code, HTMLCodeStyle style) {
         if (mimicTargetDialect && originalDialectExpression != null) {
-            return originalDialectExpression.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+            return originalDialectExpression.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style);
         }
         
         switch (type) {
@@ -685,30 +685,30 @@ public class Expression {
                 switch(renderMode) {
                     case RENDER_AS_8BITHEX:
                         if (integerConstant >= 0 && integerConstant <= 0xff) {
-                            return config.tokenizer.toHexByte(integerConstant, config.hexStyle);
+                            return HTMLCodeStyle.renderStyledHTMLPiece(config.tokenizer.toHexByte(integerConstant, config.hexStyle), HTMLCodeStyle.TYPE_CONSTANT, style);
                         }
                         break;
                     case RENDER_AS_16BITHEX:
                         if (integerConstant >= 0 && integerConstant <= 0xffff) {
-                            return config.tokenizer.toHexWord(integerConstant, config.hexStyle);
+                            return HTMLCodeStyle.renderStyledHTMLPiece(config.tokenizer.toHexWord(integerConstant, config.hexStyle), HTMLCodeStyle.TYPE_CONSTANT, style);
                         }
                         break;
                     case RENDER_AS_OCT:
-                        return config.tokenizer.toOct(integerConstant, config.hexStyle);
+                        return HTMLCodeStyle.renderStyledHTMLPiece(config.tokenizer.toOct(integerConstant, config.hexStyle), HTMLCodeStyle.TYPE_CONSTANT, style);
                     case RENDER_AS_8BITBIN:
                         if (integerConstant >= 0 && integerConstant <= 0xff) {
-                            return config.tokenizer.toBin(integerConstant, 8, config.hexStyle);
+                            return HTMLCodeStyle.renderStyledHTMLPiece(config.tokenizer.toBin(integerConstant, 8, config.hexStyle), HTMLCodeStyle.TYPE_CONSTANT, style);
                         }
                         break;
                     case RENDER_AS_16BITBIN:
                         if (integerConstant >= 0 && integerConstant <= 0xffff) {
-                            return config.tokenizer.toBin(integerConstant, 16, config.hexStyle);
+                            return HTMLCodeStyle.renderStyledHTMLPiece(config.tokenizer.toBin(integerConstant, 16, config.hexStyle), HTMLCodeStyle.TYPE_CONSTANT, style);
                         }
                         break;
                 }
-                return "" + integerConstant;
+                return HTMLCodeStyle.renderStyledHTMLPiece("" + integerConstant, HTMLCodeStyle.TYPE_CONSTANT, style);
             case EXPRESSION_DOUBLE_CONSTANT:
-                return "" + doubleConstant;
+                return HTMLCodeStyle.renderStyledHTMLPiece("" + doubleConstant, HTMLCodeStyle.TYPE_CONSTANT, style);
             case EXPRESSION_STRING_CONSTANT:
             {
                 char quoteChar = '\"';
@@ -738,9 +738,9 @@ public class Expression {
                         first = false;
                     }
                     if (insideQuotes) tmp += quoteChar;
-                    return tmp;
+                    return HTMLCodeStyle.renderStyledHTMLPiece(tmp, HTMLCodeStyle.TYPE_CONSTANT, style);
                 } else {
-                    return quoteChar + stringConstant + quoteChar;
+                    return HTMLCodeStyle.renderStyledHTMLPiece(quoteChar + stringConstant + quoteChar, HTMLCodeStyle.TYPE_CONSTANT, style);
                 }
             }
             case EXPRESSION_SYMBOL:
@@ -753,16 +753,16 @@ public class Expression {
                             suffix = "##";
                         }
                         if (config.output_replaceLabelDotsByUnderscores && !c.originalName.startsWith(".")) {
-                            return c.originalName.replace(".", "_") + suffix;
+                            return HTMLCodeStyle.renderStyledHTMLPiece(c.originalName.replace(".", "_") + suffix, HTMLCodeStyle.TYPE_LABEL, style);
                         } else {
-                            return c.originalName + suffix;
+                            return HTMLCodeStyle.renderStyledHTMLPiece(c.originalName + suffix, HTMLCodeStyle.TYPE_LABEL, style);
                         }
                     }
                 }
                 if (config.output_replaceLabelDotsByUnderscores) {
-                    return symbolName.replace(".", "_");
+                    return HTMLCodeStyle.renderStyledHTMLPiece(symbolName.replace(".", "_"), HTMLCodeStyle.TYPE_LABEL, style);
                 } else {
-                    return symbolName;
+                    return HTMLCodeStyle.renderStyledHTMLPiece(symbolName, HTMLCodeStyle.TYPE_LABEL, style);
                 }
             }
             case EXPRESSION_SIGN_CHANGE:
@@ -771,26 +771,26 @@ public class Expression {
                         || args.get(0).type == EXPRESSION_STRING_CONSTANT
                         || args.get(0).type == EXPRESSION_PARENTHESIS
                         || args.get(0).type == EXPRESSION_SYMBOL) {
-                    return "-" + args.get(0).toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+                    return "-" + args.get(0).toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style);
                 } else {
-                    return "-(" + args.get(0).toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code) + ")";
+                    return "-(" + args.get(0).toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style) + ")";
                 }
             case EXPRESSION_PARENTHESIS:
-                return "(" + args.get(0).toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code) + ")";
+                return "(" + args.get(0).toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style) + ")";
             case EXPRESSION_SUM: {
                 String str = null;
                 if (args.size() == 2 && 
                      args.get(1).type == EXPRESSION_INTEGER_CONSTANT &&
                      args.get(1).integerConstant < 0) {
                     // Special case to prevent "x + -1"  
-                    str = args.get(0).toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code) +
+                    str = args.get(0).toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style) +
                           " - " + (-args.get(1).integerConstant);
                 } else {
                     for (Expression arg : args) {
                         if (str == null) {
-                            str = arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+                            str = arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style);
                         } else {
-                            str += " + " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+                            str += " + " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style);
                         }
                     }
                 }
@@ -800,9 +800,9 @@ public class Expression {
                 String str = null;
                 for (Expression arg : args) {
                     if (str == null) {
-                        str = arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+                        str = arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style);
                     } else {
-                        str += " - " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+                        str += " - " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style);
                     }
                 }
                 return str;
@@ -811,9 +811,9 @@ public class Expression {
                 String str = null;
                 for (Expression arg : args) {
                     if (str == null) {
-                        str = arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+                        str = arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style);
                     } else {
-                        str += " * " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+                        str += " * " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style);
                     }
                 }
                 return str;
@@ -822,9 +822,9 @@ public class Expression {
                 String str = null;
                 for (Expression arg : args) {
                     if (str == null) {
-                        str = arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+                        str = arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style);
                     } else {
-                        str += " / " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+                        str += " / " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style);
                     }
                 }
                 return str;
@@ -833,12 +833,12 @@ public class Expression {
                 String str = null;
                 for (Expression arg : args) {
                     if (str == null) {
-                        str = arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+                        str = arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style);
                     } else {
                         if (mimicTargetDialect) {
-                            str += " "+config.expressionParser.OP_MOD+" " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+                            str += " "+config.expressionParser.OP_MOD+" " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style);
                         } else {
-                            str += " "+config.expressionParser.OP_STD_MOD+" " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+                            str += " "+config.expressionParser.OP_STD_MOD+" " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style);
                         }
                     }
                 }
@@ -848,12 +848,12 @@ public class Expression {
                 String str = null;
                 for (Expression arg : args) {
                     if (str == null) {
-                        str = arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+                        str = arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style);
                     } else {
                         if (mimicTargetDialect) {
-                            str += " "+config.expressionParser.OP_BIT_OR+" " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+                            str += " "+config.expressionParser.OP_BIT_OR+" " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style);
                         } else {
-                            str += " "+config.expressionParser.OP_STD_BIT_OR+" " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+                            str += " "+config.expressionParser.OP_STD_BIT_OR+" " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style);
                         }
                     }
                 }
@@ -863,12 +863,12 @@ public class Expression {
                 String str = null;
                 for (Expression arg : args) {
                     if (str == null) {
-                        str = arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+                        str = arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style);
                     } else {
                         if (mimicTargetDialect) {
-                            str += " "+config.expressionParser.OP_BIT_AND+" " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+                            str += " "+config.expressionParser.OP_BIT_AND+" " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style);
                         } else {
-                            str += " "+config.expressionParser.OP_STD_BIT_AND+" " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+                            str += " "+config.expressionParser.OP_STD_BIT_AND+" " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style);
                         }
                     }
                 }
@@ -878,12 +878,12 @@ public class Expression {
                 String str = null;
                 for (Expression arg : args) {
                     if (str == null) {
-                        str = arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+                        str = arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style);
                     } else {
                         if (mimicTargetDialect) {
-                            str += " "+config.expressionParser.OP_EQUAL+" " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+                            str += " "+config.expressionParser.OP_EQUAL+" " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style);
                         } else {
-                            str += " "+config.expressionParser.OP_STD_EQUAL+" " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+                            str += " "+config.expressionParser.OP_STD_EQUAL+" " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style);
                         }
                     }
                 }
@@ -893,12 +893,12 @@ public class Expression {
                 String str = null;
                 for (Expression arg : args) {
                     if (str == null) {
-                        str = arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+                        str = arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style);
                     } else {
                         if (mimicTargetDialect) {
-                            str += " "+config.expressionParser.OP_LOWERTHAN+" " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+                            str += " "+config.expressionParser.OP_LOWERTHAN+" " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style);
                         } else {
-                            str += " "+config.expressionParser.OP_STD_LOWERTHAN+" " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+                            str += " "+config.expressionParser.OP_STD_LOWERTHAN+" " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style);
                         }
                     }
                 }
@@ -908,12 +908,12 @@ public class Expression {
                 String str = null;
                 for (Expression arg : args) {
                     if (str == null) {
-                        str = arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+                        str = arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style);
                     } else {
                         if (mimicTargetDialect) {
-                            str += " "+config.expressionParser.OP_GREATERTHAN+" " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+                            str += " "+config.expressionParser.OP_GREATERTHAN+" " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style);
                         } else {
-                            str += " "+config.expressionParser.OP_STD_GREATERTHAN+" " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+                            str += " "+config.expressionParser.OP_STD_GREATERTHAN+" " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style);
                         }
                     }
                 }
@@ -923,12 +923,12 @@ public class Expression {
                 String str = null;
                 for (Expression arg : args) {
                     if (str == null) {
-                        str = arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+                        str = arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style);
                     } else {
                         if (mimicTargetDialect) {
-                            str += " "+config.expressionParser.OP_LEQTHAN+" " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+                            str += " "+config.expressionParser.OP_LEQTHAN+" " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style);
                         } else {
-                            str += " "+config.expressionParser.OP_STD_LEQTHAN+" " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+                            str += " "+config.expressionParser.OP_STD_LEQTHAN+" " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style);
                         }
                     }
                 }
@@ -938,12 +938,12 @@ public class Expression {
                 String str = null;
                 for (Expression arg : args) {
                     if (str == null) {
-                        str = arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+                        str = arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style);
                     } else {
                         if (mimicTargetDialect) {
-                            str += " "+config.expressionParser.OP_GEQTHAN+" " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+                            str += " "+config.expressionParser.OP_GEQTHAN+" " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style);
                         } else {
-                            str += " "+config.expressionParser.OP_STD_GEQTHAN+" " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+                            str += " "+config.expressionParser.OP_STD_GEQTHAN+" " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style);
                         }
                     }
                 }
@@ -954,12 +954,12 @@ public class Expression {
                 String str = null;
                 for (Expression arg : args) {
                     if (str == null) {
-                        str = arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+                        str = arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style);
                     } else {
                         if (mimicTargetDialect) {
-                            str += " "+config.expressionParser.OP_DIFF+" " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+                            str += " "+config.expressionParser.OP_DIFF+" " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style);
                         } else {
-                            str += " "+config.expressionParser.OP_STD_DIFF+" " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+                            str += " "+config.expressionParser.OP_STD_DIFF+" " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style);
                         }
                     }
                 }
@@ -967,21 +967,21 @@ public class Expression {
             }
 
             case EXPRESSION_TERNARY_IF: {
-                return args.get(0).toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code) + " ? "
-                        + args.get(1).toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code) + " : "
-                        + args.get(2).toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+                return args.get(0).toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style) + " ? "
+                        + args.get(1).toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style) + " : "
+                        + args.get(2).toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style);
             }
 
             case EXPRESSION_LSHIFT: {
                 String str = null;
                 for (Expression arg : args) {
                     if (str == null) {
-                        str = arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+                        str = arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style);
                     } else {
                         if (mimicTargetDialect) {
-                            str += " "+config.expressionParser.OP_LSHIFT+" " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+                            str += " "+config.expressionParser.OP_LSHIFT+" " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style);
                         } else {
-                            str += " "+config.expressionParser.OP_STD_LSHIFT+" " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+                            str += " "+config.expressionParser.OP_STD_LSHIFT+" " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style);
                         }
                     }
                 }
@@ -992,12 +992,12 @@ public class Expression {
                 String str = null;
                 for (Expression arg : args) {
                     if (str == null) {
-                        str = arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+                        str = arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style);
                     } else {
                         if (mimicTargetDialect) {
-                            str += " "+config.expressionParser.OP_RSHIFT+" " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+                            str += " "+config.expressionParser.OP_RSHIFT+" " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style);
                         } else {
-                            str += " "+config.expressionParser.OP_STD_RSHIFT+" " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+                            str += " "+config.expressionParser.OP_STD_RSHIFT+" " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style);
                         }
                     }
                 }
@@ -1008,12 +1008,12 @@ public class Expression {
                 String str = null;
                 for (Expression arg : args) {
                     if (str == null) {
-                        str = arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+                        str = arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style);
                     } else {
                         if (mimicTargetDialect) {
-                            str += " "+config.expressionParser.OP_BIT_OR+" " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+                            str += " "+config.expressionParser.OP_BIT_OR+" " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style);
                         } else {
-                            str += " "+config.expressionParser.OP_STD_BIT_OR+" " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+                            str += " "+config.expressionParser.OP_STD_BIT_OR+" " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style);
                         }
                     }
                     
@@ -1025,12 +1025,12 @@ public class Expression {
                 String str = null;
                 for (Expression arg : args) {
                     if (str == null) {
-                        str = arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+                        str = arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style);
                     } else {
                         if (mimicTargetDialect) {
-                            str += " "+config.expressionParser.OP_BIT_AND+" " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+                            str += " "+config.expressionParser.OP_BIT_AND+" " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style);
                         } else {
-                            str += " "+config.expressionParser.OP_STD_BIT_AND+" " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+                            str += " "+config.expressionParser.OP_STD_BIT_AND+" " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style);
                         }
                     }
                 }
@@ -1043,27 +1043,27 @@ public class Expression {
                         || args.get(0).type == EXPRESSION_PARENTHESIS
                         || args.get(0).type == EXPRESSION_SYMBOL) {
                     if (mimicTargetDialect) {
-                        return config.expressionParser.OP_BIT_NEGATION +" " + args.get(0).toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+                        return config.expressionParser.OP_BIT_NEGATION +" " + args.get(0).toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style);
                     } else {
-                        return config.expressionParser.OP_STD_BIT_NEGATION + " " + args.get(0).toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+                        return config.expressionParser.OP_STD_BIT_NEGATION + " " + args.get(0).toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style);
                     }
                 } else {
                     if (mimicTargetDialect) {
-                        return config.expressionParser.OP_BIT_NEGATION + " (" + args.get(0).toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code) + ")";
+                        return config.expressionParser.OP_BIT_NEGATION + " (" + args.get(0).toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style) + ")";
                     } else {
-                        return config.expressionParser.OP_STD_BIT_NEGATION + " (" + args.get(0).toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code) + ")";
+                        return config.expressionParser.OP_STD_BIT_NEGATION + " (" + args.get(0).toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style) + ")";
                     }
                 }
             case EXPRESSION_BITXOR: {
                 String str = null;
                 for (Expression arg : args) {
                     if (str == null) {
-                        str = arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+                        str = arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style);
                     } else {
                         if (mimicTargetDialect) {
-                            str += " "+config.expressionParser.OP_BIT_XOR+" " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+                            str += " "+config.expressionParser.OP_BIT_XOR+" " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style);
                         } else {
-                            str += " "+config.expressionParser.OP_STD_BIT_XOR+" " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+                            str += " "+config.expressionParser.OP_STD_BIT_XOR+" " + arg.toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style);
                         }
                     }
                 }
@@ -1076,15 +1076,15 @@ public class Expression {
                         || args.get(0).type == EXPRESSION_PARENTHESIS
                         || args.get(0).type == EXPRESSION_SYMBOL) {
                     if (mimicTargetDialect) {
-                        return config.expressionParser.OP_LOGICAL_NEGATION+" " + args.get(0).toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+                        return config.expressionParser.OP_LOGICAL_NEGATION+" " + args.get(0).toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style);
                     } else {
-                        return config.expressionParser.OP_STD_LOGICAL_NEGATION+" " + args.get(0).toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+                        return config.expressionParser.OP_STD_LOGICAL_NEGATION+" " + args.get(0).toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style);
                     }
                 } else {
                     if (mimicTargetDialect) {
-                        return config.expressionParser.OP_LOGICAL_NEGATION+" (" + args.get(0).toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code) + ")";
+                        return config.expressionParser.OP_LOGICAL_NEGATION+" (" + args.get(0).toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style) + ")";
                     } else {
-                        return config.expressionParser.OP_STD_LOGICAL_NEGATION+" (" + args.get(0).toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code) + ")";
+                        return config.expressionParser.OP_STD_LOGICAL_NEGATION+" (" + args.get(0).toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style) + ")";
                     }
                 }
             case EXPRESSION_DIALECT_FUNCTION:
@@ -1096,25 +1096,25 @@ public class Expression {
                 String str = dialectFunction + (parentheses ? "(":" ");
                 for(int i = 0;i<args.size();i++) {
                     if (i == 0) {
-                        str += args.get(i).toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+                        str += args.get(i).toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style);
                     } else {
-                        str += ", " + args.get(i).toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+                        str += ", " + args.get(i).toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style);
                     }
                 }
                 return str += (parentheses ? ")":"");
             }
             case EXPRESSION_PLUS_SIGN:
             {
-                return "+" + args.get(0).toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+                return "+" + args.get(0).toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style);
             }
             case EXPRESSION_LIST:
             {
                 String str = "";
                 for(int i = 0;i<args.size();i++) {
                     if (i == 0) {
-                        str += args.get(i).toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+                        str += args.get(i).toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style);
                     } else {
-                        str += ", " + args.get(i).toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code);
+                        str += ", " + args.get(i).toStringInternal(splitSpecialCharactersInStrings, useOriginalNames, mimicTargetDialect, s, code, style);
                     }
                 }
                 return str;

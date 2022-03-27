@@ -10,6 +10,7 @@ import cl.MDLConfig;
 import code.CodeBase;
 import code.SourceFile;
 import code.CodeStatement;
+import code.HTMLCodeStyle;
 import code.OutputBinary;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -25,14 +26,15 @@ import javax.imageio.ImageIO;
 public class AnnotatedSourceCodeGenerator implements MDLWorker {
     public final static String GFX_TAG = "mdl-asm+:html:gfx";
     public final static int COLOR_PIXEL_ON = 0xff000000;  // black
-    public final static int COLOR_PIXEL_OFF = 0xffffffff;  // white
-    public final static int COLOR_PIXEL_TRANSPARENT = 0xff8888ff;  // blue
+    public final static int COLOR_PIXEL_OFF = 0xffdddddd;  // light gray
+    public final static int COLOR_PIXEL_MASKED = 0xff8888ff;  // blue
     
     MDLConfig config = null;
 
     boolean generateHTML = false;
     String outputFileName = null;
     int imgIndex = 0;
+    HTMLCodeStyle style = new HTMLCodeStyle();
 
 
     public AnnotatedSourceCodeGenerator(MDLConfig a_config)
@@ -273,7 +275,7 @@ public class AnnotatedSourceCodeGenerator implements MDLWorker {
                 sb.append("<td></td>");
             }       
             
-            String ssString = ss.toString();
+            String ssString = ss.toStringHTML(style);
             
             // Check if there is an "mdl-asm+:html:gfx" tag:
             if (ss.comment != null && ss.comment.contains(GFX_TAG)) {
@@ -520,7 +522,7 @@ public class AnnotatedSourceCodeGenerator implements MDLWorker {
                         putZoomedPixel(img, j*8+k, i, zoom, COLOR_PIXEL_OFF);
                     } else {
                         // pixel masked!
-                        putZoomedPixel(img, j*8+k, i, zoom, COLOR_PIXEL_TRANSPARENT);
+                        putZoomedPixel(img, j*8+k, i, zoom, COLOR_PIXEL_MASKED);
                     }
                     if ((orMask & 0x80) != 0) {
                         // pixel on!

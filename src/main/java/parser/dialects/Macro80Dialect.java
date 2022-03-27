@@ -9,6 +9,7 @@ import cl.MDLConfig;
 import code.CodeBase;
 import code.CodeStatement;
 import code.Expression;
+import code.HTMLCodeStyle;
 import code.SourceConstant;
 import code.SourceFile;
 import java.nio.file.Path;
@@ -524,7 +525,7 @@ public class Macro80Dialect implements Dialect {
         
     
     @Override
-    public String statementToString(CodeStatement s, CodeBase code, Path rootPath) {
+    public String statementToString(CodeStatement s, CodeBase code, Path rootPath, HTMLCodeStyle style) {
         boolean useOriginalNames = true;
         if (linesToKeepIfGeneratingDialectAsm.contains(s.sl)) {
             return s.sl.line;
@@ -534,7 +535,7 @@ public class Macro80Dialect implements Dialect {
             return "";
         }
         
-        return s.toStringUsingRootPath(rootPath, useOriginalNames, true, code);
+        return s.toStringUsingRootPath(rootPath, useOriginalNames, true, code, style);
     }    
            
     

@@ -212,13 +212,13 @@ public class SourceCodeGenerator implements MDLWorker {
                 }
             } else {
                 if (mimicTargetDialect && config.dialectParser != null) {
-                    String ssString = config.dialectParser.statementToString(ss, code, Paths.get(output.main.getPath()));
+                    String ssString = config.dialectParser.statementToString(ss, code, Paths.get(output.main.getPath()), null);
                     if (ssString != null) {
                         sb.append(ssString);
                         sb.append("\n");
                     }
                 } else {
-                    sb.append(ss.toStringUsingRootPath(Paths.get(output.main.getPath()), false, false, code));
+                    sb.append(ss.toStringUsingRootPath(Paths.get(output.main.getPath()), false, false, code, null));
                     sb.append("\n");
                 }
             }

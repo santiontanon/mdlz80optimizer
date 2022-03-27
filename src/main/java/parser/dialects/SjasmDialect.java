@@ -15,6 +15,7 @@ import code.Expression;
 import code.SourceConstant;
 import code.SourceFile;
 import code.CodeStatement;
+import code.HTMLCodeStyle;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.Collections;
@@ -2076,7 +2077,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
     
     
     @Override
-    public String statementToString(CodeStatement s, CodeBase code, Path rootPath) {
+    public String statementToString(CodeStatement s, CodeBase code, Path rootPath, HTMLCodeStyle style) {
         boolean useOriginalNames = false;
         if (linesToKeepIfGeneratingDialectAsm.contains(s)) {
             return s.sl.line;
@@ -2084,7 +2085,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
 
         if (auxiliaryStatementsToRemoveIfGeneratingDialectasm.contains(s)) return "";
         
-        return s.toStringUsingRootPath(rootPath, useOriginalNames, true, code);
+        return s.toStringUsingRootPath(rootPath, useOriginalNames, true, code, style);
     }    
     
     

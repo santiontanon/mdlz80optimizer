@@ -12,6 +12,7 @@ import code.Expression;
 import code.SourceConstant;
 import code.SourceFile;
 import code.CodeStatement;
+import code.HTMLCodeStyle;
 import java.nio.file.Path;
 import java.util.HashMap;
 import org.apache.commons.lang3.tuple.Pair;
@@ -387,9 +388,9 @@ public class GlassDialect implements Dialect {
     
     
     @Override
-    public String statementToString(CodeStatement s, CodeBase code, Path rootPath) {
+    public String statementToString(CodeStatement s, CodeBase code, Path rootPath, HTMLCodeStyle style) {
         boolean useOriginalNames = false;
-        return s.toStringUsingRootPath(rootPath, useOriginalNames, true, code);
+        return s.toStringUsingRootPath(rootPath, useOriginalNames, true, code, style);
     }       
     
     

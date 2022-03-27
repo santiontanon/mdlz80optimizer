@@ -11,6 +11,7 @@ import code.Expression;
 import code.SourceConstant;
 import code.SourceFile;
 import code.CodeStatement;
+import code.HTMLCodeStyle;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -1179,18 +1180,18 @@ public class ASMSXDialect implements Dialect {
     }
 
     
-    public String toStringLabelWithoutSafetyEqu(CodeStatement s, boolean useOriginalNames)
+    public String toStringLabelWithoutSafetyEqu(CodeStatement s, boolean useOriginalNames, HTMLCodeStyle style)
     {
         boolean tmp = config.output_safetyEquDollar;
         config.output_safetyEquDollar = false;
-        String str = s.toStringLabel(useOriginalNames, true);
+        String str = s.toStringLabel(useOriginalNames, true, style);
         config.output_safetyEquDollar = tmp;
         return str;
     }
     
 
     @Override
-    public String statementToString(CodeStatement s, CodeBase code, Path rootPath) {
+    public String statementToString(CodeStatement s, CodeBase code, Path rootPath, HTMLCodeStyle style) {
         boolean useOriginalNames = true;
         if (linesToKeepIfGeneratingDialectAsm.contains(s)) {
             return s.sl.line;
@@ -1201,20 +1202,20 @@ public class ASMSXDialect implements Dialect {
         switch(s.type) {
             case CodeStatement.STATEMENT_CPUOP:
             {
-                String str = s.toStringLabel(useOriginalNames, false);              
+                String str = s.toStringLabel(useOriginalNames, false, style);              
                 boolean tmp = config.output_indirectionsWithSquareBrakets;
                 config.output_indirectionsWithSquareBrakets = !zilogMode;
-                str += "    " + s.op.toStringInternal(useOriginalNames, true, s, code);
+                str += "    " + s.op.toStringInternal(useOriginalNames, true, s, code, style);
                 config.output_indirectionsWithSquareBrakets = tmp;
                 if (s.comment != null) str += "  " + s.comment;
                 return str;
             }
             case CodeStatement.STATEMENT_DATA_BYTES:
             {
-                String str = s.toStringLabel(useOriginalNames, false);
+                String str = s.toStringLabel(useOriginalNames, false, style);
                 str += "    "+config.lineParser.KEYWORD_STD_DB+" ";
                 for(int i = 0;i<s.data.size();i++) {
-                    str += s.data.get(i).toStringInternal(false, useOriginalNames, true, s, code);
+                    str += s.data.get(i).toStringInternal(false, useOriginalNames, true, s, code, style);
                     if (i != s.data.size()-1) {
                         str += ", ";
                     }
@@ -1224,10 +1225,10 @@ public class ASMSXDialect implements Dialect {
             }
             case CodeStatement.STATEMENT_DATA_WORDS:
             {
-                String str = s.toStringLabel(useOriginalNames, false);
+                String str = s.toStringLabel(useOriginalNames, false, style);
                 str += "    "+config.lineParser.KEYWORD_STD_DW+" ";
                 for(int i = 0;i<s.data.size();i++) {
-                    str += s.data.get(i).toStringInternal(false, useOriginalNames, true, s, code);
+                    str += s.data.get(i).toStringInternal(false, useOriginalNames, true, s, code, style);
                     if (i != s.data.size()-1) {
                         str += ", ";
                     }
@@ -1237,9 +1238,9 @@ public class ASMSXDialect implements Dialect {
             }
             case CodeStatement.STATEMENT_DATA_DOUBLE_WORDS:
             {
-                String str = s.toStringLabel(useOriginalNames, false);
+                String str = s.toStringLabel(useOriginalNames, false, style);
                 for(int i = 0;i<s.data.size();i++) {
-                    str += s.data.get(i).toStringInternal(false, useOriginalNames, true, s, code);
+                    str += s.data.get(i).toStringInternal(false, useOriginalNames, true, s, code, style);
                     if (i != s.data.size()-1) {
                         str += ", ";
                     }
@@ -1249,18 +1250,18 @@ public class ASMSXDialect implements Dialect {
             }
             case CodeStatement.STATEMENT_DEFINE_SPACE:
             {
-                String str = s.toStringLabel(useOriginalNames, false);
+                String str = s.toStringLabel(useOriginalNames, false, style);
                 if (s.space_value == null) {
                     if (config.output_allowDSVirtual) {
-                        str += "    "+config.lineParser.KEYWORD_STD_DS+" virtual " + s.space.toStringInternal(false, useOriginalNames, true, s, code);
+                        str += "    "+config.lineParser.KEYWORD_STD_DS+" virtual " + s.space.toStringInternal(false, useOriginalNames, true, s, code, style);
                     } else {
-                        str += "\n    "+config.lineParser.KEYWORD_STD_ORG+" $ + " + s.space.toStringInternal(false, useOriginalNames, true, s, code);
+                        str += "\n    "+config.lineParser.KEYWORD_STD_ORG+" $ + " + s.space.toStringInternal(false, useOriginalNames, true, s, code, style);
                     }
                 } else {
                     if (config.output_replaceDsByData) {
                         int break_each = 16;
                         int space_as_int = s.space.evaluateToInteger(s, code, true);
-                        String space_str = s.space_value.toStringInternal(false, useOriginalNames, true, s, code);
+                        String space_str = s.space_value.toStringInternal(false, useOriginalNames, true, s, code, style);
                         str += "    "+config.lineParser.KEYWORD_STD_DB+" ";
                         {
                             for(int i = 0;i<space_as_int;i++) {
@@ -1282,7 +1283,7 @@ public class ASMSXDialect implements Dialect {
                 return str;
             }
             default:
-                return s.toStringUsingRootPath(rootPath, useOriginalNames, true, code);
+                return s.toStringUsingRootPath(rootPath, useOriginalNames, true, code, style);
         }
     }    
         

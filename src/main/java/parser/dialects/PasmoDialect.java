@@ -11,6 +11,7 @@ import code.Expression;
 import code.SourceConstant;
 import code.SourceFile;
 import code.CodeStatement;
+import code.HTMLCodeStyle;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -334,10 +335,10 @@ public class PasmoDialect implements Dialect {
     
     
     @Override
-    public String statementToString(CodeStatement s, CodeBase code, Path rootPath) {
+    public String statementToString(CodeStatement s, CodeBase code, Path rootPath, HTMLCodeStyle style) {
         boolean useOriginalNames = true;
         if (auxiliaryStatementsToRemoveIfGeneratingDialectasm.contains(s)) return "";
         
-        return s.toStringUsingRootPath(rootPath, useOriginalNames, true, code);
+        return s.toStringUsingRootPath(rootPath, useOriginalNames, true, code, style);
     }      
 }

@@ -54,16 +54,16 @@ public class CPUOp {
     @Override
     public String toString()
     {
-        return toStringInternal(false, false, null, null);
+        return toStringInternal(false, false, null, null, null);
     }
     
     
-    String argString(Expression arg, boolean useOriginalNames, boolean mimicTargetDialect, CodeStatement s, CodeBase code)
+    String argString(Expression arg, boolean useOriginalNames, boolean mimicTargetDialect, CodeStatement s, CodeBase code, HTMLCodeStyle style)
     {
         if (arg == null) {
             return "null";
         }
-        String argStr = arg.toStringInternal(false, useOriginalNames, mimicTargetDialect, s, code);
+        String argStr = arg.toStringInternal(false, useOriginalNames, mimicTargetDialect, s, code, style);
         if (config.fix_tniasm_parenthesisExpressionBug && 
             argStr.startsWith("(") &&
             arg.type != Expression.EXPRESSION_PARENTHESIS) {
@@ -73,9 +73,9 @@ public class CPUOp {
     }
 
 
-    public String toStringInternal(boolean useOriginalNames, boolean mimicTargetDialect, CodeStatement s, CodeBase code)
+    public String toStringInternal(boolean useOriginalNames, boolean mimicTargetDialect, CodeStatement s, CodeBase code, HTMLCodeStyle style)
     {
-        String str = spec.opName;
+        String str = HTMLCodeStyle.renderStyledHTMLPiece(spec.opName, HTMLCodeStyle.TYPE_MNEMONIC, style);
         
         if (config.output_opsInLowerCase) str = str.toLowerCase();
 
@@ -92,12 +92,12 @@ public class CPUOp {
                  spec.args.get(i).wordConstantIndirectionAllowed)) {
                 if (args.get(i).type == Expression.EXPRESSION_PARENTHESIS &&
                     args.get(i).args.size()==1) {
-                    str += "["+argString(args.get(i).args.get(0), useOriginalNames, mimicTargetDialect, s, code)+"]";
+                    str += "["+argString(args.get(i).args.get(0), useOriginalNames, mimicTargetDialect, s, code, style)+"]";
                 } else {
-                    str += argString(args.get(i), useOriginalNames, mimicTargetDialect, s, code);
+                    str += argString(args.get(i), useOriginalNames, mimicTargetDialect, s, code, style);
                 }
             } else {
-                str += argString(args.get(i), useOriginalNames, mimicTargetDialect, s, code);
+                str += argString(args.get(i), useOriginalNames, mimicTargetDialect, s, code, style);
             }
         }
 

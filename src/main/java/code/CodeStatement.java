@@ -283,26 +283,40 @@ public class CodeStatement {
     @Override
     public String toString()
     {
-        return toStringUsingRootPath(null, false, false, null);
+        return toStringUsingRootPath(null, false, false, null, null);
     }
 
+
+    public String toStringHTML(HTMLCodeStyle style)
+    {
+        return toStringUsingRootPath(null, false, false, null, style);
+    }
     
-    public String toStringLabel(boolean useOriginalName, boolean useOriginalColonToken)
+    
+    public String toStringLabel(boolean useOriginalName, boolean useOriginalColonToken, HTMLCodeStyle style)
     {
         String str = "";
         if (label != null) {
+            if (style != null) {
+                str += "<span style=\"";
+                str += style.labelStyle;
+                str += "\">";
+            }
             if (useOriginalName) {
                 if (config.output_replaceLabelDotsByUnderscores && !label.originalName.startsWith(".")) {
-                    str = label.originalName.replace(".", "_");
+                    str += label.originalName.replace(".", "_");
                 } else {
-                    str = label.originalName;
+                    str += label.originalName;
                 }
             } else {
                 if (config.output_replaceLabelDotsByUnderscores) {
-                    str = label.name.replace(".", "_");
+                    str += label.name.replace(".", "_");
                 } else {
-                    str = label.name;
+                    str += label.name;
                 }
+            }
+            if (style != null) {
+                str += "</span>";
             }
             if (type != STATEMENT_CONSTANT || !config.output_equsWithoutColon) {
                 if (useOriginalColonToken && label.colonTokenUsedInDefinition != null) {
@@ -333,16 +347,16 @@ public class CodeStatement {
         return str;        
     }
     
-
-    public String toStringUsingRootPath(Path rootPath, boolean useOriginalNames, boolean mimicTargetDialect, CodeBase code)
+            
+    public String toStringUsingRootPath(Path rootPath, boolean useOriginalNames, boolean mimicTargetDialect, CodeBase code, HTMLCodeStyle style)
     {
-        String str = toStringLabel(useOriginalNames, false);
+        String str = toStringLabel(useOriginalNames, false, style);
         
         switch(type) {
             case STATEMENT_NONE:
                 break;
             case STATEMENT_ORG:
-                str += "    "+config.lineParser.KEYWORD_STD_ORG+" " + org.toString();
+                str += "    "+config.lineParser.KEYWORD_STD_ORG+" " + org.toStringInternal(false, false, false, null, null, style);
                 break;
             case STATEMENT_INCLUDE:
             {
@@ -351,7 +365,7 @@ public class CodeStatement {
                 if (path.contains("\\")) {
                     path = path.replace("\\", File.separator);
                 }                
-                str += "    "+config.lineParser.KEYWORD_STD_INCLUDE+" \"" + path + "\"";
+                str += "    "+config.lineParser.KEYWORD_STD_INCLUDE+" \"" + HTMLCodeStyle.renderStyledHTMLPiece(path, HTMLCodeStyle.TYPE_CONSTANT, style) + "\"";
                 break;
             }
             case STATEMENT_INCBIN:
@@ -366,12 +380,12 @@ public class CodeStatement {
                 }                
                 if (incbinSkip != null) {
                     if (incbinSizeSpecified) {
-                        str += "    "+config.lineParser.KEYWORD_STD_INCBIN+" \"" + path + "\", " + incbinSkip + ", " + incbinSize;
+                        str += "    "+config.lineParser.KEYWORD_STD_INCBIN+" \"" + HTMLCodeStyle.renderStyledHTMLPiece(path, HTMLCodeStyle.TYPE_CONSTANT, style) + "\", " + incbinSkip + ", " + incbinSize;
                     } else {
-                        str += "    "+config.lineParser.KEYWORD_STD_INCBIN+" \"" + path + "\", " + incbinSkip;
+                        str += "    "+config.lineParser.KEYWORD_STD_INCBIN+" \"" + HTMLCodeStyle.renderStyledHTMLPiece(path, HTMLCodeStyle.TYPE_CONSTANT, style) + "\", " + incbinSkip;
                     }
                 } else {
-                    str += "    "+config.lineParser.KEYWORD_STD_INCBIN+" \"" + path + "\"";
+                    str += "    "+config.lineParser.KEYWORD_STD_INCBIN+" \"" + HTMLCodeStyle.renderStyledHTMLPiece(path, HTMLCodeStyle.TYPE_CONSTANT, style) + "\"";
                 }
                 break;
             }
@@ -384,13 +398,13 @@ public class CodeStatement {
                     config.error("Empty expression when writing an equ statement in " + sl);
                     return null;
                 }
-                str += " "+config.lineParser.KEYWORD_STD_EQU+" " + label.exp.toStringInternal(false, false, mimicTargetDialect, this, code);
+                str += " "+config.lineParser.KEYWORD_STD_EQU+" " + label.exp.toStringInternal(false, false, mimicTargetDialect, this, code, style);
                 break;
             case STATEMENT_DATA_BYTES:
                 str += "    "+config.lineParser.KEYWORD_STD_DB+" ";
                 {
                     for(int i = 0;i<data.size();i++) {
-                        str += data.get(i).toStringInternal(true, false, mimicTargetDialect, this, code);
+                        str += data.get(i).toStringInternal(true, false, mimicTargetDialect, this, code, style);
                         if (i != data.size()-1) {
                             str += ", ";
                         }
@@ -401,7 +415,7 @@ public class CodeStatement {
                 str += "    "+config.lineParser.KEYWORD_STD_DW+" ";
                 {
                     for(int i = 0;i<data.size();i++) {
-                        str += data.get(i).toStringInternal(false, false, mimicTargetDialect, this, code);
+                        str += data.get(i).toStringInternal(false, false, mimicTargetDialect, this, code, style);
                         if (i != data.size()-1) {
                             str += ", ";
                         }
@@ -412,7 +426,7 @@ public class CodeStatement {
                 str += "    "+config.lineParser.KEYWORD_STD_DD+" ";
                 {
                     for(int i = 0;i<data.size();i++) {
-                        str += data.get(i).toStringInternal(false, false, mimicTargetDialect, this, code);
+                        str += data.get(i).toStringInternal(false, false, mimicTargetDialect, this, code, style);
                         if (i != data.size()-1) {
                             str += ", ";
                         }
@@ -422,15 +436,15 @@ public class CodeStatement {
             case STATEMENT_DEFINE_SPACE:
                 if (space_value == null) {
                     if (config.output_allowDSVirtual) {
-                        str += "    "+config.lineParser.KEYWORD_STD_DS+" virtual " + space.toStringInternal(false, false, mimicTargetDialect, this, code);
+                        str += "    "+config.lineParser.KEYWORD_STD_DS+" virtual " + space.toStringInternal(false, false, mimicTargetDialect, this, code, style);
                     } else {
-                        str += "\n    "+config.lineParser.KEYWORD_STD_ORG+" $ + " + space.toStringInternal(false, false, mimicTargetDialect, this, code);
+                        str += "\n    "+config.lineParser.KEYWORD_STD_ORG+" $ + " + space.toStringInternal(false, false, mimicTargetDialect, this, code, style);
                     }
                 } else {
                     if (config.output_replaceDsByData) {
                         int break_each = 16;
                         int space_as_int = space.evaluateToInteger(this, this.source.code, true);
-                        String space_str = space_value.toStringInternal(false, false, mimicTargetDialect, this, code);
+                        String space_str = space_value.toStringInternal(false, false, mimicTargetDialect, this, code, style);
                         str += "    "+config.lineParser.KEYWORD_STD_DB+" ";
                         {
                             for(int i = 0;i<space_as_int;i++) {
@@ -445,13 +459,13 @@ public class CodeStatement {
                             }
                         }
                     } else {
-                        str += "    "+config.lineParser.KEYWORD_STD_DS+" " + space.toStringInternal(false, false, mimicTargetDialect, this, code) + ", " + space_value;
+                        str += "    "+config.lineParser.KEYWORD_STD_DS+" " + space.toStringInternal(false, false, mimicTargetDialect, this, code, style) + ", " + space_value;
                     }
                 }
                 break;
                 
             case STATEMENT_CPUOP:
-                str += "    " + op.toStringInternal(useOriginalNames, mimicTargetDialect, this, code);
+                str += "    " + op.toStringInternal(useOriginalNames, mimicTargetDialect, this, code, style);
                 break;
                 
             case STATEMENT_MACRO:
@@ -460,15 +474,16 @@ public class CodeStatement {
             case STATEMENT_MACROCALL:
             {
                 if (macroCallMacro != null) {
-                    str += "    " + macroCallMacro.name + " ";
+                    
+                    str += "    " + HTMLCodeStyle.renderStyledHTMLPiece(macroCallMacro.name, HTMLCodeStyle.TYPE_MACRO, style) + " ";
                 } else {
-                    str += "    " + macroCallName + " ";
+                    str += "    " + HTMLCodeStyle.renderStyledHTMLPiece(macroCallName, HTMLCodeStyle.TYPE_MACRO, style) + " ";
                 }
                 for(int i = 0;i<macroCallArguments.size();i++) {
                     if (i==0) {
-                        str += macroCallArguments.get(i).toStringInternal(false, false, mimicTargetDialect, this, code);
+                        str += macroCallArguments.get(i).toStringInternal(false, false, mimicTargetDialect, this, code, style);
                     } else {
-                        str += ", " + macroCallArguments.get(i).toStringInternal(false, false, mimicTargetDialect, this, code);
+                        str += ", " + macroCallArguments.get(i).toStringInternal(false, false, mimicTargetDialect, this, code, style);
                     }
                 }
                 return str;
@@ -476,9 +491,9 @@ public class CodeStatement {
             case STATEMENT_FPOS:
             {
                 if (fposAbsolute != null) {
-                    str += "    " + config.lineParser.KEYWORD_STD_FPOS + " " + fposAbsolute.toStringInternal(false, false, mimicTargetDialect, this, code);
+                    str += "    " + config.lineParser.KEYWORD_STD_FPOS + " " + fposAbsolute.toStringInternal(false, false, mimicTargetDialect, this, code, style);
                 } else {
-                    str += "    " + config.lineParser.KEYWORD_STD_FPOS + " " + fposOffset.toStringInternal(false, false, mimicTargetDialect, this, code);
+                    str += "    " + config.lineParser.KEYWORD_STD_FPOS + " " + fposOffset.toStringInternal(false, false, mimicTargetDialect, this, code, style);
                 }
                 break;
             }
@@ -491,8 +506,8 @@ public class CodeStatement {
             if (!comment.startsWith(";") && !mimicTargetDialect) {
                 actualComment = "; " + comment;
             }
-            if (str.isEmpty()) str = actualComment;
-                          else str += "  " + actualComment; 
+            if (str.isEmpty()) str = HTMLCodeStyle.renderStyledHTMLPiece(actualComment, HTMLCodeStyle.TYPE_COMMENT, style);
+                          else str += "  " + HTMLCodeStyle.renderStyledHTMLPiece(actualComment, HTMLCodeStyle.TYPE_COMMENT, style); 
         }
         
         return str;

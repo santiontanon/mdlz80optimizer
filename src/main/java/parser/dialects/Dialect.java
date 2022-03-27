@@ -10,6 +10,7 @@ import code.Expression;
 import code.SourceConstant;
 import code.SourceFile;
 import code.CodeStatement;
+import code.HTMLCodeStyle;
 import code.OutputBinary;
 import java.nio.file.Path;
 import org.apache.commons.lang3.tuple.Pair;
@@ -141,8 +142,8 @@ public interface Dialect {
         
     
     // Translates a statement to string using the syntax of the specific dialect:
-    default String statementToString(CodeStatement s, CodeBase code, Path rootPath) {
-        return s.toStringUsingRootPath(rootPath, true, true, code);
+    default String statementToString(CodeStatement s, CodeBase code, Path rootPath, HTMLCodeStyle style) {
+        return s.toStringUsingRootPath(rootPath, true, true, code, style);
     }
     
     default String getNextTemporaryLabel()
