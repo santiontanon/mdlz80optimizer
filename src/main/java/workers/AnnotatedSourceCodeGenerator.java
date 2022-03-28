@@ -35,6 +35,7 @@ public class AnnotatedSourceCodeGenerator implements MDLWorker {
     String outputFileName = null;
     int imgIndex = 0;
     HTMLCodeStyle style = new HTMLCodeStyle();
+    boolean respectOriginalIndentation = false;
 
 
     public AnnotatedSourceCodeGenerator(MDLConfig a_config)
@@ -53,7 +54,8 @@ public class AnnotatedSourceCodeGenerator implements MDLWorker {
                "Specifically, if you add a comment like this ```; mdl-asm+:html:gfx(bitmap,pre,1,8,2)```, it will interpret the bytes prior to this as a bitmap and render it visually in the html. " +
                "```pre``` means that the data is before the comment (use ```post``` to use the data that comes after the comment. ```bitmap``` means that the data will be interpreted as a bitmap (black/white with one bit per pixel). " +
                "You can use ```and-or-bitmap-with-size``` to interpret it as the usual ZX spectrum graphics where each two bytes represent 8 pixels (first is and-mask, second is or-mask). The first two bytes will be interpreted as the height/width (hence, this can only be used with ```post```). " + 
-               "When specifying ```bitmap```, the next two parameters are the width (in bytes)/height (in pixels). The last parameter is the zoom factor to use when visualizing them in the html.\n";
+               "When specifying ```bitmap```, the next two parameters are the width (in bytes)/height (in pixels). The last parameter is the zoom factor to use when visualizing them in the html.\n" +
+               "- ```-asm+:no-reindent```: tries to respect the original indentation of the source assembler file (this is not always possible, as MDL might modify or generate code, making this hard; this is why this is not on by default).\n";
     }
 
 
@@ -73,6 +75,10 @@ public class AnnotatedSourceCodeGenerator implements MDLWorker {
             flags.remove(0);
             generateHTML = true;
             outputFileName = flags.remove(0);
+            return true;
+        } else if (flags.get(0).equals("-asm+:no-reindent")) {
+            flags.remove(0);
+            respectOriginalIndentation = true;
             return true;
         }
         return false;
@@ -203,7 +209,9 @@ public class AnnotatedSourceCodeGenerator implements MDLWorker {
             while(timeString.length() < 5) timeString = " " + timeString;
             sb.append(timeString);
             sb.append("  ");
-            sb.append(ss.toString());
+            String ssString = ss.toString();
+            if (respectOriginalIndentation) ssString = reconstructIndentation(ssString, ss);
+            sb.append(ssString);
             sb.append("\n");
         }
     }
@@ -276,6 +284,7 @@ public class AnnotatedSourceCodeGenerator implements MDLWorker {
             }       
             
             String ssString = ss.toStringHTML(style);
+            if (respectOriginalIndentation) ssString = reconstructIndentation(ssString, ss);
             
             // Check if there is an "mdl-asm+:html:gfx" tag:
             if (ss.comment != null && ss.comment.contains(GFX_TAG)) {
@@ -387,6 +396,24 @@ public class AnnotatedSourceCodeGenerator implements MDLWorker {
         return outputFileName != null;
     }   
 
+    
+    public String reconstructIndentation(String ssString, CodeStatement ss)
+    {
+        if (ss.sl == null || ss.sl.line == null) return ssString;
+        String originalLine = ss.sl.line;
+        // get indentation:
+        String indentation = "";
+        for(int i = 0;i<originalLine.length();i++) {
+            char c = originalLine.charAt(i);
+            if (c == ' ' || c == '\t') {
+                indentation += c;
+            } else {
+                break;
+            }
+        }
+        return indentation += ssString.trim();
+    }
+    
     
     private List<Byte> getPreData(CodeStatement ss, CodeBase code, int dataLeft,
             HashMap<CodeStatement, BinaryGenerator.StatementBinaryEffect> statementBytesMap) 
