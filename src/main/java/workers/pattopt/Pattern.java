@@ -183,17 +183,6 @@ public class Pattern {
             }
         }
         
-        // make sure that at least one of the lines in "pattern" has id 0 (and is not a wildcard):
-        boolean found = false;
-        for(CPUOpPattern pat:pattern) {
-            if (pat.ID == 0 && !pat.isWildcard()) {
-                found = true;
-            }
-        }
-        if (!found) {
-            config.error("Pattern \""+message+"\" does not contain a non wildcard line with ID 0!");
-        }
-
         // config.trace("parsed pattern: " + message);
     }
     
@@ -1621,6 +1610,7 @@ public class Pattern {
     // - that there is no unbound variable on the replacement
     // - that all numbers appearing in the pattern, appear in the same order
     //   in the replacement.
+    // - that there is at least one element in the pattern with ID == 0
     public boolean checkIntegrity(MDLConfig config)
     {
         CodeBase code = new CodeBase(config);
@@ -1652,9 +1642,6 @@ public class Pattern {
             
         }
         
-//            public List<CPUOpPattern> pattern = new ArrayList<>();
-//    public List<CPUOpPattern> replacement = new ArrayList<>();
-
         for(int i = 0;i<pattern.size();i++) {
             for(int j = i+1;j<pattern.size();j++) {
                 int pattID1 = pattern.get(i).ID;
@@ -1671,6 +1658,18 @@ public class Pattern {
                 }
             }
         }
+        
+        // make sure that at least one of the lines in "pattern" has id 0 (and is not a wildcard):
+        boolean found = false;
+        for(CPUOpPattern pat:pattern) {
+            if (pat.ID == 0 && !pat.isWildcard()) {
+                found = true;
+            }
+        }
+        if (!found) {
+            config.error("Pattern \""+message+"\" does not contain a non wildcard line with ID 0!");
+            return false;
+        }        
         
         return true;
     }
