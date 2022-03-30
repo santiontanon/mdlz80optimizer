@@ -15,6 +15,7 @@ import workers.pattopt.PatternBasedOptimizer;
 import workers.SourceCodeGenerator;
 import workers.SourceCodeTableGenerator;
 import workers.SymbolTableGenerator;
+import workers.TapGenerator;
 import workers.searchopt.SearchBasedOptimizer;
 
 public class Main {
@@ -39,6 +40,7 @@ public class Main {
         config.registerWorker(new SourceCodeGenerator(config));
         config.registerWorker(new AnnotatedSourceCodeGenerator(config));
         config.registerWorker(new BinaryGenerator(config));
+        config.registerWorker(new TapGenerator(config));
 
         // Parse command line arguments:
         if (!config.parseArgs(args)) {

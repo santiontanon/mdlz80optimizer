@@ -305,4 +305,16 @@ public class SourceFile {
             s.evaluateAllExpressions(code, config);
         }
     }
+    
+    
+    public Integer getStartAddress(CodeBase code)
+    {
+        // Find the first statement that has some bytes:
+        for(CodeStatement s:statements) {
+            if (s.sizeInBytes(code, true, true, true) > 0) {
+                return s.getAddress(code);
+            }
+        }
+        return null;
+    }
 }

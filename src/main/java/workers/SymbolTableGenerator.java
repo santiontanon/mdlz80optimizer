@@ -28,6 +28,7 @@ public class SymbolTableGenerator implements MDLWorker {
     {
         config = a_config;
     }
+    
 
     @Override
     public String docString() {
