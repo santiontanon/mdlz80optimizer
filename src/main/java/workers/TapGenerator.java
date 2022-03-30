@@ -104,8 +104,10 @@ public class TapGenerator implements MDLWorker {
         
         // Generate the .tap blocks:
         int binaryStartAddress = output.main.getStartAddress(code);
+        
         // Code binary:
         List<Integer> codeBlock = generateTapBlock(binary, 0xff);
+        
         // Basic loader:
         List<Integer> BASICLoaderBlock = generateBASICLoaderBlock(0x5e00);
         
@@ -137,7 +139,6 @@ public class TapGenerator implements MDLWorker {
             return false;
         }
         List<Integer> asmLoaderBlock = generateTapBlock(assemblerLoaderOut.getData(), 0xff);
-        
         
         // .tap headers:
         List<Integer> header1 = generateTapHeader(programName,
@@ -218,6 +219,7 @@ public class TapGenerator implements MDLWorker {
         
         return generateTapBlock(data, 0);
     }
+    
 
     private List<Integer> generateBASICLoaderBlock(int executionStartAddress) 
     {
