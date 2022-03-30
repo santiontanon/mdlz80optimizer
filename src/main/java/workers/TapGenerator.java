@@ -221,6 +221,8 @@ public class TapGenerator implements MDLWorker {
 
     private List<Integer> generateBASICLoaderBlock(int executionStartAddress) 
     {
+        // BASIC Loader inspired by the sjasmplus BASIC loader here:
+        // https://github.com/z00m128/sjasmplus/blob/master/sjasm/io_tape.cpp
         List<Integer> data = new ArrayList<>();
         data.add(0); // flag
         
