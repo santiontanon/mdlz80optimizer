@@ -55,7 +55,8 @@ public class AnnotatedSourceCodeGenerator implements MDLWorker {
                "```pre``` means that the data is before the comment (use ```post``` to use the data that comes after the comment. ```bitmap``` means that the data will be interpreted as a bitmap (black/white with one bit per pixel). " +
                "You can use ```and-or-bitmap-with-size``` to interpret it as the usual ZX spectrum graphics where each two bytes represent 8 pixels (first is and-mask, second is or-mask). The first two bytes will be interpreted as the height/width (hence, this can only be used with ```post```). " + 
                "When specifying ```bitmap```, the next two parameters are the width (in bytes)/height (in pixels). The last parameter is the zoom factor to use when visualizing them in the html.\n" +
-               "- ```-asm+:no-reindent```: tries to respect the original indentation of the source assembler file (this is not always possible, as MDL might modify or generate code, making this hard; this is why this is not on by default).\n";
+               "- ```-asm+:no-reindent```: tries to respect the original indentation of the source assembler file (this is not always possible, as MDL might modify or generate code, making this hard; this is why this is not on by default).\n" +
+               "- ```-asm+:no-label-links```: by default, labels used in expressions are rendered as links that point to the label definitions. Use this flag to deactivate such behavior if desired.\n";
     }
 
 
@@ -79,6 +80,10 @@ public class AnnotatedSourceCodeGenerator implements MDLWorker {
         } else if (flags.get(0).equals("-asm+:no-reindent")) {
             flags.remove(0);
             respectOriginalIndentation = true;
+            return true;
+        } else if (flags.get(0).equals("-asm+:no-label-links")) {
+            flags.remove(0);
+            style.labelsAsLinks = false;
             return true;
         }
         return false;
@@ -140,7 +145,7 @@ public class AnnotatedSourceCodeGenerator implements MDLWorker {
                 for(SourceFile sf:code.getSourceFiles()) {
                     
                     if (generateHTML) {
-                        fw.write("<hr><br><b> Source Code file: " + sf.fileName + "</b><br>\n");
+                        fw.write("<hr><br><a name=\""+sf.fileName+"\"><b> Source Code file: " + sf.fileName + "</b></a><br>\n");
                         fw.write("<table class=\"sourcefile\" cellspacing=\"0\">\n");
                         fw.write("<tr><td style=\"border-bottom: 1px solid black\"><b>Address</b></td>");
                         fw.write("<td style=\"border-bottom: 1px solid black\"><b>Position in Binary</b></td>");

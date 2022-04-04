@@ -297,27 +297,21 @@ public class CodeStatement {
     {
         String str = "";
         if (label != null) {
-            if (style != null) {
-                str += "<span style=\"";
-                str += style.labelStyle;
-                str += "\">";
-            }
+            String labelText;
             if (useOriginalName) {
                 if (config.output_replaceLabelDotsByUnderscores && !label.originalName.startsWith(".")) {
-                    str += label.originalName.replace(".", "_");
+                    labelText = label.originalName.replace(".", "_");
                 } else {
-                    str += label.originalName;
+                    labelText = label.originalName;
                 }
             } else {
                 if (config.output_replaceLabelDotsByUnderscores) {
-                    str += label.name.replace(".", "_");
+                    labelText = label.name.replace(".", "_");
                 } else {
-                    str += label.name;
+                    labelText = label.name;
                 }
             }
-            if (style != null) {
-                str += "</span>";
-            }
+            str += HTMLCodeStyle.renderStyledHTMLPiece(labelText, HTMLCodeStyle.TYPE_LABEL_DEFINITION, style);
             if (type != STATEMENT_CONSTANT || !config.output_equsWithoutColon) {
                 if (useOriginalColonToken && label.colonTokenUsedInDefinition != null) {
                     str += label.colonTokenUsedInDefinition;
@@ -365,7 +359,12 @@ public class CodeStatement {
                 if (path.contains("\\")) {
                     path = path.replace("\\", File.separator);
                 }                
-                str += "    "+config.lineParser.KEYWORD_STD_INCLUDE+" \"" + HTMLCodeStyle.renderStyledHTMLPiece(path, HTMLCodeStyle.TYPE_CONSTANT, style) + "\"";
+                if (style != null) {
+                    // We are rendering HTML, generate a link for the include:
+                    str += "    "+config.lineParser.KEYWORD_STD_INCLUDE+" <a href=\"#"+path+"\">\"" + HTMLCodeStyle.renderStyledHTMLPiece(path, HTMLCodeStyle.TYPE_CONSTANT, style) + "\"</a>";
+                } else {
+                    str += "    "+config.lineParser.KEYWORD_STD_INCLUDE+" \"" + HTMLCodeStyle.renderStyledHTMLPiece(path, HTMLCodeStyle.TYPE_CONSTANT, style) + "\"";
+                }
                 break;
             }
             case STATEMENT_INCBIN:

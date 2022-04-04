@@ -753,16 +753,16 @@ public class Expression {
                             suffix = "##";
                         }
                         if (config.output_replaceLabelDotsByUnderscores && !c.originalName.startsWith(".")) {
-                            return HTMLCodeStyle.renderStyledHTMLPiece(c.originalName.replace(".", "_") + suffix, HTMLCodeStyle.TYPE_LABEL, style);
+                            return HTMLCodeStyle.renderStyledHTMLPiece(c.originalName.replace(".", "_") + suffix, HTMLCodeStyle.TYPE_LABEL_USE, style);
                         } else {
-                            return HTMLCodeStyle.renderStyledHTMLPiece(c.originalName + suffix, HTMLCodeStyle.TYPE_LABEL, style);
+                            return HTMLCodeStyle.renderStyledHTMLPiece(c.originalName + suffix, HTMLCodeStyle.TYPE_LABEL_USE, style);
                         }
                     }
                 }
                 if (config.output_replaceLabelDotsByUnderscores) {
-                    return HTMLCodeStyle.renderStyledHTMLPiece(symbolName.replace(".", "_"), HTMLCodeStyle.TYPE_LABEL, style);
+                    return HTMLCodeStyle.renderStyledHTMLPiece(symbolName.replace(".", "_"), HTMLCodeStyle.TYPE_LABEL_USE, style);
                 } else {
-                    return HTMLCodeStyle.renderStyledHTMLPiece(symbolName, HTMLCodeStyle.TYPE_LABEL, style);
+                    return HTMLCodeStyle.renderStyledHTMLPiece(symbolName, HTMLCodeStyle.TYPE_LABEL_USE, style);
                 }
             }
             case EXPRESSION_SIGN_CHANGE:
