@@ -55,6 +55,7 @@ Note: all the tasks concerning generating outputs (assembler, binaries, etc.) wi
 - ```-ansion```: turns on color message output usin ANSI codes (default: on in Unix, off in Windows).
 - ```-ansioff```: turns off color message output usin ANSI codes.
 - ```-quiet```: turns off info messages; only outputs warnings and errors.
+- ```-diggest```: turns off most info messages; only outputs summary messages, warnings and errors.
 - ```-debug```: turns on debug messages.
 - ```-trace```: turns on trace messages.
 - ```-warn```: turns on all warnings.
@@ -70,9 +71,10 @@ Note: all the tasks concerning generating outputs (assembler, binaries, etc.) wi
 - ```-hex0x```: hex numbers render like 0xffff.
 - ```-HEX0X```: hex numbers render like 0XFFFF.
 - ```-+bin```: includes binary files (incbin) in the output analyses.
-- ```-no-opt-pragma <value>```: changes the pragma to be inserted in a comment on a line to prevent optimizing it (default: mdl:no-opt)
-- ```-no-opt-start-pragma <value>```: changes the pragma to be inserted in a comment on a line to mark it as the start of a block of lines to be protected from optimization (default: mdl:no-opt-start)
-- ```-no-opt-end-pragma <value>```: changes the pragma to be inserted in a comment on a line to mark it as the end of a block of lines to be protected from optimization (default: mdl:no-opt-end)
+- ```-no-opt-pragma <value>```: changes the pragma to be inserted in a comment on a line to prevent optimizing it (default: mdl:no-opt).
+- ```-no-opt-start-pragma <value>```: changes the pragma to be inserted in a comment on a line to mark it as the start of a block of lines to be protected from optimization (default: mdl:no-opt-start).
+- ```-no-opt-end-pragma <value>```: changes the pragma to be inserted in a comment on a line to mark it as the end of a block of lines to be protected from optimization (default: mdl:no-opt-end).
+- ```-self-modifying-pragma <value>```: changes the pragma to be inserted in a comment on a line to indicate it is self-modifying (default: mdl:self-modifying). This is used by the optimizer to know that this instruction can turn into anything.
 - ```-out-opcase <case>```: whether to convert the assembler operators to upper or lower case. Possible values are: none/lower/upper (none does no conversion). Default is 'lower'.
 - ```-out-allow-ds-virtual```: allows 'ds virtual' in the generated assembler (not all assemblers support this, but simplifies output)
 - ```-out-colonless-equs```: equs will look like 'label equ value' instead of 'label: equ value'
@@ -85,7 +87,15 @@ Note: all the tasks concerning generating outputs (assembler, binaries, etc.) wi
 - ```-safety-labels-for-jumps-to-constants```: makes MDL replace the destination of a jump/call to a constant (e.g. ```jp #3c4a```) by a label. MDL does not do this by default since calls to constants are often used for BIOS calls (although replacing those constants by labels is recommended). Jumpts to constants are unsafe for optimization as the code at the target address (```#3c4a``` in the example) might move as a result of optimization. Hence, it's safer to add a safety label at the target address and use it for the jump.
 - ```-quirk-sjasm-struc```: allows having the keyword ```struc``` after the definition of a struct in sjasm (as in ```STRUCT mystruct struc```), since sjasm allows this (probably by accident), and some codebases have it.
 - ```-quirk-sjasmplus-dirbol-double-directive```: allows two directives in the same line without any separator, like this: ```db 0,0,0 dw 0``` (this is not intended, and will be fixed in future versions of sjasmplus, but some codebases use it).
-- ```-so```: Runs the search-based-based optimizer (if the input file is an assembler file (.asm/.z80/.a80), it'll try to optimize it; if the input file is a specification file (.txt), it will use as a target for program generation; which of the two will be auto-detected based on the file extension). You can pass an optional parameter: ````-so size```, ```-so speed```, ```-so ops``` or ```-so ops-safe``` (default), to tell the optimizer to optimize for program size, execution speed, number of instructions or number of instructions but ensuring at least size or speed is improved (default, as this is the computationally cheapest mode, although it might not obtain the best results). This will overwrite whatever is specified in the specificaiton file.
+- ```-da data/code/<input hints>```: disassembles the input binary. If this flag is used, the input file is interpreted as a binary file. The argument of this clad can be either ```data``` (indicating that the binary file is to be interpreted as data), ```code``` (indicating that the binary file is to be interpreted as code), or a path to an ```<input hints>``` file, which is a text file that gives hints to MDL about what is code and what is data. The hints file is mandatory. If you don't want to provide any hints, just point MDL to an empty file. The <input hints> format is as follows. Each line can be one of:
+    org <address>
+    label <address> <label>
+    comment <address> <comment>
+    comment-before <address> <comment>
+    data <address>
+    code <address>
+    space <address>
+- ```-so```: Runs the search-based-based optimizer (if the input file is an assembler file (.asm/.z80/.a80), it'll try to optimize it; if the input file is a specification file (.txt), it will use as a target for program generation; which of the two will be auto-detected based on the file extension). You can pass an optional parameter: ```-so size```, ```-so speed```, ```-so ops``` or ```-so ops-safe``` (default), to tell the optimizer to optimize for program size, execution speed, number of instructions or number of instructions but ensuring at least size or speed is improved (default, as this is the computationally cheapest mode, although it might not obtain the best results). This will overwrite whatever is specified in the specificaiton file.
 - ```-so-gen```: Like above, but instead of autodetecting, it always assumes the input file is a specification file for program generation.
 - ```-so-opt```: Like above, but instead of autodetecting, it always assumes the input file is an assembler file for optimization.
 - ```-so-maxops <n>```: (only for program generation) Sets the upper limit of how many CPU ops the resulting program can have.
@@ -105,17 +115,22 @@ Note: all the tasks concerning generating outputs (assembler, binaries, etc.) wi
 - ```-popotential-all```: Same as above, but without the one-per-line constraint.
 - ```-popatterns <file>```: specifies the file to load optimization patterns from (default 'data/pbo-patterns.txt', which contains patterns that optimize both size and speed). For targetting size optimizations, use 'data/pbo-patterns-size.txt'. Notice that some dialects might change the default, for example, the sdcc dialect sets the default to 'data/pbo-patterns-sdcc-speed.txt'
 - ```-po-ldo```: some pattern-based optimizations depend on the specific value that some labels take ('label-dependent optimizations', ldo). These might be dangerous for code that is still in development.
+- ```-po-stop-after <n>```: Stops optimizing after n optimizations. This is useful for debugging, if there is any optimization that breaks the code, to help locate it.
 - ```-do```: Runs the data optimizer (only provides potential ideas for space saving).
 - ```-do-minsavings <min>```: sets the minimum number of potential bytes that should be saved in order for the data optimizer to generate an optimization suggestion (default value is 4).- ```-dot <output file>```: generates a dot file with a graph representing the whole source code. Convert it to a png using 'dot' like this: ```dot -Tpng <output file>.dot -o <output file>.png```
 - ```-st <output file>```: to output the symbol table.
 - ```-st-constants```: includes constants, in addition to labels, in the output symbol table.
-- ```-sft <output file>```: generates a tsv file with some statistics about the source files.
+- ```-sft <output file>```: generates a tsv file with some statistics about the source files (bytes used, accumulated time of all the CPU ops in the file, etc.).
+- ```-sft-functions```: MDL will try to identify individual functions in the code, and add per-function statistics to the file generated with the ```-sft``` flag.
 - ```-asm <output file>```: saves the resulting assembler code in a single asm file (if no optimizations are performed, then this will just output the same code read as input (but with all macros and include statements expanded). Use ```auto``` as the output file name to respect the filenames specified in the sourcefiles of some dialects, or to auto generate an output name.
 - ```-asm-dialect <output file>```: same as '-asm', but tries to mimic the syntax of the defined dialect in the output (experimental feature, not fully implemented!).  Use ```auto``` as the output file name to respect the filenames specified in the sourcefiles of some dialects, or to auto generate an output name.
 - ```-asm-expand-incbin```: replaces all incbin commands with their actual data in the output assembler file, effectively, making the output assembler file self-contained.
 - ```-asm+ <output file>```: generates a single text file containing the original assembler code (with macros expanded), that includes size and time annotations at the beginning of each file to help with manual optimizations beyond what MDL already provides.
-- ```-asm+:html <output file>```: acts like ```-asm+```, except that the output is in html (rendered as a table), allowing it to have some extra information.
+- ```-asm+:html <output file>```: acts like ```-asm+```, except that the output is in html (rendered as a table), allowing it to have some extra information. It also recognizes certain tags in the source code to add html visualizations of the graphics in the game, extracting them automatically from the data in the assembler files. Specifically, if you add a comment like this ```; mdl-asm+:html:gfx(bitmap,pre,1,8,2)```, it will interpret the bytes prior to this as a bitmap and render it visually in the html. ```pre``` means that the data is before the comment (use ```post``` to use the data that comes after the comment. ```bitmap``` means that the data will be interpreted as a bitmap (black/white with one bit per pixel). You can use ```and-or-bitmap-with-size``` to interpret it as the usual ZX spectrum graphics where each two bytes represent 8 pixels (first is and-mask, second is or-mask). The first two bytes will be interpreted as the height/width (hence, this can only be used with ```post```). When specifying ```bitmap```, the next two parameters are the width (in bytes)/height (in pixels). The last parameter is the zoom factor to use when visualizing them in the html.
+- ```-asm+:no-reindent```: tries to respect the original indentation of the source assembler file (this is not always possible, as MDL might modify or generate code, making this hard; this is why this is not on by default).
+- ```-asm+:no-label-links```: by default, labels used in expressions are rendered as links that point to the label definitions. Use this flag to deactivate such behavior if desired.
 - ```-bin <output file>```: generates an assembled binary. Use ```auto``` as the output file name to respect the filenames specified in the sourcefiles of some dialects, or to autogenerate an output name.
+- ```-tap <execution start address> <program name> <filename>```: generates a .tap file, as expected by ZX spectrum emulators. ```<execution start address>``` is the entry point of the program. It can be any expression MDL recognizes in source code, e.g., a constant like ```#a600```, a label, like ```CodeStart```, or an expression like ```myLabel+10```. ```<program name>``` is the name you want to be displayed when the program loads, e.g. ```MYGAME``` (only the first 10 characters will be displayed).
 
 
 ## How to use MDL
