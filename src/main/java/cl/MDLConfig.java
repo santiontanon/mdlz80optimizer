@@ -121,6 +121,7 @@ public class MDLConfig {
     public String PRAGMA_NO_OPTIMIZATION = "mdl:no-opt";
     public String PRAGMA_NO_OPTIMIZATION_START = "mdl:no-opt-start";
     public String PRAGMA_NO_OPTIMIZATION_END = "mdl:no-opt-end";
+    public String PRAGMA_SELF_MODIFYING = "mdl:self-modifying";
     
     // Path search order (which is different in different dialects):
     public int filePathSearchOrder[] = {FILE_SEARCH_RELATIVE_TO_INCLUDING_FILE,
@@ -191,11 +192,13 @@ public class MDLConfig {
             + "- ```-HEX0X```: hex numbers render like 0XFFFF.\n"
             + "- ```-+bin```: includes binary files (incbin) in the output analyses.\n"
             + "- ```-no-opt-pragma <value>```: changes the pragma to be inserted in a comment on a line to prevent optimizing it (default: "
-            + PRAGMA_NO_OPTIMIZATION + ")\n"
+            + PRAGMA_NO_OPTIMIZATION + ").\n"
             + "- ```-no-opt-start-pragma <value>```: changes the pragma to be inserted in a comment on a line to mark it as the start of a block of lines to be protected from optimization (default: "
-            + PRAGMA_NO_OPTIMIZATION_START + ")\n"
+            + PRAGMA_NO_OPTIMIZATION_START + ").\n"
             + "- ```-no-opt-end-pragma <value>```: changes the pragma to be inserted in a comment on a line to mark it as the end of a block of lines to be protected from optimization (default: "
-            + PRAGMA_NO_OPTIMIZATION_END + ")\n"
+            + PRAGMA_NO_OPTIMIZATION_END + ").\n"
+            + "- ```-self-modifying-pragma <value>```: changes the pragma to be inserted in a comment on a line to indicate it is self-modifying (default: "
+            + PRAGMA_SELF_MODIFYING + "). This is used by the optimizer to know that this instruction can turn into anything.\n"
             + "- ```-out-opcase <case>```: whether to convert the assembler operators to upper or lower case. Possible values are: none/lower/upper (none does no conversion). Default is 'lower'.\n"
             + "- ```-out-allow-ds-virtual```: allows 'ds virtual' in the generated assembler (not all assemblers support this, but simplifies output)\n"
             + "- ```-out-colonless-equs```: equs will look like 'label equ value' instead of 'label: equ value'\n"
@@ -466,6 +469,36 @@ public class MDLConfig {
                         }
                         break;
 
+                    case "-no-opt-start-pragma":
+                        if (args.size()>=2) {
+                            args.remove(0);
+                            PRAGMA_NO_OPTIMIZATION_START = args.remove(0);
+                        } else {
+                            error("Missing pragma after " + arg);
+                            return false;
+                        }
+                        break;
+
+                    case "-no-opt-end-pragma":
+                        if (args.size()>=2) {
+                            args.remove(0);
+                            PRAGMA_NO_OPTIMIZATION_END = args.remove(0);
+                        } else {
+                            error("Missing pragma after " + arg);
+                            return false;
+                        }
+                        break;
+
+                    case "-self-modifying-pragma":
+                        if (args.size()>=2) {
+                            args.remove(0);
+                            PRAGMA_SELF_MODIFYING = args.remove(0);
+                        } else {
+                            error("Missing pragma after " + arg);
+                            return false;
+                        }
+                        break;
+                        
                     case "-out-opcase":
                         if (args.size()>=2) {
                             args.remove(0);

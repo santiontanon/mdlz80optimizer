@@ -515,6 +515,7 @@ public class SearchBasedOptimizer implements MDLWorker {
                 // reset known register values after each label:
                 if (f.getStatements().get(i).label != null ||
                     f.getStatements().get(i).include != null) knownRegisterValues.clear();
+                if (i > 0 && code.isSelfModifying(f.getStatements().get(i-1))) knownRegisterValues.clear();
                 
                 try {
                     if (optimizeStartingFromLine(f, i, knownRegisterValues, code, r)) {

@@ -257,9 +257,16 @@ public class CodeBase {
     }
     
     
+    public boolean isSelfModifying(CodeStatement s) 
+    {
+        return s.comment != null && s.comment.contains(config.PRAGMA_SELF_MODIFYING);
+    }
+    
+    
     public boolean protectedFromOptimization(CodeStatement s) 
     {
         if (s.comment != null && s.comment.contains(config.PRAGMA_NO_OPTIMIZATION)) return true;
+        if (s.comment != null && s.comment.contains(config.PRAGMA_SELF_MODIFYING)) return true;
         return protectedFromOptimization(s.sl);
     }
 
@@ -268,6 +275,7 @@ public class CodeBase {
     {
         if (sl == null || sl.line == null) return false;
         if (sl.line.contains(config.PRAGMA_NO_OPTIMIZATION)) return true;
+        if (sl.line.contains(config.PRAGMA_SELF_MODIFYING)) return true;
         for(Pair<SourceLine, SourceLine> block: optimizationProtectedBlocks) {
             if (sl.precedesEq(block.getRight()) &&
                 block.getLeft().precedesEq(sl)) {
