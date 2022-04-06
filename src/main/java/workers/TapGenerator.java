@@ -39,7 +39,7 @@ public class TapGenerator implements MDLWorker {
         // This string has MD tags, so that I can easily generate the corresponding documentation in github with the 
         // hidden "-helpmd" flag:        
         return "- ```-tap <execution start address> <program name> <filename>```: generates a .tap file, as expected by ZX spectrum emulators. " +
-               "```<execution start address>''' is the entry point of the program. It can be any expression MDL recognizes in source code, e.g., a constant like ```#a600```, a label, like ```CodeStart```, or an expression like ```myLabel+10```. " +
+               "```<execution start address>``` is the entry point of the program. It can be any expression MDL recognizes in source code, e.g., a constant like ```#a600```, a label, like ```CodeStart```, or an expression like ```myLabel+10```. " +
                "```<program name>``` is the name you want to be displayed when the program loads, e.g. ```MYGAME``` (only the first 10 characters will be displayed).\n";
     }
 
