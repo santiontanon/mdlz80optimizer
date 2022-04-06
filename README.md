@@ -191,6 +191,8 @@ Of course you could also add a ```-po``` or ```-ro``` there, if you want to opti
 
 MDL can also generate tables with how much space each of your assembler files uses (if you include many files from a main assembler file, MDL will analyze all of them), and can even generate a little visual reprsentation of your code (saved as a standard .dot file that can then be turned into a pdf or png image to view it using the [dot](https://graphviz.org) tool).
 
+Finally, although rudimentary, MDL can also be used as a disassembling tool. See the ```-da``` flag. Here is an example code base that I disassembled using MDL's disassembly functionalities: https://github.com/santiontanon/netherearth-disassembly   
+
 
 ## Requirements
 
