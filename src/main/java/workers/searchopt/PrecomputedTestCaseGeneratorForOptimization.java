@@ -15,6 +15,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import util.microprocessor.IMemory;
+import util.microprocessor.ProcessorException;
 import util.microprocessor.TrackingZ80Memory;
 import util.microprocessor.Z80.CPUConstants;
 import util.microprocessor.Z80.CPUConstants.RegisterNames;
@@ -159,7 +160,7 @@ public class PrecomputedTestCaseGeneratorForOptimization implements PrecomputedT
     
     
     @Override
-    public PrecomputedTestCase generateTestCase(MDLConfig config) {
+    public PrecomputedTestCase generateTestCase(MDLConfig config) throws ProcessorException {
         PrecomputedTestCase test = new PrecomputedTestCase();        
         if (spec.allowRamUse) test.trackMemoryWrites = true;
 
@@ -259,6 +260,8 @@ public class PrecomputedTestCaseGeneratorForOptimization implements PrecomputedT
                 z80.executeOneInstruction();
                 steps++;
             }
+        } catch(ProcessorException e) {
+            throw e;  // we just rethrow it
         } catch(Exception e) {
             config.error("Could not generate test case for search-based optimizer!");
             config.error("Exception: " + e.getMessage());

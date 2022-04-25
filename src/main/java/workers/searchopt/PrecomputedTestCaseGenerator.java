@@ -6,11 +6,12 @@
 package workers.searchopt;
 
 import cl.MDLConfig;
+import util.microprocessor.ProcessorException;
 
 /**
  *
  * @author santi
  */
 public interface PrecomputedTestCaseGenerator {
-    PrecomputedTestCase generateTestCase(MDLConfig config);
+    PrecomputedTestCase generateTestCase(MDLConfig config) throws ProcessorException;
 }

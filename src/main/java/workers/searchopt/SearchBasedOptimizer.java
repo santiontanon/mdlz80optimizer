@@ -24,6 +24,7 @@ import parser.SourceLine;
 import util.microprocessor.IMemory;
 import util.microprocessor.PlainZ80IO;
 import util.microprocessor.PlainZ80Memory;
+import util.microprocessor.ProcessorException;
 import util.microprocessor.TrackingZ80Memory;
 import util.microprocessor.Z80.CPUConfig;
 import util.microprocessor.Z80.CPUConstants;
@@ -975,7 +976,12 @@ public class SearchBasedOptimizer implements MDLWorker {
                 spec, codeToOptimize, inputRegisters, registersUsedAfter,
                 flagsUsedAfter, z80, z80Memory, code, config);
         for(int i = 0;i<spec.numberOfRandomSolutionChecks;i++) {
-            spec.precomputedTestCases[i] = spec.testCaseGenerator.generateTestCase(config);
+            try {
+                spec.precomputedTestCases[i] = spec.testCaseGenerator.generateTestCase(config);
+            } catch(ProcessorException e) {
+                config.warn("Skipping lines, as instructions not supported by the z80 simulator were detected.");
+                return false;
+            }
         }
         
         // Search:
