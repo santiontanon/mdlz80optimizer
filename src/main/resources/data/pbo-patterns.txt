@@ -1433,7 +1433,7 @@ replacement:
 1: *
 constraints:
 regpair(?regpair1,?regpair1h,?regpair1l) : 0
-regsNotUsed(1,?regpair1h)
+regsNotUsed(1,?regpair1l)
 
 pattern: Replace ld ?regpair1l,?const2; ld ?regpair1h,?const1 with ld ?regpair1,((?const2) & #00ff) + ((?const1) << 8)
 tags: sdcc-unsafe
@@ -1445,7 +1445,7 @@ replacement:
 1: *
 constraints:
 regpair(?regpair1,?regpair1h,?regpair1l) : 0
-regsNotUsed(1,?regpair1l)
+regsNotUsed(1,?regpair1h)
 
 pattern: Replace ld ?reg, (hl); cp ?reg  with  cp (hl)
 0: ld ?reg, (hl)
