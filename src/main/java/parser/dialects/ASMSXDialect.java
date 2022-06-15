@@ -851,7 +851,7 @@ public class ASMSXDialect implements Dialect {
                             Expression.operatorExpression(Expression.EXPRESSION_SUB,
                                     Expression.symbolExpression(dephase_label_name, s, code, config),
                                     Expression.symbolExpression(phase_post_label_name, s, code, config), config), 
-                            zilogMode ? "[":"(", config), config);
+                            zilogMode ? "(":"[", config), config);
             
             s.type = CodeStatement.STATEMENT_ORG;
             s.org = exp;

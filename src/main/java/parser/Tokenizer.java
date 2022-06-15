@@ -583,4 +583,14 @@ public class Tokenizer {
         if (multilineCommentEndTokens.contains(token)) return true;
         return oneTimemultilineCommentEndTokens.contains(token);
     }
+    
+    
+    public boolean isDashPlusLabel(String label) {
+        if (label.isBlank()) return false;
+        for(int i = 0;i<label.length();i++) {
+            if (label.charAt(i) != '-' && label.charAt(i) != '+') return false;
+            if (i > 0 && label.charAt(i) != label.charAt(i-1)) return false;
+        }
+        return true;
+    }    
 }

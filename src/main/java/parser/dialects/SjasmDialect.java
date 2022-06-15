@@ -1560,7 +1560,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
     public boolean postParseActions(CodeBase code)
     {
         if (reusableLabelCounts.size() > 0 && config.warning_ambiguous) {
-            config.warn("Use of sjasm reusable labels, which are conductive to human error.");
+            config.warn("Use of sjasm reusable labels, which are conducive to human error.");
         }
         
         // Make sure all reusable labels are replaced by the MDL-generated names (since after

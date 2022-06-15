@@ -165,7 +165,7 @@ public class ExpressionParser {
                     }
                     return Expression.operatorExpression(Expression.EXPRESSION_SUM, exp, exp2, config);
                 } else {
-                    tokens.remove(0);
+                    tokens.remove(0);                    
                     Expression exp2 = parseInternal(tokens, s, previous, code);
                     if (exp2 == null) {
                         config.error("Missing argument for operator -");
@@ -759,6 +759,14 @@ public class ExpressionParser {
             tokens.get(0).equals("-")) {
             // a negated expression:
             tokens.remove(0);
+
+            if (tokens.isEmpty() || config.tokenizer.isSingleLineComment(tokens.get(0))) {
+                if (config.lineParser.allowDashPlusLabels) {
+                    // this is a wla-dx label!
+                    return Expression.symbolExpression("-", s, code, config);
+                }
+            }
+            
             Expression exp = parseInternal(tokens, s, previous, code);
             if (exp != null) {
                 if (exp.type == Expression.EXPRESSION_INTEGER_CONSTANT) {
@@ -773,6 +781,14 @@ public class ExpressionParser {
             tokens.get(0).equals("+")) {
             // might be something of the form: +1, or +(2-3)
             tokens.remove(0);
+
+            if (tokens.isEmpty() || config.tokenizer.isSingleLineComment(tokens.get(0))) {
+                if (config.lineParser.allowDashPlusLabels) {
+                    // this is a wla-dx label!
+                    return Expression.symbolExpression("+", s, code, config);
+                }
+            }
+            
             Expression exp = parseInternal(tokens, s, previous, code);
             if (exp != null) {
                 return Expression.operatorExpression(Expression.EXPRESSION_PLUS_SIGN, exp, config);
@@ -839,6 +855,16 @@ public class ExpressionParser {
                 return Expression.constantExpression((Integer)val, config);
             }            
         }
+        
+        if (config.lineParser.allowDashPlusLabels &&
+            !tokens.isEmpty() &&
+            (tokens.size() == 1 || config.tokenizer.isSingleLineComment(tokens.get(1)))) {
+            if (config.tokenizer.isDashPlusLabel(tokens.get(0))) {
+                // this is a wla-dx label!
+                tokens.remove(0);
+                return Expression.symbolExpression("+", s, code, config);
+            }
+        }        
 
         config.error("expression failed to parse with token list: " + tokens);
         return null;

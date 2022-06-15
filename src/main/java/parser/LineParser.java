@@ -60,6 +60,7 @@ public class LineParser {
     // If this is set to true then "ds 1" is the same as "ds virtual 1"
     public boolean defineSpaceVirtualByDefault = false;
     public boolean allowEmptyDB_DW_DD_definitions = false;
+    public boolean emptyDB_DW_DD_definitions_define_only_space = false;
     public boolean allowIncludesWithoutQuotes = false;
 
     // sjasm defines macros like: "macro macroname arg1,...,agn" instead of "macroname: macro arg1,...,argn":
@@ -68,6 +69,7 @@ public class LineParser {
     // Pasmo allows you to call macros with less parameters than defined, just using empty strings as defaults:
     public boolean emptyStringDefaultArgumentsForMacros = false;
     public boolean allowNumberLabels = false;   // also for sjasm (for "reusable" labels)
+    public boolean allowDashPlusLabels = false;   // for wladx (for "reusable" labels)
     public boolean applyEscapeSequencesToIncludeArguments = true;
 
     public boolean sdccStyleOffsets = false;
@@ -199,8 +201,11 @@ public class LineParser {
             if (tmp == null) return null;
             name = tmp.getLeft();
             relativeTo = tmp.getRight();
-        } else {            
-            if (!allowNumberLabels || !config.tokenizer.isInteger(name)) {
+        } else {
+            if ((allowNumberLabels && config.tokenizer.isInteger(name)) ||
+                (allowDashPlusLabels && config.tokenizer.isDashPlusLabel(name))) {                
+            } else {
+                // if (!allowNumberLabels || !config.tokenizer.isInteger(name)) {
                 name = labelPrefix + name;
             }
         }
@@ -360,6 +365,7 @@ public class LineParser {
             && config.preProcessor.isMacro(token)) return false;
         if (config.tokenizer.isSymbol(token)) return true;
         if (allowNumberLabels && config.tokenizer.isInteger(token)) return true;
+        if (allowDashPlusLabels && config.tokenizer.isDashPlusLabel(token)) return true;
         return false;
     }
 
@@ -876,7 +882,11 @@ public class LineParser {
 
         if (allowEmptyDB_DW_DD_definitions) {
             if (tokens.isEmpty() || config.tokenizer.isSingleLineComment(tokens.get(0))) {
-                data.add(Expression.constantExpression(0, config));
+                if (!emptyDB_DW_DD_definitions_define_only_space) {
+                    data.add(Expression.constantExpression(0, config));
+                } else {
+                    data = null;
+                }
                 done = true;
             }
         }
@@ -896,45 +906,63 @@ public class LineParser {
         }
 
         if (isKeyword(label, KEYWORD_DB)) {
-            s.type = CodeStatement.STATEMENT_DATA_BYTES;
-        } else if (isKeyword(label, KEYWORD_DW)) {
-            s.type = CodeStatement.STATEMENT_DATA_WORDS;
-        } else {
-            s.type = CodeStatement.STATEMENT_DATA_DOUBLE_WORDS;
-        }
-        s.data = data;
-        
-        // Break the data statement into several statements if the use of "$" is detected,
-        // as different dialects have different semantics for it (referring to the
-        // pinter at the beginning of the statement, or at the current byte):
-        List<List<Expression>> all_splits = new ArrayList<>();
-        List<Expression> current_split = new ArrayList<>();
-        for(Expression exp: s.data) {
-            if (exp.containsCurrentAddress()) {
-                // we need to break!
-                if (current_split.isEmpty()) {
-                    current_split.add(exp);
-                } else {
-                    all_splits.add(current_split);
-                    current_split = new ArrayList<>();
-                    current_split.add(exp);
-                }
+            if (emptyDB_DW_DD_definitions_define_only_space && data == null) {
+                s.type = CodeStatement.STATEMENT_DEFINE_SPACE;
+                s.space = Expression.constantExpression(1, config);
             } else {
-                current_split.add(exp);
+                s.type = CodeStatement.STATEMENT_DATA_BYTES;
+            }
+        } else if (isKeyword(label, KEYWORD_DW)) {
+            if (emptyDB_DW_DD_definitions_define_only_space && data == null) {
+                s.type = CodeStatement.STATEMENT_DEFINE_SPACE;
+                s.space = Expression.constantExpression(2, config);
+            } else {
+                s.type = CodeStatement.STATEMENT_DATA_WORDS;
+            }
+        } else {
+            if (emptyDB_DW_DD_definitions_define_only_space && data == null) {
+                s.type = CodeStatement.STATEMENT_DEFINE_SPACE;
+                s.space = Expression.constantExpression(4, config);
+            } else {
+                s.type = CodeStatement.STATEMENT_DATA_DOUBLE_WORDS;
             }
         }
-        if (!current_split.isEmpty()) all_splits.add(current_split);
-        
-        s.data = all_splits.remove(0);
-        CodeStatement last = s;
-        for(List<Expression> split:all_splits) {
-            CodeStatement s2 = new CodeStatement(s.type, sl, source, config);
-            s2.data = split;
-            l.add(s2);
-            last = s2;
+        if (data != null) {
+            s.data = data;
+
+            // Break the data statement into several statements if the use of "$" is detected,
+            // as different dialects have different semantics for it (referring to the
+            // pinter at the beginning of the statement, or at the current byte):
+            List<List<Expression>> all_splits = new ArrayList<>();
+            List<Expression> current_split = new ArrayList<>();
+            for(Expression exp: s.data) {
+                if (exp.containsCurrentAddress()) {
+                    // we need to break!
+                    if (current_split.isEmpty()) {
+                        current_split.add(exp);
+                    } else {
+                        all_splits.add(current_split);
+                        current_split = new ArrayList<>();
+                        current_split.add(exp);
+                    }
+                } else {
+                    current_split.add(exp);
+                }
+            }
+            if (!current_split.isEmpty()) all_splits.add(current_split);
+
+            s.data = all_splits.remove(0);
+            CodeStatement last = s;
+            for(List<Expression> split:all_splits) {
+                CodeStatement s2 = new CodeStatement(s.type, sl, source, config);
+                s2.data = split;
+                l.add(s2);
+                last = s2;
+            }
+            return parseRestofTheLine(tokens, l, sl, last, previous, source, code);
         }
         
-        return parseRestofTheLine(tokens, l, sl, last, previous, source, code);
+        return parseRestofTheLine(tokens, l, sl, s, previous, source, code);
     }
 
     public boolean parseDefineSpace(List<String> tokens, List<CodeStatement> l, 
