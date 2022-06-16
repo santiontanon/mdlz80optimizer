@@ -164,6 +164,7 @@ public class PatternBasedOptimizer implements MDLWorker {
             config.error("Problem initializing the PatternBasedOptimizer!");
         }
         patternsConfig.logger = config.logger;
+        patternsConfig.lineParser.allowDashPlusLabels = config.lineParser.allowDashPlusLabels;
         
         loadPatterns(inputPatternsFileName);
     }

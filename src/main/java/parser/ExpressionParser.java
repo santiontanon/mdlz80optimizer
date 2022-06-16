@@ -758,12 +758,12 @@ public class ExpressionParser {
         if (tokens.size() >= 2 &&
             tokens.get(0).equals("-")) {
             // a negated expression:
-            tokens.remove(0);
+            String name = tokens.remove(0);
 
             if (tokens.isEmpty() || config.tokenizer.isSingleLineComment(tokens.get(0))) {
                 if (config.lineParser.allowDashPlusLabels) {
                     // this is a wla-dx label!
-                    return Expression.symbolExpression("-", s, code, config);
+                    return Expression.symbolExpression(config.dialectParser.symbolName(name, s).getLeft(), s, code, config);
                 }
             }
             
@@ -780,12 +780,12 @@ public class ExpressionParser {
         if (tokens.size() >= 2 &&
             tokens.get(0).equals("+")) {
             // might be something of the form: +1, or +(2-3)
-            tokens.remove(0);
+            String name = tokens.remove(0);
 
             if (tokens.isEmpty() || config.tokenizer.isSingleLineComment(tokens.get(0))) {
                 if (config.lineParser.allowDashPlusLabels) {
                     // this is a wla-dx label!
-                    return Expression.symbolExpression("+", s, code, config);
+                    return Expression.symbolExpression(config.dialectParser.symbolName(name, s).getLeft(), s, code, config);
                 }
             }
             
@@ -861,8 +861,8 @@ public class ExpressionParser {
             (tokens.size() == 1 || config.tokenizer.isSingleLineComment(tokens.get(1)))) {
             if (config.tokenizer.isDashPlusLabel(tokens.get(0))) {
                 // this is a wla-dx label!
-                tokens.remove(0);
-                return Expression.symbolExpression("+", s, code, config);
+                String name = tokens.remove(0);
+                return Expression.symbolExpression(config.dialectParser.symbolName(name, s).getLeft(), s, code, config);
             }
         }        
 

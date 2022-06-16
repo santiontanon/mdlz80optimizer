@@ -790,7 +790,7 @@ public class LineParser {
         Expression skip_exp = null;
         Expression size_exp = null;
         if (!tokens.isEmpty() && !config.tokenizer.isSingleLineComment(tokens.get(0))) {
-            if (tokens.get(0).equals(",")) {
+            if (tokens.get(0).equals(",") || tokens.get(0).equalsIgnoreCase("skip")) {
                 tokens.remove(0);
             }
             if (!tokens.isEmpty() && !config.tokenizer.isSingleLineComment(tokens.get(0))) {

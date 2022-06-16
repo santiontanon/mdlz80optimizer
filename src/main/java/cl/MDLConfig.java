@@ -81,6 +81,7 @@ public class MDLConfig {
                                                                  // to the extra "+ 3". To fix it, when an expression
                                                                  // happens to start with a parenthesis, but it's not an 
                                                                  // indirection, we just do: 0 + (<exp>), which fixes the issue.
+    public boolean allowWLADXSizeOfSymbols = false;
     
     public List<String> ignorePatternsWithTags = new ArrayList<>();
     

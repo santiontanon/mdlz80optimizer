@@ -59,6 +59,7 @@ public class WLADXZ80Dialect implements Dialect {
         config.lineParser.emptyDB_DW_DD_definitions_define_only_space = true;
         config.lineParser.allowDashPlusLabels = true;
         config.eagerMacroEvaluation = true;
+        config.allowWLADXSizeOfSymbols = true;
         
         config.lineParser.addKeywordSynonym(".org", config.lineParser.KEYWORD_ORG);        
         config.lineParser.addKeywordSynonym(".include", config.lineParser.KEYWORD_INCLUDE);
@@ -104,7 +105,9 @@ public class WLADXZ80Dialect implements Dialect {
                 count = reusableLabelCounts.get(name);
             }
             reusableLabelCounts.put(name, count+1);
-            name = config.lineParser.getLabelPrefix() + "_sjasm_reusable_" + name + "_" + count;
+            name = name.replace("-", "n");
+            name = name.replace("+", "p");
+            name = config.lineParser.getLabelPrefix() + "_wladx_reusable_" + name + "_" + count;
         }
 
         // An absolute label
@@ -121,18 +124,18 @@ public class WLADXZ80Dialect implements Dialect {
                 return Pair.of(lastAbsoluteLabel.originalName + name, lastAbsoluteLabel);
             }
         } else if (allowReusableLabels && config.tokenizer.isDashPlusLabel(name)) {
-            // it'startStatement a reusable label:
-            name = name.substring(0, name.length()-1);
+            // it's a reusable label:            
             int count = 1;
-            if (reusableLabelCounts.containsKey(name)) {
-                count = reusableLabelCounts.get(name);
-            }
-            return Pair.of("_sjasm_reusable_" + name + "_" + count, null);
-        } else if (allowReusableLabels && config.tokenizer.isDashPlusLabel(name)) {
-            // it'startStatement a reusable label:
-            name = name.substring(0, name.length()-1);
-            int count = reusableLabelCounts.get(name);
-            return Pair.of("_sjasm_reusable_" + name + "_" + (count-1), null);
+            if (name.charAt(0) == '-') {
+                count = reusableLabelCounts.get(name) - 1;
+            } else {
+                if (reusableLabelCounts.containsKey(name)) {
+                    count = reusableLabelCounts.get(name);
+                }
+            }            
+            name = name.replace("-", "n");
+            name = name.replace("+", "p");
+            return Pair.of("_wladx_reusable_" + name + "_" + count, null);
         }
 
         // An absolute label
@@ -219,6 +222,7 @@ public class WLADXZ80Dialect implements Dialect {
             List<Expression> symbols = new ArrayList<>();
             while(!tokens.isEmpty() && !config.tokenizer.isSingleLineComment(tokens.get(0))) {
                 Expression symbol = config.expressionParser.parse(tokens, s, previous, code);
+                symbols.add(symbol);
                 if (!tokens.isEmpty() && tokens.get(0).equals(",")) {
                     tokens.remove(0);
                 }
@@ -229,7 +233,12 @@ public class WLADXZ80Dialect implements Dialect {
                     config.error("Expression " + symbol + " is not a symbol in " + sl);
                     return false;
                 }
-                code.removeSymbol(symbol.symbolName);
+                // Do not undefine the symbols for now, as this assumes eager
+                // expression evaluation, while MDL uses lazy evaluation.
+                // TO DO: Perhaps the solution would be to go through the code
+                // base evaluating all the expressions that contain these
+                // symbols eagerly.
+                // code.removeSymbol(symbol.symbolName);
             }
                 
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);

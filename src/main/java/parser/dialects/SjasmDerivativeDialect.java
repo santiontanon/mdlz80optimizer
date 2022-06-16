@@ -376,7 +376,7 @@ public abstract class SjasmDerivativeDialect implements Dialect {
                 return Pair.of(name, null);
             }
         } else if (allowReusableLabels && (name.endsWith("f") || name.endsWith("F")) && config.tokenizer.isInteger(name.substring(0, name.length()-1))) {
-            // it'startStatement a reusable label:
+            // it's a reusable label:
             name = name.substring(0, name.length()-1);
             int count = 1;
             if (reusableLabelCounts.containsKey(name)) {
@@ -384,7 +384,7 @@ public abstract class SjasmDerivativeDialect implements Dialect {
             }
             return Pair.of("_sjasm_reusable_" + name + "_" + count, null);
         } else if (allowReusableLabels && (name.endsWith("b") || name.endsWith("B")) && config.tokenizer.isInteger(name.substring(0, name.length()-1))) {
-            // it'startStatement a reusable label:
+            // it's a reusable label:
             name = name.substring(0, name.length()-1);
             int count = reusableLabelCounts.get(name);
             return Pair.of("_sjasm_reusable_" + name + "_" + (count-1), null);

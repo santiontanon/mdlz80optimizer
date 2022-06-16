@@ -727,6 +727,15 @@ public class Pattern {
 
                 Expression exp1 = config.expressionParser.parse(v1_tokens, null, null, code);
                 Expression exp2 = config.expressionParser.parse(v2_tokens, null, null, code);
+                
+                if (exp1 == null) {
+                    config.error("Cannot parse " + v1_str + " as an expression");
+                    return false;
+                }
+                if (exp2 == null) {
+                    config.error("Cannot parse " + v2_str + " as an expression");
+                    return false;
+                }
 
                 if (exp1.evaluatesToIntegerConstant() != exp2.evaluatesToIntegerConstant()) {
                     return false;

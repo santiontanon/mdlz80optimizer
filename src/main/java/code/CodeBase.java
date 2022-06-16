@@ -112,11 +112,37 @@ public class CodeBase {
         return false;
     }
 
+    
+    public SourceConstant sizeOfLabelConstant(String underlyingLabel, String name) {
+        SourceConstant underlyingSC = getSymbol(underlyingLabel);
+        if (underlyingSC == null) {
+            return null;
+        }
+        // Find the next label:
+        CodeStatement s = underlyingSC.definingStatement;
+        CodeStatement s2 = s.source.getNextStatementTo(s, this);
+        while(s2 != null) {
+            if (s2.label != null && s2.label.relativeTo == null) {
+                break;
+            }
+            s2 = s2.source.getNextStatementTo(s2, this);
+        }
+        if (s2 == null) return null;
+        Expression sizeOfExpression = Expression.operatorExpression(Expression.EXPRESSION_SUB, 
+                Expression.symbolExpression(s2.label.name, s2, this, config),
+                Expression.symbolExpression(underlyingLabel, s, this, config), config);
+        SourceConstant sc = new SourceConstant(name, name, sizeOfExpression, s, config);
+        addSymbol(name, sc);
+        return sc;
+    }
+    
 
     public SourceConstant getSymbol(String name)
     {
         if (symbols.containsKey(name)) {
             return symbols.get(name);
+        } else if (config.allowWLADXSizeOfSymbols && name.startsWith("_sizeof_")) {
+            return sizeOfLabelConstant(name.substring("_sizeof_".length()), name);
         }
         return null;
     }
@@ -132,6 +158,8 @@ public class CodeBase {
     {
         if (symbols.containsKey(name)) {
             return symbols.get(name).getValue(this, silent);
+        } else if (config.allowWLADXSizeOfSymbols && name.startsWith("_sizeof_")) {
+            return sizeOfLabelConstant(name.substring("_sizeof_".length()), name);
         }
         return null;
     }
@@ -141,6 +169,8 @@ public class CodeBase {
     {
         if (symbols.containsKey(name)) {
             return symbols.get(name).getValueInternal(this, silent, null, variableStack);
+        } else if (config.allowWLADXSizeOfSymbols && name.startsWith("_sizeof_")) {
+            return sizeOfLabelConstant(name.substring("_sizeof_".length()), name);
         }
         return null;
     }
