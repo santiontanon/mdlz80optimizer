@@ -34,6 +34,9 @@ public class MDLLogger {
     int minLevelToLog = INFO;
     PrintStream out = System.out;
     PrintStream err = System.err;
+    
+    int nErrors = 0;
+    int nWarnings = 0;
         
 
     public MDLLogger(int a_minLevelToLog) {
@@ -103,13 +106,25 @@ public class MDLLogger {
                 break;
             case WARNING:
                 out.println(ANSI_YELLOW + WARNING_PREFIX + msg + ANSI_RESET);
+                nWarnings ++;
                 break;
             case ERROR:
                 err.println(ANSI_RED + ERROR_PREFIX + msg + ANSI_RESET);
+                nErrors ++;
                 break;
             default:
                 out.println(msg);
                 break;
+        }
+    }
+    
+    
+    public void reportNErrorsAndWarningsIfAny() {
+        if (nWarnings > 0) {
+            out.println(ANSI_YELLOW + nWarnings + " warnings." + ANSI_RESET);
+        }
+        if (nErrors > 0) {
+            out.println(ANSI_RED + nErrors + " errors." + ANSI_RESET);
         }
     }
 }

@@ -10,6 +10,7 @@ import workers.BinaryGenerator;
 import workers.DataOptimizer;
 import workers.Disassembler;
 import workers.Help;
+import workers.SourceCodeExecution;
 import workers.reorgopt.CodeReorganizer;
 import workers.pattopt.PatternBasedOptimizer;
 import workers.SourceCodeGenerator;
@@ -41,11 +42,12 @@ public class Main {
         config.registerWorker(new AnnotatedSourceCodeGenerator(config));
         config.registerWorker(new BinaryGenerator(config));
         config.registerWorker(new TapGenerator(config));
+        config.registerWorker(new SourceCodeExecution(config));
 
         // Parse command line arguments:
         if (!config.parseArgs(args)) {
             config.error("Could not fully parse the arguments (error code 1).");
-            System.exit(1);
+            exit(1, config);
         }
         
         // If there is nothing to do, just terminate:
@@ -65,7 +67,7 @@ public class Main {
                     } else {
                         config.error("Could not fully parse the code (error code 2). Maybe missing `-dialect <dialect>` flag?");
                     }
-                    System.exit(2);
+                    exit(2, config);
                 }
                 break;
             case MDLConfig.CODE_FROM_SEARCHBASEDOPTIMIZER:
@@ -76,15 +78,22 @@ public class Main {
                 break;
             default:
                 config.error("Unknown source code source: " + config.codeSource);
-                System.exit(4);
+                exit(4, config);
         }
         
         // Execute all the requested workers according to the command-line arguments:
         if (!config.executeWorkers(code)) {
             config.error("Could not fully execute some workers (error code 3).");
-            System.exit(3);
+            exit(3, config);
         }
         
         if (config.optimizerStats.anyOptimization()) config.info("mdl optimization summary: " + config.optimizerStats.summaryString(config));
+        config.logger.reportNErrorsAndWarningsIfAny();
+    }
+    
+    
+    public static void exit(int error, MDLConfig config) throws Exception {
+        config.logger.reportNErrorsAndWarningsIfAny();
+        System.exit(error);
     }
 }
