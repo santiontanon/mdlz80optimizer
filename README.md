@@ -87,14 +87,14 @@ Note: all the tasks concerning generating outputs (assembler, binaries, etc.) wi
 - ```-safety-labels-for-jumps-to-constants```: makes MDL replace the destination of a jump/call to a constant (e.g. ```jp #3c4a```) by a label. MDL does not do this by default since calls to constants are often used for BIOS calls (although replacing those constants by labels is recommended). Jumpts to constants are unsafe for optimization as the code at the target address (```#3c4a``` in the example) might move as a result of optimization. Hence, it's safer to add a safety label at the target address and use it for the jump.
 - ```-quirk-sjasm-struc```: allows having the keyword ```struc``` after the definition of a struct in sjasm (as in ```STRUCT mystruct struc```), since sjasm allows this (probably by accident), and some codebases have it.
 - ```-quirk-sjasmplus-dirbol-double-directive```: allows two directives in the same line without any separator, like this: ```db 0,0,0 dw 0``` (this is not intended, and will be fixed in future versions of sjasmplus, but some codebases use it).
-- ```-da data/code/<input hints>```: disassembles the input binary. If this flag is used, the input file is interpreted as a binary file. The argument of this clad can be either ```data``` (indicating that the binary file is to be interpreted as data), ```code``` (indicating that the binary file is to be interpreted as code), or a path to an ```<input hints>``` file, which is a text file that gives hints to MDL about what is code and what is data. The hints file is mandatory. If you don't want to provide any hints, just point MDL to an empty file. The <input hints> format is as follows. Each line can be one of:
-    org <address>
-    label <address> <label>
-    comment <address> <comment>
-    comment-before <address> <comment>
-    data <address>
-    code <address>
-    space <address>
+- ```-da data/code/<input hints>```: disassembles the input binary. If this flag is used, the input file is interpreted as a binary file. The argument of this clad can be either ```data``` (indicating that the binary file is to be interpreted as data), ```code``` (indicating that the binary file is to be interpreted as code), or a path to an ```<input hints>``` file, which is a text file that gives hints to MDL about what is code and what is data. The hints file is mandatory. If you don't want to provide any hints, just point MDL to an empty file. The ```<input hints>``` format is as follows. Each line can be one of:
+    - ```org <address>```
+    - ```label <address> <label>```
+    - ```comment <address> <comment>```
+    - ```comment-before <address> <comment>```
+    - ```data <address>```
+    - ```code <address>```
+    - ```space <address>```
 - ```-so```: Runs the search-based-based optimizer (if the input file is an assembler file (.asm/.z80/.a80), it'll try to optimize it; if the input file is a specification file (.txt), it will use as a target for program generation; which of the two will be auto-detected based on the file extension). You can pass an optional parameter: ```-so size```, ```-so speed```, ```-so ops``` or ```-so ops-safe``` (default), to tell the optimizer to optimize for program size, execution speed, number of instructions or number of instructions but ensuring at least size or speed is improved (default, as this is the computationally cheapest mode, although it might not obtain the best results). This will overwrite whatever is specified in the specificaiton file.
 - ```-so-gen```: Like above, but instead of autodetecting, it always assumes the input file is a specification file for program generation.
 - ```-so-opt```: Like above, but instead of autodetecting, it always assumes the input file is an assembler file for optimization.
