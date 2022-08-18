@@ -65,25 +65,21 @@ public class CPUOpSpecArg {
             relativeLabelAllowed) {
             if (exp.type != Expression.EXPRESSION_PARENTHESIS &&
                 exp.evaluatesToIntegerConstant()) {
-                if (exp.isConstant()) {
-                    Integer v = exp.evaluateToInteger(s, code, true);
-                    if (v == null) return true;
-                    if (min == null) {
-                        if (max == null) {
-                            return true;
-                        } else {
-                            if (v<=max) return true;
-                        }
+                Integer v = null;
+                v = exp.evaluateToInteger(s, code, true);
+                if (v == null) return true;
+                if (min == null) {
+                    if (max == null) {
+                        return true;
                     } else {
-                        if (max == null) {
-                            if (v>=min) return true;
-                        } else {
-                            if (v>=min && v<=max) return true;
-                        }
-                    }                    
+                        if (v<=max) return true;
+                    }
                 } else {
-                    // do not evaluateToInteger if it's not a constant, as this can trigger complex address dereferencing...
-                    return true;
+                    if (max == null) {
+                        if (v>=min) return true;
+                    } else {
+                        if (v>=min && v<=max) return true;
+                    }
                 }
             }
         }

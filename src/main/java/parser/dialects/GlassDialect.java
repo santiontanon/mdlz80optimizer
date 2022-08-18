@@ -478,6 +478,7 @@ public class GlassDialect implements Dialect {
             // we fail to evaluateToInteger the macro, but it's ok, some times it can happen
             succeeded = false;
         }
+        f.resetAddresses();
         config.logger.resume();
 
         // this is a debug message, not a warning, as it can definitively happen if macros contain unresolved symbols:

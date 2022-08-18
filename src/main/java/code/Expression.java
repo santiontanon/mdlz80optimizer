@@ -1146,7 +1146,8 @@ public class Expression {
                 || (type == EXPRESSION_DOUBLE_CONSTANT)
                 || (type == EXPRESSION_STRING_CONSTANT);
     }
-
+    
+    
     public boolean evaluatesToNumericConstant() {
         if (type == EXPRESSION_INTEGER_CONSTANT) {
             return true;
