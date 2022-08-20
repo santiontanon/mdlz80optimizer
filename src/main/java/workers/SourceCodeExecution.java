@@ -27,6 +27,7 @@ public class SourceCodeExecution implements MDLWorker {
 
     MDLConfig config = null;
     String startAddressString = null;
+    String endAddressString = null;
     String stepsString = null;
     boolean trace = false;
 
@@ -41,7 +42,9 @@ public class SourceCodeExecution implements MDLWorker {
     public String docString() {
         // This string has MD tags, so that I can easily generate the corresponding documentation in github with the 
         // hidden "-helpmd" flag:        
-        return "- ```-e <address> <steps>```: executes the source code starting at <address> for <steps> CPU cycles, and displays the changed registers and memory.\n";
+        return "- ```-e:s <address> <steps>```: executes the source code starting at <address> (address can be numer or a label name) for <steps> CPU time units, and displays the changed registers, memory and timing.\n" +
+               "- ```-e:u <address-start> <address-end>```: executes the source code starting at <address-start> until reaching <address-end>, and displays the changed registers, memory and timing.\n" +
+               "- ```-e:trace```: turns on step-by-step execution logging for ```-e:s``` or ```-e:u``` flags.";
     }
 
     @Override
@@ -51,10 +54,15 @@ public class SourceCodeExecution implements MDLWorker {
 
     @Override
     public boolean parseFlag(List<String> flags) {
-        if (flags.get(0).equals("-e") && flags.size()>=3) {
+        if (flags.get(0).equals("-e:s") && flags.size()>=3) {
             flags.remove(0);
             startAddressString = flags.remove(0);
             stepsString = flags.remove(0);
+            return true;
+        } else if (flags.get(0).equals("-e:u") && flags.size()>=3) {
+            flags.remove(0);
+            startAddressString = flags.remove(0);
+            endAddressString = flags.remove(0);
             return true;
         } else if (flags.get(0).equals("-e:trace")) {
             flags.remove(0);
@@ -98,9 +106,18 @@ public class SourceCodeExecution implements MDLWorker {
         List<String> tokens = config.tokenizer.tokenize(startAddressString);
         Expression exp = config.expressionParser.parse(tokens, null, null, code);
         int startAddress = exp.evaluateToInteger(null, code, false);
-        tokens = config.tokenizer.tokenize(stepsString);
-        exp = config.expressionParser.parse(tokens, null, null, code);
-        int steps = exp.evaluateToInteger(null, code, false);
+        int endAddress = -1;
+        int steps = -1;
+        if (stepsString != null) {
+            tokens = config.tokenizer.tokenize(stepsString);
+            exp = config.expressionParser.parse(tokens, null, null, code);
+            steps = exp.evaluateToInteger(null, code, false);
+        }
+        if (endAddressString != null) {
+            tokens = config.tokenizer.tokenize(endAddressString);
+            exp = config.expressionParser.parse(tokens, null, null, code);
+            endAddress = exp.evaluateToInteger(null, code, false);
+        }
         
         // Set program counter:
         z80.setProgramCounter(startAddress);
@@ -109,18 +126,22 @@ public class SourceCodeExecution implements MDLWorker {
         config.debug("SourceCodeExecution: steps: " + steps);
         
         // Execute!
+        int nInstructionsExecuted = 0;
         try {
-            while(z80.getTStates() < steps) {
+            while(true) {
+                if (steps >= 0 && z80.getTStates() < steps) break;
+                if (endAddress >= 0 && z80.getProgramCounter() == endAddress) break;
                 if (trace) {
                     int address = z80.getProgramCounter();
                     CodeStatement s = instructions.get(address);
                     if (s == null) {
-                        config.warn("SourceCodeExecution: execution move away from provided source code!");
+                        config.warn("SourceCodeExecution: execution moved away from provided source code!");
                     } else {
                         config.info("  executing: " + s.toString());
                     }
                 }
                 z80.executeOneInstruction();
+                nInstructionsExecuted ++;
             }
         }catch(Exception e) {
             e.printStackTrace();
@@ -140,6 +161,8 @@ public class SourceCodeExecution implements MDLWorker {
                     z80Memory.readByte(address) + 
                     " (" + config.tokenizer.toHexByte(z80Memory.readByte(address), config.hexStyle) + ")");
         }
+        config.info("  " + nInstructionsExecuted + " instructions executed.");
+        config.info("  execution time: " + z80.getTStates() + " "+config.timeUnit + "s");
                 
         return true;
     }
