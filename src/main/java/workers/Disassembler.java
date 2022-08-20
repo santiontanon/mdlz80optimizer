@@ -431,6 +431,23 @@ public class Disassembler implements MDLWorker {
                         s.comment = state_nextStatementComment;
                         state_nextStatementComment = null;
                     }
+                    // Translate the 16bit constants to hex and add their value
+                    // in a comment:
+                    String comment = null;
+                    for(int i = 0;i<op.args.size();i++) {
+                        Expression e = op.args.get(i);
+                        if (e.type == Expression.EXPRESSION_INTEGER_CONSTANT) {
+                            if (comment == null) {
+                                comment = "; ";
+                            } else {
+                                comment += ", ";
+                            }
+                            if (op.spec.args.get(i).is16bit()) {
+                                comment += config.tokenizer.toHexWord(e.evaluateToInteger(s, code, true), config.hexStyle);
+                            }
+                        }
+                    }
+                    if (comment != null) s.comment = comment;
                     sf.addStatement(s);
                     for(int i = 0;i<spec.sizeInBytes;i++) {
                         currentBlock.remove(0);

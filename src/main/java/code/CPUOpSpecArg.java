@@ -120,4 +120,12 @@ public class CPUOpSpecArg {
         
         return true;
     }
+    
+    
+    public boolean is16bit()
+    {
+        return wordConstantIndirectionAllowed || wordConstantAllowed ||
+               wordConstantBigEndianAllowed;
+        
+    }
 }
