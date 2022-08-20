@@ -89,14 +89,14 @@ public class Disassembler implements MDLWorker {
                "indicating that the binary file is to be interpreted as code), or a path to an ```<input hints>``` " +
                "file, which is a text file that gives hints to MDL about what is code and what is data. " +
                "The hints file is mandatory. If you don't want to provide any hints, just point MDL to an " +
-               "empty file. The <input hints> format is as follows. Each line can be one of:\n" +
-               "    org <address>\n" +
-               "    label <address> <label>\n" +
-               "    comment <address> <comment>\n" +
-               "    comment-before <address> <comment>\n" +
-               "    data <address>\n" +
-               "    code <address>\n" +
-               "    space <address>\n";
+               "empty file. The ```<input hints>``` format is as follows. Each line can be one of:\n" +
+               "    - ```org <address>```\n" +
+               "    - ```label <address> <label>```\n" +
+               "    - ```comment <address> <comment>```\n" +
+               "    - ```comment-before <address> <comment>```\n" +
+               "    - ```data <address>```\n" +
+               "    - ```code <address>```\n" +
+               "    - ```space <address>```\n";
     }
 
     
