@@ -696,7 +696,7 @@ replacement:
 0: inc a
 constraints:
 equal(?const,1)
-flagsNotUsedAfter(1,C)
+flagsNotUsedAfter(0,C)
 
 pattern: Replace add a,?const with dec a
 0: add a,?const
