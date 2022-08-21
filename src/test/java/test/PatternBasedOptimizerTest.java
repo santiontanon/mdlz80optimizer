@@ -87,8 +87,8 @@ public class PatternBasedOptimizerTest {
     @Test public void test50() throws Exception { test("data/potests/test50.asm", null, null, "size",  0, 0, 0); }
     @Test public void test51() throws Exception { test("data/potests/test51.asm", null, null, "speed",  -1, 2, 2); }
     @Test public void test51cpc() throws Exception { test("data/potests/test51.asm", null, "z80cpc", "speed",  1, 0, 0); }
-    @Test public void test52() throws Exception { test("data/potests/test52.asm", null, null, "size",  1, 3, 3); }
-    @Test public void test52sdcc() throws Exception { test("data/potests/test52sdcc.asm", "sdcc", null, "size",  0, 0, 0); }
+    @Test public void test52() throws Exception { test("data/potests/test52.asm", null, null, "size",  3, 13, 13); }
+    @Test public void test52sdcc() throws Exception { test("data/potests/test52sdcc.asm", "sdcc", null, "size",  1, 5, 5); }
     @Test public void test54() throws Exception { test("data/potests/test54.asm", null, null, "size",  2, 4, 4); }
     @Test public void test54ldo() throws Exception { testWithoutLabelDependentOptimizations("data/potests/test54.asm", null, null, "size",  0, 0, 0, null); }
     @Test public void test55() throws Exception { test("data/potests/test55.asm", null, null, "size",  2, 8, 8, null); }
@@ -100,7 +100,7 @@ public class PatternBasedOptimizerTest {
     @Test public void test61() throws Exception { test("data/potests/test61.asm", null, null, "size",  2, 8, 8, "data/potests/test61-expected.asm"); }
     @Test public void test62() throws Exception { test("data/potests/test62.asm", null, null, "size",  22, 135, 135, "data/potests/test62-expected.asm"); }
     @Test public void test63() throws Exception { test("data/potests/test63.asm", null, null, "size",  8, 41, 41, "data/potests/test63-expected.asm"); }
-    @Test public void test64() throws Exception { test("data/potests/test64.asm", null, null, "size",  1, 5, 5, "data/potests/test64-expected.asm"); }
+    @Test public void test64() throws Exception { test("data/potests/test64.asm", null, null, "size",  2, 10, 10, "data/potests/test64-expected.asm"); }
     @Test public void test65() throws Exception { test("data/potests/test65.asm", null, null, "size",  1, 3, 3, "data/potests/test65-expected.asm"); }
     @Test public void test66() throws Exception { test("data/potests/test66.asm", null, null, "size",  2, 16, 16, "data/potests/test66-expected.asm"); }
     @Test public void test67() throws Exception { test("data/potests/test67.asm", null, null, "size",  3, 15, 15, "data/potests/test67-expected.asm"); }

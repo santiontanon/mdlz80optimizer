@@ -575,10 +575,15 @@ public class Pattern {
         
         if (index_to_display_message_on == -1) index_to_display_message_on = a_index;
 
+        config.debug("Potential pattern match: " + this.name);
+        
         // potential match! check constraints:
         for(Constraint constraint:constraints) {
             if (!checkConstraint(constraint, match, f, code, pbo,
-                                 index_to_display_message_on)) return null;
+                                 index_to_display_message_on)) {
+                config.debug("  pattern did not match due to a constraint check: " + constraint);
+                return null;
+            }
         }
         
         // Some optimizations are not safe in some dialects. For example, SDCC
@@ -590,7 +595,10 @@ public class Pattern {
         // dialect, so, we need to access the pbo config to get the actual 
         // dialect we are currently using:
         if (pbo.config.dialectParser != null &&
-            !pbo.config.dialectParser.safeOptimization(match)) return null;
+            !pbo.config.dialectParser.safeOptimization(match)) {
+            config.debug("  pattern did not match as the dialect reported it to be unsafe");
+            return null;
+        }
 
         return match;
     }

@@ -6,8 +6,7 @@
   ld l, a
   ld (hl), 0
 
-  ld c, 1
-  ld a, c
+  ld a, 1
   ld h, a
   ld l, a
   ld (hl), 2

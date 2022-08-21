@@ -3,11 +3,10 @@
 	org #4000
 
 label1:
-	xor a
 	ld hl, label1
-	ld (hl), a
+	push hl
 	ld hl, #4001  ; this line should be optimized (except if the -po-ldo flag is used)
-	ld (hl), a
+	push hl
 
 loop:
 	jr loop
