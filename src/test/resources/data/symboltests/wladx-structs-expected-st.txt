@@ -1,0 +1,17 @@
+__wladx_ende_1: equ #a000
+__wladx_enum_post_1: equ #a000
+__wladx_enum_pre_1: equ #0000
+enemy_t: equ 12
+enemy_t.health: equ 10
+enemy_t.id: equ 0
+enemy_t.pos2: equ 6
+nemesis: equ #a000
+nemesis.health: equ 40970  ; nemesis + 10
+nemesis.id: equ 40960  ; nemesis + 0
+nemesis.pos2.pos_x: equ 40966  ; nemesis + 6
+nemesis.pos2.pos_y: equ 40968  ; nemesis + 8
+nemesis.pos_x: equ 40962  ; nemesis + 2
+nemesis.pos_y: equ 40964  ; nemesis + 4
+position_t: equ 4
+position_t.pos_x: equ 0
+position_t.pos_y: equ 2

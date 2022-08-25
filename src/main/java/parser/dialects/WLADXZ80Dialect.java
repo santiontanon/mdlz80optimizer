@@ -25,6 +25,55 @@ import parser.SourceLine;
  * @author santi
  */
 public class WLADXZ80Dialect implements Dialect {
+    
+    public static class WLADXSlot {
+        public int number;
+        public int address;
+        public String name;
+        
+        public WLADXSlot(int a_number, int a_address, String a_name) {
+            number = a_number;
+            address = a_address;
+            name = a_name;
+        }
+    }
+    
+    
+    public static class WLADXRamSection {
+        public String name;
+        public int bank;
+        public WLADXSlot slot;
+        public int nextAddress = 0;
+        
+        public WLADXRamSection(String a_name, int a_bank, WLADXSlot a_slot)
+        {
+            name = a_name;
+            bank = a_bank;
+            slot = a_slot;
+            nextAddress = slot.address;
+        }
+    }
+    
+    
+    public static class WLADXStruct {
+        public String name;
+        public SourceFile file;
+        public CodeStatement start;
+        public List<String> rawAttributeNames = new ArrayList<>();
+        public List<String> attributeNames = new ArrayList<>();
+        public List<CodeStatement> attributeDefiningStatement = new ArrayList<>();
+        public List<Integer> attributeOffset = new ArrayList<>();
+        public List<Integer> attributeSize = new ArrayList<>();
+        
+        
+        public WLADXStruct(String a_name, CodeStatement a_start, SourceFile a_file)
+        {
+            name = a_name;
+            start = a_start;
+            file = a_file;
+        }
+    }
+    
 
     private final MDLConfig config;
     
@@ -46,6 +95,16 @@ public class WLADXZ80Dialect implements Dialect {
     List<CodeStatement> linesToKeepIfGeneratingDialectAsm = new ArrayList<>(); 
     List<CodeStatement> auxiliaryStatementsToRemoveIfGeneratingDialectasm = new ArrayList<>();
     
+    // Whether we are inside the memory map definition or not:
+    public boolean insideMemoryMap = false;
+    public WLADXRamSection currentRamSection = null;
+    public WLADXStruct currentStruct = null;
+    
+    List<WLADXSlot> slots = new ArrayList<>();
+    List<WLADXRamSection> ramSections = new ArrayList<>();
+    List<WLADXStruct> structs = new ArrayList<>();
+
+
     /**
      * Constructor
      * @param a_config
@@ -66,6 +125,8 @@ public class WLADXZ80Dialect implements Dialect {
         config.lineParser.addKeywordSynonym(".incbin", config.lineParser.KEYWORD_INCBIN);
         config.lineParser.addKeywordSynonym(".db", config.lineParser.KEYWORD_DB);
         config.lineParser.addKeywordSynonym(".dw", config.lineParser.KEYWORD_DW);
+        
+        config.lineParser.keywordsHintingALabel.add("instanceof");
         
         config.preProcessor.macroSynonyms.put(".if", config.preProcessor.MACRO_IF);
         config.preProcessor.macroSynonyms.put(".else", config.preProcessor.MACRO_ELSE);
@@ -168,6 +229,14 @@ public class WLADXZ80Dialect implements Dialect {
         if (tokens.size()>=4 && tokens.get(0).equalsIgnoreCase("map")) return true;
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase(".asc")) return true;
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase(".incdir")) return true;
+        if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase(".memorymap")) return true;
+        if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase(".endme")) return true;
+        if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase(".ramsection")) return true;
+        if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase(".ends")) return true;
+        if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("instanceof")) return true;
+        if (tokens.size()>=1 && label != null && label.originalName.equalsIgnoreCase("instanceof")) return true;
+        if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase(".struct")) return true;
+        if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase(".endst")) return true;        
         return false;
     }
     
@@ -286,11 +355,6 @@ public class WLADXZ80Dialect implements Dialect {
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase(".slot")) {
             // ignore for now:
             return ignoreWithParameters(1, false, tokens, l, sl, s, previous, source, code);
-        }        
-
-        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("slot")) {
-            // ignore for now:
-            return ignoreWithParameters(2, false, tokens, l, sl, s, previous, source, code);
         }        
         
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("bankstotal")) {
@@ -564,8 +628,317 @@ public class WLADXZ80Dialect implements Dialect {
         }
         
         
+        if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase(".memorymap")) {
+            insideMemoryMap = true;
+            tokens.remove(0);
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
+        }
+
+        if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase(".endme")) {
+            if (!insideMemoryMap) {
+                config.error(".endme found outside of a memory map definition in " + sl);
+                return false;
+            }
+            insideMemoryMap = false;
+            tokens.remove(0);
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
+        }
+
+        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("slot")) {
+            if (!insideMemoryMap) {
+                config.error("'slot' found outside of a memory map definition in " + sl);
+                return false;
+            }
+            tokens.remove(0);
+            Expression slotNumber_exp = config.expressionParser.parse(tokens, s, previous, code);
+            if (slotNumber_exp == null) {
+                config.error("Cannot parse slot number in " + sl);
+                return false;
+            }
+            Expression slotAddress_exp = config.expressionParser.parse(tokens, s, previous, code);
+            if (slotAddress_exp == null) {
+                config.error("Cannot parse slot address in " + sl);
+                return false;
+            }
+            String slotName = null;
+            if (!tokens.isEmpty() && config.tokenizer.isString(tokens.get(0))) {
+                Expression slotName_exp = config.expressionParser.parse(tokens, s, previous, code);
+                if (slotName_exp == null || !slotName_exp.evaluatesToStringConstant()) {
+                    config.error("Cannot parse slot name in " + sl);
+                    return false;
+                }
+                slotName = slotName_exp.evaluateToString(s, code, true);
+            }
+            slots.add(new WLADXSlot(slotNumber_exp.evaluateToInteger(s, code, true),
+                                    slotAddress_exp.evaluateToInteger(s, code, true), slotName));
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
+        }        
+        
+        
+        if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase(".ramsection")) 
+        {
+            tokens.remove(0);
+            
+            if (tokens.isEmpty() || !config.tokenizer.isString(tokens.get(0))) {
+                config.error("Cannot parse ramsectino name in " + sl);
+                return false;                
+            }
+            String name = tokens.remove(0);  
+            Integer bank = 0;
+            if (!tokens.isEmpty() && tokens.get(0).equalsIgnoreCase("bank")) {
+                tokens.remove(0);
+                Expression bank_exp = config.expressionParser.parse(tokens, s, previous, code);
+                bank = bank_exp.evaluateToInteger(s, code, true);
+                if (bank == null) {
+                    config.error("cannot evaluate bank expression in " + sl);
+                    return false;                
+                }
+            }
+            if (tokens.isEmpty() || !tokens.get(0).equalsIgnoreCase("slot")) {
+                config.error("cannot parse slot in " + sl);
+                return false;                
+            }
+            tokens.remove(0);
+            Expression slot_exp = config.expressionParser.parse(tokens, s, previous, code);
+            WLADXSlot slot = null;
+            if (slot_exp.evaluatesToStringConstant()) {
+                // slot name:
+                String slot_name = slot_exp.evaluateToString(s, code, true);
+                for(WLADXSlot slot2:slots) {
+                    if (slot2.name != null && slot2.name.equals(slot_name)) {
+                        slot = slot2;
+                        break;
+                    }
+                }
+                if (slot == null) {
+                    config.error("unknown slot '"+slot_name+"' in " + sl);
+                    return false;                
+                }
+            } else if (slot_exp.evaluatesToIntegerConstant()) {
+                int number_or_address = slot_exp.evaluateToInteger(s, code, true);
+                // slot number or address:
+                for(WLADXSlot slot2:slots) {
+                    if (slot2.number == number_or_address ||
+                        slot2.address == number_or_address) {
+                        slot = slot2;
+                        break;
+                    }
+                }
+                if (slot == null) {
+                    config.error("unknown slot '"+number_or_address+"' in " + sl);
+                    return false;                
+                }
+            } else {
+                config.error("unknown slot in " + sl);
+                return false;                
+            }
+            
+            if (currentRamSection != null) {
+                config.error("RAM section started before previous ("+currentRamSection.name+") ended in " + sl);
+                return false;
+            }
+            
+            currentRamSection = new WLADXRamSection(name, bank, slot);
+            ramSections.add(currentRamSection);
+                        
+            s.type = CodeStatement.STATEMENT_ORG;
+            s.org = Expression.constantExpression(slot.address, config);
+            
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);            
+        }
+        
+        
+        if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase(".ends")) {
+            currentRamSection = null;
+            tokens.remove(0);
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
+        }
+
+
+        if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase(".struct")) {
+            tokens.remove(0);
+            if (tokens.isEmpty()) {
+                config.error("Missing struct name in " + sl);
+                return false;
+            }
+            String name = tokens.remove(0);
+            currentStruct = new WLADXStruct(name, s, source);
+            structs.add(currentStruct);
+            config.lineParser.pushLabelPrefix(currentStruct.name + ".");
+
+            s.type = CodeStatement.STATEMENT_CONSTANT;
+            s.label = new SourceConstant(name, name, Expression.constantExpression(0, config), s, config);
+            code.addSymbol(name, s.label);
+
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
+        }
+        
+        
+        if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase(".endst")) {
+            tokens.remove(0);
+            if (currentStruct.file == null) {
+                config.error("ends outside of a struct in " + sl);
+                return false;
+            }
+            if (currentStruct.file != source) {
+                config.error("struct split among multiple files is not supported in " + sl);
+                return false;
+            }
+            
+            if (!endStructDefinition(sl, source, code)) return false;
+
+            config.lineParser.popLabelPrefix();
+            currentStruct = null;
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
+        }
+        
+
+        if ((tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("instanceof")) ||
+            (tokens.size()>=1 && s.label != null && s.label.originalName.equalsIgnoreCase("instanceof"))) {
+            // instantiating a struct:
+            if (s.label != null && s.label.originalName.equalsIgnoreCase("instanceof")) {
+                code.removeSymbol(s.label.name);
+                s.label = null;
+            } else {
+                tokens.remove(0);
+            }
+            
+            String structName = tokens.remove(0);
+            WLADXStruct struct = null;
+            for(WLADXStruct struct2:structs) {
+                if (struct2.name.equals(structName)) {
+                    struct = struct2;
+                    break;
+                }
+            }
+            if (struct == null) {
+                config.error("Unknown struct in " + sl);
+                return false;
+            }
+            
+            if (currentStruct != null) {
+                // add to the current struct:
+                // Add a mark that will be processed later:
+                CodeStatement s2 = new CodeStatement(CodeStatement.STATEMENT_NONE, sl, source, config);
+                if (s.label != null) {
+                    s2.comment += "mdl-wladx-struct-mark\t" + struct.name + "\t" + s.label.originalName;
+                } else {
+                    s2.comment += "mdl-wladx-struct-mark\t" + struct.name;
+                }
+                s2.type = CodeStatement.STATEMENT_NONE;
+                l.add(s2);
+            } else {
+                // instantiate struct:
+                if (s.label != null) {
+                    s.type = CodeStatement.STATEMENT_CONSTANT;
+                    s.label.exp = Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, s, code, config);
+                    s.label.clearCache();
+                }
+                
+                for(int i = 0;i<struct.attributeNames.size();i++) {    
+                    int offset = struct.attributeOffset.get(i);
+                    CodeStatement s2 = new CodeStatement(CodeStatement.STATEMENT_CONSTANT, sl, source, config);
+                    SourceConstant c = new SourceConstant(
+                            s.label.name + "." + struct.rawAttributeNames.get(i),
+                            s.label.originalName + "." + struct.rawAttributeNames.get(i), 
+                            Expression.operatorExpression(Expression.EXPRESSION_SUM,
+                                    Expression.symbolExpression(s.label.name, s2, code, config),
+                                    Expression.constantExpression(offset, config), config),
+                            s2, config);
+                    s2.label = c;
+                    int res = code.addSymbol(c.name, c);
+                    if (res == -1) return false;
+                    if (res == 0) s.redefinedLabel = true; 
+                    l.add(s2);
+                }   
+            }
+            
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
+        }
+        
+        
+        
+        
         return false;
     }
+    
+    
+    public boolean endStructDefinition(SourceLine sl, SourceFile source, CodeBase code)
+    {
+        // Transform the struct into equ definitions with local labels:
+        int offset = 0;
+        int start = source.getStatements().indexOf(currentStruct.start) + 1;
+        for (int i = start; i < source.getStatements().size(); i++) {
+            CodeStatement s2 = source.getStatements().get(i);
+            int offset_prev = offset;
+            switch (s2.type) {
+                case CodeStatement.STATEMENT_NONE:
+                    if (s2.comment != null && s2.comment.contains("mdl-wladx-struct-mark")) {
+                        // insert struct:
+                        String markTokens[] = s2.comment.split("\t");
+                        s2.comment = null;
+                        String structName = markTokens[1];
+                        String attributeLabel = "";
+                        if (markTokens.length >= 3) {
+                            attributeLabel = markTokens[2] + ".";
+                        }
+                        WLADXStruct struct = null;
+                        for(WLADXStruct struct2:structs) {
+                            if (struct2.name.equals(structName)) {
+                                struct = struct2;
+                                break;
+                            }
+                        }
+                        
+                        for(int j = 0;j<struct.attributeNames.size();j++) {    
+                            currentStruct.rawAttributeNames.add(attributeLabel + struct.rawAttributeNames.get(j));
+                            currentStruct.attributeNames.add(attributeLabel + struct.attributeNames.get(j));
+                            currentStruct.attributeDefiningStatement.add(struct.attributeDefiningStatement.get(j));
+                            currentStruct.attributeOffset.add(offset);
+                            currentStruct.attributeSize.add(struct.attributeSize.get(j));
+                            offset += struct.attributeSize.get(j);
+                        }
+                    }
+                    break;
+                case CodeStatement.STATEMENT_DATA_BYTES:
+                case CodeStatement.STATEMENT_DATA_WORDS:
+                case CodeStatement.STATEMENT_DATA_DOUBLE_WORDS:
+                case CodeStatement.STATEMENT_DEFINE_SPACE:
+                {
+                    int size = s2.sizeInBytes(code, true, true, true);
+                    if (s2.label != null) {
+                        currentStruct.rawAttributeNames.add(s2.label.originalName);
+                        currentStruct.attributeNames.add(s2.label.name);
+                        // update the original name of the struct field:
+                        s2.label.originalName = s2.label.name;
+                    } else {
+                        currentStruct.rawAttributeNames.add(null);
+                        currentStruct.attributeNames.add(null);
+                    }
+                    currentStruct.attributeDefiningStatement.add(s2);
+                    currentStruct.attributeOffset.add(offset);
+                    currentStruct.attributeSize.add(size);
+                    offset += size;
+                    break;
+                }
+                default:
+                    config.error("Unsupported statement (type="+s2.type+") inside a struct definition in " + sl);
+                    return false;
+            }
+            if (s2.label != null) {
+                s2.type = CodeStatement.STATEMENT_CONSTANT;
+                s2.label.exp = Expression.constantExpression(offset_prev, config);
+            } else {
+                s2.type = CodeStatement.STATEMENT_NONE;
+            }                
+        }
+
+        // Record the struct for later:
+        currentStruct.start.label.exp = Expression.constantExpression(offset, config);
+        structs.add(currentStruct);
+        config.lineParser.keywordsHintingALabel.add(currentStruct.name);
+        return true;
+    }    
     
     
     public boolean ignoreWithParameters(int nParameters, boolean commas, List<String> tokens, List<CodeStatement> l, SourceLine sl, CodeStatement s, CodeStatement previous, SourceFile source, CodeBase code) {
@@ -593,7 +966,7 @@ public class WLADXZ80Dialect implements Dialect {
     @Override
     public boolean postParseActions(CodeBase code)
     {
-        if (reusableLabelCounts.size() > 0 && config.warning_ambiguous) {
+        if (!reusableLabelCounts.isEmpty() && config.warning_ambiguous) {
             config.warn("Use of wladx reusable labels, which are conducive to human error.");
         }
         
