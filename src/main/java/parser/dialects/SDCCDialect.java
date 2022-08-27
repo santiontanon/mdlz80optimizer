@@ -424,7 +424,7 @@ public class SDCCDialect implements Dialect {
                                         
                                     }   break;
                                 case Expression.EXPRESSION_REGISTER_OR_FLAG:
-                                    str += "0 " + "(" + exp.args.get(0).toStringInternal(true, useOriginalNames, true, s, code, style) + ")";
+                                    str += "0 " + "(" + exp.toStringInternal(true, useOriginalNames, true, s, code, style) + ")";
                                     break;
                                 default:
                                     str += args.get(i).toStringInternal(true, useOriginalNames, true, s, code, style);
