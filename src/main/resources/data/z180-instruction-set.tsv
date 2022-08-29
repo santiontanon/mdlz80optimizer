@@ -495,3 +495,4 @@ SLP	8	ED 76	2									true
 TST r	7	ED 04+8*r	2	r					S,Z,H,P/V,N,C			true
 TST n	9	ED 64 n	3						S,Z,H,P/V,N,C			true
 TSTIO n	12	ED 74 n	3	C		n			S,Z,H,P/V,N,C			true
+IN A,n	9	DB n	2	A		n		A	S,Z,N			false

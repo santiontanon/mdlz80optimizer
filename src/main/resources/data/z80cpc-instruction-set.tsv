@@ -473,3 +473,4 @@ SL1 (HL)	15	CB 26	2	HL			HL		S,Z,H,P/V,N,C		HL	false
 SL1 r	8	CB 20+r	2	r				r	S,Z,H,P/V,N,C			false
 SL1 (IX+o)	23	DD CB o 26	4	IX			IX+o		S,Z,H,P/V,N,C		IX+o	false
 SL1 (IY+o)	23	FD CB o 26	4	IY			IY+o		S,Z,H,P/V,N,C		IY+o	false
+IN A,n	3	DB n	2	A		n		A	S,Z,N			false

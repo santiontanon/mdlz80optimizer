@@ -18,6 +18,7 @@ import java.util.HashMap;
 import java.util.List;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import parser.LineParser;
 import parser.SourceLine;
 
 /**
@@ -39,18 +40,26 @@ public class WLADXZ80Dialect implements Dialect {
     }
     
     
-    public static class WLADXRamSection {
+    public static class WLADXSection {
+        public static final int REGULAR_SECTION = 0;
+        public static final int RAM_SECTION = 1;
+        
+        
         public String name;
+        public int type;
         public int bank;
         public WLADXSlot slot;
         public int nextAddress = 0;
         
-        public WLADXRamSection(String a_name, int a_bank, WLADXSlot a_slot)
+        public WLADXSection(String a_name, int a_type, int a_bank, WLADXSlot a_slot)
         {
             name = a_name;
+            type = a_type;
             bank = a_bank;
             slot = a_slot;
-            nextAddress = slot.address;
+            if (slot != null) {
+                nextAddress = slot.address;
+            }
         }
     }
     
@@ -97,11 +106,11 @@ public class WLADXZ80Dialect implements Dialect {
     
     // Whether we are inside the memory map definition or not:
     public boolean insideMemoryMap = false;
-    public WLADXRamSection currentRamSection = null;
+    public WLADXSection currentRamSection = null;
     public WLADXStruct currentStruct = null;
     
     List<WLADXSlot> slots = new ArrayList<>();
-    List<WLADXRamSection> ramSections = new ArrayList<>();
+    List<WLADXSection> ramSections = new ArrayList<>();
     List<WLADXStruct> structs = new ArrayList<>();
 
 
@@ -132,7 +141,12 @@ public class WLADXZ80Dialect implements Dialect {
         config.preProcessor.macroSynonyms.put(".else", config.preProcessor.MACRO_ELSE);
         config.preProcessor.macroSynonyms.put(".ifdef", config.preProcessor.MACRO_IFDEF);
         config.preProcessor.macroSynonyms.put(".ifndef", config.preProcessor.MACRO_IFNDEF);
-        config.preProcessor.macroSynonyms.put(".endif", config.preProcessor.MACRO_ENDIF);        
+        config.preProcessor.macroSynonyms.put(".endif", config.preProcessor.MACRO_ENDIF);
+        config.preProcessor.MACRO_MACRO = ".macro";
+        config.preProcessor.MACRO_ENDM = ".endm";
+        
+        config.lineParser.macroDefinitionStyle = LineParser.MACRO_MACRO_NAME_ARGS;     
+        config.lineParser.macroKeywordPrecedingArguments = "args";
     }
     
     
@@ -232,7 +246,6 @@ public class WLADXZ80Dialect implements Dialect {
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase(".memorymap")) return true;
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase(".endme")) return true;
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase(".ramsection")) return true;
-        if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase(".ends")) return true;
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("instanceof")) return true;
         if (tokens.size()>=1 && label != null && label.originalName.equalsIgnoreCase("instanceof")) return true;
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase(".struct")) return true;
@@ -443,14 +456,10 @@ public class WLADXZ80Dialect implements Dialect {
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
 
-        if (tokens.size() >= 1 && tokens.get(0).equalsIgnoreCase(".section")) {
+        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase(".section")) {
             tokens.remove(0);
-            // Ignore for now ...
-            Expression expName = config.expressionParser.parse(tokens, s, previous, code);
-            if (expName == null) {
-                config.error("Cannot parse section name in " + sl);
-                return false;
-            } 
+
+            String name = tokens.remove(0);
             
             if (!tokens.isEmpty()) {
                 if (tokens.get(0).equalsIgnoreCase("force")) {
@@ -461,14 +470,8 @@ public class WLADXZ80Dialect implements Dialect {
                     tokens.remove(0);
                 }
             }
-
-            linesToKeepIfGeneratingDialectAsm.add(s);
-            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
-        }
-
-        if (tokens.size() >= 1 && tokens.get(0).equalsIgnoreCase(".ends")) {
-            tokens.remove(0);
-            // Ignore for now ...
+            
+            currentRamSection = new WLADXSection(name, WLADXSection.REGULAR_SECTION, 0, null);
             linesToKeepIfGeneratingDialectAsm.add(s);
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
@@ -738,7 +741,7 @@ public class WLADXZ80Dialect implements Dialect {
                 return false;
             }
             
-            currentRamSection = new WLADXRamSection(name, bank, slot);
+            currentRamSection = new WLADXSection(name, WLADXSection.RAM_SECTION, bank, slot);
             ramSections.add(currentRamSection);
                         
             s.type = CodeStatement.STATEMENT_ORG;

@@ -71,6 +71,7 @@ public class LineParser {
     public boolean allowNumberLabels = false;   // also for sjasm (for "reusable" labels)
     public boolean allowDashPlusLabels = false;   // for wladx (for "reusable" labels)
     public boolean applyEscapeSequencesToIncludeArguments = true;
+    public String macroKeywordPrecedingArguments = null;
 
     public boolean sdccStyleOffsets = false;
     
@@ -1191,6 +1192,14 @@ public class LineParser {
                 config.error("parseMacroDefinition: invalid macro style defined for dialect!");
                 return false;                
         }        
+        
+        if (macroKeywordPrecedingArguments != null) {
+            if (tokens.isEmpty() || !tokens.get(0).equalsIgnoreCase(macroKeywordPrecedingArguments)) {
+                config.error("Expected '"+macroKeywordPrecedingArguments+"' before macro arguments in " + sl);
+                return false;
+            }
+            tokens.remove(0);
+        }
         
         // Parse arguments:
         List<String> args = new ArrayList<>();

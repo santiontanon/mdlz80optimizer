@@ -506,3 +506,4 @@ MIRR A	8	ED 24	2	A				A				false
 PXDN	8	ED 93	2	HL				HL				false
 PXAD	8	ED 94	2	DE				HL				false
 STAE	8	ED 95	2	E				A				false
+IN A,n	11	DB n	2	A		n		A	S,Z,N			false

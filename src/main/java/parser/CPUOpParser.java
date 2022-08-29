@@ -328,6 +328,15 @@ public class CPUOpParser {
             officialArgs.add(a_args.get(1));
             return new CPUOp(officialSpec, officialArgs, config);
         }
+
+        if (unofficialSpec.opName.equalsIgnoreCase("in") && a_args.size() == 2 &&
+            unofficialSpec.args.get(1).byteConstantAllowed &&
+            officialSpec.args.get(1).byteConstantIndirectionAllowed) {
+            // "in a,n" to "in a,(n)"
+            officialArgs.add(a_args.get(0));
+            officialArgs.add(Expression.parenthesisExpression(a_args.get(1), config.expressionParser.default_parenthesis, config));
+            return new CPUOp(officialSpec, officialArgs, config);
+        }
         
         List<Integer> used = new ArrayList<>();
         for(CPUOpSpecArg officialArgSpec:officialSpec.args) {
