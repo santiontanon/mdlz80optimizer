@@ -568,6 +568,7 @@ public class CodeBaseParser {
             config.warn("Safety: creating an auxiliary label for the jump in " + s.sl);
         }
 
+        code.resetAddresses();
         Expression destination = s.op.getTargetJumpExpression();
         CodeStatement current = s;
         Integer targetAddress = destination.evaluateToInteger(s, code, true);

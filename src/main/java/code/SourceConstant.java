@@ -51,6 +51,7 @@ public class SourceConstant {
         if (valueCache != null) {
             return valueCache;
         } else {
+            if (exp == null) return null;
             if (variableStack.contains(name)) {
                 config.warn("Circular dependency on '" + this.name + "' when evaluating expression, stack: " + variableStack + ", expression: " + exp);
                 return null;
