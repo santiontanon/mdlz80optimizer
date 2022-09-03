@@ -6,10 +6,9 @@ branding:
   color: 'blue'
 inputs:
   args: 
-    description: 'Command options to pass'
+    description: 'Command options to pass (as array / list)'
     required: true
 runs:
   using: 'docker'
   image: 'docker://ghcr.io/duhow/mdlz80optimizer:master'
-  args:
-    - ${{ inputs.args }}
+  args: ${{ inputs.args }}
