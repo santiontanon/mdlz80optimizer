@@ -1,0 +1,15 @@
+name: 'MDL Z80 Optimizer'
+description: 'Optimize Z80/z80n/z180 assembler code'
+author: 'santiontanon'
+branding:
+  icon: 'package'
+  color: 'blue'
+inputs:
+  args: 
+    description: 'Command options to pass'
+    required: true
+runs:
+  using: 'docker'
+  image: 'ghcr.io/duhow/mdlz80optimizer:master'
+  args:
+    - ${{ inputs.args }}
