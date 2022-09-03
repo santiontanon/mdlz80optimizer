@@ -10,6 +10,6 @@ inputs:
     required: true
 runs:
   using: 'docker'
-  image: 'ghcr.io/duhow/mdlz80optimizer:master'
+  image: 'docker://ghcr.io/duhow/mdlz80optimizer:master'
   args:
     - ${{ inputs.args }}
