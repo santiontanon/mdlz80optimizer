@@ -147,6 +147,7 @@ public class WLADXZ80Dialect implements Dialect {
         
         config.lineParser.macroDefinitionStyle = LineParser.MACRO_MACRO_NAME_ARGS;     
         config.lineParser.macroKeywordPrecedingArguments = "args";
+        config.lineParser.allowdataLinesWithoutCommas = true;
         config.expressionParser.allowSymbolsClashingWithRegisters = true;
     }
     

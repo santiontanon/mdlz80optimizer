@@ -78,6 +78,7 @@ public class LineParser {
     public boolean allowColonSeparatedInstructions = false;
     public boolean allowtniASMMultipleInstructionsPerLine = false;
     public boolean allowBackslashAsLineBreaks = false;
+    public boolean allowdataLinesWithoutCommas = false;
     
     public List<String> tokensPreventingTextMacroExpansion = new ArrayList<>();
     
@@ -902,7 +903,15 @@ public class LineParser {
             if (!tokens.isEmpty() && tokens.get(0).equals(",")) {
                 tokens.remove(0);
             } else {
-                done = true;
+                if (allowdataLinesWithoutCommas) {
+                    if (tokens.isEmpty()) {
+                        done = true;
+                    } else if (config.tokenizer.isSingleLineComment(tokens.get(0))) {
+                        done = true;
+                    }
+                } else {
+                    done = true;
+                }
             }
         }
 
