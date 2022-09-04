@@ -41,7 +41,7 @@ public class CPUOpSpec {
     public CPUOpSpec(String a_opName, int a_size, int a_times[], String a_byteRepresentation, boolean a_official, MDLConfig a_config)
     {
         opName = a_opName;
-        opNameExp = Expression.symbolExpressionInternal2(opName, a_config);
+        opNameExp = Expression.symbolExpressionInternalWithoutChecks(opName, a_config);
         sizeInBytes = a_size;
         times = a_times;
         byteRepresentationRaw = a_byteRepresentation;

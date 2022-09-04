@@ -222,6 +222,9 @@ public class CodeBase {
                 }
             }
         }
+        if (isRegister(name)) {
+            config.warn("Defining '" + name + "' as a symbol, which collides with the name of a register.");
+        }
         symbols.put(name, sc);
         return 1;
     }

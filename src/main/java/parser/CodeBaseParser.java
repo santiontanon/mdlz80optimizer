@@ -533,6 +533,18 @@ public class CodeBaseParser {
             }
         }
     }
+
+
+    public void resolveSpecificSymbols(CodeBase code, List<Expression> symbols)
+    {
+        for(SourceFile f : code.getSourceFiles()) {
+            for(CodeStatement s: f.getStatements()) {
+                for(Expression exp: s.getAllExpressions()) {
+                    exp.resolveSpecificSymbols(code, symbols);
+                }
+            }
+        }
+    }
     
     
     public boolean improveCodeSafety(CodeBase code)

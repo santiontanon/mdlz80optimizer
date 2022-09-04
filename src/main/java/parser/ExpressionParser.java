@@ -71,6 +71,7 @@ public class ExpressionParser {
     public boolean binaryDigitsCanContainSpaces = false;
     public boolean allowArrayIndexingSyntax = false;
     public String arrayIndexSignifyingLength = null;  // this is to cover the [#] syntax of SjasmPlus
+    public boolean allowSymbolsClashingWithRegisters = false;  // WLADX allows this (which is pretty bad!)
 
     // This is used by the macro80 dialect:
     public boolean doubleHashToMarkExternalSymbols = false;
@@ -679,7 +680,8 @@ public class ExpressionParser {
                         config.codeBaseParser.expressionsToReplaceByValueAtTheEnd.add(Pair.of(exp, s));
                     }
                 }
-                return exp;                
+                return exp;  
+                
             } else if (config.tokenizer.isSymbol(tokens.get(0))) {
                 String token = tokens.get(0);
                 if (!config.caseSensitiveSymbols) token = token.toLowerCase();

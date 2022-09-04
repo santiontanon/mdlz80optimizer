@@ -147,6 +147,7 @@ public class WLADXZ80Dialect implements Dialect {
         
         config.lineParser.macroDefinitionStyle = LineParser.MACRO_MACRO_NAME_ARGS;     
         config.lineParser.macroKeywordPrecedingArguments = "args";
+        config.expressionParser.allowSymbolsClashingWithRegisters = true;
     }
     
     
@@ -249,7 +250,8 @@ public class WLADXZ80Dialect implements Dialect {
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("instanceof")) return true;
         if (tokens.size()>=1 && label != null && label.originalName.equalsIgnoreCase("instanceof")) return true;
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase(".struct")) return true;
-        if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase(".endst")) return true;        
+        if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase(".endst")) return true;
+        if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase(".dstruct")) return true;
         return false;
     }
     
@@ -312,15 +314,22 @@ public class WLADXZ80Dialect implements Dialect {
             
             for(Expression symbol:symbols) {
                 if (symbol.type != Expression.EXPRESSION_SYMBOL) {
-                    config.error("Expression " + symbol + " is not a symbol in " + sl);
+                    config.error("Expression " + symbol + " is not a symbol (but "+symbol.type+") in " + sl);
                     return false;
+                }                
+            }
+            
+            // Evaluate all the current appearances of this symbol:                
+            config.codeBaseParser.resolveSpecificSymbols(code, symbols);
+            
+            for(Expression symbol:symbols) {
+                SourceConstant c = code.getSymbol(symbol.symbolName);
+                // remove the defining statement of this symbol:
+                if (c.definingStatement != null) {
+                    c.definingStatement.source.getStatements().remove(c.definingStatement);
                 }
-                // Do not undefine the symbols for now, as this assumes eager
-                // expression evaluation, while MDL uses lazy evaluation.
-                // TO DO: Perhaps the solution would be to go through the code
-                // base evaluating all the expressions that contain these
-                // symbols eagerly.
-                // code.removeSymbol(symbol.symbolName);
+                code.removeSymbol(symbol.symbolName);
+                
             }
                 
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
@@ -468,6 +477,31 @@ public class WLADXZ80Dialect implements Dialect {
                     tokens.remove(0);
                 } else if (tokens.get(0).equalsIgnoreCase("semifree")) {
                     tokens.remove(0);
+                } else if (tokens.get(0).equalsIgnoreCase("align")) {
+                    tokens.remove(0);
+                    Expression exp = config.expressionParser.parse(tokens, s, previous, code);
+                    if (exp == null) {
+                        config.error("Cannot parse align expression in " + sl);
+                        return false;
+                    }
+                    CodeStatement s2 = new CodeStatement(CodeStatement.STATEMENT_DEFINE_SPACE,sl, source, config);
+                    // ds (((($-1)/exp)+1)*exp-$)
+                    s2.space = Expression.operatorExpression(Expression.EXPRESSION_SUB,
+                                Expression.operatorExpression(Expression.EXPRESSION_MUL, 
+                                  Expression.parenthesisExpression(
+                                    Expression.operatorExpression(Expression.EXPRESSION_SUM, 
+                                      Expression.operatorExpression(Expression.EXPRESSION_DIV, 
+                                        Expression.parenthesisExpression(
+                                          Expression.operatorExpression(Expression.EXPRESSION_SUB, 
+                                              Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, s, code, config), 
+                                              Expression.constantExpression(1, config), config), "(", config),
+                                          exp, config), 
+                                      Expression.constantExpression(1, config), config), "(", config), 
+                                  exp, config),
+                                Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, s, code, config), config);
+                    s2.space_value = Expression.constantExpression(0, config);
+                    l.add(s2);
+                    auxiliaryStatementsToRemoveIfGeneratingDialectasm.add(s2);
                 }
             }
             
@@ -859,6 +893,71 @@ public class WLADXZ80Dialect implements Dialect {
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
         
+        
+        if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase(".dstruct")) {
+            // example:
+            // .dstruct ButterflyStepsLevel1 instanceof StepsData data 24, ScrollTable2440, 0, 111, 5, 0
+            tokens.remove(0);
+            String labelPrefix = tokens.remove(0);       
+            
+            if (!tokens.isEmpty() && tokens.get(0).equalsIgnoreCase("instanceof")) {
+                tokens.remove(0);
+            }
+            
+            String structName = tokens.remove(0);
+            WLADXStruct struct = null;
+            for(WLADXStruct struct2:structs) {
+                if (struct2.name.equals(structName)) {
+                    struct = struct2;
+                    break;
+                }
+            }
+            if (struct == null) {
+                config.error("Unknown struct in " + sl);
+                return false;
+            }
+            
+            if (!tokens.isEmpty() && tokens.get(0).equalsIgnoreCase("data")) {
+                tokens.remove(0);
+            }
+            
+            for(int i = 0;i<struct.attributeNames.size();i++) {
+                Expression exp = config.expressionParser.parse(tokens, s, previous, code);
+                if (exp == null) {
+                    config.error("Cannot parse expression for attribute " + struct.attributeNames.get(i) + " in " + sl);
+                    return false;
+                }
+                int type = CodeStatement.STATEMENT_DATA_BYTES;
+                switch(struct.attributeSize.get(i)) {
+                    case 1:
+                        type = CodeStatement.STATEMENT_DATA_BYTES;
+                        break;
+                    case 2:
+                        type = CodeStatement.STATEMENT_DATA_WORDS;
+                        break;
+                    case 4:
+                        type = CodeStatement.STATEMENT_DATA_DOUBLE_WORDS;
+                        break;
+                    default:
+                        config.error("Unsupported size " + struct.attributeSize.get(i) + " in struct in " + sl);
+                        return false;
+                }
+                CodeStatement s2 = new CodeStatement(type, sl, source, config);
+                String label = labelPrefix + "." + struct.attributeNames.get(i);
+                SourceConstant sc = new SourceConstant(label, label, Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, s, code, config), s2, config);
+                code.addSymbol(label, sc);
+                s2.data = new ArrayList<>();
+                s2.data.add(exp);
+                l.add(s2);
+                
+                if (!tokens.isEmpty() && tokens.get(0).equalsIgnoreCase(",")) {
+                    tokens.remove(0);
+                }
+                
+            }
+            
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
+        }
         
         
         

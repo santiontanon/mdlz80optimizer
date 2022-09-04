@@ -1358,6 +1358,55 @@ public class Expression {
     }
     
     
+    public void resolveSpecificSymbols(CodeBase code, List<Expression> symbols)
+    {
+        switch(type) {
+            case EXPRESSION_SYMBOL:
+                {
+                    boolean evaluate = false;
+                    for(Expression symbol:symbols) {
+                        if (symbol.symbolName.equals(symbolName)) {
+                            evaluate = true;
+                        }
+                    }
+                    if (evaluate) {
+                        SourceConstant c = code.getSymbol(symbolName);
+                        if (c != null && c.exp != null) {
+                            Object value = c.exp.evaluate(c.definingStatement, code, true);
+                            if (value != null) {
+                                if (value instanceof Integer) {
+                                    this.type = EXPRESSION_INTEGER_CONSTANT;
+                                    this.integerConstant = (Integer)value;
+                                    this.symbolName = null;
+                                } else if (value instanceof Double) {
+                                    this.type = EXPRESSION_DOUBLE_CONSTANT;
+                                    this.doubleConstant = (Double)value;
+                                    this.symbolName = null;
+                                } else if (value instanceof String) {
+                                    this.type = EXPRESSION_STRING_CONSTANT;
+                                    this.stringConstant = (String)value;
+                                    this.symbolName = null;
+                                } else if (value instanceof List) {
+                                    this.type = EXPRESSION_LIST;
+                                    this.args = (List<Expression>)value;
+                                    this.symbolName = null;
+                                } else {
+                                    config.warn("resolveSpecificSymbols: Unsupported expression evaluation type: " + value);
+                                }
+                            }
+                        }
+                    }
+                }
+            default:
+                if (args != null) {
+                    for(int i = 0;i<args.size();i++) {
+                        args.get(i).resolveSpecificSymbols(code, symbols);
+                    }
+                }
+        }
+    }    
+    
+    
     public boolean containsLabel(CodeBase code)
     {
         if (type == EXPRESSION_SYMBOL) {
@@ -1521,46 +1570,55 @@ public class Expression {
         if (config.expressionParser.registerSynonyms.containsKey(symbol)) {
             symbol = config.expressionParser.registerSynonyms.get(symbol);
         }
-        if (code.isRegister(symbol) || code.isCondition(symbol)) {
-            Expression exp = new Expression(EXPRESSION_REGISTER_OR_FLAG, config);
-            exp.registerOrFlagName = symbol;
-            return exp;
-        } else {
-            Expression exp = new Expression(EXPRESSION_SYMBOL, config);
-            exp.symbolName = symbol;
-            
-            // check if it's a variable that needs to be evaluated eagerly:
-            SourceConstant c = code.getSymbol(exp.symbolName);
-            if (c == null && s != null && s.labelPrefix != null && !s.labelPrefix.isEmpty()) {
-                c = code.getSymbol(s.labelPrefix+exp.symbolName);
-            }
-            if (c != null && c.resolveEagerly && evaluateEagerSymbols) {
-                Object value = c.getValue(code, false);
-                if (value == null) {
-                    config.error("Cannot resolve eager variable " + symbol + "!");
-                    return null;
-                } 
-                if (value instanceof Integer) {
-                    exp = new Expression(EXPRESSION_INTEGER_CONSTANT, config);
-                    exp.integerConstant = (Integer)value;
-                } else if (value instanceof Double) {
-                    exp = new Expression(EXPRESSION_DOUBLE_CONSTANT, config);
-                    exp.doubleConstant = (Double)value;
-                } else if (value instanceof String) {
-                    exp = new Expression(EXPRESSION_STRING_CONSTANT, config);
-                    exp.stringConstant = (String)value;
-                } else if (value instanceof List) {
-                    exp = Expression.listExpression((List<Expression>)value, config);
-                } else {
-                    return null;
+        if (CodeBase.isRegister(symbol) || CodeBase.isCondition(symbol)) {
+            boolean isRegisterOrCondition = true;
+            if (config.expressionParser.allowSymbolsClashingWithRegisters) {
+                if (code.getSymbol(symbol) != null) {
+                    // Symbol that has the same name as a register:
+                    isRegisterOrCondition = false;
                 }
-            }            
-            return exp;
+            }
+            if (isRegisterOrCondition) {
+                Expression exp = new Expression(EXPRESSION_REGISTER_OR_FLAG, config);
+                exp.registerOrFlagName = symbol;
+                return exp;
+            }
         }
+        
+        Expression exp = new Expression(EXPRESSION_SYMBOL, config);
+        exp.symbolName = symbol;
+
+        // check if it's a variable that needs to be evaluated eagerly:
+        SourceConstant c = code.getSymbol(exp.symbolName);
+        if (c == null && s != null && s.labelPrefix != null && !s.labelPrefix.isEmpty()) {
+            c = code.getSymbol(s.labelPrefix+exp.symbolName);
+        }
+        if (c != null && c.resolveEagerly && evaluateEagerSymbols) {
+            Object value = c.getValue(code, false);
+            if (value == null) {
+                config.error("Cannot resolve eager variable " + symbol + "!");
+                return null;
+            } 
+            if (value instanceof Integer) {
+                exp = new Expression(EXPRESSION_INTEGER_CONSTANT, config);
+                exp.integerConstant = (Integer)value;
+            } else if (value instanceof Double) {
+                exp = new Expression(EXPRESSION_DOUBLE_CONSTANT, config);
+                exp.doubleConstant = (Double)value;
+            } else if (value instanceof String) {
+                exp = new Expression(EXPRESSION_STRING_CONSTANT, config);
+                exp.stringConstant = (String)value;
+            } else if (value instanceof List) {
+                exp = Expression.listExpression((List<Expression>)value, config);
+            } else {
+                return null;
+            }
+        }            
+        return exp;
     }
     
-    
-    public static Expression symbolExpressionInternal2(String symbol, MDLConfig config) {
+
+    public static Expression symbolExpressionInternalWithoutChecks(String symbol, MDLConfig config) {
         Expression exp = new Expression(EXPRESSION_SYMBOL, config);
         exp.symbolName = symbol;
         return exp;

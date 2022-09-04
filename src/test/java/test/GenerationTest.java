@@ -39,10 +39,23 @@ public class GenerationTest {
                                                                           "data/generationtests/mdl-safetylabels-expected.asm")); }
     @Test public void test4() throws IOException { Assert.assertTrue(test("data/generationtests/mdl-safetylabels2.asm",
                                                                           "data/generationtests/mdl-safetylabels2-expected.asm")); }
+    @Test public void test5() throws IOException { Assert.assertTrue(test("data/generationtests/wladx-symbols.asm",
+                                                                          "data/generationtests/wladx-symbols-expected.asm", "wladx")); }
 
     private boolean test(String inputFile, String expectedOutputFile) throws IOException
     {
-        Assert.assertTrue(config.parseArgs(inputFile, "-safety-labels-for-jumps-to-constants"));
+        return test(inputFile, expectedOutputFile, "mdl");
+    }    
+
+
+    private boolean test(String inputFile, String expectedOutputFile, String dialect) throws IOException
+    {
+        if (dialect == null) {
+            Assert.assertTrue(config.parseArgs(inputFile, "-safety-labels-for-jumps-to-constants"));
+        } else {
+            Assert.assertTrue(config.parseArgs(inputFile, "-safety-labels-for-jumps-to-constants",
+                                               "-dialect", dialect));
+        }
         Assert.assertTrue(
                 "Could not parse file " + inputFile,
                 config.codeBaseParser.parseMainSourceFiles(config.inputFiles, code));
