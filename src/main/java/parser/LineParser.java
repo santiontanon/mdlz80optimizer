@@ -80,6 +80,8 @@ public class LineParser {
     public boolean allowBackslashAsLineBreaks = false;
     public boolean allowdataLinesWithoutCommas = false;
     
+    public String reptIndexArgSeparator = null;
+    
     public List<String> tokensPreventingTextMacroExpansion = new ArrayList<>();
     
     MDLConfig config;
@@ -1264,6 +1266,7 @@ public class LineParser {
         // special case for "IFDEF", which takes a special kind of argument (which should never be
         // evaluated, regardless if it's an eager variable or not):
         boolean isIfDef = false;
+        boolean isRept = false;
         
         if (!config.caseSensitiveSymbols) macroName = macroName.toLowerCase();
         if (config.convertSymbolstoUpperCase) macroName = macroName.toUpperCase();
@@ -1271,6 +1274,9 @@ public class LineParser {
         if (config.preProcessor.isMacroName(macroName, config.preProcessor.MACRO_IFDEF) ||
             config.preProcessor.isMacroName(macroName, config.preProcessor.MACRO_IFNDEF)) {
             isIfDef = true;
+        }
+        if (config.preProcessor.isMacroName(macroName, config.preProcessor.MACRO_REPT)) {
+            isRept = true;
         }
         while (!tokens.isEmpty()) {
             if (config.tokenizer.isSingleLineComment(tokens.get(0)) ||
@@ -1300,7 +1306,14 @@ public class LineParser {
             if (!tokens.isEmpty() && tokens.get(0).equals(",")) {
                 tokens.remove(0);
             } else {
-                break;
+                if (isRept && reptIndexArgSeparator != null &&
+                    !tokens.isEmpty() && tokens.get(0).equalsIgnoreCase(reptIndexArgSeparator) &&
+                    arguments.size() == 1) {
+                    tokens.remove(0);
+                    isRept = false;  // to prevent parsing more than one "reptIndexArgSeparator" in a row
+                } else {
+                    break;
+                }
             }
         }
         

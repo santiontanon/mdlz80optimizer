@@ -1358,17 +1358,12 @@ public class Expression {
     }
     
     
-    public void resolveSpecificSymbols(CodeBase code, List<Expression> symbols)
+    public void resolveSpecificSymbols(CodeBase code, List<String> symbols)
     {
         switch(type) {
             case EXPRESSION_SYMBOL:
                 {
-                    boolean evaluate = false;
-                    for(Expression symbol:symbols) {
-                        if (symbol.symbolName.equals(symbolName)) {
-                            evaluate = true;
-                        }
-                    }
+                    boolean evaluate = symbols.contains(symbolName);
                     if (evaluate) {
                         SourceConstant c = code.getSymbol(symbolName);
                         if (c != null && c.exp != null) {

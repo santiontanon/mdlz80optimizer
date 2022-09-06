@@ -133,6 +133,7 @@ public class WLADXZ80Dialect implements Dialect {
         config.lineParser.addKeywordSynonym(".incbin", config.lineParser.KEYWORD_INCBIN);
         config.lineParser.addKeywordSynonym(".db", config.lineParser.KEYWORD_DB);
         config.lineParser.addKeywordSynonym(".dw", config.lineParser.KEYWORD_DW);
+        config.lineParser.addKeywordSynonym(".dsb", config.lineParser.KEYWORD_DS);
         
         config.lineParser.keywordsHintingALabel.add("instanceof");
         config.lineParser.keywordsHintingALabel.add("dsb");
@@ -145,10 +146,13 @@ public class WLADXZ80Dialect implements Dialect {
         config.preProcessor.macroSynonyms.put(".endif", config.preProcessor.MACRO_ENDIF);
         config.preProcessor.MACRO_MACRO = ".macro";
         config.preProcessor.MACRO_ENDM = ".endm";
+        config.preProcessor.MACRO_REPT = ".repeat";
+        config.preProcessor.MACRO_ENDR = ".endr";
         
         config.lineParser.macroDefinitionStyle = LineParser.MACRO_MACRO_NAME_ARGS;     
         config.lineParser.macroKeywordPrecedingArguments = "args";
         config.lineParser.allowdataLinesWithoutCommas = true;
+        config.lineParser.reptIndexArgSeparator = "index";
         config.expressionParser.allowSymbolsClashingWithRegisters = true;
     }
     
@@ -254,6 +258,7 @@ public class WLADXZ80Dialect implements Dialect {
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase(".struct")) return true;
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase(".endst")) return true;
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase(".dstruct")) return true;
+        if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase(".redefine")) return true;
         
         if (enumCounter != null && tokens.size()>=1 && 
             (tokens.get(0).equalsIgnoreCase("db") ||
@@ -1060,6 +1065,57 @@ public class WLADXZ80Dialect implements Dialect {
             
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
+        
+        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase(".redefine")) {
+            tokens.remove(0);
+            
+            // This is like an equ, but with a variable that changes value throughout parsing.
+            // This only makes sense in eager execution, so, we check for that:
+            if (!config.eagerMacroEvaluation) {
+                config.error("Non final variable defined in lazy evaluation mode in " + sl);
+                return false;
+            }
+            
+            String symbolName = tokens.remove(0);
+            SourceConstant c = code.getSymbol(symbolName);
+            if (c == null) {
+                config.error("Cannot resolve eager variable named '"+symbolName+"' in " + sl);
+                return false;
+            }
+
+            
+            // If the variable was used before, evaluate it:
+            if (!c.resolveEagerly) {
+                List<String> symbols = new ArrayList<>();
+                symbols.add(symbolName);
+                config.codeBaseParser.resolveSpecificSymbolsFromString(code, symbols);
+
+                c.clearCache();
+                c.resolveEagerly = true;
+                // remove the defining statement of this symbol:
+                if (c.definingStatement != null) {
+                    c.definingStatement.source.getStatements().remove(c.definingStatement);
+                }
+            }
+            
+            Expression newValue = config.expressionParser.parse(tokens, s, previous, code);
+            if (newValue == null) {
+                config.error("Cannot parse new value expression in " + sl);
+                return false;
+            }
+            Integer value = newValue.evaluateToInteger(s, code, false, previous);
+            if (value == null) {
+                config.error("Cannot evaluate new value expression in " + sl);
+                return false;
+            }
+            Expression exp = Expression.constantExpression(value, config);
+            c.exp = exp;
+            c.clearCache();
+            
+            // these variables should not be part of the source code:
+            l.clear();
+            return true;
+        }            
         
         
         return false;
