@@ -270,12 +270,16 @@ public class Pattern {
         for(CPUOpPattern pat:replacement) {
             if (!pat.isWildcard()) {
                 CPUOp ipat = pat.instantiate(match, this, config);
-                int irepSize = ipat.sizeInBytes();
-                int n = 1;
-                if (pat.repetitionVariable != null) {
-                    n = match.variables.get(pat.repetitionVariable).evaluateToInteger(null, code, true);
+                if (ipat == null) {
+                    config.error("An optimization pattern ("+this.name+") has generated ilegal code!");
+                } else {
+                    int irepSize = ipat.sizeInBytes();
+                    int n = 1;
+                    if (pat.repetitionVariable != null) {
+                        n = match.variables.get(pat.repetitionVariable).evaluateToInteger(null, code, true);
+                    }
+                    replacementSize += n * irepSize;
                 }
-                replacementSize += n * irepSize;
             }
         }
         int spaceSaving = patternSize - replacementSize;
@@ -289,7 +293,12 @@ public class Pattern {
         int replacementTime[] = {0,0};
         for(CPUOpPattern pat:pattern) {
             if (!pat.isWildcard()) {
-                int tmp[] = pat.instantiate(match, this, config).timing();
+                CPUOp ipat = pat.instantiate(match, this, config);
+                if (ipat == null) {
+                    config.error("An optimization pattern ("+this.name+") has generated ilegal code!");
+                    continue;
+                } 
+                int tmp[] = ipat.timing();
                 int n = 1;
                 if (pat.repetitionVariable != null) {
                     n = match.variables.get(pat.repetitionVariable).evaluateToInteger(null, code, true);
@@ -304,7 +313,12 @@ public class Pattern {
         }
         for(CPUOpPattern pat:replacement) {
             if (!pat.isWildcard()) {
-                int tmp[] = pat.instantiate(match, this, config).timing();
+                CPUOp ipat = pat.instantiate(match, this, config);
+                if (ipat == null) {
+                    config.error("An optimization pattern ("+this.name+") has generated ilegal code!");
+                    continue;
+                } 
+                int tmp[] = ipat.timing();
                 int n = 1;
                 if (pat.repetitionVariable != null) {
                     n = match.variables.get(pat.repetitionVariable).evaluateToInteger(null, code, true);

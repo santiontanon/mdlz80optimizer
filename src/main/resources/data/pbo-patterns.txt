@@ -84,6 +84,7 @@ pattern: Remove unused ld ?reg,?any
 0: ld ?reg,?any
 replacement:
 constraints:
+notIn(?reg,I)
 regsNotUsedAfter(0,?reg)
 
 pattern: Replace ld a,?const with xor a
@@ -1928,6 +1929,7 @@ replacement:
 1: *
 2: ld ?reg2,?const1
 constraints:
+notIn(?reg2,I)
 regsNotUsed(1,?reg1)
 regsNotUsedAfter(2,?reg1)
 
