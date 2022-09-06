@@ -27,6 +27,7 @@ public class Tokenizer {
     public boolean allowQuestionMarksToStartSymbols = false;
     public boolean allowDotFollowedByNumberLabels = true;
     public boolean numericConstantsCanContainQoutes = false;
+    public boolean allowDashPlusLabels = false;   // for wladx (for "reusable" labels)
     
     public List<String> multilineCommentStartTokens = new ArrayList<>();
     public List<String> multilineCommentEndTokens = new ArrayList<>();
@@ -119,6 +120,14 @@ public class Tokenizer {
                     continue;
                 }
                 if (previous.equals("$") && isHexCharacter(next.charAt(0))) {
+                    // merge, as this is just a single symbol
+                    tokens.remove(tokens.size()-1);
+                    tokens.add(previous.concat(next));
+                    previous = previous.concat(next);
+                    continue;
+                }
+                if (allowDashPlusLabels && isDashPlusLabel(previous) && isDashPlusLabel(next) &&
+                    previous.charAt(0) == next.charAt(0)) {
                     // merge, as this is just a single symbol
                     tokens.remove(tokens.size()-1);
                     tokens.add(previous.concat(next));
@@ -593,4 +602,11 @@ public class Tokenizer {
         }
         return true;
     }    
+    
+    
+    public boolean isDashPlusLabelContinuation(String label1, String label2)
+    {
+        return isDashPlusLabel(label2) && label1.charAt(0) == label2.charAt(0);
+    }
+    
 }

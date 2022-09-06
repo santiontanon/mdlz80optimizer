@@ -762,9 +762,10 @@ public class ExpressionParser {
             // a negated expression:
             String name = tokens.remove(0);
 
-            if (tokens.isEmpty() || config.tokenizer.isSingleLineComment(tokens.get(0))) {
-                if (config.lineParser.allowDashPlusLabels) {
-                    // this is a wla-dx label!
+            if (tokens.isEmpty() || config.tokenizer.isSingleLineComment(tokens.get(0)) ||
+                tokens.get(0).equals(",") ||
+                config.tokenizer.isDashPlusLabelContinuation(name, tokens.get(0))) {
+                if (config.tokenizer.allowDashPlusLabels) {
                     return Expression.symbolExpression(config.dialectParser.symbolName(name, s).getLeft(), s, code, config);
                 }
             }
@@ -784,9 +785,9 @@ public class ExpressionParser {
             // might be something of the form: +1, or +(2-3)
             String name = tokens.remove(0);
 
-            if (tokens.isEmpty() || config.tokenizer.isSingleLineComment(tokens.get(0))) {
-                if (config.lineParser.allowDashPlusLabels) {
-                    // this is a wla-dx label!
+            if (tokens.isEmpty() || config.tokenizer.isSingleLineComment(tokens.get(0)) ||
+                tokens.get(0).equals(",")) {
+                if (config.tokenizer.allowDashPlusLabels) {
                     return Expression.symbolExpression(config.dialectParser.symbolName(name, s).getLeft(), s, code, config);
                 }
             }
@@ -858,17 +859,34 @@ public class ExpressionParser {
             }            
         }
         
-        if (config.lineParser.allowDashPlusLabels &&
+        if (config.tokenizer.allowDashPlusLabels &&
             !tokens.isEmpty() &&
-            (tokens.size() == 1 || config.tokenizer.isSingleLineComment(tokens.get(1)))) {
+            (tokens.size() == 1 || 
+             config.tokenizer.isSingleLineComment(tokens.get(1)) || 
+             tokens.get(1).equalsIgnoreCase(","))) {
             if (config.tokenizer.isDashPlusLabel(tokens.get(0))) {
                 // this is a wla-dx label!
-                String name = tokens.remove(0);
-                return Expression.symbolExpression(config.dialectParser.symbolName(name, s).getLeft(), s, code, config);
+                return Expression.symbolExpression(config.dialectParser.symbolName(tokens.remove(0), s).getLeft(), s, code, config);
             }
         }        
 
         config.error("expression failed to parse with token list: " + tokens);
         return null;
     }
+        
+    
+    /*
+    public Expression makeDashPlusLabel(String name, List<String> tokens, CodeStatement s, CodeBase code)
+    {
+        while(!tokens.isEmpty()) {
+            if (config.tokenizer.isDashPlusLabelContinuation(name, tokens.get(0))) {
+                name = name += tokens.remove(0);
+            } else {
+                break;
+            }
+        }
+        // this is a wla-dx label!
+        return Expression.symbolExpression(config.dialectParser.symbolName(name, s).getLeft(), s, code, config);
+    }
+    */
 }

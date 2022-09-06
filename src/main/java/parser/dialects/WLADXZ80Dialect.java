@@ -124,7 +124,7 @@ public class WLADXZ80Dialect implements Dialect {
         config.expressionParser.allowFloatingPointNumbers = true;
         config.lineParser.allowEmptyDB_DW_DD_definitions = true;
         config.lineParser.emptyDB_DW_DD_definitions_define_only_space = true;
-        config.lineParser.allowDashPlusLabels = true;
+        config.tokenizer.allowDashPlusLabels = true;
         config.eagerMacroEvaluation = true;
         config.allowWLADXSizeOfSymbols = true;
         

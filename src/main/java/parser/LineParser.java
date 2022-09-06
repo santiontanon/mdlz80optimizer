@@ -69,7 +69,6 @@ public class LineParser {
     // Pasmo allows you to call macros with less parameters than defined, just using empty strings as defaults:
     public boolean emptyStringDefaultArgumentsForMacros = false;
     public boolean allowNumberLabels = false;   // also for sjasm (for "reusable" labels)
-    public boolean allowDashPlusLabels = false;   // for wladx (for "reusable" labels)
     public boolean applyEscapeSequencesToIncludeArguments = true;
     public String macroKeywordPrecedingArguments = null;
 
@@ -207,7 +206,7 @@ public class LineParser {
             relativeTo = tmp.getRight();
         } else {
             if ((allowNumberLabels && config.tokenizer.isInteger(name)) ||
-                (allowDashPlusLabels && config.tokenizer.isDashPlusLabel(name))) {                
+                (config.tokenizer.allowDashPlusLabels && config.tokenizer.isDashPlusLabel(name))) {
             } else {
                 // if (!allowNumberLabels || !config.tokenizer.isInteger(name)) {
                 name = labelPrefix + name;
@@ -369,7 +368,7 @@ public class LineParser {
             && config.preProcessor.isMacro(token)) return false;
         if (config.tokenizer.isSymbol(token)) return true;
         if (allowNumberLabels && config.tokenizer.isInteger(token)) return true;
-        if (allowDashPlusLabels && config.tokenizer.isDashPlusLabel(token)) return true;
+        if (config.tokenizer.allowDashPlusLabels && config.tokenizer.isDashPlusLabel(token)) return true;
         return false;
     }
 
