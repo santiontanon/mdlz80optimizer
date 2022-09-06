@@ -43,12 +43,11 @@ See below for a more comprehensive list of flags.
 ```java -jar mdl.jar <input file name(s)> [options]```
 
 Several input file names can be specified, separated by spaces. In case that more than one input file name is specified, MDL will just act as if there was a master assembler file that includes them all in the specified order.
-  
 Note: all the tasks concerning generating outputs (assembler, binaries, etc.) will be executed after the optimizers are run.
 
 - ```-help```: to show this information (this is the only flag that can be used without specifying an input file).
 - ```-cpu <type>```: to select a different CPU (z80/z80msx/z80cpc/z80n/z80next/z180), where z80n and z80next are synonyms (default: z80msx).
-- ```-dialect <dialect>```: to allow parsing different assembler dialects (mdl/asmsx/asmsx-zilog/glass/sjasm/sjasmplus/tniasm/winape/pasmo/sdcc/sdasz80/macro80) (default: mdl, which supports some basic code idioms common to various assemblers).
+- ```-dialect <dialect>```: to allow parsing different assembler dialects (mdl/asmsx/asmsx-zilog/glass/sjasm/sjasmplus/tniasm/winape/pasmo/sdcc/sdasz80/macro80/wladx/wladxz80) (default: mdl, which supports some basic code idioms common to various assemblers).
                    Note that even when selecting a dialect, not all syntax of a given assembler might be supported.
 - ```-I <folder>```: adds a folder to the include search path (```-inc <folder>``` can also be used for compatibility with other assemblers).
 - ```-equ <symbol>=<value>```: defines a symbol that will exist while parsing the assembler code.
@@ -131,6 +130,9 @@ Note: all the tasks concerning generating outputs (assembler, binaries, etc.) wi
 - ```-asm+:no-label-links```: by default, labels used in expressions are rendered as links that point to the label definitions. Use this flag to deactivate such behavior if desired.
 - ```-bin <output file>```: generates an assembled binary. Use ```auto``` as the output file name to respect the filenames specified in the sourcefiles of some dialects, or to autogenerate an output name.
 - ```-tap <execution start address> <program name> <filename>```: generates a .tap file, as expected by ZX spectrum emulators. ```<execution start address>``` is the entry point of the program. It can be any expression MDL recognizes in source code, e.g., a constant like ```#a600```, a label, like ```CodeStart```, or an expression like ```myLabel+10```. ```<program name>``` is the name you want to be displayed when the program loads, e.g. ```MYGAME``` (only the first 10 characters will be displayed).
+- ```-e:s <address> <steps>```: executes the source code starting at <address> (address can be numer or a label name) for <steps> CPU time units, and displays the changed registers, memory and timing.
+- ```-e:u <address-start> <address-end>```: executes the source code starting at <address-start> until reaching <address-end>, and displays the changed registers, memory and timing.
+- ```-e:trace```: turns on step-by-step execution logging for ```-e:s``` or ```-e:u``` flags.
 
 
 ## How to use MDL
