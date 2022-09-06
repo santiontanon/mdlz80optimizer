@@ -277,7 +277,11 @@ public class LineParser {
         }
         String token = tokens.get(0);
 
-        if (isKeyword(token, KEYWORD_ORG)) {
+        if (config.dialectParser != null && config.dialectParser.recognizeIdiom(tokens, s.label, code)) {
+            // this one might return one or more statements:
+            return config.dialectParser.parseLine(tokens, l, sl, s, previous, source, code);
+        
+        } else if (isKeyword(token, KEYWORD_ORG)) {
             tokens.remove(0);
             if (parseOrg(tokens, l, sl, s, previous, source, code)) {
                 return true;
@@ -329,10 +333,6 @@ public class LineParser {
             if (parseFpos(tokens, l, sl, s, previous, source, code)) {
                 return true;
             }
-
-        } else if (config.dialectParser != null && config.dialectParser.recognizeIdiom(tokens, s.label, code)) {
-            // this one might return one or more statements:
-            return config.dialectParser.parseLine(tokens, l, sl, s, previous, source, code);
             
         } else if (config.tokenizer.isSymbol(token)) {
             // try to parseArgs it as an assembler instruction or macro call:

@@ -89,10 +89,7 @@ public class WLADXZ80Dialect implements Dialect {
     public static final String ENUM_PRE_LABEL_PREFIX = "__wladx_enum_pre_";
     public static final String ENUM_POST_LABEL_PREFIX = "__wladx_enum_post_";
     public static final String ENDE_LABEL_PREFIX = "__wladx_ende_";
-    
-    List<CodeStatement> enumStatements = new ArrayList<>();
-    List<CodeStatement> endeStatements = new ArrayList<>();
-    
+        
     boolean allowReusableLabels = true;
     HashMap<String, Integer> reusableLabelCounts = new HashMap<>();
     
@@ -113,6 +110,8 @@ public class WLADXZ80Dialect implements Dialect {
     List<WLADXSection> ramSections = new ArrayList<>();
     List<WLADXStruct> structs = new ArrayList<>();
 
+    public Integer enumCounter = null;
+    
 
     /**
      * Constructor
@@ -136,6 +135,8 @@ public class WLADXZ80Dialect implements Dialect {
         config.lineParser.addKeywordSynonym(".dw", config.lineParser.KEYWORD_DW);
         
         config.lineParser.keywordsHintingALabel.add("instanceof");
+        config.lineParser.keywordsHintingALabel.add("dsb");
+        config.lineParser.keywordsHintingALabel.add("dsw");
         
         config.preProcessor.macroSynonyms.put(".if", config.preProcessor.MACRO_IF);
         config.preProcessor.macroSynonyms.put(".else", config.preProcessor.MACRO_ELSE);
@@ -248,11 +249,19 @@ public class WLADXZ80Dialect implements Dialect {
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase(".memorymap")) return true;
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase(".endme")) return true;
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase(".ramsection")) return true;
-        if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("instanceof")) return true;
-        if (tokens.size()>=1 && label != null && label.originalName.equalsIgnoreCase("instanceof")) return true;
+        if (enumCounter == null && tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("instanceof")) return true;
+        if (enumCounter == null && tokens.size()>=1 && label != null && label.originalName.equalsIgnoreCase("instanceof")) return true;
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase(".struct")) return true;
         if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase(".endst")) return true;
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase(".dstruct")) return true;
+        
+        if (enumCounter != null && tokens.size()>=1 && 
+            (tokens.get(0).equalsIgnoreCase("db") ||
+             tokens.get(0).equalsIgnoreCase("dw") ||
+             tokens.get(0).equalsIgnoreCase("ds") ||
+             tokens.get(0).equalsIgnoreCase("dsb") ||
+             tokens.get(0).equalsIgnoreCase("dsw") ||
+             tokens.get(0).equalsIgnoreCase("instanceof"))) return true;
         return false;
     }
     
@@ -389,81 +398,6 @@ public class WLADXZ80Dialect implements Dialect {
             // ignore for now:
             // .SDSCTAG {version number}, {program name}, {program release notes}, {program author}
             return ignoreWithParameters(4, true, tokens, l, sl, s, previous, source, code);
-        }
-
-        if (tokens.size() >= 1 && tokens.get(0).equalsIgnoreCase(".enum")) {
-            tokens.remove(0);
-            
-            if (s.label != null) {
-                // if there was a label in the "phase" line, create a new one:
-                s = new CodeStatement(CodeStatement.STATEMENT_ORG, new SourceLine(sl), source, config);
-                l.add(s);
-            }
-            
-            // parse as an "org":
-            Expression exp = config.expressionParser.parse(tokens, s, previous, code);
-            if (exp == null) {
-                config.error("Cannot parse phase address in " + sl);
-                return false;
-            } 
-            enumStatements.add(s);
-            linesToKeepIfGeneratingDialectAsm.add(s);
-            
-            // Add the label before the org:
-            String phase_pre_label_name = ENUM_PRE_LABEL_PREFIX + enumStatements.size();
-            s.type = CodeStatement.STATEMENT_ORG;
-            s.org = exp;
-            s.label = new SourceConstant(phase_pre_label_name, phase_pre_label_name, 
-                                         Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, s, code, config),
-                                         s, config);
-            code.addSymbol(phase_pre_label_name, s.label);
-            auxiliaryStatementsToRemoveIfGeneratingDialectasm.add(s);
-            
-            // Add the label after the org:
-            s = new CodeStatement(CodeStatement.STATEMENT_NONE, new SourceLine(sl), source, config);
-            l.add(s);
-            String phase_post_label_name = ENUM_POST_LABEL_PREFIX + enumStatements.size();
-            s.label = new SourceConstant(phase_post_label_name, phase_post_label_name, 
-                                         Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, s, code, config),
-                                         s, config);
-            code.addSymbol(phase_post_label_name, s.label);
-            auxiliaryStatementsToRemoveIfGeneratingDialectasm.add(s);
-            
-            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
-        }
-        if (tokens.size() >= 1 && tokens.get(0).equalsIgnoreCase(".ende")) {
-            tokens.remove(0);
-            
-            if (s.label != null) {
-                // if there was a label in the "phase" line, create a new one:
-                s = new CodeStatement(CodeStatement.STATEMENT_ORG, sl, source, config);
-                l.add(s);
-                auxiliaryStatementsToRemoveIfGeneratingDialectasm.add(s);
-            }            
-
-            // restore normal mode addressing:
-            String phase_pre_label_name = ENUM_PRE_LABEL_PREFIX + enumStatements.size();
-            String phase_post_label_name = ENUM_POST_LABEL_PREFIX + enumStatements.size();
-            String dephase_label_name = ENDE_LABEL_PREFIX + enumStatements.size();
-
-            // __asmsx_phase_pre_* + (__asmsx_dephase_* - __asmsx_phase_post_*)
-            Expression exp = Expression.operatorExpression(Expression.EXPRESSION_SUM, 
-                    Expression.symbolExpression(phase_pre_label_name, s, code, config),
-                    Expression.parenthesisExpression(
-                            Expression.operatorExpression(Expression.EXPRESSION_SUB,
-                                    Expression.symbolExpression(dephase_label_name, s, code, config),
-                                    Expression.symbolExpression(phase_post_label_name, s, code, config), config), 
-                            "(", config), config);
-            
-            s.type = CodeStatement.STATEMENT_ORG;
-            s.org = exp;
-            s.label = new SourceConstant(dephase_label_name, dephase_label_name, 
-                                         Expression.symbolExpression(CodeBase.CURRENT_ADDRESS, s, code, config),
-                                         s, config);
-            code.addSymbol(dephase_label_name, s.label);
-            endeStatements.add(s);
-            linesToKeepIfGeneratingDialectAsm.add(s);
-            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
 
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase(".section")) {
@@ -831,8 +765,10 @@ public class WLADXZ80Dialect implements Dialect {
         }
         
 
-        if ((tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("instanceof")) ||
-            (tokens.size()>=1 && s.label != null && s.label.originalName.equalsIgnoreCase("instanceof"))) {
+        if (enumCounter == null &&
+            ((tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("instanceof")) ||
+             (tokens.size()>=1 && s.label != null && s.label.originalName.equalsIgnoreCase("instanceof")))) {
+            
             // instantiating a struct:
             if (s.label != null && s.label.originalName.equalsIgnoreCase("instanceof")) {
                 code.removeSymbol(s.label.name);
@@ -960,6 +896,170 @@ public class WLADXZ80Dialect implements Dialect {
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
         
+        if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase(".enum")) {
+            tokens.remove(0);
+            Expression exp = config.expressionParser.parse(tokens, s, previous, code);
+            if (exp == null) {
+                config.error("Could not parse enum address in " + sl);
+                return false;
+            }
+            if (!exp.evaluatesToIntegerConstant()) {
+                config.error("Enum address does not evaluate to a numerical constant in " + sl);
+                return false;
+            }
+            
+            enumCounter = exp.evaluateToInteger(s, code, true);
+            if (enumCounter == null) {
+                config.error("Error evaluating enum address in " + sl);
+                return false;
+            }
+            
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
+        }
+        
+        if (tokens.size()>=1 && tokens.get(0).equalsIgnoreCase(".ende")) {
+            tokens.remove(0);
+            enumCounter = null;
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
+        }
+        
+        if (enumCounter != null && tokens.size()>=1 && 
+            (tokens.get(0).equalsIgnoreCase("db") ||
+             tokens.get(0).equalsIgnoreCase("dw") ||
+             tokens.get(0).equalsIgnoreCase("ds") ||
+             tokens.get(0).equalsIgnoreCase("dsb") ||
+             tokens.get(0).equalsIgnoreCase("dsw") ||
+             tokens.get(0).equalsIgnoreCase("instanceof"))) {
+            String keyword = tokens.remove(0).toLowerCase();
+
+            if (s.label == null) {
+                config.error("label missing in enum statement in " + sl);
+                return false;
+            }
+            
+            switch(keyword) {
+                case "db":
+                    s.type = CodeStatement.STATEMENT_CONSTANT;
+                    s.label.exp = Expression.constantExpression(enumCounter, Expression.RENDER_AS_16BITHEX, config);
+                    enumCounter += 1;
+                    break;
+                    
+                case "dw":
+                    s.type = CodeStatement.STATEMENT_CONSTANT;
+                    s.label.exp = Expression.constantExpression(enumCounter, Expression.RENDER_AS_16BITHEX, config);
+                    enumCounter += 2;
+                    break;
+                    
+                case "ds":
+                case "dsb":
+                {
+                    s.type = CodeStatement.STATEMENT_CONSTANT;
+                    s.label.exp = Expression.constantExpression(enumCounter, Expression.RENDER_AS_16BITHEX, config);
+                    Expression exp = config.expressionParser.parse(tokens, s, previous, code);
+                    if (exp == null || !exp.evaluatesToIntegerConstant()) {
+                        config.error("Cannot parse space expression in " + sl);
+                        return false;
+                    }
+                    Integer space = exp.evaluateToInteger(s, code, true);
+                    if (space == null) {
+                        config.error("Cannot evaluate space expression in " + sl);
+                        return false;
+                    }
+                    enumCounter += space;
+                    break;
+                }
+                
+                case "dsw":
+                {
+                    s.type = CodeStatement.STATEMENT_CONSTANT;
+                    s.label.exp = Expression.constantExpression(enumCounter, Expression.RENDER_AS_16BITHEX, config);
+                    Expression exp = config.expressionParser.parse(tokens, s, previous, code);
+                    if (exp == null || !exp.evaluatesToIntegerConstant()) {
+                        config.error("Cannot parse space expression in " + sl);
+                        return false;
+                    }
+                    Integer space = exp.evaluateToInteger(s, code, true);
+                    if (space == null) {
+                        config.error("Cannot evaluate space expression in " + sl);
+                        return false;
+                    }
+                    enumCounter += space * 2;
+                    break;
+                }
+                
+                case "instanceof":
+                {
+                    String structName = tokens.remove(0);
+                    WLADXStruct struct = null;
+                    for(WLADXStruct struct2:structs) {
+                        if (struct2.name.equals(structName)) {
+                            struct = struct2;
+                            break;
+                        }
+                    }
+                    if (struct == null) {
+                        config.error("Unknown struct in " + sl);
+                        return false;
+                    }
+                    
+                    Expression exp = config.expressionParser.parse(tokens, s, previous, code);
+                    Integer number = null;
+                    if (exp != null) {
+                        if (!exp.evaluatesToIntegerConstant()) {
+                            config.error("Cannot evaluate count expression in " + sl);
+                            return false;
+                        }
+                        number = exp.evaluateToInteger(s, code, true);
+                        if (number == null) {
+                            config.error("Cannot evaluate count expression in " + sl);
+                            return false;
+                        }
+                    }
+
+                    s.type = CodeStatement.STATEMENT_CONSTANT;
+                    s.label.exp = Expression.constantExpression(enumCounter, Expression.RENDER_AS_16BITHEX, config);
+                    for(int count = 0;count<(number == null ? 1:number);count++) {
+                        String prefix = s.label.name + "." + (count+1);
+                        String originalPrefix = s.label.originalName + "." + (count+1);
+                        
+                        if (number == null) {
+                            prefix = s.label.name;
+                            originalPrefix = s.label.originalName;
+                        } else {
+                            CodeStatement s2 = new CodeStatement(CodeStatement.STATEMENT_CONSTANT, sl, source, config);
+                            SourceConstant c = new SourceConstant(
+                                    prefix,
+                                    originalPrefix, 
+                                    Expression.constantExpression(enumCounter, Expression.RENDER_AS_16BITHEX, config), s2, config);
+                            s2.label = c;
+                            int res = code.addSymbol(c.name, c);
+                            if (res == -1) return false;
+                            if (res == 0) s.redefinedLabel = true; 
+                            l.add(s2);
+                        }
+                        
+                        for(int i = 0;i<struct.attributeNames.size();i++) {    
+                            CodeStatement s2 = new CodeStatement(CodeStatement.STATEMENT_CONSTANT, sl, source, config);
+                            SourceConstant c = new SourceConstant(
+                                    prefix + "." + struct.rawAttributeNames.get(i),
+                                    originalPrefix + "." + struct.rawAttributeNames.get(i), 
+                                    Expression.constantExpression(enumCounter, Expression.RENDER_AS_16BITHEX, config), s2, config);
+                            s2.label = c;
+                            int res = code.addSymbol(c.name, c);
+                            if (res == -1) return false;
+                            if (res == 0) s.redefinedLabel = true; 
+                            l.add(s2);
+                            int size = struct.attributeSize.get(i);
+                            enumCounter += size;
+                        }   
+                    }
+                    
+                    break;
+                }
+            }
+            
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
+        }
         
         
         return false;

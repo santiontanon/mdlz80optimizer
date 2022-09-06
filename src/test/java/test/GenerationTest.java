@@ -41,6 +41,8 @@ public class GenerationTest {
                                                                           "data/generationtests/mdl-safetylabels2-expected.asm")); }
     @Test public void test5() throws IOException { Assert.assertTrue(test("data/generationtests/wladx-symbols.asm",
                                                                           "data/generationtests/wladx-symbols-expected.asm", "wladx")); }
+    @Test public void test6() throws IOException { Assert.assertTrue(test("data/generationtests/wladx-enum.asm",
+                                                                          "data/generationtests/wladx-enum-expected.asm", "wladx")); }
 
     private boolean test(String inputFile, String expectedOutputFile) throws IOException
     {
