@@ -1,3 +1,6 @@
+/*
+ * Author: Santiago Ontañón Villar (Brain Games)
+ */
 package parser.dialects;
 
 import org.apache.commons.lang3.StringUtils;

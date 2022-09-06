@@ -1,6 +1,5 @@
 /*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
+ * Author: Santiago Ontañón Villar (Brain Games)
  */
 package parser.dialects;
 
@@ -134,6 +133,7 @@ public class WLADXZ80Dialect implements Dialect {
         config.lineParser.addKeywordSynonym(".db", config.lineParser.KEYWORD_DB);
         config.lineParser.addKeywordSynonym(".dw", config.lineParser.KEYWORD_DW);
         config.lineParser.addKeywordSynonym(".dsb", config.lineParser.KEYWORD_DS);
+        config.lineParser.addKeywordSynonym("dsb", config.lineParser.KEYWORD_DS);
         
         config.lineParser.keywordsHintingALabel.add("instanceof");
         config.lineParser.keywordsHintingALabel.add("dsb");

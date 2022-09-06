@@ -5,7 +5,7 @@
 
 	<groupId>com.github.santiontanon</groupId>
 	<artifactId>mdl</artifactId>
-	<version>2.5dev</version>
+	<version>2.5</version>
 
 	<properties>
 		<maven.compiler.source>1.8</maven.compiler.source>
