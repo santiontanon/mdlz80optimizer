@@ -87,7 +87,7 @@ POP AF	9	F1	1	SP			[SP:SP+1]	AF,SP				true
 POP BC	9	C1	1	SP			[SP:SP+1]	BC,SP				true
 POP DE	9	D1	1	SP			[SP:SP+1]	DE,SP				true
 POP HL	9	E1	1	SP			[SP:SP+1]	HL,SP				true
-PUSH AF	11	F5	1	AF,SP				SP			[SP-2:SP-1]	true
+PUSH AF	11	F5	1	AF,SP	S,Z,H,P/V,N,C			SP			[SP-2:SP-1]	true
 PUSH BC	11	C5	1	BC,SP				SP			[SP-2:SP-1]	true
 PUSH DE	11	D5	1	DE,SP				SP			[SP-2:SP-1]	true
 PUSH HL	11	E5	1	HL,SP				SP			[SP-2:SP-1]	true

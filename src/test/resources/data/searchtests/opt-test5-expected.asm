@@ -20,7 +20,6 @@ Execute:
     ld (#c000), a
 
 loop:
-    ld bc, #ffff
     jr loop
 
 f1:

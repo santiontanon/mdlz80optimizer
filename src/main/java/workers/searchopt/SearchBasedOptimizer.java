@@ -734,6 +734,7 @@ public class SearchBasedOptimizer implements MDLWorker {
             case "otdr":
             case "halt":
             case "exx":
+            case "im":
                 config.debug("SBO: preventOptimization: unsupported instruction " + s.op.spec.getName());
                 return true;
             case "ex":
@@ -790,15 +791,17 @@ public class SearchBasedOptimizer implements MDLWorker {
         while(codeToOptimize.size() < optimization_max_block_size && line2 < f.getStatements().size()) {
             CodeStatement s = f.getStatements().get(line2);
             if (!codeToOptimize.isEmpty() && s.label != null) {
-                registersUsedAfter_previous = null;
-                config.debug("SBO: skipping optimization since we found a label.");
-                return false;
+//                registersUsedAfter_previous = null;
+//                config.debug("SBO: skipping optimization since we found a label.");
+//                return false;
+                break;
             }
             if (s.op != null) {
                 if (preventOptimization(s, code)) {
-                    registersUsedAfter_previous = null;
-                    config.debug("SBO: skipping optimization since we found a yet unsupported case.");
-                    return false;
+                    break;
+//                    registersUsedAfter_previous = null;
+//                    config.debug("SBO: skipping optimization since we found a yet unsupported case.");
+//                    return false;
                 }
                 codeToOptimize.add(s);
                 codeToOptimizeSize += s.op.spec.sizeInBytes;
@@ -811,6 +814,8 @@ public class SearchBasedOptimizer implements MDLWorker {
             }
             line2++;
         }
+        
+        if (codeToOptimize.isEmpty()) return false;
         
         config.debug("SBO: Optimizing from line " + f.getStatements().get(line).op + "\t\tknowing: " + knownRegisterValues);
 //        config.info("SBO: Optimizing from line " + f.getStatements().get(line).op + "\t\tknowing: " + knownRegisterValues);
