@@ -271,15 +271,17 @@ public class PrecomputedTestCaseGeneratorForOptimization implements PrecomputedT
         memory.clearWriteProtections();
         
         // Set the goal register/flag values (consider only the 8bit ones):
-        List<CPUConstants.RegisterNames> goalRegisters8bit = new ArrayList<>();
+        // Also consider PC, as a special case
+        List<CPUConstants.RegisterNames> goalRegistersToConsider = new ArrayList<>();
         for(CPUConstants.RegisterNames reg:goalRegisters) {
-            if (CPUConstants.is8bitRegister(reg)) goalRegisters8bit.add(reg);
+            if (CPUConstants.is8bitRegister(reg) ||
+                reg == CPUConstants.RegisterNames.PC) goalRegistersToConsider.add(reg);
         }
-        test.goalRegisters = new CPUConstants.RegisterNames[goalRegisters8bit.size()];
-        test.goalRegisterValues = new int[goalRegisters8bit.size()];
-        for(int i = 0;i<goalRegisters8bit.size();i++) {
-            test.goalRegisters[i] = goalRegisters8bit.get(i);
-            test.goalRegisterValues[i] = z80.getRegisterValue(goalRegisters8bit.get(i));
+        test.goalRegisters = new CPUConstants.RegisterNames[goalRegistersToConsider.size()];
+        test.goalRegisterValues = new int[goalRegistersToConsider.size()];
+        for(int i = 0;i<goalRegistersToConsider.size();i++) {
+            test.goalRegisters[i] = goalRegistersToConsider.get(i);
+            test.goalRegisterValues[i] = z80.getRegisterValue(goalRegistersToConsider.get(i));
         }
         test.goalFlags = new int[goalFlags.size()];
         test.goalFlagValues = new boolean[goalFlags.size()];

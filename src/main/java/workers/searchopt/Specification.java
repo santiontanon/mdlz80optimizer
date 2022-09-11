@@ -13,6 +13,7 @@ import code.SourceConstant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import org.apache.commons.lang3.tuple.Pair;
 import util.microprocessor.Z80.CPUConstants;
 
 /**
@@ -39,6 +40,7 @@ public class Specification {
     public List<Integer> allowed8bitConstants = new ArrayList<>();
     public List<Integer> allowed16bitConstants = new ArrayList<>();
     public List<Integer> allowedOffsetConstants = new ArrayList<>();
+    public List<Pair<Integer, Expression>> allowedJumpTargets = new ArrayList<>();
     
     public List<InputParameter> parameters = new ArrayList<>();
     public List<SpecificationExpression> startState = new ArrayList<>();

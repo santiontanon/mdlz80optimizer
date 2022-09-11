@@ -69,6 +69,9 @@ public class Help implements MDLWorker {
     public boolean work(CodeBase code) {
         String docString = config.docString;
         if (config.display_simple_help) docString = config.simpleDocString;
+        if (config.display_nothing_to_do_warning) {
+            config.warn("Nothing to do. Please specify some task for MDL to do.");            
+        }
         if (showMDTags) {
             config.info(docString);
         } else {

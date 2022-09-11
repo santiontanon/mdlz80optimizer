@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.StringTokenizer;
+import org.apache.commons.lang3.tuple.Pair;
 import parser.SourceLine;
 import util.microprocessor.Z80.CPUConstants;
 import util.microprocessor.Z80.CPUConstants.RegisterNames;
@@ -1355,8 +1356,10 @@ public class SBOCandidate {
     {
         if (spec.allowedOps.contains("jp")) {
             for(String flag:new String[]{"", "z,", "po,", "pe,", "p,", "nz,", "nc,", "m,", "c,"}) {
-                String line = "jp " + flag + "$";
-                if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;
+                for(Pair<Integer, Expression> target: spec.allowedJumpTargets) {
+                    String line = "jp " + flag + target.getLeft();
+                    if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;
+                }
             }
             if (!precomputeOp("jp hl", candidates, allDependencies, code, config)) return false;
             if (!precomputeOp("jp ix", candidates, allDependencies, code, config)) return false;
@@ -1364,12 +1367,18 @@ public class SBOCandidate {
         }
         if (spec.allowedOps.contains("jr")) {
             for(String flag:new String[]{"", "z,", "nz,", "nc,", "c,"}) {
-                String line = "jr " + flag + "$";
-                if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;
+                for(Pair<Integer, Expression>  target: spec.allowedJumpTargets) {
+                    String line = "jr " + flag + target.getLeft();
+                    if (!precomputeOp(line, candidates, allDependencies, code, config)) {
+                        return false;
+                    }
+                }
             }
         }
         if (spec.allowedOps.contains("djnz")) {
-            if (!precomputeOp("djnz $", candidates, allDependencies, code, config)) return false;
+            for(Pair<Integer, Expression>  target: spec.allowedJumpTargets) {
+                if (!precomputeOp("djnz " + target.getLeft(), candidates, allDependencies, code, config)) return false;
+            }
         }
         return true;
     }

@@ -256,7 +256,7 @@ public class PrecomputedTestCase {
     public String toString()
     {
         // This is just a debugging function, which gets changed to print
-        // whichever informatino is useful whenever I am debugging.
+        // whichever information is useful whenever I am debugging.
         /*
         CPUConstants.RegisterNames startRegisters[] = null;
         int startRegisterValues[] = null;

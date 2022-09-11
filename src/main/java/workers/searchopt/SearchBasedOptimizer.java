@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
+import org.apache.commons.lang3.tuple.Pair;
 import parser.SourceLine;
 import util.microprocessor.IMemory;
 import util.microprocessor.PlainZ80IO;
@@ -814,7 +815,7 @@ public class SearchBasedOptimizer implements MDLWorker {
         config.debug("SBO: Optimizing from line " + f.getStatements().get(line).op + "\t\tknowing: " + knownRegisterValues);
 //        config.info("SBO: Optimizing from line " + f.getStatements().get(line).op + "\t\tknowing: " + knownRegisterValues);
         
-//        config.debug("SBO: Optimizing lines " + line + " -> " + line2);
+        config.debug("SBO: Optimizing lines " + line + " -> " + line2);
         for(CodeStatement s:codeToOptimize) {
             config.debug("    " + s);
         }
@@ -835,15 +836,13 @@ public class SearchBasedOptimizer implements MDLWorker {
             spec.maxOps = optimization_max_block_size + 1;
             spec.maxSimulationTime = Math.max(codeToOptimizeTime[0], codeToOptimizeTime[1]);
         }
-        spec.allowedOps.remove("jp");
-        spec.allowedOps.remove("jr");
-        spec.allowedOps.remove("djnz");
         
         // - Find which registers we can use during search:
         List<RegisterNames> modifiedRegisters = findModifiedRegisters(codeToOptimize, f, code);
         List<RegisterNames> inputRegisters = findUsedRegisters(codeToOptimize, f, code);
         List<RegisterNames> registersUsedAfter = findRegistersUsedAfter(codeToOptimize, f, code, spec.allowGhostRegisters, modifiedRegisters, inputRegisters);
         boolean goalRequiresSettingMemory = false;
+        boolean allowJumps = false;
         registersUsedAfter_previous = registersUsedAfter;
         List<RegisterNames> registersNotUsedAfter = findRegistersNotUsedAfter(registersUsedAfter, f, code, spec.allowGhostRegisters);
         for(RegisterNames reg:modifiedRegisters) {
@@ -911,7 +910,26 @@ public class SearchBasedOptimizer implements MDLWorker {
                     }
                 }
             }
+
+            // We do not allow blocks with jumps yet as these are complex to optimize...
+//            if (s.op.spec.isJump) {
+//                // We need to check the PC register:
+//                registersUsedAfter.add(RegisterNames.PC);
+//                allowJumps = true;          
+//                Integer value = s.op.getTargetJumpExpression().evaluateToInteger(s, code, true);
+//                if (value != null) {
+//                    spec.allowedJumpTargets.add(Pair.of(value, s.op.getTargetJumpExpression()));
+//                }
+//            }
         }
+        
+        spec.allowedOps.remove("jr");
+        spec.allowedOps.remove("djnz");            
+        if (!allowJumps) {
+            // We only support absolute jumps for now
+            spec.allowedOps.remove("jp");
+        }
+
         // to do: find offset constants (and support memory access)
 //        System.out.println("    - Allowed 8bit Constants: " + spec.allowed8bitConstants);
 //        System.out.println("    - Allowed 16bit Constants: " + spec.allowed16bitConstants);

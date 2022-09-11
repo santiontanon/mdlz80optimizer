@@ -114,6 +114,7 @@ public class MDLConfig {
     
     public boolean help_triggered = false;
     public boolean display_simple_help = false;
+    public boolean display_nothing_to_do_warning = false;
 
     // Symbols defined via flags:
     public List<String> symbolDefinitions = new ArrayList<>();
@@ -613,6 +614,7 @@ public class MDLConfig {
         if (!somethingToDo()) {
             help_triggered = true;
             display_simple_help = true;
+            display_nothing_to_do_warning = true;
         }
                 
         return verify();
