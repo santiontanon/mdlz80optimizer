@@ -20,7 +20,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
-import org.apache.commons.lang3.tuple.Pair;
 import parser.SourceLine;
 import util.microprocessor.IMemory;
 import util.microprocessor.PlainZ80IO;
@@ -87,7 +86,9 @@ public class SearchBasedOptimizer implements MDLWorker {
     
     // Cache to accelerate computations:
     List<RegisterNames> registersUsedAfter_previous = null;
-        
+
+    SequenceFilter filter = null;
+    
     
     public SearchBasedOptimizer(MDLConfig a_config)
     {
@@ -293,12 +294,10 @@ public class SearchBasedOptimizer implements MDLWorker {
             return false;
         }
         
-        SequenceFilter filter = new SequenceFilter(internalConfig);
+        if (filter == null) filter = new SequenceFilter(internalConfig);
         filter.setSpecification(spec);
         try {
-            filter.loadEquivalences("data/equivalencies-l1.txt");
-            filter.loadEquivalences("data/equivalencies-l2-to-l1.txt");
-            filter.loadEquivalences("data/equivalencies-l2.txt");
+            filter.loadEquivalences(new String[]{"data/equivalencies-l1.txt", "data/equivalencies-l2-to-l1.txt", "data/equivalencies-l2.txt"});
         }catch(Exception e) {
             config.error("Could not load equivalences files...: " + e.getMessage());
             config.error(Arrays.toString(e.getStackTrace()));
@@ -1008,10 +1007,10 @@ public class SearchBasedOptimizer implements MDLWorker {
         }
         
         // Search:
-        SequenceFilter filter = new SequenceFilter(internalConfig);
+        if (filter == null) filter = new SequenceFilter(internalConfig);
         filter.setSpecification(spec);
         try {
-            filter.loadEquivalences("data/equivalencies-l1.txt");
+            filter.loadEquivalences(new String[]{"data/equivalencies-l1.txt"});
         } catch(Exception e) {
             config.error("Could not load equivalences files...: " + e.getMessage());
             config.error(Arrays.toString(e.getStackTrace()));

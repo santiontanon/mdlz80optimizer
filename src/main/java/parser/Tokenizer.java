@@ -595,7 +595,7 @@ public class Tokenizer {
     
     
     public boolean isDashPlusLabel(String label) {
-        if (label.isBlank()) return false;
+        if (isBlank(label)) return false;
         for(int i = 0;i<label.length();i++) {
             if (label.charAt(i) != '-' && label.charAt(i) != '+') return false;
             if (i > 0 && label.charAt(i) != label.charAt(i-1)) return false;
@@ -608,5 +608,12 @@ public class Tokenizer {
     {
         return isDashPlusLabel(label2) && label1.charAt(0) == label2.charAt(0);
     }
+ 
     
+    // String.isBlank was implemented only after Java 11. Since we want MDL to
+    // run on Java 8, here is a reimplementation:
+    public static boolean isBlank(String text) {
+        if (text == null) return true;
+        return text.trim().equals("");
+    }    
 }

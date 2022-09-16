@@ -27,6 +27,7 @@ public class SequenceFilter {
     Specification spec = null;
     List<CPUOpDependency> allDependencies = null;
     
+    String equivalencesLoaded[] = null;
     HashMap<String, List<SequenceEquivalence>> equivalences = new HashMap<>();
     
     public SequenceFilter(MDLConfig a_config) 
@@ -197,38 +198,57 @@ public class SequenceFilter {
     
     
     
-    public boolean loadEquivalences(String fileName) throws Exception
+    public boolean loadEquivalences(String []fileNames) throws Exception
     {
-        BufferedReader br = Resources.asReader(fileName);
-        
-        while(true) {
-            String line = br.readLine();
-            if (line == null) break;
-            String columns[] = line.split("\t");
-            String seq1 = columns[0];
-            String seq2 = columns[1];
-            String flagStr = (columns.length >= 3 ? columns[2]:"");
-            
-            // parse sequences:
-            List<SBOCandidate> l1 = parseSequence(seq1, allDependencies, config);
-            if (l1 == null) {
-                config.error("SequenceFilter: cannot parse " + seq1);
-                return false;
-            }
-            List<SBOCandidate> l2 = parseSequence(seq2, allDependencies, config);
-            if (l2 == null) {
-                config.error("SequenceFilter: cannot parse " + seq2);
-                return false;
-            }
-            List<String> flags = new ArrayList<>();
-            for(String flag:flagStr.split(",")) {
-                flag = flag.trim();
-                if (!flag.isEmpty()) {
-                    flags.add(flag);
+        if (equivalencesLoaded != null) {
+            if (equivalencesLoaded.length == fileNames.length) {
+                boolean match = true;
+                for(int i = 0;i<fileNames.length;i++) {
+                    if (!equivalencesLoaded[i].equals(fileNames[i])) {
+                        match = false;
+                        break;
+                    }
+                }
+                if (match) {
+                    // It's the same equivalences we already have loaded
+                    return true;
                 }
             }
-            
-            addEquivalence(l1, l2, flags);
+        }
+        equivalencesLoaded = fileNames;
+        
+        for(String fileName:fileNames) {
+            BufferedReader br = Resources.asReader(fileName);
+
+            while(true) {
+                String line = br.readLine();
+                if (line == null) break;
+                String columns[] = line.split("\t");
+                String seq1 = columns[0];
+                String seq2 = columns[1];
+                String flagStr = (columns.length >= 3 ? columns[2]:"");
+
+                // parse sequences:
+                List<SBOCandidate> l1 = parseSequence(seq1, allDependencies, config);
+                if (l1 == null) {
+                    config.error("SequenceFilter: cannot parse " + seq1);
+                    return false;
+                }
+                List<SBOCandidate> l2 = parseSequence(seq2, allDependencies, config);
+                if (l2 == null) {
+                    config.error("SequenceFilter: cannot parse " + seq2);
+                    return false;
+                }
+                List<String> flags = new ArrayList<>();
+                for(String flag:flagStr.split(",")) {
+                    flag = flag.trim();
+                    if (!flag.isEmpty()) {
+                        flags.add(flag);
+                    }
+                }
+
+                addEquivalence(l1, l2, flags);
+            }
         }
         
 //        System.out.println("equivalences: " + equivalences.size());

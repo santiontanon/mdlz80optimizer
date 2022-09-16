@@ -161,7 +161,7 @@ public class PrecomputedTestCaseGeneratorForOptimization implements PrecomputedT
     
     @Override
     public PrecomputedTestCase generateTestCase(MDLConfig config) throws ProcessorException {
-        PrecomputedTestCase test = new PrecomputedTestCase();        
+        PrecomputedTestCase test = new PrecomputedTestCase();
         if (spec.allowRamUse) test.trackMemoryWrites = true;
 
         test.startRegisters = startRegisters;
