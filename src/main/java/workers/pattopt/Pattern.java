@@ -1015,8 +1015,11 @@ public class Pattern {
             }
             case "evenPushPopsSPNotRead":
             {
-                // Checks that both there is the same number of pushes than pops
-                // and that SP is not explicitly read, like "add hl,sp"
+                // Checks that:
+                // - there is the same number of pushes than pops.
+                // - SP is not explicitly read, like "add hl,sp".
+                // - If SP had been assigned to IX/IY before, that memory
+                //   pointed to by IX/IY is not read/written.
                 int idx = Integer.parseInt(constraint.args[0]);
                 List<CodeStatement> statements = new ArrayList<>();
                 if (match.map.containsKey(idx)) {
@@ -1063,11 +1066,33 @@ public class Pattern {
                             maybeLogOptimization(match, pbo, f.getStatements().get(index_to_display_message_on).sl);
                             return false;
                         }
+
+                        if (pbo.statementsWhereIXIsSP == null) {
+                            pbo.searchStatementsWhereIXIYAreSP(code);
+                        }
+                        for(Expression arg:s.op.args) {
+                            if (arg.isIXIndirection()) {
+                                if (pbo.statementsWhereIXIsSP.contains(s)) {
+                                    // the instruction accesses memory pointed to by IX,
+                                    // and IX at this point is acting as SP
+                                    maybeLogOptimization(match, pbo, f.getStatements().get(index_to_display_message_on).sl);
+                                    return false;
+                                }
+                            } else  if (arg.isIYIndirection()) {
+                                if (pbo.statementsWhereIYIsSP.contains(s)) {
+                                    // the instruction accesses memory pointed to by IX,
+                                    // and IX at this point is acting as SP
+                                    maybeLogOptimization(match, pbo, f.getStatements().get(index_to_display_message_on).sl);
+                                    return false;
+                                }
+                            }
+                        }
+                        
                     }
                     // if at any point, there are more pops than push, stop:
                     if (stackMovements > 0) return false;
                 }
-                if (stackMovements != 0) return false;
+                if (stackMovements != 0) return false;                
                 break;
             }
 

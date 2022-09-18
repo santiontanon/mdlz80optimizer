@@ -29,7 +29,9 @@
 ; - notIn(variable, value1, ..., valuen)
 ; - regpair(regpair,regpair_high,regpair_low)
 ; - reachableByJr(#, label)
-; - evenPushPopsSPNotRead(#)
+; - evenPushPopsSPNotRead(#): ensures that in the block of code represented by #, there is the same number of
+;                             'push's than 'pop's, and also that SP is not used. It also checks to see if
+;                             SP had been assigned to IX/IY and used there (common in SDCC-generated code).
 ; - atLeastOneCPUOp(#)
 ; - noStackArguments(label): ensures that the function "label" does not take arguments from the stack.
 ; - memoryNotWritten(#, exp): ensures the memory location pointed to by exp is not written in block #. 

@@ -1125,6 +1125,33 @@ public class Expression {
     }
 
     
+    public boolean isIXIndirection() {
+        if (type != EXPRESSION_PARENTHESIS) return false;
+        Expression exp = args.get(0);
+        if (exp.containsRegister("ix")) return true;
+        return false;
+    }
+
+
+    public boolean isIYIndirection() {
+        if (type != EXPRESSION_PARENTHESIS) return false;
+        Expression exp = args.get(0);
+        if (exp.containsRegister("iy")) return true;
+        return false;
+    }
+    
+    
+    public boolean containsRegister(String register)
+    {
+        if (isRegister() && this.registerOrFlagName.equalsIgnoreCase(register)) return true;
+        if (args == null) return false;
+        for(Expression arg:args) {
+            if (arg.containsRegister(register)) return true;
+        }
+        return false;
+    }
+    
+    
     public boolean isRegister() {
         if (type != EXPRESSION_REGISTER_OR_FLAG) {
             return false;
@@ -1132,6 +1159,14 @@ public class Expression {
         return CodeBase.isRegister(registerOrFlagName);
     }
 
+    
+    public boolean isRegister(String register) {
+        if (type != EXPRESSION_REGISTER_OR_FLAG) {
+            return false;
+        }
+        return registerOrFlagName.equalsIgnoreCase(register);
+    }
+    
     
     public boolean is8bitRegister() {
         if (type != EXPRESSION_REGISTER_OR_FLAG) {

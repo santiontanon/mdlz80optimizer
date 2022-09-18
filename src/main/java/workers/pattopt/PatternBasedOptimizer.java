@@ -13,7 +13,10 @@ import code.CodeBase;
 import code.SourceFile;
 import code.CodeStatement;
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import util.Resources;
 import workers.MDLWorker;
 
@@ -47,6 +50,9 @@ public class PatternBasedOptimizer implements MDLWorker {
     // optimizations are still safe:
     List<EqualityConstraint> equalitiesToMaintain = new ArrayList<>();
     public boolean alreadyShownAPotentialOptimization = false;
+    
+    HashSet<CodeStatement> statementsWhereIXIsSP = null;
+    HashSet<CodeStatement> statementsWhereIYIsSP = null;
     
     List<PatternMatch> appliedOptimizations = new ArrayList<>();
 
@@ -413,6 +419,8 @@ public class PatternBasedOptimizer implements MDLWorker {
 
             if (bestPatt != null && 
                 bestPatt.apply(f, bestMatch, code, equalitiesToMaintain)) {
+                statementsWhereIXIsSP = null;
+                statementsWhereIYIsSP = null;
                 if (config.isInfoEnabled()) {
                     int bytesSaved = bestPatt.getSpaceSaving(bestMatch, code);
                     String timeSavedString = bestPatt.getTimeSavingString(bestMatch, code);
@@ -481,6 +489,103 @@ public class PatternBasedOptimizer implements MDLWorker {
             }
         }
         return false;
+    }
+    
+    /*
+    - Search for occurrences of "ld ix, 0", "add ix, sp" (and the same for "iy")
+    - Then records the set of instructions for which ix retains the value of sp
+    */
+    public void searchStatementsWhereIXIYAreSP(CodeBase code)
+    {
+        statementsWhereIXIsSP = new LinkedHashSet<>();
+        statementsWhereIYIsSP = new LinkedHashSet<>();
+        
+        for(SourceFile f:code.getSourceFiles()) {
+            for(CodeStatement s:f.getStatements()) {
+                if (s.op != null) {
+                    CodeStatement s2 = SPAssignedToRegister(s, "ix", code);
+                    if (s2 != null) {
+                        config.debug("searchStatementsWhereIXIYAreSP ix match at " + s.sl);
+                        markSPAssignedToRegisterStartingFrom(s2, "ix", statementsWhereIXIsSP, code);
+                    } else {
+                        s2 = SPAssignedToRegister(s, "iy", code);
+                        if (s2 != null) {
+                            config.debug("searchStatementsWhereIXIYAreSP iy match at " + s.sl);
+                            markSPAssignedToRegisterStartingFrom(s2, "iy", statementsWhereIYIsSP, code);
+                        }
+                    }
+                }
+            }
+        }
+//        for(CodeStatement s:statementsWhereIXIsSP) {
+//            config.info("ix: " + s.sl);
+//        }
+//        for(CodeStatement s:statementsWhereIYIsSP) {
+//            config.info("iy: " + s.sl);
+//        }
+    }
+    
+    
+    public CodeStatement SPAssignedToRegister(CodeStatement s, String register, CodeBase code)
+    {
+        if (!s.op.spec.getName().equalsIgnoreCase("ld") ||
+            !s.op.args.get(0).isRegister(register) ||
+            !s.op.args.get(1).evaluatesToNumericConstant()) {
+            return null;
+        }
+        Integer v = s.op.args.get(1).evaluateToInteger(s, code, true);
+        if (v != 0) return null;
+        
+        while(true) {
+            s = s.source.getNextStatementTo(s, code);
+            if (s == null) return null;
+            if (s.label != null) return null;
+            if (s.op != null) {
+                if (s.op.spec.getName().equalsIgnoreCase("add") &&
+                    s.op.args.get(0).isRegister(register) &&
+                    s.op.args.get(1).isRegister("sp")) {
+                    return s.source.getNextStatementTo(s, code);
+                }
+            } else {
+                if (!s.isEmptyAllowingComments()) return null;
+            }
+        }
+    }
+    
+    
+    public void markSPAssignedToRegisterStartingFrom(CodeStatement s, String register, HashSet<CodeStatement> set, CodeBase code)
+    {
+        List<CodeStatement> open = new ArrayList<>();
+        open.add(s);
+        
+        while(!open.isEmpty()) {
+            s = open.remove(0);
+            if (s.op != null) {
+                
+                // Check for "pop register" or "ld register, ???"
+                if (s.op.spec.getName().equalsIgnoreCase("pop") &&
+                    s.op.args.get(0).isRegister(register)) {
+                    continue;
+                }
+                if (s.op.spec.getName().equalsIgnoreCase("ld") &&
+                    s.op.args.get(0).isRegister(register)) {
+                    continue;
+                }
+                
+                set.add(s);
+                List<Pair<CodeStatement, List<CodeStatement>>> next_l = s.source.nextExecutionStatements(s, true, null, code);
+                if (next_l != null) {
+                    for(Pair<CodeStatement, List<CodeStatement>> next:next_l) {
+                        open.add(next.getLeft());
+                    }
+                }
+            } else {
+                if (s.type == CodeStatement.STATEMENT_NONE) {
+                    s = s.source.getNextStatementTo(s, code);
+                    open.add(s);
+                }
+            }
+        }
     }
     
     
