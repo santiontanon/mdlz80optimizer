@@ -2,6 +2,7 @@
 ; File Created by SDCC : free open source ANSI-C Compiler
 ; Version 3.9.0 #11195 (Mac OS X x86_64)
 ;--------------------------------------------------------
+    .allow_undocumented
 	.module graphics
 	.optsdcc -mz80
 ;--------------------------------------------------------

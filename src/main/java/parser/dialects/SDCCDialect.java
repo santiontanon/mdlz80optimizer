@@ -107,6 +107,7 @@ public class SDCCDialect implements Dialect {
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase(".optsdcc")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase(".globl")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase(".area")) return true;
+        if (tokens.size() >= 1 && tokens.get(0).equalsIgnoreCase(".allow_undocumented")) return true;
         return false;
     }
     
@@ -222,6 +223,11 @@ public class SDCCDialect implements Dialect {
             }            
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
+        if (tokens.size() >= 1 && tokens.get(0).equalsIgnoreCase(".allow_undocumented")) {
+            linesToKeepIfGeneratingDialectAsm.add(sl);
+            tokens.remove(0);
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
+        }        
 
         return false;
     }        
