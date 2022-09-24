@@ -6,6 +6,7 @@
 package workers.searchopt;
 
 import cl.MDLConfig;
+import cl.MDLLogger;
 import cl.OptimizationResult;
 import code.CPUOp;
 import code.CPUOpDependency;
@@ -944,7 +945,13 @@ public class SearchBasedOptimizer implements MDLWorker {
         List<Integer> flagsUsedAfter = findFlagsUsedAfter(codeToOptimize, f, code);
         config.debug("    - Input registers: " + inputRegisters);
         config.debug("    - Goal registers: " + registersUsedAfter);
-        config.debug("    - Goal flags: " + flagsUsedAfter);
+        if (config.logger.willBeLogged(MDLLogger.DEBUG)) {
+            List<String> flagsUsedAfterNames = new ArrayList<>();
+            for(Integer flag:flagsUsedAfter) {
+                flagsUsedAfterNames.add(CPUConstants.flagName(flag));
+            }
+            config.debug("    - Goal flags: " + flagsUsedAfterNames);
+        }
 
         // Start State:
         for(String reg:knownRegisterValues.keySet()) {
@@ -1295,13 +1302,15 @@ public class SearchBasedOptimizer implements MDLWorker {
         for(Integer flag:new int[]{ CPUConstants.flag_C, CPUConstants.flag_N, 
                                     CPUConstants.flag_PV, CPUConstants.flag_H, 
                                     CPUConstants.flag_Z, CPUConstants.flag_S}) {
-            for(CodeStatement s:l) {
+//            for(CodeStatement s:l) {
+                CodeStatement s = l.get(l.size()-1);
                 Boolean notUsed = Pattern.flagNotUsedAfter(s, CPUConstants.flagName(flag), f, code);
+//                System.out.println("    flag: " + CPUConstants.flagName(flag) + ": " + notUsed);
                 if (notUsed == null || notUsed == false) {
                     flags.add(flag);
-                    break;
+//                    break;
                 }
-            }
+//            }
         }
         
         

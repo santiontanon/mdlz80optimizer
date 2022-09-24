@@ -56,6 +56,12 @@ public class MDLLogger {
     }
     
     
+    public boolean willBeLogged(int level)
+    {
+        return level >= minLevelToLog;
+    }
+    
+    
     public void useColors(boolean val) 
     {
         if (val) {
