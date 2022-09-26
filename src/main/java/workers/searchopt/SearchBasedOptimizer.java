@@ -862,7 +862,6 @@ public class SearchBasedOptimizer implements MDLWorker {
             String regName = CPUConstants.registerName(reg);
             if (!spec.allowedRegisters.contains(regName)) spec.allowedRegisters.add(regName);
         }
-//        System.out.println("    - Allowed Registers: " + spec.allowedRegisters);
                 
         // - Find the set of constants used in the code:
         spec.allowed8bitConstants.clear();
@@ -1226,6 +1225,11 @@ public class SearchBasedOptimizer implements MDLWorker {
             for(RegisterNames reg:CPUConstants.eightBitRegisters) {
                 if (!allowGhostRegisters && CPUConstants.isGhostRegister(reg)) continue;
                 if (reg == RegisterNames.R) continue;
+                if (reg == RegisterNames.I) {
+                    // consider "I" as always used, as we could be in IM 2 mode
+                    registers.add(reg);
+                    continue;
+                }
                 CodeStatement s = l.get(l.size()-1);
                 Boolean notUsed = Pattern.regNotUsedAfter(s, CPUConstants.registerName(reg), f, code);
                 if (notUsed == null || notUsed == false) {
@@ -1238,6 +1242,11 @@ public class SearchBasedOptimizer implements MDLWorker {
             for(RegisterNames reg:CPUConstants.eightBitRegisters) {
                 if (!allowGhostRegisters && CPUConstants.isGhostRegister(reg)) continue;
                 if (reg == RegisterNames.R) continue;
+                if (reg == RegisterNames.I) {
+                    // consider "I" as always used, as we could be in IM 2 mode
+                    registers.add(reg);
+                    continue;
+                }
                 boolean check = false, used = false;
                 if (modifiedRegisters.contains(reg)) {
                     // - If a register is in "modifiedRegisters" we need to calculate from scratch again

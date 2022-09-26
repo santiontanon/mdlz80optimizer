@@ -59,14 +59,15 @@ public class SearchBasedOptimizerTest {
     @Test public void test14() throws IOException { test("data/searchtests/opt-test14.asm", 
               new String[]{"data/searchtests/opt-test14-expected.asm", "data/searchtests/opt-test14-expected2.asm"}); }
     @Test public void test15() throws IOException { testZ80Next("data/searchtests/opt-test15.asm", 
-              new String[]{"data/searchtests/opt-test15-expected.asm"}); }
-    
-    
+              new String[]{"data/searchtests/opt-test15-expected.asm"}); }    
     // This is a test to optimize jumps. I decided not to support blocks with jumps, since they
     // are problematic, so, this test is commented out for now (it will not pass):
 //    @Test public void test16() throws IOException { test("data/searchtests/opt-test16.asm", 
 //              new String[]{"data/searchtests/opt-test16-expected.asm"}); }
+    @Test public void test17() throws IOException { testZ80Next("data/searchtests/opt-test17.asm", 
+              new String[]{"data/searchtests/opt-test17-expected.asm"}); }
 
+    
             
     private void test(String inputFile, String expectedOutputFiles[]) throws IOException
     {

@@ -38,8 +38,8 @@ public class SearchBasedGeneratorTest {
     // So, we don't want to do it every time MDL is re-build. Just make sure these tests are re-run before
     // any new release.
     @Test public void test0() throws IOException { test("data/searchtests/test0.txt", "data/searchtests/test0-expected.asm"); }
-//    @Test public void test1() throws IOException { test("data/searchtests/test1.txt", "data/searchtests/test1-expected.asm"); }
-//    @Test public void test1b() throws IOException { test("data/searchtests/test1b.txt", new String[]{"data/searchtests/test1b-expected.asm", "data/searchtests/test1b-expected2.asm"}); }
+    @Test public void test1() throws IOException { test("data/searchtests/test1.txt", "data/searchtests/test1-expected.asm"); }
+    @Test public void test1b() throws IOException { test("data/searchtests/test1b.txt", new String[]{"data/searchtests/test1b-expected.asm", "data/searchtests/test1b-expected2.asm"}); }
 //    @Test public void test2() throws IOException { test("data/searchtests/test2.txt", "data/searchtests/test2-expected.asm"); }
 //    @Test public void test2b() throws IOException { test("data/searchtests/test2b.txt", (String[])null); }
 //    @Test public void test2c() throws IOException { test("data/searchtests/test2c.txt", "data/searchtests/test2c-expected.asm"); }
@@ -49,6 +49,8 @@ public class SearchBasedGeneratorTest {
 //    @Test public void test5b() throws IOException { test("data/searchtests/test5b.txt", "data/searchtests/test5b-expected.asm"); }
 //    @Test public void test6() throws IOException { test("data/searchtests/test6.txt", "data/searchtests/test6-expected.asm"); }
 //    @Test public void test7() throws IOException { test("data/searchtests/test7.txt", "data/searchtests/test7-expected.asm"); }
+    
+    // test8 cannot be passed yet due to limitations with "jr/jp" generation
 //    @Test public void test8() throws IOException { test("data/searchtests/test8.txt", "data/searchtests/test8-expected.asm"); }
 //    @Test public void test9() throws IOException { test("data/searchtests/test9.txt", "data/searchtests/test9-expected.asm"); }
 //    @Test public void test10() throws IOException { test("data/searchtests/test10.txt", "data/searchtests/test10-expected.asm"); }

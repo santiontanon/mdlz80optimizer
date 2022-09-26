@@ -100,7 +100,7 @@ public class CPUConstants {
         RegisterNames.H_ALT, RegisterNames.L_ALT,
         RegisterNames.IXH, RegisterNames.IXL,
         RegisterNames.IYH, RegisterNames.IYL,
-        RegisterNames.R
+        RegisterNames.R, RegisterNames.I
     };        
 
     
@@ -115,7 +115,7 @@ public class CPUConstants {
         RegisterNames.H_ALT, RegisterNames.L_ALT,
         RegisterNames.IXH, RegisterNames.IXL,
         RegisterNames.IYH, RegisterNames.IYL,
-        RegisterNames.R
+        RegisterNames.R, RegisterNames.I
     };        
 
     static {
