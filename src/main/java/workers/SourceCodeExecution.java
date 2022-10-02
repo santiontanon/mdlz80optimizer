@@ -11,6 +11,7 @@ import code.Expression;
 import code.SourceFile;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import util.microprocessor.PlainZ80IO;
 import util.microprocessor.TrackingZ80Memory;
@@ -106,6 +107,7 @@ public class SourceCodeExecution implements MDLWorker {
         List<String> tokens = config.tokenizer.tokenize(startAddressString);
         Expression exp = config.expressionParser.parse(tokens, null, null, code);
         int startAddress = exp.evaluateToInteger(null, code, false);
+        List<String> modifiedFlags = new ArrayList<>();
         int endAddress = -1;
         int steps = -1;
         if (stepsString != null) {
@@ -131,13 +133,20 @@ public class SourceCodeExecution implements MDLWorker {
             while(true) {
                 if (steps >= 0 && z80.getTStates() < steps) break;
                 if (endAddress >= 0 && z80.getProgramCounter() == endAddress) break;
+                int address = z80.getProgramCounter();
+                CodeStatement s = instructions.get(address);
                 if (trace) {
-                    int address = z80.getProgramCounter();
-                    CodeStatement s = instructions.get(address);
                     if (s == null) {
                         config.warn("SourceCodeExecution: execution moved away from provided source code!");
                     } else {
                         config.info("  executing: " + s.toString());
+                    }
+                }
+                if (s != null && s.op != null) {
+                    for(String flag:s.op.spec.outputFlags) {
+                        if (!modifiedFlags.contains(flag)) {
+                            modifiedFlags.add(flag);
+                        }
                     }
                 }
                 z80.executeOneInstruction();
@@ -156,10 +165,15 @@ public class SourceCodeExecution implements MDLWorker {
                 config.info("  " + CPUConstants.registerName(reg) + ": " + v + " (" + config.tokenizer.toHexByte(v, config.hexStyle) + ")");
             }
         }
+        config.info("  Modified flags: " + modifiedFlags);
+        HashSet<Integer> addresses = new HashSet<>();
         for(int address:z80Memory.getMemoryWrites()) {
-            config.info("  (" + config.tokenizer.toHexWord(address, config.hexStyle) + ") = " + 
-                    z80Memory.readByte(address) + 
-                    " (" + config.tokenizer.toHexByte(z80Memory.readByte(address), config.hexStyle) + ")");
+            if (!addresses.contains(address)) {
+                config.info("  (" + config.tokenizer.toHexWord(address, config.hexStyle) + ") = " + 
+                        z80Memory.readByte(address) + 
+                        " (" + config.tokenizer.toHexByte(z80Memory.readByte(address), config.hexStyle) + ")");
+                addresses.add(address);
+            }
         }
         config.info("  " + nInstructionsExecuted + " instructions executed.");
         config.info("  execution time: " + z80.getTStates() + " "+config.timeUnit + "s");

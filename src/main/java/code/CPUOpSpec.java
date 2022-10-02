@@ -493,7 +493,7 @@ public class CPUOpSpec {
         return op;
     }
     
-    
+        
     private String registerForValue(int value)
     {
         String registers[] = {"b", "c", "d", "e", "h", "l", null, "a"};
@@ -563,5 +563,5 @@ public class CPUOpSpec {
         }
         return false;
     }
-    
+        
 }

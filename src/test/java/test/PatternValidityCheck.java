@@ -49,6 +49,7 @@ public class PatternValidityCheck {
 //    @Test public void test100() throws Exception { test("data/pbo-patterns.txt", "sdcc16bitadd", true); }
 //    @Test public void test101() throws Exception { test("data/pbo-patterns.txt", "sdcc16bitcp", true); }
 //    @Test public void test102() throws Exception { test("data/pbo-patterns.txt", "sdccshiftr2", true); }
+//    @Test public void test103() throws Exception { test("data/pbo-patterns.txt", "move-to-top-of-stack", true); }
     
     @Test public void testSpeed1() throws Exception { test("data/pbo-patterns-speed.txt", "push2ld", false); }
 

@@ -1650,6 +1650,7 @@ replacement:
 5: ld (?const2),hl
 constraints:
 equal(?const3,?const1+1)
+notEqual(?const2,?const1+1)
 in(?regixiy,IX,IY)
 regsNotUsedAfter(8,?regixiy,HL,A)
 
@@ -1948,6 +1949,17 @@ replacement:
 constraints:
 regsNotUsedAfter(1,HL)
 
+; thanks to @ruyrybeyro for suggesting this pattern
+pattern: Replace pop hl; ld hl,?const1; push hl by ld hl,?const1; ex (sp),hl
+name: move-to-top-of-stack
+0: pop hl
+1: ld hl,?const1
+2: push hl
+replacement:
+0: ld hl,?const1
+1: ex (sp),hl
+constraints:
+regsNotUsedAfter(2,HL)
 
 ; automatically generated
 pattern: replace rlc ?reg0; rl ?reg1 with rlca; rl ?reg1
