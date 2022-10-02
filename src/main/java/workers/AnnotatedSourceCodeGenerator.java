@@ -254,7 +254,11 @@ public class AnnotatedSourceCodeGenerator implements MDLWorker {
                 sb.append("<td></td>");
             } else {
                 sb.append("<td>");
-                sb.append(config.tokenizer.toHexWord(position, config.hexStyle));
+                if (position >= 0xffff) {
+                    sb.append(config.tokenizer.toHexDWord(position, config.hexStyle));
+                } else {
+                    sb.append(config.tokenizer.toHexWord(position, config.hexStyle));
+                }
                 sb.append("</td>");
             }
             
