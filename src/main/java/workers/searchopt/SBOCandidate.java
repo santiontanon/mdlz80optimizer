@@ -37,6 +37,7 @@ public class SBOCandidate {
     public boolean isAbsoluteJump = false;
     public boolean isRelativeJump = false;
     public boolean isUnconditionalJump = false;
+    public Integer jumpTarget = null;
     
     // Not all ops make sense after a certain op, (e.g. "ld a,b; ld b,a"). Hence,
     // the set of ops that make sense after another op are precalculated, and stored here:
@@ -44,15 +45,17 @@ public class SBOCandidate {
     public List<SBOCandidate> prefix = null;    // the ops that "potentialFollowUps" assume (this is not used during search,
                                                 // only used to verify the precalculations are sound)
     
-    public SBOCandidate(CodeStatement a_s, List<CPUOpDependency> allDependencies, CodeBase code, MDLConfig config)
+    public SBOCandidate(CodeStatement a_s, List<CPUOpDependency> allDependencies, Specification spec, CodeBase code, MDLConfig config)
     {
         op = a_s.op;
         
         if (op.isJump()) {
             if (op.isRelativeJump()) {
                 isRelativeJump = true;
+                jumpTarget = spec.codeStartAddress + op.getTargetJumpExpression().evaluateToInteger(a_s, code, true);
             } else {
                 isAbsoluteJump = true;
+                jumpTarget = op.getTargetJumpExpression().evaluateToInteger(a_s, code, true);
             }
             if (!op.isConditional()) {
                 isUnconditionalJump = true;
@@ -858,7 +861,7 @@ public class SBOCandidate {
     }
     
     
-    static boolean precomputeOp(String line, List<SBOCandidate> candidates, List<CPUOpDependency> allDependencies, CodeBase code, MDLConfig config)
+    static boolean precomputeOp(String line, List<SBOCandidate> candidates, List<CPUOpDependency> allDependencies, Specification spec, CodeBase code, MDLConfig config)
     {
         List<String> tokens = config.tokenizer.tokenize(line);
         SourceFile sf = new SourceFile("dummy", null, null, code, config);
@@ -869,7 +872,7 @@ public class SBOCandidate {
             return false;
         }
         CodeStatement s = l.get(0);
-        SBOCandidate candidate = new SBOCandidate(s, allDependencies, code, config);
+        SBOCandidate candidate = new SBOCandidate(s, allDependencies, spec, code, config);
         if (candidate.bytes == null) return false;
         candidates.add(candidate);
         return true;
@@ -896,7 +899,7 @@ public class SBOCandidate {
                 }
                 
                 String line = opName + " " + regName;
-                if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;
+                if (!precomputeOp(line, candidates, allDependencies, spec, code, config)) return false;
             }
             
             // constant argument:
@@ -905,13 +908,13 @@ public class SBOCandidate {
                 if (constant == 0) {
                     if (opName.equals("add") || opName.equals("sub")) continue;
                 }                
-                if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;                
+                if (!precomputeOp(line, candidates, allDependencies, spec, code, config)) return false;                
             }
             
             // (hl):
             if (spec.allowRamUse && spec.allowedRegisters.contains("hl")) {
                 String line = opName + " (hl)";
-                if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;            
+                if (!precomputeOp(line, candidates, allDependencies, spec, code, config)) return false;            
             }
             
             // (ix+d) / (iy+d):
@@ -921,10 +924,10 @@ public class SBOCandidate {
                     for(Integer constant:spec.allowedOffsetConstants) {
                         if (constant >= 0) {
                             String line = opName + " ("+reg+"+"+constant+")";
-                            if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;            
+                            if (!precomputeOp(line, candidates, allDependencies, spec, code, config)) return false;            
                         } else {
                             String line = opName + " ("+reg+constant+")";
-                            if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;            
+                            if (!precomputeOp(line, candidates, allDependencies, spec, code, config)) return false;            
                         }
                     }
                 }
@@ -948,13 +951,13 @@ public class SBOCandidate {
             for(String regName : regNames) {
                 if (!spec.allowedRegisters.contains(regName)) continue;
                 String line = opName + " " + regName;
-                if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;
+                if (!precomputeOp(line, candidates, allDependencies, spec, code, config)) return false;
             }
             
             // (hl):
             if (spec.allowRamUse && spec.allowedRegisters.contains("hl")) {
                 String line = opName + " (hl)";
-                if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;            
+                if (!precomputeOp(line, candidates, allDependencies, spec, code, config)) return false;            
             }
             
             // (ix+d) / (iy+d):
@@ -964,10 +967,10 @@ public class SBOCandidate {
                     for(Integer constant:spec.allowedOffsetConstants) {
                         if (constant >= 0) {
                             String line = opName + " ("+reg+"+"+constant+")";
-                            if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;            
+                            if (!precomputeOp(line, candidates, allDependencies, spec, code, config)) return false;            
                         } else {
                             String line = opName + " ("+reg+constant+")";
-                            if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;            
+                            if (!precomputeOp(line, candidates, allDependencies, spec, code, config)) return false;            
                         }
                     }
                 }        
@@ -991,7 +994,7 @@ public class SBOCandidate {
                 if (!spec.allowedRegisters.contains(regName)) continue;
                 String line = opName + " a," + regName;
                 if (opName.equals("sub") && regName.startsWith("i")) continue;
-                if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;
+                if (!precomputeOp(line, candidates, allDependencies, spec, code, config)) return false;
             }
             
             // constant argument:
@@ -1000,13 +1003,13 @@ public class SBOCandidate {
                 if (constant == 0) {
                     if (opName.equals("add") || opName.equals("sub")) continue;
                 }
-                if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;
+                if (!precomputeOp(line, candidates, allDependencies, spec, code, config)) return false;
             }
             
             // (hl):
             if (spec.allowRamUse) {
                 String line = opName + " a,(hl)";
-                if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;            
+                if (!precomputeOp(line, candidates, allDependencies, spec, code, config)) return false;            
             }
             
             // (ix+d) / (iy+d):
@@ -1016,10 +1019,10 @@ public class SBOCandidate {
                     for(Integer constant:spec.allowedOffsetConstants) {
                         if (constant >= 0) {
                             String line = opName + " a,("+reg+"+"+constant+")";
-                            if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;            
+                            if (!precomputeOp(line, candidates, allDependencies, spec, code, config)) return false;            
                         } else {
                             String line = opName + " a,("+reg+constant+")";
-                            if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;            
+                            if (!precomputeOp(line, candidates, allDependencies, spec, code, config)) return false;            
                         }
                     }
                 }
@@ -1037,7 +1040,7 @@ public class SBOCandidate {
             if (!spec.allowedOps.contains(st.nextToken())) continue;
             if (!spec.allowedRegisters.contains(st.nextToken())) continue;
             if (!spec.allowedRegisters.contains(st.nextToken())) continue;
-            if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;            
+            if (!precomputeOp(line, candidates, allDependencies, spec, code, config)) return false;            
         }
         return true;
     }    
@@ -1053,21 +1056,21 @@ public class SBOCandidate {
                 if (arg1.equals(arg2)) continue;
                 if (!spec.allowedRegisters.contains(arg2)) continue;
                 String line = "ld " + arg1 + "," + arg2;
-                if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;
+                if (!precomputeOp(line, candidates, allDependencies, spec, code, config)) return false;
             }
             if (spec.allowRamUse) {
                 if (spec.allowedRegisters.contains("hl")) {
                     String line = "ld (hl)," + arg1;
-                    if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;
+                    if (!precomputeOp(line, candidates, allDependencies, spec, code, config)) return false;
                     line = "ld " + arg1 + ",(hl)";
-                    if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;
+                    if (!precomputeOp(line, candidates, allDependencies, spec, code, config)) return false;
                 }
             }
             
             // constant argument:
             for(Integer constant:spec.allowed8bitConstants) {
                 String line = "ld " + arg1 + "," + constant;
-                if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;                
+                if (!precomputeOp(line, candidates, allDependencies, spec, code, config)) return false;                
             }
             
             // (ix+d) / (iy+d):
@@ -1077,14 +1080,14 @@ public class SBOCandidate {
                     for(Integer constant:spec.allowedOffsetConstants) {
                         if (constant >= 0) {
                             String line = "ld " + arg1 + ",("+reg+"+"+constant+")";
-                            if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;            
+                            if (!precomputeOp(line, candidates, allDependencies, spec, code, config)) return false;            
                             line = "ld ("+reg+"+"+constant+")," + arg1;
-                            if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;            
+                            if (!precomputeOp(line, candidates, allDependencies, spec, code, config)) return false;            
                         } else {
                             String line = "ld " + arg1 + ",("+reg+constant+")";
-                            if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;
+                            if (!precomputeOp(line, candidates, allDependencies, spec, code, config)) return false;
                             line = "ld ("+reg+constant+")," + arg1;
-                            if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;
+                            if (!precomputeOp(line, candidates, allDependencies, spec, code, config)) return false;
                         }
                     }
                 }
@@ -1098,7 +1101,7 @@ public class SBOCandidate {
             for(String arg2 : regNames3) {
                 if (!spec.allowedRegisters.contains(arg2)) continue;
                 String line = "ld " + arg1 + "," + arg2;
-                if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;
+                if (!precomputeOp(line, candidates, allDependencies, spec, code, config)) return false;
             }
         }
         for(String arg1 : regNames3) {
@@ -1106,7 +1109,7 @@ public class SBOCandidate {
             for(String arg2 : regNames2) {
                 if (!spec.allowedRegisters.contains(arg2)) continue;
                 String line = "ld " + arg1 + "," + arg2;
-                if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;
+                if (!precomputeOp(line, candidates, allDependencies, spec, code, config)) return false;
             }
         }
         
@@ -1117,7 +1120,7 @@ public class SBOCandidate {
                 if (!spec.allowedRegisters.contains(arg1)) continue;
                 for(Integer constant:spec.allowed8bitConstants) {
                     String line = "ld " + arg1 + "," + constant;
-                    if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;                
+                    if (!precomputeOp(line, candidates, allDependencies, spec, code, config)) return false;                
                 }
             }
         }
@@ -1125,7 +1128,7 @@ public class SBOCandidate {
         if (spec.allowRamUse && spec.allowedRegisters.contains("hl")) {
             for(Integer constant:spec.allowed8bitConstants) {
                 String line = "ld (hl)," + constant;
-                if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;                
+                if (!precomputeOp(line, candidates, allDependencies, spec, code, config)) return false;                
             }
         }
         
@@ -1137,9 +1140,9 @@ public class SBOCandidate {
                 if (!spec.allowedRegisters.contains(arg)) continue;
                 for(Integer address:spec.allowed16bitConstants) {
                     String line = "ld (" + address + ")," + arg;
-                    if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;                
+                    if (!precomputeOp(line, candidates, allDependencies, spec, code, config)) return false;                
                     line = "ld "+arg+",(" + address + ")";
-                    if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;
+                    if (!precomputeOp(line, candidates, allDependencies, spec, code, config)) return false;
                 }                
             }        
         }
@@ -1152,10 +1155,10 @@ public class SBOCandidate {
                     for(Integer offset:spec.allowedOffsetConstants) {
                         if (offset >= 0) {
                             String line = "ld ("+reg+"+"+offset+")," + constant;
-                            if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;            
+                            if (!precomputeOp(line, candidates, allDependencies, spec, code, config)) return false;            
                         } else {
                             String line = "ld ("+reg+offset+")," + constant;
-                            if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;            
+                            if (!precomputeOp(line, candidates, allDependencies, spec, code, config)) return false;            
                         }
                     }
                 }
@@ -1169,7 +1172,7 @@ public class SBOCandidate {
                 if (!spec.allowedRegisters.contains(arg1)) continue;
                 for(Integer constant:spec.allowed16bitConstants) {
                     String line = "ld " + arg1 + "," + constant;
-                    if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;                
+                    if (!precomputeOp(line, candidates, allDependencies, spec, code, config)) return false;                
                 }
             }
         }
@@ -1184,7 +1187,7 @@ public class SBOCandidate {
             st.nextToken();
             if (!spec.allowedRegisters.contains(st.nextToken())) continue;
             if (!spec.allowedRegisters.contains(st.nextToken())) continue;
-            if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;            
+            if (!precomputeOp(line, candidates, allDependencies, spec, code, config)) return false;            
         }
         if (spec.allowRamUse) {
             String otherRamOps[] = {"ld (bc),a", "ld (de),a",
@@ -1194,7 +1197,7 @@ public class SBOCandidate {
                 st.nextToken();
                 if (!spec.allowedRegisters.contains(st.nextToken())) continue;
                 if (!spec.allowedRegisters.contains(st.nextToken())) continue;
-                if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;            
+                if (!precomputeOp(line, candidates, allDependencies, spec, code, config)) return false;            
             }            
         }
         return true;
@@ -1211,11 +1214,11 @@ public class SBOCandidate {
             for(String reg : regNames) {
                 if (!spec.allowedRegisters.contains(reg)) continue;
                 String line = op + " " + reg;
-                if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;
+                if (!precomputeOp(line, candidates, allDependencies, spec, code, config)) return false;
             }
             if (spec.allowRamUse && spec.allowedRegisters.contains("hl")) {
                 String line = op + " (hl)";
-                if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;
+                if (!precomputeOp(line, candidates, allDependencies, spec, code, config)) return false;
             }
             
             // (ix+o)/(iy+o):
@@ -1225,10 +1228,10 @@ public class SBOCandidate {
                     for(Integer constant:spec.allowedOffsetConstants) {
                         if (constant >= 0) {
                             String line = op + " ("+reg+"+"+constant+")";
-                            if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;            
+                            if (!precomputeOp(line, candidates, allDependencies, spec, code, config)) return false;            
                         } else {
                             String line = op + " ("+reg+constant+")";
-                            if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;            
+                            if (!precomputeOp(line, candidates, allDependencies, spec, code, config)) return false;            
                         }
                     }
                 }        
@@ -1238,7 +1241,7 @@ public class SBOCandidate {
             String otherOps[] = {"rlca", "rla", "rrca", "rra"};
             for(String line:otherOps) {
                 if (!spec.allowedOps.contains(line)) continue;
-                if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;            
+                if (!precomputeOp(line, candidates, allDependencies, spec, code, config)) return false;            
             }
         }
         return true;
@@ -1258,11 +1261,11 @@ public class SBOCandidate {
                 // sla a is the same as add a,a, but slower
                 if (op.equals("sla") && reg.equals("a") && spec.allowedOps.contains("add")) continue;
                 String line = op + " " + reg;
-                if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;
+                if (!precomputeOp(line, candidates, allDependencies, spec, code, config)) return false;
             }
             if (spec.allowRamUse && spec.allowedRegisters.contains("hl")) {
                 String line = op + " (hl)";
-                if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;
+                if (!precomputeOp(line, candidates, allDependencies, spec, code, config)) return false;
             }
             
             // (ix+o)/(iy+o):
@@ -1272,10 +1275,10 @@ public class SBOCandidate {
                     for(Integer constant:spec.allowedOffsetConstants) {
                         if (constant >= 0) {
                             String line = op + " ("+reg+"+"+constant+")";
-                            if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;            
+                            if (!precomputeOp(line, candidates, allDependencies, spec, code, config)) return false;            
                         } else {
                             String line = op + " ("+reg+constant+")";
-                            if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;            
+                            if (!precomputeOp(line, candidates, allDependencies, spec, code, config)) return false;            
                         }
                     }
                 }   
@@ -1293,7 +1296,7 @@ public class SBOCandidate {
         String opNames[] = {"cpl", "neg"};
         for(String op: opNames) {
             if (!spec.allowedOps.contains(op)) continue;
-            if (!precomputeOp(op, candidates, allDependencies, code, config)) return false;
+            if (!precomputeOp(op, candidates, allDependencies, spec, code, config)) return false;
         }        
         return true;
     }
@@ -1311,12 +1314,12 @@ public class SBOCandidate {
                 for(String reg: registers) {
                     if (!spec.allowedRegisters.contains(reg)) continue;
                     String line = op + " " + bit + ","+reg;
-                    if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;
+                    if (!precomputeOp(line, candidates, allDependencies, spec, code, config)) return false;
                 }
                 // (hl)
                 if (spec.allowRamUse && spec.allowedRegisters.contains("hl")) {
                     String line = op + " " + bit + ",(hl)";
-                    if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;
+                    if (!precomputeOp(line, candidates, allDependencies, spec, code, config)) return false;
                 }
                 // (ix+o)/(iy+o):
                 if (spec.allowRamUse) {
@@ -1325,10 +1328,10 @@ public class SBOCandidate {
                         for(Integer constant:spec.allowedOffsetConstants) {
                             if (constant >= 0) {
                                 String line = op + " " + bit +",("+reg+"+"+constant+")";
-                                if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;            
+                                if (!precomputeOp(line, candidates, allDependencies, spec, code, config)) return false;            
                             } else {
                                 String line = op + " " + bit +", ("+reg+constant+")";
-                                if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;            
+                                if (!precomputeOp(line, candidates, allDependencies, spec, code, config)) return false;            
                             }
                         }
                     }
@@ -1345,7 +1348,7 @@ public class SBOCandidate {
         String opNames[] = {"ccf", "scf"};
         for(String op: opNames) {
             if (!spec.allowedOps.contains(op)) continue;
-            if (!precomputeOp(op, candidates, allDependencies, code, config)) return false;
+            if (!precomputeOp(op, candidates, allDependencies, spec, code, config)) return false;
         }
         return true;
     }   
@@ -1356,28 +1359,28 @@ public class SBOCandidate {
     {
         if (spec.allowedOps.contains("jp")) {
             for(String flag:new String[]{"", "z,", "po,", "pe,", "p,", "nz,", "nc,", "m,", "c,"}) {
-                for(Pair<Integer, Expression> target: spec.allowedJumpTargets) {
+                for(Pair<Integer, Expression> target: spec.allowedJpTargets) {
                     String line = "jp " + flag + target.getLeft();
-                    if (!precomputeOp(line, candidates, allDependencies, code, config)) return false;
+                    if (!precomputeOp(line, candidates, allDependencies, spec, code, config)) return false;
                 }
             }
-            if (!precomputeOp("jp hl", candidates, allDependencies, code, config)) return false;
-            if (!precomputeOp("jp ix", candidates, allDependencies, code, config)) return false;
-            if (!precomputeOp("jp iy", candidates, allDependencies, code, config)) return false;
+            if (!precomputeOp("jp hl", candidates, allDependencies, spec, code, config)) return false;
+            if (!precomputeOp("jp ix", candidates, allDependencies, spec, code, config)) return false;
+            if (!precomputeOp("jp iy", candidates, allDependencies, spec, code, config)) return false;
         }
         if (spec.allowedOps.contains("jr")) {
             for(String flag:new String[]{"", "z,", "nz,", "nc,", "c,"}) {
-                for(Pair<Integer, Expression>  target: spec.allowedJumpTargets) {
+                for(Pair<Integer, Expression>  target: spec.allowedJrTargets) {
                     String line = "jr " + flag + target.getLeft();
-                    if (!precomputeOp(line, candidates, allDependencies, code, config)) {
+                    if (!precomputeOp(line, candidates, allDependencies, spec, code, config)) {
                         return false;
                     }
                 }
             }
         }
         if (spec.allowedOps.contains("djnz")) {
-            for(Pair<Integer, Expression>  target: spec.allowedJumpTargets) {
-                if (!precomputeOp("djnz " + target.getLeft(), candidates, allDependencies, code, config)) return false;
+            for(Pair<Integer, Expression>  target: spec.allowedJrTargets) {
+                if (!precomputeOp("djnz " + target.getLeft(), candidates, allDependencies, spec, code, config)) return false;
             }
         }
         return true;
@@ -1389,28 +1392,28 @@ public class SBOCandidate {
     {
         if (spec.allowedRegisters.contains("de") &&
             spec.allowedRegisters.contains("hl")) {
-            if (!precomputeOp("ex de,hl", candidates, allDependencies, code, config)) return false;
+            if (!precomputeOp("ex de,hl", candidates, allDependencies, spec, code, config)) return false;
         }
         if (spec.allowRamUse && 
             spec.allowedRegisters.contains("sp")) {
             if (spec.allowedRegisters.contains("hl")) {
-                if (!precomputeOp("ex (sp),hl", candidates, allDependencies, code, config)) return false;
+                if (!precomputeOp("ex (sp),hl", candidates, allDependencies, spec, code, config)) return false;
             }
             if (spec.allowedRegisters.contains("ix")) {
-                if (!precomputeOp("ex (sp),ix", candidates, allDependencies, code, config)) return false;
+                if (!precomputeOp("ex (sp),ix", candidates, allDependencies, spec, code, config)) return false;
             }
             if (spec.allowedRegisters.contains("iy")) {
-                if (!precomputeOp("ex (sp),iy", candidates, allDependencies, code, config)) return false;
+                if (!precomputeOp("ex (sp),iy", candidates, allDependencies, spec, code, config)) return false;
             }
         }
         if (spec.allowGhostRegisters) {
             if (spec.allowedRegisters.contains("af")) {
-                if (!precomputeOp("ex af,af'", candidates, allDependencies, code, config)) return false;
+                if (!precomputeOp("ex af,af'", candidates, allDependencies, spec, code, config)) return false;
             }
             if (spec.allowedRegisters.contains("bc") &&
                 spec.allowedRegisters.contains("de") &&
                 spec.allowedRegisters.contains("hl")) {
-                if (!precomputeOp("exx", candidates, allDependencies, code, config)) return false;
+                if (!precomputeOp("exx", candidates, allDependencies, spec, code, config)) return false;
             }
         }
         return true;

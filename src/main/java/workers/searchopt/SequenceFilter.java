@@ -87,14 +87,14 @@ public class SequenceFilter {
     
     public boolean filterSequence(String sequenceString, int maxSubSequenceSize) throws Exception
     {
-        List<SBOCandidate> seq = parseSequence(sequenceString, allDependencies, config);
+        List<SBOCandidate> seq = parseSequence(sequenceString, allDependencies, spec, config);
         return filterSequence(seq, maxSubSequenceSize);
     }
 
     
     public boolean filterSequence(String sequenceString, Specification spec) throws Exception
     {
-        List<SBOCandidate> seq = parseSequence(sequenceString, allDependencies, config);
+        List<SBOCandidate> seq = parseSequence(sequenceString, allDependencies, spec, config);
         return filterSequence(seq);
     }
     
@@ -229,12 +229,12 @@ public class SequenceFilter {
                 String flagStr = (columns.length >= 3 ? columns[2]:"");
 
                 // parse sequences:
-                List<SBOCandidate> l1 = parseSequence(seq1, allDependencies, config);
+                List<SBOCandidate> l1 = parseSequence(seq1, allDependencies, spec, config);
                 if (l1 == null) {
                     config.error("SequenceFilter: cannot parse " + seq1);
                     return false;
                 }
-                List<SBOCandidate> l2 = parseSequence(seq2, allDependencies, config);
+                List<SBOCandidate> l2 = parseSequence(seq2, allDependencies, spec, config);
                 if (l2 == null) {
                     config.error("SequenceFilter: cannot parse " + seq2);
                     return false;
@@ -256,7 +256,7 @@ public class SequenceFilter {
     }
     
     
-    public static List<SBOCandidate> parseSequence(String sequence, List<CPUOpDependency> allDependencies, MDLConfig config) throws Exception
+    public static List<SBOCandidate> parseSequence(String sequence, List<CPUOpDependency> allDependencies, Specification spec, MDLConfig config) throws Exception
     {
         String lines[] = sequence.split(";");
  
@@ -269,7 +269,7 @@ public class SequenceFilter {
             List<String> tokens = config.tokenizer.tokenize(line);
             List<CodeStatement> l = config.lineParser.parse(tokens, new SourceLine(line, f, i), f, null, code, config);
             for(CodeStatement s:l) {
-                SBOCandidate c = new SBOCandidate(s, allDependencies, code, config);
+                SBOCandidate c = new SBOCandidate(s, allDependencies, spec, code, config);
                 ops.add(c);
             }
         }

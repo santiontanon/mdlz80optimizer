@@ -36,11 +36,13 @@ public class Specification {
     public boolean allowIO = false;
     public boolean allowGhostRegisters = false;
     public boolean allowLoops = false;
+    public int maxBytesAlloedToJumpAhead = 5;
     
     public List<Integer> allowed8bitConstants = new ArrayList<>();
     public List<Integer> allowed16bitConstants = new ArrayList<>();
     public List<Integer> allowedOffsetConstants = new ArrayList<>();
-    public List<Pair<Integer, Expression>> allowedJumpTargets = new ArrayList<>();
+    public List<Pair<Integer, Expression>> allowedJrTargets = new ArrayList<>();
+    public List<Pair<Integer, Expression>> allowedJpTargets = new ArrayList<>();
     
     public List<InputParameter> parameters = new ArrayList<>();
     public List<SpecificationExpression> startState = new ArrayList<>();

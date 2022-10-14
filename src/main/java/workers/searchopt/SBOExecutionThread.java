@@ -193,6 +193,9 @@ public class SBOExecutionThread extends Thread {
                         
             for(SBOCandidate candidate : candidateOps) {
                 int nextAddress = codeAddress + candidate.bytes.length;
+//                if (candidate.jumpTarget != null) {
+//                    if (candidate.isRelativeJump && candidate.jumpTarget > nextAddress) continue;
+//                }
                 if (nextAddress > codeMaxAddress) continue;
                 // the very last op must contribute to the goal:
                 if (!candidate.directContributionToGoal &&
