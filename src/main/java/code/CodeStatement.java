@@ -405,13 +405,14 @@ public class CodeStatement {
                     return null;
                 }
                 str += " "+config.lineParser.KEYWORD_STD_EQU+" " + label.exp.toStringInternal(false, false, mimicTargetDialect, this, code, style);
-                if (style != null && code != null && style.annotateEqusWithFinalValue) {
+                if (style != null && code != null && style.annotateEqusWithFinalValue &&
+                    !label.exp.isConstant()) {
                     Object value = label.exp.evaluate(this, code, true);
                     if (value != null) {
                         if (value instanceof String) {
                             additionalComment += "mdl: " + label.name + " = \"" + value + "\"";
                         } else if (value instanceof Integer) {
-                            additionalComment += "mdl: " + label.name + " = " + value + " / " + config.tokenizer.toHexWithStyle((Integer)value, 4, config.hexStyle);
+                            additionalComment += "mdl: " + label.name + " = " + value + " (" + config.tokenizer.toHexWithStyle((Integer)value, 4, config.hexStyle) + ")";
                         } else {
                             additionalComment += "mdl: " + label.name + " = " + value;
                         }
