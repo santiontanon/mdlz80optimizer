@@ -25,6 +25,7 @@ public class HTMLCodeStyle {
     public String macroStyle = "color: #880088;font-weight: bold";
     
     public boolean labelsAsLinks = true;
+    public boolean annotateEqusWithFinalValue = false;
     
     
     public String getStyle(int type) {

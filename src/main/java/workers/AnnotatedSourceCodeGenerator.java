@@ -36,11 +36,13 @@ public class AnnotatedSourceCodeGenerator implements MDLWorker {
     int imgIndex = 0;
     HTMLCodeStyle style = new HTMLCodeStyle();
     boolean respectOriginalIndentation = false;
+    boolean annotateEqusWithFinalValue = true;
 
 
     public AnnotatedSourceCodeGenerator(MDLConfig a_config)
     {
         config = a_config;
+        style.annotateEqusWithFinalValue = annotateEqusWithFinalValue;
     }
 
 
@@ -292,7 +294,7 @@ public class AnnotatedSourceCodeGenerator implements MDLWorker {
                 sb.append("<td></td>");
             }       
             
-            String ssString = ss.toStringHTML(style);
+            String ssString = ss.toStringHTML(style, code);
             if (respectOriginalIndentation) ssString = reconstructIndentation(ssString, ss);
             
             // Check if there is an "mdl-asm+:html:gfx" tag:

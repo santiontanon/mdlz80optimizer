@@ -291,6 +291,12 @@ public class CodeStatement {
     {
         return toStringUsingRootPath(null, false, false, null, style);
     }
+
+
+    public String toStringHTML(HTMLCodeStyle style, CodeBase code)
+    {
+        return toStringUsingRootPath(null, false, false, code, style);
+    }
     
     
     public String toStringLabel(boolean useOriginalName, boolean useOriginalColonToken, HTMLCodeStyle style)
@@ -353,7 +359,7 @@ public class CodeStatement {
                 str += "    "+config.lineParser.KEYWORD_STD_ORG+" " + org.toStringInternal(false, false, false, null, null, style);
                 break;
             case STATEMENT_INCLUDE:
-            {
+            {                
                 String path = rawInclude;
                 // Make sure we don't have a windows/Unix path separator problem:
                 if (path.contains("\\")) {
@@ -361,7 +367,7 @@ public class CodeStatement {
                 }                
                 if (style != null) {
                     // We are rendering HTML, generate a link for the include:
-                    str += "    "+config.lineParser.KEYWORD_STD_INCLUDE+" <a href=\"#"+path+"\">\"" + HTMLCodeStyle.renderStyledHTMLPiece(path, HTMLCodeStyle.TYPE_CONSTANT, style) + "\"</a>";
+                    str += "    "+config.lineParser.KEYWORD_STD_INCLUDE+" <a href=\"#"+include.fileName+"\">\"" + HTMLCodeStyle.renderStyledHTMLPiece(path, HTMLCodeStyle.TYPE_CONSTANT, style) + "\"</a>";
                 } else {
                     str += "    "+config.lineParser.KEYWORD_STD_INCLUDE+" \"" + HTMLCodeStyle.renderStyledHTMLPiece(path, HTMLCodeStyle.TYPE_CONSTANT, style) + "\"";
                 }
@@ -398,6 +404,18 @@ public class CodeStatement {
                     return null;
                 }
                 str += " "+config.lineParser.KEYWORD_STD_EQU+" " + label.exp.toStringInternal(false, false, mimicTargetDialect, this, code, style);
+                if (style != null && code != null && style.annotateEqusWithFinalValue) {
+                    Object value = label.exp.evaluate(this, code, true);
+                    if (value != null) {
+                        if (value instanceof String) {
+                            str += "  ; mdl: " + label.name + " = \"" + value + "\"";
+                        } else if (value instanceof Integer) {
+                            str += "  ; mdl: " + label.name + " = " + value + " / " + config.tokenizer.toHexWithStyle((Integer)value, 4, config.hexStyle);
+                        } else {
+                            str += "  ; mdl: " + label.name + " = " + value;
+                        }
+                    }
+                }
                 break;
             case STATEMENT_DATA_BYTES:
                 str += "    "+config.lineParser.KEYWORD_STD_DB+" ";
