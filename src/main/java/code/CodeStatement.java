@@ -351,6 +351,7 @@ public class CodeStatement {
     public String toStringUsingRootPath(Path rootPath, boolean useOriginalNames, boolean mimicTargetDialect, CodeBase code, HTMLCodeStyle style)
     {
         String str = toStringLabel(useOriginalNames, false, style);
+        String additionalComment = "";
         
         switch(type) {
             case STATEMENT_NONE:
@@ -408,11 +409,11 @@ public class CodeStatement {
                     Object value = label.exp.evaluate(this, code, true);
                     if (value != null) {
                         if (value instanceof String) {
-                            str += "  ; mdl: " + label.name + " = \"" + value + "\"";
+                            additionalComment += "mdl: " + label.name + " = \"" + value + "\"";
                         } else if (value instanceof Integer) {
-                            str += "  ; mdl: " + label.name + " = " + value + " / " + config.tokenizer.toHexWithStyle((Integer)value, 4, config.hexStyle);
+                            additionalComment += "mdl: " + label.name + " = " + value + " / " + config.tokenizer.toHexWithStyle((Integer)value, 4, config.hexStyle);
                         } else {
-                            str += "  ; mdl: " + label.name + " = " + value;
+                            additionalComment += "mdl: " + label.name + " = " + value;
                         }
                     }
                 }
@@ -518,10 +519,14 @@ public class CodeStatement {
                 return null;
         }
         
-        if (comment != null) {
-            String actualComment = comment;
-            if (!comment.startsWith(";") && !mimicTargetDialect) {
-                actualComment = "; " + comment;
+        if (comment != null || !additionalComment.isBlank()) {
+            String actualComment = "";
+            if (comment != null) actualComment += comment;
+            if (!additionalComment.isBlank()) {
+                actualComment += (actualComment.isEmpty() ? "":"  ; ") + additionalComment;
+            }
+            if (!actualComment.startsWith(";") && !mimicTargetDialect) {
+                actualComment = "; " + actualComment;
             }
             if (str.isEmpty()) str = HTMLCodeStyle.renderStyledHTMLPiece(actualComment, HTMLCodeStyle.TYPE_COMMENT, style);
                           else str += "  " + HTMLCodeStyle.renderStyledHTMLPiece(actualComment, HTMLCodeStyle.TYPE_COMMENT, style); 
