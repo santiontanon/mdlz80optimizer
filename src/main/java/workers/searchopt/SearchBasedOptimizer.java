@@ -78,7 +78,9 @@ public class SearchBasedOptimizer implements MDLWorker {
     int flags_nChecks = -1;
     
     int optimization_max_block_size = 2;
-    
+
+    int stopAfter = -1;
+
     public final int DEPTH_TO_PRECOMPUTE3 = 4;
     public final int SIZE_TO_PRECOMPUTE3 = 7;
     public final int TIME_TO_PRECOMPUTE3 = 4;
@@ -114,7 +116,8 @@ public class SearchBasedOptimizer implements MDLWorker {
                "- ```-so-maxtime <n>```: (only for program generation) Sets the maximum time (in whichever units the target CPU uses) that the resulting program can take to execute.\n" +
                "- ```-so-threads <n>```: Sets the number of threads to use during search (default value is the number of cores of the CPU).\n" +
                "- ```-so-checks <n>```: Sets the number of random solution checks to consider a solution valid (default is 10000). Higher means more safety, but slower. If this is too low, the optimizer might generate wrong code by chance.\n" +
-               "- ```-so-blocksize <n>```: (only for existing assembler optimization) Blocks of this number of instructions will be taken one at a time and optimized (default is 2).\n";
+               "- ```-so-blocksize <n>```: (only for existing assembler optimization) Blocks of this number of instructions will be taken one at a time and optimized (default is 2).\n" +
+               "- ```-so-stop-after <n>```: Stops optimizing after n optimizations. This is useful for debugging, if there is any optimization that breaks the code, to help locate it.\n";
     }
 
     
@@ -240,6 +243,16 @@ public class SearchBasedOptimizer implements MDLWorker {
             optimization_max_block_size = Integer.parseInt(tmp);
             if (optimization_max_block_size <= 0) {
                 config.error("Invalid argument to -so-blcksize: " + tmp + " (block size must be a positive integer)");
+            }
+            return true;
+        }
+        if (flags.get(0).equals("-so-stop-after") && flags.size()>=2) {
+            flags.remove(0);
+            stopAfter = Integer.parseInt(flags.get(0));
+            flags.remove(0);
+            if (stopAfter <= 0) {
+                config.error("The parameter to -po-stop-after must be an integer larger than 0.");
+                return false;
             }
             return true;
         }
@@ -510,6 +523,9 @@ public class SearchBasedOptimizer implements MDLWorker {
     
     
     private boolean workOptimize(CodeBase code) {
+        int n_appliedOptimizations = 0;
+        boolean done = false;
+        
         silentSearch = true;
         showNewBestDuringSearch = false;
         // We will never precompute to depth 3 in this case, as the instruction set is too large, and it takes too long:
@@ -523,7 +539,7 @@ public class SearchBasedOptimizer implements MDLWorker {
             HashMap<Integer,HashMap<String,Integer>> previousKnownRegisterValues = new HashMap<>();
             HashMap<String, Integer> knownRegisterValues = new HashMap<>();
             registersUsedAfter_previous = null;
-            for (int i = 0; i < f.getStatements().size(); i++) {
+            for (int i = 0; i < f.getStatements().size() && !done; i++) {
                 HashMap<String, Integer> knownRegisterValuesCopy = new HashMap<>();
                 knownRegisterValuesCopy.putAll(knownRegisterValues);
                 previousKnownRegisterValues.put(i, knownRegisterValuesCopy);
@@ -542,6 +558,13 @@ public class SearchBasedOptimizer implements MDLWorker {
                         // Reset known values after optimization just in case:
                         knownRegisterValues.clear();
                         knownRegisterValues.putAll(previousKnownRegisterValues.get(i+1));
+                        
+                        // Check if we need to stop:
+                        n_appliedOptimizations++;
+                        if (stopAfter >= 0 && n_appliedOptimizations >= stopAfter) {
+                            done = true;
+                            break;
+                        }                        
                     } else {
                         updateKnownRegisterValues(f.getStatements().get(i), knownRegisterValues, code);
                     }
@@ -563,6 +586,7 @@ public class SearchBasedOptimizer implements MDLWorker {
 //                noptimizations >= MAX_NUMBER_OF_OPTIMIZATIONS) {
 //                break;
 //            }
+            if (done) break;
         }
         
         code.resetAddresses();
@@ -790,6 +814,9 @@ public class SearchBasedOptimizer implements MDLWorker {
     }
     
     
+    /*
+    Returns "true" if an optimization is applied.
+    */
     private boolean optimizeStartingFromLine(SourceFile f, int line, HashMap<String, Integer> knownRegisterValues, CodeBase code, OptimizationResult r) throws Exception
     {
         if (f.getStatements().get(line).op == null) {
