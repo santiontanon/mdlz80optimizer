@@ -728,8 +728,8 @@ public class SearchBasedOptimizer implements MDLWorker {
         if (primitiveRegs != null && primitiveRegs.length == 2) {
             toClear.remove(primitiveRegs[0]);
             toClear.remove(primitiveRegs[1]);
-            knownRegisterValues.put(primitiveRegs[0], val/256);
-            knownRegisterValues.put(primitiveRegs[1], val%256);
+            knownRegisterValues.put(primitiveRegs[0], (val>>8)&0x00ff);
+            knownRegisterValues.put(primitiveRegs[1], val&0x00ff);
         } else {
             toClear.remove(reg);
             knownRegisterValues.put(reg, val);
