@@ -1168,9 +1168,15 @@ public class Pattern {
                         "(", config);
                 for(CodeStatement s:statements) {
                     if (s.op == null) continue;
-                    if (s.op.isLdToMemory()) {
+                    if (s.op.writesToMemory()) {
+                        Expression writeExp = s.op.getMemoryWriteExpression();
+                        if (writeExp == null) {
+                            // We do not know where the instruction is writing,
+                            // so, prevent the optimization to be safe.
+                            return false;
+                        }
                         PatternMatch match2 = new PatternMatch(match);
-                        if (unifyExpressions(exp, s.op.args.get(0), true, match2, s, code)) {
+                        if (unifyExpressions(exp, writeExp, true, match2, s, code)) {
                             return false;
                         }
                     }

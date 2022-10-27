@@ -207,6 +207,51 @@ public class CPUOp {
     }
     
     
+    /*
+    This method attempts to retrieve the expression that represents the address
+    in memory that an instruction writes to. If it returns "null", it does NOT
+    mean that the instruction does not write to memory. It could mean that
+    either the instruction does not write to memory, or that this method was
+    not able to identify the expression.
+    */
+    public Expression getMemoryWriteExpression()
+    {
+        if (!writesToMemory()) return null;
+        
+        String opsThatWriteToFirst[] = {"ld",
+                                        "inc", "Dec", "rl", "rlc", "rr", "rrc",
+                                        "sla", "sli", "sra", "srl", "sll", "sl1"};
+        for(String opName:opsThatWriteToFirst) {
+            if (spec.opName.equalsIgnoreCase(opName)) {
+                if (spec.args.get(0).wordConstantIndirectionAllowed ||
+                    spec.args.get(0).regIndirection != null ||
+                    spec.args.get(0).regOffsetIndirection != null) {
+                    return args.get(0);
+                }
+            }
+        }
+        
+        String opsThatWriteToSecond[] = {"res", "set"};
+        for(String opName:opsThatWriteToSecond) {
+            if (spec.opName.equalsIgnoreCase(opName)) {
+                if (spec.args.get(1).wordConstantIndirectionAllowed ||
+                    spec.args.get(1).regIndirection != null ||
+                    spec.args.get(1).regOffsetIndirection != null) {
+                    return args.get(1);
+                }
+            }
+        }
+
+        // push/pop (return null)
+        // ex (sp),XXX (return null)
+        // rst XXX (return null)
+        // call XXX / ret / reti / retn (return null)
+        // ini / ind / inir / indr (return null)
+        // ldd / ldi / lddr / ldir (return null)
+        return null;
+    }
+    
+    
     public boolean readsFromMemory()
     {
         return spec.inputMemoryStart != null;        
