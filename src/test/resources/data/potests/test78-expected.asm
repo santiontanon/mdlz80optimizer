@@ -7,5 +7,7 @@ function:
     ld a, (ix - 3)
     or (ix - 4)
     ld (ix - 3), a
+    pop hl
+    push hl
     ld (hl), a
     ret

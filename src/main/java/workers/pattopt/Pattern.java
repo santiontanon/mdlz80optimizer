@@ -1166,20 +1166,30 @@ public class Pattern {
                 Expression exp = Expression.parenthesisExpression(
                         config.expressionParser.parse(tokens, null, null, code),
                         "(", config);
+                CodeStatement s_prev = null;
                 for(CodeStatement s:statements) {
                     if (s.op == null) continue;
                     if (s.op.writesToMemory()) {
                         Expression writeExp = s.op.getMemoryWriteExpression();
                         if (writeExp == null) {
-                            // We do not know where the instruction is writing,
-                            // so, prevent the optimization to be safe.
-                            return false;
-                        }
-                        PatternMatch match2 = new PatternMatch(match);
-                        if (unifyExpressions(exp, writeExp, true, match2, s, code)) {
-                            return false;
+                            if (s.op.isPush() &&
+                                s_prev.op != null && s_prev.op.isPop()) {
+                                // This is a "pop/push" sequence, which is used
+                                // by compilers like SDCC, and does not modify
+                                // memory.
+                            } else {
+                                // We do not know where the instruction is writing,
+                                // so, prevent the optimization to be safe.
+                                return false;
+                            }
+                        } else {
+                            PatternMatch match2 = new PatternMatch(match);
+                            if (unifyExpressions(exp, writeExp, true, match2, s, code)) {
+                                return false;
+                            }
                         }
                     }
+                    s_prev = s;
                 }
                 break;
             }
