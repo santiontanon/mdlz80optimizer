@@ -534,6 +534,11 @@ public class PatternBasedOptimizer implements MDLWorker {
             return null;
         }
         Integer v = s.op.args.get(1).evaluateToInteger(s, code, true);
+        if (v == null) {
+            config.debug("Cannot evaluate expression: " + s.op.args.get(1));
+            config.debug("MDL will assume that it does not evaluate to 0.");
+            return null;
+        }
         if (v != 0) return null;
         
         while(true) {
@@ -556,10 +561,12 @@ public class PatternBasedOptimizer implements MDLWorker {
     public void markSPAssignedToRegisterStartingFrom(CodeStatement s, String register, HashSet<CodeStatement> set, CodeBase code)
     {
         List<CodeStatement> open = new ArrayList<>();
+        HashSet<CodeStatement> closed = new HashSet<>();
         open.add(s);
         
         while(!open.isEmpty()) {
             s = open.remove(0);
+            closed.add(s);
             if (s.op != null) {
                 
                 // Check for "pop register" or "ld register, ???"
@@ -576,13 +583,18 @@ public class PatternBasedOptimizer implements MDLWorker {
                 List<Pair<CodeStatement, List<CodeStatement>>> next_l = s.source.nextExecutionStatements(s, true, null, code);
                 if (next_l != null) {
                     for(Pair<CodeStatement, List<CodeStatement>> next:next_l) {
-                        open.add(next.getLeft());
+                        if (!set.contains(next.getLeft()) &&
+                            !closed.contains(next.getLeft())) {
+                            open.add(next.getLeft());
+                        }
                     }
                 }
             } else {
                 if (s.type == CodeStatement.STATEMENT_NONE) {
                     s = s.source.getNextStatementTo(s, code);
-                    open.add(s);
+                    if (!set.contains(s) && !closed.contains(s)) {
+                        open.add(s);
+                    }
                 }
             }
         }

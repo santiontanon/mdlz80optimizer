@@ -1087,7 +1087,6 @@ public class Pattern {
                                 }
                             }
                         }
-                        
                     }
                     // if at any point, there are more pops than push, stop:
                     if (stackMovements > 0) return false;
@@ -1173,6 +1172,7 @@ public class Pattern {
                         Expression writeExp = s.op.getMemoryWriteExpression();
                         if (writeExp == null) {
                             if (s.op.isPush() &&
+                                s_prev != null && 
                                 s_prev.op != null && s_prev.op.isPop()) {
                                 // This is a "pop/push" sequence, which is used
                                 // by compilers like SDCC, and does not modify
