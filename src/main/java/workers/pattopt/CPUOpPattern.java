@@ -79,7 +79,7 @@ public class CPUOpPattern {
         HashMap<String, Expression> variables = new HashMap<>();
         variables.put(name, exp);
         for(int i = 0;i<args.size();i++) {
-            args.set(i, instantiateExpression(args.get(i), variables));
+            args.set(i, Pattern.instantiateExpression(args.get(i), variables));
         }
         /*
         if (code.isRegister(replacement) || code.isCondition(replacement)) {
@@ -94,37 +94,6 @@ public class CPUOpPattern {
         */
     }
     
-    
-    public Expression instantiateExpression(Expression exp, HashMap<String, Expression> variables)
-    {
-        if (exp.type == Expression.EXPRESSION_SYMBOL) {
-            if (variables.containsKey(exp.symbolName)) {
-                return variables.get(exp.symbolName).clone();
-            } else {
-                return exp;
-            }
-        } else if (exp.args != null) {
-            List<Expression> newArgs = new ArrayList<>();
-            boolean replacement = false;
-            for(Expression arg:exp.args) {
-                Expression newArg = instantiateExpression(arg, variables);
-                if (newArg != arg) {
-                    replacement = true;
-                }
-                newArgs.add(newArg);
-            }
-            if (replacement) {
-                exp = exp.clone();
-                exp.args = newArgs;
-                return exp;
-            } else {
-                return exp;
-            }
-        } else {
-            return exp;        
-        }
-    }
-    
 
     public CPUOp instantiate(PatternMatch match, Pattern pattern, MDLConfig config)
     {
@@ -134,7 +103,7 @@ public class CPUOpPattern {
         CodeStatement s = new CodeStatement(CodeStatement.STATEMENT_CPUOP, new SourceLine("", f, 0), f, config);
         List<Expression> instantiatedArgs = new ArrayList<>();
         for(Expression arg:args) {
-            Expression exp = instantiateExpression(arg, match.variables);
+            Expression exp = Pattern.instantiateExpression(arg, match.variables);
             if (exp != arg) {
                 if (exp.type != Expression.EXPRESSION_INTEGER_CONSTANT && 
                     exp.evaluatesToIntegerConstant()) {

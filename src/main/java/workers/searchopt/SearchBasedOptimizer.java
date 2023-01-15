@@ -402,11 +402,10 @@ public class SearchBasedOptimizer implements MDLWorker {
         }
                 
         SBOGlobalSearchState state = new SBOGlobalSearchState();
-        boolean goalDependencies[] = spec.getGoalDependencies(allDependencies);
+//        boolean goalDependencies[] = spec.getGoalDependencies(allDependencies);
         int nopDuration = config.opParser.getOpSpecs("nop").get(0).times[0];
         int nThreads = Runtime.getRuntime().availableProcessors();
         if (flags_nThreads != -1) nThreads = flags_nThreads;
-//        nThreads = 1;
         SBOExecutionThread threads[] = new SBOExecutionThread[nThreads];
         long start = System.currentTimeMillis();
         
@@ -427,11 +426,11 @@ public class SearchBasedOptimizer implements MDLWorker {
                     state.init(allCandidateOps, depth==0);
                     for(int i = 0;i<nThreads;i++) {
                         threads[i] = new SBOExecutionThread("thread-" + i, 
-                                            spec, allDependencies, goalDependencies,
+                                            spec, allDependencies,
                                             state, eightBitRegistersToRandomize,
                                             memoryAddressesToRandomize,
                                             showNewBestDuringSearch, code, config,
-                                            spec.searchType, depth, codeMaxAddress, spec.maxSimulationTime);
+                                            depth, codeMaxAddress, spec.maxSimulationTime);
                         threads[i].start();
                     }
                     for(int i = 0;i<nThreads;i++) threads[i].join();
@@ -454,11 +453,11 @@ public class SearchBasedOptimizer implements MDLWorker {
                     state.init(allCandidateOps, size==0);
                     for(int i = 0;i<nThreads;i++) {
                         threads[i] = new SBOExecutionThread("thread-" + i, 
-                                            spec, allDependencies, goalDependencies,
+                                            spec, allDependencies,
                                             state, eightBitRegistersToRandomize,
                                             memoryAddressesToRandomize,
                                             showNewBestDuringSearch, code, config,
-                                            spec.searchType, spec.maxOps, spec.codeStartAddress + size, spec.maxSimulationTime);
+                                            spec.maxOps, spec.codeStartAddress + size, spec.maxSimulationTime);
                         threads[i].start();
                     }
                     for(int i = 0;i<nThreads;i++) threads[i].join();
@@ -478,11 +477,11 @@ public class SearchBasedOptimizer implements MDLWorker {
                     state.init(allCandidateOps, maxTime==0);
                     for(int i = 0;i<nThreads;i++) {
                         threads[i] = new SBOExecutionThread("thread-" + i, 
-                                            spec, allDependencies, goalDependencies,
+                                            spec, allDependencies,
                                             state, eightBitRegistersToRandomize,
                                             memoryAddressesToRandomize,
                                             showNewBestDuringSearch, code, config,
-                                            spec.searchType, spec.maxOps, spec.codeStartAddress + spec.maxSizeInBytes, maxTime);
+                                            spec.maxOps, spec.codeStartAddress + spec.maxSizeInBytes, maxTime);
                         threads[i].start();
                     }
                     for(int i = 0;i<nThreads;i++) threads[i].join();

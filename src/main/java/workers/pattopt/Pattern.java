@@ -51,6 +51,20 @@ public class Pattern {
         }
         
         
+        public void assignVariable(String variable, String replacement, CodeBase code, MDLConfig config)
+        {
+            List<String> tokens = config.tokenizer.tokenize(replacement);
+            Expression exp = config.expressionParser.parse(tokens, null, null, code);
+            HashMap<String, Expression> variables = new HashMap<>();
+            variables.put(variable, exp);
+            for(int i = 0;i<args.length;i++) {
+                List<String> argTokens = config.tokenizer.tokenize(args[i]);
+                Expression argExp = config.expressionParser.parse(argTokens, null, null, code);
+                args[i] = Pattern.instantiateExpression(argExp, variables).toString();
+            }
+        }
+        
+        
         @Override
         public String toString()
         {
@@ -66,7 +80,7 @@ public class Pattern {
     public List<CPUOpPattern> pattern = new ArrayList<>();
     public List<CPUOpPattern> replacement = new ArrayList<>();
     public List<Constraint> constraints = new ArrayList<>();
-    
+    public HashMap<String, List<String>> parametrization = null;
     
     static class DepCheckNode {
         CodeStatement s;
@@ -119,6 +133,28 @@ public class Pattern {
                 state = 2;
             } else if (line.equals("constraints:")) {
                 state = 3;
+            } else if (line.startsWith("parameterized:")) {
+                // Example: parameterized: in(?reg,A,B,C,D,E,H,L)
+                List<String> tokens = config.tokenizer.tokenize(line);
+                tokens.remove(0);  // parameterized
+                tokens.remove(0);  // :
+                if (tokens.remove(0).equalsIgnoreCase("in") &&
+                    tokens.remove(0).equalsIgnoreCase("(") &&
+                    tokens.remove(0).equalsIgnoreCase("?")) {
+                    String constant = "?" + tokens.remove(0);
+                    List<String> values = new ArrayList<>();
+                    String token = tokens.remove(0);
+                    while(token.equals(",")) {
+                        values.add(tokens.remove(0));
+                        token = tokens.remove(0);
+                    }
+                    if (parametrization == null) {
+                        parametrization = new HashMap<>();
+                    }
+                    parametrization.put(constant, values);
+                } else {
+                    config.error("Cannot parse 'parameterized' statement");                    
+                }
             } else {
                 switch(state) {
                     case 1: // pattern:
@@ -204,6 +240,10 @@ public class Pattern {
         constraints = new ArrayList<>();
         for(Constraint c:p.constraints) {
             constraints.add(new Constraint(c));
+        }
+        if (p.parametrization != null) {
+            parametrization = new HashMap<>();
+            parametrization.putAll(p.parametrization);
         }
     }    
 
@@ -1756,5 +1796,119 @@ public class Pattern {
             }
         }
         return false;
+    }
+    
+    
+    public void replaceParameter(String parameter, String value)
+    {
+        if (parametrization.containsKey(parameter)) {
+            parametrization.remove(parameter);
+        }
+        
+        if (name != null) {
+            name = name + " (" + parameter + "=" + value + ")";
+        }
+        message = message.replace(parameter, value);
+        CodeBase patternCB = new CodeBase(config);
+        for(int i = 0;i<pattern.size();i++) {
+            CPUOpPattern opp = new CPUOpPattern(pattern.get(i));
+            opp.assignVariable(parameter, value, patternCB, config);
+            pattern.set(i, opp);
+        }
+        for(int i = 0;i<replacement.size();i++) {
+            CPUOpPattern opp = new CPUOpPattern(replacement.get(i));
+            opp.assignVariable(parameter, value, patternCB, config);
+            replacement.set(i, opp);
+        }
+        for(int i = 0;i<constraints.size();i++) {
+            Constraint c = new Constraint(constraints.get(i));
+            c.assignVariable(parameter, value, patternCB, config);
+            constraints.set(i, c);
+        }
+    }
+
+        
+    public static Expression instantiateExpression(Expression exp, HashMap<String, Expression> variables)
+    {
+        if (exp.type == Expression.EXPRESSION_SYMBOL) {
+            if (variables.containsKey(exp.symbolName)) {
+                return variables.get(exp.symbolName).clone();
+            } else {
+                return exp;
+            }
+        } else if (exp.args != null) {
+            List<Expression> newArgs = new ArrayList<>();
+            boolean replacement = false;
+            for(Expression arg:exp.args) {
+                Expression newArg = instantiateExpression(arg, variables);
+                if (newArg != arg) {
+                    replacement = true;
+                }
+                newArgs.add(newArg);
+            }
+            if (replacement) {
+                exp = exp.clone();
+                exp.args = newArgs;
+                return exp;
+            } else {
+                return exp;
+            }
+        } else {
+            return exp;        
+        }        
+    }
+    
+    
+    @Override
+    public String toString()
+    {
+        String str = "pattern: " + message + "\n";
+        if (name != null) {
+            str += "name: " + name + "\n";
+        }
+        for(CPUOpPattern opp:pattern) {
+            if (opp.isWildcard()) {
+                str += opp.ID + ": *\n";
+            } else {
+                str += opp.ID + ": " + opp.opName;
+                for(int i = 0;i<opp.args.size();i++) {
+                    if (i==0) {
+                        str += " " + opp.args.get(i);
+                    } else {
+                        str += ", " + opp.args.get(i);
+                    }
+                }
+                str += "\n";
+            }
+        }
+        str += "replacement:\n";
+        for(CPUOpPattern opp:replacement) {
+            if (opp.isWildcard()) {
+                str += opp.ID + ": *\n";
+            } else {
+                str += opp.ID + ": " + opp.opName;
+                for(int i = 0;i<opp.args.size();i++) {
+                    if (i==0) {
+                        str += " " + opp.args.get(i);
+                    } else {
+                        str += ", " + opp.args.get(i);
+                    }
+                }
+                str += "\n";
+            }
+        }
+        str += "constraints:\n";
+        for(Constraint c:constraints) {
+            str += c.name + "(";
+            for(int i = 0;i<c.args.length;i++) {
+                if (i == 0) {
+                    str += c.args[i];
+                } else {
+                    str += "," + c.args[i];
+                }
+            }
+            str += ")\n";
+        }
+        return str;
     }
 }

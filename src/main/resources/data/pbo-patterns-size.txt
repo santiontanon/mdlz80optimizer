@@ -66,4 +66,19 @@ replacement:
 constraints:
 in(?regixiy,IX,IY)
 equal(?const >= 4, -1)
- 
+
+; thanks to @maxiwamoto for the situation that led to this pattern
+pattern: Add ld ?regtouse, ?const4, and use a instead of ?const4 afterwards.
+name: use-register-instead-of-several-immediates
+parameterized: in(?regtouse,A,H,L,D,E,C,B)
+0: ld (?regixiy + ?const1), ?const4
+1: ld (?regixiy + ?const2), ?const4
+2: ld (?regixiy + ?const3), ?const4
+replacement:
+0: ld ?regtouse, ?const4
+1: ld (?regixiy + ?const1), ?regtouse
+2: ld (?regixiy + ?const2), ?regtouse
+3: ld (?regixiy + ?const3), ?regtouse
+constraints:
+in(?regixiy,IX,IY)
+regsNotUsedAfter(2,?regtouse)

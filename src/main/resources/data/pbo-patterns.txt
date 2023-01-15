@@ -40,6 +40,10 @@
 ; You can add ":ID" after any constraint, which the effect that the constraint will be checked right after the pattern line
 ; with number == ID is matched.
 
+; Patterns can be parameterized (if you want to define similar patterns that just
+; differ in one constant). Add the following statement:: 
+; parameterized: in(?variable,value1, ..., valuen)
+
 ; add tags to patterns to indicate if they are specific to some platform/dialect. Currently recognized tags:
 ; cpc: will only be loaded when z80cpc cpu is selected
 ; sdcc-unsafe: will not be loaded when the sdcc/sdasz80 dialects are selected
@@ -1960,6 +1964,19 @@ replacement:
 1: ex (sp),hl
 constraints:
 regsNotUsedAfter(2,HL)
+
+pattern: Replace ld (?regixiy + ?const1), ?const2 with ld (?regixiy + ?const1), ?reg, as ?reg == ?const2 here.
+name: replace-immediate-with-register
+0: ld ?reg, ?const2
+1: *
+2: ld (?regixiy + ?const1), ?const2
+replacement:
+0: ld ?reg, ?const2
+1: *
+2: ld (?regixiy + ?const1), ?reg
+constraints:
+regsNotModified(1, ?reg)
+in(?regixiy,IX,IY)
 
 ; automatically generated
 pattern: replace rlc ?reg0; rl ?reg1 with rlca; rl ?reg1

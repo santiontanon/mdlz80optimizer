@@ -31,9 +31,7 @@ import util.microprocessor.Z80.Z80Core;
  */
 public class SBOExecutionThread extends Thread {
     String threadID = "";
-    
-    int searchType;
-    
+        
     MDLConfig config;
     Specification spec;
     int nDependencies;
@@ -65,7 +63,6 @@ public class SBOExecutionThread extends Thread {
     // - 2 means they are set by an instruction
     // - 3 means both
     int currentDependencies[][] = null;
-    boolean goalDependencies[] = null;
     
     SBOGlobalSearchState globalState;
     // local state:
@@ -81,19 +78,17 @@ public class SBOExecutionThread extends Thread {
     
     public SBOExecutionThread(String a_threadID,
                               Specification a_spec, List<CPUOpDependency> a_allDependencies, 
-                              boolean a_goalDependencies[],
                               SBOGlobalSearchState a_best, RegisterNames a_eightBitRegistersToRandomize[], 
                               int a_memoryAddressesToRandomize[],
                               boolean a_showNewBestDuringSearch, CodeBase a_code,
                               MDLConfig a_config,
-                              int a_searchType, int a_codeMaxOps, int a_codeMaxAddress, int a_maxSimulationTime)
+                              int a_codeMaxOps, int a_codeMaxAddress, int a_maxSimulationTime)
     {
         threadID = a_threadID;
         config = a_config;
         spec = a_spec;
         allDependencies = a_allDependencies;
         nDependencies = allDependencies.size();
-        goalDependencies = a_goalDependencies;
         globalState = a_best;
         eightBitRegistersToRandomize = a_eightBitRegistersToRandomize;
         memoryAddressesToRandomize = a_memoryAddressesToRandomize;
@@ -130,7 +125,6 @@ public class SBOExecutionThread extends Thread {
         }
 //        config.debug("Initial dependency set: " + Arrays.toString(currentDependencies[0]));        
 
-        searchType = a_searchType;
         codeMaxOps = a_codeMaxOps;
         codeMaxAddress = a_codeMaxAddress;
         maxSimulationTime = a_maxSimulationTime;

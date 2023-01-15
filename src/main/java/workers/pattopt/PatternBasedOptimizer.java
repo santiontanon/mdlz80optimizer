@@ -211,6 +211,34 @@ public class PatternBasedOptimizer implements MDLWorker {
     }
     
     
+    void loadPattern(String patternString)
+    {
+        Pattern p = new Pattern(patternString, patternsConfig);
+        
+        // Instantiate the patterns based on their parametrization:
+        List<Pattern> open = new ArrayList<>();
+        open.add(p);
+        while(!open.isEmpty()) {
+            p = open.remove(0);
+            if (p.parametrization == null || p.parametrization.isEmpty()) {
+                if ((p.name == null || getPattern(p.name) == null) && tagCheck(p)) {
+                    // do not load the same pattern twice (some are repeated in some files for convenience):
+                    patterns.add(p);
+                }
+            } else {
+                String parameter = p.parametrization.keySet().iterator().next();
+                List<String> values = p.parametrization.get(parameter);
+                
+                for(String value:values) {
+                    Pattern p2 = new Pattern(p);
+                    p2.replaceParameter(parameter, value);
+                    open.add(p2);
+                }
+            }
+        }
+    }
+    
+    
     void loadPatterns(String fileName) 
     {
         config.debug("Loading patterns from " + fileName);
@@ -220,12 +248,9 @@ public class PatternBasedOptimizer implements MDLWorker {
             while(true) {
                 String line = br.readLine();
                 if (line == null) {
+                    // Load the last pattern:
                     if (!patternString.equals("")) {
-                        Pattern p = new Pattern(patternString, patternsConfig);
-                        if ((p.name == null || getPattern(p.name) == null) && tagCheck(p)) {
-                            // do not load the same pattern twice (some are repeated in some files for convenience):
-                            patterns.add(p);
-                        }
+                        loadPattern(patternString);
                     }
                     break;
                 }
@@ -235,11 +260,7 @@ public class PatternBasedOptimizer implements MDLWorker {
 
                 if (line.equals("")) {
                     if (!patternString.equals("")) {
-                        Pattern p = new Pattern(patternString, patternsConfig);
-                        if ((p.name == null || getPattern(p.name) == null) && tagCheck(p)) {
-                            // do not load the same pattern twice (some are repeated in some files for convenience):
-                            patterns.add(p);
-                        }
+                        loadPattern(patternString);
                         patternString = "";
                     }
                 } else {
@@ -312,9 +333,11 @@ public class PatternBasedOptimizer implements MDLWorker {
 
         Integer npatterns = r.optimizerSpecificStats.get("Pattern-based optimizer pattern applications");
         if (npatterns == null) npatterns = 0;
-        config.diggest("PatternBasedOptimizer: "+npatterns+" patterns applied, " +
-                       r.bytesSaved+" bytes, " + 
-                       r.timeSavingsString() + " " +config.timeUnit+"s saved.");
+        if (!silent) {
+            config.diggest("PatternBasedOptimizer: "+npatterns+" patterns applied, " +
+                           r.bytesSaved+" bytes, " + 
+                           r.timeSavingsString() + " " +config.timeUnit+"s saved.");
+        }
         return r;
     }
     
@@ -393,7 +416,7 @@ public class PatternBasedOptimizer implements MDLWorker {
                     sizeSavings > bestSizeSavings ||
                     (sizeSavings == bestSizeSavings && timeSavings > bestTimeSavings) ||
                     (sizeSavings == bestSizeSavings && timeSavings == bestTimeSavings && numConstraints < bestNumConstraints) ||
-                    (sizeSavings == bestSizeSavings && timeSavings == bestTimeSavings && numConstraints == bestNumConstraints && numLinesInvolved < bestMatch.map.size())) {
+                    (sizeSavings == bestSizeSavings && timeSavings == bestTimeSavings && numConstraints == bestNumConstraints && (bestMatch == null || numLinesInvolved < bestMatch.map.size()))) {
                     bestPatt = match.pattern;
                     bestMatch = match;
                     bestSizeSavings = sizeSavings;
@@ -421,7 +444,7 @@ public class PatternBasedOptimizer implements MDLWorker {
                 bestPatt.apply(f, bestMatch, code, equalitiesToMaintain)) {
                 statementsWhereIXIsSP = null;
                 statementsWhereIYIsSP = null;
-                if (config.isInfoEnabled()) {
+                if (config.isInfoEnabled() && !silent) {
                     int bytesSaved = bestPatt.getSpaceSaving(bestMatch, code);
                     String timeSavedString = bestPatt.getTimeSavingString(bestMatch, code);
                     config.info("Pattern-based optimization", statementToDisplayMessageOn.fileNameLineString(), 
