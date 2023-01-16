@@ -1128,16 +1128,20 @@ public class Expression {
     public boolean isIXIndirection() {
         if (type != EXPRESSION_PARENTHESIS) return false;
         Expression exp = args.get(0);
-        if (exp.containsRegister("ix")) return true;
-        return false;
+        return exp.containsRegister("ix");
     }
 
 
     public boolean isIYIndirection() {
         if (type != EXPRESSION_PARENTHESIS) return false;
         Expression exp = args.get(0);
-        if (exp.containsRegister("iy")) return true;
-        return false;
+        return exp.containsRegister("iy");
+    }
+    
+    public boolean isSPIndirection() {
+        if (type != EXPRESSION_PARENTHESIS) return false;
+        Expression exp = args.get(0);
+        return exp.containsRegister("sp");
     }
     
     

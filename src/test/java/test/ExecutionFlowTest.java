@@ -13,6 +13,7 @@ import java.util.List;
 import org.junit.Assert;
 import org.junit.Test;
 import workers.pattopt.ExecutionFlowAnalysis;
+import workers.pattopt.ExecutionFlowAnalysis.StatementTransition;
 
 /**
  *
@@ -38,6 +39,8 @@ public class ExecutionFlowTest {
     @Test public void test2() throws IOException { test("data/flowtests/test2.asm", null, 2); }
     @Test public void test3() throws IOException { test("data/flowtests/test3.asm", null, 0); }
     @Test public void test4() throws IOException { test("data/flowtests/test4-exported.asm", "macro80", 1); }
+    @Test public void test5() throws IOException { test("data/flowtests/test5-sp.asm", null, 1); }
+    @Test public void test6() throws IOException { test("data/flowtests/test6.asm", null, 2); }
 
     
     private void test(String inputFile, String dialect, int nRets) throws IOException
@@ -51,9 +54,9 @@ public class ExecutionFlowTest {
         Assert.assertTrue(
                 "Could not parse file " + inputFile,
                 config.codeBaseParser.parseMainSourceFiles(config.inputFiles, code));        
-        
+//        config.logger.setMinLevelToLog(MDLLogger.DEBUG);
         ExecutionFlowAnalysis flowAnalyzer = new ExecutionFlowAnalysis(code, config);
-        HashMap<CodeStatement, List<CodeStatement>> table = flowAnalyzer.findAllRetDestinations();
+        HashMap<CodeStatement, List<StatementTransition>> table = flowAnalyzer.findAllRetDestinations();
         
         Assert.assertEquals(nRets, table.size());
         
@@ -63,9 +66,9 @@ public class ExecutionFlowTest {
             String ID = tokens[1];
             int nDestinations = Integer.parseInt(tokens[2]);
             Assert.assertEquals(nDestinations, table.get(s).size());
-            for(CodeStatement sd: table.get(s)) {
-                Assert.assertNotNull(sd.comment);
-                Assert.assertTrue(sd.comment.contains(ID+"-DESTINATION"));
+            for(StatementTransition sd: table.get(s)) {
+                Assert.assertNotNull(sd.s.comment);
+                Assert.assertTrue(sd.s.comment.contains(ID+"-DESTINATION"));
             }
         }                
     }    
