@@ -24,6 +24,7 @@ public class ExecutionFlowAnalysis {
     
     HashMap<CodeStatement, List<CodeStatement>> forwardTable = null;
     HashMap<CodeStatement, List<CodeStatement>> reverseTable = null;
+    HashSet<CodeStatement> statementsWithExportedLabels = null;
         
     
     public ExecutionFlowAnalysis(CodeBase a_code, MDLConfig a_config) {
@@ -36,6 +37,7 @@ public class ExecutionFlowAnalysis {
     {
         forwardTable = null;
         reverseTable = null;
+        statementsWithExportedLabels = null;
     }
 
 
@@ -115,10 +117,10 @@ public class ExecutionFlowAnalysis {
                 if (s.op != null && s.op.isRet()) {
                     config.debug("findAllRetDestinations: found ret: " + s);
                     List<CodeStatement> destinations = findRetDestinations(s);
-                    forwardTableOnlyRets.put(s, destinations);
                     if (destinations == null) {
                         config.debug("findAllRetDestinations: null for " + s);
                     } else {
+                        forwardTableOnlyRets.put(s, destinations);
                         config.debug("findAllRetDestinations: " + destinations.size() + " for " + s);
                     }
                 }
@@ -149,6 +151,11 @@ public class ExecutionFlowAnalysis {
         open.addAll(reverseTable.get(s));
         while(!open.isEmpty()) {
             CodeStatement s2 = open.remove(0);
+            // If the ret goes through a label that is exported, then we play
+            // conservative and cancel the analysis:
+            if (isExported(s2)) {
+                return null;
+            }
             closed.add(s2);
             if (s2.op.isCall()) {
                 CodeStatement s2_next = s2.source.getNextStatementTo(s2, code);
@@ -168,6 +175,7 @@ public class ExecutionFlowAnalysis {
             } else {
                 // keep going backwards:
                 List<CodeStatement> prev_l = reverseTable.get(s2);
+                if (prev_l == null) return null;
                 for(CodeStatement prev:prev_l) {
                     if (!closed.contains(prev) && !open.contains(prev)) {
                         open.add(prev);
@@ -178,5 +186,34 @@ public class ExecutionFlowAnalysis {
         
         forwardTable.put(s, possibleDestinations);
         return possibleDestinations;
+    }
+    
+    
+    public boolean isExported(CodeStatement a_s)
+    {
+        if (config.dialectParser == null) return false;
+        if (statementsWithExportedLabels == null) {
+            statementsWithExportedLabels = new HashSet<>();
+            for(SourceFile f:code.getSourceFiles()) {
+                for(CodeStatement s:f.getStatements()) {
+                    if (s.label != null && config.dialectParser.labelIsExported(s.label)) {
+                        if (s.op != null) {
+                            statementsWithExportedLabels.add(s);
+                        } else {
+                            List<CodeStatement> s_next_op_l = nextOpExecutionStatements(s);
+                            if (s_next_op_l != null) {
+                                statementsWithExportedLabels.addAll(s_next_op_l);
+                            }
+                        }
+                    }
+                }
+            }
+            
+            config.debug("isExported:");
+            for(CodeStatement s:statementsWithExportedLabels) {
+                config.debug("    " + s);
+            }
+        }
+        return statementsWithExportedLabels.contains(a_s);
     }
 }

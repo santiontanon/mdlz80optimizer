@@ -1,4 +1,3 @@
-
     org #4000
 
     ld a, (value)

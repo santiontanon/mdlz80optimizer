@@ -5,7 +5,6 @@
 package test;
 
 import cl.MDLConfig;
-import cl.MDLLogger;
 import code.CodeBase;
 import code.CodeStatement;
 import java.io.IOException;
@@ -27,11 +26,21 @@ public class ExecutionFlowTest {
         config = new MDLConfig();
         code = new CodeBase(config);   
     }
+    
+    /*
+    In these test cases, we mark each "ret" statement in the source code with an ID, and
+    with the number of possible places it returns to, which are also then marked in 
+    the code with ID-DESTINATION. Then we check that the ExecutionFlowAnalysis
+    module can reconstruct those expected results.
+    */
 
-    @Test public void test1() throws IOException { test("data/flowtests/test1.asm", null); }
+    @Test public void test1() throws IOException { test("data/flowtests/test1.asm", null, 1); }
+    @Test public void test2() throws IOException { test("data/flowtests/test2.asm", null, 2); }
+    @Test public void test3() throws IOException { test("data/flowtests/test3.asm", null, 0); }
+    @Test public void test4() throws IOException { test("data/flowtests/test4-exported.asm", "macro80", 1); }
 
     
-    private void test(String inputFile, String dialect) throws IOException
+    private void test(String inputFile, String dialect, int nRets) throws IOException
     {
         if (dialect == null) {
             Assert.assertTrue(config.parseArgs(inputFile));
@@ -43,10 +52,10 @@ public class ExecutionFlowTest {
                 "Could not parse file " + inputFile,
                 config.codeBaseParser.parseMainSourceFiles(config.inputFiles, code));        
         
-//        config.logger.setMinLevelToLog(MDLLogger.DEBUG);
         ExecutionFlowAnalysis flowAnalyzer = new ExecutionFlowAnalysis(code, config);
         HashMap<CodeStatement, List<CodeStatement>> table = flowAnalyzer.findAllRetDestinations();
-        Assert.assertEquals(1, table.size());
+        
+        Assert.assertEquals(nRets, table.size());
         
         for(CodeStatement s: table.keySet()) {
             Assert.assertNotNull(s.comment);
