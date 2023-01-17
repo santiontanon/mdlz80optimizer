@@ -62,6 +62,8 @@ public class ExecutionFlowAnalysis {
     HashMap<CodeStatement, List<StatementTransition>> forwardTable = null;
     HashMap<CodeStatement, List<StatementTransition>> reverseTable = null;
     HashSet<CodeStatement> statementsWithExportedLabels = null;
+    
+    boolean stop_analysis_on_untracked_rst = false;
         
     
     public ExecutionFlowAnalysis(CodeBase a_code, MDLConfig a_config) {
@@ -133,7 +135,15 @@ public class ExecutionFlowAnalysis {
                     CodeStatement s_i = f.getStatements().get(i);
                     if (s_i.op.isRet()) continue;
                     List<StatementTransition> next = nextOpExecutionStatements(i, f);
-                    if (next == null) return null;
+                    if (next == null) {
+                        if (s_i.op.isRst()) {
+                            if (!stop_analysis_on_untracked_rst) {
+                                continue;
+                            }
+                        }
+                        config.error("Cannot determine the next statements after: " + s_i);
+                        return null;
+                    }
                     forwardTable.put(s_i, next);
                     for(StatementTransition st:next) {
                         if (!reverseTable.containsKey(st.s)) {

@@ -84,7 +84,8 @@ public class CPUOpSpec {
         if (opName.equalsIgnoreCase("call") ||
             opName.equalsIgnoreCase("jp") ||
             opName.equalsIgnoreCase("jr") ||
-            opName.equalsIgnoreCase("djnz")) {
+            opName.equalsIgnoreCase("djnz") ||
+            opName.equalsIgnoreCase("rst")) {
             jumpLabelArgument = args.size()-1;
         }
         if (opName.equalsIgnoreCase("ret")) isRet = true;

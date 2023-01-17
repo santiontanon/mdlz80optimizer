@@ -172,10 +172,10 @@ public class SourceFile {
         switch(s.type) {
             case CodeStatement.STATEMENT_CPUOP:
             {
-                if (s.op.isRst()) {
-                    // not currently suported
-                    return null;
-                }
+//                if (s.op.isRst()) {
+//                    // not currently suported
+//                    return null;
+//                }
                 if (s.op.isRet()) {
                     if (callStack != null && !callStack.isEmpty()) {
                         CodeStatement target = callStack.get(callStack.size()-1);
@@ -205,6 +205,22 @@ public class SourceFile {
                             // not all next statements can be determined:
                             return null;
                         }
+                    } else if (labelExp.evaluatesToIntegerConstant()) {
+                        Integer targetAddress = labelExp.evaluateToInteger(s, code, true);
+                        if (targetAddress != null) {
+                            // See if there is any label that matches with this value:
+                            for(SourceConstant label2:code.symbols.values()) {
+                                Object tmp = label2.getValue(code, true);
+                                if (tmp != null && tmp instanceof Integer) {
+                                    Integer label2Value = (Integer)tmp;
+                                    if ((int)label2Value == (int)targetAddress) {
+                                        label = label2;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        if (label == null) return null;
                     } else {
                         // not all next statements can be determined:
                         return null;
@@ -225,7 +241,7 @@ public class SourceFile {
                         next = new ArrayList<>();
                     }
                     List<CodeStatement> newCallStack = callStack;
-                    if (newCallStack != null && s.op.isCall()) {
+                    if (newCallStack != null && (s.op.isCall() || s.op.isRst())) {
                         List<Pair<CodeStatement, List<CodeStatement>>> returnFromCall = immediatelyNextExecutionStatements(index, callStack, code);
                         if (returnFromCall.size() != 1) {
                             config.error("immediatelyNextExecutionStatements returned " + returnFromCall.size() + ", instead of 1!");

@@ -41,6 +41,7 @@ public class ExecutionFlowTest {
     @Test public void test4() throws IOException { test("data/flowtests/test4-exported.asm", "macro80", 1); }
     @Test public void test5() throws IOException { test("data/flowtests/test5-sp.asm", null, 1); }
     @Test public void test6() throws IOException { test("data/flowtests/test6.asm", null, 2); }
+    @Test public void test7() throws IOException { test("data/flowtests/test7-rst.asm", null, 1); }
 
     
     private void test(String inputFile, String dialect, int nRets) throws IOException
