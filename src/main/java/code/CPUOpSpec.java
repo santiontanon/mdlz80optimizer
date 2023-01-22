@@ -34,7 +34,7 @@ public class CPUOpSpec {
     // Precompute instruction types:
     public boolean isConditional = false, isRet = false, isRst = false, isCall = false,
                    isJump = false, isRelativeJump = false, isPush = false, isPop = false,
-                   mightJump = false;
+                   mightJump = false, isAdd = false, isNop = false;
     public int jumpLabelArgument = -1;
 
     
@@ -100,6 +100,9 @@ public class CPUOpSpec {
         if (opName.equalsIgnoreCase("djnz")) isRelativeJump = true;
         if (opName.equalsIgnoreCase("push")) isPush = true;
         if (opName.equalsIgnoreCase("pop")) isPop = true;
+        if (opName.equalsIgnoreCase("add")) isAdd = true;
+        if (opName.equalsIgnoreCase("nop")) isNop = true;
+
         if (isRet || jumpLabelArgument != -1) mightJump = true;
     }
     

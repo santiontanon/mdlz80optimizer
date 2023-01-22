@@ -10,6 +10,7 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
 import cl.MDLConfig;
+import workers.pattopt.ExecutionFlowAnalysis;
 
 public class SourceFile {
     MDLConfig config;
@@ -257,9 +258,27 @@ public class SourceFile {
                     List<CodeStatement> newCallStack = callStack;
                     if (newCallStack != null) {
                         if (s.op.isPush()) {
+                            CodeStatement valuePushed = null;
+                            // Detect if the value being pushed is a label:
+                            if (s.label == null) {
+                                int i = index - 1;
+                                while(i >= 0) {
+                                    CodeStatement prev = statements.get(i);
+                                    if (prev.label != null) break;
+                                    if (prev.op != null) {
+                                        if (prev.op.isLd() && prev.op.modifiesRegister(s.op.args.get(0).registerOrFlagName)) {
+                                            // "ld" to the correct register:
+                                            valuePushed = ExecutionFlowAnalysis.statementValueOfLabelExpression(prev.op.args.get(1), code);
+                                        }
+                                        break;
+                                    } else if (!prev.isEmptyAllowingComments()) {
+                                        break;
+                                    }
+                                }
+                            }
                             newCallStack = new ArrayList<>();
                             newCallStack.addAll(callStack);
-                            newCallStack.add(null);
+                            newCallStack.add(valuePushed);
                         } else if (s.op.isPop()) {
                             newCallStack = new ArrayList<>();
                             newCallStack.addAll(callStack);

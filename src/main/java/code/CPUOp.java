@@ -276,6 +276,18 @@ public class CPUOp {
     }
     
 
+    public boolean isAdd()
+    {
+        return spec.isAdd;
+    }
+
+    
+    public boolean isNop()
+    {
+        return spec.isNop;
+    }
+
+    
     public boolean isRet()
     {
         return spec.isRet;
@@ -352,8 +364,18 @@ public class CPUOp {
         }
         return false;
     }
-
     
+    
+    public boolean modifiesRegister(String register)
+    {
+        for(CPUOpDependency outDep:getOutputDependencies()) {
+            if (outDep.register != null &&
+                outDep.register.equalsIgnoreCase(register)) return true;
+        }
+        return false;
+    }
+
+
     public boolean evaluateAllExpressions(CodeStatement s, CodeBase code, MDLConfig config)
     {
         for(int i = 0;i<args.size();i++) {
