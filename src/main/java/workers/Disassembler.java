@@ -84,12 +84,12 @@ public class Disassembler implements MDLWorker {
         // This string has MD tags, so that I can easily generate the corresponding documentation in github with the 
         // hidden "-helpmd" flag:        
         return "- ```-da data/code/<input hints>```: disassembles the input binary. If this flag is used, " +    
-               "the input file is interpreted as a binary file. The argument of this clad can be either " +
+               "the input file is interpreted as a binary file. The argument of this flag can be either " +
                "```data``` (indicating that the binary file is to be interpreted as data), ```code``` (" +
                "indicating that the binary file is to be interpreted as code), or a path to an ```<input hints>``` " +
                "file, which is a text file that gives hints to MDL about what is code and what is data. " +
-               "The hints file is mandatory. If you don't want to provide any hints, just point MDL to an " +
-               "empty file. The ```<input hints>``` format is as follows. Each line can be one of:\n" +
+               "The ```<input hints>``` format is as follows. Each line can be one of (you can comment " +
+               "lines our by prefixing them with ';'):\n" +
                "    - ```org <address>```\n" +
                "    - ```label <address> <label>```\n" +
                "    - ```comment <address> <comment>```\n" +
@@ -99,7 +99,7 @@ public class Disassembler implements MDLWorker {
                "    - ```space <address>```\n";
     }
 
-    
+
     @Override
     public String simpleDocString() {
         return "";
@@ -157,6 +157,10 @@ public class Disassembler implements MDLWorker {
                         StringTokenizer st = new StringTokenizer(line, " \t");
                         if (!st.hasMoreTokens()) continue;
                         String type = st.nextToken();
+                        if (type.startsWith(";")) {
+                            // this line is a comment
+                            continue;
+                        }
                         String addressToken = st.nextToken();
                         String restOfTheLine = (st.hasMoreTokens() ? st.nextToken("").strip():null);
                         Expression addressExp = config.expressionParser.parse(

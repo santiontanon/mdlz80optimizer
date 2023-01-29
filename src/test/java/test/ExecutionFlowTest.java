@@ -5,7 +5,7 @@
 package test;
 
 import cl.MDLConfig;
-//import cl.MDLLogger;
+import cl.MDLLogger;
 import code.CodeBase;
 import code.CodeStatement;
 import java.io.IOException;
@@ -47,6 +47,7 @@ public class ExecutionFlowTest {
     @Test public void test9() throws IOException { test("data/flowtests/test9.asm", null, 1); }
     @Test public void test10() throws IOException { test("data/flowtests/test10.asm", null, 2); }
     @Test public void test11() throws IOException { test("data/flowtests/test11-jumptables.asm", null, 4); }
+    @Test public void test12() throws IOException { test("data/flowtests/test12-jumptables2.asm", null, 3); }
 
     
     private void test(String inputFile, String dialect, int nRets) throws IOException
@@ -60,7 +61,7 @@ public class ExecutionFlowTest {
         Assert.assertTrue(
                 "Could not parse file " + inputFile,
                 config.codeBaseParser.parseMainSourceFiles(config.inputFiles, code));        
-//        config.logger.setMinLevelToLog(MDLLogger.DEBUG);
+        config.logger.setMinLevelToLog(MDLLogger.DEBUG);
         ExecutionFlowAnalysis flowAnalyzer = new ExecutionFlowAnalysis(code, config);
         HashMap<CodeStatement, List<StatementTransition>> table = flowAnalyzer.findAllRetDestinations();
         

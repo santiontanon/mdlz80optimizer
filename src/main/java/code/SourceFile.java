@@ -274,6 +274,7 @@ public class SourceFile {
                                     } else if (!prev.isEmptyAllowingComments()) {
                                         break;
                                     }
+                                    i--;
                                 }
                             }
                             newCallStack = new ArrayList<>();
