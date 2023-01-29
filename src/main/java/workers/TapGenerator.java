@@ -9,6 +9,7 @@ import code.CodeBase;
 import code.Expression;
 import code.OutputBinary;
 import code.SourceConstant;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -27,6 +28,7 @@ public class TapGenerator implements MDLWorker {
     String outputFileName = null;
     String executionStartAddressString = null;
     String programName = "PROG";
+    String loadingScreenFileName = null;
 
     public TapGenerator(MDLConfig a_config)
     {
@@ -40,7 +42,9 @@ public class TapGenerator implements MDLWorker {
         // hidden "-helpmd" flag:        
         return "- ```-tap <execution start address> <program name> <filename>```: generates a .tap file, as expected by ZX spectrum emulators. " +
                "```<execution start address>``` is the entry point of the program. It can be any expression MDL recognizes in source code, e.g., a constant like ```#a600```, a label, like ```CodeStart```, or an expression like ```myLabel+10```. " +
-               "```<program name>``` is the name you want to be displayed when the program loads, e.g. ```MYGAME``` (only the first 10 characters will be displayed).\n";
+               "```<program name>``` is the name you want to be displayed when the program loads, e.g. ```MYGAME``` (only the first 10 characters will be displayed).\n" +
+               "- ```-tap-loading-screen <filename>```: adds a loading screen to the .tap file (it only has an effect if the ```-tap``` flag was specified). " +
+               "```<filename>``` is the name of a 6912 bytes binary file with the loading screen data.\n";
     }
 
     @Override
@@ -55,6 +59,10 @@ public class TapGenerator implements MDLWorker {
             executionStartAddressString = flags.remove(0);
             programName = flags.remove(0);
             outputFileName = flags.remove(0);
+            return true;
+        } else if (flags.get(0).equals("-tap-loading-screen") && flags.size()>=2) {
+            flags.remove(0);
+            loadingScreenFileName = flags.remove(0);
             return true;
         }
         return false;
@@ -117,10 +125,18 @@ public class TapGenerator implements MDLWorker {
             BinaryGenerator bg = new BinaryGenerator(config);
             MDLConfig loaderConfig = new MDLConfig();
             CodeBase loaderCode = new CodeBase(loaderConfig);
-            if (!loaderConfig.parseArgs("data/zxspectrum-tap-loader.asm") ||
-                !loaderConfig.codeBaseParser.parseMainSourceFiles(loaderConfig.inputFiles, loaderCode)) {
-                config.error("Problem loading 'data/zxspectrum-tap-loader.asm' file to generate the.tap loader. This is probably a bug, please report!");
-                return false;
+            if (loadingScreenFileName == null) {
+                if (!loaderConfig.parseArgs("data/zxspectrum-tap-loader.asm") ||
+                    !loaderConfig.codeBaseParser.parseMainSourceFiles(loaderConfig.inputFiles, loaderCode)) {
+                    config.error("Problem loading 'data/zxspectrum-tap-loader.asm' file to generate the.tap loader. This is probably a bug, please report!");
+                    return false;
+                }
+            } else {
+                if (!loaderConfig.parseArgs("data/zxspectrum-tap-loader-ls.asm") ||
+                    !loaderConfig.codeBaseParser.parseMainSourceFiles(loaderConfig.inputFiles, loaderCode)) {
+                    config.error("Problem loading 'data/zxspectrum-tap-loader.asm' file to generate the.tap loader. This is probably a bug, please report!");
+                    return false;
+                }
             }
             // Define symbols:
             loaderCode.addSymbol("EXECUTION_START",
@@ -156,6 +172,20 @@ public class TapGenerator implements MDLWorker {
             for(int v:header2) os.write(v);
             config.debug(".tap assembler loader: " + asmLoaderBlock.size() + " bytes");
             for(int v:asmLoaderBlock) os.write(v);
+            if (loadingScreenFileName != null) {
+                FileInputStream fis = new FileInputStream(loadingScreenFileName);
+                List<Integer> loadingScreenData = new ArrayList<>();
+                while(fis.available() > 0) {
+                    loadingScreenData.add(fis.read() & 0xff);
+                }
+                if (loadingScreenData.size() != 6912) {
+                    config.error("Loading screen binary is not of length 6192 bytes!");
+                    return false;
+                }
+                List<Integer> loadingScreenBlock = generateTapBlock(loadingScreenData, 0xff);
+                config.debug(".tap loading screen: " + loadingScreenBlock.size() + " bytes");
+                for(int v:loadingScreenBlock) os.write(v);
+            }
             config.debug(".tap code: " + codeBlock.size() + " bytes");
             for(int v:codeBlock) os.write(v);
             os.flush();
