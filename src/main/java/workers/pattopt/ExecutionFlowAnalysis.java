@@ -134,15 +134,18 @@ public class ExecutionFlowAnalysis {
 
         List<StatementTransition> nextOpStatements = new ArrayList<>();
         for(Pair<CodeStatement, List<CodeStatement>> tmp:next) {
-            if (a_s.op != null &&
-                (a_s.op.isPop() || a_s.op.isRet())) {
-                open.add(new StatementTransition(tmp.getLeft(), StatementTransition.POP_RET_TRANSITION, null));
-            } else if (tmp.getRight() == null) {
-                open.add(new StatementTransition(tmp.getLeft(), StatementTransition.NON_STANDARD_STACK_TRANSITION, null));
-            } else if (tmp.getRight().isEmpty()) {
+            if (a_s.op != null) {
+                if ((a_s.op.isPop() || a_s.op.isRet())) {
+                    open.add(new StatementTransition(tmp.getLeft(), StatementTransition.POP_RET_TRANSITION, null));
+                } else if (tmp.getRight() == null) {
+                    open.add(new StatementTransition(tmp.getLeft(), StatementTransition.NON_STANDARD_STACK_TRANSITION, null));
+                } else if (tmp.getRight().isEmpty()) {
+                    open.add(new StatementTransition(tmp.getLeft(), StatementTransition.STANDARD_TRANSITION, null));
+                } else {
+                    open.add(new StatementTransition(tmp.getLeft(), StatementTransition.PUSH_CALL_TRANSITION, tmp.getRight().get(0)));
+                }
+            } else if (a_s.type == CodeStatement.STATEMENT_NONE) {
                 open.add(new StatementTransition(tmp.getLeft(), StatementTransition.STANDARD_TRANSITION, null));
-            } else {
-                open.add(new StatementTransition(tmp.getLeft(), StatementTransition.PUSH_CALL_TRANSITION, tmp.getRight().get(0)));
             }
         }
         while(!open.isEmpty()) {
@@ -212,6 +215,8 @@ public class ExecutionFlowAnalysis {
                             if (!reverseTable.get(s_i_next).contains(s_i_transition)) {
                                 reverseTable.get(s_i_next).add(s_i_transition);
                             }
+                        } else {
+                            config.debug("generateForwardAndReverseTables: failed to find the next op after " + s_i.fileNameLineString());            
                         }
                     } else if (s_i.op.isJump() && !s_i.op.isConditional()) {
                         // See if this is a "call to register" (ld reg, address; push reg; jp ...)
@@ -473,7 +478,15 @@ public class ExecutionFlowAnalysis {
         while(!open.isEmpty()) {
             Pair<CodeStatement, Integer> next = open.remove(0);
             CodeStatement s2 = next.getLeft();
-            if (s2.label != null || next.getRight() <= 0) {
+            int lookback_s2 = next.getRight();
+            if (s2.label != null) {
+                config.debug("identifyRegisterJumpTargetLocations: label found, search for the jump table start ended.");
+                regLdStatement = null;
+                break;
+            }
+            if (next.getRight() <= 0) {
+                config.debug("identifyRegisterJumpTargetLocations: maxLookBack reached, search for the jump table start ended.");
+                regLdStatement = null;
                 break;
             }
             if (s2.op != null) {
@@ -490,7 +503,34 @@ public class ExecutionFlowAnalysis {
                             }
                         }
                         break;
+                    } else if (s2.op.spec.getName().equalsIgnoreCase("ex")) {                        
+                        // See if this is the pattern found:
+                        //   ld e, (hl)
+                        //   inc hl
+                        //   ld d, (hl)
+                        //   ex de, hl
+                        List<CodeStatement> ops = getKPreviousOps(s2, 3);
+                        if (ops == null || ops.size() != 3) {
+                            regLdStatement = null;
+                            break;
+                        } else {
+                            ops.add(s2);
+                            if (ops.get(0).op.toString().equalsIgnoreCase("ld e, (hl)") &&
+                                ops.get(1).op.toString().equalsIgnoreCase("inc hl") &&
+                                ops.get(2).op.toString().equalsIgnoreCase("ld d, (hl)") &&
+                                ops.get(3).op.toString().equalsIgnoreCase("ex de, hl")) {
+                                // all good!
+                                s2 = ops.get(0);
+                                lookback_s2 -= 3;
+                            } else {
+                                config.debug("identifyRegisterJumpTargetLocations: unsupported case for 'ex de, hl'.");
+                                regLdStatement = null;
+                                break;                                
+                            }
+                        }
+                        
                     } else if (!s2.op.isAdd()) {
+                        config.debug("identifyRegisterJumpTargetLocations: unexpected function modifying the jump table resiger ("+s2.op+"), search for the jump table start ended.");
                         regLdStatement = null;
                         break;
                     }
@@ -498,20 +538,22 @@ public class ExecutionFlowAnalysis {
                 List<StatementTransition> prev_s2_l = reverseTable.get(s2);
                 if (prev_l != null) {
                     for(StatementTransition st:prev_s2_l) {
-                        open.add(Pair.of(st.s, maxLookBack - 1));        
+                        open.add(Pair.of(st.s, lookback_s2 - 1));        
                     }
                 } else {
+                    config.debug("identifyRegisterJumpTargetLocations: can't go back at: " + s2);
                     regLdStatement = null;
                     break;
                 }
             } else {
                 if (!s2.isEmptyAllowingComments()) {
+                    config.debug("identifyRegisterJumpTargetLocations: unexpected statement: " + s2);
                     regLdStatement = null;
                     break;
                 }                
             }
         }
-        
+                
         List<CodeStatement> jumpTables = new ArrayList<>();
         if (regLdStatement != null) {
             if (regLdStatement.op.isLd()) {
@@ -524,20 +566,28 @@ public class ExecutionFlowAnalysis {
                 // Find all possible values that "pop" can assign to the register:
                 List<CodeStatement> callStatements = getCallStatementsAssociatedWithPop(regLdStatement);
                 if (callStatements == null) {
+                    config.debug("identifyRegisterJumpTargetLocations: getCallStatementsAssociatedWithPop returned null");
                     return null;
                 }
                 for(CodeStatement s2:callStatements) {
                     CodeStatement s2_next = s.source.getNextStatementTo(s2, code);
                     s2_next = getFirstOpStatement(s2_next);
                     if (s2_next == null) {
-                        return null;
+                        // See if the next statement is data:
+                        s2_next = getFirstDataStatement(s2);
                     }
+                    if (s2_next == null) {
+                        config.error("identifyRegisterJumpTargetLocations: getFirstOpStatement returned null for s2: " + s2);
+                        return null;
+                    } 
                     jumpTables.add(s2_next);
                 }
             } else {
                 config.error("identifyRegisterJumpTargetLocations: internal error 1 (please report if you see this)");
                 return null;
             }
+        } else {
+            config.debug("identifyRegisterJumpTargetLocations: could not find regLdStatement.");
         }
 
         if (jumpTables.isEmpty()) return null;
@@ -641,12 +691,44 @@ public class ExecutionFlowAnalysis {
     CodeStatement getFirstOpStatement(CodeStatement s) {
         if (s.op != null) return s;
         List<StatementTransition> s_l = nextOpExecutionStatements(s);
-        if (s_l == null || s_l.size() > 1) {
-            config.error("generateForwardAndReverseTables: failed to find the next op after " + s.fileNameLineString());
+        if (s_l == null || s_l.size() != 1) {
             return null;
         } else {
             return s_l.get(0).s;
         }
+    }
+    
+    
+    CodeStatement getFirstDataStatement(CodeStatement s) {
+        if (s.data != null) return s;
+
+        int index = s.source.getStatements().indexOf(s);
+        if (s.source.getStatements().size() > index + 1) {
+            return s.source.getStatements().get(index + 1);
+        }
+
+        return null;
+    }
+        
+    
+    public List<CodeStatement> getKPreviousOps(CodeStatement s, int k)
+    {
+        List<CodeStatement> l = new ArrayList<>();
+
+        while(l.size() < k) {
+            List<StatementTransition> prev_s_l = reverseTable.get(s);
+            if (prev_s_l == null || prev_s_l.size() != 1) {
+                return null;
+            }
+            StatementTransition t = prev_s_l.get(0);
+            if (t.transitionType != StatementTransition.STANDARD_TRANSITION) {
+                return null;
+            }
+            s = prev_s_l.get(0).s;
+            l.add(0, s);
+        }
+        
+        return l;
     }
 
 
