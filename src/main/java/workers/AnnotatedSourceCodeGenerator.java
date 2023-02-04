@@ -58,9 +58,9 @@ public class AnnotatedSourceCodeGenerator implements MDLWorker {
                "  - If you add a comment like this ```; mdl-asm+:html:gfx(bitmap,pre,1,8,2)```, it will interpret the bytes prior to this as a bitmap and render it visually in the html. " +
                "```pre``` means that the data is before the comment (use ```post``` to use the data that comes after the comment. ```bitmap``` means that the data will be interpreted as a bitmap (black/white with one bit per pixel). " +
                "You can use ```and-or-bitmap-with-size``` to interpret it as the usual ZX spectrum graphics where each two bytes represent 8 pixels (first is and-mask, second is or-mask). The first two bytes will be interpreted as the height/width (hence, this can only be used with ```post```). " + 
-               "  - A comment like ```mdl-asm+:html:bgcolor(\"#ffaaaa\")``` will change the background in the HTML to the specified color from this point on." +
-               "  - A comment like ```mdl-asm+:html:bgcolor()``` will clear the HTML background color." +
                "When specifying ```bitmap```, the next two parameters are the width (in bytes)/height (in pixels). The last parameter is the zoom factor to use when visualizing them in the html.\n" +
+               "  - A comment like ```mdl-asm+:html:bgcolor(\"#ffaaaa\")``` will change the background in the HTML to the specified color from this point on.\n" +
+               "  - A comment like ```mdl-asm+:html:bgcolor()``` will clear the HTML background color.\n" +
                "- ```-asm+:no-reindent```: tries to respect the original indentation of the source assembler file (this is not always possible, as MDL might modify or generate code, making this hard; this is why this is not on by default).\n" +
                "- ```-asm+:no-label-links```: by default, labels used in expressions are rendered as links that point to the label definitions. Use this flag to deactivate such behavior if desired.\n";
     }
