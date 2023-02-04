@@ -117,6 +117,15 @@ public class CPUConstants {
         RegisterNames.IYH, RegisterNames.IYL,
         RegisterNames.R, RegisterNames.I
     };        
+    
+    
+    public static final RegisterNames sixteenBitRegisters[] = {
+        RegisterNames.BC, RegisterNames.DE, RegisterNames.HL,
+        RegisterNames.BC_ALT, RegisterNames.DE_ALT, RegisterNames.HL_ALT,
+        RegisterNames.IX, RegisterNames.IY,
+        RegisterNames.SP, RegisterNames.PC,        
+    };
+
 
     static {
         PARITY_TABLE[0] = true; // even PARITY_TABLE seed value

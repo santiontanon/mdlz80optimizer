@@ -108,6 +108,7 @@ public class SourceCodeExecution implements MDLWorker {
         Expression exp = config.expressionParser.parse(tokens, null, null, code);
         int startAddress = exp.evaluateToInteger(null, code, false);
         List<String> modifiedFlags = new ArrayList<>();
+        List<String> modifiedRegisters = new ArrayList<>();
         int endAddress = -1;
         int steps = -1;
         if (stepsString != null) {
@@ -148,6 +149,11 @@ public class SourceCodeExecution implements MDLWorker {
                             modifiedFlags.add(flag);
                         }
                     }
+                    for(String reg:s.op.spec.outputRegs) {
+                        if (!modifiedRegisters.contains(reg)) {
+                            modifiedRegisters.add(reg);
+                        }
+                    }
                 }
                 z80.executeOneInstruction();
                 nInstructionsExecuted ++;
@@ -159,10 +165,13 @@ public class SourceCodeExecution implements MDLWorker {
         
         // Print changes:
         config.info("Execution result:");
-        for(RegisterNames reg:CPUConstants.eightBitRegisters) {
-            int v = z80.getRegisterValue(reg);
-            if (v != 0) {
-                config.info("  " + CPUConstants.registerName(reg) + ": " + v + " (" + config.tokenizer.toHexByte(v, config.hexStyle) + ")");
+        for(String reg:modifiedRegisters) {
+            RegisterNames regName = CPUConstants.registerByName(reg);
+            int v = z80.getRegisterValue(regName);
+            if (CPUConstants.is8bitRegister(regName)) {
+                config.info("  " + reg + ": " + v + " (" + config.tokenizer.toHexByte(v, config.hexStyle) + ")");
+            } else {
+                config.info("  " + reg + ": " + v + " (" + config.tokenizer.toHexWord(v, config.hexStyle) + ")");
             }
         }
         config.info("  Modified flags: " + modifiedFlags);

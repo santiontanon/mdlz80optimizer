@@ -25,6 +25,7 @@ import javax.imageio.ImageIO;
  */
 public class AnnotatedSourceCodeGenerator implements MDLWorker {
     public final static String GFX_TAG = "mdl-asm+:html:gfx";
+    public final static String BG_COLOR_TAG = "mdl-asm+:html:bgcolor";
     public final static int COLOR_PIXEL_ON = 0xff000000;  // black
     public final static int COLOR_PIXEL_OFF = 0xffdddddd;  // light gray
     public final static int COLOR_PIXEL_MASKED = 0xff8888ff;  // blue
@@ -53,9 +54,12 @@ public class AnnotatedSourceCodeGenerator implements MDLWorker {
         return "- ```-asm+ <output file>```: generates a single text file containing the original assembler code (with macros expanded), that includes size and time annotations at the beginning of each file to help with manual optimizations beyond what MDL already provides.\n"
              + "- ```-asm+:html <output file>```: acts like ```-asm+```, except that the output is in html (rendered as a table), allowing it to have some extra information. " +
                "It also recognizes certain tags in the source code to add html visualizations of the graphics in the game, extracting them automatically from the data in the assembler files. "+
-               "Specifically, if you add a comment like this ```; mdl-asm+:html:gfx(bitmap,pre,1,8,2)```, it will interpret the bytes prior to this as a bitmap and render it visually in the html. " +
+               "Specifically:\n" +
+               "  - If you add a comment like this ```; mdl-asm+:html:gfx(bitmap,pre,1,8,2)```, it will interpret the bytes prior to this as a bitmap and render it visually in the html. " +
                "```pre``` means that the data is before the comment (use ```post``` to use the data that comes after the comment. ```bitmap``` means that the data will be interpreted as a bitmap (black/white with one bit per pixel). " +
                "You can use ```and-or-bitmap-with-size``` to interpret it as the usual ZX spectrum graphics where each two bytes represent 8 pixels (first is and-mask, second is or-mask). The first two bytes will be interpreted as the height/width (hence, this can only be used with ```post```). " + 
+               "  - A comment like ```mdl-asm+:html:bgcolor(\"#ffaaaa\")``` will change the background in the HTML to the specified color from this point on." +
+               "  - A comment like ```mdl-asm+:html:bgcolor()``` will clear the HTML background color." +
                "When specifying ```bitmap```, the next two parameters are the width (in bytes)/height (in pixels). The last parameter is the zoom factor to use when visualizing them in the html.\n" +
                "- ```-asm+:no-reindent```: tries to respect the original indentation of the source assembler file (this is not always possible, as MDL might modify or generate code, making this hard; this is why this is not on by default).\n" +
                "- ```-asm+:no-label-links```: by default, labels used in expressions are rendered as links that point to the label definitions. Use this flag to deactivate such behavior if desired.\n";
@@ -241,6 +245,21 @@ public class AnnotatedSourceCodeGenerator implements MDLWorker {
             String outputFileName)
     {
         for (CodeStatement ss:sf.getStatements()) {
+            
+            String ssString = ss.toStringHTML(style, code);
+            if (respectOriginalIndentation) ssString = reconstructIndentation(ssString, ss);
+            
+            // Check if there are MDL tags in comments:
+            if (ss.comment != null) {
+                if (ss.comment.contains(GFX_TAG)) {
+                    ssString = parseGFXTag(ss, ssString, code, positionInBinaryMap, statementBytesMap);
+                }
+                if (ss.comment.contains(BG_COLOR_TAG)) {
+                    ssString = parseBGColorTag(ss, ssString, style);
+                }
+            }
+            if (ssString == null) continue;
+            
             sb.append("<tr>");
             Integer address = ss.getAddress(code);
             if (address == null) {
@@ -294,106 +313,13 @@ public class AnnotatedSourceCodeGenerator implements MDLWorker {
                 sb.append("<td></td>");
             }       
             
-            String ssString = ss.toStringHTML(style, code);
-            if (respectOriginalIndentation) ssString = reconstructIndentation(ssString, ss);
-            
-            // Check if there is an "mdl-asm+:html:gfx" tag:
-            if (ss.comment != null && ss.comment.contains(GFX_TAG)) {
-                // Tag found!, get parameters:
-                int cmdStartIdx = ss.comment.indexOf(GFX_TAG);
-                int cmdEndIdx = ss.comment.indexOf(")", cmdStartIdx);
-                if (cmdEndIdx >= 0) {
-                    String cmdString = ss.comment.substring(cmdStartIdx, cmdEndIdx+1);
-                    String tokens[] = cmdString.substring(GFX_TAG.length()).split(",");
-                    List<String> args = new ArrayList<>();
-                    for(int i = 0;i<tokens.length;i++) {
-                        String token = tokens[i].strip();
-                        token = token.replace("(", "");
-                        token = token.replace(")", "");
-                        args.add(token);
-                    }
-                    BufferedImage img = null;
-                    switch(args.get(0)) {
-                        case "bitmap":
-                        {
-                            // check if we need to get the data from before, or from afterwards:
-                            if (args.size() != 5) {
-                                config.warn("Expected 5 arguments in a 'bitmap' comment tag (ignoring): " + ss.comment);                        
-                                break;
-                            }
-                            Integer width = Integer.parseInt(args.get(2));
-                            Integer height = Integer.parseInt(args.get(3));
-                            int dataSize = width*height;
-                            List<Byte> bitmapData = null;
-                            if (args.get(1).equalsIgnoreCase("pre")) {
-                                // pre:
-                                bitmapData = getPreData(ss, code, dataSize, statementBytesMap);
-                            } else if (args.get(1).equalsIgnoreCase("post")) {
-                                // post:
-                                bitmapData = getPostData(ss, code, dataSize, positionInBinaryMap, statementBytesMap);
-                            } else {
-                                config.warn("Expected second argument to be either 'pre' or 'post' in a 'bitmap' coment tag (ignoring): " + ss.comment);
-                                break;
-                            }
-                            if (bitmapData != null) {
-                                // convert it to an image!
-                                int zoom = Integer.parseInt(args.get(4));
-                                img = generateBitmapImage(bitmapData, width, height, zoom);
-                            }
-                            break;
-                        }
-                        case "and-or-bitmap-with-size":
-                        {
-                            // check if we need to get the data from before, or from afterwards:
-                            if (args.size() != 3) {
-                                config.warn("Expected 3 arguments in a 'and-or-bitmap-with-size' comment tag (ignoring): " + ss.comment);                        
-                                break;
-                            }
-                            List<Byte> bitmapData = null;
-                            if (args.get(1).equalsIgnoreCase("post")) {
-                                // post:
-                                bitmapData = getPostDataAndOrWithSize(ss, code, positionInBinaryMap, statementBytesMap);
-                            } else {
-                                config.warn("Expected second argument to be 'post' in a 'bitmap' coment tag (ignoring): " + ss.comment);
-                                break;
-                            }
-                            if (bitmapData != null) {
-                                // convert it to an image!
-                                int zoom = Integer.parseInt(args.get(2));
-                                img = generateAndOrBitmapImage(bitmapData, zoom);
-                            }
-                            break;
-                        }
-                        default:
-                            config.warn(args.get(0) + " argument not recognized in comment tag (ignoring): " + ss.comment);
-                    }
-
-                    if (img != null) {
-                        // Save image to disk (see if we need to create a folder):
-                        String folderName = outputFileName + "-assets";
-                        File folder = new File(folderName);
-                        if (!folder.exists()) {
-                            folder.mkdirs();
-                        }
-                        String fileName = folderName + File.separator + "img" + imgIndex + ".png";
-                        try {
-                            ImageIO.write(img, "png", new File(fileName));
-                        } catch (IOException ex) {
-                            config.error("Cannot write to file " + fileName);
-                        }
-                        imgIndex += 1;
-
-                        // replace command by image tag:
-
-                        String imageTag = "<img src=\"" + fileName + "\" alt=\"MDL bitmap visualization\" width=\"" + img.getWidth() + "\" height=\"" + img.getHeight() + "\">";
-                        ssString = ssString.replace(cmdString, imageTag);
-                    }
-                } else {
-                    config.warn("Could not parse "+GFX_TAG+" tag (ignoring): " + ss.comment);
-                }
+            if (style.backgroundColor != null) {
+                sb.append("<td style=\"background-color:");
+                sb.append(style.backgroundColor);
+                sb.append("\"><pre>");
+            } else {
+                sb.append("<td><pre>");
             }
-            
-            sb.append("<td><pre>");
             sb.append(ssString);
             sb.append("</pre></td>");
             sb.append("</tr>\n");
@@ -574,12 +500,149 @@ public class AnnotatedSourceCodeGenerator implements MDLWorker {
         return img;
     }
 
-    private void putZoomedPixel(BufferedImage img, int x, int y, int zoom, int color) 
+    
+    public void putZoomedPixel(BufferedImage img, int x, int y, int zoom, int color) 
     {
         for(int i = 0;i<zoom;i++) {
             for(int j = 0;j<zoom;j++) {
                 img.setRGB(x*zoom+j, y*zoom+i, color);
             }
         }
+    }
+    
+    
+    public String parseGFXTag(CodeStatement ss, String ssString, CodeBase code,
+                              HashMap<CodeStatement, Integer> positionInBinaryMap,
+                              HashMap<CodeStatement, BinaryGenerator.StatementBinaryEffect> statementBytesMap)
+    {
+        // GFX_TAG Tag found!, get parameters:
+        int cmdStartIdx = ss.comment.indexOf(GFX_TAG);
+        int cmdEndIdx = ss.comment.indexOf(")", cmdStartIdx);
+        if (cmdEndIdx >= 0) {
+            String cmdString = ss.comment.substring(cmdStartIdx, cmdEndIdx+1);
+            String tokens[] = cmdString.substring(GFX_TAG.length()).split(",");
+            List<String> args = new ArrayList<>();
+            for(int i = 0;i<tokens.length;i++) {
+                String token = tokens[i].strip();
+                token = token.replace("(", "");
+                token = token.replace(")", "");
+                args.add(token);
+            }
+            BufferedImage img = null;
+            switch(args.get(0)) {
+                case "bitmap":
+                {
+                    // check if we need to get the data from before, or from afterwards:
+                    if (args.size() != 5) {
+                        config.warn("Expected 5 arguments in a 'bitmap' comment tag (ignoring): " + ss.comment);                        
+                        break;
+                    }
+                    Integer width = Integer.parseInt(args.get(2));
+                    Integer height = Integer.parseInt(args.get(3));
+                    int dataSize = width*height;
+                    List<Byte> bitmapData = null;
+                    if (args.get(1).equalsIgnoreCase("pre")) {
+                        // pre:
+                        bitmapData = getPreData(ss, code, dataSize, statementBytesMap);
+                    } else if (args.get(1).equalsIgnoreCase("post")) {
+                        // post:
+                        bitmapData = getPostData(ss, code, dataSize, positionInBinaryMap, statementBytesMap);
+                    } else {
+                        config.warn("Expected second argument to be either 'pre' or 'post' in a 'bitmap' coment tag (ignoring): " + ss.comment);
+                        break;
+                    }
+                    if (bitmapData != null) {
+                        // convert it to an image!
+                        int zoom = Integer.parseInt(args.get(4));
+                        img = generateBitmapImage(bitmapData, width, height, zoom);
+                    }
+                    break;
+                }
+                case "and-or-bitmap-with-size":
+                {
+                    // check if we need to get the data from before, or from afterwards:
+                    if (args.size() != 3) {
+                        config.warn("Expected 3 arguments in a 'and-or-bitmap-with-size' comment tag (ignoring): " + ss.comment);                        
+                        break;
+                    }
+                    List<Byte> bitmapData = null;
+                    if (args.get(1).equalsIgnoreCase("post")) {
+                        // post:
+                        bitmapData = getPostDataAndOrWithSize(ss, code, positionInBinaryMap, statementBytesMap);
+                    } else {
+                        config.warn("Expected second argument to be 'post' in a 'bitmap' coment tag (ignoring): " + ss.comment);
+                        break;
+                    }
+                    if (bitmapData != null) {
+                        // convert it to an image!
+                        int zoom = Integer.parseInt(args.get(2));
+                        img = generateAndOrBitmapImage(bitmapData, zoom);
+                    }
+                    break;
+                }
+                default:
+                    config.warn(args.get(0) + " argument not recognized in comment tag (ignoring): " + ss.comment);
+            }
+
+            if (img != null) {
+                // Save image to disk (see if we need to create a folder):
+                String folderName = outputFileName + "-assets";
+                File folder = new File(folderName);
+                if (!folder.exists()) {
+                    folder.mkdirs();
+                }
+                String fileName = folderName + File.separator + "img" + imgIndex + ".png";
+                try {
+                    ImageIO.write(img, "png", new File(fileName));
+                } catch (IOException ex) {
+                    config.error("Cannot write to file " + fileName);
+                }
+                imgIndex += 1;
+
+                // replace command by image tag:
+
+                String imageTag = "<img src=\"" + fileName + "\" alt=\"MDL bitmap visualization\" width=\"" + img.getWidth() + "\" height=\"" + img.getHeight() + "\">";
+                ssString = ssString.replace(cmdString, imageTag);
+            }
+        } else {
+            config.warn("Could not parse "+GFX_TAG+" tag (ignoring): " + ss.comment);
+        }
+        return ssString;
+    }
+    
+    
+    public String parseBGColorTag(CodeStatement ss, String ssString, HTMLCodeStyle style)
+    {
+        int cmdStartIdx = ss.comment.indexOf(BG_COLOR_TAG);
+        List<String> tokens = config.tokenizer.tokenize(ss.comment.substring(cmdStartIdx + BG_COLOR_TAG.length()));
+        if (tokens.isEmpty() || !tokens.get(0).equalsIgnoreCase("(")) {
+            config.error("Expected '(' after " + BG_COLOR_TAG + " tag!");
+            return ssString;
+        }
+        tokens.remove(0);
+        if (tokens.isEmpty()) {
+            config.error("Expected ')' or string after '" + BG_COLOR_TAG + "('!");
+            return ssString;
+        }
+        if (tokens.get(0).equalsIgnoreCase(")")) {
+            style.backgroundColor = null;
+            if (ss.isEmptyAllowingComments()) return null;  // Skip this statement
+            // Otherwise, at least, delete the tag:
+            cmdStartIdx = ssString.indexOf(BG_COLOR_TAG);
+            return ssString.substring(cmdStartIdx);
+        }
+        // We have a bg color:
+        String token = tokens.get(0);
+        if (token.startsWith("\"") && token.endsWith("\"")) {
+            style.backgroundColor = token.substring(1, token.length() - 1);
+            if (ss.isEmptyAllowingComments()) return null;  // Skip this statement
+            // Otherwise, at least, delete the tag:
+            cmdStartIdx = ssString.indexOf(BG_COLOR_TAG);
+            return ssString.substring(cmdStartIdx);
+        } else {
+            config.error("Expected string argument to " + BG_COLOR_TAG + " tag! expected string, but found: " + tokens);
+        }
+             
+        return ssString;
     }
 }

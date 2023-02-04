@@ -16,7 +16,7 @@ public class HTMLCodeStyle {
     public static final int TYPE_CONSTANT = 5;
     public static final int TYPE_MACRO = 6;
     
-    public String backgroundColor = "ffffff";
+    public String backgroundColor = null;  // Only applies to source code, not to the whole HTML file
     public String defaultStyle = "color: #000000";
     public String comentStyle = "color: #880000";
     public String labelStyle = "color: #000088";
