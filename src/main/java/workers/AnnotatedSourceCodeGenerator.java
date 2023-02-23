@@ -38,6 +38,7 @@ public class AnnotatedSourceCodeGenerator implements MDLWorker {
     HTMLCodeStyle style = new HTMLCodeStyle();
     boolean respectOriginalIndentation = false;
     boolean annotateEqusWithFinalValue = true;
+    boolean printBGColorStats = false;
 
 
     public AnnotatedSourceCodeGenerator(MDLConfig a_config)
@@ -90,6 +91,11 @@ public class AnnotatedSourceCodeGenerator implements MDLWorker {
         } else if (flags.get(0).equals("-asm+:no-label-links")) {
             flags.remove(0);
             style.labelsAsLinks = false;
+            return true;
+        } else if (flags.get(0).equals("-asm+:html:bg-stats")) {
+            flags.remove(0);
+            // Hidden debug flag: prints stats of how many lines have which background colors
+            printBGColorStats = true;
             return true;
         }
         return false;
@@ -244,6 +250,7 @@ public class AnnotatedSourceCodeGenerator implements MDLWorker {
             HashMap<CodeStatement, BinaryGenerator.StatementBinaryEffect> statementBytesMap,
             String outputFileName)
     {
+        HashMap<String, Integer> BGColorStats = new HashMap<>();
         for (CodeStatement ss:sf.getStatements()) {
             
             String ssString = ss.toStringHTML(style, code);
@@ -317,13 +324,33 @@ public class AnnotatedSourceCodeGenerator implements MDLWorker {
                 sb.append("<td style=\"background-color:");
                 sb.append(style.backgroundColor);
                 sb.append("\"><pre>");
+                if (!BGColorStats.containsKey(style.backgroundColor)) {
+                    BGColorStats.put(style.backgroundColor, 0);
+                }
+                BGColorStats.put(style.backgroundColor, BGColorStats.get(style.backgroundColor) + 1);
             } else {
                 sb.append("<td><pre>");
+                if (!BGColorStats.containsKey("")) {
+                    BGColorStats.put("", 0);
+                }
+                BGColorStats.put("", BGColorStats.get("") + 1);
             }
             sb.append(ssString);
             sb.append("</pre></td>");
             sb.append("</tr>\n");
-            
+        }
+        
+        if (printBGColorStats) {
+            int total = 0;
+            for(String key:BGColorStats.keySet()) {
+                total += BGColorStats.get(key);
+            }
+            config.info("BGColor stats for " + sf.originalFileName + ": ");
+            for(String key:BGColorStats.keySet()) {
+                int n = BGColorStats.get(key);
+                float percent = (n / (float)total) * 100;
+                config.info("  '" + key + "': " + n + " (" + percent + "%)");
+            }
         }
     }    
     

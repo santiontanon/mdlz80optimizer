@@ -298,6 +298,7 @@ public class Disassembler implements MDLWorker {
         resolveJumpLabels(sf, code);
         if (removeUnusedLabels) removeUnusedLabels(sf, code);
         if (moveLabelsToTheirOwnLines) moveLabelsToTheirOwnLines(sf, code);
+        addHexHints(sf, code);
         
         return true;
     }
@@ -435,23 +436,7 @@ public class Disassembler implements MDLWorker {
                         s.comment = state_nextStatementComment;
                         state_nextStatementComment = null;
                     }
-                    // Translate the 16bit constants to hex and add their value
-                    // in a comment:
-                    String comment = null;
-                    for(int i = 0;i<op.args.size();i++) {
-                        Expression e = op.args.get(i);
-                        if (e.type == Expression.EXPRESSION_INTEGER_CONSTANT) {
-                            if (comment == null) {
-                                comment = "; ";
-                            } else {
-                                comment += ", ";
-                            }
-                            if (op.spec.args.get(i).is16bit()) {
-                                comment += config.tokenizer.toHexWord(e.evaluateToInteger(s, code, true), config.hexStyle);
-                            }
-                        }
-                    }
-                    if (comment != null) s.comment = comment;
+
                     sf.addStatement(s);
                     for(int i = 0;i<spec.sizeInBytes;i++) {
                         currentBlock.remove(0);
@@ -574,5 +559,37 @@ public class Disassembler implements MDLWorker {
             }
         }
     }
+    
+    
+
+    public void addHexHints(SourceFile sf, CodeBase code)
+    {
+        for(CodeStatement s: sf.getStatements()) {
+            if (s.op == null) continue;
+            // Translate the 16bit constants to hex and add their value
+            // in a comment:
+            String comment = null;
+            for(int i = 0;i<s.op.args.size();i++) {
+                Expression e = s.op.args.get(i);
+                if (e.type == Expression.EXPRESSION_PARENTHESIS &&
+                    e.args.get(0).type == Expression.EXPRESSION_INTEGER_CONSTANT) {
+                    // Indirection, directly render as hex:
+                    e.args.get(0).renderMode = Expression.RENDER_AS_16BITHEX;
+                } else if (e.type == Expression.EXPRESSION_INTEGER_CONSTANT) {
+                    if (s.op.spec.args.get(i).is16bit() &&
+                        e.integerConstant >= 10) {
+                        if (comment == null) {
+                            comment = "; ";
+                        } else {
+                            comment += ", ";
+                        }
+                        comment += config.tokenizer.toHexWord(e.evaluateToInteger(s, code, true), config.hexStyle);
+                    }
+                }
+            }
+            if (comment != null) s.comment = comment;
+        }
+    }
+        
     
 }
