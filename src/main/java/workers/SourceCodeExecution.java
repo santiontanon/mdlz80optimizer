@@ -26,11 +26,32 @@ import util.microprocessor.Z80.Z80Core;
  */
 public class SourceCodeExecution implements MDLWorker {
 
+    
+    public static class FunctionCallRecord {
+        public int stack;
+        public long startTime, endTime;
+    }
+
+
+    public static class FunctionTrackRecord {
+        public FunctionTrackRecord(String a_userString, int a_address) {
+            userString = a_userString;
+            address = a_address;
+        }
+        
+        public String userString;
+        public int address;
+        List<FunctionCallRecord> closed = new ArrayList<>();
+        List<FunctionCallRecord> open = new ArrayList<>();
+    }
+    
+    
     MDLConfig config = null;
     String startAddressString = null;
     String endAddressString = null;
     String stepsString = null;
     boolean trace = false;
+    List<String> trackFunctionStrings = new ArrayList<>();
 
     
     public SourceCodeExecution(MDLConfig a_config)
@@ -43,9 +64,10 @@ public class SourceCodeExecution implements MDLWorker {
     public String docString() {
         // This string has MD tags, so that I can easily generate the corresponding documentation in github with the 
         // hidden "-helpmd" flag:        
-        return "- ```-e:s <address> <steps>```: executes the source code starting at <address> (address can be numer or a label name) for <steps> CPU time units, and displays the changed registers, memory and timing.\n" +
+        return "- ```-e:s <address> <steps>```: executes the source code starting at <address> (address can be number or a label name) for <steps> CPU time units, and displays the changed registers, memory and timing.\n" +
                "- ```-e:u <address-start> <address-end>```: executes the source code starting at <address-start> until reaching <address-end>, and displays the changed registers, memory and timing.\n" +
-               "- ```-e:trace```: turns on step-by-step execution logging for ```-e:s``` or ```-e:u``` flags.";
+               "- ```-e:trace```: turns on step-by-step execution logging for ```-e:s``` or ```-e:u``` flags.\n" +
+               "- ```-e:track-function <address>```: tracks execution count and time of a function at the specified address (can be a label).";
     }
 
     @Override
@@ -68,6 +90,10 @@ public class SourceCodeExecution implements MDLWorker {
         } else if (flags.get(0).equals("-e:trace")) {
             flags.remove(0);
             trace = true;
+            return true;
+        } else if (flags.get(0).equals("-e:track-function") && flags.size()>=2) {
+            flags.remove(0);
+            trackFunctionStrings.add(flags.remove(0));
             return true;
         }
 
@@ -122,6 +148,15 @@ public class SourceCodeExecution implements MDLWorker {
             endAddress = exp.evaluateToInteger(null, code, false);
         }
         
+        // Functions to track:
+        List<FunctionTrackRecord> trackFunctions = new ArrayList<>();
+        for(String functionString:trackFunctionStrings) {
+            tokens = config.tokenizer.tokenize(functionString);
+            exp = config.expressionParser.parse(tokens, null, null, code);
+            int functionAddress = exp.evaluateToInteger(null, code, false);
+            trackFunctions.add(new FunctionTrackRecord(functionString, functionAddress));
+        }
+        
         // Set program counter:
         z80.setProgramCounter(startAddress);
         
@@ -132,9 +167,34 @@ public class SourceCodeExecution implements MDLWorker {
         int nInstructionsExecuted = 0;
         try {
             while(true) {
+                int address = z80.getProgramCounter();
+                int sp = z80.getSP();
+                
+                for(FunctionTrackRecord function:trackFunctions) {
+                    // Check for returns:
+                    if (!function.open.isEmpty()) {
+                        FunctionCallRecord lastCall = function.open.get(function.open.size() - 1);
+                        int diff = lastCall.stack - sp;
+                        // We need to check >= 32768 in case the stack wraps around the address space.
+                        if (diff < 0 || diff >= 32768) {
+                            lastCall.endTime = z80.getTStates();
+                            function.open.remove(lastCall);
+                            function.closed.add(lastCall);
+                        }
+                    }
+                    if (address == function.address) {
+                        // We just entered in one of the functions to track!
+                        FunctionCallRecord r = new FunctionCallRecord();
+                        r.stack = sp;
+                        r.startTime = z80.getTStates();
+                        r.endTime = -1;
+                        function.open.add(r);
+                    }
+                }
+                
                 if (steps >= 0 && z80.getTStates() < steps) break;
                 if (endAddress >= 0 && z80.getProgramCounter() == endAddress) break;
-                int address = z80.getProgramCounter();
+                
                 CodeStatement s = instructions.get(address);
                 if (trace) {
                     if (s == null) {
@@ -186,7 +246,30 @@ public class SourceCodeExecution implements MDLWorker {
         }
         config.info("  " + nInstructionsExecuted + " instructions executed.");
         config.info("  execution time: " + z80.getTStates() + " "+config.timeUnit + "s");
-                
+
+        // Report function execution:
+        if (!trackFunctions.isEmpty()) {
+            config.info("Function tracking count (min/avg/max time):");
+        }
+        for(FunctionTrackRecord function:trackFunctions) {
+            if (!function.closed.isEmpty()) {
+                long min = -1;
+                long max = -1;
+                double average = 0;
+                for(FunctionCallRecord r:function.closed) {
+                    long time = (r.endTime - r.startTime);
+                    if (min == -1 || time < min) min = time;
+                    if (max == -1 || time > max) max = time;
+                    average += time;
+                }
+                average /= function.closed.size();
+                config.info("- \"" + function.userString + "\": " + function.closed.size() + " (" +
+                        min + "/" + average + "/" + max + ")");
+            }
+            if (!function.open.isEmpty()) {
+                config.info("    called " + function.open.size() + " times without returning.");
+            }
+        }
         return true;
     }
     
