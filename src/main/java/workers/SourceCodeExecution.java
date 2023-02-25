@@ -228,7 +228,6 @@ public class SourceCodeExecution implements MDLWorker {
         // Print changes:
         config.info("Execution result:");
         for(String reg:modifiedRegisters) {
-            System.out.println(reg);
             RegisterNames regName = CPUConstants.registerByName(reg);
             int v = z80.getRegisterValue(regName);
             if (CPUConstants.is8bitRegister(regName)) {
