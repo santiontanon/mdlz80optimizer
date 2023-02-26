@@ -52,6 +52,7 @@ public class SourceCodeExecution implements MDLWorker {
     String stepsString = null;
     boolean trace = false;
     List<String> trackFunctionStrings = new ArrayList<>();
+    List<String> ignoreFunctionStrings = new ArrayList<>();
 
     
     public SourceCodeExecution(MDLConfig a_config)
@@ -67,7 +68,8 @@ public class SourceCodeExecution implements MDLWorker {
         return "- ```-e:s <address> <steps>```: executes the source code starting at <address> (address can be number or a label name) for <steps> CPU time units, and displays the changed registers, memory and timing.\n" +
                "- ```-e:u <address-start> <address-end>```: executes the source code starting at <address-start> until reaching <address-end>, and displays the changed registers, memory and timing.\n" +
                "- ```-e:trace```: turns on step-by-step execution logging for ```-e:s``` or ```-e:u``` flags.\n" +
-               "- ```-e:track-function <address>```: tracks execution count and time of a function at the specified address (can be a label).";
+               "- ```-e:track-function <address>```: tracks execution count and time of a function at the specified address (can be a label).\n" +
+                " ```-e:ignore <address>```: if during execution, this address is reached, an automatic ```ret``` will be executed, to return. This is useful to ignore BIOS/firmware calls that might not be defined in the codebase.\n";
     }
 
     @Override
@@ -94,6 +96,10 @@ public class SourceCodeExecution implements MDLWorker {
         } else if (flags.get(0).equals("-e:track-function") && flags.size()>=2) {
             flags.remove(0);
             trackFunctionStrings.add(flags.remove(0));
+            return true;
+        } else if (flags.get(0).equals("-e:ignore") && flags.size()>=2) {
+            flags.remove(0);
+            ignoreFunctionStrings.add(flags.remove(0));
             return true;
         }
 
@@ -130,13 +136,17 @@ public class SourceCodeExecution implements MDLWorker {
         }
         z80Memory.clearMemoryAccesses();
         
-        List<String> tokens = config.tokenizer.tokenize(startAddressString);
-        Expression exp = config.expressionParser.parse(tokens, null, null, code);
-        int startAddress = exp.evaluateToInteger(null, code, false);
         List<String> modifiedFlags = new ArrayList<>();
         List<String> modifiedRegisters = new ArrayList<>();
-        int endAddress = -1;
+        List<String> tokens = config.tokenizer.tokenize(startAddressString);
+        Expression exp = config.expressionParser.parse(tokens, null, null, code);
+        Integer startAddress = exp.evaluateToInteger(null, code, true);
+        Integer endAddress = -1;
         int steps = -1;
+        if (startAddress == null) {
+            config.error("Cannot evaluate start address expression: " + startAddressString);
+            return false;
+        }
         if (stepsString != null) {
             tokens = config.tokenizer.tokenize(stepsString);
             exp = config.expressionParser.parse(tokens, null, null, code);
@@ -145,7 +155,11 @@ public class SourceCodeExecution implements MDLWorker {
         if (endAddressString != null) {
             tokens = config.tokenizer.tokenize(endAddressString);
             exp = config.expressionParser.parse(tokens, null, null, code);
-            endAddress = exp.evaluateToInteger(null, code, false);
+            endAddress = exp.evaluateToInteger(null, code, true);
+            if (endAddress == null) {
+                config.error("Cannot evaluate end address expression: " + endAddressString);
+                return false;
+            }
         }
         
         // Functions to track:
@@ -153,9 +167,22 @@ public class SourceCodeExecution implements MDLWorker {
         for(String functionString:trackFunctionStrings) {
             tokens = config.tokenizer.tokenize(functionString);
             exp = config.expressionParser.parse(tokens, null, null, code);
-            int functionAddress = exp.evaluateToInteger(null, code, false);
-            trackFunctions.add(new FunctionTrackRecord(functionString, functionAddress));
+            Integer functionAddress = exp.evaluateToInteger(null, code, true);
+            if (functionAddress != null) {
+                trackFunctions.add(new FunctionTrackRecord(functionString, functionAddress));
+            }
         }
+        
+        // Write a "ret" to the address of all the functions to ignore, so we return immediately:
+        for(String functionString:ignoreFunctionStrings) {
+            tokens = config.tokenizer.tokenize(functionString);
+            exp = config.expressionParser.parse(tokens, null, null, code);
+            Integer functionAddress = exp.evaluateToInteger(null, code, true);
+            if (functionAddress != null) {
+                z80.getRAM().writeByte(functionAddress, CPUConstants.ret_opcode);
+            }
+        }
+        
         
         // Set program counter:
         z80.setProgramCounter(startAddress);
@@ -194,7 +221,7 @@ public class SourceCodeExecution implements MDLWorker {
                 
                 if (steps >= 0 && z80.getTStates() < steps) break;
                 if (endAddress >= 0 && z80.getProgramCounter() == endAddress) break;
-                
+                                
                 CodeStatement s = instructions.get(address);
                 if (trace) {
                     if (s == null) {

@@ -81,6 +81,8 @@ public class CPUConstants {
     final static int msb = 0xFF00;
     final static int lsw = 0x0000FFFF;
     
+    public final static int ret_opcode = 0xc9;
+    
     public static int flags[] = {flag_C, flag_N, flag_PV, flag_3, flag_H, flag_5, flag_Z, flag_S};
     
     public static String flagNames[] = {"C", "N", "P/V", "<unused3>", "H", "<unused5>", "Z", "S"};
