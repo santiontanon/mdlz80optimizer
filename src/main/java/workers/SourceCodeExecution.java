@@ -10,9 +10,13 @@ import code.CodeStatement;
 import code.Expression;
 import code.SourceFile;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import org.apache.commons.lang3.tuple.MutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import util.microprocessor.PlainZ80IO;
 import util.microprocessor.TrackingZ80Memory;
 import util.microprocessor.Z80.CPUConfig;
@@ -51,6 +55,7 @@ public class SourceCodeExecution implements MDLWorker {
     String endAddressString = null;
     String stepsString = null;
     boolean trace = false;
+    boolean trackAllFunctions = false;
     List<String> trackFunctionStrings = new ArrayList<>();
     List<String> ignoreFunctionStrings = new ArrayList<>();
 
@@ -69,7 +74,8 @@ public class SourceCodeExecution implements MDLWorker {
                "- ```-e:u <address-start> <address-end>```: executes the source code starting at <address-start> until reaching <address-end>, and displays the changed registers, memory and timing.\n" +
                "- ```-e:trace```: turns on step-by-step execution logging for ```-e:s``` or ```-e:u``` flags.\n" +
                "- ```-e:track-function <address>```: tracks execution count and time of a function at the specified address (can be a label).\n" +
-                " ```-e:ignore <address>```: if during execution, this address is reached, an automatic ```ret``` will be executed, to return. This is useful to ignore BIOS/firmware calls that might not be defined in the codebase.\n";
+               "- ```-e:track-all-functions```: tracks execution count and time of all functions in the code (auto detected by looking at all `call` instructions).\n" +
+               " ```-e:ignore <address>```: if during execution, this address is reached, an automatic ```ret``` will be executed, to return. This is useful to ignore BIOS/firmware calls that might not be defined in the codebase.\n";
     }
 
     @Override
@@ -96,6 +102,10 @@ public class SourceCodeExecution implements MDLWorker {
         } else if (flags.get(0).equals("-e:track-function") && flags.size()>=2) {
             flags.remove(0);
             trackFunctionStrings.add(flags.remove(0));
+            return true;
+        } else if (flags.get(0).equals("-e:track-all-functions")) {
+            flags.remove(0);
+            trackAllFunctions = true;
             return true;
         } else if (flags.get(0).equals("-e:ignore") && flags.size()>=2) {
             flags.remove(0);
@@ -135,7 +145,7 @@ public class SourceCodeExecution implements MDLWorker {
             }
         }
         z80Memory.clearMemoryAccesses();
-        
+                
         List<String> modifiedFlags = new ArrayList<>();
         List<String> modifiedRegisters = new ArrayList<>();
         List<String> tokens = config.tokenizer.tokenize(startAddressString);
@@ -169,9 +179,25 @@ public class SourceCodeExecution implements MDLWorker {
             exp = config.expressionParser.parse(tokens, null, null, code);
             Integer functionAddress = exp.evaluateToInteger(null, code, true);
             if (functionAddress != null) {
-                trackFunctions.add(new FunctionTrackRecord(functionString, functionAddress));
+                addFunctionToTrack(trackFunctions, new FunctionTrackRecord(functionString, functionAddress));
             }
         }
+        if (trackAllFunctions) {
+            // Find all the functions:
+            for(SourceFile sf:code.getSourceFiles()) {
+                for(CodeStatement s:sf.getStatements()) {
+                    if (s.op != null && s.op.isCall()) {
+                        Expression exp2 = s.op.getTargetJumpExpression();
+                        if (exp2.type == Expression.EXPRESSION_SYMBOL) {
+                            Integer functionAddress = exp2.evaluateToInteger(s, code, true);
+                            if (functionAddress != null) {
+                                addFunctionToTrack(trackFunctions, new FunctionTrackRecord(exp2.symbolName, functionAddress));
+                            }
+                        }
+                    }
+                }
+            }
+        }        
         
         // Write a "ret" to the address of all the functions to ignore, so we return immediately:
         for(String functionString:ignoreFunctionStrings) {
@@ -273,33 +299,89 @@ public class SourceCodeExecution implements MDLWorker {
                 addresses.add(address);
             }
         }
+        long globalTotal = z80.getTStates();
         config.info("  " + nInstructionsExecuted + " instructions executed.");
-        config.info("  execution time: " + z80.getTStates() + " "+config.timeUnit + "s");
+        config.info("  execution time: " + globalTotal + " "+config.timeUnit + "s");
 
         // Report function execution:
         if (!trackFunctions.isEmpty()) {
-            config.info("Function tracking count (min/avg/max time):");
+            config.info("Function: count - percentage - min / avg / max:");
         }
-        for(FunctionTrackRecord function:trackFunctions) {
-            if (!function.closed.isEmpty()) {
-                long min = -1;
-                long max = -1;
-                double average = 0;
-                for(FunctionCallRecord r:function.closed) {
-                    long time = (r.endTime - r.startTime);
-                    if (min == -1 || time < min) min = time;
-                    if (max == -1 || time > max) max = time;
-                    average += time;
+        
+        // Construct and format the funtion execution reporting table:
+        {
+            List<MutablePair<Double, String>> rows = new ArrayList<>();
+            // Step 1: function names:
+            int max_len = 0;
+            int max_closed = 0;
+            for(FunctionTrackRecord function:trackFunctions) {
+                if (!function.closed.isEmpty()) {
+                    rows.add(MutablePair.of(0.0, "- \"" + function.userString + "\":"));
+                    if (function.userString.length() > max_len) max_len = function.userString.length();
+                    if (function.closed.size() > max_closed) max_closed = function.closed.size();
                 }
-                average /= function.closed.size();
-                config.info("- \"" + function.userString + "\": " + function.closed.size() + " (" +
-                        min + "/" + average + "/" + max + ")");
             }
-            if (!function.open.isEmpty()) {
-                config.info("    called " + function.open.size() + " times without returning.");
+            // Insert black spaces:
+            for(int i = 0;i<rows.size();i++) {
+                String row = rows.get(i).getRight();
+                while(row.length() < max_len + 5) row += " ";
+                rows.get(i).setValue(row);
+            }
+            
+            // Add timing:
+            int max_closed_str_length = ("" + max_closed).length();
+            int i = 0;
+            for(FunctionTrackRecord function:trackFunctions) {
+                if (!function.closed.isEmpty()) {
+                    MutablePair<Double, String> row = rows.get(i);
+                    long min = -1;
+                    long max = -1;
+                    double functionTotal = 0;
+                    for(FunctionCallRecord r:function.closed) {
+                        long time = (r.endTime - r.startTime);
+                        if (min == -1 || time < min) min = time;
+                        if (max == -1 || time > max) max = time;
+                        functionTotal += time;
+                    }
+                    double average = functionTotal / function.closed.size();
+                    String closedString = "" + function.closed.size();
+                    while(closedString.length() < max_closed_str_length) closedString = " " + closedString;
+                    double percentageOfGlobalTotal = 100.0 * functionTotal / globalTotal;
+                    row.setLeft(percentageOfGlobalTotal);
+                    String percentageString = String.format("%.4f", percentageOfGlobalTotal);
+                    while(percentageString.length() < 7) percentageString = " " + percentageString;
+                    row.setRight(row.getRight() + " " + closedString + " - " + percentageString + "% - (" +
+                                 min + " / " + average + " / " + max + ")");
+                    i++;
+                }
+                // Consider whether I want this info or not
+                // if (!function.open.isEmpty()) {
+                //     config.info("    called " + function.open.size() + " times without returning.");
+                // }
+            }
+            
+            // Sort by percentage of time used:
+            Collections.sort(rows, new Comparator<MutablePair<Double, String>>() {
+                @Override
+                public int compare(MutablePair<Double, String> b1, MutablePair<Double, String> b2) {
+                    return -Double.compare(b1.getLeft(), b2.getLeft());
+                }
+            });
+            for(Pair<Double, String> row:rows) {
+                config.info(row.getRight());
             }
         }
         return true;
+    }
+    
+    
+    static void addFunctionToTrack(List<FunctionTrackRecord> trackFunctions, FunctionTrackRecord record) {
+        for(FunctionTrackRecord r:trackFunctions) {
+            if (r.address == record.address) {
+                return;
+            }
+        }
+        trackFunctions.add(record);
     }
     
 }
