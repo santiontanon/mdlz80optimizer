@@ -32,8 +32,10 @@ public class SourceCodeExecution implements MDLWorker {
 
     
     public static class FunctionCallRecord {
+        public FunctionTrackRecord trackRecord;
         public int stack;
         public long startTime, endTime;
+        List<FunctionCallRecord> subcalls = new ArrayList<>();
     }
 
 
@@ -56,6 +58,7 @@ public class SourceCodeExecution implements MDLWorker {
     String stepsString = null;
     boolean trace = false;
     boolean trackAllFunctions = false;
+    boolean reportAsExecutionTree = false;
     List<String> trackFunctionStrings = new ArrayList<>();
     List<String> ignoreFunctionStrings = new ArrayList<>();
 
@@ -75,7 +78,8 @@ public class SourceCodeExecution implements MDLWorker {
                "- ```-e:trace```: turns on step-by-step execution logging for ```-e:s``` or ```-e:u``` flags.\n" +
                "- ```-e:track-function <address>```: tracks execution count and time of a function at the specified address (can be a label).\n" +
                "- ```-e:track-all-functions```: tracks execution count and time of all functions in the code (auto detected by looking at all `call` instructions).\n" +
-               " ```-e:ignore <address>```: if during execution, this address is reached, an automatic ```ret``` will be executed, to return. This is useful to ignore BIOS/firmware calls that might not be defined in the codebase.\n";
+               "- ```-e:ignore <address>```: if during execution, this address is reached, an automatic ```ret``` will be executed, to return. This is useful to ignore BIOS/firmware calls that might not be defined in the codebase.\n" +
+               "- ```-e:tree```: reports the result as an execution tree.\n";
     }
 
     @Override
@@ -110,6 +114,10 @@ public class SourceCodeExecution implements MDLWorker {
         } else if (flags.get(0).equals("-e:ignore") && flags.size()>=2) {
             flags.remove(0);
             ignoreFunctionStrings.add(flags.remove(0));
+            return true;
+        } else if (flags.get(0).equals("-e:tree")) {
+            flags.remove(0);
+            reportAsExecutionTree = true;
             return true;
         }
 
@@ -174,6 +182,7 @@ public class SourceCodeExecution implements MDLWorker {
         
         // Functions to track:
         List<FunctionTrackRecord> trackFunctions = new ArrayList<>();
+        List<FunctionCallRecord> topLevelCalls = new ArrayList<>();
         for(String functionString:trackFunctionStrings) {
             tokens = config.tokenizer.tokenize(functionString);
             exp = config.expressionParser.parse(tokens, null, null, code);
@@ -218,6 +227,7 @@ public class SourceCodeExecution implements MDLWorker {
         
         // Execute!
         int nInstructionsExecuted = 0;
+        ArrayList<FunctionCallRecord> trackedCallStack = new ArrayList<>();
         try {
             while(true) {
                 int address = z80.getProgramCounter();
@@ -225,23 +235,37 @@ public class SourceCodeExecution implements MDLWorker {
                 
                 for(FunctionTrackRecord function:trackFunctions) {
                     // Check for returns:
+                    FunctionCallRecord lastCall = null;
                     if (!function.open.isEmpty()) {
-                        FunctionCallRecord lastCall = function.open.get(function.open.size() - 1);
+                        lastCall = function.open.get(function.open.size() - 1);
                         int diff = lastCall.stack - sp;
                         // We need to check >= 32768 in case the stack wraps around the address space.
                         if (diff < 0 || diff >= 32768) {
                             lastCall.endTime = z80.getTStates();
                             function.open.remove(lastCall);
                             function.closed.add(lastCall);
+                            while (trackedCallStack.contains(lastCall)) {                                
+                                trackedCallStack.remove(trackedCallStack.size()-1);
+                            }
                         }
                     }
                     if (address == function.address) {
                         // We just entered in one of the functions to track!
                         FunctionCallRecord r = new FunctionCallRecord();
+                        r.trackRecord = function;
                         r.stack = sp;
                         r.startTime = z80.getTStates();
                         r.endTime = -1;
                         function.open.add(r);
+                        if (reportAsExecutionTree) {
+                            if (trackedCallStack.isEmpty()) {
+                                topLevelCalls.add(r);
+                            } else {
+                                // keep track of the execution tree:
+                                trackedCallStack.get(trackedCallStack.size()-1).subcalls.add(r);
+                            }
+                            trackedCallStack.add(r);
+                        }
                     }
                 }
                 
@@ -291,6 +315,7 @@ public class SourceCodeExecution implements MDLWorker {
         }
         config.info("  Modified flags: " + modifiedFlags);
         HashSet<Integer> addresses = new HashSet<>();
+        config.info("  Modified memory positions (only last 32 are shown):");
         for(int address:z80Memory.getMemoryWrites()) {
             if (!addresses.contains(address)) {
                 config.info("  (" + config.tokenizer.toHexWord(address, config.hexStyle) + ") = " + 
@@ -304,12 +329,13 @@ public class SourceCodeExecution implements MDLWorker {
         config.info("  execution time: " + globalTotal + " "+config.timeUnit + "s");
 
         // Report function execution:
-        if (!trackFunctions.isEmpty()) {
+        if (trackFunctions.isEmpty()) return true;
+        if (reportAsExecutionTree) {
+            // Report the execution tree:
+            logExecutionTreeStats(topLevelCalls, 0, globalTotal);
+        } else {    
+            // Construct and format the funtion execution reporting table:
             config.info("Function: count - percentage - min / avg / max:");
-        }
-        
-        // Construct and format the funtion execution reporting table:
-        {
             List<MutablePair<Double, String>> rows = new ArrayList<>();
             // Step 1: function names:
             int max_len = 0;
@@ -384,4 +410,44 @@ public class SourceCodeExecution implements MDLWorker {
         trackFunctions.add(record);
     }
     
+    
+    void logExecutionTreeStats(List<FunctionCallRecord> calls, int indentation, long globalTotal)
+    {
+        List<String> differentFunctions = new ArrayList<>();
+        for(FunctionCallRecord call:calls) {
+            if (!differentFunctions.contains(call.trackRecord.userString)) {
+                differentFunctions.add(call.trackRecord.userString);
+            }
+        }
+        for(String functionName:differentFunctions) {
+            long min = -1;
+            long max = -1;
+            double functionTotal = 0;
+            int count = 0;
+            List<FunctionCallRecord> subcalls = new ArrayList<>();
+            for(FunctionCallRecord r:calls) {
+                if (!r.trackRecord.userString.equals(functionName)) continue;
+                if (r.endTime < r.startTime) continue;
+            
+                for(FunctionCallRecord r2:r.subcalls) {
+                    subcalls.add(r2);
+                }
+                long time = (r.endTime - r.startTime);
+                if (min == -1 || time < min) min = time;
+                if (max == -1 || time > max) max = time;
+                functionTotal += time;
+                count += 1;
+            }
+            if (count == 0) continue;
+            double average = functionTotal / count;
+            double percentageOfGlobalTotal = 100.0 * functionTotal / globalTotal;
+            String percentageString = String.format("%.4f", percentageOfGlobalTotal);
+            String row = "";
+            for(int i = 0; i<indentation; i++) row += "  ";
+            row += "- \"" + functionName + "\"\t" + count + "\t" + percentageString + "\t" + 
+                   "(" + min + " / " + average + " / " + max + ")";
+            config.info(row);
+            logExecutionTreeStats(subcalls, indentation + 1, globalTotal);
+        }
+    }
 }
