@@ -1,3 +1,4 @@
+    ld e, (ix + 1)
     ld hl,#4000
     ld b,2
 label:

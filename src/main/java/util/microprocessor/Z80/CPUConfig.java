@@ -13,7 +13,7 @@ import code.CPUOpSpec;
  * @author santi
  * 
  * In the original Z80Processor project ( https://github.com/codesqueak/Z80Processor ),
- * timings for CPU instructions were hardcoded. However ,MDL needs to simulate the Z80 
+ * timings for CPU instructions were hardcoded. However, MDL needs to simulate the Z80 
  * setup used in different machines (Spectrum, MSX, Amstrad, etc.), which have different
  * timings. So, I have separated these variables into this class, which gets them initialized
  * from the CPU op specs used by MDL (so that all the info is centralized in one single place).
@@ -88,10 +88,8 @@ public class CPUConfig {
                             OPCODE_INDEXED_CB_STATES[buffer[3]] = (byte)spec.times[0];
                         }
                     } else {
-                        if (OPCODE_DD_FD_STATES[buffer[1]] == -1) {
-                            OPCODE_T_STATES[buffer[0]] = 0;
-                            OPCODE_DD_FD_STATES[buffer[1]] = (byte)spec.times[0];
-                        }
+                        OPCODE_T_STATES[buffer[0]] = 0;
+                        OPCODE_DD_FD_STATES[buffer[1]] = (byte)spec.times[0];
                     }
                     break;
                 case 0xed:
@@ -124,7 +122,7 @@ public class CPUConfig {
         if (v[1].equals("")) {
             allSpecInstantiations(spec, buffer, byteOffset+1, nextArg);
         } else if (v[1].equals("o")) {
-            // jr/djnz offset:
+            // jr/djnz or ix/iy offset:
             buffer[byteOffset] = 0;
             allSpecInstantiations(spec, buffer, byteOffset+1, nextArg+1);
         } else if (v[1].equals("n")) {
@@ -198,7 +196,11 @@ public class CPUConfig {
                 }
                 buffer[byteOffset] -= i*8;
             }
-        }        
+        } else if (v[1].equals("+8*r")) {
+            // Ignoring this case, as we are not considering R800 instructions in this simulator.
+        } else {
+            config.error("Unsupported spec expression " + v[1]);
+        }  
     }
     
 }
