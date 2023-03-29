@@ -1,4 +1,6 @@
-5  ;    ld e, (ix + 1)
+5   ;    ld a, (ix)
+4   ;    ld a, (100)
+5   ;    ld e, (ix + 1)
 3   ;    ld hl,#4000
 2   ;    ld b,2
 2   ;    ld a,(hl)

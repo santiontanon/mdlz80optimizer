@@ -1,3 +1,5 @@
+    ld a, (ix)
+    ld a, (100)
     ld e, (ix + 1)
     ld hl,#4000
     ld b,2
