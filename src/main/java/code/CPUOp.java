@@ -193,6 +193,18 @@ public class CPUOp {
         }
         return null;
     }
+    
+    public String getTargetJumpRegister()
+    {
+        Expression exp = getTargetJumpExpression();
+        if (exp == null) return null;
+        if (exp.type == Expression.EXPRESSION_REGISTER_OR_FLAG) return exp.registerOrFlagName;
+        if (exp.type == Expression.EXPRESSION_PARENTHESIS &&
+            exp.args.get(0).type == Expression.EXPRESSION_REGISTER_OR_FLAG) {
+            return exp.args.get(0).registerOrFlagName;
+        }
+        return null;
+    }
 
 
     public boolean isConditional()
@@ -315,6 +327,16 @@ public class CPUOp {
     public boolean isJump()
     {
         return spec.isJump;
+    }
+    
+    
+    public boolean isJumpToRegister()
+    {
+        if (!isJump()) return false;
+        Expression exp = this.getTargetJumpExpression();
+        return (exp.type == Expression.EXPRESSION_REGISTER_OR_FLAG ||
+                (exp.type == Expression.EXPRESSION_PARENTHESIS &&
+                 exp.args.get(0).type == Expression.EXPRESSION_REGISTER_OR_FLAG));
     }
     
 

@@ -46,6 +46,7 @@ public class ExecutionFlowTest {
     @Test public void test8() throws IOException { test("data/flowtests/test8.asm", null, 1); }
     @Test public void test9() throws IOException { test("data/flowtests/test9.asm", null, 1); }
     @Test public void test10() throws IOException { test("data/flowtests/test10.asm", null, 2); }
+    @Test public void test10b() throws IOException { test("data/flowtests/test10b.asm", null, 2); }
     @Test public void test11() throws IOException { test("data/flowtests/test11-jumptables.asm", null, 4); }
     @Test public void test12() throws IOException { test("data/flowtests/test12-jumptables2.asm", null, 3); }
     @Test public void test13() throws IOException { test("data/flowtests/test13-jumptables3.asm", null, 3); }
