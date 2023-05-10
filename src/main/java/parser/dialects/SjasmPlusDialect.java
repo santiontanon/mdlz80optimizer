@@ -141,6 +141,7 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
         config.lineParser.addKeywordSynonym("defb", config.lineParser.KEYWORD_DB);
         config.lineParser.addKeywordSynonym("word", config.lineParser.KEYWORD_DW);
         config.lineParser.addKeywordSynonym("defw", config.lineParser.KEYWORD_DW);
+        config.lineParser.addKeywordSynonym("defd", config.lineParser.KEYWORD_DD);
         config.lineParser.addKeywordSynonym("dword", config.lineParser.KEYWORD_DD);
         config.lineParser.addKeywordSynonym("defs", config.lineParser.KEYWORD_DS);
         config.lineParser.addKeywordSynonym("block", config.lineParser.KEYWORD_DS);

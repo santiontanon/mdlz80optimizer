@@ -35,7 +35,7 @@ public class SourceCodeExecution implements MDLWorker {
         public FunctionTrackRecord trackRecord;
         public int stack;
         public long startTime, endTime;
-        List<FunctionCallRecord> subcalls = new ArrayList<>();
+        List<FunctionCallRecord> subcalls = new ArrayList<>();        
     }
 
 
@@ -43,6 +43,12 @@ public class SourceCodeExecution implements MDLWorker {
         public FunctionTrackRecord(String a_userString, int a_address) {
             userString = a_userString;
             address = a_address;
+        }
+        
+        public void clear()
+        {
+            closed.clear();
+            open.clear();
         }
         
         public String userString;
@@ -55,6 +61,7 @@ public class SourceCodeExecution implements MDLWorker {
     MDLConfig config = null;
     String startAddressString = null;
     String endAddressString = null;
+    String startTrackingAddressString = null;
     String stepsString = null;
     boolean trace = false;
     boolean trackAllFunctions = false;
@@ -73,12 +80,13 @@ public class SourceCodeExecution implements MDLWorker {
     public String docString() {
         // This string has MD tags, so that I can easily generate the corresponding documentation in github with the 
         // hidden "-helpmd" flag:        
-        return "- ```-e:s <address> <steps>```: executes the source code starting at <address> (address can be number or a label name) for <steps> CPU time units, and displays the changed registers, memory and timing.\n" +
+        return "- ```-e:s <address-start> <steps>```: executes the source code starting at <address> (address can be number or a label name) for <steps> CPU time units, and displays the changed registers, memory and timing.\n" +
                "- ```-e:u <address-start> <address-end>```: executes the source code starting at <address-start> until reaching <address-end>, and displays the changed registers, memory and timing.\n" +
                "- ```-e:trace```: turns on step-by-step execution logging for ```-e:s``` or ```-e:u``` flags.\n" +
                "- ```-e:track-function <address>```: tracks execution count and time of a function at the specified address (can be a label).\n" +
                "- ```-e:track-all-functions```: tracks execution count and time of all functions in the code (auto detected by looking at all `call` instructions).\n" +
                "- ```-e:ignore <address>```: if during execution, this address is reached, an automatic ```ret``` will be executed, to return. This is useful to ignore BIOS/firmware calls that might not be defined in the codebase.\n" +
+               "- ```-e:st <address>```: even if execution will start at ```<address-start>``` as specified in the above flags, function execution time will only be tracked starting at this label (useful if there is some initialization code we do not want to track).\n" + 
                "- ```-e:tree```: reports the result as an execution tree.\n";
     }
 
@@ -98,6 +106,10 @@ public class SourceCodeExecution implements MDLWorker {
             flags.remove(0);
             startAddressString = flags.remove(0);
             endAddressString = flags.remove(0);
+            return true;
+        } else if (flags.get(0).equals("-e:st") && flags.size()>=2) {
+            flags.remove(0);
+            startTrackingAddressString = flags.remove(0); 
             return true;
         } else if (flags.get(0).equals("-e:trace")) {
             flags.remove(0);
@@ -160,6 +172,8 @@ public class SourceCodeExecution implements MDLWorker {
         Expression exp = config.expressionParser.parse(tokens, null, null, code);
         Integer startAddress = exp.evaluateToInteger(null, code, true);
         Integer endAddress = -1;
+        Integer startTrackingAddress = -1;
+        Long startTrackingTime = null;
         int steps = -1;
         if (startAddress == null) {
             config.error("Cannot evaluate start address expression: " + startAddressString);
@@ -176,6 +190,15 @@ public class SourceCodeExecution implements MDLWorker {
             endAddress = exp.evaluateToInteger(null, code, true);
             if (endAddress == null) {
                 config.error("Cannot evaluate end address expression: " + endAddressString);
+                return false;
+            }
+        }
+        if (startTrackingAddressString != null) {
+            tokens = config.tokenizer.tokenize(startTrackingAddressString);
+            exp = config.expressionParser.parse(tokens, null, null, code);
+            startTrackingAddress = exp.evaluateToInteger(null, code, true);
+            if (startTrackingAddress == null) {
+                config.error("Cannot evaluate end address expression: " + startTrackingAddressString);
                 return false;
             }
         }
@@ -271,6 +294,13 @@ public class SourceCodeExecution implements MDLWorker {
                 
                 if (steps >= 0 && z80.getTStates() < steps) break;
                 if (endAddress >= 0 && z80.getProgramCounter() == endAddress) break;
+                if (startTrackingAddress >= 0 && z80.getProgramCounter() == startTrackingAddress) {
+                    topLevelCalls.clear();
+                    for(FunctionTrackRecord tr:trackFunctions) {
+                        tr.clear();
+                    }
+                    startTrackingTime = z80.getTStates();
+                }
                                 
                 CodeStatement s = instructions.get(address);
                 if (trace) {
@@ -325,6 +355,9 @@ public class SourceCodeExecution implements MDLWorker {
             }
         }
         long globalTotal = z80.getTStates();
+        if (startTrackingTime != null) {
+            globalTotal -= startTrackingTime;
+        }
         config.info("  " + nInstructionsExecuted + " instructions executed.");
         config.info("  execution time: " + globalTotal + " "+config.timeUnit + "s");
 
