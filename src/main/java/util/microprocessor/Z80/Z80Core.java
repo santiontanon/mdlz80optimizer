@@ -2565,8 +2565,8 @@ public class Z80Core implements ICPUData, ICPU {
         instruction = ram.readByte(reg_PC);
         incPC();
         tStates = tStates + config.OPCODE_ED_STATES[instruction];
-        if ((instruction < 0x40) || (instruction >= 0xC0)) {
-            throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
+        if ((instruction < 0x40) || (instruction >= 0xF4)) {
+            throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE + ": ED " + instruction);
         }
         switch (instruction) {
             case 0x40: {
@@ -3034,9 +3034,39 @@ public class Z80Core implements ICPUData, ICPU {
             }
             case 0xBE: {
                 throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
+            }            
+            case 0xC1: {
+                // MULUB A, B
+                MULUB(regCodeB);
+                break;
+            }
+            case 0xC9: {
+                // MULUB A, C
+                MULUB(regCodeC);
+                break;
+            }
+            case 0xD1: {
+                // MULUB a, D
+                MULUB(regCodeD);
+                break;
+            }
+            case 0xD9: {
+                // MULUB a, E
+                MULUB(regCodeE);
+                break;
+            }
+            case 0xC3: {
+                // MULUW HL, BC
+                MULUW(regCodeBC);
+                break;
+            }
+            case 0xF3: {
+                // MULUW HL, SP
+                MULUW(regCodeSP);
+                break;
             }
             default: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
+                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE + ": ED " + instruction);
             }
         }
     }
@@ -5389,7 +5419,7 @@ public class Z80Core implements ICPUData, ICPU {
         setUnusedFlags(value);
         return (value);
     }
-
+    
     /* 16 bit INC */
     private int ALU16BitInc(int value) {
         value++;
@@ -5503,6 +5533,70 @@ public class Z80Core implements ICPUData, ICPU {
             resetH();
         setN();
         setHL(ans);
+    }
+    
+    /* R800 8bit multiplication */
+    private void MULUB(int regCode) throws ProcessorException {
+        int result;
+        switch (regCode) {
+            case 0: {
+                result = reg_A * reg_B;
+                break;
+            } // B
+            case 1: {
+                result = reg_A * reg_C;
+                break;
+            } // C
+            case 2: {
+                result = reg_A * reg_D;
+                break;
+            } // D
+            case 3: {
+                result = reg_A * reg_E;
+                break;
+            } // E
+            default:
+                throw new ProcessorException("Unsupported register in MULUB");
+        }
+        setHL(result);
+        resetS();
+        if (result == 0) {
+            setZ();
+        } else {
+            resetZ();
+        }
+        resetPV();
+        if (result > 0xffff) {
+            setC();
+        } else {
+            resetC();
+        }
+    }
+
+    /* R800 16bit multiplication */
+    private void MULUW(int regCode) throws ProcessorException {
+        int result;
+        if (regCode == regCodeBC) {
+            result = getHL() * getBC();
+        } else if (regCode == regCodeSP) {
+            result = getHL() * getSP();
+        } else {
+            throw new ProcessorException("Unsupported register in MULUW");
+        }
+        setDE(result/(256*256));
+        setHL(result%(256*256));
+        resetS();
+        if (result == 0) {
+            setZ();
+        } else {
+            resetZ();
+        }
+        resetPV();
+        if (result > 0xffffffff) {
+            setC();
+        } else {
+            resetC();
+        }        
     }
 
     /*

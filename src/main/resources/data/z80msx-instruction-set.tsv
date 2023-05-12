@@ -397,9 +397,13 @@ SRA (IX+o)	25	DD CB o 2E	4	IX			IX+o		S,Z,H,P/V,N,C		IX+o	true
 SRA (IY+o)	25	FD CB o 2E	4	IY			IY+o		S,Z,H,P/V,N,C		IY+o	true
 SRL (IX+o)	25	DD CB o 3E	4	IX			IX+o		S,Z,H,P/V,N,C		IX+o	true
 SRL (IY+o)	25	FD CB o 3E	4	IY			IY+o		S,Z,H,P/V,N,C		IY+o	true
-MULUB A,r	14	ED C1+8*r	2	A,r				HL	S,Z,P/V,C			true
-MULUW HL,BC	36	ED C3	2	HL,BC				DL,HL	S,Z,P/V,C			true
-MULUW HL,SP	36	ED F3	2	HL,SP				DL,HL	S,Z,P/V,C			true
+; Note: the timing of these r800 instructions is in r800 t-states.
+MULUB A,B	14	ED C1	2	A,B				HL	S,Z,P/V,C			true
+MULUB A,C	14	ED C9	2	A,C				HL	S,Z,P/V,C			true
+MULUB A,D	14	ED D1	2	A,D				HL	S,Z,P/V,C			true
+MULUB A,E	14	ED D9	2	A,E				HL	S,Z,P/V,C			true
+MULUW HL,BC	36	ED C3	2	HL,BC				DE,HL	S,Z,P/V,C			true
+MULUW HL,SP	36	ED F3	2	HL,SP				DE,HL	S,Z,P/V,C			true
 ; Unofficial alternative way to write some instructions that some assemblers support:
 ADC (HL)	8	8E	1	A,HL	C		HL	A	S,Z,H,P/V,N,C			false
 ADC r	5	88+r	1	A,r	C			A	S,Z,H,P/V,N,C			false

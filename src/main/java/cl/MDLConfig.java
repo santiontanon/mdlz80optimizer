@@ -166,7 +166,7 @@ public class MDLConfig {
             + "Note: all the tasks concerning generating outputs (assembler, binaries, etc.) will be executed after the optimizers are run.\n"
             + "\n"
             + "- ```-help```: to show this information (this is the only flag that can be used without specifying an input file).\n"
-            + "- ```-cpu <type>```: to select a different CPU (z80/z80msx/z80cpc/z80n/z80next/z180), where z80n and z80next are synonyms (default: z80msx).\n"
+            + "- ```-cpu <type>```: to select a different CPU (z80/z80msx/z80cpc/z80n/z80next/z180/r800), where z80n and z80next are synonyms (default: z80msx).\n"
             + "- ```-dialect <dialect>```: to allow parsing different assembler dialects "
                     + "(" + StringUtils.join(Dialects.knownDialects(), '/') + ") "
                     + "(default: mdl, which supports some basic code idioms common to various assemblers).\n"
@@ -294,6 +294,10 @@ public class MDLConfig {
                                     break;
                                 case "z80msx":
                                     cpuInstructionSet = "data/z80msx-instruction-set.tsv";
+                                    timeUnit = "t-state";
+                                    break;
+                                case "r800":
+                                    cpuInstructionSet = "data/r800-instruction-set.tsv";
                                     timeUnit = "t-state";
                                     break;
                                 case "z80cpc":

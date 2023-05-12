@@ -444,14 +444,17 @@ public class SourceCodeExecution implements MDLWorker {
     }
     
     
-    void logExecutionTreeStats(List<FunctionCallRecord> calls, int indentation, long globalTotal)
+    Pair<Double, String> logExecutionTreeStats(List<FunctionCallRecord> calls, int indentation, long globalTotal)
     {
+        double totalTime = 0.0;
         List<String> differentFunctions = new ArrayList<>();
         for(FunctionCallRecord call:calls) {
             if (!differentFunctions.contains(call.trackRecord.userString)) {
                 differentFunctions.add(call.trackRecord.userString);
             }
         }
+        // Generate the tree first, and then sort each child:
+        List<Pair<Double, String>> subTreeTexts = new ArrayList<>();
         for(String functionName:differentFunctions) {
             long min = -1;
             long max = -1;
@@ -479,8 +482,35 @@ public class SourceCodeExecution implements MDLWorker {
             for(int i = 0; i<indentation; i++) row += "  ";
             row += "- \"" + functionName + "\"\t" + count + "\t" + percentageString + "\t" + 
                    "(" + min + " / " + average + " / " + max + ")";
-            config.info(row);
-            logExecutionTreeStats(subcalls, indentation + 1, globalTotal);
+            totalTime += percentageOfGlobalTotal;
+            Pair<Double, String> subTree = logExecutionTreeStats(subcalls, indentation + 1, globalTotal);
+            if (!subTree.getRight().isEmpty()) {
+                subTreeTexts.add(Pair.of(percentageOfGlobalTotal, row + "\n" + subTree.getRight() + "\n"));
+            } else {
+                subTreeTexts.add(Pair.of(percentageOfGlobalTotal, row + "\n"));
+            }
         }
+
+        String treeText = "";
+        // Sort by percentage of time used:
+        Collections.sort(subTreeTexts, new Comparator<Pair<Double, String>>() {
+            @Override
+            public int compare(Pair<Double, String> b1, Pair<Double, String> b2) {
+                return -Double.compare(b1.getLeft(), b2.getLeft());
+            }
+        });
+        for(Pair<Double, String> subTree:subTreeTexts) {
+            treeText += subTree.getRight();
+        }
+        // remove trailing new lines:
+        while(treeText.contains("\n\n")) {
+            treeText = treeText.replace("\n\n", "\n");
+        }
+    
+        if (indentation == 0) {
+            config.info("Profiler result:\n" + treeText);
+        }    
+                
+        return Pair.of(totalTime, treeText);
     }
 }
