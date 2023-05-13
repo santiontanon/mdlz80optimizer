@@ -66,6 +66,7 @@ public class SourceCodeExecution implements MDLWorker {
     boolean trace = false;
     boolean trackAllFunctions = false;
     boolean reportAsExecutionTree = false;
+    int reportAsExecutionTreeMaxDepth = 0;
     List<String> trackFunctionStrings = new ArrayList<>();
     List<String> ignoreFunctionStrings = new ArrayList<>();
 
@@ -87,7 +88,8 @@ public class SourceCodeExecution implements MDLWorker {
                "- ```-e:track-all-functions```: tracks execution count and time of all functions in the code (auto detected by looking at all `call` instructions).\n" +
                "- ```-e:ignore <address>```: if during execution, this address is reached, an automatic ```ret``` will be executed, to return. This is useful to ignore BIOS/firmware calls that might not be defined in the codebase.\n" +
                "- ```-e:st <address>```: even if execution will start at ```<address-start>``` as specified in the above flags, function execution time will only be tracked starting at this label (useful if there is some initialization code we do not want to track).\n" + 
-               "- ```-e:tree```: reports the result as an execution tree.\n";
+               "- ```-e:tree```: reports the result as an execution tree.\n" +
+               "- ```-e:tree:n```: reports the result as an execution tree, but only showing ```n``` levels, e.g. ```-e:tree:1```.\n";
     }
 
     @Override
@@ -130,6 +132,12 @@ public class SourceCodeExecution implements MDLWorker {
         } else if (flags.get(0).equals("-e:tree")) {
             flags.remove(0);
             reportAsExecutionTree = true;
+            return true;
+        } else if (flags.get(0).startsWith("-e:tree:")) {
+            String levelString = flags.remove(0).substring(8);
+            int depth = Integer.parseInt(levelString);
+            reportAsExecutionTree = true;
+            reportAsExecutionTreeMaxDepth = depth;
             return true;
         }
 
@@ -509,8 +517,12 @@ public class SourceCodeExecution implements MDLWorker {
     
         if (indentation == 0) {
             config.info("Profiler result:\n" + treeText);
-        }    
-                
-        return Pair.of(totalTime, treeText);
+        }
+        
+        if (reportAsExecutionTreeMaxDepth <= 0 || indentation < reportAsExecutionTreeMaxDepth) {
+            return Pair.of(totalTime, treeText);
+        } else {
+            return Pair.of(totalTime, "");
+        }
     }
 }

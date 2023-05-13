@@ -343,6 +343,16 @@ constraints:
 in(?op,jr,jp,call)
 regsNotUsedAfter(1,A)
 
+pattern: Replace and 1; ?op z,?const with rra; ?op nc,?const
+0: and 1
+1: ?op z,?const
+replacement:
+0: rra
+1: ?op nc,?const
+constraints:
+in(?op,jr,jp,call)
+regsNotUsedAfter(1,A)
+
 pattern: Replace bit 0,a; ?op nz,?const with rra; ?op c,?const
 0: bit 0,a
 1: ?op nz,?const
