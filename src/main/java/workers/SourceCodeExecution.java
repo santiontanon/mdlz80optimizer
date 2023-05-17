@@ -66,7 +66,9 @@ public class SourceCodeExecution implements MDLWorker {
     boolean trace = false;
     boolean trackAllFunctions = false;
     boolean reportAsExecutionTree = false;
+    boolean reportHotSpots = false;
     int reportAsExecutionTreeMaxDepth = 0;
+    int nHotSpotsToShow = 20;
     List<String> trackFunctionStrings = new ArrayList<>();
     List<String> ignoreFunctionStrings = new ArrayList<>();
 
@@ -89,7 +91,8 @@ public class SourceCodeExecution implements MDLWorker {
                "- ```-e:ignore <address>```: if during execution, this address is reached, an automatic ```ret``` will be executed, to return. This is useful to ignore BIOS/firmware calls that might not be defined in the codebase.\n" +
                "- ```-e:st <address>```: even if execution will start at ```<address-start>``` as specified in the above flags, function execution time will only be tracked starting at this label (useful if there is some initialization code we do not want to track).\n" + 
                "- ```-e:tree```: reports the result as an execution tree.\n" +
-               "- ```-e:tree:n```: reports the result as an execution tree, but only showing ```n``` levels, e.g. ```-e:tree:1```.\n";
+               "- ```-e:tree:n```: reports the result as an execution tree, but only showing ```n``` levels, e.g. ```-e:tree:1```.\n" +
+               "- ```-e:hs```: reports execution hotspots (lines of code that take the most execution time overall). By default, it shows the top 20, use ```-e:hs:n``` to show the top n instead.\n";
     }
 
     @Override
@@ -138,6 +141,16 @@ public class SourceCodeExecution implements MDLWorker {
             int depth = Integer.parseInt(levelString);
             reportAsExecutionTree = true;
             reportAsExecutionTreeMaxDepth = depth;
+            return true;
+        } else if (flags.get(0).equals("-e:hs")) {
+            flags.remove(0);
+            reportHotSpots = true;
+            return true;
+        } else if (flags.get(0).startsWith("-e:hs:")) {
+            String levelString = flags.remove(0).substring(6);
+            int n = Integer.parseInt(levelString);
+            reportHotSpots = true;
+            nHotSpotsToShow = n;
             return true;
         }
 
@@ -249,6 +262,8 @@ public class SourceCodeExecution implements MDLWorker {
             }
         }
         
+        // Hotspot tracking:
+        HashMap<Integer, MutablePair<Integer, Integer>> hotspots = new HashMap<>();
         
         // Set program counter:
         z80.setProgramCounter(startAddress);
@@ -332,7 +347,18 @@ public class SourceCodeExecution implements MDLWorker {
                         }
                     }
                 }
+                
+                long previousTime = z80.getTStates();
                 z80.executeOneInstruction();
+                if (reportHotSpots) {
+                    int executionTime = (int)(z80.getTStates() - previousTime);
+                    if (!hotspots.containsKey(address)) {
+                        hotspots.put(address, MutablePair.of(0, 0));
+                    }
+                    MutablePair<Integer, Integer> spot = hotspots.get(address);
+                    spot.setLeft(spot.getLeft() + 1);
+                    spot.setRight(spot.getRight() + executionTime);
+                }
                 nInstructionsExecuted ++;
             }
         }catch(Exception e) {
@@ -376,7 +402,7 @@ public class SourceCodeExecution implements MDLWorker {
             logExecutionTreeStats(topLevelCalls, 0, globalTotal);
         } else {    
             // Construct and format the funtion execution reporting table:
-            config.info("Function: count - percentage - min / avg / max:");
+            config.info("Function: count  percentage  (min / avg / max):");
             List<MutablePair<Double, String>> rows = new ArrayList<>();
             // Step 1: function names:
             int max_len = 0;
@@ -417,7 +443,7 @@ public class SourceCodeExecution implements MDLWorker {
                     row.setLeft(percentageOfGlobalTotal);
                     String percentageString = String.format("%.4f", percentageOfGlobalTotal);
                     while(percentageString.length() < 7) percentageString = " " + percentageString;
-                    row.setRight(row.getRight() + " " + closedString + " - " + percentageString + "% - (" +
+                    row.setRight(row.getRight() + " " + closedString + "\t" + percentageString + "%\t(" +
                                  min + " / " + average + " / " + max + ")");
                     i++;
                 }
@@ -438,6 +464,7 @@ public class SourceCodeExecution implements MDLWorker {
                 config.info(row.getRight());
             }
         }
+        if (reportHotSpots) reportHotspots(hotspots, instructions);
         return true;
     }
     
@@ -516,7 +543,7 @@ public class SourceCodeExecution implements MDLWorker {
         }
     
         if (indentation == 0) {
-            config.info("Profiler result:\n" + treeText);
+            config.info("Profiler result: count  percentage  (min / avg / max)\n" + treeText);
         }
         
         if (reportAsExecutionTreeMaxDepth <= 0 || indentation < reportAsExecutionTreeMaxDepth) {
@@ -524,5 +551,26 @@ public class SourceCodeExecution implements MDLWorker {
         } else {
             return Pair.of(totalTime, "");
         }
+    }
+    
+    
+    void reportHotspots(HashMap<Integer, MutablePair<Integer, Integer>> hotspots,
+                        HashMap<Integer, CodeStatement> instructions)
+    {
+        List<Integer> sortedSpots = new ArrayList<>();
+        sortedSpots.addAll(hotspots.keySet());
+        Collections.sort(sortedSpots, new Comparator<Integer>() {
+            @Override
+            public int compare(Integer s1, Integer s2) {
+                return -Double.compare(hotspots.get(s1).getRight(), hotspots.get(s2).getRight());
+            }
+        });
+        String hotspotsString = "";
+        for(int i = 0;i<nHotSpotsToShow;i++) {
+            Integer spot = sortedSpots.get(i);
+            MutablePair<Integer, Integer> stats = hotspots.get(spot);
+            hotspotsString += instructions.get(spot).fileNameLineString() + "\t" + stats.getLeft() + "\t" + stats.getRight() + "\n";
+        }
+        config.info("Hotspots: count time\n" + hotspotsString);
     }
 }
