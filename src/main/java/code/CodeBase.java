@@ -147,6 +147,21 @@ public class CodeBase {
         return null;
     }
 
+    
+    // Find and return any symbol that starts with 'prefix'
+    public SourceConstant getSymbolWithPrefix(String prefix)
+    {
+        if (symbols.containsKey(prefix)) {
+            return symbols.get(prefix);
+        }
+        for(String symbol:symbols.keySet()) {
+            if (symbol.startsWith(prefix)) {
+                return symbols.get(symbol);
+            }
+        }
+        return null;
+    }
+
 
     public Set<String> getSymbols()
     {

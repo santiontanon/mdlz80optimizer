@@ -514,11 +514,21 @@ public class PreProcessor {
     }
 
 
-    public String nextMacroExpansionContextName(String labelPrefix)
+    public String nextMacroExpansionContextName(String labelPrefix, CodeBase code)
     {
-        macroExpansionCounter++;
-        if (labelPrefix == null) return unnamedMacroPrefix + macroExpansionCounter;
-        return labelPrefix + unnamedMacroPrefix + macroExpansionCounter;
+        String name;
+        while(true) {
+            macroExpansionCounter++;
+            if (labelPrefix == null) {
+                name = unnamedMacroPrefix + macroExpansionCounter;
+            } else {
+                name = labelPrefix + unnamedMacroPrefix + macroExpansionCounter;
+            }
+            if (code.getSymbol(name) == null &&
+                code.getSymbolWithPrefix(name + ".") == null) {
+                return name;
+            }
+        }
     }
     
     

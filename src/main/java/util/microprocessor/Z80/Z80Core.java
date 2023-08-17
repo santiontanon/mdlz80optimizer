@@ -3102,108 +3102,13 @@ public class Z80Core implements ICPUData, ICPU {
 
         // primary decode stage
         switch (instruction) {
-            case 0x00: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0x01: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0x02: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0x03: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0x04: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0x05: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0x06: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0x07: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0x08: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
             case 0x09: {
                 reg_index = ALU16BitAddIndexed(getBC());
                 break;
             }
-            case 0x0A: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0x0B: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0x0C: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0x0D: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0x0E: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0x0F: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            //
-            case 0x10: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0x11: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0x12: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0x13: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0x14: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0x15: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0x16: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0x17: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0x18: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
             case 0x19: {
                 reg_index = ALU16BitAddIndexed(getDE());
                 break;
-            }
-            case 0x1A: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0x1B: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0x1C: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0x1D: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0x1E: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0x1F: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            //
-            case 0x20: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
             }
             case 0x21: {
                 reg_index = ram.readWord(reg_PC);
@@ -3237,12 +3142,6 @@ public class Z80Core implements ICPUData, ICPU {
                 incPC();
                 break;
             } // ld IXh, nn
-            case 0x27: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0x28: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
             case 0x29: {
                 reg_index = ALU16BitAddIndexed(reg_index);
                 break;
@@ -3274,22 +3173,6 @@ public class Z80Core implements ICPUData, ICPU {
                 incPC();
                 break;
             } // ld IXl, nn
-            case 0x2F: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            //
-            case 0x30: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0x31: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0x32: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0x33: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
             case 0x34: {
                 incIndex();
                 break;
@@ -3302,33 +3185,9 @@ public class Z80Core implements ICPUData, ICPU {
                 loadIndex8BitImmediate();
                 break;
             }
-            case 0x37: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0x38: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
             case 0x39: {
                 reg_index = ALU16BitAddIndexed(reg_SP);
                 break;
-            }
-            case 0x3A: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0x3B: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0x3C: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0x3D: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0x3E: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0x3F: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
             }
             //
             case 0x40: { /* reg_B = reg_B; */
@@ -3585,18 +3444,6 @@ public class Z80Core implements ICPUData, ICPU {
                 break;
             } // ld a,a
             //
-            case 0x80: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0x81: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0x82: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0x83: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
             case 0x84: {
                 ALU8BitAdd((reg_index & 0xFF00) >>> 8);
                 break;
@@ -3609,21 +3456,6 @@ public class Z80Core implements ICPUData, ICPU {
                 ALU8BitAdd(getIndexAddressUndocumented(regCodeM));
                 break;
             } // CP (IX+dd)
-            case 0x87: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0x88: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0x89: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0x8A: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0x8B: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
             case 0x8C: {
                 ALU8BitAdc((reg_index & 0xFF00) >>> 8);
                 break;
@@ -3636,22 +3468,6 @@ public class Z80Core implements ICPUData, ICPU {
                 ALU8BitAdc(getIndexAddressUndocumented(regCodeM));
                 break;
             } // CP (IX+dd)
-            case 0x8F: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            //
-            case 0x90: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0x91: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0x92: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0x93: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
             case 0x94: {
                 ALU8BitSub((reg_index & 0xFF00) >>> 8);
                 break;
@@ -3664,21 +3480,6 @@ public class Z80Core implements ICPUData, ICPU {
                 ALU8BitSub(getIndexAddressUndocumented(regCodeM));
                 break;
             } // CP (IX+dd)
-            case 0x97: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0x98: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0x99: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0x9A: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0x9B: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
             case 0x9C: {
                 ALU8BitSbc((reg_index & 0xFF00) >>> 8);
                 break;
@@ -3691,22 +3492,6 @@ public class Z80Core implements ICPUData, ICPU {
                 ALU8BitSbc(getIndexAddressUndocumented(regCodeM));
                 break;
             } // CP (IX+dd)
-            case 0x9F: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            //
-            case 0xA0: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0xA1: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0xA2: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0xA3: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
             case 0xA4: {
                 ALU8BitAnd((reg_index & 0xFF00) >>> 8);
                 break;
@@ -3719,21 +3504,6 @@ public class Z80Core implements ICPUData, ICPU {
                 ALU8BitAnd(getIndexAddressUndocumented(regCodeM));
                 break;
             } // CP (IX+dd)
-            case 0xA7: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0xA8: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0xA9: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0xAA: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0xAB: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
             case 0xAC: {
                 ALU8BitXor((reg_index & 0xFF00) >>> 8);
                 break;
@@ -3746,22 +3516,6 @@ public class Z80Core implements ICPUData, ICPU {
                 ALU8BitXor(getIndexAddressUndocumented(regCodeM));
                 break;
             } // CP (IX+dd)
-            case 0xAF: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            //
-            case 0xB0: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0xB1: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0xB2: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0xB3: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
             case 0xB4: {
                 ALU8BitOr((reg_index & 0xFF00) >>> 8);
                 break;
@@ -3774,21 +3528,6 @@ public class Z80Core implements ICPUData, ICPU {
                 ALU8BitOr(getIndexAddressUndocumented(regCodeM));
                 break;
             } // CP (IX+dd)
-            case 0xB7: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0xB8: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0xB9: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0xBA: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0xBB: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
             case 0xBC: {
                 ALU8BitCp((reg_index & 0xFF00) >>> 8);
                 break;
@@ -3801,213 +3540,39 @@ public class Z80Core implements ICPUData, ICPU {
                 ALU8BitCp(getIndexAddressUndocumented(regCodeM));
                 break;
             } // CP (IX+dd)
-            case 0xBF: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            //
-            case 0xC0: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0xC1: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0xC2: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0xC3: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0xC4: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0xC5: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0xC6: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0xC7: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0xC8: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0xC9: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0xCA: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
             case 0xCB: {
                 extendedIndexCB();
                 break;
-            }
-            case 0xCC: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0xCD: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0xCE: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0xCF: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            //
-            case 0xD0: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0xD1: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0xD2: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0xD3: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0xD4: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0xD5: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0xD6: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0xD7: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0xD8: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0xD9: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0xDA: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0xDB: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0xDC: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0xDD: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0xDE: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0xDF: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            //
-            case 0xE0: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
             }
             case 0xE1: {
                 reg_index = ram.readWord(reg_SP);
                 inc2SP();
                 break;
             } // pop ix
-            case 0xE2: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
             case 0xE3: {
                 EXSPIndex();
                 break;
             } // ex (sp),ix
-            case 0xE4: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
             case 0xE5: {
                 dec2SP();
                 ram.writeWord(reg_SP, reg_index);
                 break;
             } // push ix
-            case 0xE6: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0xE7: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0xE8: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
             case 0xE9: {
                 reg_PC = reg_index;
                 break;
             } // jp (ix)
-            case 0xEA: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0xEB: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0xEC: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0xED: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0xEE: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0xEF: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            //
-            case 0xF0: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0xF1: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0xF2: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0xF3: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0xF4: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0xF5: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0xF6: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0xF7: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0xF8: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
             case 0xF9: {
                 reg_SP = reg_index;
                 break;
             } // ld sp,ix
-            case 0xFA: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0xFB: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0xFC: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0xFD: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
-            case 0xFE: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            }
             default: {
-                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE);
-            } //
+                int byte1 = ram.readByte(reg_PC - 2);
+                int byte2 = ram.readByte(reg_PC - 1);
+                throw new ProcessorException(ProcessorException.COMPUTER_UNIMPLEMENTED_OPCODE +
+                        " at address " + config.config.tokenizer.toHexWord(reg_PC - 2, config.config.hexStyle) + 
+                        ": " + config.config.tokenizer.toHex(byte1, 2) + " " + config.config.tokenizer.toHex(byte2, 2));
+            }
         }
 
     }

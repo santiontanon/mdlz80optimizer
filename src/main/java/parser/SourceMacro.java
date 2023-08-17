@@ -112,7 +112,7 @@ public class SourceMacro {
                 if (previous.source == macroCall.source && previous.label != null && previous.type == CodeStatement.STATEMENT_NONE) {
                     scope = previous.label.name;
                 } else {
-                    scope = config.preProcessor.nextMacroExpansionContextName(macroCall.labelPrefix);
+                    scope = config.preProcessor.nextMacroExpansionContextName(macroCall.labelPrefix, code);
                 }
             }
             for(int i = 0;i<reptNRepetitions_value;i++) {
@@ -246,7 +246,7 @@ public class SourceMacro {
                 if (previous.source == macroCall.source && previous.label != null && previous.type == CodeStatement.STATEMENT_NONE) {
                     scope = previous.label.name;
                 } else {
-                    scope = config.preProcessor.nextMacroExpansionContextName(macroCall.labelPrefix);
+                    scope = config.preProcessor.nextMacroExpansionContextName(macroCall.labelPrefix, code);
                 }
             }
 

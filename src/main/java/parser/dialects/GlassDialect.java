@@ -262,7 +262,7 @@ public class GlassDialect implements Dialect {
             if (macroCall.label != null) {
                 scope = macroCall.label.name;
             } else {
-                scope = config.preProcessor.nextMacroExpansionContextName(macroCall.labelPrefix);
+                scope = config.preProcessor.nextMacroExpansionContextName(macroCall.labelPrefix, code);
             }
             for(int i = 1;i<args.size();i++) {
                 List<SourceLine> linesTmp = new ArrayList<>();
