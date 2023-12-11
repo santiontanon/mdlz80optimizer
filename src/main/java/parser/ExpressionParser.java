@@ -870,7 +870,11 @@ public class ExpressionParser {
             }
         }        
 
-        config.error("expression failed to parse with token list: " + tokens);
+        if (s != null) {
+            config.error("expression failed to parse with token list: " + tokens + " in " + s.sl);
+        } else {
+            config.error("expression failed to parse with token list: " + tokens);
+        }
         return null;
     }
         

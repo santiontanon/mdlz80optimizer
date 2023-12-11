@@ -49,12 +49,24 @@ public class CodeBaseParser {
                 return false;
             }
             Expression valueExp = config.expressionParser.parse(tokens, null, null, code);
+            if (valueExp == null) {
+                config.warn("Previous error was while parsing flag -equ " + definition + ", attempting to parse aain assuming value is a string.");
+            }
             if (valueExp == null ||
                 !tokens.isEmpty() ||
                 !valueExp.isConstant()) {
-                // assume it's a string:
-                String stringValue = definition.substring(definition.indexOf("="));
-                valueExp = Expression.constantExpression(stringValue, config);
+                if (definition.contains("=")) {
+                    // assume it's a string:
+                    String stringValue = definition.substring(definition.indexOf("=") + 1);
+                    valueExp = Expression.constantExpression(stringValue, config);
+                } else {
+                    config.error("Cannot parse flag -equ " + definition);
+                    return false;
+                }
+            }
+            if (valueExp == null) {
+                config.error("Cannot parse flag -equ " + definition);
+                return false;
             }
             Object value = valueExp.evaluate(null, code, true);
             if (value == null) {

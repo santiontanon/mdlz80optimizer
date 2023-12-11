@@ -140,6 +140,7 @@ public class SourceMacro {
                 return null;
             }
             Integer ifCondition_value = args.get(0).evaluateToInteger(macroCall, code, false);
+            config.debug("IF argument " + args.get(0) + " evaluates to " + ifCondition_value + ": " + macroCall.sl);
             if (ifCondition_value == null) {
                 config.error("Could not evaluate IF argument " + args.get(0) + ": " + macroCall.sl);
                 args.get(0).evaluateToInteger(macroCall, code, false);

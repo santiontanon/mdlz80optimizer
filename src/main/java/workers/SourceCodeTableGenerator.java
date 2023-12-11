@@ -175,6 +175,24 @@ public class SourceCodeTableGenerator implements MDLWorker {
     }  
     
     
+    public Pair<CodeStatement, CodeStatement> functionFromStartAndEnd(
+        CodeStatement start, CodeStatement end) {
+        // See if there are other labels just before the start:
+        SourceFile f = start.source;
+        int idx = f.getStatements().indexOf(start) - 1;
+        while(idx >= 0) {
+            CodeStatement s = f.getStatements().get(idx);
+            if (s.type != CodeStatement.STATEMENT_NONE) break;
+            if (s.op != null) break;            
+            if (s.label != null) {
+                start = s;
+            }
+            idx --;
+        }
+        return Pair.of(start, end);
+    }
+
+
     public List<Pair<CodeStatement, CodeStatement>> autodetectFunctions(SourceFile f, CodeBase code)    
     {
         List<Pair<CodeStatement, CodeStatement>> functions = new ArrayList<>();
@@ -197,11 +215,11 @@ public class SourceCodeTableGenerator implements MDLWorker {
                         if (lastOp.op.isJump() && !lastOp.op.isConditional()) {
                             // potential for function end. But if we reached
                             // here, it means that none of the conditions below
-                            // are satisfied. So, see if find other clues:
+                            // are satisfied. See if we can find other clues:
                             if (config.dialectParser != null && 
                                 config.dialectParser.hasFunctionStartMark(s)) {
                                 // function end!
-                                functions.add(Pair.of(functionStart, lastOp));
+                                functions.add(functionFromStartAndEnd(functionStart, lastOp));
                                 functionStart = s;
                                 lastOp = null;                                
                             }
@@ -222,7 +240,7 @@ public class SourceCodeTableGenerator implements MDLWorker {
                 }
                 if (functionEnd) {
                     // function end:
-                    functions.add(Pair.of(functionStart, s));
+                    functions.add(functionFromStartAndEnd(functionStart, s));
                     functionStart = null;
                     lastOp = null;
                 }
@@ -236,7 +254,7 @@ public class SourceCodeTableGenerator implements MDLWorker {
             // We found the end of a file, and we have some code leftover,
             // see if there was a function terminating in a non-standard way:
             if (lastOp.op.isJump() && !lastOp.op.isConditional()) {
-                functions.add(Pair.of(functionStart, lastOp));
+                functions.add(functionFromStartAndEnd(functionStart, lastOp));
             }
         }        
         
