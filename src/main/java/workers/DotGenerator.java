@@ -19,11 +19,13 @@ import org.apache.commons.lang3.tuple.Pair;
 public class DotGenerator implements MDLWorker {
     public static final String BINARY_COLOR = "gray";
     public static final int GRAPH_SOURCE_FILES = 0;
-    public static final int GRAPH_SOURCE_FUNCTIONS = 1;
+    public static final int GRAPH_SOURCE_CALL_GRAPH = 1;
+    public static final int GRAPH_SOURCE_FILE_CALL_GRAPH = 2;
 
     MDLConfig config = null;
     int graphType = GRAPH_SOURCE_FILES;
     String outputFileName = null;
+    List<String> excludedSourceFilesNames = new ArrayList<>();
     boolean groupCallGraphByFiles = true;
     boolean useHTMLNodes = true;  // only affects call graphs
 
@@ -44,7 +46,13 @@ public class DotGenerator implements MDLWorker {
                "```dot -Tpng <output file>.dot -o <output file>.png```\n" +
                "- ```-dot-cg <output file>```: generates a dot file with the call " +
                "graph of the whole code base. MDL will try to identify individual " +
-               "functions in the code, but some might be missed.\n";
+               "functions in the code, but some might be missed.\n" +
+               "- ```-dot-cg-files <output file>```: generates a dot file with the call " +
+               "graph of the whole code base but at a 'file' granularity, i.e., each vertex " +
+               "is a file, and edges represent that some code from a given file calls/jumps " +
+               "to the other file.\n" +
+               "- ```-dot-exclude-file <file>```: excludes a given source file " +
+               "from analysis when generating dot files.\n";
     }
 
 
@@ -66,7 +74,18 @@ public class DotGenerator implements MDLWorker {
         if (flags.get(0).equals("-dot-cg") && flags.size()>=2) {
             flags.remove(0);
             outputFileName = flags.remove(0);
-            graphType = GRAPH_SOURCE_FUNCTIONS;
+            graphType = GRAPH_SOURCE_CALL_GRAPH;
+            return true;
+        }
+        if (flags.get(0).equals("-dot-cg-files") && flags.size()>=2) {
+            flags.remove(0);
+            outputFileName = flags.remove(0);
+            graphType = GRAPH_SOURCE_FILE_CALL_GRAPH;
+            return true;
+        }
+        if (flags.get(0).equals("-dot-exclude-file") && flags.size()>=2) {
+            flags.remove(0);
+            excludedSourceFilesNames.add(flags.remove(0));
             return true;
         }
         return false;
@@ -90,8 +109,11 @@ public class DotGenerator implements MDLWorker {
             case GRAPH_SOURCE_FILES:
                 sourceFileGraph(code, sb);
                 break;
-            case GRAPH_SOURCE_FUNCTIONS:
-                callGraph(code, sb);
+            case GRAPH_SOURCE_CALL_GRAPH:
+                callGraph(code, sb, false);
+                break;
+            case GRAPH_SOURCE_FILE_CALL_GRAPH:
+                callGraph(code, sb, true);
                 break;
             default:
                 config.error("DotGenerator: Unrecognized graph type: " + graphType);
@@ -115,6 +137,7 @@ public class DotGenerator implements MDLWorker {
         
         // vertices:
         for(SourceFile f : code.getSourceFiles()) {
+            if (excludedSourceFilesNames.contains(f.fileName)) continue;
             String sName = "" + (nodeNames.size()+1);
             nodeNames.put(f.fileName, sName);
 
@@ -145,6 +168,7 @@ public class DotGenerator implements MDLWorker {
 
         // edges:
         for(SourceFile f: code.getSourceFiles()) {
+            if (excludedSourceFilesNames.contains(f.fileName)) continue;
             for(CodeStatement s : f.getStatements()) {
                 if (s.type == CodeStatement.STATEMENT_INCLUDE) {
                     sb.append(nodeNames.get(f.fileName));
@@ -177,7 +201,7 @@ public class DotGenerator implements MDLWorker {
     }
     
     
-    public void callGraph(CodeBase code, StringBuilder sb)
+    public void callGraph(CodeBase code, StringBuilder sb, boolean fileGranularity)
     {
         HashMap<String, String> nodeNames = new HashMap<>();
         HashMap<CodeStatement, String> statementsToFunctions = new HashMap<>();
@@ -188,113 +212,157 @@ public class DotGenerator implements MDLWorker {
         SourceCodeTableGenerator sctg = new SourceCodeTableGenerator(config);
         int fileIndex = 0;
         for(SourceFile f: code.getSourceFiles()) {
+            if (excludedSourceFilesNames.contains(f.fileName)) continue;
             List<Pair<CodeStatement, CodeStatement>> functions = sctg.autodetectFunctions(f, code);
             if (functions.isEmpty()) continue;
             
-            if (groupCallGraphByFiles) {
-                sb.append("subgraph cluster");
-                sb.append(fileIndex);
-                fileIndex++;
-                sb.append(" {\n");
-                sb.append("label = \"");
-                sb.append(f.fileName);
-                sb.append("\"\n");
-                sb.append("style = filled;\n");
-                sb.append("fillcolor = \"#e0e0e0\";\n");
-            }
-
-            for(Pair<CodeStatement, CodeStatement> function:functions) {
-                SourceConstant functionName = null;
-                int size = 0;
-                for(int i = f.getStatements().indexOf(function.getLeft());
-                        i <= f.getStatements().indexOf(function.getRight()); 
-                        i++) {
-                    CodeStatement s = f.getStatements().get(i);
-                    if (functionName == null) {
-                        if (s.label == null) {
-                            config.error("First statement of an autodetected function is not a label!");
-                            break;
-                        }
-                        functionName = s.label;
-                    }
-
-                    if (s.op != null) size += s.op.spec.sizeInBytes;
-                }
-                if (functionName == null) continue;
-
+            if (fileGranularity) {
                 String sName = "" + (nodeNames.size()+1);
-                nodeNames.put(functionName.name, sName);   
-                allfunctions.add(function);
-                
-                // Information necessary for creating vertices:
-                for(int i = f.getStatements().indexOf(function.getLeft());
-                        i <= f.getStatements().indexOf(function.getRight()); 
-                        i++) {
-                    CodeStatement s = f.getStatements().get(i);
-                    statementsToFunctions.put(s, sName);
-                    if (s.label != null) {
-                        labelsToFunctions.put(s.label, sName);
-                    }
-                }
                 sb.append(sName);
+                nodeNames.put(f.fileName, sName);
                 if (useHTMLNodes) {
                     sb.append("[label=<\n");
                     sb.append("<TABLE><TR>");
-                    sb.append("<TD>name: ");
-                    sb.append(functionName.name);
+                    sb.append("<TD>file: ");
+                    sb.append(f.fileName);
                     sb.append("</TD>\n");
-                    if (!groupCallGraphByFiles) {
-                        sb.append("<TD>file: ");
-                        sb.append(f.fileName);
-                        sb.append("</TD>");
-                    }
-                    sb.append("<TD>size: ");
-                    sb.append(size);
-                    sb.append("</TD>");
                     sb.append("</TR></TABLE>>]\n");                    
                 } else {
                     sb.append(" [shape=record label=\"");
                     sb.append("{{");
-                    sb.append("{name:|");
-                    sb.append(functionName.name);
+                    sb.append("{file:|");
+                    sb.append(f.fileName);
                     sb.append("}|");
-                    if (!groupCallGraphByFiles) {
-                        sb.append("{file:|");
-                        sb.append(f.fileName);
-                        sb.append("}|");
-                    }
-                    sb.append("{size:|");
-                    sb.append(size);
-                    sb.append("}}}\"]\n");
+                    sb.append("}}\"]\n");
+                }                
+            } else {
+                if (groupCallGraphByFiles) {
+                    sb.append("subgraph cluster");
+                    sb.append(fileIndex);
+                    fileIndex++;
+                    sb.append(" {\n");
+                    sb.append("label = \"");
+                    sb.append(f.fileName);
+                    sb.append("\"\n");
+                    sb.append("style = filled;\n");
+                    sb.append("fillcolor = \"#e0e0e0\";\n");
                 }
-            }
-            
-            if (groupCallGraphByFiles) {
-                sb.append("}\n");
+
+                for(Pair<CodeStatement, CodeStatement> function:functions) {
+                    SourceConstant functionName = null;
+                    int size = 0;
+                    for(int i = f.getStatements().indexOf(function.getLeft());
+                            i <= f.getStatements().indexOf(function.getRight()); 
+                            i++) {
+                        CodeStatement s = f.getStatements().get(i);
+                        if (functionName == null) {
+                            if (s.label == null) {
+                                config.error("First statement of an autodetected function is not a label!");
+                                break;
+                            }
+                            functionName = s.label;
+                        }
+
+                        if (s.op != null) size += s.op.spec.sizeInBytes;
+                    }
+                    if (functionName == null) continue;
+
+                    String sName = "" + (nodeNames.size()+1);
+                    nodeNames.put(functionName.name, sName);   
+                    allfunctions.add(function);
+
+                    // Information necessary for creating vertices:
+                    for(int i = f.getStatements().indexOf(function.getLeft());
+                            i <= f.getStatements().indexOf(function.getRight()); 
+                            i++) {
+                        CodeStatement s = f.getStatements().get(i);
+                        statementsToFunctions.put(s, sName);
+                        if (s.label != null) {
+                            labelsToFunctions.put(s.label, sName);
+                        }
+                    }
+                    sb.append(sName);
+                    if (useHTMLNodes) {
+                        sb.append("[label=<\n");
+                        sb.append("<TABLE><TR>");
+                        sb.append("<TD>name: ");
+                        sb.append(functionName.name);
+                        sb.append("</TD>\n");
+                        if (!groupCallGraphByFiles) {
+                            sb.append("<TD>file: ");
+                            sb.append(f.fileName);
+                            sb.append("</TD>");
+                        }
+                        sb.append("<TD>size: ");
+                        sb.append(size);
+                        sb.append("</TD>");
+                        sb.append("</TR></TABLE>>]\n");                    
+                    } else {
+                        sb.append(" [shape=record label=\"");
+                        sb.append("{{");
+                        sb.append("{name:|");
+                        sb.append(functionName.name);
+                        sb.append("}|");
+                        if (!groupCallGraphByFiles) {
+                            sb.append("{file:|");
+                            sb.append(f.fileName);
+                            sb.append("}|");
+                        }
+                        sb.append("{size:|");
+                        sb.append(size);
+                        sb.append("}}}\"]\n");
+                    }
+                }
+
+                if (groupCallGraphByFiles) {
+                    sb.append("}\n");
+                }
             }
         }
         
-        // Edges:
-        for(Pair<CodeStatement, CodeStatement> function:allfunctions) {
-            SourceFile f = function.getLeft().source;
-            for(int i = f.getStatements().indexOf(function.getLeft());
-                    i <= f.getStatements().indexOf(function.getRight()); 
-                    i++) {
-                CodeStatement s = f.getStatements().get(i);
-                if (s.op == null) continue;
-                SourceConstant l = s.op.getTargetJumpLabel(code);
-                if (l == null) continue;
-                String sourceNode = statementsToFunctions.get(s);
-                String targetNode = labelsToFunctions.get(l);
-                if (targetNode != null && sourceNode != null) {
-                    if (targetNode.equals(sourceNode)) continue;
-                    String edgeName = sourceNode + "-" + targetNode;
-                    if (existingEdges.contains(edgeName)) continue;
-                    existingEdges.add(edgeName);
-                    sb.append(sourceNode);
-                    sb.append(" -> ");
-                    sb.append(targetNode);
-                    sb.append("\n");
+        if (fileGranularity) {     
+            for(SourceFile f: code.getSourceFiles()) {            
+                for(CodeStatement s:f.getStatements()) {
+                    if (s.op != null) {
+                        SourceConstant l = s.op.getTargetJumpLabel(code);
+                        if (l == null) continue;
+                        String sourceNode = nodeNames.get(f.fileName);
+                        String targetNode = nodeNames.get(l.definingStatement.source.fileName);
+                        if (sourceNode == null || targetNode == null) continue;
+                        if (sourceNode.equals(targetNode)) continue;
+                        String edgeName = sourceNode + "-" + targetNode;
+                        if (existingEdges.contains(edgeName)) continue;
+                        existingEdges.add(edgeName);
+                        sb.append(sourceNode);
+                        sb.append(" -> ");
+                        sb.append(targetNode);
+                        sb.append("\n");
+                    }
+                }
+            }
+        } else {
+            // Edges:
+            for(Pair<CodeStatement, CodeStatement> function:allfunctions) {
+                SourceFile f = function.getLeft().source;
+                for(int i = f.getStatements().indexOf(function.getLeft());
+                        i <= f.getStatements().indexOf(function.getRight()); 
+                        i++) {
+                    CodeStatement s = f.getStatements().get(i);
+                    if (s.op == null) continue;
+                    SourceConstant l = s.op.getTargetJumpLabel(code);
+                    if (l == null) continue;
+                    String sourceNode = statementsToFunctions.get(s);
+                    String targetNode = labelsToFunctions.get(l);
+                    if (targetNode != null && sourceNode != null) {
+                        if (targetNode.equals(sourceNode)) continue;
+                        String edgeName = sourceNode + "-" + targetNode;
+                        if (existingEdges.contains(edgeName)) continue;
+                        existingEdges.add(edgeName);
+                        sb.append(sourceNode);
+                        sb.append(" -> ");
+                        sb.append(targetNode);
+                        sb.append("\n");
+                    }
                 }
             }
         }
