@@ -98,6 +98,23 @@ public class SourceFile {
         }
         return statements.get(index-1);
     }
+    
+    
+    public List<CodeStatement> linearizeStatements(CodeBase code)
+    {
+        List<CodeStatement> l = new ArrayList<>();
+        CodeStatement s = getStatements().get(0);;
+
+        while(s != null) {
+            while(s.include != null) {
+                s = s.include.getStatements().get(0);
+            }
+            l.add(s);
+            s = s.source.getNextStatementTo(s, code);
+        }
+
+        return l;
+    }
 
 
     public Integer sizeInBytes(CodeBase code, boolean withIncludes, boolean withIncbin, boolean withVirtual) {
