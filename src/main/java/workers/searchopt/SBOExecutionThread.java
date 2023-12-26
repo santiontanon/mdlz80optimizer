@@ -346,7 +346,7 @@ public class SBOExecutionThread extends Thread {
     }    
     
 
-    final boolean evaluateSolution(int depth, int nextAbsoluteJump, int nextRelativeJump, int breakPoint)
+    final boolean evaluateSolution(int depth, int nextAbsoluteJump, int nextRelativeJump, int breakPoint) throws Exception
     {
         if (currentAbsoluteJumps_n > nextAbsoluteJump) {
             currentOpsAddresses[depth] = breakPoint;

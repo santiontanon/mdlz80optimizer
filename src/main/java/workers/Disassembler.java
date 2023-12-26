@@ -451,6 +451,19 @@ public class Disassembler implements MDLWorker {
     }
     
     
+    public CPUOp tryToDisassembleSingleInstruction(List<Integer> currentBlock, CodeBase code) 
+    {
+        for(CPUOpSpec spec:config.opParser.getOpSpecs()) {
+            CPUOp op = spec.tryToDisassemble(currentBlock, 0, code);
+            if (op != null) {
+                return op;
+            }
+        }
+        
+        return null;
+    }    
+    
+    
     public void addLabelToStatement(String cName, CodeStatement s, CodeBase code)
     {
         SourceConstant c = new SourceConstant(cName, cName,

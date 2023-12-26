@@ -46,7 +46,7 @@ public class TrackingZ80Memory implements IMemory {
     }
 
     @Override
-    final public int readByte(int address) {
+    public int readByte(int address) {
         if (memoryReadsIndex<TRACKING_BUFFER) {
             memoryReadAddresses[memoryReadsIndex] = address;
             memoryReadValues[memoryReadsIndex] = memory[address];
@@ -57,12 +57,12 @@ public class TrackingZ80Memory implements IMemory {
     }
 
     @Override
-    final public int readWord(int address) {
+    public int readWord(int address) {
         return readByte(address) + readByte((address + 1) & 0xffff) * 256;
     }
 
     @Override
-    final public void writeByte(int address, int data) 
+    public void writeByte(int address, int data) 
     {
         for(Pair<Integer, Integer> p:writeProtections) {
             if (address >= p.getLeft() && address < p.getRight()) return;
@@ -76,7 +76,7 @@ public class TrackingZ80Memory implements IMemory {
     }
 
     @Override
-    final public void writeWord(int address, int data) {
+    public void writeWord(int address, int data) {
         writeByte(address, (data & 0x00ff));
         address = (address + 1) & 0xffff;
         data = (data >>> 8);
@@ -85,20 +85,20 @@ public class TrackingZ80Memory implements IMemory {
     
     
     @Override
-    final public void writeProtect(int start, int end)
+    public void writeProtect(int start, int end)
     {
         writeProtections.add(Pair.of(start, end));
     }
     
     
     @Override
-    final public void clearWriteProtections()
+    public void clearWriteProtections()
     {
         writeProtections.clear();
     }    
     
     
-    final public List<Integer> getMemoryWrites()
+    public List<Integer> getMemoryWrites()
     {
         List<Integer> writes = new ArrayList<>();
         for(int i = 0;i<memoryWritesIndex;i++) {
@@ -108,7 +108,7 @@ public class TrackingZ80Memory implements IMemory {
     }
     
     
-    final public List<int[]> getMemoryReads()
+    public List<int[]> getMemoryReads()
     {
         List<int[]> reads = new ArrayList<>();
         for(int i = 0;i<memoryReadsIndex;i++) {
@@ -118,14 +118,14 @@ public class TrackingZ80Memory implements IMemory {
     }
 
 
-    final public void clearMemoryAccesses()
+    public void clearMemoryAccesses()
     {
         memoryWritesIndex = 0;
         memoryReadsIndex = 0;
     }
     
     
-    final public void clearMemoryAccessesRandomizingThem(int protectStart, int protectEnd)
+    public void clearMemoryAccessesRandomizingThem(int protectStart, int protectEnd)
     {
         for(int i = 0;i<memoryWritesIndex;i++) {
             int address = memoryWriteAddresses[i];
@@ -146,13 +146,13 @@ public class TrackingZ80Memory implements IMemory {
 
 
     @Override
-    final public int[] getMemoryArray()
+    public int[] getMemoryArray()
     {
         return memory;
     }
     
     
-    final public boolean writtenBefore(int address, int time)
+    public boolean writtenBefore(int address, int time)
     {
         for(int i = 0;i<memoryWritesIndex;i++) {
             if (memoryWriteAddresses[i] == address && 

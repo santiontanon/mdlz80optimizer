@@ -5,10 +5,16 @@
 package workers;
 
 import cl.MDLConfig;
+import code.CPUOp;
+import code.CPUOpSpec;
 import code.CodeBase;
 import code.CodeStatement;
 import code.Expression;
+import code.SourceConstant;
 import code.SourceFile;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -17,8 +23,8 @@ import java.util.HashSet;
 import java.util.List;
 import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import util.microprocessor.MappedTrackingZ80Memory;
 import util.microprocessor.PlainZ80IO;
-import util.microprocessor.TrackingZ80Memory;
 import util.microprocessor.Z80.CPUConfig;
 import util.microprocessor.Z80.CPUConstants;
 import util.microprocessor.Z80.CPUConstants.RegisterNames;
@@ -29,8 +35,10 @@ import util.microprocessor.Z80.Z80Core;
  * @author santi
  */
 public class SourceCodeExecution implements MDLWorker {
+    public static final int SOURCE_RAM = 0;
+    public static final int SOURCE_ROM = 1;
 
-    
+            
     public static class FunctionCallRecord {
         public FunctionTrackRecord trackRecord;
         public int stack;
@@ -40,7 +48,7 @@ public class SourceCodeExecution implements MDLWorker {
 
 
     public static class FunctionTrackRecord {
-        public FunctionTrackRecord(String a_userString, int a_address) {
+        public FunctionTrackRecord(String a_userString, String a_address) {
             userString = a_userString;
             address = a_address;
         }
@@ -52,16 +60,16 @@ public class SourceCodeExecution implements MDLWorker {
         }
         
         public String userString;
-        public int address;
+        public String address;  // source:address (where "source" is RAM/ROM/etc.)
         List<FunctionCallRecord> closed = new ArrayList<>();
         List<FunctionCallRecord> open = new ArrayList<>();
     }
-    
+        
     
     MDLConfig config = null;
-    String startAddressString = null;
-    String endAddressString = null;
-    String startTrackingAddressString = null;
+    String startAddressUser = null;
+    String endAddressUser = null;
+    String startTrackingAddressUser = null;
     String stepsString = null;
     boolean trace = false;
     boolean trackAllFunctions = false;
@@ -71,18 +79,36 @@ public class SourceCodeExecution implements MDLWorker {
     int nHotSpotsToShow = 20;
     List<String> trackFunctionStrings = new ArrayList<>();
     List<String> ignoreFunctionStrings = new ArrayList<>();
+    Disassembler disassembler;
+    String mapperConfigFileName = null;
 
+    // Memory configuration:
+    int ROM_size = 64*1024;
+    int segment_size = 16*1024;
+    int binary_source = SOURCE_RAM;
+    int initial_mapping[][] = {{0, 0}, {0, 1}, {0, 2}, {0, 3}};
+    int RAM_mapper_type = MappedTrackingZ80Memory.NO_MAPPER;
+    int ROM_mapper_type = MappedTrackingZ80Memory.NO_MAPPER;
+    
+//    int ROM_size = 128*1024;
+//    int segment_size = 16*1024;
+//    int binary_source = SOURCE_ROM;
+//    int initial_mapping[][] = {{0, 0}, {1, 0}, {1, 1}, {0, 3}};
+//    int RAM_mapper_type = MappedTrackingZ80Memory.NO_MAPPER;
+//    int ROM_mapper_type = MappedTrackingZ80Memory.MSX_ASCII16_MAPPER;
+ 
     
     public SourceCodeExecution(MDLConfig a_config)
     {
         config = a_config;
+        disassembler = new Disassembler(config);
     }
 
     
     @Override
     public String docString() {
         // This string has MD tags, so that I can easily generate the corresponding documentation in github with the 
-        // hidden "-helpmd" flag:        
+        // hidden "-helpmd" flag:
         return "- ```-e:s <address-start> <steps>```: executes the source code starting at <address> (address can be number or a label name) for <steps> CPU time units, and displays the changed registers, memory and timing.\n" +
                "- ```-e:u <address-start> <address-end>```: executes the source code starting at <address-start> until reaching <address-end>, and displays the changed registers, memory and timing.\n" +
                "- ```-e:trace```: turns on step-by-step execution logging for ```-e:s``` or ```-e:u``` flags.\n" +
@@ -92,7 +118,10 @@ public class SourceCodeExecution implements MDLWorker {
                "- ```-e:st <address>```: even if execution will start at ```<address-start>``` as specified in the above flags, function execution time will only be tracked starting at this label (useful if there is some initialization code we do not want to track).\n" + 
                "- ```-e:tree```: reports the result as an execution tree.\n" +
                "- ```-e:tree:n```: reports the result as an execution tree, but only showing ```n``` levels, e.g. ```-e:tree:1```.\n" +
-               "- ```-e:hs```: reports execution hotspots (lines of code that take the most execution time overall). By default, it shows the top 20, use ```-e:hs:n``` to show the top n instead.\n";
+               "- ```-e:hs```: reports execution hotspots (lines of code that take the most execution time overall). By default, it shows the top 20, use ```-e:hs:n``` to show the top n instead.\n" +
+               "- ```-e:mapper-config <filename>```: if the binary to be executed requires some sort of memory mapper, it can be specified in a configuration text file. The file contains on config option per line, and should include the following options: " +
+               "binary_size: <size in bytes, multiple of page_size>, page_size: <page size in bytes, default is 16384>, ram_mapper_type: <type>, rom_mapper_type: <type> (only 'no_mapper', and 'msx_ascii16_mapper' are currently supported), initial_mapping: source1:segment1, source2:segment2, ... (one pair per each page in RAM, and where source == 0 means RAM, and source == 1 means binary, and segment is the segment within each source). " +
+               "Notice that when this option is specified, the binary is assumed to be loaded into a separate ROM (separate from RAM), and that the mapper will be used to let the z80 access the binary data. If this option is not specified, the binary will just be loaded in RAM.\n";
     }
 
     @Override
@@ -104,17 +133,17 @@ public class SourceCodeExecution implements MDLWorker {
     public boolean parseFlag(List<String> flags) {
         if (flags.get(0).equals("-e:s") && flags.size()>=3) {
             flags.remove(0);
-            startAddressString = flags.remove(0);
+            startAddressUser = flags.remove(0);
             stepsString = flags.remove(0);
             return true;
         } else if (flags.get(0).equals("-e:u") && flags.size()>=3) {
             flags.remove(0);
-            startAddressString = flags.remove(0);
-            endAddressString = flags.remove(0);
+            startAddressUser = flags.remove(0);
+            endAddressUser = flags.remove(0);
             return true;
         } else if (flags.get(0).equals("-e:st") && flags.size()>=2) {
             flags.remove(0);
-            startTrackingAddressString = flags.remove(0); 
+            startTrackingAddressUser = flags.remove(0); 
             return true;
         } else if (flags.get(0).equals("-e:trace")) {
             flags.remove(0);
@@ -152,6 +181,10 @@ public class SourceCodeExecution implements MDLWorker {
             reportHotSpots = true;
             nHotSpotsToShow = n;
             return true;
+        } else if (flags.get(0).startsWith("-e:mapper-config") && flags.size()>=2) {
+            flags.remove(0);
+            mapperConfigFileName = flags.remove(0);
+            return true;            
         }
 
         return false;
@@ -159,45 +192,73 @@ public class SourceCodeExecution implements MDLWorker {
 
     @Override
     public boolean triggered() {
-        return startAddressString != null;
+        return startAddressUser != null;
     }
 
     @Override
     public boolean work(CodeBase code) 
     {
-        TrackingZ80Memory z80Memory = new TrackingZ80Memory(null);
+        if (mapperConfigFileName != null) {
+            if (!loadMapperConfig(mapperConfigFileName)) {
+                return false;
+            }
+        } 
+        
+        MappedTrackingZ80Memory z80Memory = new MappedTrackingZ80Memory(null, segment_size, RAM_mapper_type, config, trace);
+        try {
+            z80Memory.addMemorySource(ROM_size, ROM_mapper_type, true);
+        } catch(Exception e) {
+            config.error(e.getMessage());
+            return false;
+        }
         Z80Core z80 = new Z80Core(z80Memory, new PlainZ80IO(), new CPUConfig(config));
         z80Memory.setCPU(z80);
         z80.reset();
         
         // assemble and copy program to z80 memory:
-        HashMap<Integer, CodeStatement> instructions = new HashMap<>();
+        HashMap<String, CodeStatement> instructions = new HashMap<>();
+        HashMap<CodeStatement, String> reverseInstructions = new HashMap<>();
         SourceFile main = code.outputs.get(0).main;
         BinaryGenerator generator = new BinaryGenerator(config);
-        List<BinaryGenerator.StatementBinaryEffect> statementBytes = new ArrayList<>();        
+        List<BinaryGenerator.StatementBinaryEffect> statementBytes = new ArrayList<>();
         generator.generateStatementBytes(main, code, statementBytes);
-        for(BinaryGenerator.StatementBinaryEffect effect:statementBytes) {
-            Integer address = effect.s.getAddress(code);
-            instructions.put(address, effect.s);
-            for(int i = 0;i<effect.bytes.length;i++) {
-                int b = effect.bytes[i];
-                if (b < 0) b += 256;
-                z80Memory.writeByte(address + i, b);
+        {
+            int romAddress = 0;
+            for(BinaryGenerator.StatementBinaryEffect effect:statementBytes) {
+                Integer address = effect.s.getAddress(code);
+                if (binary_source == SOURCE_ROM) {
+                    address = romAddress;
+                }
+                instructions.put(binary_source + ":" + address, effect.s);
+                reverseInstructions.put(effect.s, binary_source + ":" + address);
+                for(int i = 0;i<effect.bytes.length;i++) {
+                    int b = effect.bytes[i];
+                    if (b < 0) b += 256;
+                    z80Memory.writeByteToSource(binary_source, address + i, b);
+                }
+//                if (effect.bytes.length > 0) {
+//                    System.out.println(config.tokenizer.toHex(address, 4) + ": " + Arrays.toString(effect.bytes) + "  ->  " + effect.s + "  ->  " + effect.s.fileNameLineString());
+//                }
+                romAddress += effect.bytes.length;
             }
         }
         z80Memory.clearMemoryAccesses();
+        
+        for(int i = 0;i<initial_mapping.length;i++) {
+            z80Memory.mapPage(i, initial_mapping[i][0], initial_mapping[i][1]);
+        }
                 
         List<String> modifiedFlags = new ArrayList<>();
         List<String> modifiedRegisters = new ArrayList<>();
-        List<String> tokens = config.tokenizer.tokenize(startAddressString);
+        List<String> tokens = config.tokenizer.tokenize(startAddressUser);
         Expression exp = config.expressionParser.parse(tokens, null, null, code);
-        Integer startAddress = exp.evaluateToInteger(null, code, true);
-        Integer endAddress = -1;
-        Integer startTrackingAddress = -1;
+        String startAddressString = functionAddressInBinary(exp, code, reverseInstructions);
+        String endAddressString = null;
+        String startTrackingAddressString = null;
         Long startTrackingTime = null;
         int steps = -1;
-        if (startAddress == null) {
-            config.error("Cannot evaluate start address expression: " + startAddressString);
+        if (startAddressString == null) {
+            config.error("Cannot evaluate start address expression: " + startAddressUser);
             return false;
         }
         if (stepsString != null) {
@@ -205,21 +266,21 @@ public class SourceCodeExecution implements MDLWorker {
             exp = config.expressionParser.parse(tokens, null, null, code);
             steps = exp.evaluateToInteger(null, code, false);
         }
-        if (endAddressString != null) {
-            tokens = config.tokenizer.tokenize(endAddressString);
+        if (endAddressUser != null) {
+            tokens = config.tokenizer.tokenize(endAddressUser);
             exp = config.expressionParser.parse(tokens, null, null, code);
-            endAddress = exp.evaluateToInteger(null, code, true);
-            if (endAddress == null) {
-                config.error("Cannot evaluate end address expression: " + endAddressString);
+            endAddressString = functionAddressInBinary(exp, code, reverseInstructions);
+            if (endAddressString == null) {
+                config.error("Cannot evaluate end address expression: " + endAddressUser);
                 return false;
             }
         }
-        if (startTrackingAddressString != null) {
-            tokens = config.tokenizer.tokenize(startTrackingAddressString);
+        if (startTrackingAddressUser != null) {
+            tokens = config.tokenizer.tokenize(startTrackingAddressUser);
             exp = config.expressionParser.parse(tokens, null, null, code);
-            startTrackingAddress = exp.evaluateToInteger(null, code, true);
-            if (startTrackingAddress == null) {
-                config.error("Cannot evaluate end address expression: " + startTrackingAddressString);
+            startTrackingAddressString = functionAddressInBinary(exp, code, reverseInstructions);
+            if (startTrackingAddressString == null) {
+                config.error("Cannot evaluate end address expression: " + startTrackingAddressUser);
                 return false;
             }
         }
@@ -232,7 +293,13 @@ public class SourceCodeExecution implements MDLWorker {
             exp = config.expressionParser.parse(tokens, null, null, code);
             Integer functionAddress = exp.evaluateToInteger(null, code, true);
             if (functionAddress != null) {
-                addFunctionToTrack(trackFunctions, new FunctionTrackRecord(functionString, functionAddress));
+                String addressString = ":" + functionAddress;
+                if (binary_source == SOURCE_ROM) {
+                    addressString = functionAddressInBinary(exp, code, reverseInstructions);
+                }
+                if (addressString != null) {
+                    addFunctionToTrack(trackFunctions, new FunctionTrackRecord(functionString, addressString));
+                }
             }
         }
         if (trackAllFunctions) {
@@ -244,13 +311,19 @@ public class SourceCodeExecution implements MDLWorker {
                         if (exp2.type == Expression.EXPRESSION_SYMBOL) {
                             Integer functionAddress = exp2.evaluateToInteger(s, code, true);
                             if (functionAddress != null) {
-                                addFunctionToTrack(trackFunctions, new FunctionTrackRecord(exp2.symbolName, functionAddress));
+                                String addressString = ":" + functionAddress;
+                                if (binary_source == SOURCE_ROM) {
+                                    addressString = functionAddressInBinary(exp2, code, reverseInstructions);
+                                }
+                                if (addressString != null) {
+                                    addFunctionToTrack(trackFunctions, new FunctionTrackRecord(exp2.symbolName, addressString));
+                                }
                             }
                         }
                     }
                 }
             }
-        }        
+        }
         
         // Write a "ret" to the address of all the functions to ignore, so we return immediately:
         for(String functionString:ignoreFunctionStrings) {
@@ -258,26 +331,33 @@ public class SourceCodeExecution implements MDLWorker {
             exp = config.expressionParser.parse(tokens, null, null, code);
             Integer functionAddress = exp.evaluateToInteger(null, code, true);
             if (functionAddress != null) {
-                z80.getRAM().writeByte(functionAddress, CPUConstants.ret_opcode);
+                z80Memory.writeByteToSource(0, functionAddress, CPUConstants.ret_opcode);
             }
         }
         
         // Hotspot tracking:
-        HashMap<Integer, MutablePair<Integer, Integer>> hotspots = new HashMap<>();
+        HashMap<String, MutablePair<Integer, Integer>> hotspots = new HashMap<>();
         
         // Set program counter:
+        Integer startAddress = z80Memory.integerAddressOf(startAddressString);
+        if (startAddress == null) {
+            config.error("SourceCodeExecution: start address is not mapped to z80 memory at start up!");
+            return false;
+        }
         z80.setProgramCounter(startAddress);
         
-        config.debug("SourceCodeExecution: start address: " + startAddress);
-        config.debug("SourceCodeExecution: steps: " + steps);
+        config.debug("SourceCodeExecution: start address: " + startAddressString);
+        config.debug("SourceCodeExecution: end address: " + endAddressString);
+        config.debug("SourceCodeExecution: max steps: " + steps);
         
         // Execute!
         int nInstructionsExecuted = 0;
         ArrayList<FunctionCallRecord> trackedCallStack = new ArrayList<>();
         try {
             while(true) {
-                int address = z80.getProgramCounter();
+                int pcAddress = z80.getProgramCounter();
                 int sp = z80.getSP();
+                String addressString = z80Memory.addressString(pcAddress);
                 
                 for(FunctionTrackRecord function:trackFunctions) {
                     // Check for returns:
@@ -295,7 +375,7 @@ public class SourceCodeExecution implements MDLWorker {
                             }
                         }
                     }
-                    if (address == function.address) {
+                    if (addressMatch(pcAddress, addressString, function.address)) {
                         // We just entered in one of the functions to track!
                         FunctionCallRecord r = new FunctionCallRecord();
                         r.trackRecord = function;
@@ -315,9 +395,9 @@ public class SourceCodeExecution implements MDLWorker {
                     }
                 }
                 
-                if (steps >= 0 && z80.getTStates() < steps) break;
-                if (endAddress >= 0 && z80.getProgramCounter() == endAddress) break;
-                if (startTrackingAddress >= 0 && z80.getProgramCounter() == startTrackingAddress) {
+                if (steps >= 0 && z80.getTStates() > steps) break;
+                if (endAddressString != null && addressMatch(pcAddress, addressString, endAddressString)) break;
+                if (startTrackingAddressString != null && addressMatch(pcAddress, addressString, startTrackingAddressString)) {
                     topLevelCalls.clear();
                     for(FunctionTrackRecord tr:trackFunctions) {
                         tr.clear();
@@ -325,12 +405,17 @@ public class SourceCodeExecution implements MDLWorker {
                     startTrackingTime = z80.getTStates();
                 }
                                 
-                CodeStatement s = instructions.get(address);
+                CodeStatement s = instructions.get(addressString);
                 if (trace) {
                     if (s == null) {
-                        config.warn("SourceCodeExecution: execution moved away from provided source code!");
+                        CPUOp op = attemptToDisassemble(z80Memory, pcAddress, code);
+                        if (op != null) {
+                          config.info(z80.getTStates() + "  executing (disassembled from "+addressString+"): " + op);
+                        } else {
+                          config.warn("SourceCodeExecution: could not disassemble instruction away from provided source code! ("+addressString+")");
+                        }
                     } else {
-                        config.info("  executing: " + s.toString());
+                        config.info(z80.getTStates() + "  executing ("+addressString+"): " + s.toString());
                     }
                 }
                 if (s != null && s.op != null) {
@@ -350,12 +435,14 @@ public class SourceCodeExecution implements MDLWorker {
                 
                 long previousTime = z80.getTStates();
                 z80.executeOneInstruction();
+//                System.out.println("RAM[30843] = " + z80Memory.readByte(30843) + " RAM[30238] = " + z80Memory.readByte(30238));
+//                System.out.println("RAM[30238] = " + z80Memory.readByte(30238) + " RAM[30239] = " + z80Memory.readByte(30239));
                 if (reportHotSpots) {
                     int executionTime = (int)(z80.getTStates() - previousTime);
-                    if (!hotspots.containsKey(address)) {
-                        hotspots.put(address, MutablePair.of(0, 0));
+                    if (!hotspots.containsKey(addressString)) {
+                        hotspots.put(addressString, MutablePair.of(0, 0));
                     }
-                    MutablePair<Integer, Integer> spot = hotspots.get(address);
+                    MutablePair<Integer, Integer> spot = hotspots.get(addressString);
                     spot.setLeft(spot.getLeft() + 1);
                     spot.setRight(spot.getRight() + executionTime);
                 }
@@ -397,6 +484,14 @@ public class SourceCodeExecution implements MDLWorker {
 
         // Report function execution:
         if (trackFunctions.isEmpty()) return true;
+        
+        if (!trackedCallStack.isEmpty()) {
+            config.info("Execution ended with tracked call stack:");
+            for(FunctionCallRecord r:trackedCallStack) {
+                config.info("    " + r.trackRecord.userString);
+            }
+        }
+        
         if (reportAsExecutionTree) {
             // Report the execution tree:
             logExecutionTreeStats(topLevelCalls, 0, globalTotal);
@@ -469,9 +564,15 @@ public class SourceCodeExecution implements MDLWorker {
     }
     
     
+    boolean addressMatch(int pcAddress, String addressString, String addressToMatch) {
+        if (addressString.equals(addressToMatch)) return true;
+        return addressToMatch.charAt(0) == ':' && addressToMatch.equals(":" + pcAddress);
+    }
+    
+    
     static void addFunctionToTrack(List<FunctionTrackRecord> trackFunctions, FunctionTrackRecord record) {
         for(FunctionTrackRecord r:trackFunctions) {
-            if (r.address == record.address) {
+            if (r.address.equals(record.address)) {
                 return;
             }
         }
@@ -554,23 +655,177 @@ public class SourceCodeExecution implements MDLWorker {
     }
     
     
-    void reportHotspots(HashMap<Integer, MutablePair<Integer, Integer>> hotspots,
-                        HashMap<Integer, CodeStatement> instructions)
+    void reportHotspots(HashMap<String, MutablePair<Integer, Integer>> hotspots,
+                        HashMap<String, CodeStatement> instructions)
     {
-        List<Integer> sortedSpots = new ArrayList<>();
+        List<String> sortedSpots = new ArrayList<>();
         sortedSpots.addAll(hotspots.keySet());
-        Collections.sort(sortedSpots, new Comparator<Integer>() {
+        Collections.sort(sortedSpots, new Comparator<String>() {
             @Override
-            public int compare(Integer s1, Integer s2) {
+            public int compare(String s1, String s2) {
                 return -Double.compare(hotspots.get(s1).getRight(), hotspots.get(s2).getRight());
             }
         });
         String hotspotsString = "";
         for(int i = 0;i<nHotSpotsToShow;i++) {
-            Integer spot = sortedSpots.get(i);
+            String spot = sortedSpots.get(i);
             MutablePair<Integer, Integer> stats = hotspots.get(spot);
             hotspotsString += instructions.get(spot).fileNameLineString() + "\t" + stats.getLeft() + "\t" + stats.getRight() + "\n";
         }
         config.info("Hotspots: count time\n" + hotspotsString);
     }
+    
+    
+    /*
+    If "exp" is a label name, it calculates the offset in the binary that
+    corresponds to that label (physical address). Notice that this is different
+    from the address of that label (logical address). If the expression is not
+    a label, then it just returns the expression value.
+    
+    The return value is source:address. If the source is not specified (e.g., 
+    if the expression is not a label, or if the label is defined as an "equ",
+    then source is empty).
+    */
+    String functionAddressInBinary(Expression exp, CodeBase code, HashMap<CodeStatement, String> instructionsToAddresses)
+    {
+        if (exp.type != Expression.EXPRESSION_SYMBOL) {
+            return ":" + exp.evaluateToInteger(null, code, true);
+        }
+        SourceConstant label = code.getSymbol(exp.symbolName);
+        CodeStatement s = label.definingStatement;
+        if (s.type == CodeStatement.STATEMENT_CONSTANT) {
+            // Label defined with an "equ" statement:
+            return ":" + exp.evaluateToInteger(null, code, true);
+        }
+        
+        while(s != null && s.op == null) {
+            while(s.include != null) {
+                s = s.include.getStatements().get(0);
+            }            
+            s = s.source.getNextStatementTo(s, code);
+        }
+        if (s == null) {
+            config.error("functionAddressInBinary: no cpu op after label. exp: " + exp);
+            return null;
+        }
+        if (!instructionsToAddresses.containsKey(s)) {
+            config.error("functionAddressInBinary: first function statement not found in mapping! exp: " + exp);
+            return null;
+        }
+        
+        return instructionsToAddresses.get(s);
+    }
+    
+
+    CPUOp attemptToDisassemble(MappedTrackingZ80Memory z80Memory, int pcAddress, CodeBase code)
+    {
+        // This first loop is slow, but it's ok, as this method is only
+        // called if we are printing a trace, which is slow anyway:
+        int maxOpSpecSizeInBytes = 1;
+        for(CPUOpSpec spec:config.opParser.getOpSpecs()) {
+            if (spec.sizeInBytes > maxOpSpecSizeInBytes) {
+                maxOpSpecSizeInBytes = spec.sizeInBytes;
+            }
+        }
+        
+        List<Integer> data = new ArrayList<>();
+        for(int i = 0;i<maxOpSpecSizeInBytes;i++) {
+            data.add(z80Memory.readByte(pcAddress + i));
+        }
+        
+        CPUOp op = disassembler.tryToDisassembleSingleInstruction(data, code);
+        return op;
+    }    
+
+    private boolean loadMapperConfig(String mapperConfigFileName) {
+        try {
+            CodeBase code = new CodeBase(config);
+            BufferedReader br = new BufferedReader(new FileReader(mapperConfigFileName));
+            String line = br.readLine();
+            while(line != null) {
+                line = line.strip().toLowerCase();
+                if (line.startsWith("binary_size:")) {
+                    line = line.substring(12);
+                    List<String> tokens = config.tokenizer.tokenize(line);
+                    Expression exp = config.expressionParser.parse(tokens, null, null, code);
+                    Integer v = exp.evaluateToInteger(null, code, true);
+                    if (v == null) {
+                        config.error("Cannot evaluate expression: " + line);
+                        return false;
+                    }
+                    ROM_size = v;
+                } else if (line.startsWith("page_size:")) {
+                    line = line.substring(10);
+                    List<String> tokens = config.tokenizer.tokenize(line);
+                    Expression exp = config.expressionParser.parse(tokens, null, null, code);
+                    Integer v = exp.evaluateToInteger(null, code, true);
+                    if (v == null) {
+                        config.error("Cannot evaluate expression: " + line);
+                        return false;
+                    }
+                    segment_size = v;
+                } else if (line.startsWith("initial_mapping:")) {
+                    line = line.substring(16);
+                    String parts[] = line.split(",");
+                    int nPages = 64*1024 / segment_size;
+                    if (nPages != parts.length) {
+                        config.error("Found " + parts.length + " page mappings, but expected " + nPages + " in: " + line);
+                        return false;
+                    }
+                    initial_mapping = new int[nPages][2];                    
+                    for(int i = 0;i<nPages;i++) {
+                        String parts2[] = parts[i].split(":");
+                        if (parts2.length != 2) {
+                            config.error("Cannot parse page mapping " + parts[i] + " in: " + line);
+                            return false;
+                        }
+                        Integer source = Integer.parseInt(parts2[0].strip());
+                        Integer segment = Integer.parseInt(parts2[1].strip());
+                        if (source == null || segment == null) {
+                            config.error("Invalid source or segment numbers in page mapping " + parts[i] + " in: " + line);
+                            return false;
+                        }
+                        initial_mapping[i][0] = source;
+                        initial_mapping[i][1] = segment;
+                    }
+                } else if (line.startsWith("ram_mapper_type:")) {
+                    line = line.substring(16).strip();
+                    switch(line) {
+                        case "no_mapper":
+                            RAM_mapper_type = MappedTrackingZ80Memory.NO_MAPPER;
+                            break;
+                        case "msx_ascii16_mapper":
+                            RAM_mapper_type = MappedTrackingZ80Memory.MSX_ASCII16_MAPPER;
+                            break;
+                        default:
+                            config.error("Unsupported mapper type: " + line);
+                            return false;
+                    }
+                } else if (line.startsWith("binary_mapper_type:")) {
+                    line = line.substring(19).strip();
+                    switch(line) {
+                        case "no_mapper":
+                            ROM_mapper_type = MappedTrackingZ80Memory.NO_MAPPER;
+                            break;
+                        case "msx_ascii16_mapper":
+                            ROM_mapper_type = MappedTrackingZ80Memory.MSX_ASCII16_MAPPER;
+                            break;
+                        default:
+                            config.error("Unsupported mapper type: " + line);
+                            return false;
+                    }
+                } else {
+                    config.error("Cannot parse line: " + line);
+                }
+                line = br.readLine();
+            }
+            // When we specify a mapping, we assume the binary is always in ROM:
+            binary_source = SOURCE_ROM;
+        } catch(IOException e) {
+            config.error(e.getMessage());
+            return false;
+        }
+        return true;
+    }
+    
 }

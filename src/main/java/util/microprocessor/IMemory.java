@@ -66,15 +66,15 @@ public interface IMemory {
     }
     
     
-    default void writeProtect(int start, int end)
+    default void writeProtect(int start, int end) throws Exception
     {
     }
     
     
-    default void clearWriteProtections()
+    default void clearWriteProtections() throws Exception
     {    
     }
     
     
-    public int[] getMemoryArray();
+    public int[] getMemoryArray() throws Exception;
 }
