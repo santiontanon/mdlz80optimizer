@@ -81,6 +81,8 @@ public class SourceCodeExecution implements MDLWorker {
     List<String> ignoreFunctionStrings = new ArrayList<>();
     Disassembler disassembler;
     String mapperConfigFileName = null;
+    
+    List<String> watchKeys = new ArrayList<>();
 
     // Memory configuration:
     int ROM_size = 64*1024;
@@ -119,6 +121,7 @@ public class SourceCodeExecution implements MDLWorker {
                "- ```-e:tree```: reports the result as an execution tree.\n" +
                "- ```-e:tree:n```: reports the result as an execution tree, but only showing ```n``` levels, e.g. ```-e:tree:1```.\n" +
                "- ```-e:hs```: reports execution hotspots (lines of code that take the most execution time overall). By default, it shows the top 20, use ```-e:hs:n``` to show the top n instead.\n" +
+               "- ```-e:watch <watch-key>: every time an instruction that has a comment annotated with the tag ```<watch-key>```, the tollowing comma separated expressions will be evaluated and printed (after instruction execution). For example, if you have an instruction like ```ld a, 1  ; mdl-watch: \"hello\", a```, you can pass ```-e:watch mdl-watch:``` and after that instruction is executed, ```hello, 1``` will be printed. Think of this as having the chance of adding print statements throughout the code. You can specify this argument several times, to print watch statements with different keys.\n" +
                "- ```-e:mapper-config <filename>```: if the binary to be executed requires some sort of memory mapper, it can be specified in a configuration text file. The file contains on config option per line, and should include the following options: " +
                "binary_size: <size in bytes, multiple of page_size>, page_size: <page size in bytes, default is 16384>, ram_mapper_type: <type>, rom_mapper_type: <type> (only 'no_mapper', and 'msx_ascii16_mapper' are currently supported), initial_mapping: source1:segment1, source2:segment2, ... (one pair per each page in RAM, and where source == 0 means RAM, and source == 1 means binary, and segment is the segment within each source). " +
                "Notice that when this option is specified, the binary is assumed to be loaded into a separate ROM (separate from RAM), and that the mapper will be used to let the z80 access the binary data. If this option is not specified, the binary will just be loaded in RAM.\n";
@@ -180,6 +183,10 @@ public class SourceCodeExecution implements MDLWorker {
             int n = Integer.parseInt(levelString);
             reportHotSpots = true;
             nHotSpotsToShow = n;
+            return true;
+        } else if (flags.get(0).equals("-e:watch") && flags.size()>=2) {
+            flags.remove(0);
+            watchKeys.add(flags.remove(0));
             return true;
         } else if (flags.get(0).startsWith("-e:mapper-config") && flags.size()>=2) {
             flags.remove(0);
@@ -435,8 +442,17 @@ public class SourceCodeExecution implements MDLWorker {
                 
                 long previousTime = z80.getTStates();
                 z80.executeOneInstruction();
-//                System.out.println("RAM[30843] = " + z80Memory.readByte(30843) + " RAM[30238] = " + z80Memory.readByte(30238));
-//                System.out.println("RAM[30238] = " + z80Memory.readByte(30238) + " RAM[30239] = " + z80Memory.readByte(30239));
+                
+                if (s != null && s.comment != null) {
+                    for(String watchKey: watchKeys) {
+                        if (s.comment.contains(watchKey)) {
+                            int idx = s.comment.indexOf(watchKey) + watchKey.length();
+                            String watches = s.comment.substring(idx);
+                            printWatchStatements(watches, code, z80);
+                        }
+                    }
+                }
+                
                 if (reportHotSpots) {
                     int executionTime = (int)(z80.getTStates() - previousTime);
                     if (!hotspots.containsKey(addressString)) {
@@ -736,8 +752,49 @@ public class SourceCodeExecution implements MDLWorker {
         CPUOp op = disassembler.tryToDisassembleSingleInstruction(data, code);
         return op;
     }    
+    
+    
+    void printWatchStatements(String watchesString, CodeBase code, Z80Core z80) {
+        List<String> tokens = config.tokenizer.tokenize(watchesString);
+        Expression exp = config.expressionParser.parse(tokens, null, null, code);
+        String outputString = "";
+        if (exp != null) {
+            outputString += printWatchExpression(exp, code, z80);
+        }
+        while(exp != null && !tokens.isEmpty()) {
+            if (tokens.get(0).equals(",")) {
+                tokens.remove(0);
+            } else {
+                break;
+            }
+            exp = config.expressionParser.parse(tokens, null, null, code);
+            if (exp != null) {
+                outputString += printWatchExpression(exp, code, z80);
+            }
+        }
+        config.info(outputString);
+    }
+    
+    
+    String printWatchExpression(Expression exp, CodeBase code, Z80Core z80) {
+        if (exp.evaluatesToStringConstant()) {
+            String v = exp.evaluateToString(null, code, false);
+            return "" + v;
+        } else if (exp.evaluatesToIntegerConstant()) {
+            Integer v = exp.evaluateToInteger(null, code, false);
+            return "" + v;
+        } else if (exp.isRegister()) {
+            String register = exp.registerOrFlagName;
+            RegisterNames reg = CPUConstants.registerByName(register);
+            return "" + z80.getRegisterValue(reg);
+        } else {
+            config.warn("SourceCodeExecution: cannot evaluate watch expression " + exp.toString());
+        }
+        return "";
+    }
+    
 
-    private boolean loadMapperConfig(String mapperConfigFileName) {
+    boolean loadMapperConfig(String mapperConfigFileName) {
         try {
             CodeBase code = new CodeBase(config);
             BufferedReader br = new BufferedReader(new FileReader(mapperConfigFileName));
