@@ -769,7 +769,10 @@ public class SourceCodeExecution implements MDLWorker {
             }
             exp = config.expressionParser.parse(tokens, null, null, code);
             if (exp != null) {
-                outputString += printWatchExpression(exp, code, z80);
+                String expString = printWatchExpression(exp, code, z80);
+                if (!expString.isEmpty()) {
+                    outputString += ", " + expString;
+                }
             }
         }
         config.info(outputString);
@@ -783,10 +786,15 @@ public class SourceCodeExecution implements MDLWorker {
         } else if (exp.evaluatesToIntegerConstant()) {
             Integer v = exp.evaluateToInteger(null, code, false);
             return "" + v;
-        } else if (exp.isRegister()) {
-            String register = exp.registerOrFlagName;
-            RegisterNames reg = CPUConstants.registerByName(register);
-            return "" + z80.getRegisterValue(reg);
+        } else if (exp.type == Expression.EXPRESSION_REGISTER_OR_FLAG) {
+            if (CodeBase.isRegister(exp.registerOrFlagName)) {
+                RegisterNames reg = CPUConstants.registerByName(exp.registerOrFlagName);
+                return "" + z80.getRegisterValue(reg);
+            } else {
+                // it's a flag:
+                int flag = CPUConstants.flagByName(exp.registerOrFlagName);
+                return "" + z80.getFlagValue(flag);
+            }
         } else {
             config.warn("SourceCodeExecution: cannot evaluate watch expression " + exp.toString());
         }
