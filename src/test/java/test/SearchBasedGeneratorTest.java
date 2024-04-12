@@ -59,6 +59,9 @@ public class SearchBasedGeneratorTest {
 //    @Test public void test12() throws IOException { test("data/searchtests/test12.txt", "data/searchtests/test12-expected.asm", "size"); }
 //    @Test public void test13() throws IOException { test("data/searchtests/test13.txt", "data/searchtests/test13-expected.asm", "size"); }
 
+    @Test public void test14() throws IOException { test("data/searchtests/test14.txt", new String[]{"data/searchtests/test14-expected.txt", "data/searchtests/test14-expected2.txt"}, "speed"); }
+    @Test public void test14u() throws IOException { test("data/searchtests/test14u.txt", new String[]{"data/searchtests/test14u-expected.txt", "data/searchtests/test14u-expected2.txt"}, "speed"); }
+
 //    @Test public void testLShift9() throws IOException { test("data/searchtests/test-large1.txt", "data/searchtests/test-large1-expected.asm"); }
 //    @Test public void testLShift9size() throws IOException { test("data/searchtests/test-large1.txt", "data/searchtests/test-large1-size-expected.asm", "size"); }
 //    @Test public void testLShift9time() throws IOException { test("data/searchtests/test-large1.txt", "data/searchtests/test-large1-time-expected.asm", "speed"); }

@@ -257,12 +257,12 @@ public class SpecificationParser {
                     code.addSymbol(symbolName, symbol);
                     if (sexp.leftRegister != null) {
                         if (CPUConstants.is8bitRegister(sexp.leftRegister)) {
-                            spec.addParameter(symbol, 0, 0xff);
+                            spec.addParameter(symbol, 0, 0xff, sexp.right_signed);
                         } else {
-                            spec.addParameter(symbol, 0, 0xffff);
+                            spec.addParameter(symbol, 0, 0xffff, sexp.right_signed);
                         }
                     } else if (sexp.leftConstantMemoryAddress != null) {
-                        spec.addParameter(symbol, 0, 0xff);
+                        spec.addParameter(symbol, 0, 0xff, sexp.right_signed);
                     }
                 }
             }
@@ -644,6 +644,18 @@ public class SpecificationParser {
         if (specExp.right == null) {
             config.error("Cannot parse left-hand-side of expression in line: " + line);
             return false;
+        }
+        if (!tokens.isEmpty()) {
+            if (tokens.size() == 3 && tokens.get(0).equals("[") && tokens.get(1).equals("unsigned") && tokens.get(2).equals("]")) {
+                specExp.right_signed = InputParameter.UNSIGNED;
+            } else if (tokens.size() == 3 && tokens.get(0).equals("[") && tokens.get(1).equals("signed") && tokens.get(2).equals("]")) {
+                specExp.right_signed = InputParameter.SIGNED;
+            } else if (tokens.size() == 3 && tokens.get(0).equals("[") && tokens.get(1).equals("signedsafe") && tokens.get(2).equals("]")) {
+                specExp.right_signed = InputParameter.SIGNED_SAFE;
+            } else {
+                config.error("Unexpected tokens after right-hand expression in line: " + line);
+                return false;
+            }
         }
         
         if (isStartState) {

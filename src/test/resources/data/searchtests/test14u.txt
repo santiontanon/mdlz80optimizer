@@ -1,0 +1,7 @@
+allowed_ops: 
+    add, ld, bits, negation, rotation, shift, increment
+8bit_constants: 0, 1, 255
+initial_state:
+    a = ?v [unsigned]
+goal_state:
+    hl = ?v

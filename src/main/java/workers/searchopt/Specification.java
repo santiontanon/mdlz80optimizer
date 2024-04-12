@@ -145,7 +145,7 @@ public class Specification {
     }
     
     
-    public void addParameter(SourceConstant symbol, int minRange, int maxRange)
+    public void addParameter(SourceConstant symbol, int minRange, int maxRange, int signed)
     {
         for(InputParameter p:parameters) {
             if (p.symbol.name.equals(symbol.name)) {
@@ -154,7 +154,7 @@ public class Specification {
                 return;
             }
         }
-        parameters.add(new InputParameter(symbol, minRange, maxRange));
+        parameters.add(new InputParameter(symbol, minRange, maxRange, signed));
     }
     
     
@@ -310,16 +310,21 @@ public class Specification {
             
             // randomize constants:
             for(InputParameter parameter:parameters) {
-                int value = parameter.minValue + rand.nextInt((parameter.maxValue - parameter.minValue)+1);
-                parameter.symbol.exp = Expression.constantExpression(value, config);
-                parameter.symbol.clearCache();            
+                try {
+                    int value = parameter.randomValue(rand);
+                    parameter.symbol.exp = Expression.constantExpression(value, config);
+                    parameter.symbol.clearCache();            
+                } catch (Exception e) {
+                    config.error(e.getMessage());
+                    return false;
+                }
             }
             
             int n_startRegisters = 0;
 //            int n_startFlags = 0;
             int n_startMemoryAddresses = 0;
             for(SpecificationExpression exp : startState) {
-                if (exp.leftRegister != null) n_startRegisters ++;
+                if (exp.leftRegister != null) n_startRegisters++;
                 if (exp.leftFlagIndex != null) {
 //                    n_startFlags ++;
                     config.error("Flag values not yet supported in the start state.");
@@ -341,14 +346,15 @@ public class Specification {
                 if (exp.leftRegister != null) {
                     testCase.startRegisters[kreg] = exp.leftRegister;
                     if (CPUConstants.is8bitRegister(exp.leftRegister)) {
-                        testCase.startRegisterValues[kreg] = (value & 0xff);
+                        testCase.startRegisterValues[kreg] = InputParameter.eightBitValue(value, exp.right_signed);
+//                        System.out.println("input register = " + eightBitValue(value, exp.right_signed));
                     } else {
-                        testCase.startRegisterValues[kreg] = (value & 0xffff);
+                        testCase.startRegisterValues[kreg] = InputParameter.sixteenBitValue(value, exp.right_signed);
                     }                
                     kreg++;
                 } else if (exp.leftConstantMemoryAddress != null) {
                     testCase.startMemoryAddresses[kmem] = exp.leftConstantMemoryAddress;
-                    testCase.startMemoryValues[kmem] = value;
+                    testCase.startMemoryValues[kmem] = InputParameter.eightBitValue(value, exp.right_signed);;
                     kmem++;
                 } else {
                     config.error("Unsupported specification expression: " + exp);
@@ -380,9 +386,12 @@ public class Specification {
                     // It's a register condition:
                     testCase.goalRegisters[j] = exp.leftRegister;
                     if (CPUConstants.is8bitRegister(exp.leftRegister)) {
-                        testCase.goalRegisterValues[kreg] = (value & 0xff);
+                        // Since the output check will be done in an unsigned way, we specify the value as unsigned here:
+                        testCase.goalRegisterValues[kreg] = InputParameter.eightBitValue(value, InputParameter.UNSIGNED);
                     } else {
-                        testCase.goalRegisterValues[kreg] = (value & 0xffff);
+                        // Since the output check will be done in an unsigned way, we specify the value as unsigned here:
+                        testCase.goalRegisterValues[kreg] = InputParameter.sixteenBitValue(value, InputParameter.UNSIGNED);
+//                        System.out.println("goal register = " + sixteenBitValue(value, false));
                     }                
                     kreg++;
                 } else if (exp.leftFlagIndex != null) {
@@ -392,7 +401,8 @@ public class Specification {
                     kflag++;
                 } else if (exp.leftConstantMemoryAddress != null) {
                     testCase.goalMemoryAddresses[kmem] = exp.leftConstantMemoryAddress;
-                    testCase.goalMemoryValues[kmem] = value;
+                    // Since the output check will be done in an unsigned way, we specify the value as unsigned here:
+                    testCase.goalMemoryValues[kmem] = InputParameter.eightBitValue(value, InputParameter.UNSIGNED);;
                     kmem++;
                 } else {
                     config.error("Unsupported specification expression: " + exp);

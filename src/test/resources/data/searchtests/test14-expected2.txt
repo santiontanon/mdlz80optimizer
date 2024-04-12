@@ -1,0 +1,4 @@
+    ld l, a
+    add a, a
+    sbc a, a
+    ld h, a

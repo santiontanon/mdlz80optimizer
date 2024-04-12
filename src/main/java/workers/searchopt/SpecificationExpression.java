@@ -18,6 +18,7 @@ public class SpecificationExpression {
     public Integer leftConstantMemoryAddress = null;
     
     public Expression right;
+    public int right_signed = InputParameter.UNSIGNED;
 
     /*
     public boolean check(Z80Core z80, IMemory z80memory, CodeBase code)

@@ -1,0 +1,8 @@
+max_ops = 5
+allowed_ops: 
+    addition, ld, negation
+8bit_constants: 0
+initial_state:
+    a = ?v [signedsafe]
+goal_state:
+    hl = ?v

@@ -163,6 +163,8 @@ public class SearchBasedOptimizer implements MDLWorker {
                     config.error("Only one input file can be specified with the '-so-gen' flag, but found more than one: " + config.inputFiles);
                     return false;                    
                 }
+                operation = SBO_GENERATE;
+                config.codeSource = MDLConfig.CODE_FROM_SEARCHBASEDOPTIMIZER;
             } else if (config.inputFiles.size() == 1 &&
                        config.inputFiles.get(0).endsWith(".txt")) {
                 operation = SBO_GENERATE;

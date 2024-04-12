@@ -404,6 +404,8 @@ public class SBOExecutionThread extends Thread {
 //            if (depth == 0) System.out.println(Arrays.toString(currentOps));
 //            if (depth == 1) System.out.println(Arrays.toString(currentOps));
 //            if (depth == 2) System.out.println(Arrays.toString(currentOps));
+//            if (depth == 5) System.out.println(Arrays.toString(currentOps));
+            boolean debug = Arrays.toString(currentOps).equals("[neg, ld l, a, add a, l, sbc a, a, ld h, a]");
             
             solutionsEvaluated++;
 
@@ -413,7 +415,8 @@ public class SBOExecutionThread extends Thread {
                 if (spec.precomputedTestCases[i] == null) {
                     spec.precomputedTestCases[i] = spec.testCaseGenerator.generateTestCase(config);
                 }
-                int time2 = evaluateSolutionInternal(breakPoint, spec.precomputedTestCases[i]);
+                int time2 = evaluateSolutionInternal(breakPoint, spec.precomputedTestCases[i], debug);
+//                int time2 = evaluateSolutionInternal(breakPoint, spec.precomputedTestCases[i]);
                 if (time2 < 0) {
                     return false;
                 }
@@ -482,7 +485,7 @@ public class SBOExecutionThread extends Thread {
     // return -1 is solution fails
     // return time it takes if solution succeeds
     // "i" is the index of the 
-    final int evaluateSolutionInternal(int breakPoint, PrecomputedTestCase testCase) throws ProcessorException
+    final int evaluateSolutionInternal(int breakPoint, PrecomputedTestCase testCase, boolean debug) throws ProcessorException
     {
         // evaluate solution:
         z80.shallowReset();
@@ -522,17 +525,30 @@ public class SBOExecutionThread extends Thread {
         }
         
         // check if the solution worked:
-        if (testCase.checkGoalState(z80)) {
-//        if (testCase.checkGoalStateDebug(z80, config)) {
-            if (spec.allowRamUse) {
-                ((TrackingZ80Memory)z80.getRAM()).clearMemoryAccessesRandomizingThem(spec.codeStartAddress, breakPoint);
+        if (debug) {
+            if (testCase.checkGoalStateDebug(z80, config)) {
+                if (spec.allowRamUse) {
+                    ((TrackingZ80Memory)z80.getRAM()).clearMemoryAccessesRandomizingThem(spec.codeStartAddress, breakPoint);
+                }
+                return (int)z80.getTStates();
+            } else {
+                if (spec.allowRamUse) {
+                    ((TrackingZ80Memory)z80.getRAM()).clearMemoryAccessesRandomizingThem(spec.codeStartAddress, breakPoint);
+                }
+                return -2;
             }
-            return (int)z80.getTStates();
         } else {
-            if (spec.allowRamUse) {
-                ((TrackingZ80Memory)z80.getRAM()).clearMemoryAccessesRandomizingThem(spec.codeStartAddress, breakPoint);
+            if (testCase.checkGoalState(z80)) {
+                if (spec.allowRamUse) {
+                    ((TrackingZ80Memory)z80.getRAM()).clearMemoryAccessesRandomizingThem(spec.codeStartAddress, breakPoint);
+                }
+                return (int)z80.getTStates();
+            } else {
+                if (spec.allowRamUse) {
+                    ((TrackingZ80Memory)z80.getRAM()).clearMemoryAccessesRandomizingThem(spec.codeStartAddress, breakPoint);
+                }
+                return -2;
             }
-            return -2;
         }
     }    
     
