@@ -405,7 +405,7 @@ public class SBOExecutionThread extends Thread {
 //            if (depth == 1) System.out.println(Arrays.toString(currentOps));
 //            if (depth == 2) System.out.println(Arrays.toString(currentOps));
 //            if (depth == 5) System.out.println(Arrays.toString(currentOps));
-            boolean debug = Arrays.toString(currentOps).equals("[neg, ld l, a, add a, l, sbc a, a, ld h, a]");
+//            boolean debug = Arrays.toString(currentOps).equals("[neg, ld l, a, add a, l, sbc a, a, ld h, a]");
             
             solutionsEvaluated++;
 
@@ -415,7 +415,8 @@ public class SBOExecutionThread extends Thread {
                 if (spec.precomputedTestCases[i] == null) {
                     spec.precomputedTestCases[i] = spec.testCaseGenerator.generateTestCase(config);
                 }
-                int time2 = evaluateSolutionInternal(breakPoint, spec.precomputedTestCases[i], debug);
+//                int time2 = evaluateSolutionInternal(breakPoint, spec.precomputedTestCases[i], true);  // debug = true
+                int time2 = evaluateSolutionInternal(breakPoint, spec.precomputedTestCases[i], false);
 //                int time2 = evaluateSolutionInternal(breakPoint, spec.precomputedTestCases[i]);
                 if (time2 < 0) {
                     return false;
