@@ -380,7 +380,20 @@ public class Tokenizer {
         
         return hex;
     }
-        
+
+    
+    public String toHexAutoSize(int value, int hex_style)
+    {
+        int len = 0;
+        int v = value;
+        while(v > 0) {
+            len += 1;
+            v /= 256;
+        }
+        if (len == 0) len = 1;
+        return toHexWithStyle(value, len, hex_style);
+    }
+
     
     public String toHexByte(int value, int hex_style)
     {

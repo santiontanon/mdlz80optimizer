@@ -401,6 +401,7 @@ public class SBOExecutionThread extends Thread {
             }
             
             // Print statement to print sequences and visually inspect if there are any prunable ones:
+//            System.out.println(Arrays.toString(currentOps));
 //            if (depth == 0) System.out.println(Arrays.toString(currentOps));
 //            if (depth == 1) System.out.println(Arrays.toString(currentOps));
 //            if (depth == 2) System.out.println(Arrays.toString(currentOps));

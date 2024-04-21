@@ -1,0 +1,9 @@
+max_ops = 5
+allowed_ops: 
+    ex
+8bit_constants: 0
+initial_state:
+    hl = ?v
+    de = ?v2
+goal_state:
+    de = ?v

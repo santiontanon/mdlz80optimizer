@@ -96,7 +96,7 @@ public class PrecomputedTestCase {
         }
         for(int i = 0;i<goalRegisters.length;i++) {
             if (z80.getRegisterValue(goalRegisters[i]) != goalRegisterValues[i]) {
-                config.info("Register mismatch: " + CPUConstants.registerName(goalRegisters[i]) + " != " + goalRegisterValues[i]);
+                config.info("Register mismatch: " + CPUConstants.registerName(goalRegisters[i]) + "(= " + z80.getRegisterValue(goalRegisters[i]) + ") != " + goalRegisterValues[i]);
                 return false;
             }
         }

@@ -60,6 +60,7 @@ public class MappedTrackingZ80Memory implements IMemory {
     int memoryReadAddresses[] = new int[TRACKING_BUFFER];
     int memoryReadValues[] = new int[TRACKING_BUFFER];
     int memoryReadTime[] = new int[TRACKING_BUFFER];
+    int nProtectedWrites = 0;
     
     
     public MappedTrackingZ80Memory(ICPU a_cpu, MDLConfig a_config, boolean a_infoPageChanges) {
@@ -154,7 +155,8 @@ public class MappedTrackingZ80Memory implements IMemory {
         }
         
         if (ms.writeProtected) {
-            config.warn("MappedTrackingZ80Memory: Writing to a write protected source: " + s.source + ", address: " + address + ", value: " + data);
+            config.warn("MappedTrackingZ80Memory: Writing to a write protected source: " + s.source + ", address: " + config.tokenizer.toHexWord(address, config.hexStyle) + ", value: " + data);
+            nProtectedWrites++;
             return;
         }
         
@@ -218,6 +220,7 @@ public class MappedTrackingZ80Memory implements IMemory {
     {
         memoryWritesIndex = 0;
         memoryReadsIndex = 0;
+        nProtectedWrites = 0;
     }
 
 
@@ -265,5 +268,11 @@ public class MappedTrackingZ80Memory implements IMemory {
             }
         }
         return null;
+    }
+    
+    
+    public int getNProtectedWrites()
+    {
+        return nProtectedWrites;
     }
 }

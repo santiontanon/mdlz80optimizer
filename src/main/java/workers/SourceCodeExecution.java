@@ -75,6 +75,7 @@ public class SourceCodeExecution implements MDLWorker {
     boolean trackAllFunctions = false;
     boolean reportAsExecutionTree = false;
     boolean reportHotSpots = false;
+    boolean stopOnProtectedWrite = false;
     int reportAsExecutionTreeMaxDepth = 0;
     int nHotSpotsToShow = 20;
     List<String> trackFunctionStrings = new ArrayList<>();
@@ -91,14 +92,7 @@ public class SourceCodeExecution implements MDLWorker {
     int initial_mapping[][] = {{0, 0}, {0, 1}, {0, 2}, {0, 3}};
     int RAM_mapper_type = MappedTrackingZ80Memory.NO_MAPPER;
     int ROM_mapper_type = MappedTrackingZ80Memory.NO_MAPPER;
-    
-//    int ROM_size = 128*1024;
-//    int segment_size = 16*1024;
-//    int binary_source = SOURCE_ROM;
-//    int initial_mapping[][] = {{0, 0}, {1, 0}, {1, 1}, {0, 3}};
-//    int RAM_mapper_type = MappedTrackingZ80Memory.NO_MAPPER;
-//    int ROM_mapper_type = MappedTrackingZ80Memory.MSX_ASCII16_MAPPER;
- 
+     
     
     public SourceCodeExecution(MDLConfig a_config)
     {
@@ -121,7 +115,8 @@ public class SourceCodeExecution implements MDLWorker {
                "- ```-e:tree```: reports the result as an execution tree.\n" +
                "- ```-e:tree:n```: reports the result as an execution tree, but only showing ```n``` levels, e.g. ```-e:tree:1```.\n" +
                "- ```-e:hs```: reports execution hotspots (lines of code that take the most execution time overall). By default, it shows the top 20, use ```-e:hs:n``` to show the top n instead.\n" +
-               "- ```-e:watch <watch-key>: every time an instruction that has a comment annotated with the tag ```<watch-key>```, the tollowing comma separated expressions will be evaluated and printed (after instruction execution). For example, if you have an instruction like ```ld a, 1  ; mdl-watch: \"hello\", a```, you can pass ```-e:watch mdl-watch:``` and after that instruction is executed, ```hello, 1``` will be printed. Think of this as having the chance of adding print statements throughout the code. You can specify this argument several times, to print watch statements with different keys.\n" +
+               "- ```-e:watch <watch-key>```: every time an instruction that has a comment annotated with the tag ```<watch-key>```, the tollowing comma separated expressions will be evaluated and printed (after instruction execution). For example, if you have an instruction like ```ld a, 1  ; mdl-watch: \"hello\", a```, you can pass ```-e:watch mdl-watch:``` and after that instruction is executed, ```hello, 1``` will be printed. Think of this as having the chance of adding print statements throughout the code. You can specify this argument several times, to print watch statements with different keys.\n" +
+               "- ```-e:stop-on-protected-write```: stop as soon as an instruction tries to write into a memory protected address (i.e., the pages of memory that are not RAM, but part of the binary we are executing). By default, only warnings are issued, as this might be ok, if we have self-modifying code.\n" +
                "- ```-e:mapper-config <filename>```: if the binary to be executed requires some sort of memory mapper, it can be specified in a configuration text file. The file contains on config option per line, and should include the following options: " +
                "binary_size: <size in bytes, multiple of page_size>, page_size: <page size in bytes, default is 16384>, ram_mapper_type: <type>, rom_mapper_type: <type> (only 'no_mapper', and 'msx_ascii16_mapper' are currently supported), initial_mapping: source1:segment1, source2:segment2, ... (one pair per each page in RAM, and where source == 0 means RAM, and source == 1 means binary, and segment is the segment within each source). " +
                "Notice that when this option is specified, the binary is assumed to be loaded into a separate ROM (separate from RAM), and that the mapper will be used to let the z80 access the binary data. If this option is not specified, the binary will just be loaded in RAM.\n";
@@ -187,6 +182,10 @@ public class SourceCodeExecution implements MDLWorker {
         } else if (flags.get(0).equals("-e:watch") && flags.size()>=2) {
             flags.remove(0);
             watchKeys.add(flags.remove(0));
+            return true;
+        } else if (flags.get(0).equals("-e:stop-on-protected-write")) {
+            flags.remove(0);
+            stopOnProtectedWrite = true;
             return true;
         } else if (flags.get(0).startsWith("-e:mapper-config") && flags.size()>=2) {
             flags.remove(0);
@@ -461,6 +460,11 @@ public class SourceCodeExecution implements MDLWorker {
                     MutablePair<Integer, Integer> spot = hotspots.get(addressString);
                     spot.setLeft(spot.getLeft() + 1);
                     spot.setRight(spot.getRight() + executionTime);
+                }
+                
+                if (stopOnProtectedWrite && z80Memory.getNProtectedWrites() > 0) {
+                    config.error("Instruction that generated the protected write (address: "+addressString+"), " + s.fileNameLineString() + ":" + s);
+                    return false;
                 }
                 nInstructionsExecuted ++;
             }
@@ -785,11 +789,16 @@ public class SourceCodeExecution implements MDLWorker {
             return "" + v;
         } else if (exp.evaluatesToIntegerConstant()) {
             Integer v = exp.evaluateToInteger(null, code, false);
-            return "" + v;
+            return "" + v + " (" + config.tokenizer.toHexAutoSize(v, config.hexStyle) + ")";
         } else if (exp.type == Expression.EXPRESSION_REGISTER_OR_FLAG) {
             if (CodeBase.isRegister(exp.registerOrFlagName)) {
                 RegisterNames reg = CPUConstants.registerByName(exp.registerOrFlagName);
-                return "" + z80.getRegisterValue(reg);
+                int v = z80.getRegisterValue(reg);
+                if (CPUConstants.is8bitRegister(reg)) {
+                    return "" + v + " (" + config.tokenizer.toHexByte(v, config.hexStyle) + ")";
+                } else {
+                    return "" + v + " (" + config.tokenizer.toHexWord(v, config.hexStyle) + ")";
+                }
             } else {
                 // it's a flag:
                 int flag = CPUConstants.flagByName(exp.registerOrFlagName);
