@@ -86,12 +86,20 @@ replacement:
 constraints:
 regsNotUsedAfter(0,A)
 
-pattern: Remove unused ld ?reg,?any
+pattern: Remove unused ld ?reg, ?any
 0: ld ?reg,?any
 replacement:
 constraints:
 notIn(?reg,I)
+notIn(?any,I)
 regsNotUsedAfter(0,?reg)
+
+pattern: Remove unused ld a, i
+0: ld a, i
+replacement:
+constraints:
+regsNotUsedAfter(0,A)
+flagsNotUsedAfter(0,Z)
 
 pattern: Replace ld a,?const with xor a
 0: ld a,?const
@@ -269,13 +277,17 @@ constraints:
 flagsNotUsedAfter(0,S,Z,P/V,C)
 
 pattern: Replace ld a,?reg; neg with xor a; sub ?reg
+name: neg-to-sub
 0: ld a,?reg
 1: neg
 replacement:
 0: xor a
 1: sub ?reg
+constraints:
+in(?reg,B,C,D,E,H,L,IXL,IXH,IYL,IYH)
 
 pattern: Replace ld a,?reg; sub ?const; neg with ld a,?const; sub ?reg
+name: neg-to-sub2
 0: ld a,?reg
 1: sub ?const
 2: neg
