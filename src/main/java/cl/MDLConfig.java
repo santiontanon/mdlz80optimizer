@@ -125,6 +125,7 @@ public class MDLConfig {
     public String PRAGMA_NO_OPTIMIZATION_END = "mdl:no-opt-end";
     public String PRAGMA_SELF_MODIFYING = "mdl:self-modifying";
     public String PRAGMA_PAGE = "mdl:page";
+    public String PRAGMA_READS_REGISTER = "mdl:reads-register";
     
     // Path search order (which is different in different dialects):
     public int filePathSearchOrder[] = {FILE_SEARCH_RELATIVE_TO_INCLUDING_FILE,
@@ -204,6 +205,8 @@ public class MDLConfig {
             + PRAGMA_SELF_MODIFYING + "). This is used by the optimizer to know that this instruction can turn into anything.\n"
             + "- ```-page-pragma <value>```: changes the pragma to be inserted in a comment on a line to indicate the current page we are on (default: "
             + PRAGMA_PAGE + "). This is only used as a hint to MDL when when it generates sjasm-style symbols file (with the ```-st-sjasm``` flag).\n"            
+            + "- ```-reads-registers-pragma <value>```: changes the pragma to be inserted in a comment on a line to indicate that a given instruction uses certain registers (default: "
+            + PRAGMA_READS_REGISTER + "). This is useful when some code uses some registers in a way that MDL cannot identify (e.g. self modifying or relocating code). Specify the registers as a comma or space separated list afterwards, like this: ```"+PRAGMA_READS_REGISTER+" a, hl```.\n"
             + "- ```-out-opcase <case>```: whether to convert the assembler operators to upper or lower case. Possible values are: none/lower/upper (none does no conversion). Default is 'lower'.\n"
             + "- ```-out-allow-ds-virtual```: allows 'ds virtual' in the generated assembler (not all assemblers support this, but simplifies output)\n"
             + "- ```-out-colonless-equs```: equs will look like 'label equ value' instead of 'label: equ value'\n"
@@ -508,6 +511,26 @@ public class MDLConfig {
                         }
                         break;
                         
+                    case "-page-pragma":
+                        if (args.size()>=2) {
+                            args.remove(0);
+                            PRAGMA_PAGE = args.remove(0);
+                        } else {
+                            error("Missing pragma after " + arg);
+                            return false;
+                        }
+                        break;
+
+                    case "-uses-registers-pragma":
+                        if (args.size()>=2) {
+                            args.remove(0);
+                            PRAGMA_READS_REGISTER = args.remove(0);
+                        } else {
+                            error("Missing pragma after " + arg);
+                            return false;
+                        }
+                        break;
+
                     case "-out-opcase":
                         if (args.size()>=2) {
                             args.remove(0);

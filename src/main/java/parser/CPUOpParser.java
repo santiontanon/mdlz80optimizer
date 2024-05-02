@@ -299,8 +299,8 @@ public class CPUOpParser {
         // For example, "xor a, a" instead of "xor a".
         if (!spec.official) {
             if (config.convertToOfficial) {
-                CPUOp unofficial = new CPUOp(spec, a_args, config);
-                CPUOp official = officialFromUnofficial(spec.officialEquivalent, spec, a_args, code);
+                CPUOp unofficial = new CPUOp(spec, a_args, s, config);
+                CPUOp official = officialFromUnofficial(spec.officialEquivalent, spec, a_args, s, code);
                 if (config.warning_unofficialOps) {
                     config.warn("Style suggestion", s.fileNameLineString(), "Unofficial op syntax: " + unofficial + " converted to " + official);
                 }                
@@ -309,24 +309,24 @@ public class CPUOpParser {
                 return l;
             } else {
                 if (config.warning_unofficialOps) {
-                    config.warn("Style suggestion", s.fileNameLineString(), "Unofficial op syntax: " + new CPUOp(spec, a_args, config));
+                    config.warn("Style suggestion", s.fileNameLineString(), "Unofficial op syntax: " + new CPUOp(spec, a_args, s, config));
                 }    
             }
         }
         List<CPUOp> l = new ArrayList<>();
-        l.add(new CPUOp(spec, a_args, config));
+        l.add(new CPUOp(spec, a_args, s, config));
         return l;
     }        
     
     
-    CPUOp officialFromUnofficial(CPUOpSpec officialSpec, CPUOpSpec unofficialSpec, List<Expression> a_args, CodeBase code)
+    CPUOp officialFromUnofficial(CPUOpSpec officialSpec, CPUOpSpec unofficialSpec, List<Expression> a_args, CodeStatement s, CodeBase code)
     {
         List<Expression> officialArgs = new ArrayList<>();
 
         if (unofficialSpec.opName.equalsIgnoreCase("sub") && a_args.size() == 2) {
             // just ignore the initial "A":
             officialArgs.add(a_args.get(1));
-            return new CPUOp(officialSpec, officialArgs, config);
+            return new CPUOp(officialSpec, officialArgs, s, config);
         }
 
         if (unofficialSpec.opName.equalsIgnoreCase("in") && a_args.size() == 2 &&
@@ -335,7 +335,7 @@ public class CPUOpParser {
             // "in a,n" to "in a,(n)"
             officialArgs.add(a_args.get(0));
             officialArgs.add(Expression.parenthesisExpression(a_args.get(1), config.expressionParser.default_parenthesis, config));
-            return new CPUOp(officialSpec, officialArgs, config);
+            return new CPUOp(officialSpec, officialArgs, s, config);
         }
         
         List<Integer> used = new ArrayList<>();
@@ -363,6 +363,6 @@ public class CPUOpParser {
             }
         }
         
-        return new CPUOp(officialSpec, officialArgs, config);
+        return new CPUOp(officialSpec, officialArgs, s, config);
     }
 }

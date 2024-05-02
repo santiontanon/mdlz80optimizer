@@ -11,16 +11,18 @@ public class CPUOp {
     MDLConfig config;
     public CPUOpSpec spec;
     public List<Expression> args;
+    public CodeStatement s = null;  // Statement where this op is defined (if any)
 
-    List<CPUOpDependency> inputDeps = null;
-    List<CPUOpDependency> outputDeps = null;
+    List<CPUOpDependency> inputDeps = null;  // flags, registers, memory addresses, etc. that this instruction reads
+    List<CPUOpDependency> outputDeps = null;  // flags, registers, memory addresses, etc. that this instruction modifies
 
 
-    public CPUOp(CPUOpSpec a_spec, List<Expression> a_args, MDLConfig a_config)
+    public CPUOp(CPUOpSpec a_spec, List<Expression> a_args, CodeStatement a_s, MDLConfig a_config)
     {
         spec = a_spec;
         args = a_args;
         config = a_config;
+        s = a_s;
     }
 
 
@@ -162,6 +164,20 @@ public class CPUOp {
     public List<CPUOpDependency> getInputDependencies()
     {
         if (inputDeps == null) inputDeps = spec.getInputDependencies(args);
+        if (s != null && s.comment != null && s.comment.contains(config.PRAGMA_READS_REGISTER)) {
+            // Additional dependencies:
+            int idx = s.comment.indexOf(config.PRAGMA_READS_REGISTER) + config.PRAGMA_READS_REGISTER.length();
+            String depsString = s.comment.substring(idx);
+
+            List<String> tokens = config.tokenizer.tokenize(depsString);
+            while(!tokens.isEmpty()) {
+                String reg = tokens.remove(0).toUpperCase();
+                if (reg.equals(",")) continue;
+                if (CodeBase.isRegister(reg)) {
+                    inputDeps.add(new CPUOpDependency(reg, null, null, null, null));
+                }
+            }
+        }
         return inputDeps;
     }
 

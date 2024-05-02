@@ -457,7 +457,7 @@ public class CPUOpSpec {
     
     
     public CPUOp disassembleInstantiateOp(CodeBase code) {
-        CPUOp op = new CPUOp(this, new ArrayList<>(), config);
+        CPUOp op = new CPUOp(this, new ArrayList<>(), null, config);
 
         // Add all the arguments that do not depend on additional bytes:
         for(CPUOpSpecArg specArg:args) {                         
