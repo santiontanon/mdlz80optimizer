@@ -401,8 +401,14 @@ public class SourceCodeExecution implements MDLWorker {
                     }
                 }
                 
-                if (steps >= 0 && z80.getTStates() > steps) break;
-                if (endAddressString != null && addressMatch(pcAddress, addressString, endAddressString)) break;
+                if (steps >= 0 && z80.getTStates() > steps) {
+                    config.debug("Maximum number of execution steps reached.");
+                    break;
+                }
+                if (endAddressString != null && addressMatch(pcAddress, addressString, endAddressString)) {
+                    config.debug("Execution termination address reached, pcAddress: " + pcAddress + ", addressString: " + addressString + ", endAddressString: " + endAddressString);
+                    break;
+                }
                 if (startTrackingAddressString != null && addressMatch(pcAddress, addressString, startTrackingAddressString)) {
                     topLevelCalls.clear();
                     for(FunctionTrackRecord tr:trackFunctions) {
@@ -440,7 +446,11 @@ public class SourceCodeExecution implements MDLWorker {
                 }
                 
                 long previousTime = z80.getTStates();
+                int nProtectedWrites = z80Memory.getNProtectedWrites();
                 z80.executeOneInstruction();
+                if (s != null && z80Memory.getNProtectedWrites() > nProtectedWrites) {
+                    config.warn("The above warning occurred in line: " + s.sl);
+                }
                 
                 if (s != null && s.comment != null) {
                     for(String watchKey: watchKeys) {

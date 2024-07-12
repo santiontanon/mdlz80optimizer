@@ -498,6 +498,7 @@ public class CodeBaseParser {
 
         if (n_expanded > 0) {
             // resolve local labels again for all the new lines:
+            code.resetAddresses();
             for(CodeStatement s:f.getStatements()) {
                 s.resolveLocalLabels(code);
             }

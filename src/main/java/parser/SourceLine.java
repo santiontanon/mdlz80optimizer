@@ -59,7 +59,7 @@ public class SourceLine {
     
     public String fileNameLineString()
     {
-        String str = source.fileName + "#" + lineNumber;
+        String str = source.fileName + "#" + (lineNumber != null ? lineNumber:"-");
         if (expandedFrom != null) {
             str += " (expanded from " + expandedFrom.fileNameLineString() + ")";
         }

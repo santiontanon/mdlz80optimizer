@@ -222,7 +222,15 @@ public class Expression {
                             }
                         }
                         if (!silent) {
-                            config.error("Undefined symbol " + symbolName + " in " + s.sl);
+                            if (code.getSymbol(symbolName) == null) {
+                                if (s != null) {
+                                    config.error("Undefined symbol " + symbolName + " in " + s.sl);
+                                } else {
+                                    config.error("Undefined symbol " + symbolName);
+                                }
+                            } else {
+                                config.error("Cannot evaluated symbol '" + symbolName + "' to a value in " + s.sl);
+                            }
                         }
                         return null;
                     }

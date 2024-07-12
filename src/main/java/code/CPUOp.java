@@ -600,8 +600,9 @@ public class CPUOp {
                                 if (!silent) config.error("Unable to convert " + this + " to bytes! two numeric constants in one op!");
                                 return null;
                             }
-                            nn = arg.evaluateToInteger(s, code, true);
+                            nn = arg.evaluateToInteger(s, code, silent);
                             if (nn == null) {
+                                nn = arg.evaluateToInteger(s, code, silent);
                                 if (!silent) config.error("Unable to convert " + this + " to bytes! Cannot evaluate " + arg);
                                 return null;
                             }
