@@ -7,6 +7,7 @@ package workers;
 import cl.MDLConfig;
 import code.CPUOp;
 import code.CPUOpSpec;
+import code.CPUOpSpecArg;
 import code.CodeBase;
 import code.CodeStatement;
 import code.Expression;
@@ -67,15 +68,17 @@ public class SourceCodeExecution implements MDLWorker {
         
     
     MDLConfig config = null;
-    String startAddressUser = null;
-    String endAddressUser = null;
-    String startTrackingAddressUser = null;
-    String stepsString = null;
+    public String startAddressUser = null;
+    public String endAddressUser = null;
+    public String startTrackingAddressUser = null;
+    public String stepsString = null;
     boolean trace = false;
     boolean trackAllFunctions = false;
     boolean reportAsExecutionTree = false;
     boolean reportHotSpots = false;
     boolean stopOnProtectedWrite = false;
+    public boolean trackUselessInstructions = false;
+    public boolean reportSometimesUselessInstructions = false;
     int reportAsExecutionTreeMaxDepth = 0;
     int nHotSpotsToShow = 20;
     List<String> trackFunctionStrings = new ArrayList<>();
@@ -117,6 +120,7 @@ public class SourceCodeExecution implements MDLWorker {
                "- ```-e:hs```: reports execution hotspots (lines of code that take the most execution time overall). By default, it shows the top 20, use ```-e:hs:n``` to show the top n instead.\n" +
                "- ```-e:watch <watch-key>```: every time an instruction that has a comment annotated with the tag ```<watch-key>```, the tollowing comma separated expressions will be evaluated and printed (after instruction execution). For example, if you have an instruction like ```ld a, 1  ; mdl-watch: \"hello\", a```, you can pass ```-e:watch mdl-watch:``` and after that instruction is executed, ```hello, 1``` will be printed. Think of this as having the chance of adding print statements throughout the code. You can specify this argument several times, to print watch statements with different keys.\n" +
                "- ```-e:stop-on-protected-write```: stop as soon as an instruction tries to write into a memory protected address (i.e., the pages of memory that are not RAM, but part of the binary we are executing). By default, only warnings are issued, as this might be ok, if we have self-modifying code.\n" +
+               "- ```-e:report-useless```: tracks and reports instructions that had no visible effect in the execution (```nop```s are ignored).\n" +
                "- ```-e:mapper-config <filename>```: if the binary to be executed requires some sort of memory mapper, it can be specified in a configuration text file. The file contains on config option per line, and should include the following options: " +
                "binary_size: <size in bytes, multiple of page_size>, page_size: <page size in bytes, default is 16384>, ram_mapper_type: <type>, rom_mapper_type: <type> (only 'no_mapper', and 'msx_ascii16_mapper' are currently supported), initial_mapping: source1:segment1, source2:segment2, ... (one pair per each page in RAM, and where source == 0 means RAM, and source == 1 means binary, and segment is the segment within each source). " +
                "Notice that when this option is specified, the binary is assumed to be loaded into a separate ROM (separate from RAM), and that the mapper will be used to let the z80 access the binary data. If this option is not specified, the binary will just be loaded in RAM.\n";
@@ -187,6 +191,10 @@ public class SourceCodeExecution implements MDLWorker {
             flags.remove(0);
             stopOnProtectedWrite = true;
             return true;
+        } else if (flags.get(0).equals("-e:report-useless")) {
+            flags.remove(0);
+            trackUselessInstructions = true;
+            return true;
         } else if (flags.get(0).startsWith("-e:mapper-config") && flags.size()>=2) {
             flags.remove(0);
             mapperConfigFileName = flags.remove(0);
@@ -202,8 +210,13 @@ public class SourceCodeExecution implements MDLWorker {
     }
 
     @Override
+    @SuppressWarnings({"Convert2Lambda", "CallToPrintStackTrace", "UseSpecificCatch"})
     public boolean work(CodeBase code) 
     {
+        HashMap<String, List<CodeStatement>> uselessInstructionTracking_currentSetters = new HashMap<>();
+        HashMap<CodeStatement, Integer> uselessInstructionTracking_potentialUseless = new HashMap<>();  // the integer contains how many regs/flags were set that have not yet been overwritten or used (when it reaches 0, instruction is useless)
+        HashMap<CodeStatement, MutablePair<Integer, Integer>> uselessInstructionTracking_useful_total = new HashMap<>();  // # times useful, # times total
+                
         if (mapperConfigFileName != null) {
             if (!loadMapperConfig(mapperConfigFileName)) {
                 return false;
@@ -227,7 +240,9 @@ public class SourceCodeExecution implements MDLWorker {
         SourceFile main = code.outputs.get(0).main;
         BinaryGenerator generator = new BinaryGenerator(config);
         List<BinaryGenerator.StatementBinaryEffect> statementBytes = new ArrayList<>();
-        generator.generateStatementBytes(main, code, statementBytes);
+        if (!generator.generateStatementBytes(main, code, statementBytes)) {
+            return false;
+        }
         {
             int romAddress = 0;
             for(BinaryGenerator.StatementBinaryEffect effect:statementBytes) {
@@ -367,9 +382,8 @@ public class SourceCodeExecution implements MDLWorker {
                 
                 for(FunctionTrackRecord function:trackFunctions) {
                     // Check for returns:
-                    FunctionCallRecord lastCall = null;
                     if (!function.open.isEmpty()) {
-                        lastCall = function.open.get(function.open.size() - 1);
+                        FunctionCallRecord lastCall = function.open.get(function.open.size() - 1);
                         int diff = lastCall.stack - sp;
                         // We need to check >= 32768 in case the stack wraps around the address space.
                         if (diff < 0 || diff >= 32768) {
@@ -443,6 +457,167 @@ public class SourceCodeExecution implements MDLWorker {
                             modifiedRegisters.add(reg);
                         }
                     }
+                    if (trackUselessInstructions) {
+                        // Mark instructions as useful:
+                        // config.info(s.op + ": " + standardizeRegFlags(s.op.spec.getInputPrimitiveRegs(), s.op.spec.inputFlags, s.op) + " -> " + standardizeRegFlags(s.op.spec.getOutputPrimitiveRegs(), s.op.spec.outputFlags, s.op));
+                        boolean specialCaseEx = false;
+                        if (s.op.spec.isExOrExx) {
+                            HashMap<String, String> regFlagsExchanged = null;
+                            // handle 'exx', 'ex' separately:
+                            // Get the register/flag pairs that are exchanged:
+                            if (s.op.spec.getName().equalsIgnoreCase("exx")) {
+                                // exx
+                                regFlagsExchanged = new HashMap<>();
+                                regFlagsExchanged.put("B", "B'");
+                                regFlagsExchanged.put("C", "C'");
+                                regFlagsExchanged.put("D", "D'");
+                                regFlagsExchanged.put("E", "E'");
+                                regFlagsExchanged.put("H", "H'");
+                                regFlagsExchanged.put("L", "L'");
+                            } else if (s.op.spec.getName().equalsIgnoreCase("ex")) {
+                                if (s.op.spec.args.get(0).reg.equals("AF")) {
+                                    // ex af, af'
+                                    regFlagsExchanged = new HashMap<>();
+                                    regFlagsExchanged.put("A", "A'");
+                                    regFlagsExchanged.put("flag_C", "flag_C'");
+                                    regFlagsExchanged.put("flag_N", "flag_N'");
+                                    regFlagsExchanged.put("flag_P/V", "flag_P/V'");
+                                    regFlagsExchanged.put("flag_N", "flag_N'");
+                                    regFlagsExchanged.put("flag_Z", "flag_Z'");
+                                    regFlagsExchanged.put("flag_S", "flag_S'");
+                                } else if (s.op.spec.args.get(0).reg.equals("DE")) {
+                                    // ex de, hl
+                                    regFlagsExchanged = new HashMap<>();
+                                    regFlagsExchanged.put("E", "L");
+                                    regFlagsExchanged.put("D", "H");
+                                }
+                            }
+                            if (regFlagsExchanged != null) {
+                                specialCaseEx = true;
+                                // Go through the 'uselessInstructionTracking_currentSetters' exchanging the setters,
+                                // and adding this instruction as an additional setter:
+                                for(String regflag:regFlagsExchanged.keySet()) {
+                                    String regflag2 = regFlagsExchanged.get(regflag);
+                                    if (uselessInstructionTracking_currentSetters.containsKey(regflag)) {
+                                        if (uselessInstructionTracking_currentSetters.containsKey(regflag2)) {
+                                            // Both are present:
+                                            List<CodeStatement> tmp = uselessInstructionTracking_currentSetters.get(regflag);
+                                            uselessInstructionTracking_currentSetters.put(regflag, uselessInstructionTracking_currentSetters.get(regflag2));
+                                            uselessInstructionTracking_currentSetters.put(regflag2, tmp);
+                                            if (!uselessInstructionTracking_currentSetters.get(regflag).contains(s)) {
+                                                uselessInstructionTracking_currentSetters.get(regflag).add(s);
+                                            }
+                                            if (!uselessInstructionTracking_currentSetters.get(regflag2).contains(s)) {
+                                                uselessInstructionTracking_currentSetters.get(regflag2).add(s);
+                                            }
+                                        } else {
+                                            // Only regflag is present:
+                                            uselessInstructionTracking_currentSetters.put(regflag2, uselessInstructionTracking_currentSetters.get(regflag));
+                                            if (!uselessInstructionTracking_currentSetters.get(regflag2).contains(s)) {
+                                                uselessInstructionTracking_currentSetters.get(regflag2).add(s);
+                                            }
+                                            List<CodeStatement> l = new ArrayList<>();
+                                            l.add(s);
+                                            uselessInstructionTracking_currentSetters.put(regflag, l);
+                                        }
+                                    } else if (uselessInstructionTracking_currentSetters.containsKey(regflag2)) {
+                                        // Only regflag2 is present:
+                                        uselessInstructionTracking_currentSetters.put(regflag, uselessInstructionTracking_currentSetters.get(regflag2));
+                                        if (!uselessInstructionTracking_currentSetters.get(regflag).contains(s)) {
+                                            uselessInstructionTracking_currentSetters.get(regflag).add(s);
+                                        }
+                                        List<CodeStatement> l = new ArrayList<>();
+                                        l.add(s);
+                                        uselessInstructionTracking_currentSetters.put(regflag2, l);
+                                    } else {
+                                        // None are present:
+                                        List<CodeStatement> l = new ArrayList<>();
+                                        l.add(s);
+                                        uselessInstructionTracking_currentSetters.put(regflag, l);
+                                        l = new ArrayList<>();
+                                        l.add(s);
+                                        uselessInstructionTracking_currentSetters.put(regflag2, l);
+                                    }
+                                }
+                                uselessInstructionTracking_potentialUseless.put(s, regFlagsExchanged.size() * 2);
+                            }
+                        }
+                        if (!specialCaseEx) {
+                            // Not a "exx", or "ex"
+                            for(String regflag:standardizeRegFlags(s.op.spec.getInputPrimitiveRegs(), s.op.spec.inputFlags, s.op)) {
+                                if (uselessInstructionTracking_currentSetters.containsKey(regflag)) {
+                                    List<CodeStatement> setters = uselessInstructionTracking_currentSetters.get(regflag);
+                                    // instruction was useful:
+                                    for(CodeStatement setter:setters) {
+                                        if (uselessInstructionTracking_potentialUseless.containsKey(setter)) {
+                                            uselessInstructionTracking_potentialUseless.remove(setter);
+                                        }
+                                        if (!uselessInstructionTracking_useful_total.containsKey(setter)) {
+                                            uselessInstructionTracking_useful_total.put(setter, MutablePair.of(1, 1));
+                                        } else {
+                                            MutablePair<Integer, Integer> pair = uselessInstructionTracking_useful_total.get(setter);
+                                            pair.left++;
+                                            pair.right++;
+                                        }
+                                    }
+                                }
+                            }
+                            int nEffects = 0;
+                            for(String regflag:standardizeRegFlags(s.op.spec.getOutputPrimitiveRegs(), s.op.spec.outputFlags, s.op)) {
+                                if (uselessInstructionTracking_currentSetters.containsKey(regflag)) {
+                                    List<CodeStatement> setters = uselessInstructionTracking_currentSetters.get(regflag);
+                                    for(CodeStatement setter:setters) {
+                                        if (uselessInstructionTracking_potentialUseless.containsKey(setter)) {
+                                            int n_set = uselessInstructionTracking_potentialUseless.get(setter);
+                                            n_set--;
+                                            if (n_set <= 0) {
+                                                // instruction was useless:
+                                                if (uselessInstructionTracking_potentialUseless.containsKey(setter)) {
+                                                    uselessInstructionTracking_potentialUseless.remove(setter);
+                                                }
+                                                if (!uselessInstructionTracking_useful_total.containsKey(setter)) {
+                                                    uselessInstructionTracking_useful_total.put(setter, MutablePair.of(0, 1));
+                                                } else {
+                                                    MutablePair<Integer, Integer> pair = uselessInstructionTracking_useful_total.get(setter);
+                                                    pair.right++;
+                                                }
+                                            } else {
+                                                uselessInstructionTracking_potentialUseless.put(setter, n_set);
+                                            }
+                                        }
+                                    }
+                                    setters.clear();
+                                    setters.add(s);
+                                } else {
+                                    List<CodeStatement> setters = new ArrayList<>();
+                                    uselessInstructionTracking_currentSetters.put(regflag, setters);
+                                    setters.add(s);
+                                }
+                                nEffects++;
+                            }
+                            if (!s.op.spec.isNop &&
+                                !s.op.spec.isJump &&
+                                !s.op.spec.isCall &&
+                                !s.op.spec.isRet &&
+                                s.op.spec.outputPort == null &&
+                                s.op.spec.outputMemoryStart == null &&
+                                s.op.spec.outputMemoryEnd == null &&
+                                nEffects > 0) {
+                                uselessInstructionTracking_potentialUseless.put(s, nEffects);
+                            }
+                        }
+                        // DEBUG: Print current state of tracking:
+//                        System.out.println("---------------------------");
+//                        System.out.println(s.sl.fileNameLineString() +  ": " + s.op);
+//                        System.out.println("uselessInstructionTracking_currentSetters:");
+//                        for(String regflag:uselessInstructionTracking_currentSetters.keySet()) {
+//                            System.out.println("    " + regflag + ": " + uselessInstructionTracking_currentSetters.get(regflag));
+//                        }
+//                        System.out.println("uselessInstructionTracking_potentialUseless:");
+//                        for(CodeStatement s2:uselessInstructionTracking_potentialUseless.keySet()) {
+//                            System.out.println("    " + s2.op + "  ->  " + uselessInstructionTracking_potentialUseless.get(s2));
+//                        }
+                    }
                 }
                 
                 long previousTime = z80.getTStates();
@@ -513,84 +688,168 @@ public class SourceCodeExecution implements MDLWorker {
         config.info("  execution time: " + globalTotal + " "+config.timeUnit + "s");
 
         // Report function execution:
-        if (trackFunctions.isEmpty()) return true;
-        
-        if (!trackedCallStack.isEmpty()) {
-            config.info("Execution ended with tracked call stack:");
-            for(FunctionCallRecord r:trackedCallStack) {
-                config.info("    " + r.trackRecord.userString);
-            }
-        }
-        
-        if (reportAsExecutionTree) {
-            // Report the execution tree:
-            logExecutionTreeStats(topLevelCalls, 0, globalTotal);
-        } else {    
-            // Construct and format the funtion execution reporting table:
-            config.info("Function: count  percentage  (min / avg / max):");
-            List<MutablePair<Double, String>> rows = new ArrayList<>();
-            // Step 1: function names:
-            int max_len = 0;
-            int max_closed = 0;
-            for(FunctionTrackRecord function:trackFunctions) {
-                if (!function.closed.isEmpty()) {
-                    rows.add(MutablePair.of(0.0, "- \"" + function.userString + "\":"));
-                    if (function.userString.length() > max_len) max_len = function.userString.length();
-                    if (function.closed.size() > max_closed) max_closed = function.closed.size();
+        if (!trackFunctions.isEmpty()) {
+
+            if (!trackedCallStack.isEmpty()) {
+                config.info("Execution ended with tracked call stack:");
+                for(FunctionCallRecord r:trackedCallStack) {
+                    config.info("    " + r.trackRecord.userString);
                 }
             }
-            // Insert black spaces:
-            for(int i = 0;i<rows.size();i++) {
-                String row = rows.get(i).getRight();
-                while(row.length() < max_len + 5) row += " ";
-                rows.get(i).setValue(row);
-            }
-            
-            // Add timing:
-            int max_closed_str_length = ("" + max_closed).length();
-            int i = 0;
-            for(FunctionTrackRecord function:trackFunctions) {
-                if (!function.closed.isEmpty()) {
-                    MutablePair<Double, String> row = rows.get(i);
-                    long min = -1;
-                    long max = -1;
-                    double functionTotal = 0;
-                    for(FunctionCallRecord r:function.closed) {
-                        long time = (r.endTime - r.startTime);
-                        if (min == -1 || time < min) min = time;
-                        if (max == -1 || time > max) max = time;
-                        functionTotal += time;
+
+            if (reportAsExecutionTree) {
+                // Report the execution tree:
+                logExecutionTreeStats(topLevelCalls, 0, globalTotal);
+            } else {    
+                // Construct and format the funtion execution reporting table:
+                config.info("Function: count  percentage  (min / avg / max):");
+                List<MutablePair<Double, String>> rows = new ArrayList<>();
+                // Step 1: function names:
+                int max_len = 0;
+                int max_closed = 0;
+                for(FunctionTrackRecord function:trackFunctions) {
+                    if (!function.closed.isEmpty()) {
+                        rows.add(MutablePair.of(0.0, "- \"" + function.userString + "\":"));
+                        if (function.userString.length() > max_len) max_len = function.userString.length();
+                        if (function.closed.size() > max_closed) max_closed = function.closed.size();
                     }
-                    double average = functionTotal / function.closed.size();
-                    String closedString = "" + function.closed.size();
-                    while(closedString.length() < max_closed_str_length) closedString = " " + closedString;
-                    double percentageOfGlobalTotal = 100.0 * functionTotal / globalTotal;
-                    row.setLeft(percentageOfGlobalTotal);
-                    String percentageString = String.format("%.4f", percentageOfGlobalTotal);
-                    while(percentageString.length() < 7) percentageString = " " + percentageString;
-                    row.setRight(row.getRight() + " " + closedString + "\t" + percentageString + "%\t(" +
-                                 min + " / " + average + " / " + max + ")");
-                    i++;
                 }
-                // Consider whether I want this info or not
-                // if (!function.open.isEmpty()) {
-                //     config.info("    called " + function.open.size() + " times without returning.");
-                // }
-            }
-            
-            // Sort by percentage of time used:
-            Collections.sort(rows, new Comparator<MutablePair<Double, String>>() {
-                @Override
-                public int compare(MutablePair<Double, String> b1, MutablePair<Double, String> b2) {
-                    return -Double.compare(b1.getLeft(), b2.getLeft());
+                // Insert black spaces:
+                for(int i = 0;i<rows.size();i++) {
+                    String row = rows.get(i).getRight();
+                    while(row.length() < max_len + 5) row += " ";
+                    rows.get(i).setValue(row);
                 }
-            });
-            for(Pair<Double, String> row:rows) {
-                config.info(row.getRight());
+
+                // Add timing:
+                int max_closed_str_length = ("" + max_closed).length();
+                int i = 0;
+                for(FunctionTrackRecord function:trackFunctions) {
+                    if (!function.closed.isEmpty()) {
+                        MutablePair<Double, String> row = rows.get(i);
+                        long min = -1;
+                        long max = -1;
+                        double functionTotal = 0;
+                        for(FunctionCallRecord r:function.closed) {
+                            long time = (r.endTime - r.startTime);
+                            if (min == -1 || time < min) min = time;
+                            if (max == -1 || time > max) max = time;
+                            functionTotal += time;
+                        }
+                        double average = functionTotal / function.closed.size();
+                        String closedString = "" + function.closed.size();
+                        while(closedString.length() < max_closed_str_length) closedString = " " + closedString;
+                        double percentageOfGlobalTotal = 100.0 * functionTotal / globalTotal;
+                        row.setLeft(percentageOfGlobalTotal);
+                        String percentageString = String.format("%.4f", percentageOfGlobalTotal);
+                        while(percentageString.length() < 7) percentageString = " " + percentageString;
+                        row.setRight(row.getRight() + " " + closedString + "\t" + percentageString + "%\t(" +
+                                     min + " / " + average + " / " + max + ")");
+                        i++;
+                    }
+                    // Consider whether I want this info or not
+                    // if (!function.open.isEmpty()) {
+                    //     config.info("    called " + function.open.size() + " times without returning.");
+                    // }
+                }
+
+                // Sort by percentage of time used:
+                Collections.sort(rows, new Comparator<MutablePair<Double, String>>() {
+                    @Override
+                    public int compare(MutablePair<Double, String> b1, MutablePair<Double, String> b2) {
+                        return -Double.compare(b1.getLeft(), b2.getLeft());
+                    }
+                });
+                for(Pair<Double, String> row:rows) {
+                    config.info(row.getRight());
+                }
             }
         }
         if (reportHotSpots) reportHotspots(hotspots, instructions);
+        if (trackUselessInstructions) {
+            List<CodeStatement> useless = new ArrayList<>();
+            List<CodeStatement> simetimes_useless = new ArrayList<>();
+            for(CodeStatement s:uselessInstructionTracking_useful_total.keySet()) {
+                MutablePair<Integer, Integer> pair = uselessInstructionTracking_useful_total.get(s);
+                if (pair.left == 0) {
+                    useless.add(s);
+                } else if (pair.left < pair.right) {
+                    simetimes_useless.add(s);
+                }
+            }
+            Collections.sort(useless, new Comparator<CodeStatement>() {
+                @Override
+                public int compare(CodeStatement s1, CodeStatement s2) {
+                    return -Integer.compare(uselessInstructionTracking_useful_total.get(s1).right,
+                                            uselessInstructionTracking_useful_total.get(s2).right);
+                }
+            });            
+            Collections.sort(simetimes_useless, new Comparator<CodeStatement>() {
+                @Override
+                public int compare(CodeStatement s1, CodeStatement s2) {
+                    return Double.compare(uselessInstructionTracking_useful_total.get(s1).left / (float)uselessInstructionTracking_useful_total.get(s1).right,
+                                          uselessInstructionTracking_useful_total.get(s2).left / (float)uselessInstructionTracking_useful_total.get(s2).right);
+                }
+            });            
+            
+            config.info("Useless instruction tracking:");
+            config.info("Potentially useless at execution end: " + uselessInstructionTracking_potentialUseless.size());
+            for(CodeStatement s:uselessInstructionTracking_potentialUseless.keySet()) {
+                config.info("  - " + s.sl.fileNameLineString() + ": " + s.op +  " (" + uselessInstructionTracking_potentialUseless.get(s) + " values set left)");
+            }
+            config.info("Always useless: " + useless.size());
+            for(CodeStatement s:useless) {
+                MutablePair<Integer, Integer> pair = uselessInstructionTracking_useful_total.get(s);
+                config.info("  - ("+pair.left+"/"+pair.right+") " + s.sl.fileNameLineString() + ": " + s.op);
+            }
+            if (reportSometimesUselessInstructions) {
+                config.info("Sometimes useless: " +  + simetimes_useless.size());
+                for(CodeStatement s:simetimes_useless) {
+                    MutablePair<Integer, Integer> pair = uselessInstructionTracking_useful_total.get(s);
+                    config.info("  - ("+pair.left+"/"+pair.right+") " + s.sl.fileNameLineString() + ": " + s.op);
+                }
+            }
+        }
         return true;
+    }
+    
+    
+    List<String> standardizeRegFlags(List<String> regs, List<String> flags, CPUOp op)
+    {
+        String allFlags[] = {"flag_C", "flag_N", "flag_P/V", "flag_H", "flag_Z", "flag_S"};
+        List<String> regflags = new ArrayList<>();
+        for(String flag:flags) {
+            regflags.add("flag_" + flag);
+        }
+        for(String reg:regs) {
+            if (reg.toUpperCase().equals(reg)) {
+                if (reg.equalsIgnoreCase("PC")) continue;
+                if (reg.equalsIgnoreCase("F")) {
+                    for(String flag:allFlags) {
+                        if (!regflags.contains(flag)) {
+                            regflags.add(flag);
+                        } 
+                    }
+                } else {
+                    regflags.add(reg);
+                }
+            } else {
+                // we need to find which reg in particular is used in this op:
+                for(int i = 0;i<op.spec.args.size();i++) {
+                    CPUOpSpecArg specArg = op.spec.args.get(i);
+                    if (specArg.reg != null && specArg.reg.equals(reg)) {
+                        Expression opArg = op.args.get(i);
+                        if (opArg.type == Expression.EXPRESSION_REGISTER_OR_FLAG) {
+                            regflags.add(opArg.registerOrFlagName.toUpperCase());
+                        } else {
+                            config.error("standardizeRegFlags Register expression is not of type EXPRESSION_REGISTER_OR_FLAG");
+                        }
+                    }
+                }
+            }
+        }
+
+        return regflags;
     }
     
     

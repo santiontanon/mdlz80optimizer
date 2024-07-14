@@ -56,7 +56,7 @@ INC BC	6	3	1	BC				BC				true
 INC C	4	0C	1	C				C	S,Z,H,P/V,N			true
 INC D	4	14	1	D				D	S,Z,H,P/V,N			true
 INC DE	6	13	1	DE				DE				true
-INC E	4	1C	1	B				B	S,Z,H,P/V,N			true
+INC E	4	1C	1	E				E	S,Z,H,P/V,N			true
 INC H	4	24	1	H				H	S,Z,H,P/V,N			true
 INC HL	6	23	1	HL				HL				true
 INC L	4	2C	1	L				L	S,Z,H,P/V,N			true

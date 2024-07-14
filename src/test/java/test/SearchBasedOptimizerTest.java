@@ -39,7 +39,7 @@ public class SearchBasedOptimizerTest {
     @Test public void test2_speed() throws IOException { test("data/searchtests/opt-test2.asm", 
             new String[]{"data/searchtests/opt-test2-expected.asm", "data/searchtests/opt-test2-expected2.asm"}, "speed", 2); }
     @Test public void test3() throws IOException { test("data/searchtests/opt-test3.asm", new String[]{"data/searchtests/opt-test3-expected.asm"}); }
-    @Test public void test4() throws IOException { test("data/searchtests/opt-test4.asm", new String[]{"data/searchtests/opt-test4-expected.asm"}); }
+    @Test public void test4() throws IOException { test("data/searchtests/opt-test4.asm", new String[]{"data/searchtests/opt-test4-expected.asm", "data/searchtests/opt-test4-expected2.asm"}); }
     @Test public void test5() throws IOException { test("data/searchtests/opt-test5.asm", new String[]{"data/searchtests/opt-test5-expected.asm"}); }
     @Test public void test6() throws IOException { test("data/searchtests/opt-test6.asm", 
             new String[]{"data/searchtests/opt-test6-expected.asm", "data/searchtests/opt-test6-expected2.asm"}); }

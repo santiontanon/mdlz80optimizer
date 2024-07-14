@@ -7,6 +7,7 @@ import cl.MDLConfig;
 
 import java.util.ArrayList;
 import java.util.List;
+import util.microprocessor.Z80.CPUConstants;
 
 public class CPUOpSpec {
     MDLConfig config;
@@ -30,11 +31,13 @@ public class CPUOpSpec {
     public String inputPort = null, inputMemoryStart = null, inputMemoryEnd = null;
     public List<String> outputRegs, outputFlags;
     public String outputPort = null, outputMemoryStart = null, outputMemoryEnd = null;
+    List<String> inputPrimitiveRegs = null;
+    List<String> outputPrimitiveRegs = null;
     
     // Precompute instruction types:
     public boolean isConditional = false, isRet = false, isRst = false, isCall = false,
                    isJump = false, isRelativeJump = false, isPush = false, isPop = false,
-                   mightJump = false, isAdd = false, isNop = false;
+                   mightJump = false, isAdd = false, isNop = false, isExOrExx = false;
     public int jumpLabelArgument = -1;
 
     
@@ -102,6 +105,8 @@ public class CPUOpSpec {
         if (opName.equalsIgnoreCase("pop")) isPop = true;
         if (opName.equalsIgnoreCase("add")) isAdd = true;
         if (opName.equalsIgnoreCase("nop")) isNop = true;
+        if (opName.equalsIgnoreCase("exx")) isExOrExx = true;
+        if (opName.equalsIgnoreCase("ex")) isExOrExx = true;
 
         if (isRet || jumpLabelArgument != -1) mightJump = true;
     }
@@ -234,6 +239,48 @@ public class CPUOpSpec {
         }
 
         return deps;
+    }
+    
+    
+    public List<String> getInputPrimitiveRegs() {
+        if (inputPrimitiveRegs != null) return inputPrimitiveRegs;
+        inputPrimitiveRegs = new ArrayList<>();
+        for(String reg:inputRegs) {
+            if (isPrimitiveReg(reg)) {
+                if (CPUConstants.is8bitRegister(CPUConstants.registerByName(reg))) {
+                    inputPrimitiveRegs.add(CPUConstants.registerName(CPUConstants.registerByName(reg)).toUpperCase());
+                } else {
+                    for(CPUConstants.RegisterNames rn:CPUConstants.primitive8BitRegistersOf(CPUConstants.registerByName(reg))) {
+                        inputPrimitiveRegs.add(CPUConstants.registerName(rn).toUpperCase());
+                    }
+                }
+            } else {
+                // We just add it (but this would be something like "r", or "IYq")
+                inputPrimitiveRegs.add(reg);
+            }
+        }
+        return inputPrimitiveRegs;
+    }        
+
+    
+    public List<String> getOutputPrimitiveRegs() {
+        if (outputPrimitiveRegs != null) return outputPrimitiveRegs;
+        outputPrimitiveRegs = new ArrayList<>();
+        for(String reg:outputRegs) {
+            if (isPrimitiveReg(reg)) {
+                if (CPUConstants.is8bitRegister(CPUConstants.registerByName(reg))) {
+                    outputPrimitiveRegs.add(CPUConstants.registerName(CPUConstants.registerByName(reg)).toUpperCase());
+                } else {
+                    for(CPUConstants.RegisterNames rn:CPUConstants.primitive8BitRegistersOf(CPUConstants.registerByName(reg))) {
+                        outputPrimitiveRegs.add(CPUConstants.registerName(rn).toUpperCase());
+                    }
+                }
+            } else {
+                // We just add it (but this would be something like "r", or "IYq")
+                outputPrimitiveRegs.add(reg);
+            }
+        }
+        return outputPrimitiveRegs;
     }
 
 
