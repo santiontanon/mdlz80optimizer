@@ -80,6 +80,8 @@ public class SearchBasedOptimizer implements MDLWorker {
     int optimization_max_block_size = 2;
 
     int stopAfter = -1;
+    
+    List<String> onlyOptimizeThesefiles = new ArrayList<>();
 
     public final int DEPTH_TO_PRECOMPUTE3 = 4;
     public final int SIZE_TO_PRECOMPUTE3 = 7;
@@ -117,6 +119,7 @@ public class SearchBasedOptimizer implements MDLWorker {
                "- ```-so-threads <n>```: Sets the number of threads to use during search (default value is the number of cores of the CPU).\n" +
                "- ```-so-checks <n>```: Sets the number of random solution checks to consider a solution valid (default is 10000). Higher means more safety, but slower. If this is too low, the optimizer might generate wrong code by chance.\n" +
                "- ```-so-blocksize <n>```: (only for existing assembler optimization) Blocks of this number of instructions will be taken one at a time and optimized (default is 2).\n" +
+               "- ```-so-file <name>```: (only for existing assembler optimization) limits optimizations to a particular file (this is useful, since this is a slow optimizer, and we might want to target optimizing just one part of the code). This flag can be repeated to specify several files.\n" +
                "- ```-so-stop-after <n>```: Stops optimizing after n optimizations. This is useful for debugging, if there is any optimization that breaks the code, to help locate it.\n";
     }
 
@@ -258,6 +261,12 @@ public class SearchBasedOptimizer implements MDLWorker {
             }
             return true;
         }
+        if (flags.get(0).equals("-so-file") && flags.size()>=2) {
+            flags.remove(0);
+            onlyOptimizeThesefiles.add(flags.get(0));
+            flags.remove(0);
+            return true;
+        }
         return false;    
     }
 
@@ -339,6 +348,7 @@ public class SearchBasedOptimizer implements MDLWorker {
         return workGenerate(spec, filter, allDependencies, sf, code);
     }
     
+    @SuppressWarnings("UseSpecificCatch")
     private boolean workGenerate(Specification spec, 
                                  SequenceFilter filter,
                                  List<CPUOpDependency> allDependencies,
@@ -540,6 +550,16 @@ public class SearchBasedOptimizer implements MDLWorker {
             HashMap<Integer,HashMap<String,Integer>> previousKnownRegisterValues = new HashMap<>();
             HashMap<String, Integer> knownRegisterValues = new HashMap<>();
             registersUsedAfter_previous = null;
+            if (!onlyOptimizeThesefiles.isEmpty()) {
+                boolean optimize = false;
+                for(String fileName:onlyOptimizeThesefiles) {
+                    if (f.fileName.contains(fileName)) {
+                        optimize = true;
+                        break;
+                    }
+                }
+                if (!optimize) continue;
+            }
             for (int i = 0; i < f.getStatements().size() && !done; i++) {
                 HashMap<String, Integer> knownRegisterValuesCopy = new HashMap<>();
                 knownRegisterValuesCopy.putAll(knownRegisterValues);
