@@ -3,7 +3,6 @@ ONE: equ 1
 	ld a, (value)
 	or a
 	call z, function1
-	ld a, 2
 	ld (value), a
 __mdlrenamed__end:
 	jr __mdlrenamed__end

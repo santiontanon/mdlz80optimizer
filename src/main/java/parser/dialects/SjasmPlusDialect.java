@@ -1430,7 +1430,7 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
         
         // Saving binaries/snapshots, etc.:
         for(SaveCommand sc:saveCommands) {
-            code.resetAddresses();
+            code.resetAddressesAndFlow();
 
             String fileName = sc.arguments.get(0).evaluateToString(sc.s, code, true);
             if (fileName == null) {

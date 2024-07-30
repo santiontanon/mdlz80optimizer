@@ -1802,7 +1802,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                     s.source = output.reconstructedFile;
                     output.reconstructedFile.addStatement(s);
                 }
-                code.resetAddresses();
+                code.resetAddressesAndFlow();
                 currentAddress = block.actualAddress + block.size(code);
             }
 
@@ -1841,7 +1841,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             }
         }
         
-        code.resetAddresses();
+        code.resetAddressesAndFlow();
         return true;
     }
         
@@ -1880,7 +1880,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                     }
                     // only consider jumps within the same block:
                     if (b1 == b2) {
-                        code.resetAddresses();
+                        code.resetAddressesAndFlow();
                         b1.resetAddresses();
                         Integer address = s.getAddressAfter(code);
                         Integer targetAddress = label.evaluateToInteger(null, code, true);
@@ -1918,7 +1918,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                         }
                         // only consider jumps within the same block:
                         if (b1 == b2) {
-                            code.resetAddresses();
+                            code.resetAddressesAndFlow();
                             b1.resetAddresses();
                             Integer address = s.getAddressAfter(code);
                             Integer targetAddress = label.evaluateToInteger(null, code, true);
@@ -1943,7 +1943,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             }
         }
         
-        code.resetAddresses();
+        code.resetAddressesAndFlow();
         for(SJasmCodeBlock b: output.codeBlocks) {
             b.resetAddresses();
         }

@@ -50,7 +50,9 @@ public class ExecutionFlowTest {
     @Test public void test11() throws IOException { test("data/flowtests/test11-jumptables.asm", null, 4); }
     @Test public void test12() throws IOException { test("data/flowtests/test12-jumptables2.asm", null, 3); }
     @Test public void test13() throws IOException { test("data/flowtests/test13-jumptables3.asm", null, 3); }
-//    @Test public void test13b() throws IOException { test("data/flowtests/test13-jumptables3b.asm", null, 4); }
+    @Test public void test13b() throws IOException { test("data/flowtests/test13-jumptables3b.asm", null, 4); }
+//    @Test public void test14() throws IOException { test("data/flowtests/test14-jumptables.asm", null, 4); }
+//    @Test public void test14b() throws IOException { test("data/flowtests/test14-jumptables2.asm", null, 4); }
 
     
     private void test(String inputFile, String dialect, int nRets) throws IOException

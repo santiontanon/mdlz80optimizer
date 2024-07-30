@@ -7,11 +7,14 @@ import cl.MDLConfig;
 import java.util.ArrayList;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Set;
 import org.apache.commons.lang3.tuple.Pair;
 import parser.SourceLine;
+import workers.pattopt.ExecutionFlowAnalysis;
+import workers.pattopt.ExecutionFlowAnalysis.StatementTransition;
 
 public class CodeBase {    
     public static final String CURRENT_ADDRESS = "$";
@@ -26,6 +29,9 @@ public class CodeBase {
 
     // List of the expected output binaries:
     public List<OutputBinary> outputs = new ArrayList<>();
+
+    // Table with all the transitions that a given statement can have (e.g. jumps, rets, etc.).
+    public HashMap<CodeStatement, List<StatementTransition>> executionFlowTable = null;
 
 
     public CodeBase(MDLConfig a_config)
@@ -278,7 +284,7 @@ public class CodeBase {
     }
 
 
-    public void resetAddresses()
+    public void resetAddressesAndFlow()
     {
         for(SourceFile f:sources.values()) {
             f.resetAddresses();
@@ -286,6 +292,8 @@ public class CodeBase {
         for(SourceConstant c:symbols.values()) {
             c.valueCache = null;
         }
+        
+        executionFlowTable = null;
     }
 
     
@@ -402,5 +410,20 @@ public class CodeBase {
             }
         }
         return false;
+    }
+    
+    
+    public List<StatementTransition> getStatementPossibleDestinations(CodeStatement s)
+    {
+        if (config.flowAnalyzer == null) {
+            config.flowAnalyzer = new ExecutionFlowAnalysis(this, config);
+        }
+        if (executionFlowTable == null) {
+            executionFlowTable = config.flowAnalyzer.findAllRetDestinations();
+        }
+        if (executionFlowTable != null) {
+            return executionFlowTable.get(s);
+        }
+        return null;
     }
 }

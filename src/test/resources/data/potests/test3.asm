@@ -4,7 +4,7 @@
 	ld a,(value)
 	cp 1
 	call z,function1
-	ld a,2
+	ld a,b
 	ld (value),a
 end:
 	jp end
@@ -12,6 +12,7 @@ end:
 
 function1:
 	ld b,a
+        ld c,a
 	ret
 
 

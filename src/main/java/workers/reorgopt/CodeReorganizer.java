@@ -107,7 +107,7 @@ public class CodeReorganizer implements MDLWorker {
         OptimizationResult savings = new OptimizationResult();
         savings.addOptimizerSpecific(SAVINGS_REORGANIZATIONS_CODE, 0);
         
-        code.resetAddresses();
+        code.resetAddressesAndFlow();
         CodeStatement toBlame = code.checkRelativeJumpsInRange();
         if (toBlame != null) {
             config.error("Code Reorganizer: Some local labels are out of range to begin with, canceling execution...");
@@ -170,7 +170,7 @@ public class CodeReorganizer implements MDLWorker {
 
         config.optimizerStats.addSavings(savings);
         
-        code.resetAddresses();
+        code.resetAddressesAndFlow();
         if (code.checkRelativeJumpsInRange() != null) {
             config.error("Some local labels got out of range after the execution of the code reorganizer!");
             return false;
@@ -611,7 +611,7 @@ public class CodeReorganizer implements MDLWorker {
                 
                 if (!cancelOptimization) {
                     // Check all relative jumps are still within reach:
-                    code.resetAddresses();
+                    code.resetAddressesAndFlow();
                     // unfortunately we need to check the whole code base, as jump statements might be
                     // outside of the current area, but jumping to a label inside of the current area:
                     if (code.checkRelativeJumpsInRange() != null) cancelOptimization = true;                
@@ -657,7 +657,7 @@ public class CodeReorganizer implements MDLWorker {
                             " to right after " + call.sl.fileNameLineString() + 
                             " to remove a call and a ret statement as "+block.label.originalName+" is only caled once ("+bytesSaved+" bytes, " + timeSaved + " " + config.timeUnit+"s saved)");
                 }
-                code.resetAddresses();
+                code.resetAddressesAndFlow();
             }
         }
     }
@@ -800,7 +800,7 @@ public class CodeReorganizer implements MDLWorker {
                     subarea.subBlocks.remove(undoSubBlockIdx);
                 }
                 if (todelete == block1) {
-                    code.resetAddresses();
+                    code.resetAddressesAndFlow();
                     if (code.checkRelativeJumpsInRange() != null) {
                         config.debug("Undoing merge (case 1)!");
                         
@@ -829,7 +829,7 @@ public class CodeReorganizer implements MDLWorker {
                 todelete.label.definingStatement.source = tokeep.label.definingStatement.source;
                 
                 // Check if we have broken any relative jumps and in that case, undo:
-                code.resetAddresses();
+                code.resetAddressesAndFlow();
                 if (code.checkRelativeJumpsInRange() != null) {
                     config.debug("Undoing merge (case 2)!");
                     // undo!
@@ -865,7 +865,7 @@ public class CodeReorganizer implements MDLWorker {
                             "detected this code is identical to that in " + tokeep.label.definingStatement.sl.fileNameLineString() + 
                             " delete lines " + todelete.statements.get(0).sl.fileNameLineString() + " - " + todelete.statements.get(todelete.statements.size()-1).sl.lineNumber + 
                             " and move label '"+todelete.label.name+"' right after '"+tokeep.label.name+"' ("+bytesSaved+" bytes, " + timeSaved + " " + config.timeUnit+"s saved)");
-                    code.resetAddresses();
+                    code.resetAddressesAndFlow();
                 }
             }
         }
@@ -1039,7 +1039,7 @@ public class CodeReorganizer implements MDLWorker {
         }
         
         // Check all relative jumps are still within reach:
-        code.resetAddresses();
+        code.resetAddressesAndFlow();
         // unfortunately we need to check the whole code base, as jump statements might be
         // outside of the current area, but jumping to a label inside of the current area:
         if (code.checkRelativeJumpsInRange() != null) cancelOptimization = true;
@@ -1074,7 +1074,7 @@ public class CodeReorganizer implements MDLWorker {
                 undoFile.getStatements().add(undoPoint, s);
                 s.source = undoFile;
             }
-            code.resetAddresses();            
+            code.resetAddressesAndFlow();            
             return false;
         }
 
@@ -1086,7 +1086,7 @@ public class CodeReorganizer implements MDLWorker {
         jump.type = CodeStatement.STATEMENT_NONE;
         jump.comment = "; " + jump.sl.line + "  ; -mdl";
         jump.op = null;
-        code.resetAddresses();
+        code.resetAddressesAndFlow();
         
         savings.addSavings(bytesSaved, timeSaved);
         savings.addOptimizerSpecific(SAVINGS_REORGANIZATIONS_CODE, 1);
@@ -1254,7 +1254,7 @@ public class CodeReorganizer implements MDLWorker {
                     }
                     savings.addSavings(bytesSaved, new int[]{timeSaved});
                     savings.addOptimizerSpecific(SAVINGS_REORGANIZATIONS_CODE, 1);
-                    code.resetAddresses();
+                    code.resetAddressesAndFlow();
                 }
             }
         }        

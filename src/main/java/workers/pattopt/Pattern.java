@@ -724,12 +724,12 @@ public class Pattern {
                 if (!match.map.containsKey(idx)) return false;
                 for(int i = 1;i<constraint.args.length;i++) {
                     String reg = constraint.args[i];
-                    Boolean result = regNotUsedAfter(match.map.get(idx).get(match.map.get(idx).size()-1), reg, f, code);
+                    Boolean result = regUsedAfter(match.map.get(idx).get(match.map.get(idx).size()-1), reg, f, code);
                     if (result == null) {
                         maybeLogOptimization(match, pbo, f.getStatements().get(index_to_display_message_on).sl);
                         return false;
                     } else {
-                        if (!result) return false;
+                        if (result) return false;
                     }
                 }
                 break;
@@ -741,12 +741,12 @@ public class Pattern {
                 for(int i = 1;i<constraint.args.length;i++) {
                     String flag = constraint.args[i].replace(" ", "");   // this is because the P/V flag, otherwise, it's generated as "P / V" and there is no match
 
-                    Boolean result = flagNotUsedAfter(match.map.get(idx).get(match.map.get(idx).size()-1), flag, f, code);
+                    Boolean result = flagUsedAfter(match.map.get(idx).get(match.map.get(idx).size()-1), flag, f, code);
                     if (result == null) {
                         maybeLogOptimization(match, pbo, f.getStatements().get(index_to_display_message_on).sl);
                         return false;
                     } else {
-                        if (!result) return false;
+                        if (result) return false;
                     }
                 }
                 break;
@@ -931,7 +931,7 @@ public class Pattern {
                 for(int i = 1;i<constraint.args.length;i++) {
                     String reg = constraint.args[i];
                     for(CodeStatement s:statements) {
-                        if (!regNotModified(s, reg, f, code)) {
+                        if (regModified(s, reg, f, code)) {
                             return false;
                         }
                     }
@@ -953,7 +953,7 @@ public class Pattern {
                 for(int i = 1;i<constraint.args.length;i++) {
                     String reg = constraint.args[i];
                     for(CodeStatement s:statements) {
-                        if (!regNotModified(s, reg, f, code)) {
+                        if (regModified(s, reg, f, code)) {
                             return true;
                         }
                     }
@@ -973,7 +973,7 @@ public class Pattern {
                 for(int i = 1;i<constraint.args.length;i++) {
                     String flag = constraint.args[i];
                     for(CodeStatement s:statements) {
-                        if (!flagNotModified(s, flag, f, code)) {
+                        if (flagModified(s, flag, f, code)) {
                             return false;
                         }
                     }
@@ -994,7 +994,7 @@ public class Pattern {
                 for(int i = 1;i<constraint.args.length;i++) {
                     String reg = constraint.args[i];
                     for(CodeStatement s:statements) {
-                        if (!regNotUsed(s, reg, f, code)) {
+                        if (regUsed(s, reg, f, code)) {
                             return false;
                         }
                     }
@@ -1015,7 +1015,7 @@ public class Pattern {
                 for(int i = 1;i<constraint.args.length;i++) {
                     String flag = constraint.args[i];
                     for(CodeStatement s:statements) {
-                        if (!flagNotUsed(s, flag, f, code)) {
+                        if (flagUsed(s, flag, f, code)) {
                             return false;
                         }
                     }
@@ -1449,7 +1449,7 @@ public class Pattern {
         int previousLength = equalitiesToMaintain.size();
         equalitiesToMaintain.addAll(match.newEqualities);
         
-        code.resetAddresses();
+        code.resetAddressesAndFlow();
         
         // Check the equalities:
         // config.debug("Checking " + equalitiesToMaintain.size() + " equalities!");
@@ -1466,7 +1466,7 @@ public class Pattern {
         // If the pattern increased the size of the program:
         if (!undoOptimization && getSpaceSaving(match, code) < 0) {
             // Check all relative jumps are still within reach:
-            code.resetAddresses();
+            code.resetAddressesAndFlow();
             if (code.checkRelativeJumpsInRange() != null) {
                 undoOptimization = true;
             }                
@@ -1489,7 +1489,7 @@ public class Pattern {
             } else {
                 config.debug("Optimization undone, as it was breaking a relative jump.");
             }
-            code.resetAddresses();
+            code.resetAddressesAndFlow();
             return false;            
         }
                 
@@ -1497,7 +1497,7 @@ public class Pattern {
     }
 
 
-    public static boolean regNotModified(CodeStatement s, String reg, SourceFile f, CodeBase code)
+    public static boolean regModified(CodeStatement s, String reg, SourceFile f, CodeBase code)
     {
         CPUOpDependency dep = new CPUOpDependency(reg.toUpperCase(), null, null, null, null);        
         if (s.type == CodeStatement.STATEMENT_CPUOP) {
@@ -1506,18 +1506,18 @@ public class Pattern {
                 // It's hard to tell where is this instruction going to jump,
                 // so we act conservatively, and block the optimization:
                 // config.trace("    ret!");
-                return false;
+                return true;
             }
             
             CPUOpDependency dep2 = op.checkOutputDependency(dep);
-            return dep.equals(dep2);
+            return !dep.equals(dep2);
         } else {
-            return true;
+            return false;
         }
     }
     
     
-    public boolean flagNotModified(CodeStatement s, String flag, SourceFile f, CodeBase code)
+    public boolean flagModified(CodeStatement s, String flag, SourceFile f, CodeBase code)
     {
         CPUOpDependency dep = new CPUOpDependency(null, flag.toUpperCase(), null, null, null);        
         if (s.type == CodeStatement.STATEMENT_CPUOP) {
@@ -1526,18 +1526,18 @@ public class Pattern {
                 // It's hard to tell where is this instruction going to jump,
                 // so we act conservatively, and block the optimization:
                 // config.trace("    ret!");
-                return false;
+                return true;
             }
             
             CPUOpDependency dep2 = op.checkOutputDependency(dep);
-            return dep.equals(dep2);
+            return !dep.equals(dep2);
         } else {
-            return true;
+            return false;
         }
     }    
     
 
-    public static boolean regNotUsed(CodeStatement s, String reg, SourceFile f, CodeBase code)
+    public static boolean regUsed(CodeStatement s, String reg, SourceFile f, CodeBase code)
     {
         CPUOpDependency dep = new CPUOpDependency(reg.toUpperCase(), null, null, null, null);        
         if (s.type == CodeStatement.STATEMENT_CPUOP) {
@@ -1546,17 +1546,17 @@ public class Pattern {
                 // It's hard to tell where is this instruction going to jump,
                 // so we act conservatively, and block the optimization:
                 // config.trace("    ret!");
-                return false;
+                return true;
             }
             
-            return !op.checkInputDependency(dep);
+            return op.checkInputDependency(dep);
         } else {
-            return true;
+            return false;
         }
     }
     
     
-    public boolean flagNotUsed(CodeStatement s, String flag, SourceFile f, CodeBase code)
+    public boolean flagUsed(CodeStatement s, String flag, SourceFile f, CodeBase code)
     {
         CPUOpDependency dep = new CPUOpDependency(null, flag.toUpperCase(), null, null, null);        
         if (s.type == CodeStatement.STATEMENT_CPUOP) {
@@ -1565,33 +1565,33 @@ public class Pattern {
                 // It's hard to tell where is this instruction going to jump,
                 // so we act conservatively, and block the optimization:
                 // config.trace("    ret!");
-                return false;
+                return true;
             }
             
-            return !op.checkInputDependency(dep);
+            return op.checkInputDependency(dep);
         } else {
-            return true;
+            return false;
         }
     }    
     
     
-    public static Boolean regNotUsedAfter(CodeStatement s, String reg, SourceFile f, CodeBase code)
+    public static Boolean regUsedAfter(CodeStatement s, String reg, SourceFile f, CodeBase code)
     {
         CPUOpDependency dep = new CPUOpDependency(reg.toUpperCase(), null, null, null, null);
-        return depNotUsedAfter(s, dep, f, code);
+        return depUsedAfter(s, dep, f, code);
     }
 
 
-    public static Boolean flagNotUsedAfter(CodeStatement s, String flag, SourceFile f, CodeBase code)
+    public static Boolean flagUsedAfter(CodeStatement s, String flag, SourceFile f, CodeBase code)
     {
         CPUOpDependency dep = new CPUOpDependency(null, flag.toUpperCase(), null, null, null);
-        return depNotUsedAfter(s, dep, f, code);
+        return depUsedAfter(s, dep, f, code);
     }
 
 
     // - returns true/false if we know for sure the dependency is or not used
     // - returns null when it's unclear
-    public static Boolean depNotUsedAfter(CodeStatement s, CPUOpDependency a_dep, SourceFile f, CodeBase code)
+    public static Boolean depUsedAfter(CodeStatement s, CPUOpDependency a_dep, SourceFile f, CodeBase code)
     {
         List<DepCheckNode> open = new ArrayList<>();
         HashMap<CodeStatement,List<DepCheckNode>> closed = new HashMap<>();
@@ -1600,7 +1600,7 @@ public class Pattern {
             // It's hard to tell where is this instruction going to jump,
             // so we act conservatively, and block the optimization:
             // config.trace("    unclear next statement after " + s);
-            return false;
+            return true;
         }
         for(Pair<CodeStatement, List<CodeStatement>> pair:tmp) {
             DepCheckNode node = new DepCheckNode(pair.getLeft(), a_dep, pair.getRight());
@@ -1618,16 +1618,10 @@ public class Pattern {
 
             if (next.type == CodeStatement.STATEMENT_CPUOP) {
                 CPUOp op = next.op;
-//                if (op.isRet()) {
-//                    // It's hard to tell where is this instruction going to jump,
-//                    // so we act conservatively, and block the optimization:
-//                    // config.trace("    ret!");
-//                    return null;
-//                }
                 if (op.checkInputDependency(dep)) {
                     // dependency is actually used!
                     // config.trace("    dependency found!");
-                    return false;
+                    return true;
                 }
                 dep = op.checkOutputDependency(dep);
 //                if (dep == null) {
@@ -1638,7 +1632,7 @@ public class Pattern {
                        next.type == CodeStatement.STATEMENT_DATA_DOUBLE_WORDS) {
                 // There is either a bug in the program, or some assembler instructions
                 // are coded directly in data statements, assume dependency for safety:
-                return false;
+                return true;
             }
             
             if (dep != null) {
@@ -1685,7 +1679,7 @@ public class Pattern {
             }
         }
         
-        return true;
+        return false;
     }
     
     

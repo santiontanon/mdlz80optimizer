@@ -1,6 +1,7 @@
     org #4000
 
     call f1
+    push af
 loop:
     jr loop
 

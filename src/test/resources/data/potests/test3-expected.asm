@@ -4,7 +4,7 @@
 	ld a, (value)
 	cp 1
 	call z, function1
-	ld a, 2
+	ld a, b
 	ld (value), a
 __mdlrenamed__end:
 	jr __mdlrenamed__end

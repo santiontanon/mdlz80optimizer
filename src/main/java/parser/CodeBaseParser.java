@@ -109,7 +109,7 @@ public class CodeBaseParser {
             }
         }        
 
-        code.resetAddresses();
+        code.resetAddressesAndFlow();
         
         // Expand all macros that were not expanded initially:
         if (!expandAllMacros(code)) {
@@ -444,7 +444,7 @@ public class CodeBaseParser {
                 }
 
                 // We need to reset the addresses, as when we expand a macro, these can all change!
-                code.resetAddresses();
+                code.resetAddressesAndFlow();
 
                 // Parse the new lines (which could, potentially contain other macros, to be expanded later):
                 while(true) {
@@ -498,7 +498,7 @@ public class CodeBaseParser {
 
         if (n_expanded > 0) {
             // resolve local labels again for all the new lines:
-            code.resetAddresses();
+            code.resetAddressesAndFlow();
             for(CodeStatement s:f.getStatements()) {
                 s.resolveLocalLabels(code);
             }
@@ -611,7 +611,7 @@ public class CodeBaseParser {
             config.warn("Safety: creating an auxiliary label for the jump in " + s.sl);
         }
 
-        code.resetAddresses();
+        code.resetAddressesAndFlow();
         Expression destination = s.op.getTargetJumpExpression();
         CodeStatement current = s;
         Integer targetAddress = destination.evaluateToInteger(s, code, true);

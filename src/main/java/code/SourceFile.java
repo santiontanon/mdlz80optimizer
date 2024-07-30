@@ -195,21 +195,40 @@ public class SourceFile {
 //                    return null;
 //                }
                 if (s.op.isRet()) {
-                    if (callStack != null && !callStack.isEmpty()) {
-                        CodeStatement target = callStack.get(callStack.size()-1);
-                        if (target != null) {
-                            List<CodeStatement> newCallStack = new ArrayList<>();
-                            for(int i = 0;i<callStack.size()-1;i++) {
-                                newCallStack.add(callStack.get(i));
+                    if (callStack != null) {
+                        if (!callStack.isEmpty()) {
+                            CodeStatement target = callStack.get(callStack.size()-1);
+                            if (target != null) {
+                                List<CodeStatement> newCallStack = new ArrayList<>();
+                                for(int i = 0;i<callStack.size()-1;i++) {
+                                    newCallStack.add(callStack.get(i));
+                                }
+                                List<Pair<CodeStatement, List<CodeStatement>>> next = new ArrayList<>();
+                                next.add(Pair.of(target, newCallStack));
+                                if (s.op.isConditional()) {
+                                    next.addAll(immediatelyNextExecutionStatements(index, callStack, code));
+                                }
+                                return next;
                             }
-                            List<Pair<CodeStatement, List<CodeStatement>>> next = new ArrayList<>();
-                            next.add(Pair.of(target, newCallStack));
-                            if (s.op.isConditional()) {
-                                next.addAll(immediatelyNextExecutionStatements(index, callStack, code));
+                        } else {
+                            // Check if we have this ret in the execution flow table:
+                            List<ExecutionFlowAnalysis.StatementTransition> destinations = code.getStatementPossibleDestinations(s);
+                            if (destinations != null) {
+                                List<Pair<CodeStatement, List<CodeStatement>>> next = new ArrayList<>();
+                                List<CodeStatement> newCallStack = new ArrayList<>();
+                                for(int i = 0;i<callStack.size()-1;i++) {
+                                    newCallStack.add(callStack.get(i));
+                                }
+                                for(ExecutionFlowAnalysis.StatementTransition t: destinations) {
+                                    if (t.transitionType == ExecutionFlowAnalysis.StatementTransition.POP_RET_TRANSITION) {
+                                        next.add(Pair.of(t.s, newCallStack));                            
+                                    }
+                                }
+                                return next;
                             }
-                            return next;
                         }
                     }
+                    
                     // we don't know where are we going to jump to:
                     return null;
                 }

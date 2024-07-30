@@ -573,7 +573,7 @@ public class SearchBasedOptimizer implements MDLWorker {
                 try {
                     if (optimizeStartingFromLine(f, i, knownRegisterValues, code, r)) {
                         i = Math.max(-1, i-2);   // go back a couple of statements, as more optimizations might chain
-                        code.resetAddresses();
+                        code.resetAddressesAndFlow();
                         registersUsedAfter_previous = null;
                         
                         // Reset known values after optimization just in case:
@@ -610,7 +610,7 @@ public class SearchBasedOptimizer implements MDLWorker {
             if (done) break;
         }
         
-        code.resetAddresses();
+        code.resetAddressesAndFlow();
 
         Integer noptimizations = r.optimizerSpecificStats.get(SBO_RESULT_KEY);
         if (noptimizations == null) noptimizations = 0;
@@ -1245,7 +1245,7 @@ public class SearchBasedOptimizer implements MDLWorker {
             String regName = CPUConstants.registerName(reg);
             CPUOpDependency dep = new CPUOpDependency(regName.toUpperCase(), null, null, null, null);        
             for(CodeStatement s:l) {
-                if (!Pattern.regNotUsed(s, regName, f, code)) {
+                if (Pattern.regUsed(s, regName, f, code)) {
                     registers.add(reg);
                     break;
                 }
@@ -1266,7 +1266,7 @@ public class SearchBasedOptimizer implements MDLWorker {
         
         for(RegisterNames reg:CPUConstants.allRegisters) {
             for(CodeStatement s:l) {
-                if (!Pattern.regNotModified(s, CPUConstants.registerName(reg), f, code)) {
+                if (Pattern.regModified(s, CPUConstants.registerName(reg), f, code)) {
                     registers.add(reg);
                     break;
                 }
@@ -1293,8 +1293,8 @@ public class SearchBasedOptimizer implements MDLWorker {
                     continue;
                 }
                 CodeStatement s = l.get(l.size()-1);
-                Boolean notUsed = Pattern.regNotUsedAfter(s, CPUConstants.registerName(reg), f, code);
-                if (notUsed == null || notUsed == false) {
+                Boolean used = Pattern.regUsedAfter(s, CPUConstants.registerName(reg), f, code);
+                if (used == null || used == true) {
                     registers.add(reg);
                 }
             }
@@ -1324,8 +1324,8 @@ public class SearchBasedOptimizer implements MDLWorker {
                 }
                 if (check) {
                     CodeStatement s = l.get(l.size()-1);
-                    Boolean notUsed = Pattern.regNotUsedAfter(s, CPUConstants.registerName(reg), f, code);
-                    if (notUsed == null || notUsed == false) used = true;
+                    Boolean used2 = Pattern.regUsedAfter(s, CPUConstants.registerName(reg), f, code);
+                    if (used2 == null || used2 == true) used = true;
 //                } else {
 //                    // DEBUG (to ensure using the cache is identical to calculating from scratch):
 //                    CodeStatement s = l.get(l.size()-1);
@@ -1375,9 +1375,9 @@ public class SearchBasedOptimizer implements MDLWorker {
                                     CPUConstants.flag_Z, CPUConstants.flag_S}) {
 //            for(CodeStatement s:l) {
                 CodeStatement s = l.get(l.size()-1);
-                Boolean notUsed = Pattern.flagNotUsedAfter(s, CPUConstants.flagName(flag), f, code);
+                Boolean used = Pattern.flagUsedAfter(s, CPUConstants.flagName(flag), f, code);
 //                System.out.println("    flag: " + CPUConstants.flagName(flag) + ": " + notUsed);
-                if (notUsed == null || notUsed == false) {
+                if (used == null || used == true) {
                     flags.add(flag);
 //                    break;
                 }

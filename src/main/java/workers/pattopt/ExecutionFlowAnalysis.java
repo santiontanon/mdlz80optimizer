@@ -97,7 +97,7 @@ public class ExecutionFlowAnalysis {
     HashMap<CodeStatement, List<StatementTransition>> reverseTable = null;
     HashSet<CodeStatement> statementsWithExportedLabels = null;
     HashSet<CodeStatement> statementsInsideJumpTables = null;
-    // HashMap<CodeStatement, List<Expression>> statementsThatCallJumpTableJump = new HashMap<>();
+    HashMap<CodeStatement, List<Expression>> statementsThatCallJumpTableJump = new HashMap<>();
     
     boolean stop_analysis_on_untracked_rst = false;
         
@@ -117,17 +117,22 @@ public class ExecutionFlowAnalysis {
     }
 
 
-    public List<StatementTransition> nextOpExecutionStatements(CodeStatement s)
+    /*
+    - Returns the possible next statements executed after a given one
+    - if we have "call/rst" statements, the "next" statements would be the 
+      ones being called (not the ones we will return to after the call)
+    */
+    public List<StatementTransition> nextOpExecutionStatements(CodeStatement s, List<CodeStatement> stack)
     {
-        return nextOpExecutionStatements(s.source.getStatements().indexOf(s), s.source);
+        return nextOpExecutionStatements(s.source.getStatements().indexOf(s), s.source, stack);
     }
     
     
-    public List<StatementTransition> nextOpExecutionStatements(int index, SourceFile f)
+    public List<StatementTransition> nextOpExecutionStatements(int index, SourceFile f,  List<CodeStatement> stack)
     {
         CodeStatement a_s = f.getStatements().get(index);
         List<StatementTransition> open = new ArrayList<>();
-        List<Pair<CodeStatement, List<CodeStatement>>> next = f.nextExecutionStatements(index, true, new ArrayList<>(), code);
+        List<Pair<CodeStatement, List<CodeStatement>>> next = f.nextExecutionStatements(index, true, stack, code);
         if (next == null && a_s.op != null && a_s.op.isJump()) {
             next = identifyRegisterJumpTargetLocations(a_s);
         }
@@ -136,14 +141,19 @@ public class ExecutionFlowAnalysis {
         List<StatementTransition> nextOpStatements = new ArrayList<>();
         for(Pair<CodeStatement, List<CodeStatement>> tmp:next) {
             if (a_s.op != null) {
-                if ((a_s.op.isPop() || a_s.op.isRet())) {
+                if (a_s.op.isPop()) {
+                    open.add(new StatementTransition(tmp.getLeft(), StatementTransition.POP_RET_TRANSITION, null));
+                } else if (a_s.op.isRet() && tmp.getRight().size() < stack.size()) {
                     open.add(new StatementTransition(tmp.getLeft(), StatementTransition.POP_RET_TRANSITION, null));
                 } else if (tmp.getRight() == null) {
                     open.add(new StatementTransition(tmp.getLeft(), StatementTransition.NON_STANDARD_STACK_TRANSITION, null));
-                } else if (tmp.getRight().isEmpty()) {
+                } else if (tmp.getRight().size() == stack.size()) {
                     open.add(new StatementTransition(tmp.getLeft(), StatementTransition.STANDARD_TRANSITION, null));
-                } else {
+                } else if (tmp.getRight().size() > stack.size()) {
                     open.add(new StatementTransition(tmp.getLeft(), StatementTransition.PUSH_CALL_TRANSITION, tmp.getRight().get(0)));
+                } else {
+                    config.error("Something went wrong in ExecutionFlowAnalysis.nextOpExecutionStatements. Please report this bug.");
+                    return null;
                 }
             } else if (a_s.type == CodeStatement.STATEMENT_NONE) {
                 open.add(new StatementTransition(tmp.getLeft(), StatementTransition.STANDARD_TRANSITION, null));
@@ -176,78 +186,51 @@ public class ExecutionFlowAnalysis {
         forwardTable = new HashMap<>();
         reverseTable = new HashMap<>();
         statementsInsideJumpTables = new HashSet<>();
+        // Some statements cannot be resolved until the end:
+        List<Pair<SourceFile, Integer>> jumpToRegisterStatementsToCheckAtTheEnd = new ArrayList<>();
         
         for(SourceFile f:code.getSourceFiles()) {
             for(int i = 0;i<f.getStatements().size();i++) {
                 if (f.getStatements().get(i).op != null) {
                     CodeStatement s_i = f.getStatements().get(i);
                     if (s_i.op.isRet()) continue;
-                    List<StatementTransition> next = nextOpExecutionStatements(i, f);
+                    List<StatementTransition> next = nextOpExecutionStatements(i, f, new ArrayList<>());
                     if (next == null) {
                         if (s_i.op.isRst()) {
                             if (!stop_analysis_on_untracked_rst) {
                                 continue;
                             }
                         }
-                        config.error("Cannot determine the next statements after: " + s_i);
-                        return null;
-                    }
-                    forwardTable.put(s_i, next);
-                    for(StatementTransition st:next) {
-                        if (!reverseTable.containsKey(st.s)) {
-                            reverseTable.put(st.s, new ArrayList<>());
-                        }
-                        StatementTransition s_i_transition = new StatementTransition(s_i, st.transitionType, st.valuePushed);
-                        if (!reverseTable.get(st.s).contains(s_i_transition)) {
-                            reverseTable.get(st.s).add(s_i_transition);
-                        }
-                    }
-                    if ((s_i.op.isCall() || s_i.op.isRst()) && !s_i.op.isConditional()) {
-                        // Since "rets" are ignored, there is no way for the
-                        // analyzer to know how to get to the statement right
-                        // after a inconditional call/rst. So, we hardcode it here:
-                        CodeStatement s_i_next = s_i.source.getNextStatementTo(s_i, code);
-                        s_i_next = getFirstOpStatement(s_i_next);
-                        if (s_i_next != null) {
-                            if (!reverseTable.containsKey(s_i_next)) {
-                                reverseTable.put(s_i_next, new ArrayList<>());
-                            }
-                            StatementTransition s_i_transition = new StatementTransition(s_i, StatementTransition.POST_CALL_TRANSITION, null);
-                            if (!reverseTable.get(s_i_next).contains(s_i_transition)) {
-                                reverseTable.get(s_i_next).add(s_i_transition);
-                            }
+                        if (s_i.op.isJumpToRegister()) {
+                            jumpToRegisterStatementsToCheckAtTheEnd.add(Pair.of(f, i));
                         } else {
-                            // TODO: This code is WIP to handle test case "test13b" in ExecutionFlowTest
-                            /*
-                            // See if this is a call to a function that implements a jump table with addresses
-                            // immediately after with a series of "dw" statements:
-                            s_i_next = s_i.source.getNextStatementTo(s_i, code);
-                            while(s_i_next != null && s_i_next.isEmptyAllowingComments()) {
-                                s_i_next = s_i.source.getNextStatementTo(s_i, code);
-                            }
-                            List<Expression> tableAddresses = detectCallToJumpTableJump(s_i, s_i_next, code);
-                            if (tableAddresses != null) {
-                                statementsThatCallJumpTableJump.put(s_i, tableAddresses);
-                            } else {
-                            */
-                                config.debug("generateForwardAndReverseTables: failed to find the next op after " + s_i.fileNameLineString());                            
-                            // }
+                            config.error("Cannot determine the next statements after: " + s_i);
+                            return null;
                         }
-                    } else if (s_i.op.isJump() && !s_i.op.isConditional()) {
-                        // See if this is a "call to register" (ld reg, address; push reg; jp ...)
-                        CodeStatement retDestination = callToRegisterReturnAddress(s_i);
-                        if (retDestination != null) {
-                            config.debug("generateForwardAndReverseTables: 'call to register' ("+s_i+") return statement: " + retDestination);
-                            if (!reverseTable.containsKey(retDestination)) {
-                                reverseTable.put(retDestination, new ArrayList<>());
-                            }
-                            StatementTransition s_i_transition = new StatementTransition(s_i, StatementTransition.POST_CALL_TO_REGISTERTRANSITION, null);
-                            if (!reverseTable.get(retDestination).contains(s_i_transition)) {
-                                reverseTable.get(retDestination).add(s_i_transition);
-                            }
+                    } else {
+                        if (!generateForwardAndReverseTablesForStatement(s_i, next)) {
+                            return null;
                         }
                     }
                 }
+            }
+        }
+        
+        for(Pair<SourceFile, Integer> f_i:jumpToRegisterStatementsToCheckAtTheEnd) {
+            SourceFile f = f_i.getLeft();
+            int i = f_i.getRight();
+            CodeStatement s_i = f.getStatements().get(i);
+            List<StatementTransition> next = nextOpExecutionStatements(i, f, null);
+            if (next == null) {
+                next = forwardTable.get(s_i);
+            }
+            if (next == null) {
+                config.error("Cannot determine the next statements after: " + s_i);
+                return null;
+//            } else {
+//                if (!generateForwardAndReverseTablesForStatement(s_i, next)) {
+//                    return null;
+//                }
             }
         }
         
@@ -278,6 +261,126 @@ public class ExecutionFlowAnalysis {
         }
         */
         return Pair.of(forwardTable, reverseTable);
+    }
+                
+                
+    public boolean generateForwardAndReverseTablesForStatement(CodeStatement s_i, List<StatementTransition> next)
+    {
+        forwardTable.put(s_i, next);
+        for(StatementTransition st:next) {
+            if (!reverseTable.containsKey(st.s)) {
+                reverseTable.put(st.s, new ArrayList<>());
+            }
+            StatementTransition s_i_transition = new StatementTransition(s_i, st.transitionType, st.valuePushed);
+            if (!reverseTable.get(st.s).contains(s_i_transition)) {
+                reverseTable.get(st.s).add(s_i_transition);
+            }
+        }
+        if ((s_i.op.isCall() || s_i.op.isRst()) && !s_i.op.isConditional()) {
+            // Since "rets" are ignored, there is no way for the
+            // analyzer to know how to get to the statement right
+            // after a inconditional call/rst. So, we hardcode it here:
+            CodeStatement s_i_next = s_i.source.getNextStatementTo(s_i, code);
+            s_i_next = getFirstOpStatement(s_i_next);
+            if (s_i_next != null) {
+                if (!reverseTable.containsKey(s_i_next)) {
+                    reverseTable.put(s_i_next, new ArrayList<>());
+                }
+                StatementTransition s_i_transition = new StatementTransition(s_i, StatementTransition.POST_CALL_TRANSITION, null);
+                if (!reverseTable.get(s_i_next).contains(s_i_transition)) {
+                    reverseTable.get(s_i_next).add(s_i_transition);
+                }
+            } else {
+                // See if this is a call to a function that implements a jump table with addresses
+                // immediately after with a series of "dw" statements:
+                s_i_next = s_i.source.getNextStatementTo(s_i, code);
+                while(s_i_next != null && s_i_next.isEmptyAllowingComments()) {
+                    s_i_next = s_i.source.getNextStatementTo(s_i, code);
+                }
+                Pair<List<Expression>, List<CodeStatement>> addresses_jps = detectCallToJumpTableJump(s_i, s_i_next, code);
+                if (addresses_jps != null) {
+                    List<Expression> tableAddresses = addresses_jps.getLeft();
+                    List<CodeStatement> finaljps = addresses_jps.getRight();
+                    List<CodeStatement> statementsCorrespondingToAddresses = new ArrayList<>();
+                    statementsThatCallJumpTableJump.put(s_i, tableAddresses);
+                    config.debug("rets of " + tableAddresses + " will return to post call of caller of " + s_i.fileNameLineString());
+
+                    // We now know that the ret statements in the functions pointed by "tableAddresses"
+                    // will return to the post_call_transition of the caller of s_i.
+                    for(Expression exp:tableAddresses) {
+                        if (exp.type == Expression.EXPRESSION_SYMBOL) {
+                            SourceConstant cc = code.getSymbol(exp.symbolName);
+                            CodeStatement cc_s = cc.definingStatement;
+                            cc_s = getFirstOpStatement(cc_s);
+                            if (cc_s != null) {
+                                statementsCorrespondingToAddresses.add(cc_s);
+                            }
+                        } else {
+                            config.debug("jump table contains a non-label expression, not yet supported");
+                            return false;
+                        }
+                    }
+
+                    // Set the candidate jump labels of the "jp (hl/ix)" statements:
+                    for(CodeStatement jp:finaljps) {
+                        for(CodeStatement destination:statementsCorrespondingToAddresses) {
+                            StatementTransition jp_transition = new StatementTransition(destination, StatementTransition.STANDARD_TRANSITION, null);
+                            StatementTransition reverse_transition = new StatementTransition(jp, StatementTransition.STANDARD_TRANSITION, null);
+                            if (!forwardTable.containsKey(jp)) {
+                                forwardTable.put(jp, new ArrayList<>());
+                            }
+                            if (!forwardTable.get(jp).contains(jp_transition)) {
+                                forwardTable.get(jp).add(jp_transition);
+                            }                                        
+                            if (!reverseTable.containsKey(destination)) {
+                                reverseTable.put(destination, new ArrayList<>());
+                            }
+                            if (!reverseTable.get(destination).contains(reverse_transition)) {
+                                reverseTable.get(destination).add(reverse_transition);
+                            }                                        
+                        }
+                    }
+
+                    // Set add the destinations of the ret statements to the reverse table:
+//                                for(StatementTransition t: reverseTable.get(s_i)) {
+//                                    CodeStatement caller_to_jump_table = t.s;
+//                                    if (t.s.op != null && t.s.op.isCall()) {
+//                                        for(StatementTransition t2:forwardTable.get(caller_to_jump_table)) {
+//                                            if (t2.transitionType == StatementTransition.POST_CALL_TRANSITION) {
+//                                                if (!reverseTable.containsKey(t2.s)) {
+//                                                    reverseTable.put(t2.s, new ArrayList<>());
+//                                                }
+//                                                // ret_transition: ...
+//                                                if (!reverseTable.get(t2.s).contains(ret_transition)) {
+//                                                    reverseTable.get(t2.s).add(ret_transition);
+//                                                }
+//                                            }
+//                                        }
+//                                    } else {
+//                                        config.debug("entry to the 'call to jump_table' method was not a call: not supported.");
+//                                        return null;
+//                                    }
+//                                }
+
+                } else {
+                    config.debug("generateForwardAndReverseTables: failed to find the next op after " + s_i.fileNameLineString());
+                }
+            }
+        } else if (s_i.op.isJump() && !s_i.op.isConditional()) {
+            // See if this is a "call to register" (ld reg, address; push reg; jp ...)
+            CodeStatement retDestination = callToRegisterReturnAddress(s_i);
+            if (retDestination != null) {
+                config.debug("generateForwardAndReverseTables: 'call to register' ("+s_i+") return statement: " + retDestination);
+                if (!reverseTable.containsKey(retDestination)) {
+                    reverseTable.put(retDestination, new ArrayList<>());
+                }
+                StatementTransition s_i_transition = new StatementTransition(s_i, StatementTransition.POST_CALL_TO_REGISTERTRANSITION, null);
+                if (!reverseTable.get(retDestination).contains(s_i_transition)) {
+                    reverseTable.get(retDestination).add(s_i_transition);
+                }
+            }
+        }   
+        return true;
     }
                 
                 
@@ -318,7 +421,9 @@ public class ExecutionFlowAnalysis {
         generateForwardAndReverseTables();
         
         if (forwardTable.containsKey(s)) return forwardTable.get(s);
-        if (!reverseTable.containsKey(s)) return null;
+        if (!reverseTable.containsKey(s)) {
+            return null;
+        }
         if (isExported(s)) {
             config.debug("An exported label was crossed, canceling analysis of ret: " + s.fileNameLineString());
             return null;
@@ -345,6 +450,7 @@ public class ExecutionFlowAnalysis {
                 config.debug("An exported label was crossed, canceling analysis of ret: " + s.fileNameLineString());
                 return null;
             }
+            closed.add(efn2);
             // Apply the transition to the ExecutionFlowNode:
             efn2.s = st2.s;
             boolean keepGoing = false;
@@ -358,7 +464,7 @@ public class ExecutionFlowAnalysis {
                             if (s2_next != null) {
                                 if (s2_next.op == null) {
                                     // Find the next op:
-                                    List<StatementTransition> s2_next_op_l = nextOpExecutionStatements(s2_next);
+                                    List<StatementTransition> s2_next_op_l = nextOpExecutionStatements(s2_next, null);
                                     if (s2_next_op_l == null || s2_next_op_l.size() > 1) {
                                         config.error("findRetDestinations: failed to find the next op after " + s.fileNameLineString());
                                     } else {
@@ -434,7 +540,7 @@ public class ExecutionFlowAnalysis {
                         if (s.op != null) {
                             statementsWithExportedLabels.add(s);
                         } else {
-                            List<StatementTransition> s_next_op_l = nextOpExecutionStatements(s);
+                            List<StatementTransition> s_next_op_l = nextOpExecutionStatements(s, null);
                             if (s_next_op_l != null) {
                                 for(StatementTransition st:s_next_op_l) {
                                     statementsWithExportedLabels.add(st.s);
@@ -461,7 +567,8 @@ public class ExecutionFlowAnalysis {
     */
     public List<Pair<CodeStatement, List<CodeStatement>>> identifyRegisterJumpTargetLocations(CodeStatement s)
     {
-        if (s.op == null || !s.op.isJump()) return null;
+        List<Pair<CodeStatement, List<CodeStatement>>> destinations = new ArrayList<>();
+        if (s.op == null || !s.op.isJumpToRegister()) return null;
         String register = null;
         {
             Expression arg = s.op.args.get(0);
@@ -473,6 +580,14 @@ public class ExecutionFlowAnalysis {
             }
         }
         if (register == null) return null;
+        
+        if (forwardTable.containsKey(s)) {
+            // We have already computed this before:
+            for(StatementTransition t:forwardTable.get(s)) {
+                destinations.add(Pair.of(t.s, new ArrayList<>()));
+            }
+            return destinations;
+        }
         
         // It is a potential jump table based jump:
         config.debug("identifyRegisterJumpTargetLocations: " + s);
@@ -616,7 +731,6 @@ public class ExecutionFlowAnalysis {
         // jp label1; nop; jp label2; nop; jp label3; ...
         HashSet<CodeStatement> statementsInsideThisJumpTable = new HashSet<>();
         List<CodeStatement> stack = new ArrayList<>();
-        List<Pair<CodeStatement, List<CodeStatement>>> destinations = new ArrayList<>();
         String jump_table_style = null;  // "dw", "jp", "jp-nop"
         int state = 0;
         for(CodeStatement jumpTable:jumpTables) {
@@ -705,7 +819,7 @@ public class ExecutionFlowAnalysis {
     
     CodeStatement getFirstOpStatement(CodeStatement s) {
         if (s.op != null) return s;
-        List<StatementTransition> s_l = nextOpExecutionStatements(s);
+        List<StatementTransition> s_l = nextOpExecutionStatements(s, null);
         if (s_l == null || s_l.size() != 1) {
             return null;
         } else {
@@ -824,15 +938,16 @@ public class ExecutionFlowAnalysis {
         return null;
     }
     
-    // TODO: This code is WIP to handle test case "test13b" in ExecutionFlowTest
-    /*
-    // Returns possible jump targets in the jump table
-    public List<Expression> detectCallToJumpTableJump(CodeStatement call, CodeStatement table, CodeBase code)
+    // Returns:
+    // - possible jump targets in the jump table
+    // - list of jp hl/ix statements
+    public Pair<List<Expression>, List<CodeStatement>> detectCallToJumpTableJump(CodeStatement call, CodeStatement table, CodeBase code)
     {
         config.debug("detectCallToJumpTableJump: '"+call+"', '"+table+"'");
         // Get the table addresses:
         if (table.data == null || table.type != CodeStatement.STATEMENT_DATA_WORDS) return null;
         List<Expression> tableAddresses = new ArrayList<>();
+        List<CodeStatement> jpToRegisterStatements = new ArrayList<>();
         while(table != null && table.data != null && table.type == CodeStatement.STATEMENT_DATA_WORDS) {
             tableAddresses.addAll(table.data);
             table = table.source.getNextStatementTo(table, code);
@@ -847,45 +962,90 @@ public class ExecutionFlowAnalysis {
         // The condition should be that:
         // - all possible paths have at least one "pop hl" (without any other unpaired stack operation) and end in a "jp hl"
         // - there are no loops
-        List<List<CodeStatement>> open = new ArrayList<>();
+        List<Pair<List<CodeStatement>, List<CodeStatement>>> open = new ArrayList<>();  // Each element is "path, stack"
         CodeStatement jumpTableJumpFunction = statementValueOfLabelExpression(call.op.getTargetJumpExpression(), code);
         List<CodeStatement> l = new ArrayList<>();
         l.add(jumpTableJumpFunction);
-        open.add(l);
+        open.add(Pair.of(l, new ArrayList<>()));
         while(!open.isEmpty()) {
-            List<CodeStatement> path = open.remove(0);
-            System.out.println(path);
+            Pair<List<CodeStatement>, List<CodeStatement>> path_stack = open.remove(0);
+            List<CodeStatement> path = path_stack.getLeft();
+            List<CodeStatement> stack = path_stack.getRight();
+            config.debug("path: " + path + ", stack: " + stack.size());
             CodeStatement last = path.get(path.size() - 1);
-            List<StatementTransition> next = nextOpExecutionStatements(last);
-            if (next == null) return null;
+            List<StatementTransition> next = nextOpExecutionStatements(last, stack);
+            if (next == null) {
+                config.debug("Cannot determine statement after " + last.fileNameLineString());
+                return null;
+            }
             for(StatementTransition st:next) {
                 // Make sure there are no loops:
-                if (path.contains(st.s)) return null;
+                if (path.contains(st.s)) {
+                    config.debug("Path contains a loop back to " + st.s.fileNameLineString());
+                    return null;
+                }
                 if (st.s.op.isJumpToRegister()) {
-                    // Check that the sequence has 
+                    // Check that the sequence has one pop without other unpaired stack operation:
                     String jumpRegister = st.s.op.getTargetJumpRegister();
                     boolean good = false;
                     for(CodeStatement s:path) {
-                        if (s.op.isRet()) return null;
-                        if (s.op.isPop() && s.op.args.get(0).registerOrFlagName.equals(jumpRegister)) {
+                        if (s.op != null && s.op.isRet()) {
+                            config.debug("Path contains a ret!");
+                            return null;
+                        }
+                        if (s.op != null && s.op.isPop() && s.op.args.get(0).registerOrFlagName.equals(jumpRegister)) {
                             // Path is good!
                             good = true;
                             break;
                         }
                     }
-                    if (!good) return null;
+                    if (!good) {
+                        config.debug("Path does not contain a pop of the jump register!");
+                        return null;
+                    }
+                    jpToRegisterStatements.add(st.s);
                 } else {
                     List<CodeStatement> path2 = new ArrayList<>();
+                    List<CodeStatement> stack2 = new ArrayList<>();
                     path2.addAll(path);
                     path2.add(st.s);
-                    open.add(path2);
+                    stack2.addAll(stack);
+                    switch(st.transitionType) {
+                        case StatementTransition.PUSH_CALL_TRANSITION:
+                            {
+                                CodeStatement last_next = last.source.getNextStatementTo(last, code);
+                                if (last_next == null) {
+                                    config.debug("Cannot determine instruction to be executed after " + last.fileNameLineString());
+                                    return null;
+                                }
+                                last_next = getFirstOpStatement(last_next);
+                                if (last_next == null) {
+                                    config.debug("Cannot determine instruction to be executed after " + last.fileNameLineString());
+                                    return null;
+                                }
+                                config.debug("stack2.add: " + last_next.fileNameLineString());
+                                stack2.add(last_next);
+                            }
+                            break;
+                        case StatementTransition.POP_RET_TRANSITION:
+                            if (!stack2.isEmpty()) {
+                                stack2.remove(stack2.size() - 1);
+                            } else {
+                                // We do not error out here, since this will happen for sure, as we
+                                // will expect a "pop hl/ix" in each path to pop the return address.
+                            }
+                            break;
+                        case StatementTransition.NON_STANDARD_STACK_TRANSITION:
+                            config.debug("Path contains a non standard stack transition!");
+                            return null;
+                    }
+                    open.add(Pair.of(path2, stack2));
                 }
             }
         }
         
         config.debug("detectCallToJumpTableJump verified jumpTableJumpFunction");
 
-        return tableAddresses;
+        return Pair.of(tableAddresses, jpToRegisterStatements);
     }
-    */
 }

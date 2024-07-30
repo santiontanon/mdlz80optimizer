@@ -381,7 +381,7 @@ public class GlassDialect implements Dialect {
             }
         }
         
-        code.resetAddresses();
+        code.resetAddressesAndFlow();
             
         return true;
     }    

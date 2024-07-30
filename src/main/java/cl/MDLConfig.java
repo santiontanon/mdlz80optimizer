@@ -11,6 +11,8 @@ import java.util.List;
 import org.apache.commons.lang3.StringUtils;
 
 import code.CodeBase;
+import code.CodeStatement;
+import java.util.HashMap;
 import parser.CPUOpParser;
 import parser.CPUOpSpecParser;
 import parser.CodeBaseParser;
@@ -21,6 +23,7 @@ import parser.Tokenizer;
 import parser.dialects.Dialect;
 import parser.dialects.Dialects;
 import workers.MDLWorker;
+import workers.pattopt.ExecutionFlowAnalysis;
 
 public class MDLConfig {
     // constants:
@@ -150,7 +153,8 @@ public class MDLConfig {
     public CodeBaseParser codeBaseParser;
     public CPUOpSpecParser opSpecParser;
     public CPUOpParser opParser;
-    
+    public ExecutionFlowAnalysis flowAnalyzer = null;  // will be initialized on demand in CodeBase.java
+        
     List<MDLWorker> workers = new ArrayList<>();
     
     // Accumulated stats to be reported at the end of execution:
