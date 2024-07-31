@@ -30,26 +30,26 @@ a_times_de_signed_fast_000:
     xor a
     ld h, a
     ld l, a
-    ret  ; RET0
+    ret  ; RET0 1
 
 
 a_times_de_signed_fast_001:
     xor a
     ld h, a
     ld l, a
-    ret  ; RET1
+    ret  ; RET1 1
 
 
 a_times_de_signed_fast_002:
     xor a
     ld h, a
     ld l, a
-    ret  ; RET2
+    ret  ; RET2 1
 
 
 a_times_de_signed_fast_003:
     xor a
     ld h, a
     ld l, a
-    ret  ; RET3
+    ret  ; RET3 1
 

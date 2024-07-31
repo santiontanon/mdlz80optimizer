@@ -309,6 +309,11 @@ public class CPUOp {
         return spec.isAdd;
     }
 
+    public boolean isInc()
+    {
+        return spec.isInc;
+    }
+    
     
     public boolean isNop()
     {

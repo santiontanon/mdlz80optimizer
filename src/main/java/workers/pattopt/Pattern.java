@@ -99,7 +99,11 @@ public class Pattern {
             } else if (line.startsWith("name:")) {
                 name = line.substring(5).trim();
             } else if (line.startsWith("tags:")) {
-                tags.addAll(Arrays.asList(line.substring(5).split(" ")));
+                for(String tag:line.substring(5).split(" ")) {
+                    if (!tag.trim().isBlank()) {
+                        tags.add(tag);
+                    }
+                }
             } else if (line.equals("replacement:")) {
                 state = 2;
             } else if (line.equals("constraints:")) {
@@ -451,7 +455,16 @@ public class Pattern {
 
         for(int i = 0;i<pat1.args.size();i++) {
             Expression arg1 = pat1.args.get(i);
-            Expression arg2 = op2.args.get(i);                        
+            Expression arg2 = op2.args.get(i);
+            // Exception for the "jp (hl/ix/iy)" instructions:
+            if (op2.isJumpToRegister()) {
+                if (arg1.type == Expression.EXPRESSION_PARENTHESIS) {
+                    arg1 = arg1.args.get(0);
+                }
+                if (arg2.type == Expression.EXPRESSION_PARENTHESIS) {
+                    arg2 = arg2.args.get(0);
+                }
+            }
             if (!unifyExpressions(arg1, arg2, true, match, s, code)) return false;
         }
 
@@ -489,6 +502,8 @@ public class Pattern {
     
 
     public PatternMatch match(int a_index, SourceFile f, CodeBase code,
+                              boolean matchOptimizationProtectedCode,
+                              boolean allowLabelsWhenMatchingSingleOps,
                               PatternBasedOptimizer pbo)
     {
         int index = a_index;
@@ -512,7 +527,7 @@ public class Pattern {
                     if (index >= l.size()) return null;
                     CodeStatement s = l.get(index);
                     if (i!=0 && s.label != null) return null;
-                    if (code.protectedFromOptimization(s)) return null;
+                    if (!matchOptimizationProtectedCode && code.protectedFromOptimization(s)) return null;
 //                    if (s.comment != null && s.comment.contains(config.PRAGMA_NO_OPTIMIZATION)) return null;
                     if (s.type == CodeStatement.STATEMENT_CPUOP) {
                         PatternMatch matchTmp = new PatternMatch(match);
@@ -543,7 +558,7 @@ public class Pattern {
                     CodeStatement s = l.get(index);
                     if (i!=0 && s.label != null) return null;
                     if (i==0 && s.label != null && count>0) break;
-                    if (code.protectedFromOptimization(s)) return null;
+                    if (!matchOptimizationProtectedCode && code.protectedFromOptimization(s)) return null;
 //                    if (s.comment != null && s.comment.contains(config.PRAGMA_NO_OPTIMIZATION)) return null;
                     if (s.type == CodeStatement.STATEMENT_CPUOP) {
                         if (opMatch(patt, l.get(index).op, l.get(index), code, match)) {
@@ -574,11 +589,18 @@ public class Pattern {
                 while(true) {
                     if (index >= l.size()) return null;
                     CodeStatement s = l.get(index);
-                    if (i!=0 && s.label != null) return null;
-                    if (code.protectedFromOptimization(s)) return null;
-//                    if (s.comment != null && s.comment.contains(config.PRAGMA_NO_OPTIMIZATION)) return null;
+                    if (s.label != null) {
+                        if (i != 0 && !allowLabelsWhenMatchingSingleOps) {
+                            return null;
+                        }
+                    }
+                    if (!matchOptimizationProtectedCode && code.protectedFromOptimization(s)) return null;
                     if (s.type == CodeStatement.STATEMENT_CPUOP) break;
-                    if (!s.isEmptyAllowingComments()) return null;
+                    if (allowLabelsWhenMatchingSingleOps) {
+                        if (s.type != CodeStatement.STATEMENT_NONE) return null;
+                    } else {
+                        if (!s.isEmptyAllowingComments()) return null;
+                    }
                     index++;
                 }
                 if (!opMatch(patt, l.get(index).op, l.get(index), code, match)) return null;
@@ -619,7 +641,8 @@ public class Pattern {
         // Notice we use "pbo.config", since patterns use the default MDL
         // dialect, so, we need to access the pbo config to get the actual 
         // dialect we are currently using:
-        if (pbo.config.dialectParser != null &&
+        if (pbo != null && 
+            pbo.config.dialectParser != null &&
             !pbo.config.dialectParser.safeOptimization(match)) {
             config.debug("  pattern did not match as the dialect reported it to be unsafe");
             return null;

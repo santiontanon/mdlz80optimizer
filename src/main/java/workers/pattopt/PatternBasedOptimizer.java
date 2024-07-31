@@ -13,14 +13,12 @@ import code.CodeBase;
 import code.SourceFile;
 import code.CodeStatement;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import util.Resources;
 import workers.MDLWorker;
-import workers.pattopt.ExecutionFlowAnalysis.StatementTransition;
 
 /**
  *
@@ -347,7 +345,7 @@ public class PatternBasedOptimizer implements MDLWorker {
     public void getMatchesStartingFromLine(SourceFile f, int i, List<PatternMatch> matches, boolean lastPass, CodeBase code)
     {
         for(Pattern patt: patterns) {
-            PatternMatch match = patt.match(i, f, code, this);
+            PatternMatch match = patt.match(i, f, code, false, false, this);
             if (match != null &&
                 preventLabelDependentOptimizations &&
                 match.dependsOnLabelValues(code)) {

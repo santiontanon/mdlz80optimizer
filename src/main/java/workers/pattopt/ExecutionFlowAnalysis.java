@@ -567,253 +567,273 @@ public class ExecutionFlowAnalysis {
     */
     public List<Pair<CodeStatement, List<CodeStatement>>> identifyRegisterJumpTargetLocations(CodeStatement s)
     {
+        List<Pattern> jumpTablePatterns = new ArrayList<>();
+        jumpTablePatterns.add(
+                new Pattern(
+                        "pattern:\n" +
+                        "0: ld hl, ?const_table\n" +
+                        "1: ld ?regpair1l, ?reg1\n" +
+                        "2: ld ?regpair1h, 0\n" +
+                        "3: add ?regjump, ?regpair\n" +
+                        "4: ld ?regpair2, ?const_stack\n" +
+                        "5: push ?regpair2\n" +
+                        "6: jp (?regjump)\n" +
+                        "constraints:\n" +
+                        "in(?regjump,hl,ix,iy)\n" +
+                        "regpair(?regpair1,?regpair1h,?regpair1l)\n",
+                        config));
+        jumpTablePatterns.add(
+                new Pattern(
+                        "pattern:\n" +
+                        "0: ld hl, ?const_table\n" +
+                        "1: ld ?regpair1l, ?reg1\n" +
+                        "2: ld ?regpair1h, 0\n" +
+                        "3: add ?regjump, ?regpair\n" +
+                        "4: jp (?regjump)\n" +
+                        "constraints:\n" +
+                        "in(?regjump,hl,ix,iy)\n" +
+                        "regpair(?regpair1,?regpair1h,?regpair1l)\n",
+                        config));
+        jumpTablePatterns.add(
+                new Pattern(
+                        "pattern:\n" +
+                        "0: ld l, ?reg1\n" + 
+                        "1: ld h, ?const_table\n" +
+                        "2: ld ?reg2, (hl)\n" +
+                        "3: inc hl\n" +
+                        "4: ld ?regpair1h, (hl)\n" +
+                        "5: ld ?regpair1l, ?reg2\n" +
+                        "6: jp (?regjump)\n" +
+                        "constraints:\n" +
+                        "in(?regjump,hl,ix,iy)\n" +
+                        "regpair(?regjump,?regpair1h,?regpair1l)\n",
+                        config));
+         jumpTablePatterns.add(
+                new Pattern(
+                        "pattern:\n" +
+                        "0: ld l, ?reg1\n" +
+                        "1: ld h, ?const_table\n" +
+                        "2: add hl, hl\n" +
+                        "3: ld ?reg2, (hl)\n" +
+                        "4: inc hl\n" +
+                        "5: ld ?regpair1h, (hl)\n" +
+                        "6: ld ?regpair1l, ?reg2\n" +
+                        "7: jp (?regjump)\n" +
+                        "constraints:\n" +
+                        "in(?regjump,hl,ix,iy)\n" +
+                        "regpair(?regjump,?regpair1h,?regpair1l)\n",
+                        config)); 
+         jumpTablePatterns.add(
+                new Pattern(
+                        "pattern:\n" +
+                        "0: ld l, ?reg1\n" +
+                        "1: ld h, ?const_table\n" +
+                        "2: add hl, hl\n" +
+                        "3: add hl, hl\n" +
+                        "4: jp (hl)\n",
+                        config)); 
+         jumpTablePatterns.add(
+                new Pattern(
+                        "pattern:\n" +
+                        "tags: table-popped\n" +
+                        "0: ld ?reg1, a\n" +
+                        "1: add a, a\n" +
+                        "2: add a, ?reg1\n" +
+                        "3: pop ?regjump\n" +
+                        "4: add a, ?regjumpl\n" +
+                        "5: ld ?regjumpl, a\n" +
+                        "6: jr nc, ?const_label\n" +  // note: we are not verifying that this jp jumps to "8".
+                        "7: inc ?regjumph\n" +
+                        "8: jp (?regjump)\n" +
+                        "constraints:\n" +
+                        "in(?regjump,hl,ix,iy)\n" +
+                        "regpair(?regjump,?regjumph,?regjumpl)\n",
+                        config));                   
+        
         List<Pair<CodeStatement, List<CodeStatement>>> destinations = new ArrayList<>();
-        if (s.op == null || !s.op.isJumpToRegister()) return null;
-        String register = null;
-        {
-            Expression arg = s.op.args.get(0);
-            if (arg.type == Expression.EXPRESSION_REGISTER_OR_FLAG) {
-                register = arg.registerOrFlagName;
-            } else if (arg.type == Expression.EXPRESSION_PARENTHESIS &&
-                       arg.args.get(0).type == Expression.EXPRESSION_REGISTER_OR_FLAG) {
-                register = arg.args.get(0).registerOrFlagName;
-            }
-        }
-        if (register == null) return null;
-        
-        if (forwardTable.containsKey(s)) {
-            // We have already computed this before:
-            for(StatementTransition t:forwardTable.get(s)) {
-                destinations.add(Pair.of(t.s, new ArrayList<>()));
-            }
-            return destinations;
-        }
-        
-        // It is a potential jump table based jump:
-        config.debug("identifyRegisterJumpTargetLocations: " + s);
-        int maxLookBack = 10;
-        
-        // Go back until we find the instruction that loads "hl" with the base
-        // value (we will ignore "add" instructions, but any other instruction
-        // that modifies hl will cancel the analysis.
-        
-        List<Pair<CodeStatement, Integer>> open = new ArrayList<>();
-        CodeStatement regLdStatement = null;
-        List<StatementTransition> prev_l = reverseTable.get(s);
-        if (prev_l != null) {
-            for(StatementTransition st:prev_l) {
-                open.add(Pair.of(st.s, maxLookBack));        
-            }
-        }
-        while(!open.isEmpty()) {
-            Pair<CodeStatement, Integer> next = open.remove(0);
-            CodeStatement s2 = next.getLeft();
-            int lookback_s2 = next.getRight();
-            if (s2.label != null) {
-                config.debug("identifyRegisterJumpTargetLocations: label found, search for the jump table start ended.");
-                regLdStatement = null;
-                break;
-            }
-            if (next.getRight() <= 0) {
-                config.debug("identifyRegisterJumpTargetLocations: maxLookBack reached, search for the jump table start ended.");
-                regLdStatement = null;
-                break;
-            }
-            if (s2.op != null) {
-                if (s2.op.isCall()) break;
-                if (s2.op.modifiesRegister(register)) {
-                    if (s2.op.isLd() || s2.op.isPop()) {
-                        if (regLdStatement == null) {
-                            regLdStatement = s2;
-                        } else {
-                            if (regLdStatement != s2) {
-                                config.debug("identifyRegisterJumpTargetLocations: More than one statement setting the jump table is not supported.");
-                                regLdStatement = null;
-                                break;
-                            }
-                        }
-                        break;
-                    } else if (s2.op.spec.getName().equalsIgnoreCase("ex")) {                        
-                        // See if this is the pattern found:
-                        //   ld e, (hl)
-                        //   inc hl
-                        //   ld d, (hl)
-                        //   ex de, hl
-                        List<CodeStatement> ops = getKPreviousOps(s2, 3);
-                        if (ops == null || ops.size() != 3) {
-                            regLdStatement = null;
-                            break;
-                        } else {
-                            ops.add(s2);
-                            if (ops.get(0).op.toString().equalsIgnoreCase("ld e, (hl)") &&
-                                ops.get(1).op.toString().equalsIgnoreCase("inc hl") &&
-                                ops.get(2).op.toString().equalsIgnoreCase("ld d, (hl)") &&
-                                ops.get(3).op.toString().equalsIgnoreCase("ex de, hl")) {
-                                // all good!
-                                s2 = ops.get(0);
-                                lookback_s2 -= 3;
-                            } else {
-                                config.debug("identifyRegisterJumpTargetLocations: unsupported case for 'ex de, hl'.");
-                                regLdStatement = null;
-                                break;                                
-                            }
-                        }
-                        
-                    } else if (!s2.op.isAdd()) {
-                        config.debug("identifyRegisterJumpTargetLocations: unexpected function modifying the jump table resiger ("+s2.op+"), search for the jump table start ended.");
-                        regLdStatement = null;
-                        break;
-                    }
+        for(Pattern p:jumpTablePatterns) {
+            int n_statements = p.pattern.size();
+            int start_index = s.source.getStatements().indexOf(s);
+            for(int i = 0;i<n_statements - 1;i++) {
+                while(start_index > 0 && s.source.getStatements().get(start_index).op == null) {
+                    start_index--;
                 }
-                List<StatementTransition> prev_s2_l = reverseTable.get(s2);
-                if (prev_l != null) {
-                    for(StatementTransition st:prev_s2_l) {
-                        open.add(Pair.of(st.s, lookback_s2 - 1));        
+                start_index--;
+            }
+            if (start_index < 0) continue;
+            PatternMatch match = p.match(start_index, s.source, code, true, true, null);
+            if (match != null) {
+                // We have identified a jump table:
+                List<CodeStatement> jumpTables = new ArrayList<>();
+                List<CodeStatement> stack = new ArrayList<>();
+                if (p.tags.contains("table-popped")) {
+                    // We need to find where the table is:
+                    List<CodeStatement> jumpTableCalls = getCallStatementsAssociatedWithPop(s.source.getStatements().get(start_index));
+                    if (jumpTableCalls == null) return null;
+                    for(CodeStatement call:jumpTableCalls) {
+                        CodeStatement next = call.source.getNextStatementTo(call, code);
+                        if (next != null) {
+                            next = getFirstOpStatement(next);
+                            jumpTables.add(next);
+                        } else {
+                            return null;
+                        }
                     }
                 } else {
-                    config.debug("identifyRegisterJumpTargetLocations: can't go back at: " + s2);
-                    regLdStatement = null;
-                    break;
-                }
-            } else {
-                if (!s2.isEmptyAllowingComments()) {
-                    config.debug("identifyRegisterJumpTargetLocations: unexpected statement: " + s2);
-                    regLdStatement = null;
-                    break;
-                }                
-            }
-        }
-                
-        List<CodeStatement> jumpTables = new ArrayList<>();
-        if (regLdStatement != null) {
-            if (regLdStatement.op.isLd()) {
-                Expression label = regLdStatement.op.args.get(1);
-                if (label.type == Expression.EXPRESSION_SYMBOL) {
-                    SourceConstant cc = code.getSymbol(label.symbolName);
-                    jumpTables.add(cc.definingStatement);
-                }
-            } else if (regLdStatement.op.isPop()) {
-                // Find all possible values that "pop" can assign to the register:
-                List<CodeStatement> callStatements = getCallStatementsAssociatedWithPop(regLdStatement);
-                if (callStatements == null) {
-                    config.debug("identifyRegisterJumpTargetLocations: getCallStatementsAssociatedWithPop returned null");
-                    return null;
-                }
-                for(CodeStatement s2:callStatements) {
-                    CodeStatement s2_next = s.source.getNextStatementTo(s2, code);
-                    s2_next = getFirstOpStatement(s2_next);
-                    if (s2_next == null) {
-                        // See if the next statement is data:
-                        s2_next = getFirstDataStatement(s2);
+                    SourceConstant cc = getJumpTableSymbolFromExpression(match.variables.get("?const_table"));
+                    if (cc != null) {
+                        jumpTables.add(cc.definingStatement);
+
+                        Expression stack_content = match.variables.get("?const_stack");
+                        if (stack_content != null) {
+                            if (stack_content.type == Expression.EXPRESSION_SYMBOL) {
+                                SourceConstant cc2 = code.getSymbol(stack_content.symbolName);
+                                stack.add(cc2.definingStatement);
+                            } else {
+                                config.debug("We do not know how to identify the return address from the jump table, skipping.");
+                                return null;
+                            }
+                        }
                     }
-                    if (s2_next == null) {
-                        config.error("identifyRegisterJumpTargetLocations: getFirstOpStatement returned null for s2: " + s2);
-                        return null;
-                    } 
-                    jumpTables.add(s2_next);
                 }
-            } else {
-                config.error("identifyRegisterJumpTargetLocations: internal error 1 (please report if you see this)");
-                return null;
-            }
-        } else {
-            config.debug("identifyRegisterJumpTargetLocations: could not find regLdStatement.");
-        }
+                if (jumpTables.isEmpty()) return null;
+                config.debug("identifyRegisterJumpTargetLocations: potential Jump tables: " + jumpTables);
 
-        if (jumpTables.isEmpty()) return null;
-
-        config.debug("identifyRegisterJumpTargetLocations: potential Jump tables: " + jumpTables);
-        
-        // Identify the list of target destinations in the jump table:
-        // Possible patterns:
-        // dw label1, label2, ...
-        // jp label1; jp label2; ...
-        // jp label1; nop; jp label2; nop; jp label3; ...
-        HashSet<CodeStatement> statementsInsideThisJumpTable = new HashSet<>();
-        List<CodeStatement> stack = new ArrayList<>();
-        String jump_table_style = null;  // "dw", "jp", "jp-nop"
-        int state = 0;
-        for(CodeStatement jumpTable:jumpTables) {
-            CodeStatement s2 = jumpTable;
-            while(s2 != null) {
-                if (s2.type == CodeStatement.STATEMENT_CPUOP) {
-                    if (jump_table_style == null || jump_table_style.equals("jp") || jump_table_style.equals("jp-nop")) {
-                        if (jump_table_style != null && jump_table_style.equals("jp-nop")) {
-                            if (state == 1) {
-                                // expecting a "nop":
-                                if (s2.op.isNop()) {
+                // Identify the list of target destinations in the jump table:
+                // Possible patterns:
+                // dw label1, label2, ...
+                // jp label1; jp label2; ...
+                // jp label1; nop; jp label2; nop; jp label3; ...
+                HashSet<CodeStatement> statementsInsideThisJumpTable = new HashSet<>();
+                String jump_table_style = null;  // "dw", "jp", "jp-nop"
+                int state = 0;
+                for(CodeStatement jumpTable:jumpTables) {
+                    CodeStatement s2 = jumpTable;
+                    while(s2 != null) {
+                        if (s2.type == CodeStatement.STATEMENT_CPUOP) {
+                            if (jump_table_style == null || jump_table_style.equals("jp") || jump_table_style.equals("jp-nop")) {
+                                if (jump_table_style != null && jump_table_style.equals("jp-nop")) {
+                                    if (state == 1) {
+                                        // expecting a "nop" or a "db 0:
+                                        if (s2.op.isNop()) {
+                                            statementsInsideThisJumpTable.add(s2);
+                                            state = 0;
+                                        } else {
+                                            break;
+                                        }
+                                    } else {
+                                        // expecting a "jp":
+                                        if (s2.op.spec.opName.equalsIgnoreCase("jp") && ! s2.op.isConditional()) {
+                                            statementsInsideThisJumpTable.add(s2);
+                                            CodeStatement target = statementValueOfLabelExpression(s2.op.args.get(0), code);
+                                            if (target == null) return null;
+                                            target = getFirstOpStatement(target);
+                                            if (target == null) return null;
+                                            destinations.add(Pair.of(target, stack));
+                                            state = 1;
+                                        }
+                                    }
+                                } else {
+                                    if (s2.op.spec.opName.equalsIgnoreCase("jp") && ! s2.op.isConditional()) {
+                                        statementsInsideThisJumpTable.add(s2);
+                                        jump_table_style = "jp";
+                                        CodeStatement target = statementValueOfLabelExpression(s2.op.args.get(0), code);
+                                        if (target == null) return null;
+                                        target = getFirstOpStatement(target);
+                                        if (target == null) return null;
+                                        destinations.add(Pair.of(target, stack));
+                                    } else if (s2.op.isNop()) {
+                                        if (destinations.size() == 1) {
+                                            jump_table_style = "jp-nop";
+                                            state = 0;
+                                        } else {
+                                            break;
+                                        }
+                                    } else {
+                                        break;
+                                    }
+                                }
+                            } else {
+                                break;
+                            }
+                        } else if (s2.type == CodeStatement.STATEMENT_DATA_BYTES) {
+                            boolean ok = false;
+                            if (jump_table_style != null) {
+                                if (jump_table_style.equals("jp-nop") && state == 1) {
+                                    ok = true;
+                                } else if (jump_table_style.equals("jp")) {
+                                    if (statementsInsideThisJumpTable.size() == 1) {
+                                        jump_table_style = "jp-nop";
+                                        state = 1;
+                                        ok = true;
+                                    }
+                                }
+                            }
+                            if (ok) {
+                                // expecting a "nop" or a "db 0:
+                                if (s2.data.size() == 1 &&
+                                    s2.data.get(0).type == Expression.EXPRESSION_INTEGER_CONSTANT &&
+                                    s2.data.get(0).integerConstant == 0) {
                                     statementsInsideThisJumpTable.add(s2);
                                     state = 0;
                                 } else {
                                     break;
                                 }
                             } else {
-                                // expecting a "jp":
-                                if (s2.op.spec.opName.equalsIgnoreCase("jp") && ! s2.op.isConditional()) {
-                                    statementsInsideThisJumpTable.add(s2);
-                                    CodeStatement target = statementValueOfLabelExpression(s2.op.args.get(0), code);
+                                break;
+                            }
+
+                        } else if (s2.type == CodeStatement.STATEMENT_DATA_WORDS) {
+                            if (jump_table_style == null || jump_table_style.equals("dw")) {
+                                jump_table_style = "dw";
+                                for(Expression exp: s2.data) {
+                                    CodeStatement target = statementValueOfLabelExpression(exp, code);
                                     if (target == null) return null;
                                     target = getFirstOpStatement(target);
                                     if (target == null) return null;
                                     destinations.add(Pair.of(target, stack));
-                                    state = 1;
-                                }
-                            }
-                        } else {
-                            if (s2.op.spec.opName.equalsIgnoreCase("jp") && ! s2.op.isConditional()) {
-                                statementsInsideThisJumpTable.add(s2);
-                                jump_table_style = "jp";
-                                CodeStatement target = statementValueOfLabelExpression(s2.op.args.get(0), code);
-                                if (target == null) return null;
-                                target = getFirstOpStatement(target);
-                                if (target == null) return null;
-                                destinations.add(Pair.of(target, stack));
-                            } else if (s2.op.isNop()) {
-                                if (destinations.size() == 1) {
-                                    jump_table_style = "jp-nop";
-                                    state = 0;
-                                } else {
-                                    break;
                                 }
                             } else {
                                 break;
                             }
+                        } else if (s2 == jumpTable && s2.type == CodeStatement.STATEMENT_NONE) {
+                            // this case is ok
+                        } else if (!s2.isEmptyAllowingComments()) {
+                            break;
                         }
-                    } else {
-                        break;
+                        s2 = s2.source.getNextStatementTo(s2, code);
                     }
-                } else if (s2.type == CodeStatement.STATEMENT_DATA_WORDS) {
-                    if (jump_table_style == null || jump_table_style.equals("dw")) {
-                        jump_table_style = "dw";
-                        for(Expression exp: s2.data) {
-                            CodeStatement target = statementValueOfLabelExpression(exp, code);
-                            if (target == null) return null;
-                            target = getFirstOpStatement(target);
-                            if (target == null) return null;
-                            destinations.add(Pair.of(target, stack));
-                        }
-                    } else {
-                        break;
-                    }
-                } else if (s2 == jumpTable && s2.type == CodeStatement.STATEMENT_NONE) {
-                    // this case is ok
-                } else if (!s2.isEmptyAllowingComments()) {
-                    break;
                 }
-                s2 = s2.source.getNextStatementTo(s2, code);
-            }
-        }
-        
-        config.debug("identifyRegisterJumpTargetLocations: destinations" + destinations);
-        if (!destinations.isEmpty()) {
-            for(CodeStatement jts:statementsInsideThisJumpTable) {
-                if (!statementsInsideJumpTables.contains(jts)) {
-                    statementsInsideJumpTables.add(jts);
-                }
-            }
-        }
 
-        return destinations;
+                config.debug("identifyRegisterJumpTargetLocations: destinations" + destinations);
+                if (!destinations.isEmpty()) {
+                    for(CodeStatement jts:statementsInsideThisJumpTable) {
+                        if (!statementsInsideJumpTables.contains(jts)) {
+                            statementsInsideJumpTables.add(jts);
+                        }
+                    }
+                }
+
+                return destinations;
+            }
+        }
+        return null;
+    }
+    
+    
+    SourceConstant getJumpTableSymbolFromExpression(Expression exp)
+    {
+        if (exp.type == Expression.EXPRESSION_SYMBOL) {
+            return code.getSymbol(exp.symbolName);
+        } else if (exp.type == Expression.EXPRESSION_DIV) {
+            Expression left = exp.args.get(0);
+            Expression right = exp.args.get(1);
+            if (left.type == Expression.EXPRESSION_SYMBOL &&
+                right.type == Expression.EXPRESSION_INTEGER_CONSTANT) {
+                return code.getSymbol(left.symbolName);
+            }
+        }
+        return null;
     }
 
     
@@ -828,16 +848,16 @@ public class ExecutionFlowAnalysis {
     }
     
     
-    CodeStatement getFirstDataStatement(CodeStatement s) {
-        if (s.data != null) return s;
-
-        int index = s.source.getStatements().indexOf(s);
-        if (s.source.getStatements().size() > index + 1) {
-            return s.source.getStatements().get(index + 1);
-        }
-
-        return null;
-    }
+//    CodeStatement getFirstDataStatement(CodeStatement s) {
+//        if (s.data != null) return s;
+//
+//        int index = s.source.getStatements().indexOf(s);
+//        if (s.source.getStatements().size() > index + 1) {
+//            return s.source.getStatements().get(index + 1);
+//        }
+//
+//        return null;
+//    }
         
     
     public List<CodeStatement> getKPreviousOps(CodeStatement s, int k)
