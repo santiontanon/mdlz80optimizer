@@ -79,7 +79,9 @@ public class ExecutionFlowAnalysis {
         public boolean equals(Object o) {
             if (!(o instanceof ExecutionFlowNode)) return false;
             ExecutionFlowNode efn = (ExecutionFlowNode)o;
-            if (!s.equals(efn.s)) return false;
+            if (!s.equals(efn.s)) {
+                return false;
+            }
             return stackSize == stackSize;
         }
 
@@ -222,7 +224,7 @@ public class ExecutionFlowAnalysis {
                     nextOpStatements.add(st);
                 }
             } else {
-                next = f.nextExecutionStatements(st.s, true, new ArrayList<>(), code);
+                next = st.s.source.nextExecutionStatements(st.s, true, new ArrayList<>(), code);
                 if (next == null) return null;
                 for(Pair<CodeStatement, List<CodeStatement>> tmp:next) {
                     open.add(new StatementTransition(tmp.getLeft(), st.transitionType, st.valuePushed));
@@ -260,8 +262,18 @@ public class ExecutionFlowAnalysis {
                         if (s_i.op.isJumpToRegister()) {
                             jumpToRegisterStatementsToCheckAtTheEnd.add(Pair.of(f, i));
                         } else {
-                            if (!s_i.op.isCall() || !config.ignoreCallsToNonDefinedSymbolsInExecutionFlowAnalysis) {
-                                config.error("Cannot determine the next statements after: " + s_i);
+                            if (config.allowCallsToNonDefinedSymbolsInExecutionFlowAnalysis) {
+                                if (s_i.op.isCall()) {
+                                    // ok: this is just probably calling a function that is not defined
+                                } else if (s_i.op.isJump()) {
+                                    // ok: this is jumping to a function that is not defined (e.g. tail recursion).
+                                    //     So, we just ignore it.
+                                } else {
+                                    config.error("Cannot determine the next statements after: " + s_i.fileNameLineString());
+                                    return null;                                    
+                                }                                
+                            } else {
+                                config.error("Cannot determine the next statements after: " + s_i.fileNameLineString());
                                 return null;
                             }
                         }
@@ -283,8 +295,8 @@ public class ExecutionFlowAnalysis {
                 next = forwardTable.get(s_i);
             }
             if (next == null) {
-                config.error("Cannot determine the next statements after: " + s_i);
-                return null;
+                config.warn("Cannot determine the next statements after: " + s_i.fileNameLineString());
+//                return null;
 //            } else {
 //                if (!generateForwardAndReverseTablesForStatement(s_i, next)) {
 //                    return null;
@@ -508,9 +520,11 @@ public class ExecutionFlowAnalysis {
                 config.debug("An exported label was crossed, canceling analysis of ret: " + s.fileNameLineString());
                 return null;
             }
-            closed.add(efn2);
+            if (!closed.contains(efn2)) {
+                closed.add(efn2);
+            }
             // Apply the transition to the ExecutionFlowNode:
-            efn2.s = st2.s;
+            efn2 = new ExecutionFlowNode(st2.s, efn2.stackSize);
             boolean keepGoing = false;
             switch(st2.transitionType) {
                 case StatementTransition.PUSH_CALL_TRANSITION:
@@ -625,15 +639,32 @@ public class ExecutionFlowAnalysis {
     */
     public List<Pair<CodeStatement, List<CodeStatement>>> identifyRegisterJumpTargetLocations(CodeStatement s)
     {
-        List<Pair<CodeStatement, List<CodeStatement>>> destinations = new ArrayList<>();
+        if (s.comment != null && s.comment.contains(config.PRAGMA_JUMPTABLE)) {
+            String tokens[] = s.comment.split(" ");
+            int idx = -1;
+            for(int j = 0;j<tokens.length;j++) {
+                if (tokens[j].equals(config.PRAGMA_JUMPTABLE)) {
+                    idx = j + 1;
+                    break;
+                }
+            }
+            if (idx > 0 && tokens.length > idx) {
+                SourceConstant cc = code.getSymbol(tokens[idx]);
+                List<CodeStatement> jumpTables = new ArrayList<>();
+                List<CodeStatement> stack = new ArrayList<>();
+                jumpTables.add(cc.definingStatement);
+                return destinationsInJumpTables(jumpTables, stack);
+            }
+        }
+
         for(Pattern p:jumpTablePatterns) {
             int n_statements = p.pattern.size();
             int start_index = s.source.getStatements().indexOf(s);
             for(int i = 0;i<n_statements - 1;i++) {
+                start_index--;
                 while(start_index > 0 && s.source.getStatements().get(start_index).op == null) {
                     start_index--;
                 }
-                start_index--;
             }
             if (start_index < 0) continue;
             PatternMatch match = p.match(start_index, s.source, code, true, true, null);
@@ -674,82 +705,65 @@ public class ExecutionFlowAnalysis {
                 if (jumpTables.isEmpty()) return null;
                 config.debug("identifyRegisterJumpTargetLocations: potential Jump tables: " + jumpTables);
 
-                // Identify the list of target destinations in the jump table:
-                // Possible patterns:
-                // dw label1, label2, ...
-                // jp label1; jp label2; ...
-                // jp label1; nop; jp label2; nop; jp label3; ...
-                HashSet<CodeStatement> statementsInsideThisJumpTable = new HashSet<>();
-                String jump_table_style = null;  // "dw", "jp", "jp-nop"
-                int state = 0;
-                for(CodeStatement jumpTable:jumpTables) {
-                    CodeStatement s2 = jumpTable;
-                    while(s2 != null) {
-                        if (s2.type == CodeStatement.STATEMENT_CPUOP) {
-                            if (jump_table_style == null || jump_table_style.equals("jp") || jump_table_style.equals("jp-nop")) {
-                                if (jump_table_style != null && jump_table_style.equals("jp-nop")) {
-                                    if (state == 1) {
-                                        // expecting a "nop" or a "db 0:
-                                        if (s2.op.isNop()) {
-                                            statementsInsideThisJumpTable.add(s2);
-                                            state = 0;
-                                        } else {
-                                            break;
-                                        }
-                                    } else {
-                                        // expecting a "jp":
-                                        if (s2.op.spec.opName.equalsIgnoreCase("jp") && ! s2.op.isConditional()) {
-                                            statementsInsideThisJumpTable.add(s2);
-                                            CodeStatement target = statementValueOfLabelExpression(s2.op.args.get(0), code);
-                                            if (target == null) return null;
-                                            target = getFirstOpStatement(target);
-                                            if (target == null) return null;
-                                            destinations.add(Pair.of(target, stack));
-                                            state = 1;
-                                        }
-                                    }
+                return destinationsInJumpTables(jumpTables, stack);
+            }
+        }
+        
+        return null;
+    }
+    
+    
+    public List<Pair<CodeStatement, List<CodeStatement>>>  destinationsInJumpTables(
+            List<CodeStatement> jumpTables,
+            List<CodeStatement> stack)
+    {
+        List<Pair<CodeStatement, List<CodeStatement>>> destinations = new ArrayList<>();
+        // Identify the list of target destinations in the jump table:
+        // Possible patterns:
+        // dw label1, label2, ...
+        // jp label1; jp label2; ...
+        // jp label1; nop; jp label2; nop; jp label3; ...
+        HashSet<CodeStatement> statementsInsideThisJumpTable = new HashSet<>();
+        String jump_table_style = null;  // "dw", "jp", "jp-nop"
+        int state = 0;
+        for(CodeStatement jumpTable:jumpTables) {
+            CodeStatement s2 = jumpTable;
+            while(s2 != null) {
+                if (s2.type == CodeStatement.STATEMENT_CPUOP) {
+                    if (jump_table_style == null || jump_table_style.equals("jp") || jump_table_style.equals("jp-nop")) {
+                        if (jump_table_style != null && jump_table_style.equals("jp-nop")) {
+                            if (state == 1) {
+                                // expecting a "nop" or a "db 0:
+                                if (s2.op.isNop()) {
+                                    statementsInsideThisJumpTable.add(s2);
+                                    state = 0;
                                 } else {
-                                    if (s2.op.spec.opName.equalsIgnoreCase("jp") && ! s2.op.isConditional()) {
-                                        statementsInsideThisJumpTable.add(s2);
-                                        jump_table_style = "jp";
-                                        CodeStatement target = statementValueOfLabelExpression(s2.op.args.get(0), code);
-                                        if (target == null) return null;
-                                        target = getFirstOpStatement(target);
-                                        if (target == null) return null;
-                                        destinations.add(Pair.of(target, stack));
-                                    } else if (s2.op.isNop()) {
-                                        if (destinations.size() == 1) {
-                                            jump_table_style = "jp-nop";
-                                            state = 0;
-                                        } else {
-                                            break;
-                                        }
-                                    } else {
-                                        break;
-                                    }
+                                    break;
                                 }
                             } else {
-                                break;
-                            }
-                        } else if (s2.type == CodeStatement.STATEMENT_DATA_BYTES) {
-                            boolean ok = false;
-                            if (jump_table_style != null) {
-                                if (jump_table_style.equals("jp-nop") && state == 1) {
-                                    ok = true;
-                                } else if (jump_table_style.equals("jp")) {
-                                    if (statementsInsideThisJumpTable.size() == 1) {
-                                        jump_table_style = "jp-nop";
-                                        state = 1;
-                                        ok = true;
-                                    }
+                                // expecting a "jp":
+                                if (s2.op.spec.opName.equalsIgnoreCase("jp") && ! s2.op.isConditional()) {
+                                    statementsInsideThisJumpTable.add(s2);
+                                    CodeStatement target = statementValueOfLabelExpression(s2.op.args.get(0), code);
+                                    if (target == null) return null;
+                                    target = getFirstOpStatement(target);
+                                    if (target == null) return null;
+                                    destinations.add(Pair.of(target, stack));
+                                    state = 1;
                                 }
                             }
-                            if (ok) {
-                                // expecting a "nop" or a "db 0:
-                                if (s2.data.size() == 1 &&
-                                    s2.data.get(0).type == Expression.EXPRESSION_INTEGER_CONSTANT &&
-                                    s2.data.get(0).integerConstant == 0) {
-                                    statementsInsideThisJumpTable.add(s2);
+                        } else {
+                            if (s2.op.spec.opName.equalsIgnoreCase("jp") && ! s2.op.isConditional()) {
+                                statementsInsideThisJumpTable.add(s2);
+                                jump_table_style = "jp";
+                                CodeStatement target = statementValueOfLabelExpression(s2.op.args.get(0), code);
+                                if (target == null) return null;
+                                target = getFirstOpStatement(target);
+                                if (target == null) return null;
+                                destinations.add(Pair.of(target, stack));
+                            } else if (s2.op.isNop()) {
+                                if (destinations.size() == 1) {
+                                    jump_table_style = "jp-nop";
                                     state = 0;
                                 } else {
                                     break;
@@ -757,44 +771,71 @@ public class ExecutionFlowAnalysis {
                             } else {
                                 break;
                             }
-
-                        } else if (s2.type == CodeStatement.STATEMENT_DATA_WORDS) {
-                            if (jump_table_style == null || jump_table_style.equals("dw")) {
-                                jump_table_style = "dw";
-                                for(Expression exp: s2.data) {
-                                    CodeStatement target = statementValueOfLabelExpression(exp, code);
-                                    if (target == null) return null;
-                                    target = getFirstOpStatement(target);
-                                    if (target == null) return null;
-                                    destinations.add(Pair.of(target, stack));
-                                }
-                            } else {
-                                break;
+                        }
+                    } else {
+                        break;
+                    }
+                } else if (s2.type == CodeStatement.STATEMENT_DATA_BYTES) {
+                    boolean ok = false;
+                    if (jump_table_style != null) {
+                        if (jump_table_style.equals("jp-nop") && state == 1) {
+                            ok = true;
+                        } else if (jump_table_style.equals("jp")) {
+                            if (statementsInsideThisJumpTable.size() == 1) {
+                                jump_table_style = "jp-nop";
+                                state = 1;
+                                ok = true;
                             }
-                        } else if (s2 == jumpTable && s2.type == CodeStatement.STATEMENT_NONE) {
-                            // this case is ok
-                        } else if (!s2.isEmptyAllowingComments()) {
+                        }
+                    }
+                    if (ok) {
+                        // expecting a "nop" or a "db 0:
+                        if (s2.data.size() == 1 &&
+                            s2.data.get(0).type == Expression.EXPRESSION_INTEGER_CONSTANT &&
+                            s2.data.get(0).integerConstant == 0) {
+                            statementsInsideThisJumpTable.add(s2);
+                            state = 0;
+                        } else {
                             break;
                         }
-                        s2 = s2.source.getNextStatementTo(s2, code);
+                    } else {
+                        break;
                     }
-                }
 
-                config.debug("identifyRegisterJumpTargetLocations: destinations" + destinations);
-                if (!destinations.isEmpty()) {
-                    for(CodeStatement jts:statementsInsideThisJumpTable) {
-                        if (!statementsInsideJumpTables.contains(jts)) {
-                            statementsInsideJumpTables.add(jts);
+                } else if (s2.type == CodeStatement.STATEMENT_DATA_WORDS) {
+                    if (jump_table_style == null || jump_table_style.equals("dw")) {
+                        jump_table_style = "dw";
+                        for(Expression exp: s2.data) {
+                            CodeStatement target = statementValueOfLabelExpression(exp, code);
+                            if (target == null) return null;
+                            target = getFirstOpStatement(target);
+                            if (target == null) return null;
+                            destinations.add(Pair.of(target, stack));
                         }
+                    } else {
+                        break;
                     }
+                } else if (s2 == jumpTable && s2.type == CodeStatement.STATEMENT_NONE) {
+                    // this case is ok
+                } else if (!s2.isEmptyAllowingComments()) {
+                    break;
                 }
-
-                return destinations;
+                s2 = s2.source.getNextStatementTo(s2, code);
             }
         }
-        return null;
+
+        config.debug("identifyRegisterJumpTargetLocations: destinations" + destinations);
+        if (!destinations.isEmpty()) {
+            for(CodeStatement jts:statementsInsideThisJumpTable) {
+                if (!statementsInsideJumpTables.contains(jts)) {
+                    statementsInsideJumpTables.add(jts);
+                }
+            }
+        }
+
+        return destinations;
     }
-    
+
     
     SourceConstant getJumpTableSymbolFromExpression(Expression exp)
     {
