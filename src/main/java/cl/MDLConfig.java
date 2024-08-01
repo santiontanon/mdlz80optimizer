@@ -11,8 +11,6 @@ import java.util.List;
 import org.apache.commons.lang3.StringUtils;
 
 import code.CodeBase;
-import code.CodeStatement;
-import java.util.HashMap;
 import parser.CPUOpParser;
 import parser.CPUOpSpecParser;
 import parser.CodeBaseParser;
@@ -85,6 +83,7 @@ public class MDLConfig {
                                                                  // happens to start with a parenthesis, but it's not an 
                                                                  // indirection, we just do: 0 + (<exp>), which fixes the issue.
     public boolean allowWLADXSizeOfSymbols = false;
+    public boolean ignoreCallsToNonDefinedSymbolsInExecutionFlowAnalysis = true;
     
     public List<String> ignorePatternsWithTags = new ArrayList<>();
     
@@ -222,7 +221,9 @@ public class MDLConfig {
             + "- ```-out-evaluate-all-expressions```: this flag makes MDL resolve all expressions down to their ultimate numeric or string value when generating assembler code.\n"
             + "- ```-safety-labels-for-jumps-to-constants```: makes MDL replace the destination of a jump/call to a constant (e.g. ```jp #3c4a```) by a label. MDL does not do this by default since calls to constants are often used for BIOS calls (although replacing those constants by labels is recommended). Jumpts to constants are unsafe for optimization as the code at the target address (```#3c4a``` in the example) might move as a result of optimization. Hence, it's safer to add a safety label at the target address and use it for the jump.\n"
             + "- ```-quirk-sjasm-struc```: allows having the keyword ```struc``` after the definition of a struct in sjasm (as in ```STRUCT mystruct struc```), since sjasm allows this (probably by accident), and some codebases have it.\n"
-            + "- ```-quirk-sjasmplus-dirbol-double-directive```: allows two directives in the same line without any separator, like this: ```db 0,0,0 dw 0``` (this is not intended, and will be fixed in future versions of sjasmplus, but some codebases use it).\n";
+            + "- ```-quirk-sjasmplus-dirbol-double-directive```: allows two directives in the same line without any separator, like this: ```db 0,0,0 dw 0``` (this is not intended, and will be fixed in future versions of sjasmplus, but some codebases use it).\n"
+            + "- ```-do-not-allow-calls-to-nondefined-symbols```: some times you want to optimize part of a codebase, and hence some symbols might be undefined, so, MDL tends to allow those. but if you want to be strict about that, and cancel further analysis of a file when one sych symbol is found, set this flag.\n";
+    
 
     public String simpleDocString = "MDL "+Main.VERSION_STRING+" (A Z80 assembler optimizer) by Santiago Ontañón (Brain Games, 2020-2022)\n"
             + "https://github.com/santiontanon/mdlz80optimizer\n"
@@ -614,6 +615,11 @@ public class MDLConfig {
 
                     case "-quirk-sjasmplus-dirbol-double-directive":
                         quirk_sjasmplus_dirbol_double_directive = true;
+                        args.remove(0);
+                        break;
+                        
+                    case "-do-not-allow-calls-to-nondefined-symbols":
+                        ignoreCallsToNonDefinedSymbolsInExecutionFlowAnalysis = false;
                         args.remove(0);
                         break;
                         

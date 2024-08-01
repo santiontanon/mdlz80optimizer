@@ -204,8 +204,10 @@ public class ExecutionFlowAnalysis {
                         if (s_i.op.isJumpToRegister()) {
                             jumpToRegisterStatementsToCheckAtTheEnd.add(Pair.of(f, i));
                         } else {
-                            config.error("Cannot determine the next statements after: " + s_i);
-                            return null;
+                            if (!s_i.op.isCall() || !config.ignoreCallsToNonDefinedSymbolsInExecutionFlowAnalysis) {
+                                config.error("Cannot determine the next statements after: " + s_i);
+                                return null;
+                            }
                         }
                     } else {
                         if (!generateForwardAndReverseTablesForStatement(s_i, next)) {
@@ -567,6 +569,12 @@ public class ExecutionFlowAnalysis {
     */
     public List<Pair<CodeStatement, List<CodeStatement>>> identifyRegisterJumpTargetLocations(CodeStatement s)
     {
+        /*
+        These are different patterns that jump tables can take. This list is
+        not exhaustive, and MDL might not catch all possible ways to construct
+        jump tables.
+        TODO: move these to a text file, and load them here.
+        */
         List<Pattern> jumpTablePatterns = new ArrayList<>();
         jumpTablePatterns.add(
                 new Pattern(

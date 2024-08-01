@@ -36,7 +36,7 @@ public class PatternBasedOptimizerTest {
     }
 
     @Test public void test1() throws Exception { test("data/potests/test1.asm", null, null, "size",  4, 9, 9, "data/potests/test1-expected.asm"); }
-    @Test public void test2() throws Exception { test("data/potests/test2.asm", null, null, "size",  4, 9, 9, "data/potests/test2-expected.asm"); }
+    @Test public void test2() throws Exception { test("data/potests/test2.asm", null, null, "size",  6, 17, 17, "data/potests/test2-expected.asm"); }
     @Test public void test3() throws Exception { test("data/potests/test3.asm", null, null, "size",  2, 3, 3, "data/potests/test3-expected.asm"); }
     @Test public void test4() throws Exception { test("data/potests/test4.asm", null, null, "size",  1, -2, -2, "data/potests/test4-expected.asm"); }
     @Test public void test5() throws Exception { test("data/potests/test5.asm", null, null, "size",  1, -2, -2, "data/potests/test5-expected.asm"); }
@@ -55,7 +55,7 @@ public class PatternBasedOptimizerTest {
     @Test public void test18() throws Exception { test("data/potests/test18.asm", null, null, "size",  7, 18, 18); }
     @Test public void test19() throws Exception { test("data/potests/test19.asm", null, null, "size",  3, 8, 8); }
     @Test public void test20() throws Exception { test("data/potests/test20.asm", null, null, "size",  9, 4, 19); }
-    @Test public void test21() throws Exception { test("data/potests/test21.asm", null, null, "size",  4, 9, 9); }
+    @Test public void test21() throws Exception { test("data/potests/test21.asm", null, null, "size",  10, 31, 31); }
     @Test public void test22() throws Exception { test("data/potests/test22.asm", null, null, "size",  3, 6, 6); }
     @Test public void test23() throws Exception { test("data/potests/test23.asm", null, null, "size",  2, 3, 3); }
     @Test public void test24() throws Exception { test("data/potests/test24.asm", null, null, "size",  1, -2, -2); }

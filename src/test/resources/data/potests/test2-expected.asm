@@ -13,7 +13,6 @@ EXTERNAL: equ #0000
 __mdlrenamed__end:
     jr __mdlrenamed__end
 function1:
-    ld a, 1  ; should be NOT optimized because of the "ret" (to be safe)
 	ret
 value:
 	db 1

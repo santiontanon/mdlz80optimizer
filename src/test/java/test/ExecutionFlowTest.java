@@ -35,7 +35,7 @@ public class ExecutionFlowTest {
     the code with ID-DESTINATION. Then we check that the ExecutionFlowAnalysis
     module can reconstruct those expected results.
     */
-
+//
     @Test public void test1() throws IOException { test("data/flowtests/test1.asm", null, 1); }
     @Test public void test2() throws IOException { test("data/flowtests/test2.asm", null, 2); }
     @Test public void test3() throws IOException { test("data/flowtests/test3.asm", null, 0); }
@@ -53,6 +53,7 @@ public class ExecutionFlowTest {
     @Test public void test13b() throws IOException { test("data/flowtests/test13-jumptables3b.asm", null, 4); }
     @Test public void test14() throws IOException { test("data/flowtests/test14-jumptables.asm", null, 4); }
     @Test public void test14b() throws IOException { test("data/flowtests/test14-jumptables2.asm", null, 4); }
+    @Test public void test15() throws IOException { test("data/flowtests/test15-jumptables.asm", null, 4); }
 
     
     private void test(String inputFile, String dialect, int nRets) throws IOException
