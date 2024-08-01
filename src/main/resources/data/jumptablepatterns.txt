@@ -1,0 +1,94 @@
+; For all the patterns below:
+; - ?const_table: this is the expression that contains the jumptable label. It is assumed it'll be just the label, or the label divided by a constant.
+; - ?const_stack: if this is present, we assume this value will be in the stack when the functions in the jump table are called (e.g. for the return address).
+
+pattern:
+0: ld hl, ?const_table
+1: ld ?regpair1l, ?reg1
+2: ld ?regpair1h, 0
+3: add ?regjump, ?regpair
+4: ld ?regpair2, ?const_stack
+5: push ?regpair2
+6: jp (?regjump)
+constraints:
+in(?regjump,hl,ix,iy)
+regpair(?regpair1,?regpair1h,?regpair1l)
+
+
+pattern:
+0: ld hl, ?const_table
+1: ld ?regpair1l, ?reg1
+2: ld ?regpair1h, 0
+3: add ?regjump, ?regpair
+4: jp (?regjump)
+constraints:
+in(?regjump,hl,ix,iy)
+regpair(?regpair1,?regpair1h,?regpair1l)
+
+
+pattern:
+0: ld l, ?reg1 
+1: ld h, ?const_table
+2: ld ?reg2, (hl)
+3: inc hl
+4: ld ?regpair1h, (hl)
+5: ld ?regpair1l, ?reg2
+6: jp (?regjump)
+constraints:
+in(?regjump,hl,ix,iy)
+regpair(?regjump,?regpair1h,?regpair1l)
+
+
+pattern:
+0: ld l, ?reg1
+1: ld h, ?const_table
+2: add hl, hl
+3: ld ?reg2, (hl)
+4: inc hl
+5: ld ?regpair1h, (hl)
+6: ld ?regpair1l, ?reg2
+7: jp (?regjump)
+constraints:
+in(?regjump,hl,ix,iy)
+regpair(?regjump,?regpair1h,?regpair1l)
+
+
+pattern:
+0: ld l, ?reg1
+1: ld h, ?const_table
+2: add hl, hl
+3: add hl, hl
+4: jp (hl)
+
+
+; note: we are not verifying that '?const_label' jumps to "8".
+pattern:
+tags: table-popped
+0: ld ?reg1, a
+1: add a, a
+2: add a, ?reg1
+3: pop ?regjump
+4: add a, ?regjumpl
+5: ld ?regjumpl, a
+6: jr nc, ?const_label  
+7: inc ?regjumph
+8: jp (?regjump)
+constraints:
+in(?regjump,hl,ix,iy)
+regpair(?regjump,?regjumph,?regjumpl)
+
+
+pattern:
+tags: table-popped
+0: ld ?reg1, a
+1: add a, a
+2: add a, ?reg1
+3: pop ?regjump
+4: ld regpair1h, 0
+5: ld regpair1l, a
+6: add ?regjump, regpair1
+7: jp (?regjump)
+constraints:
+in(?regjump,hl,ix,iy)
+regpair(?regjump,?regjumph,?regjumpl)
+regpair(?regpair1,?regpair1h,?regpair1l)

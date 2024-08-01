@@ -10,12 +10,15 @@ import code.CodeStatement;
 import code.Expression;
 import code.SourceConstant;
 import code.SourceFile;
+import java.io.BufferedReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import util.Resources;
 
 /**
  *
@@ -98,6 +101,7 @@ public class ExecutionFlowAnalysis {
     HashSet<CodeStatement> statementsWithExportedLabels = null;
     HashSet<CodeStatement> statementsInsideJumpTables = null;
     HashMap<CodeStatement, List<Expression>> statementsThatCallJumpTableJump = new HashMap<>();
+    List<Pattern> jumpTablePatterns = new ArrayList<>();
     
     boolean stop_analysis_on_untracked_rst = false;
         
@@ -105,6 +109,58 @@ public class ExecutionFlowAnalysis {
     public ExecutionFlowAnalysis(CodeBase a_code, MDLConfig a_config) {
         config = a_config;
         code = a_code;
+        loadPatterns("data/jumptablepatterns.txt");
+    }
+    
+    
+    void loadPatterns(String fileName) 
+    {
+        config.debug("Loading jumptable patterns from " + fileName);
+        
+        try (BufferedReader br = Resources.asReader(fileName)) {
+            String patternString = "";
+            while(true) {
+                String line = br.readLine();
+                if (line == null) {
+                    // Load the last pattern:
+                    if (!patternString.equals("")) {
+                        jumpTablePatterns.add(new Pattern(patternString, config));
+                    }
+                    break;
+                }
+                line = line.trim();
+                // ignore comments:
+                if (config.tokenizer.isSingleLineComment(line)) continue;
+
+                if (line.equals("")) {
+                    if (!patternString.equals("")) {
+                        jumpTablePatterns.add(new Pattern(patternString, config));
+                        patternString = "";
+                    }
+                } else {
+                    if (line.startsWith("include")) {
+                        List<String> tokens = config.tokenizer.tokenize(line);
+                        if (tokens.size()>=2) {
+                            String name = tokens.get(1);
+                            if (config.tokenizer.isString(name)) {
+                                // include another pattern file:
+                                name = name.substring(1, name.length()-1);
+                                String path = config.lineParser.pathConcat(FilenameUtils.getFullPath(fileName), name);
+                                loadPatterns(path);
+                            } else {
+                                config.error("Problem loading patterns in line: " + line);
+                            }
+                        } else {
+                            config.error("Problem loading patterns in line: " + line);
+                        }
+                    } else {
+                        patternString += line + "\n";
+                    }
+                }
+            }
+        } catch (Exception e) {
+            config.error("ExecutionFlowAnalysis: error initializing jumptable patterns! " + e.getMessage());
+        }
     }
 
 
@@ -569,95 +625,6 @@ public class ExecutionFlowAnalysis {
     */
     public List<Pair<CodeStatement, List<CodeStatement>>> identifyRegisterJumpTargetLocations(CodeStatement s)
     {
-        /*
-        These are different patterns that jump tables can take. This list is
-        not exhaustive, and MDL might not catch all possible ways to construct
-        jump tables.
-        TODO: move these to a text file, and load them here.
-        */
-        List<Pattern> jumpTablePatterns = new ArrayList<>();
-        jumpTablePatterns.add(
-                new Pattern(
-                        "pattern:\n" +
-                        "0: ld hl, ?const_table\n" +
-                        "1: ld ?regpair1l, ?reg1\n" +
-                        "2: ld ?regpair1h, 0\n" +
-                        "3: add ?regjump, ?regpair\n" +
-                        "4: ld ?regpair2, ?const_stack\n" +
-                        "5: push ?regpair2\n" +
-                        "6: jp (?regjump)\n" +
-                        "constraints:\n" +
-                        "in(?regjump,hl,ix,iy)\n" +
-                        "regpair(?regpair1,?regpair1h,?regpair1l)\n",
-                        config));
-        jumpTablePatterns.add(
-                new Pattern(
-                        "pattern:\n" +
-                        "0: ld hl, ?const_table\n" +
-                        "1: ld ?regpair1l, ?reg1\n" +
-                        "2: ld ?regpair1h, 0\n" +
-                        "3: add ?regjump, ?regpair\n" +
-                        "4: jp (?regjump)\n" +
-                        "constraints:\n" +
-                        "in(?regjump,hl,ix,iy)\n" +
-                        "regpair(?regpair1,?regpair1h,?regpair1l)\n",
-                        config));
-        jumpTablePatterns.add(
-                new Pattern(
-                        "pattern:\n" +
-                        "0: ld l, ?reg1\n" + 
-                        "1: ld h, ?const_table\n" +
-                        "2: ld ?reg2, (hl)\n" +
-                        "3: inc hl\n" +
-                        "4: ld ?regpair1h, (hl)\n" +
-                        "5: ld ?regpair1l, ?reg2\n" +
-                        "6: jp (?regjump)\n" +
-                        "constraints:\n" +
-                        "in(?regjump,hl,ix,iy)\n" +
-                        "regpair(?regjump,?regpair1h,?regpair1l)\n",
-                        config));
-         jumpTablePatterns.add(
-                new Pattern(
-                        "pattern:\n" +
-                        "0: ld l, ?reg1\n" +
-                        "1: ld h, ?const_table\n" +
-                        "2: add hl, hl\n" +
-                        "3: ld ?reg2, (hl)\n" +
-                        "4: inc hl\n" +
-                        "5: ld ?regpair1h, (hl)\n" +
-                        "6: ld ?regpair1l, ?reg2\n" +
-                        "7: jp (?regjump)\n" +
-                        "constraints:\n" +
-                        "in(?regjump,hl,ix,iy)\n" +
-                        "regpair(?regjump,?regpair1h,?regpair1l)\n",
-                        config)); 
-         jumpTablePatterns.add(
-                new Pattern(
-                        "pattern:\n" +
-                        "0: ld l, ?reg1\n" +
-                        "1: ld h, ?const_table\n" +
-                        "2: add hl, hl\n" +
-                        "3: add hl, hl\n" +
-                        "4: jp (hl)\n",
-                        config)); 
-         jumpTablePatterns.add(
-                new Pattern(
-                        "pattern:\n" +
-                        "tags: table-popped\n" +
-                        "0: ld ?reg1, a\n" +
-                        "1: add a, a\n" +
-                        "2: add a, ?reg1\n" +
-                        "3: pop ?regjump\n" +
-                        "4: add a, ?regjumpl\n" +
-                        "5: ld ?regjumpl, a\n" +
-                        "6: jr nc, ?const_label\n" +  // note: we are not verifying that this jp jumps to "8".
-                        "7: inc ?regjumph\n" +
-                        "8: jp (?regjump)\n" +
-                        "constraints:\n" +
-                        "in(?regjump,hl,ix,iy)\n" +
-                        "regpair(?regjump,?regjumph,?regjumpl)\n",
-                        config));                   
-        
         List<Pair<CodeStatement, List<CodeStatement>>> destinations = new ArrayList<>();
         for(Pattern p:jumpTablePatterns) {
             int n_statements = p.pattern.size();
