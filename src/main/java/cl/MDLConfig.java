@@ -84,6 +84,7 @@ public class MDLConfig {
                                                                  // indirection, we just do: 0 + (<exp>), which fixes the issue.
     public boolean allowWLADXSizeOfSymbols = false;
     public boolean allowCallsToNonDefinedSymbolsInExecutionFlowAnalysis = true;
+    public boolean useExecutionFlowAnalysis = true;
     
     public List<String> ignorePatternsWithTags = new ArrayList<>();
     
@@ -224,7 +225,8 @@ public class MDLConfig {
             + "- ```-safety-labels-for-jumps-to-constants```: makes MDL replace the destination of a jump/call to a constant (e.g. ```jp #3c4a```) by a label. MDL does not do this by default since calls to constants are often used for BIOS calls (although replacing those constants by labels is recommended). Jumpts to constants are unsafe for optimization as the code at the target address (```#3c4a``` in the example) might move as a result of optimization. Hence, it's safer to add a safety label at the target address and use it for the jump.\n"
             + "- ```-quirk-sjasm-struc```: allows having the keyword ```struc``` after the definition of a struct in sjasm (as in ```STRUCT mystruct struc```), since sjasm allows this (probably by accident), and some codebases have it.\n"
             + "- ```-quirk-sjasmplus-dirbol-double-directive```: allows two directives in the same line without any separator, like this: ```db 0,0,0 dw 0``` (this is not intended, and will be fixed in future versions of sjasmplus, but some codebases use it).\n"
-            + "- ```-do-not-allow-calls-to-nondefined-symbols```: some times you want to optimize part of a codebase, and hence some symbols might be undefined, so, MDL tends to allow those. but if you want to be strict about that, and cancel further analysis of a file when one sych symbol is found, set this flag.\n";
+            + "- ```-do-not-allow-calls-to-nondefined-symbols```: some times you want to optimize part of a codebase, and hence some symbols might be undefined, so, MDL tends to allow those. but if you want to be strict about that, and cancel further analysis of a file when one sych symbol is found, set this flag.\n"
+            + "- ```-no-flow-analysis```: MDL by default tries to analyze the execution flow of the program to identify all the places where a function is called, all the places a `ret` statement can return to, etc. But it does not allways get it right. If this causes problems, you can disable it with this flag. As a consequence, MDL will assume that all registers are used after a `ret`, since it will not know where execution will continue.\n";
     
 
     public String simpleDocString = "MDL "+Main.VERSION_STRING+" (A Z80 assembler optimizer) by Santiago Ontañón (Brain Games, 2020-2022)\n"
@@ -632,6 +634,11 @@ public class MDLConfig {
                         
                     case "-do-not-allow-calls-to-nondefined-symbols":
                         allowCallsToNonDefinedSymbolsInExecutionFlowAnalysis = false;
+                        args.remove(0);
+                        break;
+                        
+                    case "-no-flow-analysis":
+                        useExecutionFlowAnalysis = false;
                         args.remove(0);
                         break;
                         

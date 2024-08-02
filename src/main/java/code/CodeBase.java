@@ -415,6 +415,8 @@ public class CodeBase {
     
     public List<StatementTransition> getStatementPossibleDestinations(CodeStatement s)
     {
+        if (!config.useExecutionFlowAnalysis) return null;
+
         if (config.flowAnalyzer == null) {
             config.flowAnalyzer = new ExecutionFlowAnalysis(this, config);
         }
