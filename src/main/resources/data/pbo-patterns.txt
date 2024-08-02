@@ -87,6 +87,7 @@ constraints:
 regsNotUsedAfter(0,A)
 
 pattern: Remove unused ld ?reg, ?any
+name: unused-ld-any
 0: ld ?reg,?any
 replacement:
 constraints:
@@ -95,6 +96,7 @@ notIn(?any,I)
 regsNotUsedAfter(0,?reg)
 
 pattern: Remove unused ld a, i
+name: unused-ld-i
 0: ld a, i
 replacement:
 constraints:
@@ -1605,6 +1607,7 @@ replacement:
 0: ld a,?const2
 
 pattern: Remove unused ld ?reg1,?reg2;ld ?reg2,?reg1
+name: unused-double-ld
 0: ld ?reg1,?reg2
 1: ld ?reg2,?reg1
 replacement:

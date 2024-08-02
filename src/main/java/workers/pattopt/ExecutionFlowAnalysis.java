@@ -251,7 +251,9 @@ public class ExecutionFlowAnalysis {
             for(int i = 0;i<f.getStatements().size();i++) {
                 if (f.getStatements().get(i).op != null) {
                     CodeStatement s_i = f.getStatements().get(i);
-                    if (s_i.op.isRet()) continue;
+                    if (s_i.op.isRet()) {
+                        continue;
+                    }
                     List<StatementTransition> next = nextOpExecutionStatements(i, f, new ArrayList<>());
                     if (next == null) {
                         if (s_i.op.isRst()) {
@@ -592,6 +594,16 @@ public class ExecutionFlowAnalysis {
                     if (!closed.contains(efn3) && !open.contains(pair3)) {
                         open.add(pair3);
                     }
+                }
+            }
+        }
+        
+        if (s.op.isConditional()) {
+            // Add a regular transition to the next statement:
+            List<Pair<CodeStatement, List<CodeStatement>>> next = s.source.immediatelyNextExecutionStatements(s.source.getStatements().indexOf(s), new ArrayList<>(), code);
+            if (next.size() == 1) {
+                for(Pair<CodeStatement, List<CodeStatement>> tmp:next) {
+                    possibleDestinations.add(new StatementTransition(tmp.getLeft(), StatementTransition.STANDARD_TRANSITION, null));
                 }
             }
         }

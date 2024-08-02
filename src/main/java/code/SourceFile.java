@@ -128,7 +128,7 @@ public class SourceFile {
             Integer s_size = s.sizeInBytesInternal(code, withIncludes, withIncbin, withVirtual, variableStack);
             if (s_size == null) return null;
             if (s_size < 0) {
-                System.out.println("statement with negative size: " + s_size + " -> " + s);
+                config.warn("statement with negative size: " + s_size + " -> " + s);
             }
             size += s_size;
         }
@@ -194,6 +194,7 @@ public class SourceFile {
 //                    // not currently suported
 //                    return null;
 //                }
+                List<Pair<CodeStatement, List<CodeStatement>>> next = new ArrayList<>();
                 if (s.op.isRet()) {
                     if (callStack != null) {
                         if (!callStack.isEmpty()) {
@@ -203,7 +204,6 @@ public class SourceFile {
                                 for(int i = 0;i<callStack.size()-1;i++) {
                                     newCallStack.add(callStack.get(i));
                                 }
-                                List<Pair<CodeStatement, List<CodeStatement>>> next = new ArrayList<>();
                                 next.add(Pair.of(target, newCallStack));
                                 if (s.op.isConditional()) {
                                     next.addAll(immediatelyNextExecutionStatements(index, callStack, code));
@@ -214,7 +214,6 @@ public class SourceFile {
                             // Check if we have this ret in the execution flow table:
                             List<ExecutionFlowAnalysis.StatementTransition> destinations = code.getStatementPossibleDestinations(s);
                             if (destinations != null) {
-                                List<Pair<CodeStatement, List<CodeStatement>>> next = new ArrayList<>();
                                 List<CodeStatement> newCallStack = new ArrayList<>();
                                 for(int i = 0;i<callStack.size()-1;i++) {
                                     newCallStack.add(callStack.get(i));
@@ -222,6 +221,10 @@ public class SourceFile {
                                 for(ExecutionFlowAnalysis.StatementTransition t: destinations) {
                                     if (t.transitionType == ExecutionFlowAnalysis.StatementTransition.POP_RET_TRANSITION) {
                                         next.add(Pair.of(t.s, newCallStack));                            
+                                    } else if (s.op.isConditional()) {
+                                        if (t.transitionType == ExecutionFlowAnalysis.StatementTransition.STANDARD_TRANSITION) {
+                                            next.add(Pair.of(t.s, callStack));                            
+                                        }
                                     }
                                 }
                                 return next;
@@ -271,7 +274,6 @@ public class SourceFile {
                     }
 
                     // get target CodeStatement:
-                    List<Pair<CodeStatement, List<CodeStatement>>> next;
                     if (s.op.isConditional()) {
                         next = immediatelyNextExecutionStatements(index, callStack, code);
                     } else {

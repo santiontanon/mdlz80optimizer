@@ -9,6 +9,7 @@ import cl.MDLLogger;
 import code.CodeBase;
 import code.CodeStatement;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import org.junit.Assert;
@@ -81,8 +82,14 @@ public class ExecutionFlowTest {
             String tokens[] = s.comment.split(" ");
             String ID = tokens[1];
             int nDestinations = Integer.parseInt(tokens[2]);
-            Assert.assertEquals(nDestinations, table.get(s).size());
+            List<StatementTransition> retDestinations = new ArrayList<>();
             for(StatementTransition sd: table.get(s)) {
+                if (sd.transitionType == StatementTransition.POP_RET_TRANSITION) {
+                    retDestinations.add(sd);
+                }
+            }
+            Assert.assertEquals(nDestinations, retDestinations.size());
+            for(StatementTransition sd: retDestinations) {
                 Assert.assertNotNull(sd.s.comment);
                 Assert.assertTrue(sd.s.comment.contains(ID+"-DESTINATION"));
             }

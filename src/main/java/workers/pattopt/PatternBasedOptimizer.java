@@ -374,7 +374,7 @@ public class PatternBasedOptimizer implements MDLWorker {
         getMatchesStartingFromLine(f, i, matches, lastPass, code);
         
         if (!matches.isEmpty()) {
-            // Look for patterns that match in the lines that will be modified beyon line "i",
+            // Look for patterns that match in the lines that will be modified beyond line "i",
             // to reduce the probability of applying a pattern that prevents a better one
             // to be applied later on:
             int lastMatchedLine = i;
@@ -448,7 +448,7 @@ public class PatternBasedOptimizer implements MDLWorker {
                     int bytesSaved = bestPatt.getSpaceSaving(bestMatch, code);
                     String timeSavedString = bestPatt.getTimeSavingString(bestMatch, code);
                     config.info("Pattern-based optimization", statementToDisplayMessageOn.fileNameLineString(), 
-                            bestPatt.getInstantiatedName(bestMatch)+" ("+bytesSaved+" bytes, " +
+                            bestPatt.getInstantiatedName(bestMatch) + " ("+bytesSaved+" bytes, " +
                             timeSavedString + " " +config.timeUnit+"s saved)");
                     for(EqualityConstraint ec:bestMatch.newEqualities) {
                         config.debug("new equality constraint: " + ec.exp1 + " == " + ec.exp2);

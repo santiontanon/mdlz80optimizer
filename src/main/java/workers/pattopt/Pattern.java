@@ -747,7 +747,8 @@ public class Pattern {
                 if (!match.map.containsKey(idx)) return false;
                 for(int i = 1;i<constraint.args.length;i++) {
                     String reg = constraint.args[i];
-                    Boolean result = regUsedAfter(match.map.get(idx).get(match.map.get(idx).size()-1), reg, f, code);
+                    CodeStatement s = match.map.get(idx).get(match.map.get(idx).size()-1);
+                    Boolean result = regUsedAfter(s, reg, f, code);
                     if (result == null) {
                         maybeLogOptimization(match, pbo, f.getStatements().get(index_to_display_message_on).sl);
                         return false;

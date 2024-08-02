@@ -48,13 +48,8 @@ public class PrecomputedTestCase {
 
     public boolean checkGoalState(Z80Core z80)
     {
-//        System.out.println(this);
         for(int i = 0;i<goalRegisters.length;i++) {
             if (z80.getRegisterValue(goalRegisters[i]) != goalRegisterValues[i]) {
-//                System.out.println("register mismatch: " + goalRegisters[i] + " -> " + z80.getRegisterValue(goalRegisters[i]) + " vs " + goalRegisterValues[i]);
-//                for(int j = 0;j<startRegisters.length;j++) {
-//                    System.out.println("    initial " + startRegisters[j] + " = " + startRegisterValues[j]);
-//                }
                 return false;
             }
         }
@@ -81,10 +76,6 @@ public class PrecomputedTestCase {
             }
         }
 
-//        for(int i = 0;i<goalRegisters.length;i++) {
-//            System.out.println(goalRegisters[i] + ": " + goalRegisterValues[i]);
-//        }
-        
         return true;
     }        
 
