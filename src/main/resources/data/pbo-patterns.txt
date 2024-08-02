@@ -240,7 +240,7 @@ replacement:
 constraints:
 regsNotUsedAfter(3,A)
 
-pattern: Replace ld a,(hl); lde (de),a; inc de; inc hl; with ldi
+pattern: Replace ld a,(hl); lde (de),a; inc de; inc hl; with ldi; inc bc
 0: ld a,(hl)
 1: ld (de),a
 3: inc de
@@ -2002,6 +2002,26 @@ replacement:
 constraints:
 regsNotModified(1, ?reg)
 in(?regixiy,IX,IY)
+
+pattern: Replace xor a; add a, ?reg with ld a, ?reg.
+name: add-to-ld
+0: xor a
+1: add a, ?reg
+replacement:
+0: ld a, ?reg
+constraints:
+flagsNotUsedAfter(1,S,Z,H,P/V,N,C)
+
+pattern: Replace ld ?reg2, ?reg1; ld ?reg3, ?reg2 with ld ?reg3, ?reg1
+name: unnecessary-intermediate
+0: ld ?reg2, ?reg1
+1: ld ?reg3, ?reg2
+replacement:
+0: ld ?reg3, ?reg1
+constraints:
+notIn(?reg1,R,I)
+notIn(?reg2,R,I)
+notIn(?reg3,R,I)
 
 ; automatically generated
 pattern: replace rlc ?reg0; rl ?reg1 with rlca; rl ?reg1

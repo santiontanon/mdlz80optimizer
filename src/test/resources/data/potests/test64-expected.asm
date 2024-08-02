@@ -6,9 +6,9 @@
   ld l, a
   ld (hl), 0
 
-  ld a, 1
-  ld h, a
-  ld l, a
+  ld c, 1
+  ld h, c
+  ld l, c
   ld (hl), 2
 
 
