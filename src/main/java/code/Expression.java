@@ -662,7 +662,6 @@ public class Expression {
             }
             case EXPRESSION_PLUS_SIGN:
                 return args.get(0).evaluateInternal(s, code, silent, previous, variableStack);
-
         }
 
         return null;

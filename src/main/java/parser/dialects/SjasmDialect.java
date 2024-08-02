@@ -296,6 +296,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                 ":", config.expressionParser.OPERATOR_PRECEDENCE[Expression.EXPRESSION_BITNEGATION]);
         config.expressionParser.dialectFunctionsSingleArgumentNoParenthesisPrecedence.put(
                 "::", config.expressionParser.OPERATOR_PRECEDENCE[Expression.EXPRESSION_BITNEGATION]);
+        config.expressionParser.sjasmBinaryColonOperator = true;
         
         // We define it as a dialectMacro instead of as a synonym of "REPT", as it has some special syntax for
         // indicating the current iteration
@@ -1361,6 +1362,16 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             return Expression.operatorExpression(Expression.EXPRESSION_BITAND, 
                     args.get(0),
                     Expression.constantExpression(0x00ff, Expression.RENDER_AS_16BITHEX, config), config);
+        }
+        if (functionName.equalsIgnoreCase(":") && args.size() == 2) {
+            return Expression.operatorExpression(Expression.EXPRESSION_SUM, 
+                    Expression.parenthesisExpression(
+                            Expression.operatorExpression(Expression.EXPRESSION_LSHIFT,
+                                                          Expression.parenthesisExpression(args.get(0), "(", config),
+                                                          Expression.constantExpression(8, Expression.RENDER_DEFAULT, config),
+                                                          config),
+                            "(", config),
+                    Expression.parenthesisExpression(args.get(1), "(", config), config);
         }
         if (functionName.equalsIgnoreCase("::") && args.size() == 1) {
             if (!args.get(0).evaluatesToIntegerConstant()) {

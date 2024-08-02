@@ -66,6 +66,7 @@ public class ExpressionParser {
     public List<Integer> sjasmCounterVariables = new ArrayList<>();
     public boolean sdccStyleHashMarksForConstants = false;
     public boolean sjasmPlusCurlyBracketExpressions = false;
+    public boolean sjasmBinaryColonOperator = false;
     
     public boolean allowFloatingPointNumbers = false;
     public boolean binaryDigitsCanContainSpaces = false;
@@ -84,7 +85,8 @@ public class ExpressionParser {
         5, 13, 11, 10, 9,   // %, ||, &&, =, <
         9, 9, 9, 10, 16,    // >, <=, >=, !=, ?
         7, 7, 13, 11, 3,    // <<, >>, |, &, ~
-        12, 3, -1, -1, -1}; // ^, !
+        12, 3, -1, -1, -1,  // ^, !
+        -1, 10};            // :
 
     // This is a copy of the standard operator precedence, used to see if the precedences in the current
     // dialect differ from the usual:
@@ -94,7 +96,8 @@ public class ExpressionParser {
         5, 13, 11, 10, 9,   // %, ||, &&, =, <
         9, 9, 9, 10, 16,    // >, <=, >=, !=, ?
         7, 7, 13, 11, 3,    // <<, >>, |, &, ~
-        12, 3, -1, -1, -1}; // ^, !    
+        12, 3, -1, -1, -1,  // ^, !
+        -1, 10};            // :
 
     public ExpressionParser(MDLConfig a_config)
     {
@@ -347,6 +350,23 @@ public class ExpressionParser {
                     return null;
                 }
                 exp = Expression.operatorExpression(Expression.EXPRESSION_AND, exp, exp2, config);
+                continue;
+            }
+            if (sjasmBinaryColonOperator && tokens.get(0).equals(":")) {
+                tokens.remove(0);
+                Expression exp2 = parseInternal(tokens, s, previous, code);
+                if (exp2 == null) {
+                    config.error("Missing argument for operator :");
+                    return null;
+                }
+                exp = Expression.operatorExpression(Expression.EXPRESSION_SUM, 
+                        Expression.parenthesisExpression(
+                                Expression.operatorExpression(Expression.EXPRESSION_LSHIFT,
+                                                              Expression.parenthesisExpression(exp, "(", config),
+                                                              Expression.constantExpression(8, Expression.RENDER_DEFAULT, config),
+                                                              config),
+                                "(", config),
+                        Expression.parenthesisExpression(exp2, "(", config), config);
                 continue;
             }
             // array indexing:
