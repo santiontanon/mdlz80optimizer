@@ -2019,7 +2019,7 @@ name: unnecessary-intermediate
 replacement:
 0: ld ?reg3, ?reg1
 constraints:
-regsNotUsedAfter(2,?reg2)
+regsNotUsedAfter(1,?reg2)
 notIn(?reg1,R,I)
 notIn(?reg2,R,I)
 notIn(?reg3,R,I)
