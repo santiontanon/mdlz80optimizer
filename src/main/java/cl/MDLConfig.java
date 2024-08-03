@@ -163,7 +163,7 @@ public class MDLConfig {
 
     // This string has MD tags, so that I can easily generate the corresponding documentation in github with the 
     // hidden "-helpmd" flag:
-    public String docString = "MDL "+Main.VERSION_STRING+" (A Z80 assembler optimizer) by Santiago Ontañón (Brain Games, 2020-2022)\n"
+    public String docString = "MDL "+Main.VERSION_STRING+" (A Z80 assembler optimizer) by Santiago Ontañón (Brain Games, 2020-2024)\n"
             + "https://github.com/santiontanon/mdlz80optimizer\n"
             + "\n"
             + "Command Line Arguments:\n"
