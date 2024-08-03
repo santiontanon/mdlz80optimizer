@@ -115,6 +115,16 @@ public class ExecutionFlowAnalysis {
     }
     
     
+    public void reset()
+    {
+        forwardTable = null;
+        reverseTable = null;
+        statementsWithExportedLabels = null;
+        statementsInsideJumpTables = null;
+        statementsThatCallJumpTableJump = new HashMap<>();
+    }
+    
+    
     void loadPatterns(String fileName) 
     {
         config.debug("Loading jumptable patterns from " + fileName);

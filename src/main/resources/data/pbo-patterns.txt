@@ -1835,8 +1835,7 @@ replacement:
 constraints:
 in(?regixiy,ix,iy)
 regsNotUsed(1,?reg2)
-regsNotModified(1,?reg2)
-regsModified(1,?reg1,?regixiy)
+regsNotModified(1,?reg2,?regixiy)
 memoryNotWritten(1,?regixiy + ?const1)
 
 pattern: Prevent moving ?regpair to hl by using register a.
@@ -2020,9 +2019,9 @@ replacement:
 0: ld ?reg3, ?reg1
 constraints:
 regsNotUsedAfter(1,?reg2)
-notIn(?reg1,R,I)
+notIn(?reg1,R,I,IXL,IXH,IYL,IYH)
 notIn(?reg2,R,I)
-notIn(?reg3,R,I)
+notIn(?reg3,R,I,IXL,IXH,IYL,IYH)
 
 ; automatically generated
 pattern: replace rlc ?reg0; rl ?reg1 with rlca; rl ?reg1

@@ -571,7 +571,7 @@ public class SearchBasedOptimizer implements MDLWorker {
                 if (i > 0 && code.isSelfModifying(f.getStatements().get(i-1))) knownRegisterValues.clear();
                 
                 try {
-                    if (optimizeStartingFromLine(f, i, knownRegisterValues, code, r)) {
+                    if (optimizeStartingFromLine(f, i, knownRegisterValues, code, r)) {                        
                         i = Math.max(-1, i-2);   // go back a couple of statements, as more optimizations might chain
                         code.resetAddressesAndFlow();
                         registersUsedAfter_previous = null;
@@ -1216,6 +1216,7 @@ public class SearchBasedOptimizer implements MDLWorker {
                     s2.label = s.label;
                     s2.labelPrefix = s.labelPrefix;
                     additionalStatements.add(s2);
+                    f.getStatements().remove(s);
                 }
             }
             for(CodeStatement s:additionalStatements) {

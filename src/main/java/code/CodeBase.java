@@ -294,6 +294,7 @@ public class CodeBase {
         }
         
         executionFlowTable = null;
+        if (config.flowAnalyzer != null) config.flowAnalyzer.reset();
     }
 
     

@@ -800,9 +800,9 @@ public class SBOCandidate {
         }
         
         config.debug("allCandidateOps: " + candidates.size());
-        for(SBOCandidate op:candidates) {
-            config.debug("- " + op);
-        }
+//        for(SBOCandidate op:candidates) {
+//            config.debug("- " + op);
+//        }
         
         // Precalculate which instructions can contribute to the solution:
         boolean goalDependencies[] = spec.getGoalDependencies(allDependencies);
