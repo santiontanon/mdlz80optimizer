@@ -957,9 +957,11 @@ public class SourceCodeExecution implements MDLWorker {
         });
         String hotspotsString = "";
         for(int i = 0;i<nHotSpotsToShow;i++) {
-            String spot = sortedSpots.get(i);
-            MutablePair<Integer, Integer> stats = hotspots.get(spot);
-            hotspotsString += instructions.get(spot).fileNameLineString() + "\t" + stats.getLeft() + "\t" + stats.getRight() + "\n";
+            if (sortedSpots.size() > i) {
+                String spot = sortedSpots.get(i);
+                MutablePair<Integer, Integer> stats = hotspots.get(spot);
+                hotspotsString += instructions.get(spot).fileNameLineString() + "\t" + stats.getLeft() + "\t" + stats.getRight() + "\n";
+            }
         }
         config.info("Hotspots: count time\n" + hotspotsString);
     }
@@ -1071,7 +1073,7 @@ public class SourceCodeExecution implements MDLWorker {
             } else {
                 // it's a flag:
                 int flag = CPUConstants.flagByName(exp.registerOrFlagName);
-                return "" + z80.getFlagValue(flag);
+                return "" + z80.getFlagValue(CPUConstants.flagIndex(flag));
             }
         } else {
             config.warn("SourceCodeExecution: cannot evaluate watch expression " + exp.toString());

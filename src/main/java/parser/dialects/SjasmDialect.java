@@ -575,7 +575,6 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             struct = new SjasmStruct();
             struct.name = tokens.remove(0);
             struct.file = source;
-            config.lineParser.pushLabelPrefix(struct.name + ".");
             if (config.quirk_sjasm_struc &&
                 !tokens.isEmpty() && tokens.get(0).equalsIgnoreCase("struc")) {
                 // I found it in this file: https://github.com/GuillianSeed/MetalGear/blob/master/constants/structures.asm
@@ -585,9 +584,10 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
             struct.file = source;
             struct.start = s;
             s.type = CodeStatement.STATEMENT_CONSTANT;
-            SourceConstant c = new SourceConstant(struct.name, struct.name, null, s, config);
+            SourceConstant c = config.lineParser.newSourceConstant(struct.name, null, s, null);
             s.label = c;
             if (code.addSymbol(c.name, c) != 1) return false;
+            config.lineParser.pushLabelPrefix(c.name + ".");
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
         if (tokens.size() >= 1 && tokens.get(0).equalsIgnoreCase("ends")) {
@@ -654,7 +654,12 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                 s.label.exp = Expression.constantExpression(mapCounter, Expression.RENDER_AS_16BITHEX, config);
             }
             s.type = CodeStatement.STATEMENT_CONSTANT;
-            mapCounter += exp.evaluateToInteger(s, code, false);
+            Integer exp_value = exp.evaluateToInteger(s, code, false);
+            if (exp_value == null) {
+                config.error("Cannot evaluate expression " + exp);
+                return false;
+            }
+            mapCounter += exp_value;
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("assert")) {

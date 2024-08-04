@@ -79,6 +79,8 @@ public class SjasmTest {
                                                                            new String[] {"data/generationtests/sjasm-macro5-expected.asm"}, false)); }
     @Test public void test23() throws IOException { Assert.assertTrue(test("data/generationtests/sjasm-colon.asm",
                                                                            new String[] {"data/generationtests/sjasm-colon-expected.asm"}, false)); }
+    @Test public void test24() throws IOException { Assert.assertTrue(test("data/generationtests/sjasm24.asm",
+                                                                           new String[] {"data/generationtests/sjasm24-expected.asm"}, false)); }
 
     private boolean test(String inputFile, String[] expectedOutputFiles, boolean mimicTargetDialect) throws IOException
     {
