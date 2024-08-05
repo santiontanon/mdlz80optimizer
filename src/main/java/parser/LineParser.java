@@ -1319,6 +1319,7 @@ public class LineParser {
         s.macroCallName = macroName;
         s.macroCallArguments = arguments;
         s.type = CodeStatement.STATEMENT_MACROCALL;
+        s.labelPrefix = labelPrefix;
         return parseRestofTheLine(tokens, l, sl, s, previous, source, code);
     }
 

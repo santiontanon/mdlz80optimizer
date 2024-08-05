@@ -68,6 +68,7 @@ public class CodeStatement {
     public List<Expression> macroCallArguments = null;
     public List<String> macroDefinitionArgs;
     public List<Expression> macroDefinitionDefaults;
+    public String macroExpansionLabelPrefix = null;  // If we are not yet expanding the macro, but will do later, we store the labelPrefix here
     
     // These are optional attributes that all statements can have:
     public boolean redefinedLabel = false;

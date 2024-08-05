@@ -146,11 +146,16 @@ public class SourceMacro {
                 args.get(0).evaluateToInteger(macroCall, code, false);
                 return null;
             }
+            List<SourceLine> linesTmp = new ArrayList<>();
             if (ifCondition_value == Expression.FALSE) {
-                lines2.addAll(elseLines);
+                linesTmp.addAll(elseLines);
             } else {
-                lines2.addAll(lines);
+                linesTmp.addAll(lines);
             }
+            if (macroCall.labelPrefix != null && !macroCall.labelPrefix.isEmpty()) {
+                scopeMacroExpansionLines(macroCall.labelPrefix, linesTmp, code, config);
+            }
+            lines2.addAll(linesTmp);
         } else if (config.preProcessor.isMacroName(name, config.preProcessor.MACRO_IFDEF)) {
             if (args.isEmpty()) {
                 config.error("No argument found for "+name+" macro in " + macroCall.sl);
@@ -305,11 +310,11 @@ public class SourceMacro {
     {
         if (!lines.isEmpty()) {
             SourceLine l2 = new SourceLine("", lines.get(0).source, lines.get(0).lineNumber);
-            l2.labelPrefixToPush = scope + ".";
+            l2.labelPrefixToPush = scope + (scope.endsWith(".") ? "":".");
             lines.add(0, l2);
             
             SourceLine l3 = new SourceLine("", lines.get(lines.size()-1).source, lines.get(lines.size()-1).lineNumber);
-            l3.labelPrefixToPop = scope + ".";            
+            l3.labelPrefixToPop = scope + (scope.endsWith(".") ? "":".");
             lines.add(l3);
         }
     }

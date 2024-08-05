@@ -56,7 +56,7 @@ public class SourceLine {
         return fileNameLineString()+": " + line;
     }
     
-    
+        
     public String fileNameLineString()
     {
         String str = source.fileName + "#" + (lineNumber != null ? lineNumber:"-");

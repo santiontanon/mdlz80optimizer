@@ -106,6 +106,9 @@ public class ExecutionFlowAnalysis {
     List<Pattern> jumpTablePatterns = new ArrayList<>();
     
     boolean stop_analysis_on_untracked_rst = false;
+    
+    // This is for not printing the "Cannot determine the next statements after" warning again and again:
+    List<CodeStatement> statementsAlreadyWarned = new ArrayList<>();
         
     
     public ExecutionFlowAnalysis(CodeBase a_code, MDLConfig a_config) {
@@ -281,11 +284,17 @@ public class ExecutionFlowAnalysis {
                                     // ok: this is jumping to a function that is not defined (e.g. tail recursion).
                                     //     So, we just ignore it.
                                 } else {
-                                    config.error("Cannot determine the next statements after: " + s_i.fileNameLineString());
+                                    if (!statementsAlreadyWarned.contains(s_i)) {
+                                        statementsAlreadyWarned.add(s_i);
+                                        config.error("Cannot determine the next statements after: " + s_i.fileNameLineString());
+                                    }
                                     return null;                                    
                                 }                                
                             } else {
-                                config.error("Cannot determine the next statements after: " + s_i.fileNameLineString());
+                                if (!statementsAlreadyWarned.contains(s_i)) {
+                                    statementsAlreadyWarned.add(s_i);
+                                    config.error("Cannot determine the next statements after: " + s_i.fileNameLineString());
+                                }
                                 return null;
                             }
                         }
@@ -307,7 +316,10 @@ public class ExecutionFlowAnalysis {
                 next = forwardTable.get(s_i);
             }
             if (next == null) {
-                config.warn("Cannot determine the next statements after: " + s_i.fileNameLineString());
+                if (!statementsAlreadyWarned.contains(s_i)) {
+                    statementsAlreadyWarned.add(s_i);
+                    config.warn("Cannot determine the next statements after: " + s_i.fileNameLineString());
+                }
 //                return null;
 //            } else {
 //                if (!generateForwardAndReverseTablesForStatement(s_i, next)) {

@@ -45,6 +45,10 @@ public class GenerationTest {
                                                                           "data/generationtests/wladx-enum-expected.asm", "wladx")); }
     @Test public void test7() throws IOException { Assert.assertTrue(test("data/generationtests/wladx-repeat.asm",
                                                                           "data/generationtests/wladx-repeat-expected.asm", "wladx")); }
+    @Test public void test8a() throws IOException { Assert.assertTrue(test("data/generationtests/mdl-macros-a.asm",
+                                                                          "data/generationtests/mdl-macros-expected.asm")); }
+    @Test public void test8b() throws IOException { Assert.assertTrue(test("data/generationtests/mdl-macros-b.asm",
+                                                                          "data/generationtests/mdl-macros-expected.asm")); }
 
     private boolean test(String inputFile, String expectedOutputFile) throws IOException
     {

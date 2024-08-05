@@ -1095,8 +1095,8 @@ public class CodeReorganizer implements MDLWorker {
         if (moveBefore) {
             config.info("Reorganization optimization",
                     toMove.statements.get(0).sl.fileNameLineString(), 
-                    "move lines " + toMove.statements.get(0).sl.lineNumber + " - " + 
-                                    toMove.statements.get(toMove.statements.size()-1).sl.lineNumber + 
+                    "move lines " + toMove.statements.get(0).sl.fileNameLineString() + " - " + 
+                                    toMove.statements.get(toMove.statements.size()-1).sl.fileNameLineString() + 
                     " to right before " + destination.statements.get(0).sl.fileNameLineString() + 
                     " to remove a jump statement ("+bytesSaved+" bytes, " + timeSavedString + " " + config.timeUnit+"s saved)");
                         
@@ -1243,8 +1243,8 @@ public class CodeReorganizer implements MDLWorker {
                     config.info("Reorganization optimization",
                             block2.statements.get(block2_firstOp).sl.fileNameLineString(), 
                             "delete unreachable code in lines " + 
-                            block2.statements.get(block2_firstOp).sl.lineNumber + " - " + 
-                            block2.statements.get(endOfUnreachable).sl.lineNumber + 
+                            block2.statements.get(block2_firstOp).sl.fileNameLineString() + " - " + 
+                            block2.statements.get(endOfUnreachable).sl.fileNameLineString() + 
                             " " + bytesSaved + " bytes saved.");
                     
                     for(CodeStatement s:toDelete) {
