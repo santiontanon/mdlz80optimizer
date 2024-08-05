@@ -59,7 +59,7 @@ public class Resources {
     
     private static boolean existsInClasspath(String path) {
 
-        if (StringUtils.isBlank(path)) {
+        if (path == null || path.trim().isEmpty()) {
             return false;
         }
 
@@ -74,7 +74,7 @@ public class Resources {
 
     public static boolean existsInFileSystem(String path) {
 
-        if (StringUtils.isBlank(path)) {
+        if (path == null || path.trim().isEmpty()) {
             return false;
         }
 

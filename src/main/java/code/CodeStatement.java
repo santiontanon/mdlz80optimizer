@@ -520,10 +520,10 @@ public class CodeStatement {
                 return null;
         }
         
-        if (comment != null || !additionalComment.isBlank()) {
+        if (comment != null || !additionalComment.trim().isEmpty()) {
             String actualComment = "";
             if (comment != null) actualComment += comment;
-            if (!additionalComment.isBlank()) {
+            if (!additionalComment.trim().isEmpty()) {
                 actualComment += (actualComment.isEmpty() ? "":"  ; ") + additionalComment;
             }
             if (!actualComment.startsWith(";") && !mimicTargetDialect) {

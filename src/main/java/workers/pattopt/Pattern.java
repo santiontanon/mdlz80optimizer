@@ -100,7 +100,7 @@ public class Pattern {
                 name = line.substring(5).trim();
             } else if (line.startsWith("tags:")) {
                 for(String tag:line.substring(5).split(" ")) {
-                    if (!tag.trim().isBlank()) {
+                    if (tag != null && !tag.trim().isEmpty()) {
                         tags.add(tag);
                     }
                 }

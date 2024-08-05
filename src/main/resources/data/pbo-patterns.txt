@@ -13,9 +13,9 @@
 ; These are used to match lines from pattern to replacement. Any number appearing in pattern, and not in replacement will be deleted.
 ; The optimization will be reported to the line in pattern with number 0 (at least one line must have number 0)
 ; If a pattern is re-ordering statements (e.g., pattern has 0,1 and replacement, 1,0), MDL will fail to do this.
-; To work around this, just set the numbers 0,1 in the patter, and then 1,2 in the replacement (e.g., give new
+; To work around this, just set the numbers 0,1 in the pattern, and then 1,2 in the replacement (i.e., give new
 ; numbers to the statements that move).
-; supported constraints:
+; Supported constraints:
 ; - regsNotUsedAfter(#, reg1, ..., reg)
 ; - regsNotModified(#, reg1, ..., reg)
 ; - regsModified(#, reg1, ..., reg)
