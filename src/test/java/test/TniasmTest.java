@@ -38,7 +38,7 @@ public class TniasmTest {
     @Test public void test3() throws IOException { Assert.assertTrue(test("data/generationtests/tniasm-multiple.asm",
                                                                           "data/generationtests/tniasm-multiple-expected.asm")); }
     @Test public void test4() throws IOException { Assert.assertTrue(test("data/generationtests/tniasm-macros.asm",
-                                                                          "data/generationtests/tniasm-macros-expected.asm")); }
+                                                                          "data/generationtests/tniasm-macros-expected.asm", true)); }
     @Test public void test5() throws IOException { Assert.assertTrue(test("data/generationtests/tniasm-error.asm",
                                                                           "data/generationtests/tniasm-error-expected.asm")); }
     @Test public void test6() throws IOException { Assert.assertTrue(test("data/generationtests/tniasm-fakeops.asm",
@@ -46,7 +46,16 @@ public class TniasmTest {
 
     private boolean test(String inputFile, String expectedOutputFile) throws IOException
     {
-        Assert.assertTrue(config.parseArgs(inputFile,"-dialect","tniasm"));
+        return test(inputFile, expectedOutputFile, false);
+    }
+
+    private boolean test(String inputFile, String expectedOutputFile, boolean tniasmPipeAsOr) throws IOException
+    {
+        if (tniasmPipeAsOr) {
+            Assert.assertTrue(config.parseArgs(inputFile,"-dialect", "tniasm","-tniasm-pipe-as-or"));            
+        } else {
+            Assert.assertTrue(config.parseArgs(inputFile,"-dialect", "tniasm"));
+        }
         Assert.assertTrue(
                 "Could not parse file " + inputFile,
                 config.codeBaseParser.parseMainSourceFiles(config.inputFiles, code));

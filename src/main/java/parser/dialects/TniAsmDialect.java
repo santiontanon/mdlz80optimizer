@@ -73,7 +73,9 @@ public class TniAsmDialect implements Dialect {
         config.expressionParser.OP_LOGICAL_OR = "or";
         config.expressionParser.OP_LOGICAL_AND = "and";
         config.expressionParser.OP_MOD = "mod";
-        config.expressionParser.addOpSynonym("|", config.expressionParser.OP_LOGICAL_OR);
+        if (config.tniasmPipeAsOr) {
+            config.expressionParser.addOpSynonym("|", config.expressionParser.OP_LOGICAL_OR);
+        }
         config.expressionParser.addOpSynonym("&", config.expressionParser.OP_LOGICAL_AND);
         config.expressionParser.addOpSynonym("%", config.expressionParser.OP_MOD);
         config.tryParsingUndefinedSymbolsAsHex = true;

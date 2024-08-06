@@ -573,6 +573,12 @@ public class LineParser {
                 if (labelPrefix != null) s2.labelPrefix = labelPrefix;
                 l.add(s2);
                 return parseInternal(tokens, l, sl, s2, null, source, code, false);
+            } else if (tniAsmMultipleInstructionsPerLine && tokens.get(0).equals("|")) {
+                tokens.remove(0);
+                CodeStatement s2 = new CodeStatement(CodeStatement.STATEMENT_NONE, sl, source, config);
+                if (labelPrefix != null) s2.labelPrefix = labelPrefix;
+                l.add(s2);
+                return parseInternal(tokens, l, sl, s2, null, source, code, false);
             } else if (config.quirk_sjasmplus_dirbol_double_directive ||
                        (tniAsmMultipleInstructionsPerLine && allowMoreInstructions)) {
                 CodeStatement s2 = new CodeStatement(CodeStatement.STATEMENT_NONE, sl, source, config);
@@ -1045,7 +1051,8 @@ public class LineParser {
         
         while (!tokens.isEmpty()) {
             if (config.tokenizer.isSingleLineComment(tokens.get(0)) ||
-                (allowColonSeparatedInstructions && tokens.get(0).equals(":"))) {
+                (allowColonSeparatedInstructions && tokens.get(0).equals(":")) ||
+                (tniAsmMultipleInstructionsPerLine && tokens.get(0).equals("|"))) {
                 break;
             }
             Expression exp = null;
