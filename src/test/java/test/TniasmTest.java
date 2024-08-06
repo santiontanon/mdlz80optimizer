@@ -41,6 +41,8 @@ public class TniasmTest {
                                                                           "data/generationtests/tniasm-macros-expected.asm")); }
     @Test public void test5() throws IOException { Assert.assertTrue(test("data/generationtests/tniasm-error.asm",
                                                                           "data/generationtests/tniasm-error-expected.asm")); }
+    @Test public void test6() throws IOException { Assert.assertTrue(test("data/generationtests/tniasm-fakeops.asm",
+                                                                          "data/generationtests/tniasm-fakeops-expected.asm")); }
 
     private boolean test(String inputFile, String expectedOutputFile) throws IOException
     {

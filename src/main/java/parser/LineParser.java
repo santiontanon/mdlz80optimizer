@@ -66,6 +66,7 @@ public class LineParser {
     // sjasm defines macros like: "macro macroname arg1,...,agn" instead of "macroname: macro arg1,...,argn":
     public int macroDefinitionStyle = MACRO_LABEL_MACRO_ARGS;
     public boolean tniAsmStylemacroArgs = false;
+    public boolean tniAsmMultipleInstructionsPerLine = false;
     // Pasmo allows you to call macros with less parameters than defined, just using empty strings as defaults:
     public boolean emptyStringDefaultArgumentsForMacros = false;
     public boolean allowNumberLabels = false;   // also for sjasm (for "reusable" labels)
@@ -75,7 +76,6 @@ public class LineParser {
     public boolean sdccStyleOffsets = false;
     
     public boolean allowColonSeparatedInstructions = false;
-    public boolean allowtniASMMultipleInstructionsPerLine = false;
     public boolean allowBackslashAsLineBreaks = false;
     public boolean allowdataLinesWithoutCommas = false;
     
@@ -574,11 +574,11 @@ public class LineParser {
                 l.add(s2);
                 return parseInternal(tokens, l, sl, s2, null, source, code, false);
             } else if (config.quirk_sjasmplus_dirbol_double_directive ||
-                       (allowtniASMMultipleInstructionsPerLine && allowMoreInstructions)) {
+                       (tniAsmMultipleInstructionsPerLine && allowMoreInstructions)) {
                 CodeStatement s2 = new CodeStatement(CodeStatement.STATEMENT_NONE, sl, source, config);
                 if (labelPrefix != null) s2.labelPrefix = labelPrefix;
                 l.add(s2);
-                boolean allowLabels = allowtniASMMultipleInstructionsPerLine && allowMoreInstructions;
+                boolean allowLabels = tniAsmMultipleInstructionsPerLine && allowMoreInstructions;
                 return parseInternal(tokens, l, sl, s2, null, source, code, allowLabels);
             }
         }
@@ -1037,7 +1037,7 @@ public class LineParser {
         List<Expression> arguments = new ArrayList<>();
         
         List<String> tokensBacktrack = null;
-        if (allowtniASMMultipleInstructionsPerLine &&
+        if (tniAsmMultipleInstructionsPerLine &&
             config.opParser.isOpName(opName, 0)) {
             tokensBacktrack = new ArrayList<>();
             tokensBacktrack.addAll(tokens);

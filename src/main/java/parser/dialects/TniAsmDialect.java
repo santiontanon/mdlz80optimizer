@@ -5,6 +5,7 @@ package parser.dialects;
 
 
 import cl.MDLConfig;
+import code.CPUOp;
 import code.CodeBase;
 import code.Expression;
 import code.SourceConstant;
@@ -58,7 +59,7 @@ public class TniAsmDialect implements Dialect {
         config.lineParser.addKeywordSynonym("::", config.lineParser.KEYWORD_STD_COLON);
         
         config.lineParser.defineSpaceVirtualByDefault = true;
-        config.lineParser.allowtniASMMultipleInstructionsPerLine = true;
+        config.lineParser.tniAsmMultipleInstructionsPerLine = true;
         config.lineParser.allowBackslashAsLineBreaks = true;
         config.lineParser.macroDefinitionStyle = LineParser.MACRO_MACRO_NAME_ARGS;
         config.lineParser.tniAsmStylemacroArgs = true;
@@ -275,5 +276,62 @@ public class TniAsmDialect implements Dialect {
 //        if (auxiliaryStatementsToRemoveIfGeneratingDialectasm.contains(s)) return "";
         
         return s.toStringUsingRootPath(rootPath, useOriginalNames, true, code, style);
-    }        
+    }
+    
+
+
+    @Override
+    public boolean parseFakeCPUOps(List<String> tokens, SourceLine sl, List<CodeStatement> l, CodeStatement previous, SourceFile source, CodeBase code) 
+    {
+        // This function only adds the additional instructions beyond the first one. So, it will leave in "tokens", the set of
+        // tokens necessary for MDL'definingStatement regular parser to still parse the first op
+        CodeStatement s = l.get(0);
+        
+        if (tokens.size()>=4 && 
+            (tokens.get(0).equalsIgnoreCase("push") || tokens.get(0).equalsIgnoreCase("pop"))) {
+            // instructions of the style: push bc,de,hl
+            List<String> regpairs = new ArrayList<>();
+            boolean process = true;
+            int idx = 1;
+            while(true) {
+                if (tokens.size()<=idx) {
+                    process = false;
+                    break;
+                }
+                String regpair = tokens.get(idx);
+                if (!code.isRegisterPair(regpair)) {
+                    process = false;
+                    break;
+                }
+                regpairs.add(regpair);                    
+                idx++;
+                if (tokens.size()<=idx) break;
+                if (config.tokenizer.isSingleLineComment(tokens.get(idx))) break;
+                if (!tokens.get(idx).equals(",")) {
+                    process = false;
+                    break;
+                }
+                idx++;
+            }
+            if (process && regpairs.size()>1) {
+                int toremove = (regpairs.size()-1)*2;
+                for(int i = 0;i<toremove;i++) tokens.remove(2);
+                
+                // we overwrite the argument of the first, since in the case of a pop, the order might have changed:
+                tokens.set(1, regpairs.get(0));
+                
+                for(int i = 1;i<regpairs.size();i++) {
+                    CodeStatement auxiliaryS = new CodeStatement(CodeStatement.STATEMENT_CPUOP, sl, source, config);
+                    List<Expression> auxiliaryArguments = new ArrayList<>();
+                    auxiliaryArguments.add(Expression.symbolExpression(regpairs.get(i), auxiliaryS, code, config));
+                    List<CPUOp> op_l = config.opParser.parseOp(tokens.get(0), auxiliaryArguments, s, previous, code);
+                    if (op_l == null || op_l.size() != 1) return false;
+                    auxiliaryS.op = op_l.get(0);
+                    l.add(auxiliaryS);                    
+                }
+                return true;
+            }
+        }
+        return true;
+    }
 }
