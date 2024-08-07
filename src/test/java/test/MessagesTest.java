@@ -11,6 +11,7 @@ import code.CodeBase;
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.Assert;
 import org.junit.Test;
 import util.ListOutputStream;
@@ -78,7 +79,10 @@ public class MessagesTest {
             actual = actual.replace(MDLLogger.ANSI_RED, "");
             Assert.assertTrue(
                     "\nexpected: '"+expected+"'\nbut found: '"+actual+"'",
-                    expected.equals(actual));
+                    // (trim to ignore line-ending differences)
+                    StringUtils.equals(
+                        StringUtils.trim(expected),
+                        StringUtils.trim(actual)));
         }
         
         return true;
