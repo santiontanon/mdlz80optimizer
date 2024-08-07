@@ -24,8 +24,8 @@ public class Dialects {
      */
     public static String[] knownDialects() {
         return new String[]{"mdl", "asmsx", "asmsx-zilog", "glass", "sjasm",
-                            "sjasmplus", "tniasm", "winape", "pasmo", "sdcc",
-                            "sdasz80", "macro80", "wladx", "wladxz80"};
+                            "sjasmplus", "tniasm", "tniasm045", "tniasm10", "winape", "pasmo",
+                            "sdcc", "sdasz80", "macro80", "wladx", "wladxz80"};
     }
     
     /**
@@ -65,7 +65,11 @@ public class Dialects {
             case "sjasmplus":
                 return new SjasmPlusDialect(config);
             case "tniasm":
-                return new TniAsmDialect(config);
+                return new TniAsmDialect(config, TniAsmDialect.TNIASM045);
+            case "tniasm045":
+                return new TniAsmDialect(config, TniAsmDialect.TNIASM045);
+            case "tniasm10":
+                return new TniAsmDialect(config, TniAsmDialect.TNIASM10);
             case "winape":
                 return new WinAPEDialect(config);
             case "pasmo":

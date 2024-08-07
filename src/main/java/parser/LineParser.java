@@ -66,7 +66,8 @@ public class LineParser {
     // sjasm defines macros like: "macro macroname arg1,...,agn" instead of "macroname: macro arg1,...,argn":
     public int macroDefinitionStyle = MACRO_LABEL_MACRO_ARGS;
     public boolean tniAsmStylemacroArgs = false;
-    public boolean tniAsmMultipleInstructionsPerLine = false;
+    public boolean tniAsm045MultipleInstructionsPerLine = false;
+    public boolean tniAsm10MultipleInstructionsPerLine = false;
     // Pasmo allows you to call macros with less parameters than defined, just using empty strings as defaults:
     public boolean emptyStringDefaultArgumentsForMacros = false;
     public boolean allowNumberLabels = false;   // also for sjasm (for "reusable" labels)
@@ -573,18 +574,18 @@ public class LineParser {
                 if (labelPrefix != null) s2.labelPrefix = labelPrefix;
                 l.add(s2);
                 return parseInternal(tokens, l, sl, s2, null, source, code, false);
-            } else if (tniAsmMultipleInstructionsPerLine && tokens.get(0).equals("|")) {
+            } else if (tniAsm045MultipleInstructionsPerLine && tokens.get(0).equals("|")) {
                 tokens.remove(0);
                 CodeStatement s2 = new CodeStatement(CodeStatement.STATEMENT_NONE, sl, source, config);
                 if (labelPrefix != null) s2.labelPrefix = labelPrefix;
                 l.add(s2);
                 return parseInternal(tokens, l, sl, s2, null, source, code, false);
             } else if (config.quirk_sjasmplus_dirbol_double_directive ||
-                       (tniAsmMultipleInstructionsPerLine && allowMoreInstructions)) {
+                       (tniAsm045MultipleInstructionsPerLine && allowMoreInstructions)) {
                 CodeStatement s2 = new CodeStatement(CodeStatement.STATEMENT_NONE, sl, source, config);
                 if (labelPrefix != null) s2.labelPrefix = labelPrefix;
                 l.add(s2);
-                boolean allowLabels = tniAsmMultipleInstructionsPerLine && allowMoreInstructions;
+                boolean allowLabels = tniAsm045MultipleInstructionsPerLine && allowMoreInstructions;
                 return parseInternal(tokens, l, sl, s2, null, source, code, allowLabels);
             }
         }
@@ -1043,7 +1044,7 @@ public class LineParser {
         List<Expression> arguments = new ArrayList<>();
         
         List<String> tokensBacktrack = null;
-        if (tniAsmMultipleInstructionsPerLine &&
+        if (tniAsm045MultipleInstructionsPerLine &&
             config.opParser.isOpName(opName, 0)) {
             tokensBacktrack = new ArrayList<>();
             tokensBacktrack.addAll(tokens);
@@ -1052,7 +1053,7 @@ public class LineParser {
         while (!tokens.isEmpty()) {
             if (config.tokenizer.isSingleLineComment(tokens.get(0)) ||
                 (allowColonSeparatedInstructions && tokens.get(0).equals(":")) ||
-                (tniAsmMultipleInstructionsPerLine && tokens.get(0).equals("|"))) {
+                (tniAsm045MultipleInstructionsPerLine && tokens.get(0).equals("|"))) {
                 break;
             }
             Expression exp = null;

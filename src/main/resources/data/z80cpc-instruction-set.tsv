@@ -249,7 +249,7 @@ OUT (C),D	4	ED 51	2	BC,D						C		true
 OUT (C),E	4	ED 59	2	BC,E						C		true
 OUT (C),H	4	ED 61	2	BC,H						C		true
 OUT (C),L	4	ED 69	2	BC,L						C		true
-OUT (n),A	4	D3 n	2	A,B						n		true
+OUT (n),A	4	D3 n	2	A						n		true
 OUTD	5	ED AB	2	B,C,HL			HL	B,HL	S,Z,H,P/V,N,C	C		true
 OUTI	5	ED A3	2	B,C,HL			HL	B,HL	S,Z,H,P/V,N,C	C		true
 POP IX	5	DD E1	2	SP			[SP:SP+1]	IX,SP				true

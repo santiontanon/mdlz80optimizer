@@ -251,7 +251,7 @@ OUT (C),D	12	ED 51	2	BC,D						C		true
 OUT (C),E	12	ED 59	2	BC,E						C		true
 OUT (C),H	12	ED 61	2	BC,H						C		true
 OUT (C),L	12	ED 69	2	BC,L						C		true
-OUT (n),A	11	D3 n	2	A,B						n		true
+OUT (n),A	11	D3 n	2	A						n		true
 OUTD	16	ED AB	2	B,C,HL			HL	B,HL	S,Z,H,P/V,N,C	C		true
 OUTI	16	ED A3	2	B,C,HL			HL	B,HL	S,Z,H,P/V,N,C	C		true
 POP IX	14	DD E1	2	SP			[SP:SP+1]	IX,SP				true
