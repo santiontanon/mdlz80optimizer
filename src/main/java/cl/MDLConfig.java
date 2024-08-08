@@ -8,8 +8,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.lang3.StringUtils;
-
 import code.CodeBase;
 import parser.CPUOpParser;
 import parser.CPUOpSpecParser;
@@ -175,7 +173,7 @@ public class MDLConfig {
             + "- ```-help```: to show this information (this is the only flag that can be used without specifying an input file).\n"
             + "- ```-cpu <type>```: to select a different CPU (z80/z80msx/z80cpc/z80n/z80next/z180/r800), where z80n and z80next are synonyms (default: z80msx).\n"
             + "- ```-dialect <dialect>```: to allow parsing different assembler dialects "
-                    + "(" + StringUtils.join(Dialects.knownDialects(), '/') + ") "
+                    + "(" + String.join("/", Dialects.knownDialects()) + ") "
                     + "(default: mdl, which supports some basic code idioms common to various assemblers).\n"
             + "                   Note that even when selecting a dialect, not all syntax of a given assembler might be supported.\n"
             + "- ```-I <folder>```: adds a folder to the include search path (```-inc <folder>``` can also be used for compatibility with other assemblers).\n"
@@ -237,7 +235,7 @@ public class MDLConfig {
             + "\n"
             + "- ```-help```: for an exhaustive list of flags (just type ```java -jar mdl.jar -help```).\n"
             + "- ```-dialect <dialect>```: selects which assembler dialect to use "
-                    + "(" + StringUtils.join(Dialects.knownDialects(), '/') + ").\n";
+                    + "(" + String.join("/", Dialects.knownDialects()) + ").\n";
     
     
     public MDLConfig() {

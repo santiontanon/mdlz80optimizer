@@ -11,7 +11,6 @@ import code.CodeBase;
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
-import org.apache.commons.lang3.StringUtils;
 import org.junit.Assert;
 import org.junit.Test;
 import util.ListOutputStream;
@@ -46,8 +45,6 @@ public class MessagesTest {
             Assert.assertTrue(config.parseArgs(inputFile,"-dialect",dialect));
         }
         
-        
-        
         BufferedReader br = Resources.asReader(expectedMessagesFile);
         String expectedOutputLines[] = br.lines().toArray(String[]::new);
         
@@ -80,9 +77,7 @@ public class MessagesTest {
             Assert.assertTrue(
                     "\nexpected: '"+expected+"'\nbut found: '"+actual+"'",
                     // (trim to ignore line-ending differences)
-                    StringUtils.equals(
-                        StringUtils.trim(expected),
-                        StringUtils.trim(actual)));
+                    expected.trim().equals(actual.trim()));
         }
         
         return true;
