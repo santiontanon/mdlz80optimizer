@@ -930,19 +930,19 @@ public class SearchBasedOptimizer implements MDLWorker {
         spec.allowed16bitConstants.clear();
         HashMap<Integer, List<Expression>> constantsToExpressions = new HashMap<>();
         for(CodeStatement s:codeToOptimize) {
+            // Memory writes:
+            if (s.op.writesToMemory()) {
+                spec.allowRamUse = true;
+                goalRequiresSettingMemory = true;
+            }
+            // Memory reads:
+            if (s.op.readsFromMemory()) {
+                spec.allowRamUse = true;
+            }                
+
             for(int i = 0;i<s.op.args.size();i++) {
                 Expression arg = s.op.args.get(i);
-                
-                // Memory writes:
-                if (i == 0 && s.op.writesToMemory()) {
-                    spec.allowRamUse = true;
-                    goalRequiresSettingMemory = true;
-                }
-                // Memory reads:
-                if (i == 0 && s.op.readsFromMemory()) {
-                    spec.allowRamUse = true;
-                }                
-                
+                                
                 if (arg.evaluatesToIntegerConstant()) {
                     Integer value = arg.evaluateToInteger(s, code, true);
                     if (value == null) {
@@ -1013,6 +1013,7 @@ public class SearchBasedOptimizer implements MDLWorker {
             }
             config.debug("    - Goal flags: " + flagsUsedAfterNames);
         }
+        config.debug("    - sets memory: " + goalRequiresSettingMemory);
 
         // Start State:
         for(String reg:knownRegisterValues.keySet()) {

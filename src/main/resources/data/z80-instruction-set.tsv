@@ -263,7 +263,7 @@ RL (HL)	15	CB 16	2	HL	C			HL	S,Z,H,P/V,N,C		HL	true
 RL r	8	CB 10+r	2	r	C			r	S,Z,H,P/V,N,C			true
 RLC (HL)	15	CB 06	2	HL				HL	S,Z,H,P/V,N,C		HL	true
 RLC r	8	CB 00+r	2	r				r	S,Z,H,P/V,N,C			true
-RLD	18	ED 6F	2	A,HL			HL		S,Z,H,P/V,N			true
+RLD	18	ED 6F	2	A,HL			HL		S,Z,H,P/V,N		HL	true
 RR (HL)	15	CB 1E	2	HL	C			HL	S,Z,H,P/V,N,C		HL	true
 RR r	8	CB 18+r	2	r	C			r	S,Z,H,P/V,N,C			true
 RRC (HL)	15	CB 0E	2	HL				HL	S,Z,H,P/V,N,C		HL	true
