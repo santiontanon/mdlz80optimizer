@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.StringTokenizer;
 import org.junit.Assert;
 import org.junit.Test;
+import parser.dialects.TniAsmDialect;
 import util.Resources;
 import workers.SourceCodeGenerator;
 
@@ -31,31 +32,38 @@ public class TniasmTest {
         code = new CodeBase(config);
     }
 
-    @Test public void test1() throws IOException { Assert.assertTrue(test("data/generationtests/tniasm-ifdef.asm",
+    // tniasm0.45 tests:
+    @Test public void test1() throws IOException { Assert.assertTrue(test045("data/generationtests/tniasm-ifdef.asm",
                                                                           "data/generationtests/tniasm-ifdef-expected.asm")); }
-    @Test public void test2() throws IOException { Assert.assertTrue(test("data/generationtests/tniasm-constants.asm",
+    @Test public void test2() throws IOException { Assert.assertTrue(test045("data/generationtests/tniasm-constants.asm",
                                                                           "data/generationtests/tniasm-constants-expected.asm")); }
-    @Test public void test3() throws IOException { Assert.assertTrue(test("data/generationtests/tniasm-multiple.asm",
+    @Test public void test3() throws IOException { Assert.assertTrue(test045("data/generationtests/tniasm-multiple.asm",
                                                                           "data/generationtests/tniasm-multiple-expected.asm")); }
-    @Test public void test4() throws IOException { Assert.assertTrue(test("data/generationtests/tniasm-macros.asm",
-                                                                          "data/generationtests/tniasm-macros-expected.asm", true)); }
-    @Test public void test5() throws IOException { Assert.assertTrue(test("data/generationtests/tniasm-error.asm",
+    @Test public void test4() throws IOException { Assert.assertTrue(test045("data/generationtests/tniasm-operators.asm",
+                                                                          "data/generationtests/tniasm-operators-expected.asm")); }
+    @Test public void test5() throws IOException { Assert.assertTrue(test045("data/generationtests/tniasm-error.asm",
                                                                           "data/generationtests/tniasm-error-expected.asm")); }
-    @Test public void test6() throws IOException { Assert.assertTrue(test("data/generationtests/tniasm-fakeops.asm",
+    @Test public void test6() throws IOException { Assert.assertTrue(test045("data/generationtests/tniasm-fakeops.asm",
                                                                           "data/generationtests/tniasm-fakeops-expected.asm")); }
+    // tniasm1.0 tests:
+    @Test public void test10_1() throws IOException { Assert.assertTrue(test10("data/generationtests/tniasm-macros.asm",
+                                                                          "data/generationtests/tniasm-macros-expected.asm")); }
+    @Test public void test10_2() throws IOException { Assert.assertTrue(test10("data/generationtests/tniasm-10.asm",
+                                                                          "data/generationtests/tniasm-10-expected.asm")); }
 
-    private boolean test(String inputFile, String expectedOutputFile) throws IOException
+    private boolean test045(String inputFile, String expectedOutputFile) throws IOException
     {
-        return test(inputFile, expectedOutputFile, false);
+        return test(inputFile, expectedOutputFile, "tniasm");
     }
 
-    private boolean test(String inputFile, String expectedOutputFile, boolean tniasmPipeAsOr) throws IOException
+    private boolean test10(String inputFile, String expectedOutputFile) throws IOException
     {
-        if (tniasmPipeAsOr) {
-            Assert.assertTrue(config.parseArgs(inputFile,"-dialect", "tniasm","-tniasm-pipe-as-or"));            
-        } else {
-            Assert.assertTrue(config.parseArgs(inputFile,"-dialect", "tniasm"));
-        }
+        return test(inputFile, expectedOutputFile, "tniasm10");
+    }
+    
+    private boolean test(String inputFile, String expectedOutputFile, String dialect) throws IOException
+    {
+        Assert.assertTrue(config.parseArgs(inputFile,"-dialect", dialect));
         Assert.assertTrue(
                 "Could not parse file " + inputFile,
                 config.codeBaseParser.parseMainSourceFiles(config.inputFiles, code));

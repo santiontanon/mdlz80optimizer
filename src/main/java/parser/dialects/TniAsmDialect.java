@@ -24,6 +24,8 @@ import parser.SourceLine;
  * @author theNestruo (with later contributions from santi.ontanon)
  */
 public class TniAsmDialect implements Dialect {
+    public static final int TNIASM045 = 0;
+    public static final int TNIASM10 = 1;
 
     private final MDLConfig config;
 
@@ -33,7 +35,7 @@ public class TniAsmDialect implements Dialect {
      * Constructor
      * @param a_config
      */
-    public TniAsmDialect(MDLConfig a_config) {
+    public TniAsmDialect(MDLConfig a_config, int version) {
         super();
 
         config = a_config;
@@ -57,24 +59,27 @@ public class TniAsmDialect implements Dialect {
         config.lineParser.addKeywordSynonym("rb", config.lineParser.KEYWORD_DS);
         config.lineParser.addKeywordSynonym("%res8", config.lineParser.KEYWORD_DS);
         config.lineParser.addKeywordSynonym("::", config.lineParser.KEYWORD_STD_COLON);
+        config.lineParser.addKeywordSynonym("%equ", config.lineParser.KEYWORD_EQU);
         
         config.lineParser.defineSpaceVirtualByDefault = true;
-        config.lineParser.tniAsmMultipleInstructionsPerLine = true;
         config.lineParser.allowBackslashAsLineBreaks = true;
         config.lineParser.macroDefinitionStyle = LineParser.MACRO_MACRO_NAME_ARGS;
         config.lineParser.tniAsmStylemacroArgs = true;
         config.caseSensitiveSymbols = false;
         
-        config.expressionParser.binaryDigitsCanContainSpaces = true;
-        config.expressionParser.OP_BIT_NEGATION = "not";
-        config.expressionParser.OP_BIT_OR = "or";
-        config.expressionParser.OP_BIT_AND = "and";
-        config.expressionParser.OP_BIT_XOR = "xor";
-        config.expressionParser.OP_LOGICAL_OR = "or";
-        config.expressionParser.OP_LOGICAL_AND = "and";
-        config.expressionParser.OP_MOD = "mod";
-        if (config.tniasmPipeAsOr) {
+        if (version == TNIASM10) {
             config.expressionParser.addOpSynonym("|", config.expressionParser.OP_LOGICAL_OR);
+            config.lineParser.tniAsm10MultipleInstructionsPerLine = true;        
+        } else if (version == TNIASM045) {
+            config.expressionParser.binaryDigitsCanContainSpaces = true;
+            config.lineParser.tniAsm045MultipleInstructionsPerLine = true;
+            config.expressionParser.OP_BIT_NEGATION = "not";
+            config.expressionParser.OP_BIT_OR = "or";
+            config.expressionParser.OP_BIT_AND = "and";
+            config.expressionParser.OP_BIT_XOR = "xor";
+            config.expressionParser.OP_LOGICAL_OR = "or";
+            config.expressionParser.OP_LOGICAL_AND = "and";
+            config.expressionParser.OP_MOD = "mod";
         }
         config.expressionParser.addOpSynonym("&", config.expressionParser.OP_LOGICAL_AND);
         config.expressionParser.addOpSynonym("%", config.expressionParser.OP_MOD);
@@ -90,6 +95,7 @@ public class TniAsmDialect implements Dialect {
         config.tokenizer.doubleTokens.add("%macro");
         config.tokenizer.doubleTokens.add("%endmacro");
         config.tokenizer.doubleTokens.add("%error");
+        config.tokenizer.doubleTokens.add("%equ");
     }
 
     
