@@ -1,0 +1,7 @@
+    DEVICE ZXSPECTRUM128
+    SLDOPT COMMENT WPMEM, LOGPOINT, ASSERTION
+
+label:
+    nop
+
+    SAVEBIN 'main.bin', label

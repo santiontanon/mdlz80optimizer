@@ -438,6 +438,7 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("mmu")) return true;
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("savenex")) return true;
         if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("cspectmap")) return true;
+        if (tokens.size() >= 3 && tokens.get(0).equalsIgnoreCase("sldopt")) return true;
         
 
         for(SjasmStruct s:structs) {
@@ -1069,6 +1070,14 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
             linesToKeepIfGeneratingDialectAsm.add(s);
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);            
         }
+        if (tokens.size()>=2 && tokens.get(0).equalsIgnoreCase("sldopt")) {
+            // ignore for now:
+            while(!tokens.isEmpty() && !config.tokenizer.isSingleLineComment(tokens.get(0))) {
+                tokens.remove(0);
+            }            
+            linesToKeepIfGeneratingDialectAsm.add(s);
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);            
+        }
         
         
         if (parseAbyte(tokens, l, sl, s, previous, source, code)) return true;
@@ -1438,7 +1447,7 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
                 return false;
             }
             
-            switch(sc.command) {
+            switch(sc.command.toLowerCase()) {
                 case "savebin":
                 {
                     Integer start = 0;
