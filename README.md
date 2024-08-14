@@ -26,7 +26,7 @@ Several input file names can be specified, separated by spaces. In case that mor
 Note: all the tasks concerning generating outputs (assembler, binaries, etc.) will be executed after the optimizers are run.
 
 - ```-help```: for an exhaustive list of flags (just type java -jar mdl.jar -help).
-- ```-dialect <dialect>```: selects which assembler dialect to use (mdl/asmsx/asmsx-zilog/glass/sjasm/sjasmplus/tniasm/winape/pasmo/sdcc/sdasz80/macro80).
+- ```-dialect <dialect>```: selects which assembler dialect to use (mdl/asmsx/asmsx-zilog/glass/sjasm/sjasmplus/tniasm/tniasm045/tniasm10/winape/pasmo/sdcc/sdasz80/macro80/wladx/wladxz80).
 - ```-so```: Runs the search-based-based optimizer (optimizes code if the input is an assembler file; generates code if the input file is a specification file).
 - ```-ro```: Runs the code reoganizer optimizer.
 - ```-po```: Runs the pattern-based optimizer.
@@ -47,10 +47,9 @@ Note: all the tasks concerning generating outputs (assembler, binaries, etc.) wi
 
 - ```-help```: to show this information (this is the only flag that can be used without specifying an input file).
 - ```-cpu <type>```: to select a different CPU (z80/z80msx/z80cpc/z80n/z80next/z180/r800), where z80n and z80next are synonyms (default: z80msx).
-- ```-dialect <dialect>```: to allow parsing different assembler dialects (mdl/asmsx/asmsx-zilog/glass/sjasm/sjasmplus/tniasm/winape/pasmo/sdcc/sdasz80/macro80/wladx/wladxz80) (default: mdl, which supports some basic code idioms common to various assemblers).
+- ```-dialect <dialect>```: to allow parsing different assembler dialects (mdl/asmsx/asmsx-zilog/glass/sjasm/sjasmplus/tniasm/tniasm045/tniasm10/winape/pasmo/sdcc/sdasz80/macro80/wladx/wladxz80) (default: mdl, which supports some basic code idioms common to various assemblers).
                    Note that even when selecting a dialect, not all syntax of a given assembler might be supported.
-- ```-I <folder>```: adds a folder to the include search path (```-inc <folder>``` can also be used for compatibility with other assemblers).
-- ```-equ <symbol>=<value>```: defines a symbol that will exist while parsing the assembler code.
+- ```-I <folder>```: adds a folder to the include search path (```-inc <folder>``` can also be used for compatibility with other assemblers).- ```-equ <symbol>=<value>```: defines a symbol that will exist while parsing the assembler code.
 - ```-ansion```: turns on color message output usin ANSI codes (default: on in Unix, off in Windows).
 - ```-ansioff```: turns off color message output usin ANSI codes.
 - ```-quiet```: turns off info messages; only outputs warnings and errors.
