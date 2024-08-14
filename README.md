@@ -14,6 +14,7 @@ Moreover, mdl accepts a number of command line arguments in order to make it do 
 The latest version can always be downloaded from the "releases" section: https://github.com/santiontanon/mdlz80optimizer/releases
 
 I also recorded a series of videos explaining how does MDL work:
+- Version 2.6: https://www.youtube.com/watch?v=XWvb9lz3Y88 (in English, explaining code profiling functionality)
 - Version 1.4: https://www.youtube.com/watch?v=yVniGPu-znc (in Spanish), https://www.youtube.com/watch?v=2M8la7TuCzw&t=1s (in English)
 - Introduction to the main idea (earlier versions): https://www.youtube.com/watch?v=g5aoF4-r4v4 , https://www.youtube.com/watch?v=TCtm3FRz45c , and https://www.youtube.com/watch?v=30SEguEDWp0 (in English)
 
