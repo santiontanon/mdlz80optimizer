@@ -42,6 +42,7 @@ public class PatternValidityCheck {
         r = new Random();        
     }
 
+    // Individual pattern tests:
     @Test public void test2() throws Exception { test("data/pbo-patterns.txt", "cp02ora", false); }
     @Test public void test3() throws Exception { test("data/pbo-patterns.txt", "cp12deca", false); }
 
@@ -50,9 +51,13 @@ public class PatternValidityCheck {
 //    @Test public void test101() throws Exception { test("data/pbo-patterns.txt", "sdcc16bitcp", true); }
 //    @Test public void test102() throws Exception { test("data/pbo-patterns.txt", "sdccshiftr2", true); }
 //    @Test public void test103() throws Exception { test("data/pbo-patterns.txt", "move-to-top-of-stack", true); }
-    
+        
     @Test public void testSpeed1() throws Exception { test("data/pbo-patterns-speed.txt", "push2ld", false); }
 
+    // Test all patterns without wildcards/repetitions:
+    @Test public void testAllNoMemory() throws Exception { testAll("data/pbo-patterns.txt", false); }
+    
+    
     private void test(String patternsFile, String patternName, boolean checkMemory) throws Exception
     {
         Assert.assertTrue(config.parseArgs("dummy", "-popatterns", patternsFile));
@@ -81,6 +86,73 @@ public class PatternValidityCheck {
                                               flagsToIgnore, registersToIgnore,
                                               code, checkMemory, 1000));
         }
+    }
+    
+    
+    private boolean testAll(String patternsFile, boolean checkMemory) throws Exception
+    {
+        Assert.assertTrue(config.parseArgs("dummy", "-popatterns", patternsFile));
+        
+        pbo.initPatterns();
+        int nTotalPatterns = 0;
+        int nWildcardsOrRepetitions = 0;
+        int nNotSupported = 0;
+        int nVerified = 0;
+        for(Pattern pattern:pbo.getPatterns()) {
+            nTotalPatterns++;
+            if (pattern.hasWildcard() || pattern.hasRepetition()) {
+                nWildcardsOrRepetitions++;
+                continue;
+            }
+            
+            // Construct the code snippets:
+            CodeBase code = new CodeBase(config);
+            List<Pattern> instantiated = allPatternInstantiations(pattern, code);
+            if (instantiated == null) {
+                nNotSupported ++;
+                continue;
+            }
+            System.out.println("instantiated ("+pattern.name+"): " + instantiated.size());
+            int nTotalInstantiations = 0;
+            int nVerifiedInstantiations = 0;
+            for(Pattern instantiatedPattern:instantiated) {
+                config.info("Instantiated pattern:\n" + instantiatedPattern);
+                nTotalInstantiations++;
+                if (!instantiatedPattern.fullyInstantiated()) {
+                    continue;
+                }
+                if (instantiatedPattern.usesMemory()) {
+                    continue;
+                }
+                if (instantiatedPattern.hasJumps()) {
+                    continue;
+                }
+
+                // Extract the parameters:
+                List<String> parameters = getParameters(instantiatedPattern);
+                Assert.assertNotNull("parameters is null", parameters);
+                List<Integer> flagsToIgnore = getFlagsToIgnore(instantiatedPattern);
+                Assert.assertNotNull("flagsToIgnore is null", flagsToIgnore);
+    //            System.out.println("flagsToIgnore: " + flagsToIgnore);
+                List<CPUConstants.RegisterNames> registersToIgnore = getRegistersToIgnore(instantiatedPattern);
+                Assert.assertNotNull("registersToIgnore is null", registersToIgnore);
+    //            System.out.println("registersToIgnore: " + registersToIgnore);            
+                Assert.assertTrue(evaluatePattern(instantiatedPattern, parameters, 
+                                                  flagsToIgnore, registersToIgnore,
+                                                  code, checkMemory, 1000));
+                nVerifiedInstantiations++;
+            }
+            if (nVerifiedInstantiations > 0) {
+                nVerified++;
+            }
+        }
+        
+        config.info("testAll: nTotalPatterns: " + nTotalPatterns +
+                    ", nWildcardsOrRepetitions: " + nWildcardsOrRepetitions +
+                    ", nNotSupported: " + nNotSupported +
+                    ", nVerified: " + nVerified);
+        
+        return true;
     }
     
     
@@ -448,6 +520,9 @@ public class PatternValidityCheck {
                         case "evenPushPops":
                         case "atLeastOneCPUOp":
                             System.out.println("Remaining constraint: " + c.name + " not yet supported (args: "+Arrays.toString(c.args)+")");
+                            return null;
+                        default:
+                            System.out.println("Remaining constraint: " + c.name + " not implemented! (args: "+Arrays.toString(c.args)+")");
                             return null;
                 }
             }

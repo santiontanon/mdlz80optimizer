@@ -211,7 +211,7 @@ JR NZ,o	3/2	20 o	2		Z			PC				true
 JR Z,o	3/2	28 o	2		Z			PC				true
 JR o	3	18 o	2					PC				true
 LD (HL),n	5	36 n	2	HL							HL	true
-LD A,I	2	ED 57	2	I				A	Z			true
+LD A,I	2	ED 57	2	I				A	S,Z,H,P/V,N			true
 LD A,IXp	2	DD 78+p	2	IXp				A				true
 LD A,IYq	2	FD 78+q	2	IYq				A				true
 LD A,R	2	ED 5F	2	R				A				true

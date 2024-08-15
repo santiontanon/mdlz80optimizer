@@ -239,6 +239,74 @@ public class Pattern {
     }
     
     
+    public boolean hasWildcard()
+    {
+        for(CPUOpPattern opp:pattern) {
+            if (opp.isWildcard()) return true;
+        }
+        for(CPUOpPattern opp:replacement) {
+            if (opp.isWildcard()) return true;
+        }
+        return false;
+    }
+
+
+    public boolean hasRepetition()
+    {
+        for(CPUOpPattern opp:pattern) {
+            if (opp.repetitionVariable != null) return true;
+        }
+        for(CPUOpPattern opp:replacement) {
+            if (opp.repetitionVariable != null) return true;
+        }
+        return false;
+    }
+    
+    
+    public boolean usesMemory()
+    {
+        for(CPUOpPattern opp:pattern) {
+            CPUOp op = opp.instantiate(new PatternMatch(this, null), this, config);
+            if (op.readsFromMemory()) return true;
+            if (op.writesToMemory()) return true;
+        }
+        for(CPUOpPattern opp:replacement) {
+            CPUOp op = opp.instantiate(new PatternMatch(this, null), this, config);
+            if (op.readsFromMemory()) return true;
+            if (op.writesToMemory()) return true;
+        }
+        return false;
+    }
+    
+    
+    public boolean fullyInstantiated()
+    {
+        for(CPUOpPattern opp:pattern) {
+            CPUOp op = opp.instantiate(new PatternMatch(this, null), this, config);
+            if (op == null) return false;
+        }
+        for(CPUOpPattern opp:replacement) {
+            CPUOp op = opp.instantiate(new PatternMatch(this, null), this, config);
+            if (op == null) return false;
+        }
+        return true;
+    }
+
+
+    public boolean hasJumps()
+    {
+        for(CPUOpPattern opp:pattern) {
+            CPUOp op = opp.instantiate(new PatternMatch(this, null), this, config);
+            if (op.isJump()) return true;
+        }
+        for(CPUOpPattern opp:replacement) {
+            CPUOp op = opp.instantiate(new PatternMatch(this, null), this, config);
+            if (op.isJump()) return true;
+        }
+        return false;
+    }
+    
+    
     public Pattern assignVariable(String name, String replacement, CodeBase code)
     {
         Pattern p = new Pattern(this);
