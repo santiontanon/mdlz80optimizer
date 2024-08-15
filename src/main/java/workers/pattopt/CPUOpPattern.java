@@ -69,6 +69,22 @@ public class CPUOpPattern {
     }
     
     
+    public List<String> getAllVariables()
+    {
+        List<String> variables = new ArrayList<>();
+        if (repetitionVariable != null) variables.add(repetitionVariable);
+        if (opName.startsWith("?")) variables.add(opName);
+        for(Expression arg:args) {
+            for(String symbol:arg.getAllSymbols()) {
+                if (symbol.startsWith("?")) {
+                    variables.add(symbol);
+                }
+            }
+        }
+        return variables;
+    }
+    
+    
     public void assignVariable(String name, String replacement, CodeBase code, MDLConfig config)
     {
         if (opName != null && opName.equals(name)) {

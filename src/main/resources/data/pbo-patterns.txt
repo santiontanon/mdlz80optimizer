@@ -6,6 +6,7 @@
 ; Notes:
 ; - variables must start with the following prefixes:
 ; - ?const: for example ?const1, ?constant, etc. These match with constant expressions, like "(VAR+2)/$", or "1".
+; - ?8bitconst: for example ?8bitconst1, ?8bitconstant, etc. These match with constant expressions, like "(VAR+2)/$", or "1", but are treated as 8bit constants (only useful for formal pattern verification).
 ; - ?reg: for example ?reg1, ?regpair, etc. These match with register names.
 ; - ?op: for example ?op, ?op1, etc. These match with opcodes (e.g., ld, add, push, pop, etc.)
 ; - ?any: for example ?any, ?any1. These match with anything.
@@ -197,17 +198,19 @@ replacement:
 0: ldi
 constraints:
 regsNotUsedAfter(3,A,BC)
+flagsNotUsedAfter(3,H,N,P/V)
 
 ; thanks to pgimeno for suggesting this permutation
 pattern: Replace ld a,(hl); inc hl; ld (de),a; inc de with ldi
 0: ld a,(hl)
-2: inc hl
-1: ld (de),a
+1: inc hl
+2: ld (de),a
 3: inc de
 replacement:
 0: ldi
 constraints:
 regsNotUsedAfter(3,A,BC)
+flagsNotUsedAfter(3,H,N,P/V)
 
 pattern: Replace ld a,(hl); ld (de),a; inc de; inc hl; with ldi
 0: ld a,(hl)
@@ -229,29 +232,32 @@ replacement:
 1: inc bc
 constraints:
 regsNotUsedAfter(3,A)
+flagsNotUsedAfter(3,H,N,P/V)
 
 ; thanks to pgimeno for suggesting this permutation
 pattern: Replace ld a,(hl); inc hl; ld (de),a; inc de with ldi; inc bc
 0: ld a,(hl)
-2: inc hl
-1: ld (de),a
+1: inc hl
+2: ld (de),a
 3: inc de
 replacement:
 0: ldi
 1: inc bc
 constraints:
 regsNotUsedAfter(3,A)
+flagsNotUsedAfter(3,H,N,P/V)
 
 pattern: Replace ld a,(hl); lde (de),a; inc de; inc hl; with ldi; inc bc
 0: ld a,(hl)
 1: ld (de),a
-3: inc de
-2: inc hl
+2: inc de
+3: inc hl
 replacement:
 0: ldi
 1: inc bc
 constraints:
 regsNotUsedAfter(3,A)
+flagsNotUsedAfter(3,H,N,P/V)
 
 ; thanks to grauw for suggesting the "and" variation
 pattern: Replace ld ?regpair,?const1; ?op a; sbc hl,?regpair with ld ?regpair,-(?const1); add hl,?regpair
@@ -301,15 +307,16 @@ name: neg-to-sub2
 2: neg
 replacement:
 0: ld a,?const
-1: sub ?reg
+2: sub ?reg
 constraints:
-flagsNotUsedAfter(0,P/V,N,C,H)
+notIn(?reg,A)
+flagsNotUsedAfter(2,P/V,N,C,H)
 
 pattern: Replace sla l; rl h with add hl,hl
 0: sla l
 1: rl h
 replacement:
-0: add hl,hl
+1: add hl,hl
 constraints:
 flagsNotUsedAfter(1,S,Z,P/V,C,H)
 
@@ -344,6 +351,7 @@ replacement:
 constraints:
 in(?op,jr,jp,call)
 regsNotUsedAfter(2,A)
+flagsNotUsedAfter(2,S,Z,P/V,C,H,N)
 
 pattern: Replace and 1; cp 1; ?op z,?const with and 1; ?op nz,?const
 0: and 1
@@ -405,11 +413,11 @@ constraints:
 in(?op,jr,jp,call)
 regsNotUsedAfter(1,A)
 
-pattern: Replace ld ?regixiy,?const1; ld ?reg,(?regixiy+?const2) with ld hl,?const1+?const2; ld ?reg,(hl)
+pattern: Replace ld ?regixiy,?const1; ld ?reg,(?regixiy+?8bitconst2) with ld hl,?const1+?8bitconst2; ld ?reg,(hl)
 0: ld ?regixiy,?const1
-1: ld ?reg,(?regixiy+?const2)
+1: ld ?reg,(?regixiy+?8bitconst2)
 replacement:
-0: ld hl,?const1+?const2
+0: ld hl,?const1+?8bitconst2
 1: ld ?reg,(hl)
 constraints:
 in(?reg,A,B,C,D,E,H,L)
@@ -427,11 +435,11 @@ in(?reg,A,B,C,D,E,H,L)
 in(?regixiy,IX,IY)
 regsNotUsedAfter(1,?regixiy,HL)
 
-pattern: Replace ld ?regixiy,?const1; ld (?regixiy+?const2),?const3 with ld hl,?const1+?const2; ld (hl),?const3
+pattern: Replace ld ?regixiy,?const1; ld (?regixiy+?8bitconst2),?const3 with ld hl,?const1+?8bitconst2; ld (hl),?const3
 0: ld ?regixiy,?const1
-1: ld (?regixiy+?const2),?const3
+1: ld (?regixiy+?8bitconst2),?const3
 replacement:
-0: ld hl,?const1+?const2
+0: ld hl,?const1+?8bitconst2
 1: ld (hl),?const3
 constraints:
 in(?regixiy,IX,IY)
@@ -447,12 +455,12 @@ constraints:
 in(?regixiy,IX,IY)
 regsNotUsedAfter(1,?regixiy,HL)
 
-pattern: Replace ld ?regixiy,?const1; ld ?reg1,(?regixiy+?const2); ld ?reg2,(?regixiy+?const3) with ld hl,?const1+?const2; ld ?reg1,(hl); inc hl; ld ?reg2,(hl)
+pattern: Replace ld ?regixiy,?const1; ld ?reg1,(?regixiy+?8bitconst2); ld ?reg2,(?regixiy+?8bitconst3) with ld hl,?const1+?8bitconst2; ld ?reg1,(hl); inc hl; ld ?reg2,(hl)
 0: ld ?regixiy,?const1
-1: ld ?reg1,(?regixiy+?const2)
-2: ld ?reg2,(?regixiy+?const3)
+1: ld ?reg1,(?regixiy+?8bitconst2)
+2: ld ?reg2,(?regixiy+?8bitconst3)
 replacement:
-0: ld hl,?const1+?const2
+0: ld hl,?const1+?8bitconst2
 1: ld ?reg1,(hl)
 2: inc hl
 3: ld ?reg2,(hl)
@@ -460,7 +468,7 @@ constraints:
 in(?regixiy,IX,IY)
 notIn(?reg1,H,L)
 notIn(?reg2,H,L)
-equal(?const2+1,?const3)
+equal(?8bitconst2+1,?8bitconst3)
 regsNotUsedAfter(2,?regixiy,HL)
 
 pattern: Replace ld ?regixiy,?const1; ld ?reg1,(?regixiy); ld ?reg2,(?regixiy+1) with ld hl,?const1; ld ?reg1,(hl); inc hl; ld ?reg2,(hl)
@@ -485,22 +493,22 @@ constraints:
 in(?reg,A,B,C,D,E,H,L)
 
 ; theNestruo
-pattern: Replace ld ?reg,?const1; ld (?regixiy+?const2),?reg with ld (?regixiy+?const2),?const1
+pattern: Replace ld ?reg,?const1; ld (?regixiy+?8bitconst2),?reg with ld (?regixiy+?8bitconst2),?const1
 0: ld ?reg,?const1
-1: ld (?regixiy+?const2),?reg
+1: ld (?regixiy+?8bitconst2),?reg
 replacement:
-0: ld (?regixiy+?const2),?const1
+0: ld (?regixiy+?8bitconst2),?const1
 constraints:
 in(?reg,A,B,C,D,E,H,L)
 in(?regixiy,IX,IY)
 regsNotUsedAfter(1,?reg)
 
 ; theNestruo
-pattern: Replace xor a; ld (?regixiy+?const2),a with ld (?regixiy+?const2),0
+pattern: Replace xor a; ld (?regixiy+?8bitconst2),a with ld (?regixiy+?8bitconst2),0
 0: xor a
-1: ld (?regixiy+?const2),a
+1: ld (?regixiy+?8bitconst2),a
 replacement:
-0: ld (?regixiy+?const2),0
+0: ld (?regixiy+?8bitconst2),0
 constraints:
 in(?regixiy,IX,IY)
 regsNotUsedAfter(1,A)
@@ -756,7 +764,7 @@ replacement:
 0: dec a
 constraints:
 equal(?const,-1)
-flagsNotUsedAfter(1,C)
+flagsNotUsedAfter(0,C,N,H)
 
 pattern: Replace ?op a,?const with ?op a,?reg (as ?reg == ?const here)
 2: ld ?reg,?const
@@ -1386,7 +1394,7 @@ pattern: Replace xor a; inc a by ld a,1
 0: xor a
 1: inc a
 replacement:
-0: ld a,1
+1: ld a,1
 constraints:
 flagsNotUsedAfter(1,S,Z,H,P/V,N,C)
 
@@ -1523,9 +1531,9 @@ pattern: Replace inc a;dec a with or a
 0: inc a
 1: dec a
 replacement:
-0: or a
+1: or a
 constraints:
-flagsNotUsedAfter(0,C)
+flagsNotUsedAfter(1,C,N,P/V,H)
 
 pattern: Replace sub ?const1 with dec a
 0: sub ?const1
@@ -1593,7 +1601,7 @@ pattern: Replace ld a,?const1;or ?const2 by ld a,(?const1) | (?const2)
 0: ld a,?const1
 1: or ?const2
 replacement:
-0: ld a,(?const1) | (?const2)
+1: ld a,(?const1) | (?const2)
 constraints:
 flagsNotUsedAfter(1,S,Z,H,P/V,N,C)
 
@@ -1601,7 +1609,7 @@ pattern: Replace ld a,?const1;or ?const2 by ld a,(?const1) & (?const2)
 0: ld a,?const1
 1: and ?const2
 replacement:
-0: ld a,(?const1) & (?const2)
+1: ld a,(?const1) & (?const2)
 constraints:
 flagsNotUsedAfter(1,S,Z,H,P/V,N,C)
 
@@ -1609,7 +1617,7 @@ pattern: Replace ld a,?const1;and ?const2 by ld a,(?const1) + (?const2)
 0: ld a,?const1
 1: add a,?const2
 replacement:
-0: ld a,(?const1) + (?const2)
+1: ld a,(?const1) + (?const2)
 constraints:
 flagsNotUsedAfter(1,S,Z,H,P/V,N,C)
 
@@ -1617,7 +1625,7 @@ pattern: Replace ld a,?const1;sub ?const2 by ld a,(?const1) - (?const2)
 0: ld a,?const1
 1: sub ?const2
 replacement:
-0: ld a,(?const1) - (?const2)
+1: ld a,(?const1) - (?const2)
 constraints:
 flagsNotUsedAfter(1,S,Z,H,P/V,N,C)
 
@@ -1635,6 +1643,8 @@ name: unused-double-ld
 1: ld ?reg2,?reg1
 replacement:
 constraints:
+notIn(?reg1,R,I)
+notIn(?reg2,R,I)
 regsNotUsedAfter(1,?reg1)
 
 ; SDCC-specific pattern
@@ -2030,8 +2040,9 @@ name: add-to-ld
 0: xor a
 1: add a, ?reg
 replacement:
-0: ld a, ?reg
+1: ld a, ?reg
 constraints:
+notIn(?reg,A)
 flagsNotUsedAfter(1,S,Z,H,P/V,N,C)
 
 pattern: Replace ld ?reg2, ?reg1; ld ?reg3, ?reg2 with ld ?reg3, ?reg1

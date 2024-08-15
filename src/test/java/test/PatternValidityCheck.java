@@ -16,8 +16,8 @@ import java.util.Random;
 import org.junit.Assert;
 import org.junit.Test;
 import util.microprocessor.PlainZ80IO;
-import util.microprocessor.PlainZ80Memory;
 import util.microprocessor.ProcessorException;
+import util.microprocessor.TrackingZ80Memory;
 import util.microprocessor.Z80.CPUConfig;
 import util.microprocessor.Z80.CPUConstants;
 import util.microprocessor.Z80.Z80Core;
@@ -49,13 +49,13 @@ public class PatternValidityCheck {
     // These ones are commented out by default as tests with "checkMemory = true" are slow 
 //    @Test public void test100() throws Exception { test("data/pbo-patterns.txt", "sdcc16bitadd", true); }
 //    @Test public void test101() throws Exception { test("data/pbo-patterns.txt", "sdcc16bitcp", true); }
-//    @Test public void test102() throws Exception { test("data/pbo-patterns.txt", "sdccshiftr2", true); }
-//    @Test public void test103() throws Exception { test("data/pbo-patterns.txt", "move-to-top-of-stack", true); }
+//    @Test public void test102() throws Exception { test("data/pbo-patterns.txt", "move-to-top-of-stack", true); }
         
     @Test public void testSpeed1() throws Exception { test("data/pbo-patterns-speed.txt", "push2ld", false); }
 
     // Test all patterns without wildcards/repetitions:
     @Test public void testAllNoMemory() throws Exception { testAll("data/pbo-patterns.txt", false); }
+//    @Test public void testAll() throws Exception { testAll("data/pbo-patterns.txt", true); }  // Slow test (disabled by default)
     
     
     private void test(String patternsFile, String patternName, boolean checkMemory) throws Exception
@@ -81,7 +81,7 @@ public class PatternValidityCheck {
             List<CPUConstants.RegisterNames> registersToIgnore = getRegistersToIgnore(p);
             Assert.assertNotNull("registersToIgnore is null", registersToIgnore);
 //            System.out.println("registersToIgnore: " + registersToIgnore);
-            
+
             Assert.assertTrue(evaluatePattern(p, parameters, 
                                               flagsToIgnore, registersToIgnore,
                                               code, checkMemory, 1000));
@@ -94,6 +94,7 @@ public class PatternValidityCheck {
         Assert.assertTrue(config.parseArgs("dummy", "-popatterns", patternsFile));
         
         pbo.initPatterns();
+        List<String> nonVerifiedNames = new ArrayList<>();  // names of the patterns we cannot verify
         int nTotalPatterns = 0;
         int nWildcardsOrRepetitions = 0;
         int nNotSupported = 0;
@@ -121,10 +122,11 @@ public class PatternValidityCheck {
                 if (!instantiatedPattern.fullyInstantiated()) {
                     continue;
                 }
-                if (instantiatedPattern.usesMemory()) {
+                if (!checkMemory && instantiatedPattern.usesMemory()) {
                     continue;
                 }
-                if (instantiatedPattern.hasJumps()) {
+                if (instantiatedPattern.hasJumps() ||
+                    instantiatedPattern.hasCalls()) {
                     continue;
                 }
 
@@ -139,11 +141,15 @@ public class PatternValidityCheck {
     //            System.out.println("registersToIgnore: " + registersToIgnore);            
                 Assert.assertTrue(evaluatePattern(instantiatedPattern, parameters, 
                                                   flagsToIgnore, registersToIgnore,
-                                                  code, checkMemory, 1000));
+                                                  code, instantiatedPattern.usesMemory(), 1000));
                 nVerifiedInstantiations++;
             }
             if (nVerifiedInstantiations > 0) {
                 nVerified++;
+            } else {
+                if (pattern.name != null) {
+                    nonVerifiedNames.add(pattern.name);
+                }
             }
         }
         
@@ -151,6 +157,7 @@ public class PatternValidityCheck {
                     ", nWildcardsOrRepetitions: " + nWildcardsOrRepetitions +
                     ", nNotSupported: " + nNotSupported +
                     ", nVerified: " + nVerified);
+        config.info("testAll: nonVerified patterns: " + nonVerifiedNames);
         
         return true;
     }
@@ -162,10 +169,12 @@ public class PatternValidityCheck {
                                     CodeBase code, 
                                     boolean checkMemory, int repetitions) throws Exception
     {
-        PlainZ80Memory z80Memory1 = new PlainZ80Memory();
+        TrackingZ80Memory z80Memory1 = new TrackingZ80Memory(null);
         Z80Core z801 = new Z80Core(z80Memory1, new PlainZ80IO(), new CPUConfig(config));
-        PlainZ80Memory z80Memory2 = new PlainZ80Memory();
+        z80Memory1.setCPU(z801);
+        TrackingZ80Memory z80Memory2 = new TrackingZ80Memory(null);
         Z80Core z802 = new Z80Core(z80Memory2, new PlainZ80IO(), new CPUConfig(config));
+        z80Memory2.setCPU(z802);
         
         for(int i = 0;i<repetitions;i++) {
             if (!evaluatePattern(p, parameters, flagsToIgnore, registersToIgnore, 
@@ -181,22 +190,31 @@ public class PatternValidityCheck {
                                     List<Integer> flagsToIgnore,
                                     List<CPUConstants.RegisterNames> registersToIgnore,
                                     CodeBase code,
-                                    PlainZ80Memory z80Memory1, Z80Core z801,
-                                    PlainZ80Memory z80Memory2, Z80Core z802,
+                                    TrackingZ80Memory z80Memory1, Z80Core z801,
+                                    TrackingZ80Memory z80Memory2, Z80Core z802,
                                     boolean checkMemory) throws Exception
     {
         // randomize the start address from a range:
         int minStartAddress = 0x0000;
         int maxStartAddress = 0x0f00;
+        int minStackAddress = 0xc000;
+        int maxStackAddress = 0xf000;
         int maxStackSize = 0x0100;
         
         int startAddress = minStartAddress + r.nextInt(maxStartAddress - minStartAddress);
+        int stackAddress = minStackAddress + r.nextInt(maxStackAddress - minStackAddress);
                 
         // Assign random values to all the input parameters:
         PatternMatch match = new PatternMatch(p, null);
         for(String parameter:parameters) {            
             // give it a random value:
             int v = r.nextInt(0xf000)+0x1000;   // prevent constants from having the same range as where the code is, just in case
+            if (parameter.startsWith("?8bitconst")) {
+                v = v % 256;
+                if (v > 127) {
+                    v -= 256;
+                }
+            }
             match.addVariableMatch(parameter, Expression.constantExpression(v, config));            
 //            System.out.println("parameter " + parameter + " = " + v);
         }
@@ -223,11 +241,21 @@ public class PatternValidityCheck {
         }
         z801.setProgramCounter(startAddress);
         z802.setProgramCounter(startAddress);
-        
+        z801.setRegisterValue(CPUConstants.RegisterNames.SP, stackAddress);
+        z802.setRegisterValue(CPUConstants.RegisterNames.SP, stackAddress);
+                
         // Simulate the pattern and replacement:
         int patternLastAddress = simulateProgram(p.pattern, match, startAddress, z801, z80Memory1, code);
         int replacementLastAddress = simulateProgram(p.replacement, match, startAddress, z802, z80Memory2, code);
-                
+        
+        // Check if the program tried to read from itself (we consider this a successful test):
+        for(int read[]:z80Memory1.getMemoryReads()) {
+            int address = read[0];
+            if (address >= startAddress && address < patternLastAddress) {
+                return true;
+            }
+        }
+        
         // Compare the output state of the simulator:
         for(CPUConstants.RegisterNames register: CPUConstants.eightBitRegisters) {
             if (registersToIgnore.contains(register)) continue;
@@ -283,7 +311,7 @@ public class PatternValidityCheck {
     
     
     private void showInstantiatedProgram(String name, List<CPUOpPattern> l, 
-                                PatternMatch match) {
+                                         PatternMatch match) {
         System.out.println(name);
         for(CPUOpPattern opp:l) {
             if (!opp.wildcard) {
@@ -298,8 +326,8 @@ public class PatternValidityCheck {
                                 PatternMatch match,
                                 int startAddress,
                                 Z80Core z80,
-                                PlainZ80Memory memory,
-                                CodeBase code) throws ProcessorException {
+                                TrackingZ80Memory memory,
+                                CodeBase code) throws Exception, ProcessorException {
         List<Integer> opAddresses = new ArrayList<>();
         int currentAddress = startAddress;
 //        System.out.println("--------");
@@ -321,7 +349,8 @@ public class PatternValidityCheck {
                 }
             }
         }
-                
+        memory.clearMemoryAccesses();
+        
         // Simulate the program:
         memory.writeProtect(startAddress, currentAddress);
         int steps = 0;
@@ -423,14 +452,20 @@ public class PatternValidityCheck {
     }
     
     
-    private List<Pattern> allPatternInstantiations(Pattern pattern, CodeBase code)
+    private List<Pattern> allPatternInstantiations(Pattern a_pattern, CodeBase code)
     {
+        String registers[] = {
+            "BC", "DE", "HL", "IX", "IY", "SP",
+            "A", "B", "C", "D", "E", "H", "L",
+            "IXH", "IXL", "IYH", "IYL", "R", "I",
+        };
         List<Pattern> instantiated = new ArrayList<>();
-        instantiated.add(pattern);
-        
-        // Process "in" constraints:
-        for(Pattern.Constraint c:pattern.constraints) {
-            if (c.name.equals("in")) {
+        Pattern newPattern1 = new Pattern(a_pattern);
+        instantiated.add(newPattern1);
+
+        // Process "in"/"notIn" constraints:
+        for(Pattern.Constraint c:newPattern1.constraints) {
+            if (c.name.equalsIgnoreCase("in")) {
                 List<Pattern> newInstantiated = new ArrayList<>();
                 for(int i = 1;i<c.args.length;i++) {
                     for(Pattern p1:instantiated) {
@@ -440,27 +475,47 @@ public class PatternValidityCheck {
                     }
                 }
                 instantiated = newInstantiated;
+            } else if (c.name.equalsIgnoreCase("notIn") && c.args[0].startsWith("?reg")) {
+                // "notIn" for a register:
+                List<Pattern> newInstantiated = new ArrayList<>();
+                for(String v:registers) {
+                    boolean allowed = true;
+                    for(int i = 1;i<c.args.length;i++) {
+                        if (v.equalsIgnoreCase(c.args[i])) {
+                            allowed = false;
+                            break;
+                        }
+                    }
+                    if (allowed) {
+                        for(Pattern p1:instantiated) {
+                            // replace "c.args[0]" by "c.args[i]":
+                            Pattern p2 = p1.assignVariable(c.args[0], v, code);
+                            newInstantiated.add(p2);
+                        }
+                    }
+                }
+                instantiated = newInstantiated;
             }
         }
-        
+                
         // Process "regpair" constraints:
         for(int i = 0;i<instantiated.size();i++) {
-            Pattern newPattern = instantiated.get(i);
-            for(int j = 0;j<newPattern.constraints.size();j++) {
-                Pattern.Constraint c = newPattern.constraints.get(j);
+            Pattern newPattern2 = instantiated.get(i);
+            for(int j = 0;j<newPattern2.constraints.size();j++) {
+                Pattern.Constraint c = newPattern2.constraints.get(j);
                 if (c.name.equals("regpair")) {
                     String expected[] = {null, null, null};
-                    if (!newPattern.regpairConstraint(c.args, expected)) {
+                    if (!newPattern2.regpairConstraint(c.args, expected)) {
                         return null;
                     }
 
                     for(int k = 0;k<3;k++) {
                         if (c.args[k].startsWith("?")) {
-                            newPattern = newPattern.assignVariable(c.args[k], expected[k], code);
+                            newPattern2 = newPattern2.assignVariable(c.args[k], expected[k], code);
                         }
                     }
-                    instantiated.set(i, newPattern);
-                    newPattern.constraints.remove(c);
+                    instantiated.set(i, newPattern2);
+                    newPattern2.constraints.remove(c);
                     j--;
                 }
             }
@@ -468,29 +523,45 @@ public class PatternValidityCheck {
         
         // Process "equal" constraints:
         for(int i = 0;i<instantiated.size();i++) {
-            Pattern newPattern = instantiated.get(i);
-            for(int j = 0;j<newPattern.constraints.size();j++) {
-                Pattern.Constraint c = newPattern.constraints.get(j);
+            Pattern newPattern2 = instantiated.get(i);
+            for(int j = 0;j<newPattern2.constraints.size();j++) {
+                Pattern.Constraint c = newPattern2.constraints.get(j);
                 if (c.name.equals("equal")) {
                     List<String> tokens = config.tokenizer.tokenize(c.args[0]);
                     if (tokens.size() == 2 && tokens.get(0).equals("?")) {
                         // we can handle this case:
 
                         // remove this constraint:
-                        newPattern.constraints.remove(c);
+                        newPattern2.constraints.remove(c);
                         j--;
 
-                        newPattern = newPattern.assignVariable(c.args[0], c.args[1], code);
-                        instantiated.set(i, newPattern);
+                        newPattern2 = newPattern2.assignVariable(c.args[0], c.args[1], code);
+                        instantiated.set(i, newPattern2);
                     } else {
                         System.out.println("Equal could not be handled with tokens: " + tokens);
                     }
                 }
             }
             
-            System.out.println(newPattern.replacement);
+            System.out.println(newPattern2.replacement);
         }
         
+        // Get all register variables that remain uninstantiated:
+        for(int i = 0;i<instantiated.size();i++) {
+            Pattern newPattern3 = instantiated.get(i);
+            for(String variable:newPattern3.getAllVariables()) {
+                if (variable.startsWith("?reg")) {
+                    List<Pattern> newInstantiated = new ArrayList<>();
+                    for(String v:registers) {
+                        for(Pattern p1:instantiated) {
+                            Pattern p2 = p1.assignVariable(variable, v, code);
+                            newInstantiated.add(p2);
+                        }
+                    }
+                    instantiated = newInstantiated;
+                }
+            }
+        }        
         
         // Verify all remaining constraints are ok:
         for(Pattern p: instantiated) {
@@ -527,7 +598,6 @@ public class PatternValidityCheck {
                 }
             }
         }
-                
         return instantiated;
     }
 }

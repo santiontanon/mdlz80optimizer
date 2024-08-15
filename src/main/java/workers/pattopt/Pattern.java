@@ -307,6 +307,37 @@ public class Pattern {
     }
     
     
+    public boolean hasCalls()
+    {
+        for(CPUOpPattern opp:pattern) {
+            CPUOp op = opp.instantiate(new PatternMatch(this, null), this, config);
+            if (op.isCall() || op.isRst()) return true;
+        }
+        for(CPUOpPattern opp:replacement) {
+            CPUOp op = opp.instantiate(new PatternMatch(this, null), this, config);
+            if (op.isCall() || op.isRst()) return true;
+        }
+        return false;
+    }
+
+    
+    public List<String> getAllVariables()
+    {
+        List<String> variables = new ArrayList<>();
+        for(CPUOpPattern opp:pattern) {
+            for(String v:opp.getAllVariables()) {
+                if (!variables.contains(v)) variables.add(v);
+            }
+        }
+        for(CPUOpPattern opp:replacement) {
+            for(String v:opp.getAllVariables()) {
+                if (!variables.contains(v)) variables.add(v);
+            }
+        }
+        return variables;
+    }
+
+    
     public Pattern assignVariable(String name, String replacement, CodeBase code)
     {
         Pattern p = new Pattern(this);
@@ -319,7 +350,10 @@ public class Pattern {
         }
         List<Constraint> todelete = new ArrayList<>();
         for(Constraint c:p.constraints) {
-            if (c.name.equals("in") && c.args[0].equals(name)) {
+            if (c.name.equalsIgnoreCase("in") && c.args[0].equals(name)) {
+                // remove this constraint:
+                todelete.add(c);
+            } else if (c.name.equalsIgnoreCase("notIn") && c.args[0].equals(name)) {
                 // remove this constraint:
                 todelete.add(c);
             } else {
@@ -441,7 +475,8 @@ public class Pattern {
                 } else {
                     return false;
                 }
-            } else if (pattern.symbolName.startsWith("?const")) {
+            } else if (pattern.symbolName.startsWith("?const") ||
+                       pattern.symbolName.startsWith("?8bitconst")) {
                 // We exclude matches with "parenthesis" expressions, as those might be indirections
                 if (arg2.evaluatesToIntegerConstant() &&
                     arg2.type != Expression.EXPRESSION_PARENTHESIS) {
@@ -489,7 +524,8 @@ public class Pattern {
                 pattern.args.get(0).args.get(0).type == Expression.EXPRESSION_SYMBOL &&
                 pattern.args.get(0).args.get(0).symbolName.startsWith("?reg") &&
                 pattern.args.get(0).args.get(1).type == Expression.EXPRESSION_SYMBOL &&
-                pattern.args.get(0).args.get(1).symbolName.startsWith("?const")) {
+                (pattern.args.get(0).args.get(1).symbolName.startsWith("?const") ||
+                 pattern.args.get(0).args.get(1).symbolName.startsWith("?8bitconst"))) {
                 if (arg2.type == Expression.EXPRESSION_PARENTHESIS &&
                     arg2.args.get(0).type == Expression.EXPRESSION_REGISTER_OR_FLAG) {
                     if (!unifyExpressions(pattern.args.get(0).args.get(0), arg2.args.get(0), false, match, s, code)) {
