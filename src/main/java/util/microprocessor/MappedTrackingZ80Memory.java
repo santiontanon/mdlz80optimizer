@@ -120,6 +120,15 @@ public class MappedTrackingZ80Memory implements IMemory {
         }
         return v;
     }
+    
+    @Override
+    public int readByteUntracked(int address) {
+        int page = address / pageSize;
+        int withinPage = address % pageSize;
+        MemorySegment s = pages[page];
+        int v = sources.get(s.source).memory[s.segment * pageSize + withinPage];
+        return v;
+    }
 
     @Override
     public int readWord(int address) {

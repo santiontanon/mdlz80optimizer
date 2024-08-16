@@ -31,9 +31,18 @@ public interface IMemory {
      * @param address The address to read from
      * @return The byte read
      */
-    default int readByte(int address) {
-        return 0x76; // Halt
-    }
+    int readByte(int address);
+
+    
+    /**
+     * Read a byte from memory (but do not track it in implementations that 
+     * track).
+     *
+     * @param address The address to read from
+     * @return The byte read
+     */
+    int readByteUntracked(int address);
+    
 
     /**
      * Read a 16 bit word from memory, LSB, MSB order
@@ -41,9 +50,7 @@ public interface IMemory {
      * @param address The address to read from
      * @return The word read
      */
-    default int readWord(int address) {
-        return 0x7676; // Halt
-    }
+    int readWord(int address);
 
     /**
      * Write a byte into memory
@@ -51,9 +58,7 @@ public interface IMemory {
      * @param address The address to be written to
      * @param data    The byte to be written
      */
-    default void writeByte(int address, int data) {
-        // do nothing
-    }
+    void writeByte(int address, int data);
 
     /**
      * Write a 16 bit word into memory, LSB, MSB order.
@@ -61,9 +66,7 @@ public interface IMemory {
      * @param address The address to be written to
      * @param data    The word to be written
      */
-    default void writeWord(int address, int data) {
-        // do nothing
-    }
+    void writeWord(int address, int data);
     
     
     default void writeProtect(int start, int end) throws Exception

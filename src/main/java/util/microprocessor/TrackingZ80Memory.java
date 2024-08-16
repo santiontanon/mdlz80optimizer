@@ -57,6 +57,11 @@ public class TrackingZ80Memory implements IMemory {
     }
 
     @Override
+    public int readByteUntracked(int address) {
+        return memory[address];
+    }
+
+    @Override
     public int readWord(int address) {
         return readByte(address) + readByte((address + 1) & 0xffff) * 256;
     }
@@ -140,8 +145,36 @@ public class TrackingZ80Memory implements IMemory {
             }
         }
         memoryWritesIndex = 0;
+        memoryReadsIndex = 0;   
+    }
+    
+    
+    public void clearMemoryAccessesRandomizingThemSynchronized(TrackingZ80Memory m2)
+    {
+        for(int i = 0;i<memoryWritesIndex;i++) {
+            int address = memoryWriteAddresses[i];
+            memory[address] = r.nextInt(256);
+            m2.memory[address] = memory[address];
+        }
+        for(int i = 0;i<memoryReadsIndex;i++) {
+            int address = memoryReadAddresses[i];
+            memory[address] = r.nextInt(256);
+            m2.memory[address] = memory[address];
+        }
+        for(int i = 0;i<m2.memoryWritesIndex;i++) {
+            int address = m2.memoryWriteAddresses[i];
+            memory[address] = r.nextInt(256);
+            m2.memory[address] = memory[address];
+        }
+        for(int i = 0;i<m2.memoryReadsIndex;i++) {
+            int address = m2.memoryReadAddresses[i];
+            memory[address] = r.nextInt(256);
+            m2.memory[address] = memory[address];
+        }
+        memoryWritesIndex = 0;
         memoryReadsIndex = 0;
-        
+        m2.memoryWritesIndex = 0;
+        m2.memoryReadsIndex = 0;
     }
 
 

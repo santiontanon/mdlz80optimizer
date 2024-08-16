@@ -65,6 +65,22 @@ public class Pattern {
         }
         
         
+        public boolean allArgumentsAreGround(CodeBase code, MDLConfig config)
+        {
+            for(String arg:args) {
+                if (arg.startsWith("?")) return false;
+                List<String> argTokens = config.tokenizer.tokenize(arg);
+                Expression argExp = config.expressionParser.parse(argTokens, null, null, code);
+                if (argExp.type != Expression.EXPRESSION_REGISTER_OR_FLAG &&
+                    argExp.type != Expression.EXPRESSION_SYMBOL &&
+                    argExp.type != Expression.EXPRESSION_INTEGER_CONSTANT) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        
+        
         @Override
         public String toString()
         {
@@ -351,9 +367,6 @@ public class Pattern {
         List<Constraint> todelete = new ArrayList<>();
         for(Constraint c:p.constraints) {
             if (c.name.equalsIgnoreCase("in") && c.args[0].equals(name)) {
-                // remove this constraint:
-                todelete.add(c);
-            } else if (c.name.equalsIgnoreCase("notIn") && c.args[0].equals(name)) {
                 // remove this constraint:
                 todelete.add(c);
             } else {

@@ -512,6 +512,7 @@ replacement:
 constraints:
 in(?regixiy,IX,IY)
 regsNotUsedAfter(1,A)
+flagsNotUsedAfter(1,S,Z,H,P/V,N,C)
 
 pattern: Remove duplicate ld ?reg,?const
 2: ld ?reg,?const
@@ -1516,6 +1517,7 @@ pattern: Replace ld ?reg, (hl); cp ?reg  with  cp (hl)
 replacement:
 0: cp (hl)
 constraints:
+notIn(?reg,A)
 regsNotUsedAfter(1,?reg)
 
 pattern: Replace ld ?reg, a; ld a, (hl); cp ?reg  with  cp (hl)
@@ -1525,7 +1527,9 @@ pattern: Replace ld ?reg, a; ld a, (hl); cp ?reg  with  cp (hl)
 replacement:
 0: cp (hl)
 constraints:
+notIn(?reg,A,H,L)
 regsNotUsedAfter(2,?reg,A)
+flagsNotUsedAfter(2,C,H,S,P/V)
 
 pattern: Replace inc a;dec a with or a
 0: inc a
@@ -1840,7 +1844,10 @@ replacement:
 constraints:
 regsNotUsedAfter(2, ?reg2)
 regsNotUsedAfter(2, ?reg16)
+in(?reg2,A,B,C,D,E,H,L)
 in(?reg16,bc,de,hl,ix,iy)
+regpair(?reg16,?reg16h,?reg16l)
+notIn(?reg2,?reg16h,?reg16l)
 
 pattern: replace ld a, (?regixiy + ?const1); add a, ?const2; ld (?regixiy + ?const1), a	with inc (?regixiy + ?const1) ... inc (?regixiy + ?const1)
 name: sdcc-index-register-increment

@@ -28,6 +28,11 @@ public class PlainZ80Memory implements IMemory {
     }
 
     @Override
+    final public int readByteUntracked(int address) {
+        return memory[address];
+    }
+
+    @Override
     final public int readWord(int address) {
         return readByte(address) + readByte((address + 1) & 0xffff) * 256;
     }

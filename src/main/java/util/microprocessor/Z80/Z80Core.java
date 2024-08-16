@@ -386,6 +386,30 @@ public class Z80Core implements ICPUData, ICPU {
 
     
     /**
+     * Reads a byte from RAM during instruction decode. We will not track these
+     * Reads.
+     *
+     * @return The byte in address "address".
+     */
+    public int readBytePC()
+    {
+        return ram.readByteUntracked(reg_PC);
+    }
+
+
+    /**
+     * Reads a word from RAM during instruction decode. We will not track these
+     * Reads.
+     *
+     * @return The word in address "address".
+     */
+    public int readWordPC()
+    {
+        return ram.readByteUntracked(reg_PC) + ram.readByteUntracked((reg_PC + 1) & 0xffff) * 256;
+    }
+    
+    
+    /**
      * Writes a byte to RAM
      *
      * @param address The address to write to.
@@ -423,7 +447,7 @@ public class Z80Core implements ICPUData, ICPU {
             }
         }
         halt = false;
-        instruction = ram.readByte(reg_PC);
+        instruction = readBytePC();
         incPC();
         try {
             decodeOneByteInstruction(instruction);
@@ -462,7 +486,7 @@ public class Z80Core implements ICPUData, ICPU {
                 break;
             } // null
             case 0x01: {
-                setBC(ram.readWord(reg_PC));
+                setBC(readWordPC());
                 inc2PC();
                 break;
             } // LD bc, nnnn
@@ -483,7 +507,7 @@ public class Z80Core implements ICPUData, ICPU {
                 break;
             } // dec b
             case 0x06: {
-                reg_B = ram.readByte(reg_PC);
+                reg_B = readBytePC();
                 incPC();
                 break;
             } // ld b,nn
@@ -516,7 +540,7 @@ public class Z80Core implements ICPUData, ICPU {
                 break;
             } // dec c
             case 0x0E: {
-                reg_C = ram.readByte(reg_PC);
+                reg_C = readBytePC();
                 incPC();
                 break;
             } // ld c,n
@@ -530,7 +554,7 @@ public class Z80Core implements ICPUData, ICPU {
                 break;
             } // djnz
             case 0x11: {
-                setDE(ram.readWord(reg_PC));
+                setDE(readWordPC());
                 inc2PC();
                 break;
             } // LD de, nnnn
@@ -551,7 +575,7 @@ public class Z80Core implements ICPUData, ICPU {
                 break;
             } // dec d
             case 0x16: {
-                reg_D = ram.readByte(reg_PC);
+                reg_D = readBytePC();
                 incPC();
                 break;
             } // ld d,nn
@@ -584,7 +608,7 @@ public class Z80Core implements ICPUData, ICPU {
                 break;
             } // dec e
             case 0x1E: {
-                reg_E = ram.readByte(reg_PC);
+                reg_E = readBytePC();
                 incPC();
                 break;
             } // ld e,n
@@ -603,12 +627,12 @@ public class Z80Core implements ICPUData, ICPU {
                 break;
             } // jr nz
             case 0x21: {
-                setHL(ram.readWord(reg_PC));
+                setHL(readWordPC());
                 inc2PC();
                 break;
             } // LD hl, nnnn
             case 0x22: {
-                ram.writeWord(ram.readWord(reg_PC), getHL());
+                ram.writeWord(readWordPC(), getHL());
                 inc2PC();
                 break;
             } // LD (nnnn), hl
@@ -625,7 +649,7 @@ public class Z80Core implements ICPUData, ICPU {
                 break;
             } // dec h
             case 0x26: {
-                reg_H = ram.readByte(reg_PC);
+                reg_H = readBytePC();
                 incPC();
                 break;
             } // ld h,nn
@@ -647,7 +671,7 @@ public class Z80Core implements ICPUData, ICPU {
                 break;
             } // add hl,hl
             case 0x2A: {
-                setHL(ram.readWord(ram.readWord(reg_PC)));
+                setHL(ram.readWord(readWordPC()));
                 inc2PC();
                 break;
             } // LD hl, (nnnn)
@@ -664,7 +688,7 @@ public class Z80Core implements ICPUData, ICPU {
                 break;
             } // dec l
             case 0x2E: {
-                reg_L = ram.readByte(reg_PC);
+                reg_L = readBytePC();
                 incPC();
                 break;
             } // ld l,n
@@ -683,12 +707,12 @@ public class Z80Core implements ICPUData, ICPU {
                 break;
             } // jr nc
             case 0x31: {
-                reg_SP = ram.readWord(reg_PC);
+                reg_SP = readWordPC();
                 inc2PC();
                 break;
             } // LD sp, nnnn
             case 0x32: {
-                ram.writeByte(ram.readWord(reg_PC), reg_A);
+                ram.writeByte(readWordPC(), reg_A);
                 inc2PC();
                 break;
             } // LD (nnnn), A
@@ -705,7 +729,7 @@ public class Z80Core implements ICPUData, ICPU {
                 break;
             } // dec (hl)
             case 0x36: {
-                ram.writeByte(getHL(), ram.readByte(reg_PC));
+                ram.writeByte(getHL(), readBytePC());
                 incPC();
                 break;
             } // ld (hl), nn
@@ -727,7 +751,7 @@ public class Z80Core implements ICPUData, ICPU {
                 break;
             } // add hl,sp
             case 0x3A: {
-                reg_A = ram.readByte(ram.readWord(reg_PC));
+                reg_A = ram.readByte(readWordPC());
                 inc2PC();
                 break;
             } // LD a, (nnnn)
@@ -744,7 +768,7 @@ public class Z80Core implements ICPUData, ICPU {
                 break;
             } // dec a
             case 0x3E: {
-                reg_A = ram.readByte(reg_PC);
+                reg_A = readBytePC();
                 incPC();
                 break;
             } // ld a,n
@@ -1236,7 +1260,7 @@ public class Z80Core implements ICPUData, ICPU {
                 break;
             }
             case 0xC6: {
-                ALU8BitAdd(ram.readByte(reg_PC));
+                ALU8BitAdd(readBytePC());
                 incPC();
                 break;
             }
@@ -1269,7 +1293,7 @@ public class Z80Core implements ICPUData, ICPU {
                 break;
             }
             case 0xCE: {
-                ALU8BitAdc(ram.readByte(reg_PC));
+                ALU8BitAdc(readBytePC());
                 incPC();
                 break;
             }
@@ -1305,7 +1329,7 @@ public class Z80Core implements ICPUData, ICPU {
                 break;
             }
             case 0xD6: {
-                ALU8BitSub(ram.readByte(reg_PC));
+                ALU8BitSub(readBytePC());
                 incPC();
                 break;
             }
@@ -1338,7 +1362,7 @@ public class Z80Core implements ICPUData, ICPU {
                 break;
             }
             case 0xDE: {
-                ALU8BitSbc(ram.readByte(reg_PC));
+                ALU8BitSbc(readBytePC());
                 incPC();
                 break;
             }
@@ -1374,7 +1398,7 @@ public class Z80Core implements ICPUData, ICPU {
                 break;
             }
             case 0xE6: {
-                ALU8BitAnd(ram.readByte(reg_PC));
+                ALU8BitAnd(readBytePC());
                 incPC();
                 break;
             }
@@ -1407,7 +1431,7 @@ public class Z80Core implements ICPUData, ICPU {
                 break;
             }
             case 0xEE: {
-                ALU8BitXor(ram.readByte(reg_PC));
+                ALU8BitXor(readBytePC());
                 incPC();
                 break;
             }
@@ -1445,7 +1469,7 @@ public class Z80Core implements ICPUData, ICPU {
                 break;
             }
             case 0xF6: {
-                ALU8BitOr(ram.readByte(reg_PC));
+                ALU8BitOr(readBytePC());
                 incPC();
                 break;
             }
@@ -1478,7 +1502,7 @@ public class Z80Core implements ICPUData, ICPU {
                 break;
             }
             case 0xFE: {
-                ALU8BitCp(ram.readByte(reg_PC));
+                ALU8BitCp(readBytePC());
                 incPC();
                 break;
             }
@@ -1504,7 +1528,7 @@ public class Z80Core implements ICPUData, ICPU {
      * *****************************************************************************
      */
     private void extendedCB() {
-        instruction = ram.readByte(reg_PC);
+        instruction = readBytePC();
         incPC();
         tStates = tStates + config.OPCODE_CB_STATES[instruction];
         // decode stage
@@ -2562,7 +2586,7 @@ public class Z80Core implements ICPUData, ICPU {
      */
 
     private void extendedED() throws ProcessorException {
-        instruction = ram.readByte(reg_PC);
+        instruction = readBytePC();
         incPC();
         tStates = tStates + config.OPCODE_ED_STATES[instruction];
         if ((instruction < 0x40) || (instruction >= 0xF4)) {
@@ -3096,7 +3120,7 @@ public class Z80Core implements ICPUData, ICPU {
     /* generic index register processing */
 
     private void extendedDDFD() throws ProcessorException {
-        instruction = ram.readByte(reg_PC);
+        instruction = readBytePC();
         incPC();
         tStates = tStates + config.OPCODE_DD_FD_STATES[instruction];
 
@@ -3111,12 +3135,12 @@ public class Z80Core implements ICPUData, ICPU {
                 break;
             }
             case 0x21: {
-                reg_index = ram.readWord(reg_PC);
+                reg_index = readWordPC();
                 inc2PC();
                 break;
             }
             case 0x22: {
-                ram.writeWord(ram.readWord(reg_PC), reg_index);
+                ram.writeWord(readWordPC(), reg_index);
                 inc2PC();
                 break;
             }
@@ -3137,7 +3161,7 @@ public class Z80Core implements ICPUData, ICPU {
                 break;
             } // dec IXh
             case 0x26: {
-                int temp = ram.readByte(reg_PC) << 8;
+                int temp = readBytePC() << 8;
                 reg_index = (reg_index & 0x00FF) | temp;
                 incPC();
                 break;
@@ -3147,7 +3171,7 @@ public class Z80Core implements ICPUData, ICPU {
                 break;
             }
             case 0x2A: {
-                reg_index = ram.readWord(ram.readWord(reg_PC));
+                reg_index = ram.readWord(readWordPC());
                 inc2PC();
                 break;
             }
@@ -3168,7 +3192,7 @@ public class Z80Core implements ICPUData, ICPU {
                 break;
             } // dec IXl
             case 0x2E: {
-                int temp = ram.readByte(reg_PC);
+                int temp = readBytePC();
                 reg_index = (reg_index & 0xFF00) | temp;
                 incPC();
                 break;
@@ -5830,7 +5854,7 @@ public class Z80Core implements ICPUData, ICPU {
      */
     private void relativeJump() {
         reg_R++;
-        int offset = ram.readByte(reg_PC);
+        int offset = readBytePC();
         if (offset > 0x007F)
             offset = offset - 0x0100;
         reg_PC++;
@@ -5851,13 +5875,13 @@ public class Z80Core implements ICPUData, ICPU {
 
     private void jp(boolean cc) {
         if (cc)
-            reg_PC = ram.readWord(reg_PC);
+            reg_PC = readWordPC();
         else
             inc2PC();
     }
 
     private void jp() {
-        reg_PC = ram.readWord(reg_PC);
+        reg_PC = readWordPC();
     }
 
     private void ret(boolean cc, int instruction) {
@@ -5894,7 +5918,7 @@ public class Z80Core implements ICPUData, ICPU {
     }
 
     private void call() {
-        int destination = ram.readWord(reg_PC);
+        int destination = readWordPC();
         inc2PC();
         dec2SP();
         ram.writeWord(reg_SP, reg_PC);
@@ -5959,14 +5983,14 @@ public class Z80Core implements ICPUData, ICPU {
 
     /* IN A,(NN) */
     private void inAN() {
-        reg_A = io.IORead(ram.readByte(reg_PC));
+        reg_A = io.IORead(readBytePC());
         incPC();
         reg_R++;
     }
 
     /* OUT (NN),A */
     private void outNA() {
-        io.IOWrite(ram.readByte(reg_PC), reg_A);
+        io.IOWrite(readBytePC(), reg_A);
         incPC();
         reg_R++;
     }
@@ -6348,14 +6372,14 @@ public class Z80Core implements ICPUData, ICPU {
      * extended 16 bit loads for ED instructions
      */
     private void LDRegnnnnInd16Bit(int regCode) {
-        int address = ram.readWord(reg_PC);
+        int address = readWordPC();
         int data = ram.readWord(address);
         set16BitRegister(data, regCode);
         inc2PC();
     }
 
     private void LDnnnnRegInd16Bit(int regCode) {
-        int address = ram.readWord(reg_PC);
+        int address = readWordPC();
         ram.writeWord(address, get16BitRegister(regCode));
         inc2PC();
     }
@@ -6416,7 +6440,7 @@ public class Z80Core implements ICPUData, ICPU {
      */
     private int getIndexOffset() {
         reg_R++;
-        int index = ram.readByte(reg_PC);
+        int index = readBytePC();
         incPC();
         if (index > 0x007f)
             return (index - 256);
@@ -6605,7 +6629,7 @@ public class Z80Core implements ICPUData, ICPU {
     private void loadIndex8BitImmediate() {
         reg_R++;
         int address = getIndexAddress();
-        int data = ram.readByte(reg_PC);
+        int data = readBytePC();
         incPC();
         ram.writeByte(address, data);
     }
