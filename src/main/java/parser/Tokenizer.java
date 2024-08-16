@@ -26,7 +26,7 @@ public class Tokenizer {
     public boolean sdccStyleDollarInLabels = false;
     public boolean allowQuestionMarksToStartSymbols = false;
     public boolean allowDotFollowedByNumberLabels = true;
-    public boolean numericConstantsCanContainQoutes = false;
+    public boolean numericConstantsCanContainQuotes = false;
     public boolean allowDashPlusLabels = false;   // for wladx (for "reusable" labels)
     
     public List<String> multilineCommentStartTokens = new ArrayList<>();
@@ -98,7 +98,7 @@ public class Tokenizer {
         while(st.hasMoreTokens()) {
             String next = st.nextToken();
             if (previous != null) {
-                if (doubleTokens.contains(previous+next)) {
+                if (doubleTokens.contains((previous+next).toLowerCase())) {
                     tokens.remove(tokens.size()-1);
                     tokens.add(previous.concat(next));
                     previous = previous.concat(next);
@@ -199,7 +199,7 @@ public class Tokenizer {
                 tokens.add(token);
             } else if (next.equals("'")) {
                 StringBuilder tokenBuilder = new StringBuilder(next);
-                if (numericConstantsCanContainQoutes && previous != null) {
+                if (numericConstantsCanContainQuotes && previous != null) {
                     if (st.hasMoreTokens()) {
                         if (isHex(previous) || isInteger(previous) || isBinary(previous)) {
                             next = st.nextToken();
