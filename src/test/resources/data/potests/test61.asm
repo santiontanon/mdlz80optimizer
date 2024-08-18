@@ -3,4 +3,5 @@
     ld a, 1
     cp a
 loop:
+    jr z,loop
     jr loop

@@ -26,7 +26,7 @@ CP E	4	B8+3	1	A,E					S,Z,H,P/V,N,C			true
 CP H	4	B8+4	1	A,H					S,Z,H,P/V,N,C			true
 CP L	4	B8+5	1	A,L					S,Z,H,P/V,N,C			true
 CPL	3	2F	1	A				A	H,N			true
-DAA	4	27	1	A	H,N,C				S,Z,H,P/V,C			true
+DAA	4	27	1	A	H,N,C			A	S,Z,H,P/V,C			true
 DEC (HL)	10	35	1	HL			HL		S,Z,H,P/V,N		HL	true
 DEC A	4	3D	1	A				A	S,Z,H,P/V,N			true
 DEC B	4	5	1	B				B	S,Z,H,P/V,N			true

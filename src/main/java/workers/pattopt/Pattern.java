@@ -1378,7 +1378,62 @@ public class Pattern {
                     }
                 }
                 break;
-            }            
+            }
+            
+            case "regFlagEffectsNotUsedAfter":
+            {
+                // Get the list of register/flag effects:
+                int idx = Integer.parseInt(constraint.args[0]);
+                List<CodeStatement> statements = new ArrayList<>();
+                if (match.map.containsKey(idx)) {
+                    statements.addAll(match.map.get(idx));
+                } else {
+                    return true;
+                }
+                if (statements.size() != 1) {
+                    config.warn("regFlagEffectsNotUsedAfter refers to a block with more than one instruction!");
+                    return false;
+                }
+                CodeStatement s = statements.get(0);
+                CPUOp op = s.op;
+                List<CPUOpDependency> regFlagOutputDeps = op.getOutputDependencies();
+                for(CPUOpDependency d:regFlagOutputDeps) {
+                    if (d.flag == null && d.register == null) {
+                        // there is a non-register/flag effect.
+//                        System.out.println("regFlagEffectsNotUsedAfter: " + s + " -> dep failed: " + d);
+                        return false;
+                    } else if (d.register != null &&
+                               (d.register.equalsIgnoreCase("I") ||
+                                d.register.equalsIgnoreCase("R"))) {
+                        return false;
+                    }
+                }
+
+                int idx2 = Integer.parseInt(constraint.args[1]);
+                CodeStatement s2 = match.map.get(idx2).get(match.map.get(idx).size()-1);
+                
+                // Check that they are not used:
+                for(CPUOpDependency d:regFlagOutputDeps) {
+                    if (d.register != null) {
+                        Boolean result = regUsedAfter(s2, d.register, f, code);
+                        if (result == null) {
+                            maybeLogOptimization(match, pbo, f.getStatements().get(index_to_display_message_on).sl);
+                            return false;
+                        } else {
+                            if (result) return false;
+                        }
+                    } else if (d.flag != null) {
+                        Boolean result = flagUsedAfter(s2, d.flag, f, code);
+                        if (result == null) {
+                            maybeLogOptimization(match, pbo, f.getStatements().get(index_to_display_message_on).sl);
+                            return false;
+                        } else {
+                            if (result) return false;
+                        }
+                    }
+                }
+                break;
+            }
             
             default:
                 throw new UnsupportedOperationException("Unknown pattern constraint " + constraint.name);

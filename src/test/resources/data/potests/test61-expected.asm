@@ -2,4 +2,5 @@
 
     cp a
 loop:
+    jr z, loop
     jr loop

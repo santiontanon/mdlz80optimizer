@@ -38,6 +38,10 @@
 ; - memoryNotWritten(#, exp): ensures the memory location pointed to by exp is not written in block #. 
 ;                             Notice that matching is by expression matching, so, if you specify a constant
 ;                             and there happens to be a register with that has that address, it will not match.
+; - regFlagEffectsNotUsedAfter(#1, #2): ensures that the registers or flags modified by block #1, are not
+;                                       used after block #2. #1 must be a block with a single instruction.
+;                                       If #1 has a non-register/flag effect, this constraint will fail.
+;                                       It will also fail if the op modifies register I or R.
 ; You can add ":ID" after any constraint, which the effect that the constraint will be checked right after the pattern line
 ; with number == ID is matched.
 
@@ -2063,6 +2067,37 @@ regsNotUsedAfter(1,?reg2)
 notIn(?reg1,R,I,IXL,IXH,IYL,IYH)
 notIn(?reg2,R,I)
 notIn(?reg3,R,I,IXL,IXH,IYL,IYH)
+
+pattern: remove unused ?op
+name: unnecessary-0args
+0: ?op
+replacement:
+constraints:
+in(?op,ccf,cpl,daa,rla,rlca,rra,rrca,scf,cpd,cpi,neg,rld,rrd,)
+regFlagEffectsNotUsedAfter(0, 0)
+
+pattern: remove unused ?op ?any1
+name: unnecessary-1args
+0: ?op ?any1
+replacement:
+constraints:
+in(?op,and,cp,dec,inc,or,and,xor,sub,rl,rlc,rr,rrc,sla,sli,sra,srl)
+regFlagEffectsNotUsedAfter(0, 0)
+
+pattern: remove unused ?op ?any1, ?any2
+name: unnecessary-2args
+0: ?op ?any1, ?any2
+replacement:
+constraints:
+in(?op,adc,add,ld,sbc,bit,set,res)
+regFlagEffectsNotUsedAfter(0, 0)
+
+pattern: remove unused ex de, hl
+name: unnecessary-2args-ex
+0: ex de, hl
+replacement:
+constraints:
+regFlagEffectsNotUsedAfter(0, 0)
 
 ; automatically generated
 pattern: replace rlc ?reg0; rl ?reg1 with rlca; rl ?reg1

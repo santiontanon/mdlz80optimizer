@@ -120,6 +120,7 @@ public class PatternBasedOptimizerTest {
     @Test public void test80() throws Exception { test("data/potests/test80.asm", null, null, "size", 2, 11, 11, "data/potests/test80-expected.asm"); }
     @Test public void test81() throws Exception { test("data/potests/test81.asm", null, null, "size", 0, 0, 0, "data/potests/test81-expected.asm"); }
     @Test public void test82() throws Exception { test("data/potests/test82.asm", null, null, "size", 4, 18, 18, "data/potests/test82-expected.asm"); }
+    @Test public void test83() throws Exception { test("data/potests/test83.asm", null, null, "size", 4, 20, 20, "data/potests/test83-expected.asm"); }
 
     
     private void test(String inputFile, String dialect, String cpu, String target,
