@@ -34,6 +34,7 @@ public class TniAsmDialect implements Dialect {
     /**
      * Constructor
      * @param a_config
+     * @param version
      */
     public TniAsmDialect(MDLConfig a_config, int version) {
         super();
@@ -70,6 +71,7 @@ public class TniAsmDialect implements Dialect {
         if (version == TNIASM10) {
             config.expressionParser.addOpSynonym("|", config.expressionParser.OP_LOGICAL_OR);
             config.lineParser.tniAsm10MultipleInstructionsPerLine = true;        
+            config.allowNumberStartingSymbols = true;
         } else if (version == TNIASM045) {
             config.expressionParser.binaryDigitsCanContainSpaces = true;
             config.lineParser.tniAsm045MultipleInstructionsPerLine = true;
@@ -128,7 +130,16 @@ public class TniAsmDialect implements Dialect {
         }
         return null;        
     }
+
     
+    public String prependUnderscoreIfNecessary(String label)
+    {
+        if (label.charAt(0) >= '0' && label.charAt(0) <= '9') {
+            return "_" + label;
+        }
+        return label;
+    }
+
 
     @Override
     public Pair<String, SourceConstant> newSymbolName(String name, Expression value, CodeStatement s) {
@@ -136,12 +147,12 @@ public class TniAsmDialect implements Dialect {
         if (name.startsWith(".")) {
             SourceConstant lastAbsoluteLabel = getLastAbsoluteLabel(s);        
             if (lastAbsoluteLabel != null) {
-                return Pair.of(lastAbsoluteLabel.originalName + name, lastAbsoluteLabel);
+                return Pair.of(prependUnderscoreIfNecessary(lastAbsoluteLabel.originalName + name), lastAbsoluteLabel);
             }
         }
 
         // An absolute label
-        return Pair.of(config.lineParser.getLabelPrefix() + name, null);
+        return Pair.of(prependUnderscoreIfNecessary(config.lineParser.getLabelPrefix() + name), null);
     }
 
 
@@ -151,12 +162,12 @@ public class TniAsmDialect implements Dialect {
         if (name.startsWith(".")) {
             SourceConstant lastAbsoluteLabel = getLastAbsoluteLabel(s);
             if (lastAbsoluteLabel != null) {
-                return Pair.of(lastAbsoluteLabel.originalName + name, lastAbsoluteLabel);
+                return Pair.of(prependUnderscoreIfNecessary(lastAbsoluteLabel.originalName + name), lastAbsoluteLabel);
             }
         }
 
         // An absolute label
-        return Pair.of(name, null);
+        return Pair.of(prependUnderscoreIfNecessary(name), null);
     }
     
     

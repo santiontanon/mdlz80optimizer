@@ -273,7 +273,7 @@ public class SourceMacro {
 
         String previous = null;
         for(String token:tokens) {
-            if (previous != null && config.lineParser.macroArguentPrefixes.contains(previous) && config.tokenizer.isSymbol(token)) {
+            if (previous != null && config.lineParser.macroArguentPrefixes.contains(previous) && config.tokenizer.isSymbol(token, config.allowNumberStartingSymbols)) {
                 // variable name starting with "?" (or equivalent parameter prefix for the dialect):
                 line2 = line2.substring(0, line2.length()-1);
                 token = previous + token;

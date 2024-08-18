@@ -128,6 +128,9 @@ public class TokenizerTest {
     @Test public void test30() {
         Assert.assertArrayEquals(new String[]{"ld","a",",","_l@a","#b","?","e","!","l"}, tokenize("ld	a,_l@a#b?e!l"));
     }
+    @Test public void test31() {
+        Assert.assertArrayEquals(new String[]{"10_label", ":"}, tokenize("10_label:", "tniasm10"));
+    }
 
     
     private String[] tokenize(String line)

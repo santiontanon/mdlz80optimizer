@@ -336,7 +336,7 @@ public class LineParser {
                 return true;
             }
             
-        } else if (config.tokenizer.isSymbol(token)) {
+        } else if (config.tokenizer.isSymbol(token, config.allowNumberStartingSymbols)) {
             // try to parseArgs it as an assembler instruction or macro call:
             tokens.remove(0);
             if (config.opParser.isOpName(token)) {
@@ -360,16 +360,17 @@ public class LineParser {
         }
         return false;
     }
-
+    
     public boolean canBeLabel(String token, boolean indented) {
         if (isKeyword(token)) return false;
         if (config.opParser.isOpName(token, 0) && !config.considerCpuOpSymbolsWithoutIndentationToBeLabels) return false;
         if (config.preProcessor.isMacroName(token, config.preProcessor.MACRO_MACRO)) return false;
         if ((macroDefinitionStyle == MACRO_MACRO_NAME_ARGS || macroDefinitionStyle == MACRO_BOTH)
             && config.preProcessor.isMacro(token)) return false;
-        if (config.tokenizer.isSymbol(token)) return true;
+        if (config.tokenizer.isSymbol(token, config.allowNumberStartingSymbols)) return true;
         if (allowNumberLabels && config.tokenizer.isInteger(token)) return true;
         if (config.tokenizer.allowDashPlusLabels && config.tokenizer.isDashPlusLabel(token)) return true;
+        if (config.allowNumberStartingSymbols && token.charAt(0) >= '0' && token.charAt(0) <= '9' && config.tokenizer.containsLetter(token)) return true;
         return false;
     }
 

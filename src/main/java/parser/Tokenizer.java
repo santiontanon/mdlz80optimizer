@@ -16,6 +16,8 @@ public class Tokenizer {
     // MSX BASIC files have this character to indicate end of file (remove it while parsing):
     public static final int BASIC_EOF = 0x1a;
     
+    public MDLConfig config = null;
+    
     public HashSet<String> doubleTokens = new HashSet<>();
     
     public HashMap<String,String> stringEscapeSequences = new HashMap<>();
@@ -43,8 +45,9 @@ public class Tokenizer {
             .matcher("");   
     
     
-    public Tokenizer()
+    public Tokenizer(MDLConfig a_config)
     {
+        config = a_config;
         doubleTokens.add("<<");
         doubleTokens.add(">>");
         doubleTokens.add("<=");
@@ -160,10 +163,10 @@ public class Tokenizer {
                 }
                 if (additionalNonFirstSymbolCharacters != null && 
                     ((additionalNonFirstSymbolCharacters.contains(next) &&
-                      isSymbol(previous)) ||
+                      isSymbol(previous, config.allowNumberStartingSymbols)) ||
                      (additionalNonFirstSymbolCharacters.contains(previous.substring(previous.length()-1)) &&
-                      isSymbol(previous) &&
-                      isSymbol(next)))) {
+                      isSymbol(previous, config.allowNumberStartingSymbols) &&
+                      isSymbol(next, config.allowNumberStartingSymbols)))) {
                     tokens.remove(tokens.size()-1);
                     tokens.add(previous.concat(next));
                     previous = previous.concat(next);
@@ -263,8 +266,16 @@ public class Tokenizer {
         return token.substring(1, token.length()-1);
     }
     
+    public boolean containsLetter(String token)
+    {
+        for(int i = 0;i<token.length();i++) {
+            if (token.charAt(i) >= 'a' && token.charAt(i) <= 'z') return true;
+            if (token.charAt(i) >= 'A' && token.charAt(i) <= 'Z') return true;
+        }
+        return false;
+    }
     
-    public boolean isSymbol(String token)
+    public boolean isSymbol(String token, boolean allowNumberStartingSymbols)
     {
         if (token.equalsIgnoreCase("af'")) return true;
         if (token.equals("$")) return true;
@@ -272,6 +283,11 @@ public class Tokenizer {
         int c = token.charAt(0);
         if ((c>='a' && c<='z') || (c>='A' && c<='Z') || c=='_' ||
             c == '@') return true;
+        
+        if (token.charAt(0) >= '0' && token.charAt(0) <= '9' &&
+            allowNumberStartingSymbols && containsLetter(token)) {
+            return true;
+        }
         
         if (c == '.') {
             if (allowDotFollowedByNumberLabels) {

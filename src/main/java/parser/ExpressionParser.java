@@ -660,7 +660,7 @@ public class ExpressionParser {
                 // Exception for SjasmPlus:
                 if (functionName.equalsIgnoreCase("$$")) {
                     // See if the next token is not a symbol:
-                    if (tokens.isEmpty() || !config.tokenizer.isSymbol(tokens.get(0))) {
+                    if (tokens.isEmpty() || !config.tokenizer.isSymbol(tokens.get(0), config.allowNumberStartingSymbols)) {
                         // Parse as the symbol "$$":
                         Expression exp = Expression.dialectFunctionExpression(functionName, new ArrayList<>(), config);
                         return exp;
@@ -702,7 +702,7 @@ public class ExpressionParser {
                 }
                 return exp;  
                 
-            } else if (config.tokenizer.isSymbol(tokens.get(0))) {
+            } else if (config.tokenizer.isSymbol(tokens.get(0), config.allowNumberStartingSymbols)) {
                 String token = tokens.get(0);
                 if (!config.caseSensitiveSymbols) token = token.toLowerCase();
                 if (config.convertSymbolstoUpperCase) token = token.toUpperCase();

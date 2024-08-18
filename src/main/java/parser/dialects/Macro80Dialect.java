@@ -389,7 +389,7 @@ public class Macro80Dialect implements Dialect {
             while(!tokens.isEmpty() && !config.tokenizer.isSingleLineComment(tokens.get(0)) &&
                     !config.tokenizer.isMultiLineCommentStart(tokens.get(0))) {
                 String token = tokens.remove(0);
-                if (!config.tokenizer.isSymbol(token)) {
+                if (!config.tokenizer.isSymbol(token, config.allowNumberStartingSymbols)) {
                     config.error("Expected symbol name in " + sl);
                     return false;
                 }
@@ -409,7 +409,7 @@ public class Macro80Dialect implements Dialect {
             while(!tokens.isEmpty() && !config.tokenizer.isSingleLineComment(tokens.get(0)) &&
                     !config.tokenizer.isMultiLineCommentStart(tokens.get(0))) {
                 String token = tokens.remove(0);
-                if (!config.tokenizer.isSymbol(token)) {
+                if (!config.tokenizer.isSymbol(token, config.allowNumberStartingSymbols)) {
                     config.error("Expected symbol name in " + sl);
                     return false;
                 }

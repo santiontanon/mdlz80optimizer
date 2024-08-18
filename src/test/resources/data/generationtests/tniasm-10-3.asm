@@ -2,8 +2,12 @@
 
 VAR1: %equ 1
 
-label1:
+10_label1:
 %IF VAR1 = 1
   nop
 %ENDIF
-  jr label1
+  jr 10_label1
+
+.20_sublabel2:
+  nop
+  jr .20_sublabel2

@@ -81,6 +81,7 @@ public class MDLConfig {
                                                                  // happens to start with a parenthesis, but it's not an 
                                                                  // indirection, we just do: 0 + (<exp>), which fixes the issue.
     public boolean allowWLADXSizeOfSymbols = false;
+    public boolean allowNumberStartingSymbols = false;
     public boolean allowCallsToNonDefinedSymbolsInExecutionFlowAnalysis = true;
     public boolean useExecutionFlowAnalysis = true;
     
@@ -252,7 +253,7 @@ public class MDLConfig {
         // ignore all the platform specific patterns, by default:
         ignorePatternsWithTags.add(CPC_TAG);
 
-        tokenizer = new Tokenizer();          
+        tokenizer = new Tokenizer(this);
     }
 
 

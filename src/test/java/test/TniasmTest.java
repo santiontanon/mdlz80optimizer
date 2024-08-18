@@ -33,23 +33,23 @@ public class TniasmTest {
     }
 
     // tniasm0.45 tests:
-//    @Test public void test1() throws IOException { Assert.assertTrue(test045("data/generationtests/tniasm-ifdef.asm",
-//                                                                          "data/generationtests/tniasm-ifdef-expected.asm")); }
-//    @Test public void test2() throws IOException { Assert.assertTrue(test045("data/generationtests/tniasm-constants.asm",
-//                                                                          "data/generationtests/tniasm-constants-expected.asm")); }
-//    @Test public void test3() throws IOException { Assert.assertTrue(test045("data/generationtests/tniasm-multiple.asm",
-//                                                                          "data/generationtests/tniasm-multiple-expected.asm")); }
-//    @Test public void test4() throws IOException { Assert.assertTrue(test045("data/generationtests/tniasm-operators.asm",
-//                                                                          "data/generationtests/tniasm-operators-expected.asm")); }
-//    @Test public void test5() throws IOException { Assert.assertTrue(test045("data/generationtests/tniasm-error.asm",
-//                                                                          "data/generationtests/tniasm-error-expected.asm")); }
-//    @Test public void test6() throws IOException { Assert.assertTrue(test045("data/generationtests/tniasm-fakeops.asm",
-//                                                                          "data/generationtests/tniasm-fakeops-expected.asm")); }
-//    // tniasm1.0 tests:
-//    @Test public void test10_1() throws IOException { Assert.assertTrue(test10("data/generationtests/tniasm-macros.asm",
-//                                                                          "data/generationtests/tniasm-macros-expected.asm")); }
-//    @Test public void test10_2() throws IOException { Assert.assertTrue(test10("data/generationtests/tniasm-10.asm",
-//                                                                          "data/generationtests/tniasm-10-expected.asm")); }
+    @Test public void test1() throws IOException { Assert.assertTrue(test045("data/generationtests/tniasm-ifdef.asm",
+                                                                          "data/generationtests/tniasm-ifdef-expected.asm")); }
+    @Test public void test2() throws IOException { Assert.assertTrue(test045("data/generationtests/tniasm-constants.asm",
+                                                                          "data/generationtests/tniasm-constants-expected.asm")); }
+    @Test public void test3() throws IOException { Assert.assertTrue(test045("data/generationtests/tniasm-multiple.asm",
+                                                                          "data/generationtests/tniasm-multiple-expected.asm")); }
+    @Test public void test4() throws IOException { Assert.assertTrue(test045("data/generationtests/tniasm-operators.asm",
+                                                                          "data/generationtests/tniasm-operators-expected.asm")); }
+    @Test public void test5() throws IOException { Assert.assertTrue(test045("data/generationtests/tniasm-error.asm",
+                                                                          "data/generationtests/tniasm-error-expected.asm")); }
+    @Test public void test6() throws IOException { Assert.assertTrue(test045("data/generationtests/tniasm-fakeops.asm",
+                                                                          "data/generationtests/tniasm-fakeops-expected.asm")); }
+    // tniasm1.0 tests:
+    @Test public void test10_1() throws IOException { Assert.assertTrue(test10("data/generationtests/tniasm-macros.asm",
+                                                                          "data/generationtests/tniasm-macros-expected.asm")); }
+    @Test public void test10_2() throws IOException { Assert.assertTrue(test10("data/generationtests/tniasm-10.asm",
+                                                                          "data/generationtests/tniasm-10-expected.asm")); }
     @Test public void test10_3() throws IOException { Assert.assertTrue(test10("data/generationtests/tniasm-10-3.asm",
                                                                           "data/generationtests/tniasm-10-3-expected.asm")); }
 
