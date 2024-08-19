@@ -26,7 +26,6 @@ public class Tokenizer {
     public boolean allowAndpersandHex = false;
     public boolean sdccStyleHashMarksForConstants = false;
     public boolean sdccStyleDollarInLabels = false;
-    public boolean allowQuestionMarksToStartSymbols = false;
     public boolean allowDotFollowedByNumberLabels = true;
     public boolean numericConstantsCanContainQuotes = false;
     public boolean allowDashPlusLabels = false;   // for wladx (for "reusable" labels)
@@ -89,8 +88,8 @@ public class Tokenizer {
     
     public List<String> tokenize(String line, List<String> tokens, boolean includeBlanks) {
         String tokenizerString = " \r\n\t()[]#,;:+-*/%|&'\"!<>=~^{}\\";
-        
-        if (!allowQuestionMarksToStartSymbols) {
+
+        if (!config.additionalCharactersAllowedStartingSymbols.contains("?")) {
             tokenizerString += "?";
         }
         if (!sdccStyleDollarInLabels) {
@@ -98,9 +97,18 @@ public class Tokenizer {
         }
         StringTokenizer st = new StringTokenizer(line, tokenizerString, true);
         String previous = null;
+        boolean keepConcatenatingToSymbol = false;
         while(st.hasMoreTokens()) {
             String next = st.nextToken();
             if (previous != null) {
+                if (keepConcatenatingToSymbol && isSymbol(next, config.allowNumberStartingSymbols)) {
+                    tokens.remove(tokens.size()-1);
+                    tokens.add(previous.concat(next));
+                    previous = previous.concat(next);
+                    continue;
+                } else {
+                    keepConcatenatingToSymbol = false;
+                }
                 if (doubleTokens.contains((previous+next).toLowerCase())) {
                     tokens.remove(tokens.size()-1);
                     tokens.add(previous.concat(next));
@@ -230,6 +238,15 @@ public class Tokenizer {
                 if (token.length()<2 || !token.endsWith("'")) return null;
                 token = "\"" + token.substring(1, token.length()-1) + "\"";
                 tokens.add(token);
+            } else if (previous != null &&
+                       config.additionalCharactersAllowedInsideSymbols.contains(next) &&
+                       isSymbol(previous, config.allowNumberStartingSymbols)) {
+                // Merge tokens:
+                tokens.remove(tokens.size()-1);
+                tokens.add(previous.concat(next));
+                previous = previous.concat(next);
+                keepConcatenatingToSymbol = true;
+                continue;                
             } else {
                 if (!next.equals(" ") && !next.equals("\r") && !next.equals("\n") && !next.equals("\t")) {
                     if (!allowDotFollowedByNumberLabels && next.charAt(0)=='.') {
@@ -284,7 +301,7 @@ public class Tokenizer {
         if ((c>='a' && c<='z') || (c>='A' && c<='Z') || c=='_' ||
             c == '@') return true;
         
-        if (token.charAt(0) >= '0' && token.charAt(0) <= '9' &&
+        if (c >= '0' && c <= '9' &&
             allowNumberStartingSymbols && containsLetter(token)) {
             return true;
         }
@@ -302,7 +319,9 @@ public class Tokenizer {
             c>='0' && c<='9') {
             return true;
         }
-        if (allowQuestionMarksToStartSymbols && token.charAt(0) == '?') return true;
+        for(String c2: config.additionalCharactersAllowedStartingSymbols) {
+            if (c2.charAt(0) == c) return true;
+        }
         
         return false;
     }

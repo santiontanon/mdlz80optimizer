@@ -64,6 +64,8 @@ public class BinaryGeneratorTest {
                                                                            "data/generationtests/sjasmplus-fpos-expected.bin")); }
     @Test public void test17() throws Exception { Assert.assertTrue(test("data/generationtests/rst.asm", "mdl",
                                                                            "data/generationtests/rst-expected.bin")); }
+    @Test public void test18() throws Exception { Assert.assertTrue(test("data/generationtests/tniasm-10-4.asm", "tniasm10",
+                                                                           "data/generationtests/tniasm-10-4-expected.bin")); }
         
 
     private boolean test(String inputFile, String dialect, String expectedOutputFile) throws Exception

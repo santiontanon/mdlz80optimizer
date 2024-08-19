@@ -131,6 +131,12 @@ public class TokenizerTest {
     @Test public void test31() {
         Assert.assertArrayEquals(new String[]{"10_label", ":"}, tokenize("10_label:", "tniasm10"));
     }
+    @Test public void test32() {
+        Assert.assertArrayEquals(new String[]{".", "#", "len", ":"}, tokenize(".#len:"));
+    }
+    @Test public void test33() {
+        Assert.assertArrayEquals(new String[]{".#len", ":"}, tokenize(".#len:", "tniasm10"));
+    }
 
     
     private String[] tokenize(String line)

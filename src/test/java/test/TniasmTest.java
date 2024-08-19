@@ -14,7 +14,6 @@ import java.util.List;
 import java.util.StringTokenizer;
 import org.junit.Assert;
 import org.junit.Test;
-import parser.dialects.TniAsmDialect;
 import util.Resources;
 import workers.SourceCodeGenerator;
 
@@ -52,6 +51,8 @@ public class TniasmTest {
                                                                           "data/generationtests/tniasm-10-expected.asm")); }
     @Test public void test10_3() throws IOException { Assert.assertTrue(test10("data/generationtests/tniasm-10-3.asm",
                                                                           "data/generationtests/tniasm-10-3-expected.asm")); }
+    @Test public void test10_4() throws IOException { Assert.assertTrue(test10("data/generationtests/tniasm-10-4.asm",
+                                                                          "data/generationtests/tniasm-10-4-expected.asm")); }
 
     private boolean test045(String inputFile, String expectedOutputFile) throws IOException
     {

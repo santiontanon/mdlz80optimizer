@@ -72,6 +72,10 @@ public class TniAsmDialect implements Dialect {
             config.expressionParser.addOpSynonym("|", config.expressionParser.OP_LOGICAL_OR);
             config.lineParser.tniAsm10MultipleInstructionsPerLine = true;        
             config.allowNumberStartingSymbols = true;
+            config.additionalCharactersAllowedInsideSymbols.add("#");
+            config.additionalCharactersAllowedInsideSymbols.add("'");
+            config.additionalCharactersAllowedInsideSymbols.add("?");
+            config.additionalCharactersAllowedStartingSymbols.add("#");
         } else if (version == TNIASM045) {
             config.expressionParser.binaryDigitsCanContainSpaces = true;
             config.lineParser.tniAsm045MultipleInstructionsPerLine = true;

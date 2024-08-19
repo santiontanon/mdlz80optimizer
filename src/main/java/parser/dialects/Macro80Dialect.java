@@ -48,7 +48,7 @@ public class Macro80Dialect implements Dialect {
         config.hexStyle = MDLConfig.HEX_STYLE_H_CAPS;
 
         config.lineParser.allowIncludesWithoutQuotes = true;
-        config.tokenizer.allowQuestionMarksToStartSymbols = true;
+        config.additionalCharactersAllowedStartingSymbols.add("?");
         config.tokenizer.additionalNonFirstSymbolCharacters = new ArrayList<>();
         config.tokenizer.additionalNonFirstSymbolCharacters.add("?");
 

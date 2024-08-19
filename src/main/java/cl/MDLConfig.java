@@ -84,6 +84,8 @@ public class MDLConfig {
     public boolean allowNumberStartingSymbols = false;
     public boolean allowCallsToNonDefinedSymbolsInExecutionFlowAnalysis = true;
     public boolean useExecutionFlowAnalysis = true;
+    public List<String> additionalCharactersAllowedInsideSymbols = new ArrayList<>();
+    public List<String> additionalCharactersAllowedStartingSymbols = new ArrayList<>();
     
     public List<String> ignorePatternsWithTags = new ArrayList<>();
     
