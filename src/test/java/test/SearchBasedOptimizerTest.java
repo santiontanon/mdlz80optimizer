@@ -68,6 +68,8 @@ public class SearchBasedOptimizerTest {
               new String[]{"data/searchtests/opt-test17-expected.asm"}); }
     @Test public void test18() throws IOException { testZ80Next("data/searchtests/opt-test18.asm", 
               new String[]{"data/searchtests/opt-test18-expected.asm"}); }
+    @Test public void test19() throws IOException { test("data/searchtests/opt-test19.asm", 
+              new String[]{"data/searchtests/opt-test19-expected.asm"}); }
 
     
             

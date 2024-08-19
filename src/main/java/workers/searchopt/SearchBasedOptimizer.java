@@ -10,6 +10,7 @@ import cl.MDLLogger;
 import cl.OptimizationResult;
 import code.CPUOp;
 import code.CPUOpDependency;
+import code.CPUOpSpec;
 import code.CodeBase;
 import code.CodeStatement;
 import code.Expression;
@@ -1227,6 +1228,7 @@ public class SearchBasedOptimizer implements MDLWorker {
             for(CodeStatement s:optimized) {
                 s.source = f;
                 s.sl.lineNumber = originalCode.get(0).sl.lineNumber;
+                simplify8bitConstants(s);
                 f.addStatement(insertionPoint, s);
                 insertionPoint++;
             }
@@ -1388,5 +1390,26 @@ public class SearchBasedOptimizer implements MDLWorker {
         
         
         return flags;
+    }
+    
+    
+    public void simplify8bitConstants(CodeStatement s)
+    {
+        if (s.op == null) return;
+        CPUOp op = s.op;
+        CPUOpSpec spec = op.spec;
+        for(int i = 0;i<op.args.size();i++) {
+            Expression exp = op.args.get(i);
+            if (exp.type == Expression.EXPRESSION_INTEGER_CONSTANT) {
+                if (!spec.args.get(i).is16bit()) {
+                    exp.integerConstant = exp.integerConstant & 0xff;
+                    if (exp.renderMode == Expression.RENDER_AS_16BITHEX) {
+                        exp.renderMode = Expression.RENDER_AS_8BITHEX;
+                    } else if (exp.renderMode == Expression.RENDER_AS_16BITBIN) {
+                        exp.renderMode = Expression.RENDER_AS_8BITBIN;
+                    }
+                }
+            }
+        }
     }
 }
