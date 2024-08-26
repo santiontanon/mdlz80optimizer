@@ -405,6 +405,7 @@ public class PatternBasedOptimizer implements MDLWorker {
             int bestTimeSavings = 0;
             int bestNumConstraints = 0;
             for(PatternMatch match:matches) {
+                if (!match.pattern.canBeInstantiated(match, code)) continue;
                 int sizeSavings = match.pattern.getSpaceSaving(match, code);
                 int timeSavings = match.pattern.getTimeSaving(match, code)[0];
                 int numConstraints = match.newEqualities.size();
@@ -424,59 +425,63 @@ public class PatternBasedOptimizer implements MDLWorker {
                     bestNumConstraints = numConstraints;
                 }
             }
-
-            CodeStatement statementToDisplayMessageOn = null;
-            int startIndex = i;
-            int endIndex = startIndex;
-            for(int id:bestMatch.map.keySet()) {
-                if (id == 0) statementToDisplayMessageOn = bestMatch.map.get(id).get(0);
-                for(CodeStatement s:bestMatch.map.get(id)) {
-                    int idx = f.getStatements().indexOf(s);
-                    if (idx > endIndex) endIndex = idx;
-                }
-            }
-            if (statementToDisplayMessageOn == null) {
-                config.warn("Could not identify the statement to display the optimization message on...");
-                statementToDisplayMessageOn = f.getStatements().get(i);
-            }
-
-            if (bestPatt != null && 
-                bestPatt.apply(f, bestMatch, code, equalitiesToMaintain)) {
-                statementsWhereIXIsSP = null;
-                statementsWhereIYIsSP = null;
-                if (config.isInfoEnabled() && !silent) {
-                    int bytesSaved = bestPatt.getSpaceSaving(bestMatch, code);
-                    String timeSavedString = bestPatt.getTimeSavingString(bestMatch, code);
-                    config.info("Pattern-based optimization", statementToDisplayMessageOn.fileNameLineString(), 
-                            bestPatt.getInstantiatedName(bestMatch) + " ("+bytesSaved+" bytes, " +
-                            timeSavedString + " " +config.timeUnit+"s saved)");
-                    for(EqualityConstraint ec:bestMatch.newEqualities) {
-                        config.debug("new equality constraint: " + ec.exp1 + " == " + ec.exp2);
+            
+            if (bestMatch != null) {
+                CodeStatement statementToDisplayMessageOn = null;
+                int startIndex = i;
+                int endIndex = startIndex;
+                for(int id:bestMatch.map.keySet()) {
+                    if (id == 0) statementToDisplayMessageOn = bestMatch.map.get(id).get(0);
+                    for(CodeStatement s:bestMatch.map.get(id)) {
+                        int idx = f.getStatements().indexOf(s);
+                        if (idx > endIndex) endIndex = idx;
                     }
-
-//                            if (config.isDebugEnabled()) {
-//                                StringBuilder previousCode = new StringBuilder();
-//                                for(int line = startIndex;line<endIndex;line++) {
-//                                    previousCode.append('\n')
-//                                                .append(f.getStatements().get(line).toString());
-//                                }
-//
-//                                StringBuilder newCode = new StringBuilder();
-//                                endIndex = f.getStatements().size();
-//                                if (endStatement != null) endIndex = f.getStatements().indexOf(endStatement);
-//                                for(int line = startIndex;line<endIndex;line++) {
-//                                    newCode.append('\n')
-//                                           .append(f.getStatements().get(line).toString());
-//                                }
-//
-//                                config.debug(previousCode + "\nReplaced by:" + newCode);
-//                            }
                 }
-                r.addOptimizerSpecific("Pattern-based optimizer pattern applications", 1);
-                r.addSavings(bestPatt.getSpaceSaving(bestMatch, code), bestPatt.getTimeSaving(bestMatch, code));
-                bestMatch.setConfig(config);    // we set the dialect configuration to the global one, in order to generate code properly if needed
-                appliedOptimizations.add(bestMatch);
-                return true;
+                if (statementToDisplayMessageOn == null) {
+                    config.warn("Could not identify the statement to display the optimization message on...");
+                    statementToDisplayMessageOn = f.getStatements().get(i);
+                }
+
+                if (bestPatt != null && 
+                    bestPatt.apply(f, bestMatch, code, equalitiesToMaintain)) {
+                    statementsWhereIXIsSP = null;
+                    statementsWhereIYIsSP = null;
+                    if (config.isInfoEnabled() && !silent) {
+                        int bytesSaved = bestPatt.getSpaceSaving(bestMatch, code);
+                        String timeSavedString = bestPatt.getTimeSavingString(bestMatch, code);
+                        config.info("Pattern-based optimization", statementToDisplayMessageOn.fileNameLineString(), 
+                                bestPatt.getInstantiatedName(bestMatch) + " ("+bytesSaved+" bytes, " +
+                                timeSavedString + " " +config.timeUnit+"s saved)" 
+    //                            + (bestPatt.name == null ? "":" [" + bestPatt.name + "]")
+                                );
+                        for(EqualityConstraint ec:bestMatch.newEqualities) {
+                            config.debug("new equality constraint: " + ec.exp1 + " == " + ec.exp2);
+                        }
+
+    //                            if (config.isDebugEnabled()) {
+    //                                StringBuilder previousCode = new StringBuilder();
+    //                                for(int line = startIndex;line<endIndex;line++) {
+    //                                    previousCode.append('\n')
+    //                                                .append(f.getStatements().get(line).toString());
+    //                                }
+    //
+    //                                StringBuilder newCode = new StringBuilder();
+    //                                endIndex = f.getStatements().size();
+    //                                if (endStatement != null) endIndex = f.getStatements().indexOf(endStatement);
+    //                                for(int line = startIndex;line<endIndex;line++) {
+    //                                    newCode.append('\n')
+    //                                           .append(f.getStatements().get(line).toString());
+    //                                }
+    //
+    //                                config.debug(previousCode + "\nReplaced by:" + newCode);
+    //                            }
+                    }
+                    r.addOptimizerSpecific("Pattern-based optimizer pattern applications", 1);
+                    r.addSavings(bestPatt.getSpaceSaving(bestMatch, code), bestPatt.getTimeSaving(bestMatch, code));
+                    bestMatch.setConfig(config);    // we set the dialect configuration to the global one, in order to generate code properly if needed
+                    appliedOptimizations.add(bestMatch);
+                    return true;
+                }
             } else {
                 config.debug("Optimization pattern application failed");
             }

@@ -417,6 +417,22 @@ public class Pattern {
     }
     
     
+    public boolean canBeInstantiated(PatternMatch match, CodeBase code)
+    {
+        for(CPUOpPattern pat:replacement) {
+            if (!pat.isWildcard()) {
+                config.logger.silence();
+                CPUOp ipat = pat.instantiate(match, this, config);
+                config.logger.resume();
+                if (ipat == null) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    
     public int[] getTimeSaving(PatternMatch match, CodeBase code)
     {
         int patternTime[] = {0,0};
