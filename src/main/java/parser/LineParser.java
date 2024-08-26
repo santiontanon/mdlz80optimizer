@@ -8,8 +8,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import org.apache.commons.lang3.StringUtils;
-
 import cl.MDLConfig;
 import code.CPUOp;
 import code.CodeBase;
@@ -1347,7 +1345,7 @@ public class LineParser {
                 {
                     // Relative to the source file that included this file
                     String sourcePath = source.getPath();
-                    if (StringUtils.isNotBlank(sourcePath)) {
+                    if (!sourcePath.isBlank()) {
                         // santi: Do NOT change to "FilenameUtils.concat", that function assumes that the first argument
                         // is an absolute directory, which in different configurations cannot be ensured to be true.
                         // for example when calling mdl like: java -jar mdl.jar ../project/src/main.asm -I ../project2/src
@@ -1375,7 +1373,7 @@ public class LineParser {
                 {
                     // Relative to the main assembler file of the project
                     String sourcePath = code.outputs.get(0).main.getPath();
-                    if (StringUtils.isNotBlank(sourcePath)) {
+                    if (!sourcePath.isBlank()) {
                         // santi: Do NOT change to "FilenameUtils.concat", that function assumes that the first argument
                         // is an absolute directory, which in different configurations cannot be ensured to be true.
                         // for example when calling mdl like: java -jar mdl.jar ../project/src/main.asm -I ../project2/src

@@ -9,7 +9,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
-import org.apache.commons.lang3.StringUtils;
 
 /**
  * Convenience utility class to read files from either the classpath or the

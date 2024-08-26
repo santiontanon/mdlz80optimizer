@@ -15,7 +15,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import parser.LineParser;
 import parser.SourceLine;
@@ -589,7 +588,7 @@ public class WLADXZ80Dialect implements Dialect {
             }
 
             String sourcePath = source.getPath();
-            if (StringUtils.isNotBlank(sourcePath)) {
+            if (!sourcePath.isBlank()) {
                 // santi: Do NOT change to "FilenameUtils.concat", that function assumes that the first argument
                 // is an absolute directory, which in different configurations cannot be ensured to be true.
                 // for example when calling mdl like: java -jar mdl.jar ../project/src/main.asm -I ../project2/src

@@ -3,8 +3,6 @@
  */
 package parser.dialects;
 
-import org.apache.commons.lang3.StringUtils;
-
 import cl.MDLConfig;
 
 /**
@@ -35,9 +33,12 @@ public class Dialects {
      */
     public static String asKnownDialect(String dialect) {
 
-        return StringUtils.equalsAnyIgnoreCase(dialect, knownDialects())
-                ? StringUtils.lowerCase(dialect)
-                : null;
+        for(String dialect2:knownDialects()) {
+            if (dialect.equalsIgnoreCase(dialect2)) {
+                return dialect.toLowerCase();
+            }
+        }
+        return null;
     }
 
     /**

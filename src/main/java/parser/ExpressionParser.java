@@ -12,7 +12,6 @@ import code.CodeStatement;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
 public class ExpressionParser {
@@ -239,7 +238,8 @@ public class ExpressionParser {
                 exp = Expression.operatorExpression(Expression.EXPRESSION_BITXOR, exp, exp2, config);
                 continue;
             }
-            if (StringUtils.equalsAnyIgnoreCase(tokens.get(0), OP_EQUAL, "==")) {
+            if (tokens.get(0).equalsIgnoreCase(OP_EQUAL) ||
+                tokens.get(0).equalsIgnoreCase("==")) {
                 tokens.remove(0);
                 Expression exp2 = parseInternal(tokens, s, previous, code);
                 if (exp2 == null) {
@@ -818,7 +818,7 @@ public class ExpressionParser {
             }
         }
         if (tokens.size() >= 2 &&
-            StringUtils.equalsIgnoreCase(tokens.get(0), OP_BIT_NEGATION)) {
+            OP_BIT_NEGATION.equalsIgnoreCase(tokens.get(0))) {
             // a bit negated expression:
             tokens.remove(0);
             Expression exp = parseInternal(tokens, s, previous, code);

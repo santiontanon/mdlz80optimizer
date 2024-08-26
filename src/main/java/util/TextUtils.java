@@ -3,8 +3,8 @@ package util;
 import java.io.File;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.StringTokenizer;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
 /**
@@ -42,25 +42,29 @@ public class TextUtils {
     public static boolean matches(String pPattern, String pString, boolean caseSensitive) {
 
         // (sanity check)
-        if (StringUtils.isEmpty(pPattern)) {
-            return StringUtils.isEmpty(pString);
+        if (pPattern == null || pPattern.isEmpty()) {
+            return pString == null || pString.isEmpty();
         }
 
         // (sanitizes input)
-        final String pattern = StringUtils.defaultString(pPattern);
-        final String string = StringUtils.defaultString(pString);
+        String pattern = pPattern;  // cannot be null here
+        String string = (pString == null ? "":pString);
 
+        if (!caseSensitive) {
+            pattern = pattern.toLowerCase();
+            string = string.toLowerCase();
+        }
         // Checks for every literal in proper order
         int pos = 0;
-        for (String literal : StringUtils.splitPreserveAllTokens(pattern, '*')) {
-            final int nextPos = caseSensitive
-                    ? StringUtils.indexOf(string, literal, pos)
-                    : StringUtils.indexOfIgnoreCase(string, literal, pos);
+        StringTokenizer t = new StringTokenizer(pattern, "*");
+        while(t.hasMoreTokens()) {
+            String literal = t.nextToken();
+            final int nextPos = string.indexOf(literal, pos);
             if (nextPos < 0) {
                 return false;
             }
             pos = nextPos + literal.length();
-        }
+        }        
         return true;
     }
 
@@ -116,8 +120,14 @@ public class TextUtils {
 
         // Checks every string for a positive match
         for (String string: strings) {
-            if (matches(pattern, string)) {
-                return true;
+            if (caseSensitive) {
+                if (matches(pattern, string)) {
+                    return true;
+                }
+            } else {
+                if (matchesIgnoreCase(pattern, string)) {
+                    return true;
+                }
             }
         }
         return false;
