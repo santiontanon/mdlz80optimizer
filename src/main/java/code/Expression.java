@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import cl.MDLConfig;
-import org.apache.commons.lang3.tuple.Pair;
+import util.Pair;
 
 public class Expression {
 

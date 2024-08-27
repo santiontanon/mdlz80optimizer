@@ -22,8 +22,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import org.apache.commons.lang3.tuple.MutablePair;
-import org.apache.commons.lang3.tuple.Pair;
+import util.Pair;
 import util.microprocessor.MappedTrackingZ80Memory;
 import util.microprocessor.PlainZ80IO;
 import util.microprocessor.Z80.CPUConfig;
@@ -215,7 +214,7 @@ public class SourceCodeExecution implements MDLWorker {
     {
         HashMap<String, List<CodeStatement>> uselessInstructionTracking_currentSetters = new HashMap<>();
         HashMap<CodeStatement, Integer> uselessInstructionTracking_potentialUseless = new HashMap<>();  // the integer contains how many regs/flags were set that have not yet been overwritten or used (when it reaches 0, instruction is useless)
-        HashMap<CodeStatement, MutablePair<Integer, Integer>> uselessInstructionTracking_useful_total = new HashMap<>();  // # times useful, # times total
+        HashMap<CodeStatement, Pair<Integer, Integer>> uselessInstructionTracking_useful_total = new HashMap<>();  // # times useful, # times total
                 
         if (mapperConfigFileName != null) {
             if (!loadMapperConfig(mapperConfigFileName)) {
@@ -357,7 +356,7 @@ public class SourceCodeExecution implements MDLWorker {
         }
         
         // Hotspot tracking:
-        HashMap<String, MutablePair<Integer, Integer>> hotspots = new HashMap<>();
+        HashMap<String, Pair<Integer, Integer>> hotspots = new HashMap<>();
         
         // Set program counter:
         Integer startAddress = z80Memory.integerAddressOf(startAddressString);
@@ -553,9 +552,9 @@ public class SourceCodeExecution implements MDLWorker {
                                             uselessInstructionTracking_potentialUseless.remove(setter);
                                         }
                                         if (!uselessInstructionTracking_useful_total.containsKey(setter)) {
-                                            uselessInstructionTracking_useful_total.put(setter, MutablePair.of(1, 1));
+                                            uselessInstructionTracking_useful_total.put(setter, Pair.of(1, 1));
                                         } else {
-                                            MutablePair<Integer, Integer> pair = uselessInstructionTracking_useful_total.get(setter);
+                                            Pair<Integer, Integer> pair = uselessInstructionTracking_useful_total.get(setter);
                                             pair.left++;
                                             pair.right++;
                                         }
@@ -576,9 +575,9 @@ public class SourceCodeExecution implements MDLWorker {
                                                     uselessInstructionTracking_potentialUseless.remove(setter);
                                                 }
                                                 if (!uselessInstructionTracking_useful_total.containsKey(setter)) {
-                                                    uselessInstructionTracking_useful_total.put(setter, MutablePair.of(0, 1));
+                                                    uselessInstructionTracking_useful_total.put(setter, Pair.of(0, 1));
                                                 } else {
-                                                    MutablePair<Integer, Integer> pair = uselessInstructionTracking_useful_total.get(setter);
+                                                    Pair<Integer, Integer> pair = uselessInstructionTracking_useful_total.get(setter);
                                                     pair.right++;
                                                 }
                                             } else {
@@ -640,9 +639,9 @@ public class SourceCodeExecution implements MDLWorker {
                 if (reportHotSpots) {
                     int executionTime = (int)(z80.getTStates() - previousTime);
                     if (!hotspots.containsKey(addressString)) {
-                        hotspots.put(addressString, MutablePair.of(0, 0));
+                        hotspots.put(addressString, Pair.of(0, 0));
                     }
-                    MutablePair<Integer, Integer> spot = hotspots.get(addressString);
+                    Pair<Integer, Integer> spot = hotspots.get(addressString);
                     spot.setLeft(spot.getLeft() + 1);
                     spot.setRight(spot.getRight() + executionTime);
                 }
@@ -703,13 +702,13 @@ public class SourceCodeExecution implements MDLWorker {
             } else {    
                 // Construct and format the funtion execution reporting table:
                 config.info("Function: count  percentage  (min / avg / max):");
-                List<MutablePair<Double, String>> rows = new ArrayList<>();
+                List<Pair<Double, String>> rows = new ArrayList<>();
                 // Step 1: function names:
                 int max_len = 0;
                 int max_closed = 0;
                 for(FunctionTrackRecord function:trackFunctions) {
                     if (!function.closed.isEmpty()) {
-                        rows.add(MutablePair.of(0.0, "- \"" + function.userString + "\":"));
+                        rows.add(Pair.of(0.0, "- \"" + function.userString + "\":"));
                         if (function.userString.length() > max_len) max_len = function.userString.length();
                         if (function.closed.size() > max_closed) max_closed = function.closed.size();
                     }
@@ -718,7 +717,7 @@ public class SourceCodeExecution implements MDLWorker {
                 for(int i = 0;i<rows.size();i++) {
                     String row = rows.get(i).getRight();
                     while(row.length() < max_len + 5) row += " ";
-                    rows.get(i).setValue(row);
+                    rows.get(i).setRight(row);
                 }
 
                 // Add timing:
@@ -726,7 +725,7 @@ public class SourceCodeExecution implements MDLWorker {
                 int i = 0;
                 for(FunctionTrackRecord function:trackFunctions) {
                     if (!function.closed.isEmpty()) {
-                        MutablePair<Double, String> row = rows.get(i);
+                        Pair<Double, String> row = rows.get(i);
                         long min = -1;
                         long max = -1;
                         double functionTotal = 0;
@@ -754,9 +753,9 @@ public class SourceCodeExecution implements MDLWorker {
                 }
 
                 // Sort by percentage of time used:
-                Collections.sort(rows, new Comparator<MutablePair<Double, String>>() {
+                Collections.sort(rows, new Comparator<Pair<Double, String>>() {
                     @Override
-                    public int compare(MutablePair<Double, String> b1, MutablePair<Double, String> b2) {
+                    public int compare(Pair<Double, String> b1, Pair<Double, String> b2) {
                         return -Double.compare(b1.getLeft(), b2.getLeft());
                     }
                 });
@@ -770,7 +769,7 @@ public class SourceCodeExecution implements MDLWorker {
             List<CodeStatement> useless = new ArrayList<>();
             List<CodeStatement> simetimes_useless = new ArrayList<>();
             for(CodeStatement s:uselessInstructionTracking_useful_total.keySet()) {
-                MutablePair<Integer, Integer> pair = uselessInstructionTracking_useful_total.get(s);
+                Pair<Integer, Integer> pair = uselessInstructionTracking_useful_total.get(s);
                 if (pair.left == 0) {
                     useless.add(s);
                 } else if (pair.left < pair.right) {
@@ -799,13 +798,13 @@ public class SourceCodeExecution implements MDLWorker {
             }
             config.info("Always useless: " + useless.size());
             for(CodeStatement s:useless) {
-                MutablePair<Integer, Integer> pair = uselessInstructionTracking_useful_total.get(s);
+                Pair<Integer, Integer> pair = uselessInstructionTracking_useful_total.get(s);
                 config.info("  - ("+pair.left+"/"+pair.right+") " + s.sl.fileNameLineString() + ": " + s.op);
             }
             if (reportSometimesUselessInstructions) {
                 config.info("Sometimes useless: " +  + simetimes_useless.size());
                 for(CodeStatement s:simetimes_useless) {
-                    MutablePair<Integer, Integer> pair = uselessInstructionTracking_useful_total.get(s);
+                    Pair<Integer, Integer> pair = uselessInstructionTracking_useful_total.get(s);
                     config.info("  - ("+pair.left+"/"+pair.right+") " + s.sl.fileNameLineString() + ": " + s.op);
                 }
             }
@@ -944,7 +943,7 @@ public class SourceCodeExecution implements MDLWorker {
     }
     
     
-    void reportHotspots(HashMap<String, MutablePair<Integer, Integer>> hotspots,
+    void reportHotspots(HashMap<String, Pair<Integer, Integer>> hotspots,
                         HashMap<String, CodeStatement> instructions)
     {
         List<String> sortedSpots = new ArrayList<>();
@@ -959,7 +958,7 @@ public class SourceCodeExecution implements MDLWorker {
         for(int i = 0;i<nHotSpotsToShow;i++) {
             if (sortedSpots.size() > i) {
                 String spot = sortedSpots.get(i);
-                MutablePair<Integer, Integer> stats = hotspots.get(spot);
+                Pair<Integer, Integer> stats = hotspots.get(spot);
                 hotspotsString += instructions.get(spot).fileNameLineString() + "\t" + stats.getLeft() + "\t" + stats.getRight() + "\n";
             }
         }

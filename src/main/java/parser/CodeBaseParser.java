@@ -8,14 +8,13 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.lang3.tuple.Pair;
-
 import cl.MDLConfig;
 import code.CodeBase;
 import code.Expression;
 import code.SourceFile;
 import code.CodeStatement;
 import code.SourceConstant;
+import util.Pair;
 import util.Resources;
 
 public class CodeBaseParser {

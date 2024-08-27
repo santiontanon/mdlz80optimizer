@@ -19,7 +19,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.StringTokenizer;
-import org.apache.commons.lang3.tuple.Pair;
+import util.Pair;
 import workers.MDLWorker;
 import workers.SourceCodeGenerator;
 

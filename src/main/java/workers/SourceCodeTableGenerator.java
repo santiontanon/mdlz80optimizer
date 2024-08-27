@@ -9,13 +9,12 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
-import org.apache.commons.lang3.tuple.Pair;
-
 import cl.MDLConfig;
 import code.CodeBase;
 import code.SourceFile;
 import code.CodeStatement;
 import code.SourceConstant;
+import util.Pair;
 
 /**
  *

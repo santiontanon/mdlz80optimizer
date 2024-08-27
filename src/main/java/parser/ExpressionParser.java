@@ -11,8 +11,7 @@ import code.Expression;
 import code.CodeStatement;
 import java.util.ArrayList;
 import java.util.HashMap;
-
-import org.apache.commons.lang3.tuple.Pair;
+import util.Pair;
 
 public class ExpressionParser {
     MDLConfig config;

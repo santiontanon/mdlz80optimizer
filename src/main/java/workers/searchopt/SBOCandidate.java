@@ -16,8 +16,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.StringTokenizer;
-import org.apache.commons.lang3.tuple.Pair;
 import parser.SourceLine;
+import util.Pair;
 import util.microprocessor.Z80.CPUConstants;
 import util.microprocessor.Z80.CPUConstants.RegisterNames;
 

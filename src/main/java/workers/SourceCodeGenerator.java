@@ -15,7 +15,7 @@ import code.CodeStatement;
 import code.OutputBinary;
 import java.nio.file.Paths;
 import java.util.Arrays;
-import org.apache.commons.lang3.tuple.Pair;
+import util.Pair;
 import util.TextUtils;
 
 /**

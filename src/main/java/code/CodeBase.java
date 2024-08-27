@@ -11,8 +11,8 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Set;
-import org.apache.commons.lang3.tuple.Pair;
 import parser.SourceLine;
+import util.Pair;
 import workers.pattopt.ExecutionFlowAnalysis;
 import workers.pattopt.ExecutionFlowAnalysis.StatementTransition;
 

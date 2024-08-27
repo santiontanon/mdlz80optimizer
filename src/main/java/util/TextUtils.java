@@ -5,8 +5,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.StringTokenizer;
 
-import org.apache.commons.lang3.tuple.Pair;
-
 /**
  * Convenience utility class with text-related utilities
  */

@@ -14,7 +14,7 @@ import code.CodeStatement;
 import code.SourceConstant;
 import java.util.ArrayList;
 import java.util.HashSet;
-import org.apache.commons.lang3.tuple.Pair;
+import util.Pair;
 
 public class DotGenerator implements MDLWorker {
     public static final String BINARY_COLOR = "gray";

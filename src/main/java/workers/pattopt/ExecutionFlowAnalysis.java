@@ -17,7 +17,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.lang3.tuple.Pair;
+import util.Pair;
 import util.Resources;
 
 /**

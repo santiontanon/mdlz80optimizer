@@ -19,8 +19,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.StringTokenizer;
-import org.apache.commons.lang3.tuple.Pair;
 import parser.SourceLine;
+import util.Pair;
 import util.Resources;
 
 /**

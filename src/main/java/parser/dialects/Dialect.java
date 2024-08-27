@@ -13,10 +13,10 @@ import code.CodeStatement;
 import code.HTMLCodeStyle;
 import code.OutputBinary;
 import java.nio.file.Path;
-import org.apache.commons.lang3.tuple.Pair;
 import parser.MacroExpansion;
 import parser.SourceLine;
 import parser.SourceMacro;
+import util.Pair;
 import workers.pattopt.PatternMatch;
 import workers.reorgopt.CodeBlock;
 

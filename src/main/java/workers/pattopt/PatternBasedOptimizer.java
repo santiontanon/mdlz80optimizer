@@ -16,7 +16,7 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.lang3.tuple.Pair;
+import util.Pair;
 import util.Resources;
 import workers.MDLWorker;
 

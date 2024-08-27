@@ -7,8 +7,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import org.apache.commons.lang3.tuple.Pair;
-
 import cl.MDLConfig;
 import code.CPUOp;
 import code.CPUOpDependency;
@@ -20,6 +18,7 @@ import code.SourceFile;
 import code.CodeStatement;
 import java.util.Arrays;
 import parser.SourceLine;
+import util.Pair;
 
 /**
  *

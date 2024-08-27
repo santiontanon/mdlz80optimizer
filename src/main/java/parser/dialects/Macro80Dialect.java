@@ -13,10 +13,10 @@ import code.SourceFile;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.commons.lang3.tuple.Pair;
 import parser.MacroExpansion;
 import parser.SourceLine;
 import parser.SourceMacro;
+import util.Pair;
 
 /**
  *

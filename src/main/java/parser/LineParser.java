@@ -16,7 +16,7 @@ import code.SourceConstant;
 import code.SourceFile;
 import code.CodeStatement;
 import java.util.Arrays;
-import org.apache.commons.lang3.tuple.Pair;
+import util.Pair;
 import util.Resources;
 
 public class LineParser {

@@ -15,9 +15,9 @@ import code.HTMLCodeStyle;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.commons.lang3.tuple.Pair;
 import parser.LineParser;
 import parser.SourceLine;
+import util.Pair;
 
 /**
  * tniASM 0.45 Dialect

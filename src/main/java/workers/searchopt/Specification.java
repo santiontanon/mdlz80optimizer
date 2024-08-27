@@ -13,7 +13,7 @@ import code.SourceConstant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import org.apache.commons.lang3.tuple.Pair;
+import util.Pair;
 import util.microprocessor.Z80.CPUConstants;
 
 /**
