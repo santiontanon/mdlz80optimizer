@@ -10,8 +10,6 @@ import java.util.List;
 import java.util.StringTokenizer;
 import java.util.stream.Collectors;
 
-import org.apache.commons.io.IOUtils;
-
 import cl.MDLConfig;
 import code.CPUOpSpec;
 import code.CPUOpSpecArg;
@@ -31,8 +29,7 @@ public class CPUOpSpecParser {
     public List<CPUOpSpec> parseSpecs() throws IOException
     {
         try (BufferedReader br = Resources.asReader(config.cpuInstructionSet)) {
-            List<CPUOpSpec> specs = IOUtils.readLines(br)
-                    .stream()
+            List<CPUOpSpec> specs = br.lines()
                     .filter(line -> !config.tokenizer.isSingleLineComment(line))
                     .map(line -> parseOpSpecLine(line.split("\t"), config))
                     .filter(opSpec -> opSpec != null)
