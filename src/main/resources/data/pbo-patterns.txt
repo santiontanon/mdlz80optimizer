@@ -201,6 +201,8 @@ name: dec-jr-to-djnz
 1: jr nz,?const1
 replacement:
 0: djnz ?const1
+constraints:
+flagsNotUsedAfter(1,S,Z,H,P/V,N)
 
 pattern: Replace ld a,(hl); lde (de),a; inc hl; inc de with ldi
 name: ldi
@@ -388,6 +390,7 @@ replacement:
 1: ?op nz,?const
 constraints:
 in(?op,jr,jp,call)
+flagsNotUsedAfter(2,S,Z,P/V,C,H,N)
 
 pattern: Replace bit 0,a; ?op z,?const with rra; ?op nc,?const
 name: bit0-to-rra
@@ -399,6 +402,7 @@ replacement:
 constraints:
 in(?op,jr,jp,call)
 regsNotUsedAfter(1,A)
+flagsNotUsedAfter(1,S,Z,P/V,C,H,N)
 
 pattern: Replace and 1; ?op z,?const with rra; ?op nc,?const
 name: and1-to-rra
@@ -410,6 +414,7 @@ replacement:
 constraints:
 in(?op,jr,jp,call)
 regsNotUsedAfter(1,A)
+flagsNotUsedAfter(1,S,Z,P/V,C,H,N)
 
 pattern: Replace bit 0,a; ?op nz,?const with rra; ?op c,?const
 name: bit0-to-rra2
@@ -421,6 +426,7 @@ replacement:
 constraints:
 in(?op,jr,jp,call)
 regsNotUsedAfter(1,A)
+flagsNotUsedAfter(1,S,Z,P/V,C,H,N)
 
 pattern: Replace bit 7,a; ?op z,?const with rla; ?op nc,?const
 name: bit7-to-rla
@@ -432,6 +438,7 @@ replacement:
 constraints:
 in(?op,jr,jp,call)
 regsNotUsedAfter(1,A)
+flagsNotUsedAfter(1,S,Z,P/V,C,H,N)
 
 pattern: Replace bit 7,a; ?op nz,?const with rla; ?op c,?const
 name: bit7-to-rla2
@@ -443,6 +450,7 @@ replacement:
 constraints:
 in(?op,jr,jp,call)
 regsNotUsedAfter(1,A)
+flagsNotUsedAfter(1,S,Z,P/V,C,H,N)
 
 pattern: Replace ld ?regixiy,?const1; ld ?reg,(?regixiy+?8bitconst2) with ld hl,?const1+?8bitconst2; ld ?reg,(hl)
 name: indexreg-to-hl-offset
@@ -502,8 +510,8 @@ replacement:
 3: ld ?reg2,(hl)
 constraints:
 in(?regixiy,IX,IY)
-notIn(?reg1,H,L)
-notIn(?reg2,H,L)
+in(?reg1,A,B,C,D,E)
+in(?reg2,A,B,C,D,E)
 equal(?8bitconst2+1,?8bitconst3)
 regsNotUsedAfter(2,?regixiy,HL)
 
@@ -1322,13 +1330,14 @@ regsNotUsedAfter(1,DE)
 
 pattern: Replace add hl, ?any; ex de,hl; ld (?const1), de with add hl,?any; ld (?const1), hl
 name: unnecessary-exdehl2
-0: add hl, ?any
+0: add hl, ?reg
 1: ex de, hl
 2: ld (?const1), de
 replacement:
-0: add hl, ?any
+0: add hl, ?reg
 2: ld (?const1), hl
 constraints:
+in(?reg,BC,DE,HL,SP)
 regsNotUsedAfter(2,DE,HL)
 
 pattern: Replace ld (?regixiy + ?const), a; inc (?regixiy + ?const); ... inc (?regixiy + ?const) with add a, ?const2; ld (?regixiy + ?const), a
@@ -1396,20 +1405,22 @@ flagsNotUsedAfter(0,S,Z,H,P/V,N,C)
 
 pattern: Remove unused add ?reg,?any
 name: unnecessary-add
-0: add ?reg,?any
+0: add ?reg,?reg2
 replacement:
 constraints:
 in(?reg,HL,IX,IY)
+in(?reg2,BC,DE,HL,IX,IY,SP)
 regsNotUsedAfter(0,?reg)
 flagsNotUsedAfter(0,H,N,C)
 
 pattern: Remove unused ?op ?reg,?any
 name: unnecessary-adc-sbc
-0: ?op ?reg,?any
+0: ?op ?reg,?reg2
 replacement:
 constraints:
 in(?op,adc,sbc)
 in(?reg,HL,IX,IY)
+in(?reg2,BC,DE,HL,IX,IY,SP)
 regsNotUsedAfter(0,?reg)
 flagsNotUsedAfter(0,S,Z,H,P/V,N,C)
 
@@ -1434,6 +1445,7 @@ replacement:
 constraints:
 in(?op,jp)
 regsNotUsedAfter(1,A)
+flagsNotUsedAfter(1,S,Z,H,P/V,N,C)
 
 pattern: bit 6,a; ?op z,?const -> add a,a; ?op p,?const
 name: bit6-to-add2
@@ -1445,6 +1457,7 @@ replacement:
 constraints:
 in(?op,jp)
 regsNotUsedAfter(1,A)
+flagsNotUsedAfter(1,S,Z,H,P/V,N,C)
 
 pattern: Remove redundant ?op ?any
 0: ?op ?any
@@ -1649,6 +1662,7 @@ replacement:
 constraints:
 in(?opjp,jr,jp)
 in(?anycp,Z,NC,P)
+flagsNotUsedAfter(1,S,Z,H,P/V,N,C)
 
 pattern: Remove duplicate xor a 
 1: xor a

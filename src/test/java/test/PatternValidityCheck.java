@@ -8,6 +8,7 @@ package test;
 import cl.MDLConfig;
 import code.CPUOp;
 import code.CodeBase;
+import code.CodeStatement;
 import code.Expression;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -45,18 +46,19 @@ public class PatternValidityCheck {
     // Individual pattern tests (not needed as "testAll" already tests them all!):
 //    @Test public void test2() throws Exception { test("data/pbo-patterns.txt", "cp02ora", false); }
 //    @Test public void test3() throws Exception { test("data/pbo-patterns.txt", "cp12deca", false); }
-//
-//    @Test public void test100() throws Exception { test("data/pbo-patterns.txt", "sdcc16bitadd", true); }
-//    @Test public void test101() throws Exception { test("data/pbo-patterns.txt", "sdcc16bitcp", true); }
-//    @Test public void test102() throws Exception { test("data/pbo-patterns.txt", "move-to-top-of-stack", true); }
-//    @Test public void test103() throws Exception { test("data/pbo-patterns.txt", "unnecessary-ld-to-reg", true); }
-//    
+//    @Test public void test4() throws Exception { test("data/pbo-patterns.txt", "sdcc16bitadd", true); }
+//    @Test public void test5() throws Exception { test("data/pbo-patterns.txt", "sdcc16bitcp", true); }
+//    @Test public void test6() throws Exception { test("data/pbo-patterns.txt", "move-to-top-of-stack", true); }
+//    @Test public void test7() throws Exception { test("data/pbo-patterns.txt", "unnecessary-ld-to-reg", true); }
+//    @Test public void test8() throws Exception { test("data/pbo-patterns.txt", "dec-jr-to-djnz", true); }
+
     @Test public void testSpeed1() throws Exception { test("data/pbo-patterns-speed.txt", "push2ld", false); }
 
     // Test all patterns without wildcards/repetitions:
-    @Test public void testAllNonRepeat() throws Exception { testAll("data/pbo-patterns.txt", true, false, false, true); }
-    @Test public void testAllRepeat() throws Exception { testAll("data/pbo-patterns.txt", false, true, false, true); }
-    
+//    @Test public void testAllNonRepeat() throws Exception { testAll("data/pbo-patterns.txt", true, false, false, true); }
+//    @Test public void testAllRepeat() throws Exception { testAll("data/pbo-patterns.txt", false, true, false, true); }
+    @Test public void testAllNonWildcard() throws Exception { testAll("data/pbo-patterns.txt", true, true, false, true); }
+
     
     private void test(String patternsFile, String patternName, boolean checkMemory) throws Exception
     {
@@ -76,15 +78,13 @@ public class PatternValidityCheck {
                 continue;
             }
             config.info("Instantiated pattern:\n" + p);
-            // Extract the parameters:
+
             List<String> parameters = getParameters(p);
             Assert.assertNotNull("parameters is null", parameters);
             List<Integer> flagsToIgnore = getFlagsToIgnore(p);
             Assert.assertNotNull("flagsToIgnore is null", flagsToIgnore);
-//            System.out.println("flagsToIgnore: " + flagsToIgnore);
             List<CPUConstants.RegisterNames> registersToIgnore = getRegistersToIgnore(p);
             Assert.assertNotNull("registersToIgnore is null", registersToIgnore);
-//            System.out.println("registersToIgnore: " + registersToIgnore);
 
             Assert.assertTrue(evaluatePattern(p, parameters, 
                                               flagsToIgnore, registersToIgnore,
@@ -99,20 +99,25 @@ public class PatternValidityCheck {
         
         pbo.initPatterns();
         List<String> nonVerifiedNames = new ArrayList<>();  // names of the patterns we cannot verify
+        List<String> nonSupportedNames = new ArrayList<>();
         int nTotalPatterns = 0;
-        int nWildcards = 0;
-        int nRepetitions = 0;
+        int nUntestedDueToWildcards = 0;
+        int nUntestedDueToRepetitions = 0;
         int nNotSupported = 0;
         int nVerified = 0;
         for(Pattern pattern:pbo.getPatterns()) {
             nTotalPatterns++;
             if (pattern.hasWildcard()) {
-                nWildcards++;
-                if (!testWilcard) continue;
+                if (!testWilcard) {
+                    nUntestedDueToWildcards++;
+                    continue;
+                }
             }
             if (pattern.hasRepetition()) {
-                nRepetitions++;
-                if (!testRepeat) continue;
+                if (!testRepeat) {
+                    nUntestedDueToRepetitions++;
+                    continue;
+                }
             }
             if (!pattern.hasWildcard() && !pattern.hasRepetition()) {
                 if (!testStandard) continue;
@@ -123,6 +128,7 @@ public class PatternValidityCheck {
             List<Pattern> instantiated = allPatternInstantiations(pattern, code);
             if (instantiated == null) {
                 nNotSupported ++;
+                nonSupportedNames.add(pattern.name);
                 continue;
             }
             System.out.println("instantiated ("+pattern.name+"): " + instantiated.size());
@@ -137,20 +143,13 @@ public class PatternValidityCheck {
                 if (!checkMemory && instantiatedPattern.usesMemory()) {
                     continue;
                 }
-                if (instantiatedPattern.hasJumps() ||
-                    instantiatedPattern.hasCalls()) {
-                    continue;
-                }
 
-                // Extract the parameters:
                 List<String> parameters = getParameters(instantiatedPattern);
                 Assert.assertNotNull("parameters is null", parameters);
                 List<Integer> flagsToIgnore = getFlagsToIgnore(instantiatedPattern);
                 Assert.assertNotNull("flagsToIgnore is null", flagsToIgnore);
-    //            System.out.println("flagsToIgnore: " + flagsToIgnore);
                 List<CPUConstants.RegisterNames> registersToIgnore = getRegistersToIgnore(instantiatedPattern);
                 Assert.assertNotNull("registersToIgnore is null", registersToIgnore);
-    //            System.out.println("registersToIgnore: " + registersToIgnore);            
                 Assert.assertTrue(evaluatePattern(instantiatedPattern, parameters, 
                                                   flagsToIgnore, registersToIgnore,
                                                   code, instantiatedPattern.usesMemory(), 1000));
@@ -168,11 +167,12 @@ public class PatternValidityCheck {
         }
         
         config.info("testAll: nTotalPatterns: " + nTotalPatterns +
-                    ", nWildcards: " + nWildcards +
-                    ", nRepetitions: " + nRepetitions +
+                    ", nWildcards: " + nUntestedDueToWildcards +
+                    ", nRepetitions: " + nUntestedDueToRepetitions +
                     ", nNotSupported: " + nNotSupported +
                     ", nVerified: " + nVerified);
-        config.info("testAll: nonVerified patterns: " + nonVerifiedNames);
+        config.info("testAll: non-verified patterns: " + nonVerifiedNames);
+        config.info("testAll: non-supported patterns: " + nonSupportedNames);
         
         return true;
     }
@@ -218,7 +218,7 @@ public class PatternValidityCheck {
                                     boolean checkMemory) throws Exception
     {
         // randomize the start address from a range:
-        int minStartAddress = 0x0000;
+        int minStartAddress = 0x0100;
         int maxStartAddress = 0x0f00;
         int minStackAddress = 0xc000;
         int maxStackAddress = 0xf000;
@@ -229,7 +229,22 @@ public class PatternValidityCheck {
                 
         // Assign random values to all the input parameters:
         PatternMatch match = new PatternMatch(p, null);
-        for(String parameter:parameters) {            
+        // Determine which of the parameters are labels:
+        List<String> labelParameters = new ArrayList<>();
+        List<String> nonLabelParameters = new ArrayList<>();
+        for(String parameter:parameters) {
+            if (isLabel(parameter, p)) {
+                labelParameters.add(parameter);
+            } else {
+                nonLabelParameters.add(parameter);
+            }
+        }
+        int nextLabel = startAddress - 2;  // labels will be in the area right before the code:
+        for(String parameter:labelParameters) {
+            match.addVariableMatch(parameter, Expression.constantExpression(nextLabel, config));            
+            nextLabel -= 2;
+        }        
+        for(String parameter:nonLabelParameters) {
             // give it a random value:
             int v = r.nextInt(0xf000)+0x1000;   // prevent constants from having the same range as where the code is, just in case
             if (parameter.startsWith("?8bitconst")) {
@@ -359,6 +374,39 @@ public class PatternValidityCheck {
     }
     
     
+    // Checks whether "symbol" is used as a label in a jr/jp/call/djnz/etc. instruction in the pattern
+    private boolean isLabel(String symbol, Pattern pattern)
+    {
+        for(CPUOpPattern opp:pattern.pattern) {
+            if (opp.opName.equalsIgnoreCase("jr") ||
+                opp.opName.equalsIgnoreCase("jp") ||
+                opp.opName.equalsIgnoreCase("djnz") ||
+                opp.opName.equalsIgnoreCase("call")) {
+                Expression exp = opp.args.get(opp.args.size() - 1);
+                if (exp.type == Expression.EXPRESSION_SYMBOL) {
+                    if (exp.symbolName.equalsIgnoreCase(symbol)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        for(CPUOpPattern opp:pattern.replacement) {
+            if (opp.opName.equalsIgnoreCase("jr") ||
+                opp.opName.equalsIgnoreCase("jp") ||
+                opp.opName.equalsIgnoreCase("djnz") ||
+                opp.opName.equalsIgnoreCase("call")) {
+                Expression exp = opp.args.get(opp.args.size() - 1);
+                if (exp.type == Expression.EXPRESSION_SYMBOL) {
+                    if (exp.symbolName.equalsIgnoreCase(symbol)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+    
+    
     private void showInstantiatedProgram(String name, List<CPUOpPattern> l, 
                                          PatternMatch match) {
         System.out.println(name);
@@ -387,7 +435,10 @@ public class PatternValidityCheck {
                 Assert.assertNotNull(op);
 //                System.out.println(config.tokenizer.toHex(startAddress, 4) + ":  " + op);
 
-                List<Integer> bytes = op.assembleToBytes(null, code, config);
+                // Create a fake statement, just so that we can assembleToBytes when there are relative jumps
+                CodeStatement s = new CodeStatement(CodeStatement.STATEMENT_CPUOP, null, null, config);
+                s.address = currentAddress;
+                List<Integer> bytes = op.assembleToBytes(s, code, config);
                 Assert.assertNotNull(bytes);
                 Assert.assertFalse(bytes.isEmpty());
                 
