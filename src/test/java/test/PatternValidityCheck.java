@@ -51,12 +51,11 @@ public class PatternValidityCheck {
 //    @Test public void test102() throws Exception { test("data/pbo-patterns.txt", "move-to-top-of-stack", true); }
 //    @Test public void test103() throws Exception { test("data/pbo-patterns.txt", "unnecessary-ld-to-reg", true); }
 //    
-//    @Test public void testSpeed1() throws Exception { test("data/pbo-patterns-speed.txt", "push2ld", false); }
+    @Test public void testSpeed1() throws Exception { test("data/pbo-patterns-speed.txt", "push2ld", false); }
 
     // Test all patterns without wildcards/repetitions:
-//    @Test public void testAllNoMemory() throws Exception { testAll("data/pbo-patterns.txt", false); }
     @Test public void testAllNonRepeat() throws Exception { testAll("data/pbo-patterns.txt", true, false, false, true); }
-//    @Test public void testAllRepeat() throws Exception { testAll("data/pbo-patterns.txt", false, true, false, true); }
+    @Test public void testAllRepeat() throws Exception { testAll("data/pbo-patterns.txt", false, true, false, true); }
     
     
     private void test(String patternsFile, String patternName, boolean checkMemory) throws Exception
@@ -160,7 +159,9 @@ public class PatternValidityCheck {
             if (nVerifiedInstantiations > 0) {
                 nVerified++;
             } else {
-                if (pattern.name != null) {
+                if (pattern.name == null) {
+                    nonVerifiedNames.add("unnamed-pattern");
+                } else {
                     nonVerifiedNames.add(pattern.name);
                 }
             }
@@ -626,16 +627,17 @@ public class PatternValidityCheck {
         }
         for(CPUOpPattern opp:pattern.replacement) {
             if (opp.repetitionVariable != null) {
-                Assert.assertTrue(opp.repetitionVariable + " only appears in the replacement!",
-                                  repetitionVariables.contains(opp.repetitionVariable));
+                if (!repetitionVariables.contains(opp.repetitionVariable)) {
+                    repetitionVariables.add(opp.repetitionVariable);
+                }
             }
         }
         if (!repetitionVariables.isEmpty()) {
             List<Pattern> newInstantiated = new ArrayList<>();
             // Start by instantiating a repetition variable:
             String variable = repetitionVariables.get(0);
-            // Instantiate repetition patterns with values from 1 to 4:
-            for(int i = 1; i <= 4; i++) {
+            // Instantiate repetition patterns with values from 1 to 5:
+            for(int i = 1; i <= 5; i++) {
                 Pattern p2 = new Pattern(pattern);
                 p2.replaceParameter(variable, "" + i);
                 List<CPUOpPattern> newPattern = new ArrayList<>();
