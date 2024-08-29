@@ -77,7 +77,7 @@ public class PatternBasedOptimizerTest {
     @Test public void test40() throws Exception { test("data/potests/test40.asm", null, null, "size",  9, 54, 54); }
     @Test public void test41() throws Exception { test("data/potests/test41.asm", null, null, "size",  0, 0, 0); }
     @Test public void test42() throws Exception { test("data/potests/test42.asm", null, null, "size",  2, 4, 4); }
-    @Test public void test43() throws Exception { test("data/potests/test43.asm", null, null, "size",  0, 2, 2); }
+    @Test public void test43() throws Exception { test("data/potests/test43.asm", null, null, "size",  0, 0, 0); }
     @Test public void test44() throws Exception { test("data/potests/test44.asm", null, null, "size",  5, 26, 26); }
     @Test public void test45() throws Exception { test("data/potests/test45.asm", null, null, "size",  4, 22, 22); }
     @Test public void test46() throws Exception { test("data/potests/test46.asm", null, null, "size",  1, 5, 5); }

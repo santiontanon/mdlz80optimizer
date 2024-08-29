@@ -46,7 +46,7 @@
 ; with number == ID is matched.
 
 ; Patterns can be parameterized (if you want to define similar patterns that just
-; differ in one constant). Add the following statement:: 
+; differ in one constant). Add the following statement:
 ; parameterized: in(?variable,value1, ..., valuen)
 
 ; add tags to patterns to indicate if they are specific to some platform/dialect. Currently recognized tags:
@@ -119,12 +119,14 @@ equal(?const,0)
 flagsNotUsedAfter(0,S,Z,H,P/V,N,C)
 
 pattern: Replace srl a; ...; srl a with rrca; ...; rrca; and #ff >> ?const1
+name: srl-to-rrca
 0: [?const1] srl a
 replacement:
 0: [?const1] rrca
 1: and #ff >> ?const1
 constraints:
 equal(?const1 >= 3, -1)
+flagsNotUsedAfter(0,C,H)
 
 pattern: Replace pop ?regpair1; ld ?regpair2h,?regpair1h; ld ?regpair2l,?regpair1l with pop ?regpair2
 0: pop ?regpair1
@@ -985,8 +987,10 @@ constraints:
 in(?reg,B,C,D,E,H,L,IXL,IYL)
 equal(?const >= 4, -1) 
 regsNotUsedAfter(0,A)
+flagsNotUsedAfter(0,C,H,N,P/V)
 
 pattern: Replace inc ?regixiy; ... inc ?regixiy with ld bc,?const; add ?regixiy,bc
+name: inc-to-add-index
 0: [?const] inc ?regixiy
 replacement:
 0: ld bc,?const
@@ -995,8 +999,10 @@ constraints:
 in(?regixiy,IX,IY)
 equal(?const >= 3, -1) 
 regsNotUsedAfter(0,BC)
+flagsNotUsedAfter(0,C,H,N,P/V)
 
 pattern: Replace dec ?regixiy; ... dec ?regixiy with ld bc,-?const; add ?regixiy,bc
+name: dec-to-add-index
 0: [?const] dec ?regixiy
 replacement:
 0: ld bc,-?const
@@ -1005,8 +1011,10 @@ constraints:
 in(?regixiy,IX,IY)
 equal(?const >= 3, -1) 
 regsNotUsedAfter(0,BC)
+flagsNotUsedAfter(0,C,H,N,P/V)
 
 pattern: Replace inc ?regixiy; ... inc ?regixiy with ld de,?const; add ?regixiy,de
+name: inc-to-add-index
 0: [?const] inc ?regixiy
 replacement:
 0: ld de,?const
@@ -1015,8 +1023,10 @@ constraints:
 in(?regixiy,IX,IY)
 equal(?const >= 3, -1) 
 regsNotUsedAfter(0,DE)
+flagsNotUsedAfter(0,C,H,N,P/V)
 
 pattern: Replace dec ?regixiy; ... dec ?regixiy with ld de,-?const; add ?regixiy,de
+name: dec-to-add-index
 0: [?const] dec ?regixiy
 replacement:
 0: ld de,-?const
@@ -1025,6 +1035,7 @@ constraints:
 in(?regixiy,IX,IY)
 equal(?const >= 3, -1) 
 regsNotUsedAfter(0,DE)
+flagsNotUsedAfter(0,C,H,N,P/V)
 
 pattern: Replace inc ?regixiy; ... inc ?regixiy with push bc; ld bc,?const; add ?regixiy,bc; pop bc
 0: [?const] inc ?regixiy
@@ -1036,6 +1047,7 @@ replacement:
 constraints:
 equal(?const >= 5, -1) 
 in(?regixiy,IX,IY)
+flagsNotUsedAfter(0,C,H,N,P/V)
 
 pattern: Replace dec ?regixiy; ... dec ?regixiy with push bc; ld bc,-?const; add ?regixiy,bc; pop bc
 0: [?const] dec ?regixiy
@@ -1046,14 +1058,16 @@ replacement:
 3: pop bc
 constraints:
 in(?regixiy,IX,IY)
-equal(?const >= 5, -1) 
+equal(?const >= 5, -1)
+flagsNotUsedAfter(0,C,H,N,P/V)
 
 pattern: Replace inc a; ... inc a with add a,?const
 0: [?const] inc a
 replacement:
 0: add a,?const
 constraints:
-equal(?const >= 2, -1) 
+equal(?const >= 2, -1)
+flagsNotUsedAfter(0,C,H,N,P/V)
 
 pattern: Replace dec a; ... dec a with add a,-?const
 0: [?const] dec a
@@ -1061,6 +1075,7 @@ replacement:
 0: add a,-?const
 constraints:
 equal(?const >= 2, -1) 
+flagsNotUsedAfter(0,C,N,H,P/V)
 
 pattern: Replace scf; ccf with or a
 0: scf
@@ -1280,6 +1295,7 @@ constraints:
 in(?regixiy,IX,IY)
 equal(?const2 > 1, -1)
 regsNotUsedAfter(1,A)
+flagsNotUsedAfter(1,C,N,H,P/V)
 
 pattern: Replace ld (?regixiy + ?const), a; inc (?regixiy + ?const) with inc a; ld (?regixiy + ?const), a
 0: ld (?regixiy + ?const), a

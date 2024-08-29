@@ -55,7 +55,8 @@ public class PatternValidityCheck {
 
     // Test all patterns without wildcards/repetitions:
 //    @Test public void testAllNoMemory() throws Exception { testAll("data/pbo-patterns.txt", false); }
-    @Test public void testAll() throws Exception { testAll("data/pbo-patterns.txt", true); }
+    @Test public void testAllNonRepeat() throws Exception { testAll("data/pbo-patterns.txt", true, false, false, true); }
+//    @Test public void testAllRepeat() throws Exception { testAll("data/pbo-patterns.txt", false, true, false, true); }
     
     
     private void test(String patternsFile, String patternName, boolean checkMemory) throws Exception
@@ -70,7 +71,7 @@ public class PatternValidityCheck {
         CodeBase code = new CodeBase(config);
         List<Pattern> instantiated = allPatternInstantiations(pattern, code);
         Assert.assertNotNull(instantiated);
-        System.out.println("instantiated ("+patternName+"): " + instantiated.size());
+//        System.out.println("instantiated ("+patternName+"): " + instantiated.size());
         for(Pattern p:instantiated) {
             if (!p.fullyInstantiated()) {
                 continue;
@@ -93,23 +94,31 @@ public class PatternValidityCheck {
     }
     
     
-    private boolean testAll(String patternsFile, boolean checkMemory) throws Exception
+    private boolean testAll(String patternsFile, boolean testStandard, boolean testRepeat, boolean testWilcard, boolean checkMemory) throws Exception
     {
         Assert.assertTrue(config.parseArgs("dummy", "-popatterns", patternsFile));
         
         pbo.initPatterns();
         List<String> nonVerifiedNames = new ArrayList<>();  // names of the patterns we cannot verify
         int nTotalPatterns = 0;
-        int nWildcardsOrRepetitions = 0;
+        int nWildcards = 0;
+        int nRepetitions = 0;
         int nNotSupported = 0;
         int nVerified = 0;
         for(Pattern pattern:pbo.getPatterns()) {
             nTotalPatterns++;
-            if (pattern.hasWildcard() || pattern.hasRepetition()) {
-                nWildcardsOrRepetitions++;
-                continue;
+            if (pattern.hasWildcard()) {
+                nWildcards++;
+                if (!testWilcard) continue;
             }
-            
+            if (pattern.hasRepetition()) {
+                nRepetitions++;
+                if (!testRepeat) continue;
+            }
+            if (!pattern.hasWildcard() && !pattern.hasRepetition()) {
+                if (!testStandard) continue;
+            }
+                        
             // Construct the code snippets:
             CodeBase code = new CodeBase(config);
             List<Pattern> instantiated = allPatternInstantiations(pattern, code);
@@ -158,7 +167,8 @@ public class PatternValidityCheck {
         }
         
         config.info("testAll: nTotalPatterns: " + nTotalPatterns +
-                    ", nWildcardsOrRepetitions: " + nWildcardsOrRepetitions +
+                    ", nWildcards: " + nWildcards +
+                    ", nRepetitions: " + nRepetitions +
                     ", nNotSupported: " + nNotSupported +
                     ", nVerified: " + nVerified);
         config.info("testAll: nonVerified patterns: " + nonVerifiedNames);
@@ -496,8 +506,9 @@ public class PatternValidityCheck {
         List<Pattern> instantiated = new ArrayList<>();
         Pattern newPattern1 = new Pattern(a_pattern);
         open.add(newPattern1);
-        
+                
         while(!open.isEmpty()) {
+            System.out.println("allPatternInstantiations: open: " + open.size());
             Pattern p = open.remove(0);
             List<Pattern> newInstantiated = allPatternInstantiationsOneConstraint(p, code);
             if (newInstantiated == null) {
@@ -508,32 +519,50 @@ public class PatternValidityCheck {
         }
 
         // Check "equal" constraints:
+        List<Pattern> toDelete = new ArrayList<>();
         for(int i = 0;i<instantiated.size();i++) {
-            Pattern newPattern2 = instantiated.get(i);
-            for(int j = 0;j<newPattern2.constraints.size();j++) {
-                Pattern.Constraint c = newPattern2.constraints.get(j);
+            Pattern p = instantiated.get(i);
+            for(int j = 0;j<p.constraints.size();j++) {
+                Pattern.Constraint c = p.constraints.get(j);
                 if (c.name.equals("equal")) {
                     List<String> tokens = config.tokenizer.tokenize(c.args[0]);
                     if (tokens.size() == 2 && tokens.get(0).equals("?")) {
                         // we can handle this case:
 
                         // remove this constraint:
-                        newPattern2.constraints.remove(c);
+                        p.constraints.remove(c);
                         j--;
 
-                        newPattern2 = newPattern2.assignVariable(c.args[0], c.args[1], code);
-                        instantiated.set(i, newPattern2);
+                        p.replaceParameter(c.args[0], c.args[1]);
                     } else {
-                        System.out.println("Equal could not be handled with tokens: " + tokens);
+                        Expression exp = config.expressionParser.parse(tokens, null, null, code);
+                        if (exp != null && exp.evaluatesToIntegerConstant()) {
+                            List<String> tokens2 = config.tokenizer.tokenize(c.args[1]);
+                            Expression exp2 = config.expressionParser.parse(tokens2, null, null, code);
+                            if (exp2 != null && exp2.evaluatesToIntegerConstant()) {
+                                Integer v1 = exp.evaluateToInteger(null, code, true);
+                                Integer v2 = exp2.evaluateToInteger(null, code, true);
+                                if (v1 != null && v1.equals(v2)) {
+                                    p.constraints.remove(c);
+                                    j--;
+                                } else {
+                                    // Constraint violated! We do not want this instantiation:
+                                    toDelete.add(p);
+                                    break;
+                                }
+                            } else {
+                                System.out.println("Equal could not be handled with second arg tokens: " + tokens2);
+                            }
+                        } else {
+                            System.out.println("Equal could not be handled with first arg tokens: " + tokens);
+                        }
                     }
                 }
             }
-            
-            System.out.println(newPattern2.replacement);
-        }    
-        
-        // Verify all remaining constraints are ok:
-        for(Pattern p: instantiated) {
+//            System.out.println(newPattern2.replacement);
+
+            if (toDelete.contains(p)) continue;
+            // Verify all remaining constraints are ok:
             for(Pattern.Constraint c:p.constraints) {
                 switch(c.name) {
                         case "flagsNotUsedAfter":
@@ -544,7 +573,7 @@ public class PatternValidityCheck {
                                 // Flags/registers not used after the last instruction in the pattern, are fine
                                 continue;
                             }
-                            System.out.println("Remaining constraint: " + c.name + " not associated with the last instruction of the pattern, not yet supported");
+                            System.out.println("Remaining constraint: " + c.name + " not associated with the last instruction of the pattern, not yet supported (pattern: " + p.name + ")");
                             return null;
                         }
                         case "regsNotModified":
@@ -567,6 +596,11 @@ public class PatternValidityCheck {
                 }
             }
         }
+        
+        for(Pattern p:toDelete) {
+            instantiated.remove(p);
+        }
+        
         return instantiated;
     }
     
@@ -579,13 +613,73 @@ public class PatternValidityCheck {
             "IXH", "IXL", "IYH", "IYL", "R", "I",
         };
         
+//        System.out.println("allPatternInstantiationsOneConstraint: #contraints " + pattern.constraints.size() + " (first: " + (pattern.constraints.isEmpty() ? "":pattern.constraints.get(0)) + ")");
+        
+        // Get the repetition variables:
+        List<String> repetitionVariables = new ArrayList<>();
+        for(CPUOpPattern opp:pattern.pattern) {
+            if (opp.repetitionVariable != null) {
+                if (!repetitionVariables.contains(opp.repetitionVariable)) {
+                    repetitionVariables.add(opp.repetitionVariable);
+                }
+            }
+        }
+        for(CPUOpPattern opp:pattern.replacement) {
+            if (opp.repetitionVariable != null) {
+                Assert.assertTrue(opp.repetitionVariable + " only appears in the replacement!",
+                                  repetitionVariables.contains(opp.repetitionVariable));
+            }
+        }
+        if (!repetitionVariables.isEmpty()) {
+            List<Pattern> newInstantiated = new ArrayList<>();
+            // Start by instantiating a repetition variable:
+            String variable = repetitionVariables.get(0);
+            // Instantiate repetition patterns with values from 1 to 4:
+            for(int i = 1; i <= 4; i++) {
+                Pattern p2 = new Pattern(pattern);
+                p2.replaceParameter(variable, "" + i);
+                List<CPUOpPattern> newPattern = new ArrayList<>();
+                for(int j = 0;j<p2.pattern.size();j++) {
+                    if (variable.equals(p2.pattern.get(j).repetitionVariable)) {
+                        // repeat it "i" times:
+                        for(int k = 0;k<i;k++) {
+                            CPUOpPattern opp = new CPUOpPattern(p2.pattern.get(j));
+                            opp.repetitionVariable = null;
+                            newPattern.add(opp);
+                        }
+                    } else {
+                        newPattern.add(p2.pattern.get(j));
+                    }
+                }
+                p2.pattern = newPattern;
+                List<CPUOpPattern> newReplacement = new ArrayList<>();
+                for(int j = 0;j<p2.replacement.size();j++) {
+                    if (variable.equals(p2.replacement.get(j).repetitionVariable)) {
+                        // repeat it "i" times:
+                        for(int k = 0;k<i;k++) {
+                            CPUOpPattern opp = new CPUOpPattern(p2.replacement.get(j));
+                            opp.repetitionVariable = null;
+                            newReplacement.add(opp);
+                        }
+                    } else {
+                        newReplacement.add(p2.replacement.get(j));
+                    }
+                }
+                p2.replacement = newReplacement;
+                newInstantiated.add(p2);
+            }
+            return newInstantiated;
+        }        
+        
         // Process "in"/"notIn" constraints:
         for(Pattern.Constraint c:pattern.constraints) {
             if (c.name.equalsIgnoreCase("in")) {
                 List<Pattern> newInstantiated = new ArrayList<>();
                 for(int i = 1;i<c.args.length;i++) {
                     // replace "c.args[0]" by "c.args[i]":
-                    Pattern p2 = pattern.assignVariable(c.args[0], c.args[i], code);
+                    Pattern p2 = new Pattern(pattern);
+                    p2.replaceParameter(c.args[0], c.args[i]);
+                    p2.constraints.remove(pattern.constraints.indexOf(c));
                     newInstantiated.add(p2);
                 }
                 return newInstantiated;
@@ -603,7 +697,9 @@ public class PatternValidityCheck {
                         }
                         if (allowed) {
                             // replace "c.args[0]" by "c.args[i]":
-                            Pattern p2 = pattern.assignVariable(c.args[0], v, code);
+                            Pattern p2 = new Pattern(pattern);
+                            p2.replaceParameter(c.args[0], v);
+                            p2.constraints.remove(pattern.constraints.indexOf(c));
                             newInstantiated.add(p2);
                         }
                     }
@@ -637,7 +733,7 @@ public class PatternValidityCheck {
                 pattern.constraints.remove(c);
                 for(int k = 0;k<3;k++) {
                     if (c.args[k].startsWith("?")) {
-                        pattern = pattern.assignVariable(c.args[k], expected[k], code);
+                        pattern.replaceParameter(c.args[k], expected[k]);
                     }
                 }
                 newInstantiated.add(pattern);
@@ -650,7 +746,8 @@ public class PatternValidityCheck {
             if (variable.startsWith("?reg")) {
                 List<Pattern> newInstantiated = new ArrayList<>();
                 for(String v:registers) {
-                    Pattern p2 = pattern.assignVariable(variable, v, code);
+                    Pattern p2 = new Pattern(pattern);
+                    p2.replaceParameter(variable, v);
                     newInstantiated.add(p2);
                 }
                 return newInstantiated;

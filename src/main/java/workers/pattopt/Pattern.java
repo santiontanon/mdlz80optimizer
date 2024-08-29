@@ -353,32 +353,32 @@ public class Pattern {
     }
 
     
-    public Pattern assignVariable(String name, String replacement, CodeBase code)
-    {
-        Pattern p = new Pattern(this);
-        
-        for(CPUOpPattern opp:p.pattern) {
-            opp.assignVariable(name, replacement, code, config);
-        }
-        for(CPUOpPattern opp:p.replacement) {
-            opp.assignVariable(name, replacement, code, config);
-        }
-        List<Constraint> todelete = new ArrayList<>();
-        for(Constraint c:p.constraints) {
-            if (c.name.equalsIgnoreCase("in") && c.args[0].equals(name)) {
-                // remove this constraint:
-                todelete.add(c);
-            } else {
-                for(int i = 0;i<c.args.length;i++) {
-                    if (c.args[i].equals(name)) {
-                        c.args[i] = replacement;
-                    }
-                }
-            }
-        }
-        p.constraints.removeAll(todelete);
-        return p;
-    }
+//    public Pattern assignVariable(String name, String replacement, CodeBase code)
+//    {
+//        Pattern p = new Pattern(this);
+//        
+//        for(CPUOpPattern opp:p.pattern) {
+//            opp.assignVariable(name, replacement, code, config);
+//        }
+//        for(CPUOpPattern opp:p.replacement) {
+//            opp.assignVariable(name, replacement, code, config);
+//        }
+//        List<Constraint> todelete = new ArrayList<>();
+//        for(Constraint c:p.constraints) {
+//            if (c.name.equalsIgnoreCase("in") && c.args[0].equals(name)) {
+//                // remove this constraint:
+//                todelete.add(c);
+//            } else {
+//                for(int i = 0;i<c.args.length;i++) {
+//                    if (c.args[i].equals(name)) {
+//                        c.args[i] = replacement;
+//                    }
+//                }
+//            }
+//        }
+//        p.constraints.removeAll(todelete);
+//        return p;
+//    }
 
 
     public int getSpaceSaving(PatternMatch match, CodeBase code)
@@ -620,6 +620,23 @@ public class Pattern {
         }
         return tokens2;
     }
+    
+    
+    public List<String> applyBindingToTokens(List<String> tokens, String variable, String value)
+    {
+        // apply bindings:
+        List<String> tokens2 = new ArrayList<>();
+        for(int i = 0;i<tokens.size();i++) {
+            if (tokens.get(i).equals("?") && variable.equals("?" + tokens.get(i+1))) {                            
+                List<String> tokensTmp = config.tokenizer.tokenize(value);
+                tokens2.addAll(tokensTmp);
+                i++;    // we skip the second token we used
+            } else {
+                tokens2.add(tokens.get(i));
+            }
+        }
+        return tokens2;
+    }    
     
     
     public void maybeLogOptimization(PatternMatch match, PatternBasedOptimizer pbo, SourceLine sl)
@@ -1977,7 +1994,7 @@ public class Pattern {
     
     public void replaceParameter(String parameter, String value)
     {
-        if (parametrization.containsKey(parameter)) {
+        if (parametrization != null && parametrization.containsKey(parameter)) {
             parametrization.remove(parameter);
         }
         
@@ -2046,7 +2063,11 @@ public class Pattern {
             if (opp.isWildcard()) {
                 str += opp.ID + ": *\n";
             } else {
-                str += opp.ID + ": " + opp.opName;
+                if (opp.repetitionVariable != null) {
+                    str += opp.ID + ": [" + opp.repetitionVariable + "] " + opp.opName;                    
+                } else {
+                    str += opp.ID + ": " + opp.opName;
+                }
                 for(int i = 0;i<opp.args.size();i++) {
                     if (i==0) {
                         str += " " + opp.args.get(i);
@@ -2062,7 +2083,11 @@ public class Pattern {
             if (opp.isWildcard()) {
                 str += opp.ID + ": *\n";
             } else {
-                str += opp.ID + ": " + opp.opName;
+                if (opp.repetitionVariable != null) {
+                    str += opp.ID + ": [" + opp.repetitionVariable + "] " + opp.opName;                    
+                } else {
+                    str += opp.ID + ": " + opp.opName;
+                }
                 for(int i = 0;i<opp.args.size();i++) {
                     if (i==0) {
                         str += " " + opp.args.get(i);
