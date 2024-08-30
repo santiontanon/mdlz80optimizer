@@ -57,15 +57,16 @@
 ; thanks to pgimeno for noticing the needed constraint
 pattern: Replace cp ?const1; ?op1 c,?const2; ?op1 z,?const2 with cp ?const1+1; ?op1 c,?const2
 name: czjump2c
-0: cp ?const1
+0: cp ?8bitconst1
 1: ?op1 c,?const2
 2: ?op1 z,?const2
 replacement:
-0: cp ?const1+1
+0: cp ?8bitconst1+1
 1: ?op1 c,?const2
 constraints:
 in(?op1,jp,jr)
-notEqual(?const1 & 0xff,255)
+notEqual(?8bitconst1,255)
+flagsNotUsedAfter(2,C,N,P/V,H,S)
 
 pattern: Replace cp 0 with or a
 name: cp02ora
@@ -138,23 +139,23 @@ replacement:
 0: pop ?regpair2
 constraints:
 in(?regpair1,BC,DE,HL)
+in(?regpair2,BC,DE,HL)
 regpair(?regpair1,?regpair1h,?regpair1l)
 regpair(?regpair2,?regpair2h,?regpair2l)
-in(?regpair2,BC,DE,HL)
 regsNotUsedAfter(2,?regpair1)
 
 pattern: Replace pop ?regpair1; ld ?regpair2l,?regpair1l; ld ?regpair2h,?regpair1h with pop ?regpair2
 name: unnecessary-ld-after-pop2
 0: pop ?regpair1
-2: ld ?regpair2l,?regpair1l
-1: ld ?regpair2h,?regpair1h
+1: ld ?regpair2l,?regpair1l
+2: ld ?regpair2h,?regpair1h
 replacement:
 0: pop ?regpair2
 constraints:
 in(?regpair1,BC,DE,HL)
+in(?regpair2,BC,DE,HL)
 regpair(?regpair1,?regpair1h,?regpair1l)
 regpair(?regpair2,?regpair2h,?regpair2l)
-in(?regpair2,BC,DE,HL)
 regsNotUsedAfter(2,?regpair1)
 
 pattern: Replace ld a,(?const1); ?opincdec a; ld (?const1),a with ld hl,?const1; ?opincdec (hl)
@@ -233,12 +234,13 @@ pattern: Replace ld a,(hl); ld (de),a; inc de; inc hl; with ldi
 name: ldi3
 0: ld a,(hl)
 1: ld (de),a
-3: inc de
-2: inc hl
+2: inc de
+3: inc hl
 replacement:
 0: ldi
 constraints:
 regsNotUsedAfter(3,A,BC)
+flagsNotUsedAfter(3,H,N,P/V)
 
 pattern: Replace ld a,(hl); lde (de),a; inc hl; inc de with ldi; inc bc
 name: ldi-inc
@@ -513,9 +515,11 @@ in(?regixiy,IX,IY)
 in(?reg1,A,B,C,D,E)
 in(?reg2,A,B,C,D,E)
 equal(?8bitconst2+1,?8bitconst3)
+notEqual(?8bitconst2,127)
 regsNotUsedAfter(2,?regixiy,HL)
 
 pattern: Replace ld ?regixiy,?const1; ld ?reg1,(?regixiy); ld ?reg2,(?regixiy+1) with ld hl,?const1; ld ?reg1,(hl); inc hl; ld ?reg2,(hl)
+name: consecutive-indexing-to-hl2
 0: ld ?regixiy,?const1
 1: ld ?reg1,(?regixiy)
 2: ld ?reg2,(?regixiy+1)
@@ -531,6 +535,7 @@ notIn(?reg2,H,L)
 regsNotUsedAfter(2,?regixiy,HL)
 
 pattern: Remove ld ?reg,?reg
+name: unnecessary-ld-to-itself
 0: ld ?reg,?reg
 replacement:
 constraints:
@@ -538,6 +543,7 @@ in(?reg,A,B,C,D,E,H,L)
 
 ; theNestruo
 pattern: Replace ld ?reg,?const1; ld (?regixiy+?8bitconst2),?reg with ld (?regixiy+?8bitconst2),?const1
+name: ixiy-unnecessary-intermediate-reg
 0: ld ?reg,?const1
 1: ld (?regixiy+?8bitconst2),?reg
 replacement:
@@ -549,6 +555,7 @@ regsNotUsedAfter(1,?reg)
 
 ; theNestruo
 pattern: Replace xor a; ld (?regixiy+?8bitconst2),a with ld (?regixiy+?8bitconst2),0
+name: ixiy-0
 0: xor a
 1: ld (?regixiy+?8bitconst2),a
 replacement:
@@ -720,6 +727,7 @@ regsNotUsedAfter(5,A)
 
 ; Note that we include the "atLeastOneCPUOp" constraint, to prevent eliminating the usual push af; pop af combination used for timing
 pattern: Remove push ?reg / pop ?reg as register is not modified in between
+name: unnecessary-push-pop
 0: push ?reg
 1: *
 2: pop ?reg
@@ -918,6 +926,7 @@ in(?regpair,HL,DE,BC)
 equal(?const2,(?const1&#ff)*256+(?const1&#ff))
 
 pattern: Replace ld a,(?const); ?op ?any; ld (?const),a with ld hl,?const; ld a,(hl); ?op ?any; ld (hl),a
+name: op-to-memory-via-hl
 0: ld a,(?const)
 1: ?op a,?any
 2: ld (?const),a
@@ -928,7 +937,7 @@ replacement:
 3: ld (hl),a
 constraints:
 in(?op,add,adc,sbc)
-regsNotUsedAfter(0,HL)
+regsNotUsedAfter(2,HL)
 
 ; The following two patterns are alternatives to the one above, in case the one above does not match:
 pattern: Replace ld a,(?const); ?op ?any; ld (?const),a with ld de,?const; ld a,(de); ?op ?any; ld (de),a
@@ -942,7 +951,7 @@ replacement:
 3: ld (de),a
 constraints:
 in(?op,add,adc,sbc)
-regsNotUsedAfter(0,DE)
+regsNotUsedAfter(2,DE)
 
 pattern: Replace ld a,(?const); ?op ?any; ld (?const),a with ld bc,?const; ld a,(bc); ?op ?any; ld (bc),a
 0: ld a,(?const)
@@ -955,7 +964,7 @@ replacement:
 3: ld (bc),a
 constraints:
 in(?op,add,adc,sbc)
-regsNotUsedAfter(0,BC)
+regsNotUsedAfter(2,BC)
 
 pattern: Replace ld a,(?const); ?op ?any; ld (?const),a with ld hl,?const; ld a,(hl); ?op ?any; ld (hl),a
 0: ld a,(?const)
@@ -968,7 +977,7 @@ replacement:
 3: ld (hl),a
 constraints:
 in(?op,and,or,xor,sub)
-regsNotUsedAfter(0,HL)
+regsNotUsedAfter(2,HL)
 
 ; The following two patterns are alternatives to the one above, in case the one above does not match:
 pattern: Replace ld a,(?const); ?op ?any; ld (?const),a with ld de,?const; ld a,(de); ?op ?any; ld (de),a
@@ -982,7 +991,7 @@ replacement:
 3: ld (de),a
 constraints:
 in(?op,and,or,xor,sub)
-regsNotUsedAfter(0,DE)
+regsNotUsedAfter(2,DE)
 
 pattern: Replace ld a,(?const); ?op ?any; ld (?const),a with ld bc,?const; ld a,(bc); ?op ?any; ld (bc),a
 0: ld a,(?const)
@@ -995,7 +1004,7 @@ replacement:
 3: ld (bc),a
 constraints:
 in(?op,and,or,xor,sub)
-regsNotUsedAfter(0,BC)
+regsNotUsedAfter(2,BC)
 
 pattern: Replace push de; ld de, ?const1; add hl, de; pop de with ld bc, ?const1; add hl, bc
 0: push de
@@ -1123,6 +1132,7 @@ equal(?const >= 2, -1)
 flagsNotUsedAfter(0,C,N,H,P/V)
 
 pattern: Replace scf; ccf with or a
+name: check-carry-flag
 0: scf
 1: ccf
 replacement:
@@ -1131,6 +1141,7 @@ constraints:
 flagsNotUsedAfter(1,S,Z,H,P/V,H)
 
 pattern: Replace push ?regpair1; pop ?regpair2 with ld ?reg2h,?reg1h; ld ?reg2l,?reg1l
+name: regpair-transfer
 0: push ?regpair1
 1: pop ?regpair2
 replacement:
@@ -1143,6 +1154,7 @@ regpair(?regpair1,?reg1h,?reg1l)
 regpair(?regpair2,?reg2h,?reg2l)
 
 pattern: Replace ld ?reg, a; ld a, ?const; add a, ?reg with add a, ?const
+name: unnecessary-reg-to-add-to-a
 0: ld ?reg, a
 1: ld a, ?const
 2: add a, ?reg
@@ -1153,6 +1165,7 @@ in(?reg,B,C,D,E,H,L,IXL,IXH,IYL,IYH)
 regsNotUsedAfter(2, ?reg)
 
 pattern: Remove unnecessary ?op ?const
+name: unnecessary-op-const
 0: ?op ?const
 replacement:
 constraints:
@@ -1161,6 +1174,7 @@ in(?op,add,or,xor,sub)
 flagsNotUsedAfter(0,S,Z,H,P/V,N,C)
 
 pattern: Remove unnecessary ?op a,?const
+name: unnecessary-op-a-const
 0: ?op a,?const
 replacement:
 constraints:
@@ -1364,6 +1378,7 @@ equal(?const2 , 1)
 regsNotUsedAfter(1,A)
 
 pattern: Remove unused ?op ?regpair
+name: unused-op-regpair
 0: ?op ?regpair
 replacement:
 constraints:
@@ -1372,6 +1387,7 @@ in(?regpair,BC,DE,HL,IX,IY)
 regsNotUsedAfter(0,?regpair)
 
 pattern: Remove unused ?op ?reg
+name: unused-op-1arg
 0: ?op ?reg
 replacement:
 constraints:
@@ -1381,6 +1397,7 @@ regsNotUsedAfter(0,?reg)
 flagsNotUsedAfter(0,S,Z,H,P/V,N)
 
 pattern: Remove unused ?op ?any
+name: unused-op-1arg2
 0: ?op ?any
 replacement:
 constraints:
@@ -1389,6 +1406,7 @@ regsNotUsedAfter(0,A)
 flagsNotUsedAfter(0,S,Z,H,P/V,N,C)
 
 pattern: Remove unused ?op a,?any
+name: unused-op-2args
 0: ?op a,?any
 replacement:
 constraints:
@@ -1397,6 +1415,7 @@ regsNotUsedAfter(0,A)
 flagsNotUsedAfter(0,S,Z,H,P/V,N,C)
 
 pattern: Remove unused sub ?any
+name: unused-sub
 0: sub ?any
 replacement:
 constraints:
@@ -1425,6 +1444,7 @@ regsNotUsedAfter(0,?reg)
 flagsNotUsedAfter(0,S,Z,H,P/V,N,C)
 
 pattern: ld hl,?const1; ld ?regpairl,(hl); inc hl; ld ?regpairh,(hl) -> ld ?regpair,(?const1)
+name: complex-to-simple-regpair-assignment
 0: ld hl,?const1
 1: ld ?regpairl,(hl)
 2: inc hl
@@ -1460,6 +1480,7 @@ regsNotUsedAfter(1,A)
 flagsNotUsedAfter(1,S,Z,H,P/V,N,C)
 
 pattern: Remove redundant ?op ?any
+name: redundant-op
 0: ?op ?any
 1: ?op ?any
 replacement:
@@ -1475,6 +1496,7 @@ in(?op,and,or)
 flagsNotUsedAfter(0,S,Z,H,P/V,N,C)
 
 pattern: Replace xor a; inc a by ld a,1
+name: xor-inc-to-ld
 0: xor a
 1: inc a
 replacement:
@@ -1493,6 +1515,7 @@ reachableByJr(0,?const1)
 
 ; theNestruo
 pattern: Replace ld ?regpair,?const1 with ld ?regpairl,(?const1) & #00ff
+name: regpair-to-half
 tags: sdcc-unsafe
 0: ld ?regpair,?const1
 replacement:
@@ -1502,6 +1525,7 @@ regpair(?regpair,?regpairh,?regpairl)
 regsNotUsedAfter(0,?regpairh)
 
 pattern: Replace ld ?regpair,?const1 with ld ?regpairh,(?const1) >> 8
+name: regpair-to-half2
 tags: sdcc-unsafe
 0: ld ?regpair,?const1
 replacement:
@@ -1595,6 +1619,7 @@ regpair(?regpair1,?regpair1h,?regpair1l) : 0
 regsNotUsed(1,?regpair1h)
 
 pattern: Replace ld ?reg, (hl); cp ?reg  with  cp (hl)
+name: decomposed-cphl
 0: ld ?reg, (hl)
 1: cp ?reg
 replacement:
@@ -1604,6 +1629,7 @@ notIn(?reg,A)
 regsNotUsedAfter(1,?reg)
 
 pattern: Replace ld ?reg, a; ld a, (hl); cp ?reg  with  cp (hl)
+name: decomposed-cphl2
 0: ld ?reg, a
 1: ld a, (hl)
 2: cp ?reg
@@ -1615,6 +1641,7 @@ regsNotUsedAfter(2,?reg,A)
 flagsNotUsedAfter(2,C,H,S,P/V)
 
 pattern: Replace inc a;dec a with or a
+name: incdec-to-or
 0: inc a
 1: dec a
 replacement:
@@ -1623,6 +1650,7 @@ constraints:
 flagsNotUsedAfter(1,C,N,P/V,H)
 
 pattern: Replace sub ?const1 with dec a
+name: sub-to-dec
 0: sub ?const1
 replacement:
 0: dec a
@@ -1645,6 +1673,7 @@ regsNotUsedAfter(3,A)
 flagsNotUsedAfter(0,S,Z,H,P/V,N,C)
 
 pattern: Replace cpl; cp ?const with cp ~(?const)
+name: precompiled-cpl
 0: cpl
 1: cp ?const
 replacement:
@@ -1687,6 +1716,7 @@ constraints:
 regsNotModified(2,A)
 
 pattern: Replace ld a,?const1;or ?const2 by ld a,(?const1) | (?const2)
+name: precompiled-or
 0: ld a,?const1
 1: or ?const2
 replacement:
@@ -1695,6 +1725,7 @@ constraints:
 flagsNotUsedAfter(1,S,Z,H,P/V,N,C)
 
 pattern: Replace ld a,?const1;or ?const2 by ld a,(?const1) & (?const2)
+name: precompiled-and
 0: ld a,?const1
 1: and ?const2
 replacement:
@@ -1703,6 +1734,7 @@ constraints:
 flagsNotUsedAfter(1,S,Z,H,P/V,N,C)
 
 pattern: Replace ld a,?const1;and ?const2 by ld a,(?const1) + (?const2)
+name: precompiled-add
 0: ld a,?const1
 1: add a,?const2
 replacement:
@@ -1711,6 +1743,7 @@ constraints:
 flagsNotUsedAfter(1,S,Z,H,P/V,N,C)
 
 pattern: Replace ld a,?const1;sub ?const2 by ld a,(?const1) - (?const2)
+name: precompiled-sub
 0: ld a,?const1
 1: sub ?const2
 replacement:
@@ -1719,6 +1752,7 @@ constraints:
 flagsNotUsedAfter(1,S,Z,H,P/V,N,C)
 
 pattern: Replace xor a;and ?const2 by ld a,?const2
+name: xor-add-to-ld
 0: xor a
 1: add a,?const2
 replacement:
@@ -1773,7 +1807,8 @@ name: sdcc16bitcp
 replacement:
 0: ld de, (?const1)
 1: ld hl, (?const2)
-2: sbc hl, de
+2: or a
+3: sbc hl, de
 constraints:
 in(?regixiy,IX,IY)
 regsNotUsedAfter(6,A,DE,HL,?regixiy)
@@ -2167,7 +2202,7 @@ name: unnecessary-0args
 0: ?op
 replacement:
 constraints:
-in(?op,ccf,cpl,daa,rla,rlca,rra,rrca,scf,cpd,cpi,neg,rld,rrd,)
+in(?op,ccf,cpl,daa,rla,rlca,rra,rrca,scf,cpd,cpi,neg,rld,rrd)
 regFlagEffectsNotUsedAfter(0, 0)
 
 pattern: remove unused ?op ?any1

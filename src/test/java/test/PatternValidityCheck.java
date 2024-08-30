@@ -12,6 +12,7 @@ import code.CodeStatement;
 import code.Expression;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
 import org.junit.Assert;
@@ -50,13 +51,11 @@ public class PatternValidityCheck {
 //    @Test public void test5() throws Exception { test("data/pbo-patterns.txt", "sdcc16bitcp", true); }
 //    @Test public void test6() throws Exception { test("data/pbo-patterns.txt", "move-to-top-of-stack", true); }
 //    @Test public void test7() throws Exception { test("data/pbo-patterns.txt", "unnecessary-ld-to-reg", true); }
-//    @Test public void test8() throws Exception { test("data/pbo-patterns.txt", "dec-jr-to-djnz", true); }
+//    @Test public void test8() throws Exception { test("data/pbo-patterns.txt", "consecutive-indexing-to-hl", true); }
 
-    @Test public void testSpeed1() throws Exception { test("data/pbo-patterns-speed.txt", "push2ld", false); }
+//    @Test public void testSpeed1() throws Exception { test("data/pbo-patterns-speed.txt", "push2ld", false); }
 
-    // Test all patterns without wildcards/repetitions:
-//    @Test public void testAllNonRepeat() throws Exception { testAll("data/pbo-patterns.txt", true, false, false, true); }
-//    @Test public void testAllRepeat() throws Exception { testAll("data/pbo-patterns.txt", false, true, false, true); }
+    // Test all patterns without wildcards:
     @Test public void testAllNonWildcard() throws Exception { testAll("data/pbo-patterns.txt", true, true, false, true); }
 
     
@@ -128,7 +127,11 @@ public class PatternValidityCheck {
             List<Pattern> instantiated = allPatternInstantiations(pattern, code);
             if (instantiated == null) {
                 nNotSupported ++;
-                nonSupportedNames.add(pattern.name);
+                if (pattern.name == null) {
+                    nonSupportedNames.add("-");
+                } else {
+                    nonSupportedNames.add(pattern.name);
+                }
                 continue;
             }
             System.out.println("instantiated ("+pattern.name+"): " + instantiated.size());
@@ -208,7 +211,8 @@ public class PatternValidityCheck {
         return true;
     }
     
-    
+    // 179, 249
+    // 179, 249
     private boolean evaluatePattern(Pattern p, List<String> parameters, 
                                     List<Integer> flagsToIgnore,
                                     List<CPUConstants.RegisterNames> registersToIgnore,
@@ -217,6 +221,28 @@ public class PatternValidityCheck {
                                     TrackingZ80Memory z80Memory2, Z80Core z802,
                                     boolean checkMemory) throws Exception
     {
+        // Get forbidden values from "notIn"/"notEqual" constraints:
+        HashMap<String,List<String>> forbiddenValues = new HashMap<>();
+        for(Pattern.Constraint c:p.constraints) {
+            if (c.name.equalsIgnoreCase("notIn") ||
+                c.name.equalsIgnoreCase("notEqual")) {
+                if (!forbiddenValues.containsKey(c.args[0])) {
+                    forbiddenValues.put(c.args[0], new ArrayList<>());
+                }
+                for(int i = 1;i<c.args.length;i++) {
+                    Integer v = evalArgument(c.args[i], code);
+                    if (v == null) {
+                        // Ignore this one
+//                        System.out.println("Cannot evaluate argument in constraint: " + c);
+//                        return false;
+                    } else {
+                        if (!forbiddenValues.get(c.args[0]).contains("" + v)) {
+                            forbiddenValues.get(c.args[0]).add("" + v);
+                        }
+                    }
+                }
+            }
+        }
         // randomize the start address from a range:
         int minStartAddress = 0x0100;
         int maxStartAddress = 0x0f00;
@@ -251,6 +277,13 @@ public class PatternValidityCheck {
                 v = v % 256;
                 if (v > 127) {
                     v -= 256;
+                }
+            }
+            if (forbiddenValues.containsKey(parameter)) {
+                for(String fv:forbiddenValues.get(parameter)) {
+                    if (fv.equals("" + v)) {
+                        return true;  // skip this case
+                    }
                 }
             }
             match.addVariableMatch(parameter, Expression.constantExpression(v, config));            
@@ -577,22 +610,24 @@ public class PatternValidityCheck {
             for(int j = 0;j<p.constraints.size();j++) {
                 Pattern.Constraint c = p.constraints.get(j);
                 if (c.name.equals("equal")) {
-                    List<String> tokens = config.tokenizer.tokenize(c.args[0]);
-                    if (tokens.size() == 2 && tokens.get(0).equals("?")) {
-                        // we can handle this case:
-
+                    List<String> tokens1 = config.tokenizer.tokenize(c.args[0]);
+                    List<String> tokens2 = config.tokenizer.tokenize(c.args[1]);
+                    if (tokens1.size() == 2 && tokens1.get(0).equals("?")) {
                         // remove this constraint:
                         p.constraints.remove(c);
                         j--;
-
                         p.replaceParameter(c.args[0], c.args[1]);
+                    } else if (tokens2.size() == 2 && tokens2.get(0).equals("?")) {
+                        // remove this constraint:
+                        p.constraints.remove(c);
+                        j--;
+                        p.replaceParameter(c.args[1], c.args[0]);
                     } else {
-                        Expression exp = config.expressionParser.parse(tokens, null, null, code);
-                        if (exp != null && exp.evaluatesToIntegerConstant()) {
-                            List<String> tokens2 = config.tokenizer.tokenize(c.args[1]);
+                        Expression exp1 = config.expressionParser.parse(tokens1, null, null, code);
+                        if (exp1 != null && exp1.evaluatesToIntegerConstant()) {
                             Expression exp2 = config.expressionParser.parse(tokens2, null, null, code);
                             if (exp2 != null && exp2.evaluatesToIntegerConstant()) {
-                                Integer v1 = exp.evaluateToInteger(null, code, true);
+                                Integer v1 = exp1.evaluateToInteger(null, code, true);
                                 Integer v2 = exp2.evaluateToInteger(null, code, true);
                                 if (v1 != null && v1.equals(v2)) {
                                     p.constraints.remove(c);
@@ -606,7 +641,7 @@ public class PatternValidityCheck {
                                 System.out.println("Equal could not be handled with second arg tokens: " + tokens2);
                             }
                         } else {
-                            System.out.println("Equal could not be handled with first arg tokens: " + tokens);
+                            System.out.println("Equal could not be handled with first arg tokens: " + tokens1);
                         }
                     }
                 }
@@ -628,14 +663,21 @@ public class PatternValidityCheck {
                             System.out.println("Remaining constraint: " + c.name + " not associated with the last instruction of the pattern, not yet supported (pattern: " + p.name + ")");
                             return null;
                         }
+                        case "notIn":
+                        case "notEqual":
+                            if (argIsSymbol(c.args[0])) {
+                                // ok
+                                break;
+                            }
+                            System.out.println("Remaining constraint: " + c.name + " not yet supported (args: "+Arrays.toString(c.args)+")");
+                            return null;
+                        
                         case "regsNotModified":
                         case "regsNotUsed":
                         case "flagsNotModified":
                         case "flagsNotUsed":
                         case "equal":
-                        case "notEqual":
                         case "in":
-                        case "notIn":
                         case "regpair":
                         case "reachableByJr":
                         case "evenPushPops":
@@ -654,6 +696,20 @@ public class PatternValidityCheck {
         }
         
         return instantiated;
+    }
+    
+    
+    private boolean argIsSymbol(String arg) {
+        List<String> tokens = config.tokenizer.tokenize(arg);
+        if (tokens.size() == 2 && tokens.get(0).equals("?")) return true;
+        return false;
+    }
+    
+    
+    private Integer evalArgument(String arg, CodeBase code) {
+        List<String> tokens = config.tokenizer.tokenize(arg);
+        Expression exp = config.expressionParser.parse(tokens, null, null, code);
+        return exp.evaluateToInteger(null, code, true);        
     }
     
     
