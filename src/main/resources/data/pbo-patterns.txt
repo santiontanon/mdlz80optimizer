@@ -66,7 +66,7 @@ replacement:
 constraints:
 in(?op1,jp,jr)
 notEqual(?8bitconst1,255)
-flagsNotUsedAfter(2,C,N,P/V,H,S)
+flagsNotUsedAfter(2,Z,C,N,P/V,H,S)
 
 pattern: Replace cp 0 with or a
 name: cp02ora
@@ -1452,6 +1452,7 @@ name: complex-to-simple-regpair-assignment
 replacement:
 0: ld ?regpair,(?const1)
 constraints:
+in(?regpairl,C,E)
 regpair(?regpair,?regpairh,?regpairl)
 regsNotUsedAfter(3,HL)
 
@@ -1521,6 +1522,7 @@ tags: sdcc-unsafe
 replacement:
 0: ld ?regpairl,(?const1) & #00ff
 constraints:
+in(?regpair,BC,DE,HL,IX,IY)
 regpair(?regpair,?regpairh,?regpairl)
 regsNotUsedAfter(0,?regpairh)
 
@@ -1531,6 +1533,7 @@ tags: sdcc-unsafe
 replacement:
 0: ld ?regpairh,(?const1) >> 8
 constraints:
+in(?regpair,BC,DE,HL,IX,IY)
 regpair(?regpair,?regpairh,?regpairl)
 regsNotUsedAfter(0,?regpairl)
 
@@ -2015,8 +2018,9 @@ replacement:
 4: ld (?regpair), a
 6: inc ?regpair
 constraints:
+in(?regpair,BC,DE)
 regpair(?regpair,?regpairh,?regpairl)
-regsNotUsedAfter(6,A)
+regsNotUsedAfter(6,A,HL)
 
 pattern: Move ld (?regixiy2 + ?const2), a just before ld a, (?regixiy1 + ?const1), to save one of the ld a, (?regixiy1 + ?const1).
 name: sdcc-inefficient-index-register-use2

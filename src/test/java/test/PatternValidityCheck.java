@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Random;
 import org.junit.Assert;
 import org.junit.Test;
+import util.Pair;
 import util.microprocessor.PlainZ80IO;
 import util.microprocessor.ProcessorException;
 import util.microprocessor.TrackingZ80Memory;
@@ -51,9 +52,9 @@ public class PatternValidityCheck {
 //    @Test public void test5() throws Exception { test("data/pbo-patterns.txt", "sdcc16bitcp", true); }
 //    @Test public void test6() throws Exception { test("data/pbo-patterns.txt", "move-to-top-of-stack", true); }
 //    @Test public void test7() throws Exception { test("data/pbo-patterns.txt", "unnecessary-ld-to-reg", true); }
-//    @Test public void test8() throws Exception { test("data/pbo-patterns.txt", "consecutive-indexing-to-hl", true); }
+//    @Test public void test8() throws Exception { test("data/pbo-patterns.txt", "unnecessary-0args", true); }
 
-//    @Test public void testSpeed1() throws Exception { test("data/pbo-patterns-speed.txt", "push2ld", false); }
+    @Test public void testSpeed1() throws Exception { test("data/pbo-patterns-speed.txt", "push2ld", false); }
 
     // Test all patterns without wildcards:
     @Test public void testAllNonWildcard() throws Exception { testAll("data/pbo-patterns.txt", true, true, false, true); }
@@ -80,9 +81,10 @@ public class PatternValidityCheck {
 
             List<String> parameters = getParameters(p);
             Assert.assertNotNull("parameters is null", parameters);
-            List<Integer> flagsToIgnore = getFlagsToIgnore(p);
+            Pair<List<Integer>, List<CPUConstants.RegisterNames>> tmp = getFlagsAndRegistersToIgnore(p);
+            List<Integer> flagsToIgnore = tmp.left;
+            List<CPUConstants.RegisterNames> registersToIgnore = tmp.right;
             Assert.assertNotNull("flagsToIgnore is null", flagsToIgnore);
-            List<CPUConstants.RegisterNames> registersToIgnore = getRegistersToIgnore(p);
             Assert.assertNotNull("registersToIgnore is null", registersToIgnore);
 
             Assert.assertTrue(evaluatePattern(p, parameters, 
@@ -149,9 +151,10 @@ public class PatternValidityCheck {
 
                 List<String> parameters = getParameters(instantiatedPattern);
                 Assert.assertNotNull("parameters is null", parameters);
-                List<Integer> flagsToIgnore = getFlagsToIgnore(instantiatedPattern);
+                Pair<List<Integer>, List<CPUConstants.RegisterNames>> tmp = getFlagsAndRegistersToIgnore(instantiatedPattern);
+                List<Integer> flagsToIgnore = tmp.left;
+                List<CPUConstants.RegisterNames> registersToIgnore = tmp.right;
                 Assert.assertNotNull("flagsToIgnore is null", flagsToIgnore);
-                List<CPUConstants.RegisterNames> registersToIgnore = getRegistersToIgnore(instantiatedPattern);
                 Assert.assertNotNull("registersToIgnore is null", registersToIgnore);
                 Assert.assertTrue(evaluatePattern(instantiatedPattern, parameters, 
                                                   flagsToIgnore, registersToIgnore,
@@ -517,9 +520,11 @@ public class PatternValidityCheck {
     }
     
     
-    private List<Integer> getFlagsToIgnore(Pattern pattern)
+    private Pair<List<Integer>, List<CPUConstants.RegisterNames>> getFlagsAndRegistersToIgnore(Pattern pattern)
     {
         List<Integer> flags = new ArrayList<>();
+        List<CPUConstants.RegisterNames> registers = new ArrayList<>();
+        registers.add(CPUConstants.RegisterNames.R);
         
         for(Pattern.Constraint c:pattern.constraints) {
             switch(c.name) {
@@ -534,26 +539,13 @@ public class PatternValidityCheck {
                             }
                         }
                         if (found == -1) {
-                            System.out.println("Unknown flag " + flag);
+                            config.error("Unknown flag " + flag);
                             return null;
                         }
                         flags.add(CPUConstants.flags[found]);
                     }
                     break;
-            }
-        }
 
-        return flags;
-    }
-    
-    
-    private List<CPUConstants.RegisterNames> getRegistersToIgnore(Pattern pattern)
-    {
-        List<CPUConstants.RegisterNames> registers = new ArrayList<>();
-        registers.add(CPUConstants.RegisterNames.R);
-        
-        for(Pattern.Constraint c:pattern.constraints) {
-            switch(c.name) {
                 case "regsNotUsedAfter":
                     for(int i = 1;i<c.args.length;i++) {
                         boolean found = false;
@@ -573,15 +565,49 @@ public class PatternValidityCheck {
                             }
                         }
                         if (!found) {
-                            System.out.println("Unknown register " + c.args[i]);
+                            config.error("Unknown register " + c.args[i]);
                             return null;
                         }
                     }
                     break;
+                    
+                // NOTE: This is only partially implemented, since it might be hard
+                //       to implement this constraint here, as we do not have the
+                //       pattern fully instantiated at this point. We might have to
+                //       use this constraint after the instantiations.
+//                case "regFlagEffectsNotUsedAfter":
+//                    {
+//                        CPUOpPattern opp = null;
+//                        int idx = Integer.parseInt(c.args[0]);
+//                        for(CPUOpPattern opp2:pattern.pattern) {
+//                            if (opp2.ID == idx) {
+//                                opp = opp2;
+//                                break;
+//                            }
+//                        }
+//                        if (opp == null) {
+//                            config.error("constraint refers to unexisting op: " + c);
+//                            return null;
+//                        }
+                        
+//                        List<CPUOpDependency> regFlagOutputDeps = op.getOutputDependencies();
+//                        for(CPUOpDependency d:regFlagOutputDeps) {
+//                            if (d.flag == null && d.register == null) {
+//                                // there is a non-register/flag effect.
+//                                // System.out.println("regFlagEffectsNotUsedAfter: " + s + " -> dep failed: " + d);
+//                                return false;
+//                            } else if (d.register != null &&
+//                                       (d.register.equalsIgnoreCase("I") ||
+//                                        d.register.equalsIgnoreCase("R"))) {
+//                                return false;
+//                            }
+//                        }
+//                    }
+//                    break;
             }
         }
 
-        return registers;
+        return Pair.of(flags, registers);
     }
     
     
@@ -671,6 +697,10 @@ public class PatternValidityCheck {
                             }
                             System.out.println("Remaining constraint: " + c.name + " not yet supported (args: "+Arrays.toString(c.args)+")");
                             return null;
+                            
+                        case "noStackArguments":
+                            // We ignore this constraint
+                            break;
                         
                         case "regsNotModified":
                         case "regsNotUsed":

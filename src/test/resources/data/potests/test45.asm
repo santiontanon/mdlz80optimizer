@@ -5,7 +5,7 @@
 	ld d,(hl)
 	ld (var2),de
 
-	ld hl,va2
+	ld hl,var2
 	ld c,1
 	halt  ; just some instruction in between
 	ld b,2
