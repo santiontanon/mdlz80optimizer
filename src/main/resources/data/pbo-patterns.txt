@@ -2206,7 +2206,7 @@ name: unnecessary-0args
 0: ?op
 replacement:
 constraints:
-in(?op,ccf,cpl,daa,rla,rlca,rra,rrca,scf,cpd,cpi,neg,rld,rrd)
+in(?op,ccf,cpl,daa,rla,rlca,rra,rrca,scf,cpd,cpi,neg)
 regFlagEffectsNotUsedAfter(0, 0)
 
 pattern: remove unused ?op ?any1
@@ -2222,7 +2222,7 @@ name: unnecessary-2args
 0: ?op ?any1, ?any2
 replacement:
 constraints:
-in(?op,adc,add,ld,sbc,bit,set,res)
+in(?op,adc,add,sbc,bit,set,res,ld)
 regFlagEffectsNotUsedAfter(0, 0)
 
 pattern: remove unused ex de, hl

@@ -7,6 +7,7 @@ package test;
 
 import cl.MDLConfig;
 import code.CPUOp;
+import code.CPUOpDependency;
 import code.CodeBase;
 import code.CodeStatement;
 import code.Expression;
@@ -52,7 +53,7 @@ public class PatternValidityCheck {
 //    @Test public void test5() throws Exception { test("data/pbo-patterns.txt", "sdcc16bitcp", true); }
 //    @Test public void test6() throws Exception { test("data/pbo-patterns.txt", "move-to-top-of-stack", true); }
 //    @Test public void test7() throws Exception { test("data/pbo-patterns.txt", "unnecessary-ld-to-reg", true); }
-//    @Test public void test8() throws Exception { test("data/pbo-patterns.txt", "unnecessary-0args", true); }
+//    @Test public void test8() throws Exception { test("data/pbo-patterns.txt", "unnecessary-2args", true); }
 
     @Test public void testSpeed1() throws Exception { test("data/pbo-patterns-speed.txt", "push2ld", false); }
 
@@ -570,40 +571,71 @@ public class PatternValidityCheck {
                         }
                     }
                     break;
-                    
-                // NOTE: This is only partially implemented, since it might be hard
-                //       to implement this constraint here, as we do not have the
-                //       pattern fully instantiated at this point. We might have to
-                //       use this constraint after the instantiations.
-//                case "regFlagEffectsNotUsedAfter":
-//                    {
-//                        CPUOpPattern opp = null;
-//                        int idx = Integer.parseInt(c.args[0]);
-//                        for(CPUOpPattern opp2:pattern.pattern) {
-//                            if (opp2.ID == idx) {
-//                                opp = opp2;
-//                                break;
-//                            }
-//                        }
-//                        if (opp == null) {
-//                            config.error("constraint refers to unexisting op: " + c);
-//                            return null;
-//                        }
+                case "regFlagEffectsNotUsedAfter":
+                    CPUOpPattern opp = null;
+                    int idx = Integer.parseInt(c.args[0]);
+                    for(CPUOpPattern opp2:pattern.pattern) {
+                        if (opp2.ID == idx) {
+                            opp = opp2;
+                            break;
+                        }
+                    }
+                    if (opp == null) {
+                        config.error("constraint refers to unexisting op: " + c);
+                        return null;
+                    }
+                    CPUOp op = opp.instantiate(new PatternMatch(pattern, null), pattern, config);
                         
-//                        List<CPUOpDependency> regFlagOutputDeps = op.getOutputDependencies();
-//                        for(CPUOpDependency d:regFlagOutputDeps) {
-//                            if (d.flag == null && d.register == null) {
-//                                // there is a non-register/flag effect.
-//                                // System.out.println("regFlagEffectsNotUsedAfter: " + s + " -> dep failed: " + d);
-//                                return false;
-//                            } else if (d.register != null &&
-//                                       (d.register.equalsIgnoreCase("I") ||
-//                                        d.register.equalsIgnoreCase("R"))) {
-//                                return false;
-//                            }
-//                        }
-//                    }
-//                    break;
+                    List<CPUOpDependency> regFlagOutputDeps = op.getOutputDependencies();
+                    for(CPUOpDependency d:regFlagOutputDeps) {
+                        if (d.flag == null && d.register == null) {
+                            // there is a non-register/flag effect.
+                            // System.out.println("regFlagEffectsNotUsedAfter: " + s + " -> dep failed: " + d);
+                        } else {
+                            if (d.register != null) {
+                                if (d.register.equalsIgnoreCase("I") ||
+                                    d.register.equalsIgnoreCase("R")) {
+                                    return null;
+                                } else {
+                                    boolean found = false;
+                                    for(CPUConstants.RegisterNames reg:CPUConstants.allRegisters) {
+                                        if (CPUConstants.registerName(reg).equalsIgnoreCase(d.register)) {
+                                            if (CPUConstants.is8bitRegister(reg) ||
+                                                reg == CPUConstants.RegisterNames.SP ||
+                                                reg == CPUConstants.RegisterNames.PC) { 
+                                                registers.add(reg);
+                                            } else {
+                                                for(CPUConstants.RegisterNames reg2:CPUConstants.primitive8BitRegistersOf(reg)) {
+                                                    registers.add(reg2);
+                                                }
+                                            }
+                                            found = true;
+                                            break;
+                                        }
+                                    }
+                                    if (!found) {
+                                        config.error("Unknown register " + d.register);
+                                        return null;
+                                    }
+                                }
+                            } else if (d.flag != null) {
+                                String flag = d.flag.replace(" ", "");
+                                int found = -1;
+                                for(int j = 0;j<CPUConstants.flagNames.length;j++) {
+                                    if (CPUConstants.flagNames[j].equalsIgnoreCase(flag)) {
+                                        found = j;
+                                        break;
+                                    }
+                                }
+                                if (found == -1) {
+                                    config.error("Unknown flag " + flag);
+                                    return null;
+                                }
+                                flags.add(CPUConstants.flags[found]);
+                            }
+                        }
+                    }
+                    break;
             }
         }
 
@@ -629,7 +661,7 @@ public class PatternValidityCheck {
             }
         }
 
-        // Check "equal" constraints:
+        // Check constraints that can only be checked after the pattern is instantiated:
         List<Pattern> toDelete = new ArrayList<>();
         for(int i = 0;i<instantiated.size();i++) {
             Pattern p = instantiated.get(i);
@@ -680,6 +712,7 @@ public class PatternValidityCheck {
                 switch(c.name) {
                         case "flagsNotUsedAfter":
                         case "regsNotUsedAfter":
+                        case "regFlagEffectsNotUsedAfter":
                         {
                             int ID = Integer.parseInt(c.args[0]);
                             if (ID == p.pattern.get(p.pattern.size()-1).ID) {

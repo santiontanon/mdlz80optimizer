@@ -275,12 +275,12 @@ RLC D	7	CB 02	2	d				d	S,Z,H,P/V,N,C			true
 RLC E	7	CB 03	2	e				e	S,Z,H,P/V,N,C			true
 RLC H	7	CB 04	2	h				h	S,Z,H,P/V,N,C			true
 RLC L	7	CB 05	2	l				l	S,Z,H,P/V,N,C			true
-RLD	16	ED 6F	2	A,HL			HL		S,Z,H,P/V,N		HL	true
+RLD	16	ED 6F	2	A,HL			HL	A	S,Z,H,P/V,N		HL	true
 RR (HL)	13	CB 1E	2	HL	C			HL	S,Z,H,P/V,N,C		HL	true
 RR r	7	CB 18+r	2	r	C			r	S,Z,H,P/V,N,C			true
 RRC (HL)	13	CB 0E	2	HL				HL	S,Z,H,P/V,N,C		HL	true
 RRC r	7	CB 08+r	2	r				r	S,Z,H,P/V,N,C			true
-RRD	16	ED 67	2	A,HL			HL		S,Z,H,P/V,N		HL	true
+RRD	16	ED 67	2	A,HL			HL	A	S,Z,H,P/V,N		HL	true
 SBC A,IXp	8	DD 98+p	2	A,IXp	C			A	S,Z,H,P/V,N,C			true
 SBC A,IYq	8	FD 98+q	2	A,IYq	C			A	S,Z,H,P/V,N,C			true
 SBC A,n	6	DE n	2	A	C			A	S,Z,H,P/V,N,C			true
