@@ -10,5 +10,5 @@ inputs:
     required: true
 runs:
   using: 'docker'
-  image: 'docker://ghcr.io/duhow/mdlz80optimizer:master'
+  image: 'docker://ghcr.io/santiontanon/mdlz80optimizer:master'
   args: ${{ inputs.args }}
