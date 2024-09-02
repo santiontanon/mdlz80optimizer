@@ -59,7 +59,7 @@ public class Pattern {
             for(int i = 0;i<args.length;i++) {
                 List<String> argTokens = config.tokenizer.tokenize(args[i]);
                 Expression argExp = config.expressionParser.parse(argTokens, null, null, code);
-                args[i] = Pattern.instantiateExpression(argExp, variables).toString();
+                args[i] = Pattern.instantiateExpression(argExp, variables).toString().replace(" ", "");
             }
         }
         
@@ -199,6 +199,7 @@ public class Pattern {
                         String split[] = new String[expressions.size()];
                         for(int i = 0;i<split.length;i++) {
                             split[i] = expressions.get(i).toString();
+                            split[i] = split[i].replace(" ", "");  // this is because the P/V flag, otherwise, it's generated as "P / V" and there is no match
                         }
                         constraints.add(new Constraint(name, split, triggerAfterID));
                         break;
@@ -351,7 +352,29 @@ public class Pattern {
         }
         return variables;
     }
+    
+    
+    public CPUOpPattern getPatternWithId(int a_ID)
+    {
+        for(CPUOpPattern opp:pattern) {
+            if (opp.ID == a_ID) {
+                return opp;
+            }
+        }
+        return null;
+    }
 
+    
+    public CPUOpPattern getReplacementWithId(int a_ID)
+    {
+        for(CPUOpPattern opp:replacement) {
+            if (opp.ID == a_ID) {
+                return opp;
+            }
+        }
+        return null;
+    }
+    
     
 //    public Pattern assignVariable(String name, String replacement, CodeBase code)
 //    {
@@ -488,6 +511,31 @@ public class Pattern {
             return ""+tmp[0];
         } else {
             return tmp[0] + "/" + tmp[1];
+        }
+    }
+    
+    
+    public void replaceWildcard(int ID, List<CPUOpPattern> l)
+    {
+        for(int i = 0;i<pattern.size();i++) {
+            if (pattern.get(i).ID == ID) {
+                pattern.remove(i);
+                for(CPUOpPattern opp:l) {
+                    pattern.add(i, opp);
+                    i++;
+                }
+                break;
+            }
+        }
+        for(int i = 0;i<replacement.size();i++) {
+            if (replacement.get(i).ID == ID) {
+                replacement.remove(i);
+                for(CPUOpPattern opp:l) {
+                    replacement.add(i, opp);
+                    i++;
+                }
+                break;
+            }
         }
     }
     
@@ -774,6 +822,12 @@ public class Pattern {
         config.debug("Potential pattern match: " + this.name);
         
         // potential match! check constraints:
+        // We try executing first the "regpair" constraints, as these might fill additional variables:
+        for(Constraint constraint:constraints) {
+            if (constraint.name.equalsIgnoreCase("regpair")) {
+                checkConstraint(constraint, match, f, code, pbo, index_to_display_message_on);
+            }
+        }
         for(Constraint constraint:constraints) {
             if (!checkConstraint(constraint, match, f, code, pbo,
                                  index_to_display_message_on)) {

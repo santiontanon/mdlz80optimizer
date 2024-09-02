@@ -185,14 +185,15 @@ regsNotUsedAfter(2,HL)
 
 pattern: Replace ld ?reg,?const1; ld (hl),?reg with ld (hl),?const1
 name: unnecessary-intermediate-reg
-0: ld ?reg,?const1
+0: ld ?reg,?8bitconst1
 1: *
 2: ld (hl),?reg
 replacement:
-0: ld (hl),?const1
+0: ld (hl),?8bitconst1
 1: *
 constraints:
-regsNotModified(1, HL)
+in(?reg,A,B,C,D,E)
+regsNotModified(1, HL, ?reg)
 regsNotUsed(1,?reg)
 regsNotUsedAfter(2,?reg)
 
@@ -584,7 +585,7 @@ replacement:
 1: *
 constraints:
 regsNotModified(1, ?reg1, ?reg2)
-notIn(?reg2,R)
+notIn(?reg2,R,I)
 
 ; Thanks to theNestruo for suggesting the idea for this pattern:
 pattern: Replace ld (?reg2),?const with ld (?reg2),?reg (as ?reg == ?const here)
@@ -764,6 +765,7 @@ replacement:
 constraints:
 in(?op,jr,jp)
 regsNotModified(3,A)
+flagsNotUsedAfter(0,C,N,P/V,H,Z,S)
 
 ; Thanks to theNestruo for suggesting the idea for this pattern:
 pattern: Remove unnecessary ld a,0 (a must be zero here)
@@ -910,20 +912,22 @@ in(?regpair,HL,BC,DE)
 regsNotModified(1,?regh)
 equal((?const1&#ff00)>>8,?const2)
 
-pattern: Replace ld ?regpair,?const2 with ld ?regpairh,?reg; ld ?regpairl,?reg (as ?reg == ?const1 here)
-2: ld ?reg,?const1
+pattern: Replace ld ?regpair,?const2 with ld ?regpairh,?reg1; ld ?regpairl,?reg1 (as ?reg1 == ?const1 here)
+name: ld-const-to-doubleld-reg
+2: ld ?reg1,?const1
 1: *
 0: ld ?regpair,?const2
 replacement:
-2: ld ?reg,?const1
+2: ld ?reg1,?const1
 1: *
-0: ld ?regpairh,?reg
-3: ld ?regpairl,?reg
+0: ld ?regpairh,?reg1
+3: ld ?regpairl,?reg1
 constraints:
-in(?reg,A,B,C,D,E,H,L)
+in(?reg1,A,B,C,D,E,H,L)
 regpair(?regpair,?regpairl,?regpairh)
 in(?regpair,HL,DE,BC)
 equal(?const2,(?const1&#ff)*256+(?const1&#ff))
+regsNotModified(1,?reg1)
 
 pattern: Replace ld a,(?const); ?op ?any; ld (?const),a with ld hl,?const; ld a,(hl); ?op ?any; ld (hl),a
 name: op-to-memory-via-hl
@@ -1199,6 +1203,7 @@ in(?reg,BC,DE,HL,SP)
 flagsNotModified(1,C)
 
 pattern: Remove unnecessary ?opandor a
+name: unnecessary-carry-clear2
 2: ret c
 1: *
 0: ?opandor a
@@ -1316,7 +1321,7 @@ replacement:
 1: *
 0: inc ?regpair
 constraints:
-in(?regpair,BC,DE,HL,IC,IY)
+in(?regpair,BC,DE,HL,IX,IY)
 equal(?const2,?const1+1)
 regsNotModified(1,?regpair)
 
@@ -1329,7 +1334,7 @@ replacement:
 1: *
 0: dec ?regpair
 constraints:
-in(?regpair,BC,DE,HL,IC,IY)
+in(?regpair,BC,DE,HL,IX,IY)
 equal(?const2,?const1-1)
 regsNotModified(1,?regpair)
 
@@ -1569,6 +1574,7 @@ equal((?const1) & #00ff, (?const2) & #00ff)
 
 ; Thanks to theNestruo for suggesting the idea for this pattern:
 pattern: Replace ld (?reg2),?const2 with ld (?reg2),?regpairl (as ?regpairl == ?const2 here)
+name: reuse-regpairl-in-assignment
 2: ld ?regpair,?const1
 1: *
 0: ld (?reg2),?const2
@@ -1577,6 +1583,7 @@ replacement:
 1: *
 0: ld (?reg2),?regpairl
 constraints:
+in(?regpair,BC,DE,HL)
 regpair(?regpair,?regpairh,?regpairl)
 in(?reg2,HL,IX,IY)
 equal(?const2, (?const1) & #00ff)
@@ -1584,6 +1591,7 @@ regsNotModified(1,?regpairl)
 
 ; Thanks to theNestruo for suggesting the idea for this pattern:
 pattern: Replace ld (?reg2),?const2 with ld (?reg2),?regpairh (as ?regpairh == ?const2 here)
+name: reuse-regpairh-in-assignment
 2: ld ?regpair,?const1
 1: *
 0: ld (?reg2),?const2
@@ -1592,6 +1600,7 @@ replacement:
 1: *
 0: ld (?reg2),?regpairh
 constraints:
+in(?regpair,BC,DE,HL)
 regpair(?regpair,?regpairh,?regpairl)
 in(?reg2,HL,IX,IY)
 equal(?const2, (?const1) >> 8)
@@ -1881,9 +1890,11 @@ replacement:
 1: *
 constraints:
 in(?reg1,HL,IX,IY)
+in(?reg0,BC,DE,HL,IX,IY)
 equal(?const,0)
 regsNotModified(1, ?reg0)
 flagsNotUsedAfter(2,H,N,C)
+regsNotUsedAfter(2,?reg0)
 
 pattern: Remove ld ?reg0, ?const; ...; add a, ?reg0, as ?const = 0
 name: add-0-to-a
@@ -1893,9 +1904,11 @@ name: add-0-to-a
 replacement:
 1: *
 constraints:
+notIn(?reg0,A)
 regsNotModified(1, ?reg0)
 equal(?const,0)
 flagsNotUsedAfter(2,S,Z,H,P/V,N,C)
+regsNotUsedAfter(2,?reg0)
 
 ; bc == 0 after ldir
 ; Thanks to max_iwamoto for suggesting the idea for this pattern
@@ -1954,6 +1967,8 @@ replacement:
 2: ld ?reg2, ?reg1
 1: *
 constraints:
+notIn(?reg1,I,R)
+notIn(?reg2,I,R)
 regsNotModified(1, ?reg1)
 regsNotModified(1, ?reg2)
 
@@ -2097,27 +2112,31 @@ replacement:
 2: *
 3: ld (?const1),?regpair2
 constraints:
+in(?regpair1,BC,DE,HL,IX,IY)
+in(?regpair2,BC,DE,HL,IX,IY)
 regpair(?regpair1,?reg1h,?reg1l)
 regpair(?regpair2,?reg2h,?reg2l)
 regsNotUsed(2,?regpair1)
-regsNotModified(2,?regpair1)
+regsNotModified(2,?regpair1,?regpair2)
 regsNotUsedAfter(3,?regpair1)
 
-pattern: Remove ld ?reg1h,?reg2h; ld ?reg1l,?reg2l and replace ld (?const1),?reg1 by ld (?const1),?reg2
+pattern: Remove ld ?reg1h,?reg2h; ld ?reg1l,?reg2l and replace ld (?const1),?regpair1 by ld (?const1),?regpair2
 name: unnecessary-register-move2
 0: ld ?reg1l,?reg2l
 1: ld ?reg1h,?reg2h
 2: *
-3: ld (?const1),?reg1
+3: ld (?const1),?regpair1
 replacement:
 2: *
-3: ld (?const1),?reg2
+3: ld (?const1),?regpair2
 constraints:
-regpair(?reg1,?reg1h,?reg1l)
-regpair(?reg2,?reg2h,?reg2l)
-regsNotUsed(2,?reg1)
-regsNotModified(2,?reg1)
-regsNotUsedAfter(3,?reg1)
+in(?regpair1,BC,DE,HL,IX,IY)
+in(?regpair2,BC,DE,HL,IX,IY)
+regpair(?regpair1,?reg1h,?reg1l)
+regpair(?regpair2,?reg2h,?reg2l)
+regsNotUsed(2,?regpair1)
+regsNotModified(2,?regpair1,?regpair2)
+regsNotUsedAfter(3,?regpair1)
 
 pattern: Replace ld ?reg1,?const1; ld ?reg2,?reg1 by ld ?reg2,?const1, as ?reg1 is never used afterwards.
 name: unnecessary-intermediate-register
@@ -2130,6 +2149,7 @@ replacement:
 constraints:
 notIn(?reg2,I)
 regsNotUsed(1,?reg1)
+regsNotModified(1,?reg1)
 regsNotUsedAfter(2,?reg1)
 
 pattern: Replace ld hl,?const1; ld (hl),a by ld (?const1),a
@@ -2150,8 +2170,11 @@ replacement:
 0: ld ?reg3, ?reg1
 1: *
 constraints:
-regsNotUsed(1,?reg2)
-regsNotUsed(1,?reg3)
+notIn(?reg1,I,R)
+notIn(?reg2,I,R)
+notIn(?reg3,I,R)
+regsNotUsed(1,?reg2,?reg3)
+regsNotModified(1,?reg2,?reg3)
 regsNotUsedAfter(2,?reg2)
 
 ; thanks to @ruyrybeyro for suggesting this pattern
@@ -2241,6 +2264,7 @@ replacement:
 1: *
 constraints:
 regsNotUsed(1,DE,HL)
+regsNotModified(1,DE,HL)
 
 ; automatically generated
 pattern: replace rlc ?reg0; rl ?reg1 with rlca; rl ?reg1

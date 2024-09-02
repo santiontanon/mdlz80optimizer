@@ -38,6 +38,10 @@ public class PatternValidityCheck {
     private final MDLConfig config;
     private final PatternBasedOptimizer pbo;
     private final Random r;
+    
+    private final String patternsToSkip[] = {
+        "bc=0-after-ldir", "b=0-after-ldir", "c=0-after-ldir",
+    };
 
     public PatternValidityCheck() {
         config = new MDLConfig();
@@ -53,12 +57,15 @@ public class PatternValidityCheck {
 //    @Test public void test5() throws Exception { test("data/pbo-patterns.txt", "sdcc16bitcp", true); }
 //    @Test public void test6() throws Exception { test("data/pbo-patterns.txt", "move-to-top-of-stack", true); }
 //    @Test public void test7() throws Exception { test("data/pbo-patterns.txt", "unnecessary-ld-to-reg", true); }
-//    @Test public void test8() throws Exception { test("data/pbo-patterns.txt", "unnecessary-2args", true); }
+
+//    @Test public void test8() throws Exception { test("data/pbo-patterns.txt", "unnecessary-intermediate-reg", true); }
+//    @Test public void test9() throws Exception { test("data/pbo-patterns.txt", "unnecessary-double-ex", true); }
 
     @Test public void testSpeed1() throws Exception { test("data/pbo-patterns-speed.txt", "push2ld", false); }
 
-    // Test all patterns without wildcards:
+    // Test all patterns:
     @Test public void testAllNonWildcard() throws Exception { testAll("data/pbo-patterns.txt", true, true, false, true); }
+//    @Test public void testAllWildcard() throws Exception { testAll("data/pbo-patterns.txt", false, false, true, true); }  // takes more than 1 minute, so, commented out
 
     
     private void test(String patternsFile, String patternName, boolean checkMemory) throws Exception
@@ -69,6 +76,8 @@ public class PatternValidityCheck {
         Pattern pattern = pbo.getPattern(patternName);
         Assert.assertNotNull(pattern);
 
+//        System.out.println(pattern);
+        
         // Construct the code snippets:
         CodeBase code = new CodeBase(config);
         List<Pattern> instantiated = allPatternInstantiations(pattern, code);
@@ -124,7 +133,19 @@ public class PatternValidityCheck {
             if (!pattern.hasWildcard() && !pattern.hasRepetition()) {
                 if (!testStandard) continue;
             }
-                        
+            {
+                boolean skip = false;
+                for(String toSkip:patternsToSkip) {
+                    if (toSkip.equalsIgnoreCase(pattern.name)) {
+                        nNotSupported ++;
+                        nonSupportedNames.add(toSkip);
+                        skip = true;
+                        break;
+                    }
+                }
+                if (skip) continue;
+            }
+                                    
             // Construct the code snippets:
             CodeBase code = new CodeBase(config);
             List<Pattern> instantiated = allPatternInstantiations(pattern, code);
@@ -319,6 +340,10 @@ public class PatternValidityCheck {
         z801.setRegisterValue(CPUConstants.RegisterNames.SP, stackAddress);
         z802.setRegisterValue(CPUConstants.RegisterNames.SP, stackAddress);
         
+        // Set an address that is definitively not inside the program, just in case there is a "ret":
+        z80Memory1.writeWord(stackAddress, 0);
+        z80Memory2.writeWord(stackAddress, 0);
+        
         // Simulate the pattern and replacement:
         int patternLastAddress = simulateProgram(p.pattern, match, startAddress, z801, z80Memory1, code);
         int replacementLastAddress = simulateProgram(p.replacement, match, startAddress, z802, z80Memory2, code);
@@ -364,6 +389,8 @@ public class PatternValidityCheck {
                 System.out.println("Simulations differ in register " + CPUConstants.registerName(register) + ": " + 
                         config.tokenizer.toHex(z801.getRegisterValue(register), 2) + " != " +
                         config.tokenizer.toHex(z802.getRegisterValue(register), 2));
+                System.out.println("Last PC addresses: " + config.tokenizer.toHex(z801.getProgramCounter(), 4) + ", " + config.tokenizer.toHex(z802.getProgramCounter(), 4));
+                System.out.println("Stack address: " + config.tokenizer.toHex(stackAddress, 4));
                 System.out.println("Pattern addresses: " + config.tokenizer.toHex(startAddress, 4) + " - " + config.tokenizer.toHex(patternLastAddress, 4));
                 System.out.println("Replacement addresses: " + config.tokenizer.toHex(startAddress, 4) + " - " + config.tokenizer.toHex(replacementLastAddress, 4));
                 showInstantiatedProgram("pattern:", p.pattern, match);
@@ -378,7 +405,8 @@ public class PatternValidityCheck {
                 if (i>=startAddress && (i<patternLastAddress || i<replacementLastAddress)) continue;
                 if (i>stackAddress - maxStackSize && i <stackAddress + maxStackSize) continue;
                 if (z80Memory1.readByteUntracked(i) != z80Memory2.readByteUntracked(i)) {
-                    System.out.println("Simulations differ in memory address " + config.tokenizer.toHex(i, 4));
+                    System.out.println("Simulations differ in memory address " + config.tokenizer.toHex(i, 4) + " (" + i + ")");
+                    System.out.println("Stack address: " + config.tokenizer.toHex(stackAddress, 4));
                     System.out.println("Pattern addresses: " + config.tokenizer.toHex(startAddress, 4) + " - " + config.tokenizer.toHex(patternLastAddress, 4));
                     System.out.println("Replacement addresses: " + config.tokenizer.toHex(startAddress, 4) + " - " + config.tokenizer.toHex(replacementLastAddress, 4));
                     showInstantiatedProgram("pattern:", p.pattern, match);
@@ -390,7 +418,8 @@ public class PatternValidityCheck {
                 if (i>=startAddress && (i<patternLastAddress || i<replacementLastAddress)) continue;
                 if (i>stackAddress - maxStackSize && i <stackAddress + maxStackSize) continue;
                 if (z80Memory1.readByteUntracked(i) != z80Memory2.readByteUntracked(i)) {
-                    System.out.println("Simulations differ in memory address " + config.tokenizer.toHex(i, 4));
+                    System.out.println("Simulations differ in memory address " + config.tokenizer.toHex(i, 4) + " (" + i + ")");
+                    System.out.println("Stack address: " + config.tokenizer.toHex(stackAddress, 4));
                     System.out.println("Pattern addresses: " + config.tokenizer.toHex(startAddress, 4) + " - " + config.tokenizer.toHex(patternLastAddress, 4));
                     System.out.println("Replacement addresses: " + config.tokenizer.toHex(startAddress, 4) + " - " + config.tokenizer.toHex(replacementLastAddress, 4));
                     showInstantiatedProgram("pattern:", p.pattern, match);
@@ -448,7 +477,7 @@ public class PatternValidityCheck {
                                          PatternMatch match) {
         System.out.println(name);
         for(CPUOpPattern opp:l) {
-            if (!opp.wildcard) {
+            if (!opp.isWildcard()) {
                 CPUOp op = opp.instantiate(match, null, config);
                 System.out.println("    " + op);
             }
@@ -466,7 +495,7 @@ public class PatternValidityCheck {
         int currentAddress = startAddress;
 //        System.out.println("--------");
         for(CPUOpPattern opp:l) {
-            if (!opp.wildcard) {
+            if (!opp.isWildcard()) {
                 CPUOp op = opp.instantiate(match, null, config);
 //                System.out.println("    " + op);
                 Assert.assertNotNull(op);
@@ -652,6 +681,9 @@ public class PatternValidityCheck {
                 
         while(!open.isEmpty()) {
             System.out.println("allPatternInstantiations: open: " + open.size());
+//            if (open.size() > 10000) {
+//                System.out.println("!!!");
+//            }
             Pattern p = open.remove(0);
             List<Pattern> newInstantiated = allPatternInstantiationsOneConstraint(p, code);
             if (newInstantiated == null) {
@@ -660,53 +692,235 @@ public class PatternValidityCheck {
                 open.addAll(newInstantiated);
             }
         }
-
+                
         // Check constraints that can only be checked after the pattern is instantiated:
         List<Pattern> toDelete = new ArrayList<>();
         for(int i = 0;i<instantiated.size();i++) {
+            HashMap<Integer, List<CPUConstants.RegisterNames>> registersNotToModify = new HashMap<>();
+            HashMap<Integer, List<CPUConstants.RegisterNames>> registersNotToUse = new HashMap<>();
+            HashMap<Integer, List<Integer>> flagsNotToModify = new HashMap<>();
+            HashMap<Integer, List<Integer>> flagsNotToUse = new HashMap<>();
             Pattern p = instantiated.get(i);
             for(int j = 0;j<p.constraints.size();j++) {
                 Pattern.Constraint c = p.constraints.get(j);
-                if (c.name.equals("equal")) {
-                    List<String> tokens1 = config.tokenizer.tokenize(c.args[0]);
-                    List<String> tokens2 = config.tokenizer.tokenize(c.args[1]);
-                    if (tokens1.size() == 2 && tokens1.get(0).equals("?")) {
-                        // remove this constraint:
-                        p.constraints.remove(c);
-                        j--;
-                        p.replaceParameter(c.args[0], c.args[1]);
-                    } else if (tokens2.size() == 2 && tokens2.get(0).equals("?")) {
-                        // remove this constraint:
-                        p.constraints.remove(c);
-                        j--;
-                        p.replaceParameter(c.args[1], c.args[0]);
-                    } else {
-                        Expression exp1 = config.expressionParser.parse(tokens1, null, null, code);
-                        if (exp1 != null && exp1.evaluatesToIntegerConstant()) {
-                            Expression exp2 = config.expressionParser.parse(tokens2, null, null, code);
-                            if (exp2 != null && exp2.evaluatesToIntegerConstant()) {
-                                Integer v1 = exp1.evaluateToInteger(null, code, true);
-                                Integer v2 = exp2.evaluateToInteger(null, code, true);
-                                if (v1 != null && v1.equals(v2)) {
-                                    p.constraints.remove(c);
-                                    j--;
+                switch(c.name) {
+                    case "equal":
+                    {
+                        List<String> tokens1 = config.tokenizer.tokenize(c.args[0]);
+                        List<String> tokens2 = config.tokenizer.tokenize(c.args[1]);
+                        if (tokens1.size() == 2 && tokens1.get(0).equals("?")) {
+                            // remove this constraint:
+                            p.constraints.remove(c);
+                            j--;
+                            p.replaceParameter(c.args[0], c.args[1]);
+                        } else if (tokens2.size() == 2 && tokens2.get(0).equals("?")) {
+                            // remove this constraint:
+                            p.constraints.remove(c);
+                            j--;
+                            p.replaceParameter(c.args[1], c.args[0]);
+                        } else {
+                            Expression exp1 = config.expressionParser.parse(tokens1, null, null, code);
+                            if (exp1 != null && exp1.evaluatesToIntegerConstant()) {
+                                Expression exp2 = config.expressionParser.parse(tokens2, null, null, code);
+                                if (exp2 != null && exp2.evaluatesToIntegerConstant()) {
+                                    Integer v1 = exp1.evaluateToInteger(null, code, true);
+                                    Integer v2 = exp2.evaluateToInteger(null, code, true);
+                                    if (v1 != null && v1.equals(v2)) {
+                                        p.constraints.remove(c);
+                                        j--;
+                                    } else {
+                                        // Constraint violated! We do not want this instantiation:
+                                        toDelete.add(p);
+                                        break;
+                                    }
                                 } else {
-                                    // Constraint violated! We do not want this instantiation:
-                                    toDelete.add(p);
-                                    break;
+                                    System.out.println("Equal could not be handled with second arg tokens: " + tokens2);
                                 }
                             } else {
-                                System.out.println("Equal could not be handled with second arg tokens: " + tokens2);
+                                System.out.println("Equal could not be handled with first arg tokens: " + tokens1);
                             }
-                        } else {
-                            System.out.println("Equal could not be handled with first arg tokens: " + tokens1);
                         }
+                        break;
+                    }
+                    case "regsNotModified":
+                    {
+                        int ID = Integer.parseInt(c.args[0]);
+                        CPUOpPattern opp = p.getPatternWithId(ID);
+                        if (opp.isWildcard()) {
+                            if (!registersNotToModify.containsKey(ID)) {
+                                registersNotToModify.put(ID, new ArrayList<>());
+                            }
+                            for(int k = 1;k<c.args.length;k++) {
+//                                if (CPUConstants.registerByName(c.args[k]) == null) {
+//                                    System.out.println(c.args[k]);
+//                                }
+                                for(CPUConstants.RegisterNames r2:CPUConstants.primitive8BitRegistersOf(CPUConstants.registerByName(c.args[k]))) {
+                                    registersNotToModify.get(ID).add(r2);
+                                }
+                            }
+                            // remove this constraint:
+                            p.constraints.remove(c);
+                            j--;
+                        }
+                        break;
+                    }
+                    case "regsNotUsed":
+                    {
+                        int ID = Integer.parseInt(c.args[0]);
+                        CPUOpPattern opp = p.getPatternWithId(ID);
+                        if (opp.isWildcard()) {
+                            if (!registersNotToUse.containsKey(ID)) {
+                                registersNotToUse.put(ID, new ArrayList<>());
+                            }
+                            for(int k = 1;k<c.args.length;k++) {
+                                for(CPUConstants.RegisterNames r2:CPUConstants.primitive8BitRegistersOf(CPUConstants.registerByName(c.args[k]))) {
+                                    registersNotToUse.get(ID).add(r2);
+                                }
+                            }
+                            // remove this constraint:
+                            p.constraints.remove(c);
+                            j--;
+                        }
+                        break;
+                    }
+                    case "flagsNotModified":
+                    {
+                        int ID = Integer.parseInt(c.args[0]);
+                        CPUOpPattern opp = p.getPatternWithId(ID);
+                        if (opp.isWildcard()) {
+                            if (!flagsNotToModify.containsKey(ID)) {
+                                flagsNotToModify.put(ID, new ArrayList<>());
+                            }
+                            for(int k = 1;k<c.args.length;k++) {
+//                                if (CPUConstants.flagByName(c.args[k]) == null) {
+//                                    System.out.println(c.args[k]);
+//                                }
+                                flagsNotToModify.get(ID).add(CPUConstants.flagByName(c.args[k]));
+                            }
+                            // remove this constraint:
+                            p.constraints.remove(c);
+                            j--;
+                        }
+                        break;
+                    }
+                    case "flagsNotUsed":
+                    {
+                        int ID = Integer.parseInt(c.args[0]);
+                        CPUOpPattern opp = p.getPatternWithId(ID);
+                        if (opp.isWildcard()) {
+                            if (!flagsNotToUse.containsKey(ID)) {
+                                flagsNotToUse.put(ID, new ArrayList<>());
+                            }
+                            for(int k = 1;k<c.args.length;k++) {
+                                flagsNotToUse.get(ID).add(CPUConstants.flagByName(c.args[k]));
+                            }
+                            // remove this constraint:
+                            p.constraints.remove(c);
+                            j--;
+                        }
+                        break;
                     }
                 }
             }
 //            System.out.println(newPattern2.replacement);
-
             if (toDelete.contains(p)) continue;
+            
+            System.out.println("registersNotToModify:" + registersNotToModify);
+            System.out.println("registersNotToUse:" + registersNotToUse);
+            System.out.println("flagsNotToModify:" + flagsNotToModify);
+            System.out.println("flagsNotToUse:" + flagsNotToUse);
+
+            HashMap<Integer, List<CPUOpPattern>> codeToReplaceWildcardsWith = new HashMap<>();
+            for(CPUOpPattern opp:p.pattern) {
+                int constID = 0;  // used to synthesize new constants
+                if (opp.isWildcard()) {
+                    List<CPUOpPattern> wildcardOps = new ArrayList<>();
+                    CPUConstants.RegisterNames registers[] = {
+                        CPUConstants.RegisterNames.A,
+                        CPUConstants.RegisterNames.B, CPUConstants.RegisterNames.C,
+                        CPUConstants.RegisterNames.D, CPUConstants.RegisterNames.E,
+                        CPUConstants.RegisterNames.H, CPUConstants.RegisterNames.L,
+//                        RegisterNames.A_ALT, RegisterNames.F_ALT,
+//                        RegisterNames.B_ALT, RegisterNames.C_ALT,
+//                        RegisterNames.D_ALT, RegisterNames.E_ALT,
+//                        RegisterNames.H_ALT, RegisterNames.L_ALT,
+                        CPUConstants.RegisterNames.IXH, CPUConstants.RegisterNames.IXL,
+                        CPUConstants.RegisterNames.IYH, CPUConstants.RegisterNames.IYL,
+                        CPUConstants.RegisterNames.I,
+//                        RegisterNames.R, 
+                    };
+                    // Registers we need to modify:
+                    List<CPUConstants.RegisterNames> l = registersNotToModify.get(opp.ID);
+                    if (l == null) l = new ArrayList<>();
+                    for(CPUConstants.RegisterNames r:registers) {
+                        if (!l.contains(r)) {
+                            // We need to modify this register:
+                            if (r == CPUConstants.RegisterNames.I) {
+                                // Special case, we need to push/pop AF
+                                wildcardOps.add(CPUOpPattern.parse(opp.ID + ": push af", code, config));
+                                wildcardOps.add(CPUOpPattern.parse(opp.ID + ": ld a, ?8bitconst__synthetic__" + constID, code, config));
+                                wildcardOps.add(CPUOpPattern.parse(opp.ID + ": ld i, a", code, config));
+                                wildcardOps.add(CPUOpPattern.parse(opp.ID + ": pop af", code, config));
+                                constID++;
+                            } else {
+                                wildcardOps.add(CPUOpPattern.parse(opp.ID + ": ld "+CPUConstants.registerName(r)+", ?8bitconst__synthetic__" + constID, code, config));
+                                constID++;                                
+                            }
+                        }
+                    }
+                    // Registers we need to read (we ignore this part for now, as it's problenatic to test):
+//                    int nextMemoryAddress = 0x4000;  // Something away from the program and away from the stack
+//                    l = registersNotToUse.get(opp.ID);
+//                    if (l == null) l = new ArrayList<>();
+//                    for(CPUConstants.RegisterNames r2:registers) {
+//                        if (!l.contains(r2)) {
+//                            // We need to use this register:
+//                            if (r2 == CPUConstants.RegisterNames.A) {
+//                                wildcardOps.add(CPUOpPattern.parse(opp.ID + ": ld ("+nextMemoryAddress+"), a", code, config));
+//                                nextMemoryAddress++;
+//                            } else {
+//                                wildcardOps.add(CPUOpPattern.parse(opp.ID + ": push af", code, config));
+//                                wildcardOps.add(CPUOpPattern.parse(opp.ID + ": ld a, "+CPUConstants.registerName(r2), code, config));
+//                                wildcardOps.add(CPUOpPattern.parse(opp.ID + ": ld (" + nextMemoryAddress + "), a", code, config));
+//                                wildcardOps.add(CPUOpPattern.parse(opp.ID + ": pop af", code, config));
+//                                nextMemoryAddress++; 
+//                            }
+//                        }
+//                    }
+                    // Flags we need to modify:
+                    List<Integer> l2 = flagsNotToModify.get(opp.ID);
+                    int f_xor_mask = 0xff;  // we will "xor" this to "F" to modify the flags we want
+                    if (l2 != null) {
+                        for(int f:l2) {
+                            f_xor_mask &= ~f;
+                        }
+                    }
+                    if (f_xor_mask != 0) {
+                        wildcardOps.add(CPUOpPattern.parse(opp.ID + ": push bc", code, config));
+                        wildcardOps.add(CPUOpPattern.parse(opp.ID + ": push af", code, config));
+                        wildcardOps.add(CPUOpPattern.parse(opp.ID + ": pop bc", code, config));
+                        wildcardOps.add(CPUOpPattern.parse(opp.ID + ": ld  a, c", code, config));
+                        wildcardOps.add(CPUOpPattern.parse(opp.ID + ": xor " + f_xor_mask, code, config));
+                        wildcardOps.add(CPUOpPattern.parse(opp.ID + ": ld c, a", code, config));
+                        wildcardOps.add(CPUOpPattern.parse(opp.ID + ": push bc", code, config));
+                        wildcardOps.add(CPUOpPattern.parse(opp.ID + ": pop af", code, config));
+                        wildcardOps.add(CPUOpPattern.parse(opp.ID + ": pop bc", code, config));
+                    }
+                    if (!wildcardOps.isEmpty()) {
+                        for(CPUOpPattern opp2:wildcardOps) {
+                            if (opp2 == null) {
+                                return null;
+                            }
+                        }
+                        codeToReplaceWildcardsWith.put(opp.ID, wildcardOps);
+                    }
+                }
+            }
+            
+            for(Integer ID: codeToReplaceWildcardsWith.keySet()) {
+                p.replaceWildcard(ID, codeToReplaceWildcardsWith.get(ID));
+            }
+            
             // Verify all remaining constraints are ok:
             for(Pattern.Constraint c:p.constraints) {
                 switch(c.name) {
@@ -745,6 +959,7 @@ public class PatternValidityCheck {
                         case "reachableByJr":
                         case "evenPushPops":
                         case "atLeastOneCPUOp":
+                        case "memoryNotWritten":
                             System.out.println("Remaining constraint: " + c.name + " not yet supported (args: "+Arrays.toString(c.args)+")");
                             return null;
                         default:
@@ -757,6 +972,9 @@ public class PatternValidityCheck {
         for(Pattern p:toDelete) {
             instantiated.remove(p);
         }
+        
+        // Print the first instantiation:
+//        System.out.println(instantiated.get(0));
         
         return instantiated;
     }
@@ -785,6 +1003,8 @@ public class PatternValidityCheck {
         };
         
 //        System.out.println("allPatternInstantiationsOneConstraint: #contraints " + pattern.constraints.size() + " (first: " + (pattern.constraints.isEmpty() ? "":pattern.constraints.get(0)) + ")");
+//        System.out.println("allPatternInstantiationsOneConstraint:");
+//        System.out.println(pattern);
         
         // Get the repetition variables:
         List<String> repetitionVariables = new ArrayList<>();

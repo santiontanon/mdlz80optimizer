@@ -23,7 +23,7 @@ public class CPUOpPattern {
     public static final String WILDCARD = "*";
     
     public int ID;
-    public boolean wildcard = false;   // if this is true, "opName" and "args" will be "*" and empty.
+//    public boolean wildcard = false;   // if this is true, "opName" and "args" will be "*" and empty.
     public String repetitionVariable = null;   // if this is not null, it means we can match this line many times in a row (its number will be matched to "repetitionVariable")
     public String opName;
     public List<Expression> args = new ArrayList<>();
@@ -36,7 +36,7 @@ public class CPUOpPattern {
     public CPUOpPattern(CPUOpPattern opp)
     {
         ID = opp.ID;
-        wildcard = opp.wildcard;
+//        wildcard = opp.wildcard;
         repetitionVariable = opp.repetitionVariable;
         opName = opp.opName;
         args = new ArrayList<>();

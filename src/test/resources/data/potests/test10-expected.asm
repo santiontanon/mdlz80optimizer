@@ -1,8 +1,8 @@
 ; Test case: 
 ; - lines 4-6 should be optimized
 
-	pop bc
-	ld (var1), bc
+	pop de
+	ld (var1), de
 
 loop:
 	jr loop
