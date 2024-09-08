@@ -76,6 +76,7 @@ public class SourceCodeExecution implements MDLWorker {
     boolean reportAsExecutionTree = false;
     boolean reportHotSpots = false;
     boolean stopOnProtectedWrite = false;
+    boolean trackConditionals = false;
     public boolean trackUselessInstructions = false;
     public boolean reportSometimesUselessInstructions = false;
     int reportAsExecutionTreeMaxDepth = 0;
@@ -120,6 +121,7 @@ public class SourceCodeExecution implements MDLWorker {
                "- ```-e:watch <watch-key>```: every time an instruction that has a comment annotated with the tag ```<watch-key>```, the tollowing comma separated expressions will be evaluated and printed (after instruction execution). For example, if you have an instruction like ```ld a, 1  ; mdl-watch: \"hello\", a```, you can pass ```-e:watch mdl-watch:``` and after that instruction is executed, ```hello, 1``` will be printed. Think of this as having the chance of adding print statements throughout the code. You can specify this argument several times, to print watch statements with different keys.\n" +
                "- ```-e:stop-on-protected-write```: stop as soon as an instruction tries to write into a memory protected address (i.e., the pages of memory that are not RAM, but part of the binary we are executing). By default, only warnings are issued, as this might be ok, if we have self-modifying code.\n" +
                "- ```-e:report-useless```: tracks and reports instructions that had no visible effect in the execution (```nop```s are ignored).\n" +
+               "- ```-e:track-conditionals```: tracks which branch of each conditional statement (jr/jp/call/ret) is taken and reports if there is any for which one of the conditional paths is never taken.\n" +
                "- ```-e:mapper-config <filename>```: if the binary to be executed requires some sort of memory mapper, it can be specified in a configuration text file. The file contains on config option per line, and should include the following options: " +
                "binary_size: <size in bytes, multiple of page_size>, page_size: <page size in bytes, default is 16384>, ram_mapper_type: <type>, rom_mapper_type: <type> (only 'no_mapper', and 'msx_ascii16_mapper' are currently supported), initial_mapping: source1:segment1, source2:segment2, ... (one pair per each page in RAM, and where source == 0 means RAM, and source == 1 means binary, and segment is the segment within each source). " +
                "Notice that when this option is specified, the binary is assumed to be loaded into a separate ROM (separate from RAM), and that the mapper will be used to let the z80 access the binary data. If this option is not specified, the binary will just be loaded in RAM.\n";
@@ -193,6 +195,10 @@ public class SourceCodeExecution implements MDLWorker {
         } else if (flags.get(0).equals("-e:report-useless")) {
             flags.remove(0);
             trackUselessInstructions = true;
+            return true;
+        } else if (flags.get(0).equals("-e:track-conditionals")) {
+            flags.remove(0);
+            trackConditionals = true;
             return true;
         } else if (flags.get(0).startsWith("-e:mapper-config") && flags.size()>=2) {
             flags.remove(0);
@@ -358,6 +364,9 @@ public class SourceCodeExecution implements MDLWorker {
         // Hotspot tracking:
         HashMap<String, Pair<Integer, Integer>> hotspots = new HashMap<>();
         
+        // Conditional tracking:
+        HashMap<CodeStatement, Pair<Integer, Integer>> conditionalInstructionStats = new HashMap<>();
+        
         // Set program counter:
         Integer startAddress = z80Memory.integerAddressOf(startAddressString);
         if (startAddress == null) {
@@ -372,6 +381,8 @@ public class SourceCodeExecution implements MDLWorker {
         
         // Execute!
         int nInstructionsExecuted = 0;
+        CodeStatement previous_s = null;
+        int previous_pc = z80.getProgramCounter();
         ArrayList<FunctionCallRecord> trackedCallStack = new ArrayList<>();
         try {
             while(true) {
@@ -427,6 +438,8 @@ public class SourceCodeExecution implements MDLWorker {
                     for(FunctionTrackRecord tr:trackFunctions) {
                         tr.clear();
                     }
+                    conditionalInstructionStats.clear();
+                    hotspots.clear();
                     startTrackingTime = z80.getTStates();
                 }
                                 
@@ -650,7 +663,22 @@ public class SourceCodeExecution implements MDLWorker {
                     config.error("Instruction that generated the protected write (address: "+addressString+"), " + s.fileNameLineString() + ":" + s);
                     return false;
                 }
-                nInstructionsExecuted ++;
+                
+                if (trackConditionals && previous_s != null) {
+                    if (previous_s.op != null && previous_s.op.isConditional()) {
+                        if (!conditionalInstructionStats.containsKey(previous_s)) {
+                            conditionalInstructionStats.put(previous_s, Pair.of(0, 0));
+                        }
+                        conditionalInstructionStats.get(previous_s).left++;
+                        if (pcAddress != previous_pc + previous_s.op.sizeInBytes()) {
+                            // jump taken:
+                            conditionalInstructionStats.get(previous_s).right++;
+                        }
+                    }
+                }
+                nInstructionsExecuted++;
+                previous_pc = pcAddress;
+                previous_s = s;
             }
         }catch(Exception e) {
             e.printStackTrace();
@@ -806,6 +834,26 @@ public class SourceCodeExecution implements MDLWorker {
                 for(CodeStatement s:simetimes_useless) {
                     Pair<Integer, Integer> pair = uselessInstructionTracking_useful_total.get(s);
                     config.info("  - ("+pair.left+"/"+pair.right+") " + s.sl.fileNameLineString() + ": " + s.op);
+                }
+            }
+        }
+        if (trackConditionals) {
+            List<CodeStatement> conditionals = new ArrayList<>();
+            conditionals.addAll(conditionalInstructionStats.keySet());
+            Collections.sort(conditionals, new Comparator<CodeStatement>() {
+                @Override
+                public int compare(CodeStatement s1, CodeStatement s2) {
+                    return -Integer.compare(conditionalInstructionStats.get(s1).left,
+                                            conditionalInstructionStats.get(s2).left);
+                }
+            });
+            config.info("Conditional statement stats (total/jump taken):");
+            for(CodeStatement s:conditionals) {
+                Pair<Integer, Integer> pair = conditionalInstructionStats.get(s);
+//                if (pair.left >= 10) {
+                    if (pair.right == 0 || pair.right.equals(pair.left)) {
+                        config.info("  - ("+pair.left+"/"+pair.right+") " + s.sl.fileNameLineString() + ": " + s.op);
+//                    }
                 }
             }
         }

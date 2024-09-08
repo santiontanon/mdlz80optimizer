@@ -7,6 +7,7 @@ package parser;
 
 import code.SourceFile;
 import code.CodeStatement;
+import code.Expression;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,6 +20,7 @@ public class SourceLine {
     public SourceFile source;
     public Integer lineNumber;
     public CodeStatement expandedFrom;
+    public List<Expression> expandedFromArgs;
     
     public String labelPrefixToPush = null;
     public String labelPrefixToPop = null;
@@ -29,6 +31,7 @@ public class SourceLine {
         source = sl.source;
         lineNumber = sl.lineNumber;
         expandedFrom = sl.expandedFrom;
+        expandedFromArgs = sl.expandedFromArgs;
     }
     
     
@@ -38,15 +41,17 @@ public class SourceLine {
         source = a_f;
         lineNumber = a_ln;
         expandedFrom = null;
+        expandedFromArgs = null;
     }
 
 
-    public SourceLine(String a_line, SourceFile a_f, Integer a_ln, CodeStatement a_expandedFrom)
+    public SourceLine(String a_line, SourceFile a_f, Integer a_ln, CodeStatement a_expandedFrom, List<Expression> a_expandedFromArgs)
     {
         line = a_line;
         source = a_f;
         lineNumber = a_ln;
         expandedFrom = a_expandedFrom;
+        expandedFromArgs = a_expandedFromArgs;
     }
 
     
@@ -61,7 +66,11 @@ public class SourceLine {
     {
         String str = source.fileName + "#" + (lineNumber != null ? lineNumber:"-");
         if (expandedFrom != null) {
-            str += " (expanded from " + expandedFrom.fileNameLineString() + ")";
+            if (expandedFromArgs != null && !expandedFromArgs.isEmpty()) {
+                str += " (expanded from " + expandedFrom.fileNameLineString() + " with args "+expandedFromArgs+")";
+            } else {
+                str += " (expanded from " + expandedFrom.fileNameLineString() + ")";
+            }
         }
         return str;
     }    

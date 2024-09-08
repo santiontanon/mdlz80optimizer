@@ -139,11 +139,11 @@ public class SourceMacro {
                 config.error("No argument found for "+name+" macro in " + macroCall.sl);
                 return null;
             }
-            Integer ifCondition_value = args.get(0).evaluateToInteger(macroCall, code, false);
+            Integer ifCondition_value = args.get(0).evaluateToInteger(macroCall, code, true);
             config.debug("IF argument " + args.get(0) + " evaluates to " + ifCondition_value + ": " + macroCall.sl);
             if (ifCondition_value == null) {
-                config.error("Could not evaluate IF argument " + args.get(0) + ": " + macroCall.sl);
-                args.get(0).evaluateToInteger(macroCall, code, false);
+//                config.error("Could not evaluate IF argument " + args.get(0) + ": " + macroCall.sl);
+//                args.get(0).evaluateToInteger(macroCall, code, false);
                 return null;
             }
             List<SourceLine> linesTmp = new ArrayList<>();
@@ -302,7 +302,7 @@ public class SourceMacro {
             line2 += newToken;
             previous = token;
         }
-        return new SourceLine(line2, sl.source, sl.lineNumber, macroCall);
+        return new SourceLine(line2, sl.source, sl.lineNumber, macroCall, args);
     }
 
     

@@ -1868,6 +1868,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
         for(SJasmCodeBlock cb:output.codeBlocks) {
             if (cb.statements.contains(s)) return cb;
         }
+        config.error("Line " + s.sl.fileNameLineString() + " does not belong to any block!");
         return null;
     }
     
@@ -1895,7 +1896,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                     } else {
                     }
                     // only consider jumps within the same block:
-                    if (b1 == b2) {
+                    if (b1 != null && b1 == b2) {
                         code.resetAddressesAndFlow();
                         b1.resetAddresses();
                         Integer address = s.getAddressAfter(code);
@@ -1933,7 +1934,7 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                             }
                         }
                         // only consider jumps within the same block:
-                        if (b1 == b2) {
+                        if (b1 != null && b1 == b2) {
                             code.resetAddressesAndFlow();
                             b1.resetAddresses();
                             Integer address = s.getAddressAfter(code);
@@ -2074,15 +2075,15 @@ public class SjasmDialect extends SjasmDerivativeDialect implements Dialect
                                 nRotations++;
                             }
                         } else {                            
-                            lines2.add(new SourceLine(line3, sl3.source, sl3.lineNumber, macroCall));
+                            lines2.add(new SourceLine(line3, sl3.source, sl3.lineNumber, macroCall, args));
                         }
                     }
                 }
                 repeatLinesToExecute = null;
             } else if (repeatLines == null) {
-                lines2.add(new SourceLine(line2, sl.source, sl.lineNumber, macroCall));
+                lines2.add(new SourceLine(line2, sl.source, sl.lineNumber, macroCall, args));
             } else {
-                repeatLines.add(new SourceLine(line2, sl.source, sl.lineNumber, macroCall));
+                repeatLines.add(new SourceLine(line2, sl.source, sl.lineNumber, macroCall, args));
             }
         }   
 

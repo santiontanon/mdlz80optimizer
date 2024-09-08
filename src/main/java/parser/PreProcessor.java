@@ -324,7 +324,7 @@ public class PreProcessor {
                 
                 MacroExpansion expandedMacro = s.macroCallMacro.instantiate(s.macroCallArguments, s, code, config);
                 if (expandedMacro == null) {
-                    config.error("Problem instantiating macro "+s.macroCallMacro.name+" in " + sl);
+//                    config.error("Problem instantiating macro "+s.macroCallMacro.name+" in " + sl);
                     return null;
                 }
                 

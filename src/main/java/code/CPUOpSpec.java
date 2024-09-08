@@ -77,8 +77,7 @@ public class CPUOpSpec {
     {
         // precompute instruction types:
         if (inputFlags!= null && !inputFlags.isEmpty() &&
-            (opName.equalsIgnoreCase("cp") ||
-             opName.equalsIgnoreCase("call") ||
+            (opName.equalsIgnoreCase("call") ||
              opName.equalsIgnoreCase("ret") ||
              opName.equalsIgnoreCase("jp") ||
              opName.equalsIgnoreCase("jr"))) {

@@ -198,22 +198,32 @@ public class LineParser {
             }
         }
         
+        SourceConstant c = null;
         if (config.dialectParser != null) {
             Pair<String, SourceConstant> tmp = config.dialectParser.newSymbolName(name, value, previous);
             if (tmp == null) return null;
             name = tmp.getLeft();
             relativeTo = tmp.getRight();
-        } else {
+            c = new SourceConstant(name, rawName, value, s, config);
+            c.relativeTo = relativeTo;
+
+            if (s.source.code.wouldAddingSymbolResultInAnError(name, c)) {
+                // default to MDL's default naming system
+                c = null;
+            }
+        }
+        if (c == null) {
             if ((allowNumberLabels && config.tokenizer.isInteger(name)) ||
                 (config.tokenizer.allowDashPlusLabels && config.tokenizer.isDashPlusLabel(name))) {
             } else {
                 // if (!allowNumberLabels || !config.tokenizer.isInteger(name)) {
                 name = labelPrefix + name;
             }
+            c = new SourceConstant(name, rawName, value, s, config);
+            c.relativeTo = relativeTo;
         }
 
-        SourceConstant c = new SourceConstant(name, rawName, value, s, config);
-        c.relativeTo = relativeTo;
+
         return c;
     }    
 

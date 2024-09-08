@@ -202,7 +202,18 @@ public class CodeBase {
         symbols.remove(name);
     }
     
+    
+    public boolean wouldAddingSymbolResultInAnError(String name, SourceConstant sc)
+    {
+        if (symbols.containsKey(name)) {
+            SourceConstant previous = symbols.get(name);
+            return !previous.resolveEagerly;
+        } else {
+            return false;
+        }
+    }
 
+    
     // Returns:
     // 1: ok
     // 0: redefinition

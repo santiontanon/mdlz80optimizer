@@ -41,8 +41,8 @@ public class SourceLineTrackingTest {
     @Test public void test29() throws IOException {
         // (uses wildcards to prevent test failure in Windows)
         optimizeAndLookFor("data/potests/test29.asm",
-                "INFO: Pattern-based optimization in *test29-include.asm#4 (expanded from *test29.asm#6): Replace ld a,0 with xor a (1 bytes, 3 t-states saved)",
-                "INFO: Pattern-based optimization in *test29-include.asm#4 (expanded from *test29.asm#8): Replace ld a,0 with xor a (1 bytes, 3 t-states saved)");
+                "INFO: Pattern-based optimization in *test29-include.asm#4 (expanded from *test29.asm#6 with args [0]): Replace ld a,0 with xor a (1 bytes, 3 t-states saved)",
+                "INFO: Pattern-based optimization in *test29-include.asm#4 (expanded from *test29.asm#8 with args [0]): Replace ld a,0 with xor a (1 bytes, 3 t-states saved)");
     }
 
     private void optimizeAndLookFor(String inputFile, String ... expectedOutputLines) throws IOException
