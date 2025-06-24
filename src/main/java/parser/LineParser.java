@@ -1355,7 +1355,7 @@ public class LineParser {
                 {
                     // Relative to the source file that included this file
                     String sourcePath = source.getPath();
-                    if (!sourcePath.isBlank()) {
+                    if (!Tokenizer.isBlank(sourcePath)) {
                         // santi: Do NOT change to "FilenameUtils.concat", that function assumes that the first argument
                         // is an absolute directory, which in different configurations cannot be ensured to be true.
                         // for example when calling mdl like: java -jar mdl.jar ../project/src/main.asm -I ../project2/src
@@ -1383,7 +1383,7 @@ public class LineParser {
                 {
                     // Relative to the main assembler file of the project
                     String sourcePath = code.outputs.get(0).main.getPath();
-                    if (!sourcePath.isBlank()) {
+                    if (!Tokenizer.isBlank(sourcePath)) {
                         // santi: Do NOT change to "FilenameUtils.concat", that function assumes that the first argument
                         // is an absolute directory, which in different configurations cannot be ensured to be true.
                         // for example when calling mdl like: java -jar mdl.jar ../project/src/main.asm -I ../project2/src

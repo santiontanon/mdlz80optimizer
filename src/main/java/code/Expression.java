@@ -229,7 +229,7 @@ public class Expression {
                                     config.error("Undefined symbol " + symbolName);
                                 }
                             } else {
-                                config.error("Cannot evaluated symbol '" + symbolName + "' to a value in " + s.sl);
+                                config.error("Cannot evaluate symbol '" + symbolName + "' to a value in " + s.sl);
                             }
                         }
                         return null;

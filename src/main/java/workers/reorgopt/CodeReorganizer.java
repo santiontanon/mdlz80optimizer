@@ -110,7 +110,7 @@ public class CodeReorganizer implements MDLWorker {
         code.resetAddressesAndFlow();
         CodeStatement toBlame = code.checkRelativeJumpsInRange();
         if (toBlame != null) {
-            config.error("Code Reorganizer: Some local labels are out of range to begin with, canceling execution...");
+            config.error("Code Reorganizer: Some local labels are out of range to begin with, or some labels could not be resolved, canceling execution...");
             config.error("Problematic statement: " + toBlame.sl);
             return false;
         }
@@ -552,6 +552,7 @@ public class CodeReorganizer implements MDLWorker {
                     }
                 }
                 if (callBlock == null) return;
+                if (block == callBlock) return;
                 
                 // try to inline:
                 // remove call/jp statement:
@@ -589,16 +590,20 @@ public class CodeReorganizer implements MDLWorker {
                 
                 CPUOp retOp = null;
                 String retOpComment = null; 
+                boolean retRemoved = false;
                 if (ret == null) {
                     cancelOptimization = true;
                 } else {
-                    // remove the "ret" statement:
-                    retOp = ret.op;
-                    retOpComment = ret.comment;                
-                    if (ret.comment == null) ret.comment = "";
-                    ret.op = null;
-                    ret.type = CodeStatement.STATEMENT_NONE;
-                    ret.comment = ";     " + retOp + "  ; -mdl";
+                    if (callOp.isCall()) {
+                        // remove the "ret" statement:
+                        retOp = ret.op;
+                        retOpComment = ret.comment;                
+                        if (ret.comment == null) ret.comment = "";
+                        ret.op = null;
+                        ret.type = CodeStatement.STATEMENT_NONE;
+                        ret.comment = ";     " + retOp + "  ; -mdl";
+                        retRemoved = true;
+                    }
                 }
                 
                 // remove "block" from the subarea blocks:
@@ -645,8 +650,8 @@ public class CodeReorganizer implements MDLWorker {
                     call.type = CodeStatement.STATEMENT_CPUOP;
                 } else {
                     // print optimization message:
-                    int bytesSaved = callOp.sizeInBytes() + retOp.sizeInBytes();
-                    int timeSaved = callOp.timing()[0] + retOp.timing()[0];
+                    int bytesSaved = callOp.sizeInBytes() + (retOp == null ? 0:retOp.sizeInBytes());
+                    int timeSaved = callOp.timing()[0] + (retOp == null ? 0:retOp.timing()[0]);
                     savings.addSavings(bytesSaved, new int[]{timeSaved});
                     savings.addOptimizerSpecific(SAVINGS_REORGANIZATIONS_CODE, 1);
                     
@@ -655,7 +660,9 @@ public class CodeReorganizer implements MDLWorker {
                             "move lines " + block.statements.get(0).sl.fileNameLineString() + "-" + 
                                             block.statements.get(block.statements.size()-1).sl.lineNumber + 
                             " to right after " + call.sl.fileNameLineString() + 
-                            " to remove a call and a ret statement as "+block.label.originalName+" is only caled once ("+bytesSaved+" bytes, " + timeSaved + " " + config.timeUnit+"s saved)");
+                            " to remove a call " + 
+                            (retRemoved ? "and a ret statement ":"") +
+                            "as "+block.label.originalName+" is only caled once ("+bytesSaved+" bytes, " + timeSaved + " " + config.timeUnit+"s saved)");
                 }
                 code.resetAddressesAndFlow();
             }

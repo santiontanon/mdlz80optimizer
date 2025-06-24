@@ -360,7 +360,11 @@ public class CodeBase {
             for(CodeStatement s:f.getStatements()) {
                 if (s.type == CodeStatement.STATEMENT_CPUOP) {
                     if (s.op.isJump()) {
-                        if (!s.op.labelInRange(s, this)) {
+                        Boolean inRange = s.op.labelInRange(s, this);
+                        if (inRange == null) {
+                            config.error("Could not resolve some of the labels involved in a relative jump. Maybe this can be due to an undefined label.");
+                            return s;
+                        } else if (!inRange) {
                             return s;
                         }
                     }

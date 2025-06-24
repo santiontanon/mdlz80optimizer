@@ -742,7 +742,7 @@ public class CPUOp {
     }
     
     
-    public boolean labelInRange(CodeStatement s, CodeBase code)
+    public Boolean labelInRange(CodeStatement s, CodeBase code)
     {
         if (!isJump()) return true;
         
@@ -751,11 +751,11 @@ public class CPUOp {
             Expression target = args.get(idx);
             Integer endAddress = target.evaluateToInteger(s, code, true);
             if (endAddress == null) {
-                return false;
+                return null;
             }
             Integer startAddress = s.getAddressAfter(code);
             if (startAddress == null) {
-                return false;
+                return null;
             }
             int diff = endAddress - startAddress;
             if (!offsetWithinJrRange(diff)) {

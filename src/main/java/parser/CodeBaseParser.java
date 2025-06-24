@@ -398,14 +398,24 @@ public class CodeBaseParser {
             for (SourceFile f : l) {
                 do{
                     expanded = expandAllMacros(f, code);
-                    if (expanded == null) return false;
+                    if (expanded == null) {
+                        return false;
+                    }
                     n_expanded += expanded.getLeft();
                     n_failed += expanded.getRight();
                 } while(expanded.getLeft() != 0);
             }
-            config.debug("expandAllMacros: " + n_expanded + " / " + (n_expanded+n_failed));
+            config.debug("expandAllMacros: " + n_expanded + " / " + (n_expanded + n_failed));
             if (n_expanded == 0 && n_failed > 0) {
-                config.debug("Failed to expand all macros after loading source code: " + n_failed+ " did not expand.");
+                config.error("Failed to expand all macros after loading source code: " + n_failed + " did not expand.");
+                for (SourceFile f : l) {
+                    for(int i = 0;i<f.getStatements().size();i++) {
+                        CodeStatement s_macro = f.getStatements().get(i);
+                        if (s_macro.type == CodeStatement.STATEMENT_MACROCALL) {
+                            config.error("Macro did not expand at " + s_macro.sl.fileNameLineString() + ": " + s_macro.sl.line);
+                        }
+                    }
+                }
                 return false;
             }
         } while (n_failed > 0);
@@ -473,7 +483,9 @@ public class CodeBaseParser {
                         }
                     } else {
                         List<CodeStatement> l = config.lineParser.parse(tokens, sl, f, insertionPoint, code, config);
-                        if (l == null) return null;
+                        if (l == null) {
+                            return null;
+                        }
                         for(CodeStatement s:l) {
                             // we set expandMacroCalls to "false" here, as if we are in this function, it means we are not evaluating
                             // macros eagerly:
