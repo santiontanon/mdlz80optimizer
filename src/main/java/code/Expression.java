@@ -1308,7 +1308,7 @@ public class Expression {
             return false;
         }
         if (type == EXPRESSION_STRING_CONSTANT) {
-            return true;
+            return stringConstant.length() != 1;
         }
         if (type == EXPRESSION_PARENTHESIS) {
             return args.get(0).evaluatesToStringConstant();
