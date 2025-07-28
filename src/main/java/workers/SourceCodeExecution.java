@@ -44,6 +44,12 @@ public class SourceCodeExecution implements MDLWorker {
         public int stack;
         public long startTime, endTime;
         List<FunctionCallRecord> subcalls = new ArrayList<>();        
+        
+        @Override
+        public String toString()
+        {
+            return "FunctionCallRecord("+trackRecord.userString+","+stack+")";
+        }
     }
 
 
@@ -384,11 +390,14 @@ public class SourceCodeExecution implements MDLWorker {
         CodeStatement previous_s = null;
         int previous_pc = z80.getProgramCounter();
         ArrayList<FunctionCallRecord> trackedCallStack = new ArrayList<>();
+        List<CodeStatement> executionTrace = new ArrayList<>();
         try {
             while(true) {
                 int pcAddress = z80.getProgramCounter();
                 int sp = z80.getSP();
                 String addressString = z80Memory.addressString(pcAddress);
+                CodeStatement s = instructions.get(addressString);
+                executionTrace.add(s);
                 
                 for(FunctionTrackRecord function:trackFunctions) {
                     // Check for returns:
@@ -407,20 +416,26 @@ public class SourceCodeExecution implements MDLWorker {
                     }
                     if (addressMatch(pcAddress, addressString, function.address)) {
                         // We just entered in one of the functions to track!
-                        FunctionCallRecord r = new FunctionCallRecord();
-                        r.trackRecord = function;
-                        r.stack = sp;
-                        r.startTime = z80.getTStates();
-                        r.endTime = -1;
-                        function.open.add(r);
-                        if (reportAsExecutionTree) {
-                            if (trackedCallStack.isEmpty()) {
-                                topLevelCalls.add(r);
-                            } else {
-                                // keep track of the execution tree:
-                                trackedCallStack.get(trackedCallStack.size()-1).subcalls.add(r);
+                        FunctionCallRecord lastCall = null;
+                        if (!function.open.isEmpty()) {
+                            lastCall = function.open.get(function.open.size() - 1);
+                        }
+                        if (lastCall == null || lastCall.stack != sp) {
+                            FunctionCallRecord r = new FunctionCallRecord();
+                            r.trackRecord = function;
+                            r.stack = sp;
+                            r.startTime = z80.getTStates();
+                            r.endTime = -1;
+                            function.open.add(r);
+                            if (reportAsExecutionTree) {
+                                if (trackedCallStack.isEmpty()) {
+                                    topLevelCalls.add(r);
+                                } else {
+                                    // keep track of the execution tree:
+                                    trackedCallStack.get(trackedCallStack.size()-1).subcalls.add(r);
+                                }
+                                trackedCallStack.add(r);
                             }
-                            trackedCallStack.add(r);
                         }
                     }
                 }
@@ -443,7 +458,6 @@ public class SourceCodeExecution implements MDLWorker {
                     startTrackingTime = z80.getTStates();
                 }
                                 
-                CodeStatement s = instructions.get(addressString);
                 if (trace) {
                     if (s == null) {
                         CPUOp op = attemptToDisassemble(z80Memory, pcAddress, code);
