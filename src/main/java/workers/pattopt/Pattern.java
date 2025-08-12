@@ -1453,13 +1453,15 @@ public class Pattern {
                 for(CodeStatement s:statements) {
                     if (s.op == null) continue;
                     int i = s.op.spec.args.size() - 1;  // check only the last argument (for reads)
-                    CPUOpSpecArg argSpec = s.op.spec.args.get(i);
-                    if (argSpec.wordConstantIndirectionAllowed ||
-                        argSpec.regIndirection != null ||
-                        argSpec.regOffsetIndirection != null) {
-                        PatternMatch match2 = new PatternMatch(match);
-                        if (unifyExpressions(exp, s.op.args.get(i), true, match2, s, code)) {
-                            return false;
+                    if (i >= 0) {
+                        CPUOpSpecArg argSpec = s.op.spec.args.get(i);
+                        if (argSpec.wordConstantIndirectionAllowed ||
+                            argSpec.regIndirection != null ||
+                            argSpec.regOffsetIndirection != null) {
+                            PatternMatch match2 = new PatternMatch(match);
+                            if (unifyExpressions(exp, s.op.args.get(i), true, match2, s, code)) {
+                                return false;
+                            }
                         }
                     }
                 }
