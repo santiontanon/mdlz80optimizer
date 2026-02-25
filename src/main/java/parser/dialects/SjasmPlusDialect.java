@@ -411,6 +411,7 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
         if (tokens.size() >= 1 && tokens.get(0).equalsIgnoreCase("outend")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("size")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("page")) return true;
+        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("dh")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("dz")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("align")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("module")) return true;
@@ -528,6 +529,26 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
         }
 
         
+        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("dh")) {
+            tokens.remove(0);
+            String arg = tokens.remove(0);
+            if (!arg.startsWith("\"") || !arg.endsWith("\"")) {
+                config.error("dh needs a string argument in " + sl);
+                return false;
+            }
+            String hexString = arg.substring(1, arg.length() - 1);
+
+            List<Expression> data = new ArrayList<>();
+            for (int i = 0; i < hexString.length(); i += 2) {
+                String byteString = hexString.substring(i, i + 2);
+                int value = Integer.parseInt(byteString, 16);
+                data.add(Expression.constantExpression(value, Expression.RENDER_AS_8BITHEX, config));
+            }
+            s.type = CodeStatement.STATEMENT_DATA_BYTES;
+            s.data = data;
+            return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
+        }
+
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("dz")) {
             tokens.remove(0);
             if (!config.lineParser.parseData(tokens, "db", l, sl, s, previous, source, code)) return false;
