@@ -412,6 +412,8 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("size")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("page")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("dh")) return true;
+        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("defh")) return true;
+        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("hex")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("dz")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("align")) return true;
         if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("module")) return true;
@@ -528,22 +530,65 @@ public class SjasmPlusDialect extends SjasmDerivativeDialect implements Dialect
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
         }
 
-        
-        if (tokens.size() >= 2 && tokens.get(0).equalsIgnoreCase("dh")) {
-            tokens.remove(0);
-            String arg = tokens.remove(0);
-            if (!arg.startsWith("\"") || !arg.endsWith("\"")) {
-                config.error("dh needs a string argument in " + sl);
+        if (tokens.size() >= 2 && (tokens.get(0).equalsIgnoreCase("dh") ||
+                tokens.get(0).equalsIgnoreCase("defh") ||
+                tokens.get(0).equalsIgnoreCase("hex"))) {
+            String keyword = tokens.remove(0);
+            List<Expression> data = new ArrayList<>();
+
+            // Consume all remaining tokens (before comments) as hex data:
+            while (!tokens.isEmpty()) {
+                String token = tokens.get(0);
+                if (config.tokenizer.isSingleLineComment(token) ||
+                        config.tokenizer.isMultiLineCommentStart(token))
+                    break;
+
+                tokens.remove(0);
+
+                // Skip comma separators:
+                if (token.equals(","))
+                    continue;
+
+                // Determine the hex content:
+                String hexContent;
+                if (token.startsWith("\"") && token.endsWith("\"") && token.length() >= 2) {
+                    // Quoted string (double or single quotes, auto-converted before)
+                    hexContent = token.substring(1, token.length() - 1);
+                } else {
+                    // Unquoted hex digits
+                    hexContent = token;
+                }
+
+                // Remove spaces from the hex content:
+                hexContent = hexContent.replace(" ", "");
+
+                // Validate hex characters:
+                for (int i = 0; i < hexContent.length(); i++) {
+                    if (!config.tokenizer.isHexCharacter(hexContent.charAt(i))) {
+                        config.error(keyword + ": invalid hex character '" + hexContent.charAt(i) + "' in " + sl);
+                        return false;
+                    }
+                }
+
+                // Validate even number of hex digits:
+                if (hexContent.length() % 2 != 0) {
+                    config.error(keyword + ": hex digits must be in pairs in " + sl);
+                    return false;
+                }
+
+                // Parse hex pairs into bytes:
+                for (int i = 0; i < hexContent.length(); i += 2) {
+                    String byteString = hexContent.substring(i, i + 2);
+                    int value = Integer.parseInt(byteString, 16);
+                    data.add(Expression.constantExpression(value, Expression.RENDER_AS_8BITHEX, config));
+                }
+            }
+
+            if (data.isEmpty()) {
+                config.error(keyword + ": no hex data provided in " + sl);
                 return false;
             }
-            String hexString = arg.substring(1, arg.length() - 1);
 
-            List<Expression> data = new ArrayList<>();
-            for (int i = 0; i < hexString.length(); i += 2) {
-                String byteString = hexString.substring(i, i + 2);
-                int value = Integer.parseInt(byteString, 16);
-                data.add(Expression.constantExpression(value, Expression.RENDER_AS_8BITHEX, config));
-            }
             s.type = CodeStatement.STATEMENT_DATA_BYTES;
             s.data = data;
             return config.lineParser.parseRestofTheLine(tokens, l, sl, s, previous, source, code);
