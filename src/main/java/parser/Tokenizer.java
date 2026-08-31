@@ -643,7 +643,7 @@ public class Tokenizer {
     
     
     public boolean isDashPlusLabel(String label) {
-        if (isBlank(label)) return false;
+        if (Tokenizer.isBlank(label)) return false;
         for(int i = 0;i<label.length();i++) {
             if (label.charAt(i) != '-' && label.charAt(i) != '+') return false;
             if (i > 0 && label.charAt(i) != label.charAt(i-1)) return false;
