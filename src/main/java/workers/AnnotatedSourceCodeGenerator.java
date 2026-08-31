@@ -550,7 +550,7 @@ public class AnnotatedSourceCodeGenerator implements MDLWorker {
             String tokens[] = cmdString.substring(GFX_TAG.length()).split(",");
             List<String> args = new ArrayList<>();
             for(int i = 0;i<tokens.length;i++) {
-                String token = tokens[i].strip();
+                String token = tokens[i].trim();
                 token = token.replace("(", "");
                 token = token.replace(")", "");
                 args.add(token);

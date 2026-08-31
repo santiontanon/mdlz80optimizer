@@ -13,6 +13,7 @@ import code.Expression;
 import code.SourceConstant;
 import code.SourceFile;
 import java.io.BufferedReader;
+import java.io.DataInputStream;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -132,7 +133,12 @@ public class Disassembler implements MDLWorker {
         
         try {
             InputStream fis = Resources.asInputStream(config.inputFiles.get(0));
-            data = fis.readAllBytes();
+//            data = fis.readAllBytes();
+            
+            // Java 8 version of "readAllBytes()":
+            data = new byte[fis.available()];
+            DataInputStream dataInputStream = new DataInputStream(fis);
+            dataInputStream.readFully(data);
         } catch(Exception e) {
             config.error("Cannot read binary input file: " + config.inputFiles.get(0));
             return false;
@@ -162,7 +168,7 @@ public class Disassembler implements MDLWorker {
                             continue;
                         }
                         String addressToken = st.nextToken();
-                        String restOfTheLine = (st.hasMoreTokens() ? st.nextToken("").strip():null);
+                        String restOfTheLine = (st.hasMoreTokens() ? st.nextToken("").trim():null);
                         Expression addressExp = config.expressionParser.parse(
                                 config.tokenizer.tokenize(addressToken), null, null, code);
                         if (addressExp == null || !addressExp.evaluatesToNumericConstant()) {

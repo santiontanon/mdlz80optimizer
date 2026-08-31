@@ -203,7 +203,7 @@ public class SymbolTableGenerator implements MDLWorker {
                     String tokens[] = s.comment.substring(idx).split(" ");
                     String pageString = null;
                     for(String token:tokens) {
-                        token = token.strip();
+                        token = token.trim();
                         if (!token.isEmpty()) {
                             pageString = token;
                             break;

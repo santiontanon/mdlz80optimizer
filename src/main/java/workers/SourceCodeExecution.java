@@ -1149,7 +1149,7 @@ public class SourceCodeExecution implements MDLWorker {
             BufferedReader br = new BufferedReader(new FileReader(mapperConfigFileName));
             String line = br.readLine();
             while(line != null) {
-                line = line.strip().toLowerCase();
+                line = line.trim().toLowerCase();
                 if (line.startsWith("binary_size:")) {
                     line = line.substring(12);
                     List<String> tokens = config.tokenizer.tokenize(line);
@@ -1185,8 +1185,8 @@ public class SourceCodeExecution implements MDLWorker {
                             config.error("Cannot parse page mapping " + parts[i] + " in: " + line);
                             return false;
                         }
-                        Integer source = Integer.parseInt(parts2[0].strip());
-                        Integer segment = Integer.parseInt(parts2[1].strip());
+                        Integer source = Integer.parseInt(parts2[0].trim());
+                        Integer segment = Integer.parseInt(parts2[1].trim());
                         if (source == null || segment == null) {
                             config.error("Invalid source or segment numbers in page mapping " + parts[i] + " in: " + line);
                             return false;
@@ -1195,7 +1195,7 @@ public class SourceCodeExecution implements MDLWorker {
                         initial_mapping[i][1] = segment;
                     }
                 } else if (line.startsWith("ram_mapper_type:")) {
-                    line = line.substring(16).strip();
+                    line = line.substring(16).trim();
                     switch(line) {
                         case "no_mapper":
                             RAM_mapper_type = MappedTrackingZ80Memory.NO_MAPPER;
@@ -1208,7 +1208,7 @@ public class SourceCodeExecution implements MDLWorker {
                             return false;
                     }
                 } else if (line.startsWith("binary_mapper_type:")) {
-                    line = line.substring(19).strip();
+                    line = line.substring(19).trim();
                     switch(line) {
                         case "no_mapper":
                             ROM_mapper_type = MappedTrackingZ80Memory.NO_MAPPER;
